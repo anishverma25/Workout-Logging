@@ -87,7 +87,7 @@ function FormError({ error }: { error: string | null }) {
 
 function ShowPassword({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-muted">
+    <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm text-muted">
       <input
         type="checkbox"
         className="size-4 accent-[var(--color-accent)]"
@@ -127,14 +127,14 @@ export function SignInPage() {
           <p>
             New here?{' '}
             <Link
-              className="font-semibold text-accent-text"
+              className="tap-target font-semibold text-accent-text"
               to={`/sign-up?next=${encodeURIComponent(next)}`}
             >
               Create an account
             </Link>
           </p>
           <p>
-            <Link className="font-semibold text-accent-text" to="/forgot-password">
+            <Link className="tap-target font-semibold text-accent-text" to="/forgot-password">
               Forgot your password?
             </Link>
           </p>
@@ -212,7 +212,7 @@ export function SignUpPage() {
         <p>
           Already have an account?{' '}
           <Link
-            className="font-semibold text-accent-text"
+            className="tap-target font-semibold text-accent-text"
             to={`/sign-in?next=${encodeURIComponent(next)}`}
           >
             Sign in
@@ -288,7 +288,7 @@ export function ForgotPasswordPage() {
       intro="Enter the email you signed up with and we will send you a link to choose a new password."
       footer={
         <p>
-          <Link className="font-semibold text-accent-text" to="/sign-in">
+          <Link className="tap-target font-semibold text-accent-text" to="/sign-in">
             Back to sign in
           </Link>
         </p>

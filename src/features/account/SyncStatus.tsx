@@ -55,3 +55,34 @@ export function SyncSummary() {
     </div>
   );
 }
+
+/** One quiet line under a finished workout: saved on this device, or synced to the account. */
+export function SyncLine({ className }: { className?: string }) {
+  const account = useAccount();
+  const description = useSyncDescription();
+  const { icon: Icon, className: tone } = TONE[description.tone];
+  const signedIn = account.status === 'signedIn';
+  return (
+    <p
+      className={cn('flex items-center gap-2 text-sm text-faint', className)}
+      role="status"
+      aria-label="Sync status"
+    >
+      <Icon className={cn('size-4 shrink-0', tone)} aria-hidden />
+      <span>
+        {signedIn ? description.title : 'Saved on this device only.'}
+        {account.status === 'unavailable' || account.status === 'loading' ? null : (
+          <>
+            {' '}
+            <Link
+              to={signedIn ? '/account' : '/sign-in?next=/account'}
+              className="underline underline-offset-4"
+            >
+              {signedIn ? 'Details' : 'Back it up'}
+            </Link>
+          </>
+        )}
+      </span>
+    </p>
+  );
+}

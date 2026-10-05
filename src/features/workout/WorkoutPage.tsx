@@ -55,7 +55,7 @@ function StartScreen() {
             </h2>
             <Link
               to={`/routines/${routine.id}`}
-              className="text-sm font-medium text-accent-text underline-offset-4 hover:underline"
+              className="tap-target text-sm font-medium text-accent-text underline-offset-4 hover:underline"
             >
               Edit routine
             </Link>

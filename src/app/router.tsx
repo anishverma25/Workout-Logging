@@ -2,10 +2,12 @@ import { createBrowserRouter } from 'react-router';
 import { AppShell } from './layout/AppShell';
 import { RouteError } from './layout/RouteError';
 import { HomePage } from '@/features/home/HomePage';
+import { SummaryPage } from '@/features/workout/SummaryPage';
 import { WorkoutPage } from '@/features/workout/WorkoutPage';
 
 /**
- * Home and the workout logger load with the app, since they are where people start. Every other
+ * Home, the workout logger and its summary load with the app: logging and finishing a workout
+ * must work even before the service worker has cached anything. Every other
  * screen is its own chunk, fetched on first visit (and precached by the service worker, so it
  * still opens offline).
  */
@@ -20,10 +22,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'workout', element: <WorkoutPage /> },
-      {
-        path: 'workouts/:workoutId/summary',
-        lazy: page(() => import('@/features/workout/SummaryPage'), 'SummaryPage'),
-      },
+      { path: 'workouts/:workoutId/summary', element: <SummaryPage /> },
       {
         path: 'routines',
         lazy: page(() => import('@/features/routines/RoutinesPage'), 'RoutinesPage'),

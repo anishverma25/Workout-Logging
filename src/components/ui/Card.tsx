@@ -37,7 +37,7 @@ export function SectionHeader({ title, detail, action, id }: SectionHeaderProps)
       {action ? (
         <Link
           to={action.to}
-          className="shrink-0 rounded-md text-sm font-medium text-accent-text underline-offset-4 hover:underline"
+          className="tap-target shrink-0 rounded-md text-sm font-medium text-accent-text underline-offset-4 hover:underline"
         >
           {action.label}
         </Link>

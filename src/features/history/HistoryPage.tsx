@@ -34,6 +34,8 @@ const RANGES: { value: HistoryRange; label: string }[] = [
   { value: 'all', label: 'All time' },
 ];
 
+const WEEKS_PER_PAGE = 12;
+
 export function HistoryPage() {
   const training = useTrainingData();
   const prefs = usePreferences();
@@ -55,6 +57,13 @@ export function HistoryPage() {
     () => groupByWeek(filtered, prefs.weekStartsOn),
     [filtered, prefs.weekStartsOn],
   );
+  // Long histories render a few months at a time, so opening History stays instant after
+  // years of training. Changing the filters starts again from the most recent weeks.
+  const filtersKey = JSON.stringify(filters);
+  const [shown, setShown] = useState({ key: filtersKey, weeks: WEEKS_PER_PAGE });
+  const weekLimit = shown.key === filtersKey ? shown.weeks : WEEKS_PER_PAGE;
+  const visibleWeeks = weeks.slice(0, weekLimit);
+  const hiddenWorkouts = weeks.slice(weekLimit).reduce((n, w) => n + w.entries.length, 0);
   const exerciseName = options.exercises.find((e) => e.id === filters.exerciseId)?.name;
   const active =
     filters.workoutName !== null || filters.exerciseId !== null || filters.muscle !== null;
@@ -134,7 +143,7 @@ export function HistoryPage() {
           )}
 
           <div className="mt-2 flex flex-col gap-8">
-            {weeks.map((week) => (
+            {visibleWeeks.map((week) => (
               <section
                 key={week.weekStart.toISOString()}
                 aria-label={weekLabel(week.weekStart, now, prefs.weekStartsOn)}
@@ -160,6 +169,16 @@ export function HistoryPage() {
               </section>
             ))}
           </div>
+          {hiddenWorkouts > 0 ? (
+            <Button
+              variant="secondary"
+              block
+              className="mt-8"
+              onClick={() => setShown({ key: filtersKey, weeks: weekLimit + WEEKS_PER_PAGE })}
+            >
+              Show older workouts ({hiddenWorkouts} more)
+            </Button>
+          ) : null}
         </>
       ) : null}
 

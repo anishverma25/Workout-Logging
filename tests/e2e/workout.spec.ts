@@ -50,6 +50,7 @@ test('an empty set is completed with last time’s numbers in one tap', async ({
   await startRoutineWorkout(page);
   const card = firstCard(page);
   const load = card.getByRole('textbox', { name: 'Set 1 load in kg' });
+  await expect(card.getByText(/^Last time/)).toBeVisible();
   const hint = await load.getAttribute('placeholder');
   expect(hint).toBeTruthy();
   await card.getByRole('button', { name: 'Mark set 1 done' }).click();

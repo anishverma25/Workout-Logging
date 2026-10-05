@@ -37,6 +37,7 @@ import { formatRepRange } from '@/lib/format';
 import { columnsFor, setLabels, trackingOf } from './format';
 import { SetRow, SET_GRID, SET_GRID_NO_EFFORT } from './SetRow';
 import { SetSheet } from './SetSheet';
+import { loadPreviousPerformance } from '@/data/repositories/workoutView';
 import { cn } from '@/lib/cn';
 
 interface Props {
@@ -155,8 +156,10 @@ function ExerciseCardImpl({ view, index, count, prefs, onSetCompleted }: Props) 
               {lastTimeLabel(new Date(previous.workout.startedAt))}
             </span>
           </span>
-        ) : (
+        ) : previous === null ? (
           <span className="text-faint">First time logging this exercise</span>
+        ) : (
+          <span aria-hidden />
         )}
         {canCopy ? (
           <button
@@ -197,6 +200,21 @@ function ExerciseCardImpl({ view, index, count, prefs, onSetCompleted }: Props) 
               prefs={prefs}
               previous={matchingPreviousSet(prevSets, sets, s.id)}
               suggestion={suggestFor(prevSets, sets, s.id)}
+              loadSuggestion={
+                previous === undefined
+                  ? async () => {
+                      const workout = await db.workouts.get(we.workoutId);
+                      if (!workout) return null;
+                      const map = await loadPreviousPerformance(
+                        db,
+                        [we.exerciseId],
+                        workout.startedAt,
+                        we.workoutId,
+                      );
+                      return suggestFor(map.get(we.exerciseId)?.sets ?? [], sets, s.id);
+                    }
+                  : undefined
+              }
               targetRir={target?.rir ?? null}
               onOpenOptions={(set) => setOptionsFor(set.id)}
               onCompleted={onCompleted}

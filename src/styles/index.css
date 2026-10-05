@@ -17,13 +17,13 @@
   --line-strong: rgb(22 25 19 / 0.16);
   --text: #141612;
   --text-muted: #555a4f;
-  --text-faint: #6c7164;
+  --text-faint: #63685b;
   --accent: #c8f542;
   --accent-ink: #11140a;
   --accent-text: #466600;
   --accent-soft: rgb(120 168 0 / 0.13);
   --data-2: #3f5bd6;
-  --warn: #9a6400;
+  --warn: #865500;
   --warn-soft: rgb(214 140 0 / 0.14);
   --danger: #c4311f;
   --danger-soft: rgb(196 49 31 / 0.1);
@@ -217,5 +217,20 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Enlarges the touch area of small inline links and pills to at least 44px without changing
+   their layout. The element must not clip overflow. */
+@utility tap-target {
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
   }
 }

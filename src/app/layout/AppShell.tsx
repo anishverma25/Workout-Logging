@@ -13,11 +13,22 @@ import { SyncBadge } from '@/features/account/SyncStatus';
 export function AppShell() {
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[17rem_1fr]">
+      <a
+        href="#main"
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById('main')?.focus();
+        }}
+        className="sr-only z-50 rounded-xl bg-accent px-4 py-3 font-semibold text-accent-ink focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
+      >
+        Skip to content
+      </a>
       <Sidebar />
       <div className="min-w-0">
         <main
           id="main"
-          className="mx-auto w-full max-w-[72rem] px-safe pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-safe lg:px-10 lg:pb-16"
+          tabIndex={-1}
+          className="mx-auto outline-none w-full max-w-[72rem] px-safe pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-safe lg:px-10 lg:pb-16"
         >
           <AppNotices />
           <StartWorkoutProvider>
@@ -40,7 +51,7 @@ export function DemoPill({ className }: { className?: string }) {
     <Link
       to="/settings#demo-data"
       className={cn(
-        'inline-flex h-7 items-center gap-1.5 rounded-full border border-warn/40 bg-warn-soft px-2.5 text-xs font-semibold text-warn',
+        'tap-target inline-flex h-7 items-center gap-1.5 rounded-full border border-warn/40 bg-warn-soft px-2.5 text-xs font-semibold text-warn',
         className,
       )}
       title="You are viewing fictional demo data. Manage it in Settings."

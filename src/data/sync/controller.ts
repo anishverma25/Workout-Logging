@@ -88,6 +88,7 @@ export class SyncController {
     });
 
     const onOnline = () => this.syncNow();
+    const onOffline = () => this.set({ phase: 'offline' });
     const onVisible = () => {
       if (document.visibilityState === 'visible') this.syncNow();
     };
@@ -96,6 +97,7 @@ export class SyncController {
     }, PULL_INTERVAL_MS);
     if (typeof window !== 'undefined') {
       window.addEventListener('online', onOnline);
+      window.addEventListener('offline', onOffline);
       document.addEventListener('visibilitychange', onVisible);
     }
     this.session = {
@@ -107,6 +109,7 @@ export class SyncController {
         clearInterval(interval);
         if (typeof window !== 'undefined') {
           window.removeEventListener('online', onOnline);
+          window.removeEventListener('offline', onOffline);
           document.removeEventListener('visibilitychange', onVisible);
         }
       },
@@ -142,6 +145,11 @@ export class SyncController {
       return this.running;
     }
     const session = this.session;
+    // No point trying without a network: wait for the browser's `online` event instead.
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      this.set({ phase: 'offline' });
+      return Promise.resolve();
+    }
     this.running = (async () => {
       this.set({ phase: 'syncing' });
       try {

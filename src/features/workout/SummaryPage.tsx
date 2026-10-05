@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { ArrowDownRight, ArrowUpRight, Check, Minus, Trophy } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
+import { SyncLine } from '@/features/account/SyncStatus';
 import { Card } from '@/components/ui/Card';
 import { ErrorState, Skeleton } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
@@ -156,12 +157,7 @@ export function SummaryPage() {
           View workout details
         </ButtonLink>
       </div>
-      <p className="mt-4 text-center text-sm text-faint">
-        Saved on this device.{' '}
-        <Link to="/settings" className="underline underline-offset-4">
-          About storage
-        </Link>
-      </p>
+      <SyncLine className="mt-4 justify-center" />
     </div>
   );
 }
@@ -208,7 +204,10 @@ function ChangeDetail({ change, unit }: { change: ExerciseChange | null; unit: W
         : `${change.today} reps`;
   return (
     <span className="text-right text-xs text-faint">
-      {detail}, vs {formatRelativeDayInline(change.previousDate).replace(/^on /, '')}
+      {detail}, vs{' '}
+      {formatRelativeDayInline(change.previousDate)
+        .replace(/^on /, '')
+        .replace(/^today$/, 'earlier today')}
     </span>
   );
 }

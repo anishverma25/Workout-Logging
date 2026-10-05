@@ -62,19 +62,24 @@ export function previousPerformance(
 /**
  * The previous set that lines up with a set in today's list: the same position among sets
  * of the same type. The 2nd working set today is compared with the 2nd working set last time.
- * Falls back to the last set of that type, so an extra set still gets a sensible suggestion.
+ *
+ * Shown as "last time", so by default it is exact: a 4th set today has no last time if only
+ * three were done. With `fallback`, an extra set borrows the last set of that type, which is
+ * right for a suggestion but would be wrong presented as history.
  */
 export function matchingPreviousSet(
   previous: WorkoutSet[],
   today: Pick<WorkoutSet, 'id' | 'setType'>[],
   setId: string,
+  { fallback = false }: { fallback?: boolean } = {},
 ): WorkoutSet | null {
   const target = today.find((s) => s.id === setId);
   if (!target) return null;
   const index = today.filter((s) => s.setType === target.setType).findIndex((s) => s.id === setId);
   const sameType = previous.filter((s) => s.setType === target.setType);
+  if (sameType[index]) return sameType[index]!;
   // A back-off or drop set with no matching history gets no guess: none beats a wrong one.
-  return sameType[index] ?? sameType[sameType.length - 1] ?? null;
+  return fallback ? (sameType[sameType.length - 1] ?? null) : null;
 }
 
 /** Values a set would be completed with when the user taps done without typing. */
@@ -104,7 +109,9 @@ export function suggestFor(
   today: WorkoutSet[],
   setId: string,
 ): SetSuggestion | null {
-  const fromHistory = suggestionFrom(matchingPreviousSet(previous, today, setId));
+  const fromHistory = suggestionFrom(
+    matchingPreviousSet(previous, today, setId, { fallback: true }),
+  );
   if (fromHistory) return fromHistory;
   const target = today.find((s) => s.id === setId);
   if (!target) return null;

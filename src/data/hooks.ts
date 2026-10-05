@@ -9,8 +9,11 @@ import { getDemoStatus, type DemoStatus } from './demo/service';
 import { getDismissedSuggestions, getPreferences, getRestTimer } from './repositories/meta';
 import { getActiveWorkout } from './repositories/workouts';
 import {
-  loadActiveWorkoutView,
-  loadWorkoutView,
+  combineWorkoutView,
+  loadPreviousPerformance,
+  loadWorkoutCore,
+  shareWorkoutCore,
+  type WorkoutCore,
   type WorkoutView,
 } from './repositories/workoutView';
 import { loadTrainingData } from './repositories/training';
@@ -24,7 +27,12 @@ export type QueryState<T> =
  * Subscribes to a Dexie live query. Re-runs automatically when any table it read changes,
  * so every screen updates the moment demo data is loaded, cleared or a set is logged.
  */
-export function useLiveData<T>(query: () => Promise<T>, deps: unknown[] = []): QueryState<T> {
+export function useLiveData<T>(
+  query: () => Promise<T>,
+  deps: unknown[] = [],
+  /** Optional structural sharing: keep parts of the previous result that did not change. */
+  share?: (prev: T | undefined, next: T) => T,
+): QueryState<T> {
   const [state, setState] = useState<QueryState<T>>({
     status: 'loading',
     data: undefined,
@@ -32,7 +40,12 @@ export function useLiveData<T>(query: () => Promise<T>, deps: unknown[] = []): Q
   });
   useEffect(() => {
     const subscription = liveQuery(query).subscribe({
-      next: (data) => setState({ status: 'success', data, error: undefined }),
+      next: (data) =>
+        setState((prev) => ({
+          status: 'success',
+          data: share ? share(prev.data, data) : data,
+          error: undefined,
+        })),
       error: (err: unknown) =>
         setState({
           status: 'error',
@@ -73,13 +86,52 @@ export const useExerciseCatalog = () =>
     };
   });
 
+/**
+ * A workout with "last time" for each exercise, as two live queries: the workout itself
+ * re-runs on every change (cheap), history only when the exercises or the workout change.
+ * Logging a set never re-reads the past, however long it is.
+ */
+function useWorkoutViewFrom(core: QueryState<WorkoutCore | null>): QueryState<WorkoutView | null> {
+  const c = core.data;
+  const ids = c ? [...new Set(c.exercises.map((e) => e.workoutExercise.exerciseId))] : [];
+  const key = c ? `${c.workout.id}|${c.workout.startedAt}|${ids.join(',')}` : '';
+  const previous = useLiveData(
+    async () =>
+      c
+        ? {
+            workoutId: c.workout.id,
+            map: await loadPreviousPerformance(db, ids, c.workout.startedAt, c.workout.id),
+          }
+        : undefined,
+    [key],
+  );
+  if (core.status !== 'success') return core;
+  if (!c) return { status: 'success', data: null, error: undefined };
+  // The workout shows straight away. Each exercise's "last time" is filled in once its
+  // history is loaded; a result for another workout is never used.
+  const map = previous.data?.workoutId === c.workout.id ? previous.data.map : undefined;
+  return { status: 'success', data: combineWorkoutView(c, map), error: undefined };
+}
+
 export const useActiveWorkoutView = () =>
-  useLiveData<WorkoutView | null>(() => loadActiveWorkoutView(db));
+  useWorkoutViewFrom(
+    useLiveData<WorkoutCore | null>(
+      async () => {
+        const active = await getActiveWorkout(db);
+        return active ? loadWorkoutCore(db, active.id) : null;
+      },
+      [],
+      shareWorkoutCore,
+    ),
+  );
 
 export const useWorkoutView = (workoutId: string | undefined) =>
-  useLiveData<WorkoutView | null>(
-    async () => (workoutId ? loadWorkoutView(db, workoutId) : null),
-    [workoutId],
+  useWorkoutViewFrom(
+    useLiveData<WorkoutCore | null>(
+      async () => (workoutId ? loadWorkoutCore(db, workoutId) : null),
+      [workoutId],
+      shareWorkoutCore,
+    ),
   );
 
 /** Only the id and start of the workout in progress: cheap enough for the app shell. */

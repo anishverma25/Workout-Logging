@@ -25,6 +25,8 @@ interface Props {
   prefs: Preferences;
   previous: WorkoutSet | null;
   suggestion: SetSuggestion | null;
+  /** Set while this exercise's history is still loading: fetches the suggestion on demand. */
+  loadSuggestion?: () => Promise<SetSuggestion | null>;
   targetRir: number | null;
   onOpenOptions: (set: WorkoutSet) => void;
   /** Called after a set becomes done, with the set, to start rest. */
@@ -40,6 +42,7 @@ function SetRowImpl({
   prefs,
   previous,
   suggestion,
+  loadSuggestion,
   targetRir,
   onOpenOptions,
   onCompleted,
@@ -72,7 +75,9 @@ function SetRowImpl({
         amountRef.current?.flush(),
         effortRef.current?.flush(),
       ]);
-      const result = await completeSet(db, set.id, suggestion);
+      // A tap in the first moment after opening still uses last time's numbers.
+      const fill = loadSuggestion ? await loadSuggestion() : suggestion;
+      const result = await completeSet(db, set.id, fill);
       if (!result.ok) {
         toast(result.reason);
         return;
