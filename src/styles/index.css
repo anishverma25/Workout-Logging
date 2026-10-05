@@ -1,0 +1,146 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens. Components use these through Tailwind utilities (bg-surface, text-muted...).
+ * Dark is the primary theme. Light mirrors every token so both stay complete.
+ */
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root,
+[data-theme='light'] {
+  --bg: #f2f3ee;
+  --surface: #ffffff;
+  --surface-2: #f2f3ed;
+  --surface-3: #e7e9e1;
+  --line: rgb(22 25 19 / 0.08);
+  --line-strong: rgb(22 25 19 / 0.16);
+  --text: #141612;
+  --text-muted: #555a4f;
+  --text-faint: #6c7164;
+  --accent: #c8f542;
+  --accent-ink: #11140a;
+  --accent-text: #466600;
+  --accent-soft: rgb(120 168 0 / 0.13);
+  --data-2: #3f5bd6;
+  --warn: #9a6400;
+  --warn-soft: rgb(214 140 0 / 0.14);
+  --danger: #c4311f;
+  --danger-soft: rgb(196 49 31 / 0.1);
+  --shadow-card: 0 1px 0 rgb(22 25 19 / 0.04), 0 8px 24px -16px rgb(22 25 19 / 0.25);
+  --glow: rgb(150 205 0 / 0.16);
+  --nav-bg: rgb(255 255 255 / 0.86);
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg: #0e0f0d;
+  --surface: #151714;
+  --surface-2: #1c1f1a;
+  --surface-3: #262a23;
+  --line: rgb(236 240 228 / 0.07);
+  --line-strong: rgb(236 240 228 / 0.14);
+  --text: #eef0e8;
+  --text-muted: #a6aa9e;
+  --text-faint: #868b7f;
+  --accent: #c8f542;
+  --accent-ink: #11140a;
+  --accent-text: #c8f542;
+  --accent-soft: rgb(200 245 66 / 0.11);
+  --data-2: #93abff;
+  --warn: #f2bd4b;
+  --warn-soft: rgb(242 189 75 / 0.12);
+  --danger: #ff7a68;
+  --danger-soft: rgb(255 122 104 / 0.12);
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 12px 32px -20px rgb(0 0 0 / 0.8);
+  --glow: rgb(200 245 66 / 0.1);
+  --nav-bg: rgb(14 15 13 / 0.86);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-data-2: var(--data-2);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --font-sans: 'Barlow', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Barlow Condensed', 'Barlow', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1.25rem;
+  --radius-control: 0.875rem;
+  --shadow-card: var(--shadow-card);
+  --ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@layer base {
+  html {
+    background: var(--bg);
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-bg text-text font-sans antialiased;
+    font-size: 1rem;
+    line-height: 1.5;
+    min-height: 100dvh;
+    font-feature-settings: 'kern';
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent-text);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@layer utilities {
+  /* Numbers line up in columns and do not jitter as they change. */
+  .tabular {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .px-safe {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
