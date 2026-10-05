@@ -9,6 +9,7 @@ import '@fontsource/barlow-condensed/600.css';
 import '@fontsource/barlow-condensed/700.css';
 import './styles/index.css';
 import { bootstrap } from './app/bootstrap';
+import { registerServiceWorker } from './app/pwa';
 import { router } from './app/router';
 import { ThemeProvider } from './app/theme';
 import { DatabaseScope } from './app/DatabaseScope';
@@ -29,6 +30,8 @@ function render() {
     </StrictMode>,
   );
 }
+
+registerServiceWorker();
 
 // Render even if bootstrapping fails, so screens can show their own error states.
 bootstrap()

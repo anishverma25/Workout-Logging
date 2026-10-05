@@ -2,29 +2,16 @@ import { createBrowserRouter } from 'react-router';
 import { AppShell } from './layout/AppShell';
 import { RouteError } from './layout/RouteError';
 import { HomePage } from '@/features/home/HomePage';
-import { HistoryPage } from '@/features/history/HistoryPage';
-import { MorePage } from '@/features/more/MorePage';
-import { ExercisesPage } from '@/features/exercises/ExercisesPage';
-import { RoutineEditorPage } from '@/features/routines/RoutineEditorPage';
-import { NotFoundPage } from '@/features/pages';
-import { ProPage } from '@/features/pro/ProPage';
-import { MethodologyPage } from '@/features/progress/MethodologyPage';
-import { ProgressPage } from '@/features/progress/ProgressPage';
-import { BodyPage } from '@/features/body/BodyPage';
-import { WorkoutDetailPage } from '@/features/history/WorkoutDetailPage';
-import { RecordsPage } from '@/features/records/RecordsPage';
-import { SummaryPage } from '@/features/workout/SummaryPage';
 import { WorkoutPage } from '@/features/workout/WorkoutPage';
-import { ProfilePage } from '@/features/profile/ProfilePage';
-import { RoutinesPage } from '@/features/routines/RoutinesPage';
-import { SettingsPage } from '@/features/settings/SettingsPage';
-import { AccountPage } from '@/features/account/AccountPage';
-import {
-  ForgotPasswordPage,
-  NewPasswordPage,
-  SignInPage,
-  SignUpPage,
-} from '@/features/account/AuthPages';
+
+/**
+ * Home and the workout logger load with the app, since they are where people start. Every other
+ * screen is its own chunk, fetched on first visit (and precached by the service worker, so it
+ * still opens offline).
+ */
+const page =
+  <M extends Record<string, unknown>>(load: () => Promise<M>, name: keyof M & string) =>
+  async () => ({ Component: (await load())[name] as React.ComponentType });
 
 export const router = createBrowserRouter([
   {
@@ -33,26 +20,68 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'workout', element: <WorkoutPage /> },
-      { path: 'workouts/:workoutId/summary', element: <SummaryPage /> },
-      { path: 'routines', element: <RoutinesPage /> },
-      { path: 'routines/:routineId', element: <RoutineEditorPage /> },
-      { path: 'progress', element: <ProgressPage /> },
-      { path: 'progress/methodology', element: <MethodologyPage /> },
-      { path: 'history', element: <HistoryPage /> },
-      { path: 'history/:workoutId', element: <WorkoutDetailPage /> },
-      { path: 'records', element: <RecordsPage /> },
-      { path: 'exercises', element: <ExercisesPage /> },
-      { path: 'body', element: <BodyPage /> },
-      { path: 'profile', element: <ProfilePage /> },
-      { path: 'settings', element: <SettingsPage /> },
-      { path: 'pro', element: <ProPage /> },
-      { path: 'more', element: <MorePage /> },
-      { path: 'account', element: <AccountPage /> },
-      { path: 'sign-in', element: <SignInPage /> },
-      { path: 'sign-up', element: <SignUpPage /> },
-      { path: 'forgot-password', element: <ForgotPasswordPage /> },
-      { path: 'reset-password', element: <NewPasswordPage /> },
-      { path: '*', element: <NotFoundPage /> },
+      {
+        path: 'workouts/:workoutId/summary',
+        lazy: page(() => import('@/features/workout/SummaryPage'), 'SummaryPage'),
+      },
+      {
+        path: 'routines',
+        lazy: page(() => import('@/features/routines/RoutinesPage'), 'RoutinesPage'),
+      },
+      {
+        path: 'routines/:routineId',
+        lazy: page(() => import('@/features/routines/RoutineEditorPage'), 'RoutineEditorPage'),
+      },
+      {
+        path: 'progress',
+        lazy: page(() => import('@/features/progress/ProgressPage'), 'ProgressPage'),
+      },
+      {
+        path: 'progress/methodology',
+        lazy: page(() => import('@/features/progress/MethodologyPage'), 'MethodologyPage'),
+      },
+      {
+        path: 'history',
+        lazy: page(() => import('@/features/history/HistoryPage'), 'HistoryPage'),
+      },
+      {
+        path: 'history/:workoutId',
+        lazy: page(() => import('@/features/history/WorkoutDetailPage'), 'WorkoutDetailPage'),
+      },
+      {
+        path: 'records',
+        lazy: page(() => import('@/features/records/RecordsPage'), 'RecordsPage'),
+      },
+      {
+        path: 'exercises',
+        lazy: page(() => import('@/features/exercises/ExercisesPage'), 'ExercisesPage'),
+      },
+      { path: 'body', lazy: page(() => import('@/features/body/BodyPage'), 'BodyPage') },
+      {
+        path: 'profile',
+        lazy: page(() => import('@/features/profile/ProfilePage'), 'ProfilePage'),
+      },
+      {
+        path: 'settings',
+        lazy: page(() => import('@/features/settings/SettingsPage'), 'SettingsPage'),
+      },
+      { path: 'pro', lazy: page(() => import('@/features/pro/ProPage'), 'ProPage') },
+      { path: 'more', lazy: page(() => import('@/features/more/MorePage'), 'MorePage') },
+      {
+        path: 'account',
+        lazy: page(() => import('@/features/account/AccountPage'), 'AccountPage'),
+      },
+      { path: 'sign-in', lazy: page(() => import('@/features/account/AuthPages'), 'SignInPage') },
+      { path: 'sign-up', lazy: page(() => import('@/features/account/AuthPages'), 'SignUpPage') },
+      {
+        path: 'forgot-password',
+        lazy: page(() => import('@/features/account/AuthPages'), 'ForgotPasswordPage'),
+      },
+      {
+        path: 'reset-password',
+        lazy: page(() => import('@/features/account/AuthPages'), 'NewPasswordPage'),
+      },
+      { path: '*', lazy: page(() => import('@/features/pages'), 'NotFoundPage') },
     ],
   },
 ]);

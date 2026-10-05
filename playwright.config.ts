@@ -17,10 +17,17 @@ export default defineConfig({
     ...(executablePath ? { launchOptions: { executablePath } } : {}),
   },
   projects: [
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    { name: 'mobile', use: { ...devices['Pixel 7'] }, testIgnore: /pwa\.spec\.ts/ },
     {
       name: 'desktop',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
+      testIgnore: /pwa\.spec\.ts/,
+    },
+    {
+      // The production build (service worker, security headers), served by `vite preview`.
+      name: 'pwa',
+      testMatch: /pwa\.spec\.ts/,
+      use: { ...devices['Pixel 7'], baseURL: 'http://localhost:4175' },
     },
   ],
   webServer: [
@@ -35,6 +42,13 @@ export default defineConfig({
       command: 'pnpm exec vite --mode e2e --port 5175 --strictPort',
       url: 'http://localhost:5175',
       reuseExistingServer: !process.env.CI,
+    },
+    {
+      command:
+        'pnpm exec vite build --mode e2e --outDir dist-e2e --emptyOutDir && pnpm exec vite preview --mode e2e --outDir dist-e2e --port 4175 --strictPort',
+      url: 'http://localhost:4175',
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
     },
   ],
 });

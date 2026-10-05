@@ -51,8 +51,7 @@ async function addWeighIn(page: Page, kg: string, { navigate = true } = {}) {
   await expect(page.getByText('Weigh-in saved')).toBeVisible();
 }
 
-const syncStatus = (page: Page) =>
-  page.getByRole('status').filter({ hasText: /sync|Saved|Offline/i });
+const syncStatus = (page: Page) => page.getByRole('status', { name: 'Sync status' });
 
 test('account pages are protected and the guest is told data is device-only', async ({ page }) => {
   await page.goto('/account');
@@ -175,14 +174,18 @@ test('offline changes are saved on the device and only called synced after the s
   await signUp(page, uniqueEmail('offline'));
   await expect(syncStatus(page)).toContainText('Synced to your account');
 
-  await page.goto('/body');
+  // Navigate inside the app: the development server has no service worker, so a full page
+  // load (or a screen that was never opened) needs the network.
+  const go = (path: string) =>
+    page.evaluate((p) => {
+      history.pushState({}, '', p);
+      dispatchEvent(new PopStateEvent('popstate'));
+    }, path);
+  await go('/body');
+  await expect(page.getByRole('heading', { level: 1, name: 'Body metrics' })).toBeVisible();
   await context.setOffline(true);
   await addWeighIn(page, '70.1', { navigate: false });
-  // Navigate inside the app: a full page load would need the network.
-  await page.evaluate(() => {
-    history.pushState({}, '', '/account');
-    dispatchEvent(new PopStateEvent('popstate'));
-  });
+  await go('/account');
   await expect(syncStatus(page)).toContainText(/Offline|Saved on this device|Could not reach/, {
     timeout: 15_000,
   });

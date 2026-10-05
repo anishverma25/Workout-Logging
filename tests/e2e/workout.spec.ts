@@ -8,18 +8,16 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('#today-title')).toBeVisible();
 });
 
-/** Starts today's planned day from Home if there is one, otherwise the first routine day. */
+/**
+ * Starts the demo's Push day, whose first exercise is a weighted lift. Not "today's" day:
+ * that changes with the calendar (a Pull day starts with pull-ups, which have no load field).
+ */
 async function startRoutineWorkout(page: Page) {
-  const startToday = page.getByRole('button', { name: /^Start (Push|Pull|Legs)$/ });
-  if (await startToday.count()) {
-    await startToday.first().click();
-  } else {
-    await page.goto('/workout');
-    await page
-      .getByRole('button', { name: /^Start / })
-      .first()
-      .click();
-  }
+  await page.goto('/workout');
+  await page
+    .getByRole('button', { name: /^Start Push/ })
+    .first()
+    .click();
   await expect(page.getByRole('button', { name: 'Finish' })).toBeVisible();
 }
 

@@ -6,7 +6,8 @@ import {
   setDevEntitlement,
   type DevEntitlementState,
 } from '@/app/devEntitlement';
-import { FlaskConical, HardDrive, RotateCcw, Trash2 } from 'lucide-react';
+import { FlaskConical, HardDrive, RotateCcw, Smartphone, Trash2 } from 'lucide-react';
+import { isIosSafari, promptInstall, usePwa } from '@/app/pwa';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { useTheme, type ThemePreference } from '@/app/theme';
 import { Button, ButtonLink } from '@/components/ui/Button';
@@ -30,6 +31,7 @@ export function SettingsPage() {
       <div className="flex max-w-2xl flex-col gap-5">
         <AppearanceSection />
         <UnitsSection />
+        <InstallSection />
         <StorageSection />
         <DemoSection />
         {import.meta.env.DEV ? <DeveloperSection /> : null}
@@ -101,6 +103,31 @@ function UnitsSection() {
             { value: 'lb', label: 'lb' },
           ]}
         />
+      </Row>
+    </Card>
+  );
+}
+
+function InstallSection() {
+  const { installPrompt, installed } = usePwa();
+  let detail: string;
+  if (installed)
+    detail = 'Installed. It opens from your home screen, works offline and updates itself.';
+  else if (installPrompt)
+    detail = 'Add it to your home screen. It opens like an app and works offline.';
+  else if (isIosSafari()) detail = 'In Safari, tap Share, then Add to Home Screen.';
+  else detail = "Use your browser's menu to install it or add it to your home screen.";
+  return (
+    <Card className="p-5">
+      <h2 className="mb-3 flex items-center gap-2 font-display text-xl font-semibold">
+        <Smartphone className="size-5 text-faint" aria-hidden /> Install the app
+      </h2>
+      <Row title={installed ? 'Installed' : 'Home screen'} detail={detail}>
+        {installPrompt && !installed ? (
+          <Button size="sm" variant="secondary" onClick={() => void promptInstall()}>
+            Install
+          </Button>
+        ) : null}
       </Row>
     </Card>
   );

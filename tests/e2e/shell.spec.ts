@@ -45,6 +45,7 @@ test('theme and units can be changed', async ({ page }) => {
   await page.getByRole('radio', { name: 'Light' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.getByRole('radio', { name: 'lb' }).click();
+  await expect(page.getByText('Showing weights in lb')).toBeVisible();
   await page.goto('/');
   await expect(page.getByRole('region', { name: 'Body weight' })).toContainText('lb');
 });

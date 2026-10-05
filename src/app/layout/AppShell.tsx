@@ -5,6 +5,7 @@ import { cn } from '@/lib/cn';
 import { useDemoStatus } from '@/data/hooks';
 import { APP_NAME, PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '../navigation';
 import { BrandMark } from './BrandMark';
+import { AppNotices } from './AppNotices';
 import { StartWorkoutProvider } from '@/features/workout/StartWorkout';
 import { WorkoutDock } from '@/features/workout/WorkoutDock';
 import { SyncBadge } from '@/features/account/SyncStatus';
@@ -18,6 +19,7 @@ export function AppShell() {
           id="main"
           className="mx-auto w-full max-w-[72rem] px-safe pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-safe lg:px-10 lg:pb-16"
         >
+          <AppNotices />
           <StartWorkoutProvider>
             <Suspense fallback={null}>
               <Outlet />

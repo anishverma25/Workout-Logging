@@ -44,7 +44,7 @@ export function SyncSummary() {
   const description = useSyncDescription();
   const { icon: Icon, className: tone } = TONE[description.tone];
   return (
-    <div className="flex gap-3" role="status">
+    <div className="flex gap-3" role="status" aria-label="Sync status">
       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2">
         <Icon className={cn('size-5', tone)} aria-hidden />
       </span>

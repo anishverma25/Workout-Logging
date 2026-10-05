@@ -40,7 +40,9 @@ Read README.md for setup, architecture and calculation rules.
 
 - `pnpm check` (typecheck, lint, unit tests, build) and `pnpm test:e2e` (mobile and desktop).
 - RLS and sync tests run real Postgres (PGlite) with the migrations: `src/test/server.ts`.
-- E2E runs against `tests/fake-supabase/server.ts` (vite `--mode e2e`, port 5175).
+- E2E runs against `tests/fake-supabase/server.ts` (vite `--mode e2e`, port 5175). The `pwa`
+  project tests the production build via `vite preview` on port 4175.
+- The service worker must never cache cross-origin or API responses.
 - In a sandbox that cannot download Playwright's browser, point `PW_CHROMIUM_PATH` at a local
   Chromium, for example `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
 
@@ -65,4 +67,7 @@ Read README.md for setup, architecture and calculation rules.
 - Phase 7: 168-hour server trial, `subscriptions` table with RPCs, central entitlement, Pro
   gates on Progress and the logger, Pro page with configurable manual UPI, admin guide in
   `docs/admin-pro-payments.md`, development-only access states.
-- Next: Phase 8 (PWA, offline caching, deployment).
+- Phase 8: PWA (manifest, icons, service worker precaching the build, update prompt, install),
+  offline notice, route code splitting, security headers and CSP, Cloudflare Pages and Supabase
+  deployment guide (`docs/deployment.md`), CI with e2e.
+- Next: Phase 9 (full QA audit and report).
