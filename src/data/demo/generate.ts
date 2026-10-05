@@ -244,6 +244,8 @@ export function generateDemoDataset(now: Date, seed: number = DEMO_SEED): DemoDa
       status: 'completed',
       startedAt: iso(startedAt),
       endedAt: iso(endedAt),
+      pausedAt: null,
+      pausedMs: 0,
       notes: note,
       timeZone,
     });

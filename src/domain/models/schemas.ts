@@ -125,6 +125,10 @@ export const Workout = z.object({
   status: WorkoutStatus,
   startedAt: isoDateTime,
   endedAt: isoDateTime.nullable(),
+  /** Set while paused. Paused time is excluded from the workout duration. */
+  pausedAt: isoDateTime.nullable(),
+  /** Total paused milliseconds from completed pauses. */
+  pausedMs: z.number().int().min(0),
   notes: z.string().nullable(),
   timeZone: z.string(),
 });
@@ -198,6 +202,34 @@ export const Preferences = z.object({
   defaultRestSeconds: z.number().int().min(15).max(900),
 });
 export type Preferences = z.infer<typeof Preferences>;
+
+/** Routine targets for one exercise, as edited in the routine builder. */
+export const RoutineTargets = z
+  .object({
+    targetSets: z.number().int().min(1).max(20),
+    repMin: z.number().int().min(1).max(100),
+    repMax: z.number().int().min(1).max(100),
+    targetRir: z.number().min(0).max(10).nullable(),
+    restSeconds: z.number().int().min(0).max(900),
+    notes: z.string().max(500).nullable(),
+  })
+  .refine((t) => t.repMin <= t.repMax, {
+    message: 'Lowest reps must not be above highest reps',
+    path: ['repMax'],
+  });
+export type RoutineTargets = z.infer<typeof RoutineTargets>;
+
+export const CustomExerciseInput = z.object({
+  name: z.string().trim().min(2, 'Give it a name of at least 2 characters').max(80),
+  primaryMuscle: MuscleGroup,
+  secondaryMuscles: z.array(MuscleGroup),
+  equipment: Equipment,
+  category: z.enum(['compound', 'isolation']),
+  trackingType: TrackingType,
+  loadMode: LoadMode,
+  instructions: z.string().trim().max(1000).nullable(),
+});
+export type CustomExerciseInput = z.infer<typeof CustomExerciseInput>;
 
 export const DEFAULT_PREFERENCES: Preferences = {
   weightUnit: 'kg',

@@ -45,6 +45,8 @@ export function buildData(specs: SessionSpec[]): TrainingData {
       status: 'completed',
       startedAt: spec.at,
       endedAt: end,
+      pausedAt: null,
+      pausedMs: 0,
       notes: null,
       timeZone: 'UTC',
     });
