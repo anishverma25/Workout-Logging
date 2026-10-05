@@ -9,6 +9,7 @@ import {
   Library,
   Scale,
   Settings,
+  Trophy,
   UserRound,
 } from 'lucide-react';
 
@@ -30,6 +31,7 @@ export const PRIMARY_NAV: NavItem[] = [
 ];
 
 export const SECONDARY_NAV: NavItem[] = [
+  { to: '/records', label: 'Records', icon: Trophy },
   { to: '/exercises', label: 'Exercises', icon: Library },
   { to: '/body', label: 'Body metrics', icon: Scale },
   { to: '/profile', label: 'Profile', icon: UserRound },

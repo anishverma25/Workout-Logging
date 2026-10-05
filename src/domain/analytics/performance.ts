@@ -13,6 +13,12 @@ export interface ExercisePerformance {
   heaviestLoadSet: WorkoutSet | null;
   mostReps: number | null;
   mostRepsSet: WorkoutSet | null;
+  /** Timed exercises: longest completed working set, seconds. */
+  longestDuration: number | null;
+  longestDurationSet: WorkoutSet | null;
+  /** Distance exercises: longest completed working set, metres. */
+  longestDistance: number | null;
+  longestDistanceSet: WorkoutSet | null;
 }
 
 export function performanceFor(
@@ -32,7 +38,12 @@ export function performanceFor(
     heaviestLoadSet: null,
     mostReps: null,
     mostRepsSet: null,
+    longestDuration: null,
+    longestDurationSet: null,
+    longestDistance: null,
+    longestDistanceSet: null,
   };
+  const tracking = exercise?.trackingType;
   for (const set of sets) {
     if (isLoadEligible(set, exercise)) {
       const e1rm = estimateOneRepMax(set.weightKg, set.reps);
@@ -46,7 +57,35 @@ export function performanceFor(
         perf.heaviestLoadSet = set;
       }
     }
-    if (exercise?.trackingType === 'bodyweight_reps' && isWorkingSet(set) && (set.reps ?? 0) > 0) {
+    // Weighted bodyweight moves: the heaviest added load is a real, comparable record.
+    // It is not used for e1RM or volume, because body weight is not part of the logged load.
+    if (
+      tracking === 'weighted_bodyweight' &&
+      isWorkingSet(set) &&
+      (set.weightKg ?? 0) > 0 &&
+      (set.reps ?? 0) > 0
+    ) {
+      const w = set.weightKg ?? 0;
+      if (perf.heaviestLoad === null || w > perf.heaviestLoad) {
+        perf.heaviestLoad = w;
+        perf.heaviestLoadSet = set;
+      }
+    }
+    if (tracking === 'duration' && isWorkingSet(set) && (set.durationSec ?? 0) > 0) {
+      const d = set.durationSec ?? 0;
+      if (perf.longestDuration === null || d > perf.longestDuration) {
+        perf.longestDuration = d;
+        perf.longestDurationSet = set;
+      }
+    }
+    if (tracking === 'distance' && isWorkingSet(set) && (set.distanceM ?? 0) > 0) {
+      const d = set.distanceM ?? 0;
+      if (perf.longestDistance === null || d > perf.longestDistance) {
+        perf.longestDistance = d;
+        perf.longestDistanceSet = set;
+      }
+    }
+    if (tracking === 'bodyweight_reps' && isWorkingSet(set) && (set.reps ?? 0) > 0) {
       const r = set.reps ?? 0;
       if (perf.mostReps === null || r > perf.mostReps) {
         perf.mostReps = r;

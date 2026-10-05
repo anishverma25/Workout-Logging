@@ -47,3 +47,62 @@ export function bodyWeightSummary(
       .map((e) => ({ date: new Date(e.measuredAt), kg: e.weightKg })),
   };
 }
+
+export interface BodyWeightPoint {
+  date: Date;
+  kg: number;
+  /** Mean of entries in the 7 days up to and including this one; null with fewer than 3. */
+  averageKg: number | null;
+  entry: BodyWeightEntry;
+}
+
+/** Every entry with the rolling average at that point, oldest first. */
+export function bodyWeightSeries(entries: BodyWeightEntry[]): BodyWeightPoint[] {
+  const sorted = entries.filter(isAlive).sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
+  return sorted.map((entry, i) => {
+    const date = new Date(entry.measuredAt);
+    const windowStart = addDays(date, -ROLLING_WINDOW_DAYS);
+    const window: BodyWeightEntry[] = [];
+    for (let j = i; j >= 0; j--) {
+      const e = sorted[j]!;
+      if (new Date(e.measuredAt) <= windowStart) break;
+      window.push(e);
+    }
+    return {
+      date,
+      kg: entry.weightKg,
+      averageKg:
+        window.length >= ROLLING_MIN_ENTRIES
+          ? window.reduce((s, e) => s + e.weightKg, 0) / window.length
+          : null,
+      entry,
+    };
+  });
+}
+
+export interface BodyWeightTrend {
+  /** Change in the rolling average from the first to the last point in range that has one. */
+  averageChangeKg: number;
+  days: number;
+  from: Date;
+  to: Date;
+}
+
+/**
+ * The trend over a set of points, from rolling averages only: single weigh-ins move with
+ * water and food, so comparing two of them says little. Needs averages at least 7 days apart.
+ */
+export function bodyWeightTrend(points: BodyWeightPoint[]): BodyWeightTrend | null {
+  const withAvg = points.filter((p) => p.averageKg !== null);
+  const first = withAvg[0];
+  const last = withAvg[withAvg.length - 1];
+  if (!first || !last) return null;
+  const days = Math.round((last.date.getTime() - first.date.getTime()) / 86_400_000);
+  if (days < ROLLING_WINDOW_DAYS) return null;
+  return {
+    averageChangeKg: last.averageKg! - first.averageKg!,
+    days,
+    from: first.date,
+    to: last.date,
+  };
+}

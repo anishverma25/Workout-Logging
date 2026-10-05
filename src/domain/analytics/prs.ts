@@ -1,8 +1,10 @@
+import { formatClock } from '@/lib/format';
+import { formatWeight, type WeightUnit } from '@/lib/units';
 import type { Exercise } from '../models/schemas';
 import { performanceByExercise } from './performance';
 import type { Session } from './sessions';
 
-export type PrType = 'e1rm' | 'load' | 'reps';
+export type PrType = 'e1rm' | 'load' | 'reps' | 'duration' | 'distance';
 
 export interface PersonalRecord {
   id: string;
@@ -12,7 +14,7 @@ export interface PersonalRecord {
   workoutId: string;
   setId: string;
   date: Date;
-  /** e1RM or load in kg, or reps for bodyweight exercises. */
+  /** e1RM or load in kg, reps for bodyweight, seconds for timed, metres for distance. */
   value: number;
   previousBest: number;
   weightKg: number | null;
@@ -23,6 +25,8 @@ export const PR_LABELS: Record<PrType, string> = {
   e1rm: 'Estimated 1RM',
   load: 'Heaviest load',
   reps: 'Most reps',
+  duration: 'Longest time',
+  distance: 'Longest distance',
 };
 
 /** Minimum improvement to count as a record, so rounding noise never creates PRs. */
@@ -44,6 +48,8 @@ export function detectPersonalRecords(
     let bestE1rm: number | null = null;
     let bestLoad: number | null = null;
     let bestReps: number | null = null;
+    let bestDuration: number | null = null;
+    let bestDistance: number | null = null;
     const name = nameById.get(exerciseId) ?? 'Exercise';
 
     for (const perf of history) {
@@ -101,6 +107,32 @@ export function detectPersonalRecords(
         }
         bestReps = Math.max(bestReps ?? 0, perf.mostReps);
       }
+      if (perf.longestDuration !== null && perf.longestDurationSet) {
+        if (bestDuration !== null && perf.longestDuration > bestDuration) {
+          push(
+            'duration',
+            perf.longestDuration,
+            bestDuration,
+            perf.longestDurationSet.id,
+            null,
+            null,
+          );
+        }
+        bestDuration = Math.max(bestDuration ?? 0, perf.longestDuration);
+      }
+      if (perf.longestDistance !== null && perf.longestDistanceSet) {
+        if (bestDistance !== null && perf.longestDistance > bestDistance + EPSILON) {
+          push(
+            'distance',
+            perf.longestDistance,
+            bestDistance,
+            perf.longestDistanceSet.id,
+            null,
+            null,
+          );
+        }
+        bestDistance = Math.max(bestDistance ?? 0, perf.longestDistance);
+      }
     }
   }
 
@@ -114,10 +146,24 @@ export function detectPersonalRecords(
 export function featuredRecord(records: PersonalRecord[]): PersonalRecord | null {
   const newest = records[0];
   if (!newest) return null;
-  const priority: Record<PrType, number> = { load: 0, e1rm: 1, reps: 2 };
+  const priority: Record<PrType, number> = { load: 0, e1rm: 1, reps: 2, duration: 3, distance: 3 };
   const sameSession = records.filter((r) => r.workoutId === newest.workoutId);
   return (
     [...sameSession].sort((a, b) => priority[a.type] - priority[b.type] || b.value - a.value)[0] ??
     null
   );
+}
+
+/** "85 kg", "12 reps", "1:30", "400 m". Loads are converted to the display unit. */
+export function formatRecordValue(type: PrType, value: number, unit: WeightUnit): string {
+  switch (type) {
+    case 'reps':
+      return `${value} reps`;
+    case 'duration':
+      return formatClock(value);
+    case 'distance':
+      return `${Math.round(value).toLocaleString()} m`;
+    default:
+      return formatWeight(value, unit);
+  }
 }

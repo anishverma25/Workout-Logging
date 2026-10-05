@@ -5,7 +5,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ErrorState, Skeleton } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
-import { PR_LABELS } from '@/domain/analytics/prs';
+import { formatRecordValue, PR_LABELS } from '@/domain/analytics/prs';
 import { summarizeWorkout, type ExerciseChange } from '@/domain/workout/summary';
 import { cn } from '@/lib/cn';
 import { formatDayMonth, formatLongDay, formatRelativeDayInline } from '@/lib/dates';
@@ -95,10 +95,10 @@ export function SummaryPage() {
                 </span>
                 <span className="tabular shrink-0 text-right">
                   <span className="block font-display text-lg font-semibold">
-                    {pr.type === 'reps' ? `${pr.value} reps` : formatWeight(pr.value, unit)}
+                    {formatRecordValue(pr.type, pr.value, unit)}
                   </span>
                   <span className="text-xs text-faint">
-                    was {pr.type === 'reps' ? pr.previousBest : formatWeight(pr.previousBest, unit)}
+                    was {formatRecordValue(pr.type, pr.previousBest, unit)}
                   </span>
                 </span>
               </li>
@@ -191,7 +191,9 @@ function ChangeValue({ change }: { change: ExerciseChange | null }) {
       )}
     >
       <Icon className="size-4" aria-hidden />
-      {formatSignedPercent(change.change, 1)}
+      {Math.abs(change.change) < 0.0005
+        ? 'Same as last time'
+        : formatSignedPercent(change.change, 1)}
     </span>
   );
 }

@@ -1,4 +1,4 @@
-import { ChartNoAxesColumnIncreasing, Crown, Scale } from 'lucide-react';
+import { ChartNoAxesColumnIncreasing, Crown } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
 import { PlannedFeature } from './shared/PlannedFeature';
 import { PageHeader } from '@/app/layout/PageHeader';
@@ -17,25 +17,6 @@ export function ProgressPage() {
         'A methodology page explaining exactly how every number is calculated',
       ]}
     />
-  );
-}
-
-export function BodyPage() {
-  return (
-    <PlannedFeature
-      title="Body metrics"
-      subtitle="Body weight, measured honestly"
-      icon={<Scale className="size-5" aria-hidden />}
-      points={[
-        'Quick daily weigh-ins in kg or lb',
-        'Trend line and 7-day rolling average, once there is enough data',
-        'Relative strength: estimated 1RM divided by body weight',
-      ]}
-    >
-      <ButtonLink to="/" variant="secondary" size="sm">
-        Your latest weigh-in is on Home
-      </ButtonLink>
-    </PlannedFeature>
   );
 }
 

@@ -39,4 +39,8 @@ Read README.md for setup, architecture and calculation rules.
   routine builder with 7 templates.
 - Phase 3: workout logger (sets, previous performance, suggestions, rest timer, pause, finish,
   discard, persistence) and the workout summary.
-- Next: Phase 4 (history timeline and detail, PR page, body metrics).
+- Phase 4: history timeline with filters, workout detail with set correction and delete,
+  records page (actual vs estimated, reps at each load), body metrics with trend chart.
+- Charts: own SVG kit in `src/components/charts` (no library). Colours `--chart-1`, `--chart-2`
+  are validated for contrast and colour-vision separation; use them for marks.
+- Next: Phase 5 (analytics dashboard, insights, progression, methodology).

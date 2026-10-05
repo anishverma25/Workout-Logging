@@ -17,7 +17,10 @@ test('routine from a template: rename, add a day and exercise, duplicate, delete
   await expect(page.getByRole('heading', { level: 1, name: /Upper Lower/ })).toBeVisible();
 
   // Rename
-  await page.getByRole('button', { name: /Upper Lower/ }).first().click();
+  await page
+    .getByRole('button', { name: /Upper Lower/ })
+    .first()
+    .click();
   await page.getByRole('textbox', { name: 'Name' }).fill('Off-season');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('heading', { level: 1, name: /Off-season/ })).toBeVisible();

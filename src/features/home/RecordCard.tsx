@@ -1,5 +1,5 @@
 import { Trophy } from 'lucide-react';
-import { PR_LABELS, type PersonalRecord } from '@/domain/analytics/prs';
+import { formatRecordValue, PR_LABELS, type PersonalRecord } from '@/domain/analytics/prs';
 import { Card } from '@/components/ui/Card';
 import { formatRelativeDay } from '@/lib/dates';
 import { formatWeight, formatWeightValue, type WeightUnit } from '@/lib/units';
@@ -28,20 +28,23 @@ export function RecordCard({ record, recentCount, unit }: RecordCardProps) {
           <p className="mt-3 truncate font-semibold">{record.exerciseName}</p>
           <p className="mt-1 flex items-baseline gap-1.5">
             <span className="tabular font-display text-[2.6rem] font-bold leading-none">
-              {record.type === 'reps' ? record.value : formatWeightValue(record.value, unit)}
+              {record.type === 'e1rm' || record.type === 'load'
+                ? formatWeightValue(record.value, unit)
+                : formatRecordValue(record.type, record.value, unit).split(' ')[0]}
             </span>
-            <span className="text-muted">{record.type === 'reps' ? 'reps' : unit}</span>
+            <span className="text-muted">
+              {record.type === 'e1rm' || record.type === 'load'
+                ? unit
+                : (formatRecordValue(record.type, record.value, unit).split(' ')[1] ?? '')}
+            </span>
           </p>
           <p className="mt-2 text-sm font-medium text-accent-text">{PR_LABELS[record.type]}</p>
           <p className="mt-auto pt-3 text-sm text-faint">
             {record.type === 'e1rm' && record.weightKg !== null && record.reps !== null
               ? `Estimated from ${formatWeight(record.weightKg, unit)} × ${record.reps}. `
               : null}
-            Previous best{' '}
-            {record.type === 'reps'
-              ? `${record.previousBest} reps`
-              : formatWeight(record.previousBest, unit)}
-            . {formatRelativeDay(record.date)}.
+            Previous best {formatRecordValue(record.type, record.previousBest, unit)}.{' '}
+            {formatRelativeDay(record.date)}.
           </p>
         </>
       ) : (
