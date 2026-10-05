@@ -127,21 +127,20 @@
   }
 }
 
-@layer utilities {
+/* Custom utilities. Declared with @utility so responsive variants (lg:px-10) still override them. */
+@utility tabular {
   /* Numbers line up in columns and do not jitter as they change. */
-  .tabular {
-    font-variant-numeric: tabular-nums lining-nums;
-  }
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .pt-safe {
-    padding-top: env(safe-area-inset-top);
-  }
-  .px-safe {
-    padding-left: max(1rem, env(safe-area-inset-left));
-    padding-right: max(1rem, env(safe-area-inset-right));
-  }
+  font-variant-numeric: tabular-nums lining-nums;
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility px-safe {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
 }
 
 /* Sheets slide up on phones and settle in on larger screens. */

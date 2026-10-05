@@ -96,3 +96,23 @@ describe('exercise records', () => {
     expect(types).toEqual(['e1rm', 'load']);
   });
 });
+
+describe('isolation lifts', () => {
+  it('get load and reps-at-load records but never an estimated 1RM', () => {
+    const d = buildData([
+      {
+        at: '2026-09-01T18:00:00Z',
+        exercises: [{ key: 'triceps-rope-pushdown', sets: [{ w: 25, r: 12 }] }],
+      },
+      {
+        at: '2026-09-04T18:00:00Z',
+        exercises: [{ key: 'triceps-rope-pushdown', sets: [{ w: 27.5, r: 10 }] }],
+      },
+    ]);
+    const [r] = exerciseRecords(buildSessions(d), SYSTEM_EXERCISES);
+    expect(r!.bestE1rm).toBeNull();
+    expect(r!.heaviest?.value).toBe(27.5);
+    expect(r!.repsAtLoad).toHaveLength(2);
+    expect(r!.history.map((h) => h.type)).toEqual(['load']);
+  });
+});

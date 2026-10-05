@@ -62,8 +62,8 @@ UI (features/*, components/ui)
 | Metric               | Rule                                                                                                                                                    |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Volume load          | Sum of load x reps over completed, non-warm-up sets of load-tracked exercises. Per-hand dumbbell moves count both hands. Bodyweight moves are excluded. |
-| Estimated 1RM        | Epley, `weight x (1 + reps / 30)`, only for sets of 12 reps or fewer. 1 rep = the load. Always labelled an estimate.                                    |
-| Personal records     | Heaviest load, best e1RM, most reps (bodyweight). The first session is a baseline, not a record.                                                        |
+| Estimated 1RM        | Epley, `weight x (1 + reps / 30)`, compound lifts only, sets of 12 reps or fewer. 1 rep = the load. Always labelled an estimate.                        |
+| Personal records     | Heaviest load, best e1RM, most reps (bodyweight), longest time or distance. The first session is a baseline, not a record.                              |
 | Adherence            | Completed planned sessions / planned sessions, over days that have passed. Hidden when nothing was planned.                                             |
 | Body weight          | 7-day average needs 3 or more entries in the window.                                                                                                    |
 | "Below best" insight | Compound lifts only, at least 4% under the best e1RM, and never when the load just went up.                                                             |

@@ -8,6 +8,7 @@ import {
   NotebookPen,
   Plus,
   Trash2,
+  TrendingUp,
 } from 'lucide-react';
 import { Button, IconButton } from '@/components/ui/Button';
 import { ActionList, TextArea } from '@/components/ui/Fields';
@@ -21,6 +22,7 @@ import {
   updateSet,
   updateWorkoutExerciseNotes,
 } from '@/data/repositories/workouts';
+import { checkProgression } from '@/domain/analytics/progression';
 import type { Preferences, WorkoutSet } from '@/domain/models/schemas';
 import { matchingPreviousSet, suggestFor } from '@/domain/workout/previous';
 import {
@@ -64,6 +66,11 @@ function ExerciseCardImpl({ view, index, count, prefs, onSetCompleted }: Props) 
       s.durationSec === null &&
       s.distanceM === null,
   );
+  // The same rule as the Progress page, applied to last time's sets with today's target.
+  const readyToProgress =
+    previous && target && we.exerciseId === previous.workoutExercise.exerciseId
+      ? checkProgression(target, previous.sets, tracking)
+      : null;
   const canCopy = previous && emptySets.some((s) => matchingPreviousSet(prevSets, sets, s.id));
 
   const onCompleted = useCallback(
@@ -122,6 +129,17 @@ function ExerciseCardImpl({ view, index, count, prefs, onSetCompleted }: Props) 
         >
           {we.notes}
         </button>
+      ) : null}
+
+      {readyToProgress ? (
+        <p className="mx-4 mt-3 flex items-start gap-2 rounded-xl bg-accent-soft px-3 py-2 text-sm">
+          <TrendingUp className="mt-0.5 size-4 shrink-0 text-accent-text" aria-hidden />
+          <span>
+            Last time every set reached the top of the range
+            {readyToProgress.effort === 'met' ? ' at the planned effort' : ''}. Consider a little
+            more load today.
+          </span>
+        </p>
       ) : null}
 
       <div className="mx-4 mt-3 flex min-h-8 items-center justify-between gap-2 text-sm">

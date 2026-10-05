@@ -11,7 +11,7 @@ import { db } from '@/data/db';
 import { usePreferences, useTrainingData, useWorkoutView } from '@/data/hooks';
 import type { WorkoutExerciseView } from '@/data/repositories/workoutView';
 import { deleteWorkout, updateWorkoutDetails } from '@/data/repositories/workouts';
-import { estimateOneRepMax } from '@/domain/analytics/e1rm';
+import { estimateOneRepMax, supportsE1rm } from '@/domain/analytics/e1rm';
 import { formatRecordValue, PR_LABELS, type PersonalRecord } from '@/domain/analytics/prs';
 import { SET_TYPE_LABELS, SET_TYPE_SHORT } from '@/domain/models/labels';
 import type { Preferences, WorkoutSet } from '@/domain/models/schemas';
@@ -240,7 +240,7 @@ function ExerciseBlock({
   const tracking = trackingOf(exercise);
   const labels = setLabels(sets);
   const best = sets.reduce<number | null>((b, s) => {
-    if (tracking !== 'weight_reps' || s.setType === 'warmup') return b;
+    if (!supportsE1rm(exercise) || s.setType === 'warmup') return b;
     const e = estimateOneRepMax(s.weightKg, s.reps);
     return e !== null && (b === null || e > b) ? e : b;
   }, null);

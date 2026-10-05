@@ -92,7 +92,7 @@ export function generateInsights(input: InsightInput): Insight[] {
         id: 'volume-change',
         tone: 'neutral',
         title: `Your volume load was ${Math.round(Math.abs(change) * 100)}% ${change > 0 ? 'higher' : 'lower'} than the previous ${input.periodDays} days.`,
-        basis: `${Math.round(input.volumeThisPeriod).toLocaleString()} kg vs ${Math.round(input.volumePreviousPeriod).toLocaleString()} kg of load x reps on working sets. Volume load tracks work done; it is not a direct measure of muscle growth.`,
+        basis: `${formatWeight(input.volumeThisPeriod, unit, 0)} vs ${formatWeight(input.volumePreviousPeriod, unit, 0)} of load × reps on working sets. Volume load tracks work done; it is not a direct measure of muscle growth.`,
         priority: 4 + Math.abs(change) * 10,
       });
     }

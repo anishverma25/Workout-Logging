@@ -75,8 +75,23 @@ test('clearing demo data survives a reload', async ({ page }) => {
 });
 
 test('no horizontal scrolling on any main page', async ({ page }) => {
-  for (const path of ['/', '/routines', '/history', '/settings', '/more', '/profile']) {
+  for (const path of [
+    '/',
+    '/routines',
+    '/workout',
+    '/progress',
+    '/progress?range=7d',
+    '/progress/methodology',
+    '/history',
+    '/records',
+    '/exercises',
+    '/body',
+    '/settings',
+    '/more',
+    '/profile',
+  ]) {
     await page.goto(path);
+    await page.waitForLoadState('networkidle');
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - window.innerWidth,
     );

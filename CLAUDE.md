@@ -43,4 +43,9 @@ Read README.md for setup, architecture and calculation rules.
   records page (actual vs estimated, reps at each load), body metrics with trend chart.
 - Charts: own SVG kit in `src/components/charts` (no library). Colours `--chart-1`, `--chart-2`
   are validated for contrast and colour-vision separation; use them for marks.
-- Next: Phase 5 (analytics dashboard, insights, progression, methodology).
+- Phase 5: Progress page from one engine (`domain/analytics/progress.ts`): strength (e1RM,
+  top load, reps, relative strength), volume, muscle sets, consistency, body weight, records,
+  insights, progression suggestions (also shown in the logger), methodology page.
+- Rules worth remembering: e1RM only for compound lifts; period comparisons only when history
+  covers the whole previous period; partial periods are labelled.
+- Next: Phase 6 (Supabase auth, schema, RLS, local-first sync).

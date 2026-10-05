@@ -17,3 +17,14 @@ export function estimateOneRepMax(
   if (reps === 1) return weightKg;
   return weightKg * (1 + reps / 30);
 }
+
+/**
+ * Estimated 1RM is only meaningful for compound lifts: a one-rep max for a lateral raise or a
+ * cable pushdown is not something anyone trains for or could safely test. Isolation exercises
+ * keep their real records (heaviest load, best reps at each load) instead.
+ */
+export function supportsE1rm(
+  exercise: { trackingType: string; category: string } | undefined,
+): boolean {
+  return !!exercise && exercise.trackingType === 'weight_reps' && exercise.category === 'compound';
+}

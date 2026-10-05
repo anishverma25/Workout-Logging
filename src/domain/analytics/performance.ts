@@ -1,5 +1,5 @@
 import type { Exercise, WorkoutSet } from '../models/schemas';
-import { estimateOneRepMax } from './e1rm';
+import { estimateOneRepMax, supportsE1rm } from './e1rm';
 import { isLoadEligible, isWorkingSet, type Session } from './sessions';
 
 /** Best values for one exercise within one session. */
@@ -46,7 +46,7 @@ export function performanceFor(
   const tracking = exercise?.trackingType;
   for (const set of sets) {
     if (isLoadEligible(set, exercise)) {
-      const e1rm = estimateOneRepMax(set.weightKg, set.reps);
+      const e1rm = supportsE1rm(exercise) ? estimateOneRepMax(set.weightKg, set.reps) : null;
       if (e1rm !== null && (perf.bestE1rm === null || e1rm > perf.bestE1rm)) {
         perf.bestE1rm = e1rm;
         perf.bestE1rmSet = set;

@@ -8,6 +8,7 @@ export const META_KEYS = {
   /** Set once the app has decided whether to auto-load demo data, so clearing it sticks. */
   demoAutoloadHandled: 'demo.autoloadHandled',
   restTimer: 'workout.restTimer',
+  dismissedSuggestions: 'progress.dismissedSuggestions',
 } as const;
 
 export async function getMeta<T>(db: WorkoutDatabase, key: string): Promise<T | undefined> {
@@ -45,4 +46,16 @@ export async function getRestTimer(db: WorkoutDatabase): Promise<RestTimerState 
 export async function saveRestTimer(db: WorkoutDatabase, state: RestTimerState | null) {
   if (state === null) await db.meta.delete(META_KEYS.restTimer);
   else await setMeta(db, META_KEYS.restTimer, state);
+}
+
+/** Ids of progression suggestions the person dismissed (exerciseId:workoutId). */
+export async function getDismissedSuggestions(db: WorkoutDatabase): Promise<string[]> {
+  return (await getMeta<string[]>(db, META_KEYS.dismissedSuggestions)) ?? [];
+}
+
+export async function dismissSuggestion(db: WorkoutDatabase, id: string): Promise<void> {
+  const current = await getDismissedSuggestions(db);
+  if (current.includes(id)) return;
+  // Keep the list short: old sessions never come back as suggestions anyway.
+  await setMeta(db, META_KEYS.dismissedSuggestions, [...current, id].slice(-200));
 }

@@ -95,6 +95,7 @@ export function LineChart({
           <svg
             width={width}
             height={height}
+            style={{ position: 'absolute', inset: 0 }}
             role="img"
             aria-labelledby={titleId}
             tabIndex={0}

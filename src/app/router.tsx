@@ -6,7 +6,9 @@ import { HistoryPage } from '@/features/history/HistoryPage';
 import { MorePage } from '@/features/more/MorePage';
 import { ExercisesPage } from '@/features/exercises/ExercisesPage';
 import { RoutineEditorPage } from '@/features/routines/RoutineEditorPage';
-import { NotFoundPage, ProgressPage, ProPage } from '@/features/pages';
+import { NotFoundPage, ProPage } from '@/features/pages';
+import { MethodologyPage } from '@/features/progress/MethodologyPage';
+import { ProgressPage } from '@/features/progress/ProgressPage';
 import { BodyPage } from '@/features/body/BodyPage';
 import { WorkoutDetailPage } from '@/features/history/WorkoutDetailPage';
 import { RecordsPage } from '@/features/records/RecordsPage';
@@ -27,6 +29,7 @@ export const router = createBrowserRouter([
       { path: 'routines', element: <RoutinesPage /> },
       { path: 'routines/:routineId', element: <RoutineEditorPage /> },
       { path: 'progress', element: <ProgressPage /> },
+      { path: 'progress/methodology', element: <MethodologyPage /> },
       { path: 'history', element: <HistoryPage /> },
       { path: 'history/:workoutId', element: <WorkoutDetailPage /> },
       { path: 'records', element: <RecordsPage /> },

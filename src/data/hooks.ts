@@ -5,7 +5,7 @@ import { exerciseUsage, type ExerciseUsage } from '@/domain/exercises/search';
 import type { TrainingData } from '@/domain/analytics/sessions';
 import { db } from './db';
 import { getDemoStatus, type DemoStatus } from './demo/service';
-import { getPreferences, getRestTimer } from './repositories/meta';
+import { getDismissedSuggestions, getPreferences, getRestTimer } from './repositories/meta';
 import { getActiveWorkout } from './repositories/workouts';
 import {
   loadActiveWorkoutView,
@@ -85,3 +85,8 @@ export const useWorkoutView = (workoutId: string | undefined) =>
 export const useActiveWorkout = () => useLiveData(() => getActiveWorkout(db));
 
 export const useRestTimer = () => useLiveData(() => getRestTimer(db));
+
+export function useDismissedSuggestions(): Set<string> {
+  const state = useLiveData(() => getDismissedSuggestions(db));
+  return new Set(state.data ?? []);
+}

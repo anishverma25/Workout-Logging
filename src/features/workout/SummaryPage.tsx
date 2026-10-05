@@ -132,7 +132,7 @@ export function SummaryPage() {
         </ul>
         <p className="mt-2 text-xs text-faint">
           Changes compare your best set with the last time you did each exercise: estimated 1RM for
-          weighted lifts, most reps for bodyweight ones.
+          compound lifts, top load for isolation lifts, most reps for bodyweight ones.
         </p>
       </Card>
 
@@ -201,7 +201,11 @@ function ChangeValue({ change }: { change: ExerciseChange | null }) {
 function ChangeDetail({ change, unit }: { change: ExerciseChange | null; unit: WeightUnit }) {
   if (!change || change.kind === 'first') return <span />;
   const detail =
-    change.kind === 'e1rm' ? `e1RM ${formatWeight(change.today, unit)}` : `${change.today} reps`;
+    change.kind === 'e1rm'
+      ? `e1RM ${formatWeight(change.today, unit)}`
+      : change.kind === 'load'
+        ? `top load ${formatWeight(change.today, unit)}`
+        : `${change.today} reps`;
   return (
     <span className="text-right text-xs text-faint">
       {detail}, vs {formatRelativeDayInline(change.previousDate).replace(/^on /, '')}

@@ -21,6 +21,7 @@ export type ExerciseChange =
       previousDate: Date;
     }
   | { kind: 'reps'; today: number; previous: number; change: number; previousDate: Date }
+  | { kind: 'load'; today: number; previous: number; change: number; previousDate: Date }
   | { kind: 'first' };
 
 export interface ExerciseSummary {
@@ -65,12 +66,18 @@ function changeFor(
   const id = current.workoutExercise.exerciseId;
   const prev = previousSessionWith(sessions, session, id);
   const today = performanceFor(exercise, id, session.workout.id, session.date, current.sets);
-  const comparable =
+  // Compounds compare estimated 1RM, isolation lifts their top load, bodyweight moves reps.
+  const mode: 'e1rm' | 'load' | 'reps' | null =
     exercise?.trackingType === 'weight_reps'
       ? today.bestE1rm !== null
-      : exercise?.trackingType === 'bodyweight_reps'
-        ? today.mostReps !== null
-        : false;
+        ? 'e1rm'
+        : today.heaviestLoad !== null
+          ? 'load'
+          : null
+      : exercise?.trackingType === 'bodyweight_reps' && today.mostReps !== null
+        ? 'reps'
+        : null;
+  const comparable = mode !== null;
   if (!comparable) return null;
   if (!prev) return { kind: 'first' };
   const before = performanceFor(
@@ -80,7 +87,17 @@ function changeFor(
     prev.session.date,
     prev.exercise.sets,
   );
-  if (exercise?.trackingType === 'weight_reps') {
+  if (mode === 'load') {
+    if (before.heaviestLoad === null || today.heaviestLoad === null) return null;
+    return {
+      kind: 'load',
+      today: today.heaviestLoad,
+      previous: before.heaviestLoad,
+      change: (today.heaviestLoad - before.heaviestLoad) / before.heaviestLoad,
+      previousDate: prev.session.date,
+    };
+  }
+  if (mode === 'e1rm') {
     if (before.bestE1rm === null || today.bestE1rm === null) return null;
     return {
       kind: 'e1rm',

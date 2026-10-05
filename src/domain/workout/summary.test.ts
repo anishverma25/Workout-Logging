@@ -105,3 +105,19 @@ describe('workout summary', () => {
     expect(summarizeWorkout(data, 'missing')).toBeNull();
   });
 });
+
+describe('isolation comparisons', () => {
+  it('compares top load, since estimated 1RM does not apply', () => {
+    const d = buildData([
+      { at: '2026-09-01T18:00:00Z', exercises: [{ key: 'cable-fly', sets: [{ w: 20, r: 12 }] }] },
+      { at: '2026-09-04T18:00:00Z', exercises: [{ key: 'cable-fly', sets: [{ w: 22.5, r: 10 }] }] },
+    ]);
+    const s = summarizeWorkout(d, d.workouts[1]!.id)!;
+    expect(s.exercises[0]!.change).toMatchObject({
+      kind: 'load',
+      today: 22.5,
+      previous: 20,
+      change: 0.125,
+    });
+  });
+});

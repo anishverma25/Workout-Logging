@@ -1,5 +1,4 @@
 import type { Exercise, MuscleGroup, TrackingType } from '../models/schemas';
-import { estimateOneRepMax } from './e1rm';
 import { performanceByExercise } from './performance';
 import { detectPersonalRecords, type PersonalRecord } from './prs';
 import { isWorkingSet, type Session } from './sessions';
@@ -138,6 +137,3 @@ function hasWorkingSets(sessions: Session[], exerciseId: string): boolean {
     ),
   );
 }
-
-/** e1RM a given set implies, for showing "estimated from 80 kg × 8". */
-export const impliedE1rm = (weightKg: number, reps: number) => estimateOneRepMax(weightKg, reps);

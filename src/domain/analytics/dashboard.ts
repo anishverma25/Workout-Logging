@@ -183,7 +183,11 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
     compoundIds: new Set(data.exercises.filter((e) => e.category === 'compound').map((e) => e.id)),
     recentAdherence,
     volumeThisPeriod: recentVolume,
-    volumePreviousPeriod: totalVolumeLoad(previousSessions),
+    // Only compare with a previous week the history fully covers.
+    volumePreviousPeriod:
+      sessions[0] && startOfDay(sessions[0].date) <= addDays(recentStart, -RECENT_DAYS)
+        ? totalVolumeLoad(previousSessions)
+        : 0,
     periodDays: RECENT_DAYS,
     unit: prefs.weightUnit,
     recentSince: recentStart,
