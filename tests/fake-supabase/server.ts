@@ -397,5 +397,7 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(FAKE_SUPABASE_PORT, () => {
-  process.stdout.write(`Fake Supabase on http://localhost:${FAKE_SUPABASE_PORT} (anon key ${ANON_KEY})\n`);
+  process.stdout.write(
+    `Fake Supabase on http://localhost:${FAKE_SUPABASE_PORT} (anon key ${ANON_KEY})\n`,
+  );
 });
