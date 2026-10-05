@@ -48,7 +48,10 @@ export async function loadTrainingData(db: WorkoutDatabase): Promise<TrainingDat
       ]);
       // Prefer a real profile over the demo one if both exist.
       const liveProfiles = alive(profiles);
-      const profile = liveProfiles.find((p) => p.origin === 'user') ?? liveProfiles[0] ?? null;
+      const own = liveProfiles
+        .filter((p) => p.origin === 'user')
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      const profile = own[0] ?? liveProfiles[0] ?? null;
       return {
         profile,
         exercises: alive(exercises),

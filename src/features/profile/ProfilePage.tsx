@@ -1,4 +1,11 @@
-import { UserRound } from 'lucide-react';
+import { useState, type FormEvent } from 'react';
+import { Pencil, UserRound } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Chips, TextField } from '@/components/ui/Fields';
+import { Sheet } from '@/components/ui/Sheet';
+import { useToast } from '@/components/ui/Toast';
+import { db } from '@/data/db';
+import { ProfileError, saveProfile } from '@/data/repositories/profile';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
@@ -25,17 +32,39 @@ export function ProfilePage() {
   const prefs = usePreferences();
   const profile = training.data?.profile;
   const bw = training.data ? bodyWeightSummary(training.data.bodyWeights) : null;
+  const [editing, setEditing] = useState(false);
+  // The demo profile is fictional and read only; editing creates the person's own.
+  const editable = profile && profile.origin !== 'demo' ? profile : null;
 
   return (
     <>
-      <PageHeader title="Profile" subtitle="Editing your profile arrives with accounts." />
+      <PageHeader
+        title="Profile"
+        subtitle="Your name, goal and experience. Used to greet you and to label your training."
+        actions={
+          training.status === 'success' ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<Pencil className="size-4" aria-hidden />}
+              onClick={() => setEditing(true)}
+            >
+              {editable ? 'Edit profile' : 'Set up profile'}
+            </Button>
+          ) : undefined
+        }
+      />
+      <Sheet open={editing} onClose={() => setEditing(false)} title="Your profile">
+        {editing ? <ProfileForm initial={editable} onDone={() => setEditing(false)} /> : null}
+      </Sheet>
       {training.status === 'loading' ? <Skeleton className="h-48 max-w-2xl" /> : null}
       {training.status === 'error' ? <ErrorState error={training.error} /> : null}
       {training.status === 'success' && !profile ? (
         <EmptyState
           icon={<UserRound className="size-5" aria-hidden />}
           title="No profile yet"
-          body="Your name, goal and experience level help tailor suggestions. You will set these up when accounts arrive."
+          body="Your name, goal and experience level. Add them so the app knows who it is talking to."
+          actions={<Button onClick={() => setEditing(true)}>Set up profile</Button>}
         />
       ) : null}
       {profile ? (
@@ -79,5 +108,84 @@ function Field({ label, value }: { label: string; value: string }) {
       <dt className="text-xs font-medium text-faint">{label}</dt>
       <dd className="mt-1 font-semibold">{value}</dd>
     </div>
+  );
+}
+
+const GOAL_OPTIONS = (Object.keys(GOALS) as Profile['goal'][]).map((value) => ({
+  value,
+  label: GOALS[value],
+}));
+const EXPERIENCE_OPTIONS = (Object.keys(EXPERIENCE) as Profile['experience'][]).map((value) => ({
+  value,
+  label: EXPERIENCE[value],
+}));
+
+function ProfileForm({ initial, onDone }: { initial: Profile | null; onDone: () => void }) {
+  const toast = useToast();
+  const [name, setName] = useState(initial?.displayName ?? '');
+  const [birthDate, setBirthDate] = useState(initial?.birthDate ?? '');
+  const [goal, setGoal] = useState<Profile['goal']>(initial?.goal ?? 'strength_hypertrophy');
+  const [experience, setExperience] = useState<Profile['experience']>(
+    initial?.experience ?? 'beginner',
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await saveProfile(db, { displayName: name, birthDate: birthDate || null, goal, experience });
+      toast('Profile saved');
+      onDone();
+    } catch (err) {
+      setError(err instanceof ProfileError ? err.message : 'Could not save. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form className="flex flex-col gap-5" onSubmit={submit}>
+      <TextField
+        label="Name"
+        autoComplete="given-name"
+        maxLength={60}
+        required
+        value={name}
+        error={error}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <TextField
+        label="Birth date"
+        type="date"
+        hint="Optional. Only used to show your age."
+        value={birthDate}
+        onChange={(e) => setBirthDate(e.target.value)}
+      />
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium text-muted">Goal</p>
+        <Chips
+          label="Goal"
+          options={GOAL_OPTIONS}
+          value={goal}
+          onChange={(v) => v && setGoal(v)}
+          className="sm:flex-wrap"
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium text-muted">Experience</p>
+        <Chips
+          label="Experience"
+          options={EXPERIENCE_OPTIONS}
+          value={experience}
+          onChange={(v) => v && setExperience(v)}
+        />
+      </div>
+      <Button type="submit" size="lg" block disabled={busy}>
+        {busy ? 'Saving...' : 'Save profile'}
+      </Button>
+    </form>
   );
 }

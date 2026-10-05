@@ -43,6 +43,8 @@ Read README.md for setup, architecture and calculation rules.
 - E2E runs against `tests/fake-supabase/server.ts` (vite `--mode e2e`, port 5175). The `pwa`
   project tests the production build via `vite preview` on port 4175.
 - The service worker must never cache cross-origin or API responses.
+- Full e2e takes about 10 minutes; in a sandbox with a 10 minute command limit, run it in the
+  background and poll the log.
 - In a sandbox that cannot download Playwright's browser, point `PW_CHROMIUM_PATH` at a local
   Chromium, for example `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
 
@@ -70,4 +72,6 @@ Read README.md for setup, architecture and calculation rules.
 - Phase 8: PWA (manifest, icons, service worker precaching the build, update prompt, install),
   offline notice, route code splitting, security headers and CSP, Cloudflare Pages and Supabase
   deployment guide (`docs/deployment.md`), CI with e2e.
-- Next: Phase 9 (full QA audit and report).
+- Phase 9: QA audit (`docs/qa-report.md`): journey, integrity and accessibility e2e suites,
+  performance on two years of data, profile editing, fixes listed in the report.
+- Next: Phase 10 (product polish, launch-readiness checklist, first-user testing docs).
