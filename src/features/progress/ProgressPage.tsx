@@ -565,6 +565,7 @@ function VolumeSection({ model, unit }: { model: ProgressModel; unit: WeightUnit
           {top.length > 0 ? (
             <BarChart
               orientation="horizontal"
+              categoryName="Exercise"
               label={`Volume load by exercise in ${unit}`}
               valueName={`Volume (${unit})`}
               formatValue={(v) => formatCompact(v)}
@@ -600,6 +601,7 @@ function MusclesSection({ model }: { model: ProgressModel }) {
           {rows.some((w) => w.weighted > 0) ? (
             <BarChart
               orientation="horizontal"
+              categoryName="Muscle group"
               label={
                 perWeek
                   ? 'Weighted working sets per week by muscle group'

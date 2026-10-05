@@ -36,6 +36,10 @@ async function signOut(page: Page) {
   await page.getByRole('button', { name: 'Sign out' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByText(/^Signed out/)).toBeVisible();
+  // Signing out switches databases and redirects away from Account; let that settle before
+  // the next full page load, or the two navigations race.
+  await page.waitForURL(/\/sign-in/);
+  await page.waitForLoadState('networkidle');
 }
 
 async function addWeighIn(page: Page, kg: string, { navigate = true } = {}) {

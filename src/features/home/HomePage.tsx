@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Dumbbell, FlaskConical } from 'lucide-react';
+import { CalendarRange, Dumbbell, FlaskConical } from 'lucide-react';
+import { useAccount } from '@/app/account';
 import { buildDashboard } from '@/domain/analytics/dashboard';
 import { db } from '@/data/db';
 import { loadDemoData } from '@/data/demo/service';
@@ -19,6 +20,8 @@ import { TodayCard } from './TodayCard';
 import { WeekCard } from './WeekCard';
 
 export function HomePage() {
+  // Demo data lives only in the device-only space, never in an account.
+  const signedIn = useAccount().status === 'signedIn';
   const training = useTrainingData();
   const prefs = usePreferences();
   const now = useNow();
@@ -46,28 +49,50 @@ export function HomePage() {
           icon={<Dumbbell className="size-5" aria-hidden />}
           title="Your training starts here"
           body={
-            <>
-              Log a workout and this page fills in with what to train today, your weekly rhythm,
-              records and strength trends, all calculated from your own sets. Want to look around
-              first? Load the demo athlete.
-            </>
+            signedIn ? (
+              <>
+                Pick a routine and Home shows what to train today. Every workout you log adds to
+                your weekly rhythm, records and strength trends, all calculated from your own sets.
+              </>
+            ) : (
+              <>
+                Log a workout and this page fills in with what to train today, your weekly rhythm,
+                records and strength trends, all calculated from your own sets. Want to look around
+                first? Load the demo athlete.
+              </>
+            )
           }
           actions={
-            <>
-              <ButtonLink to="/workout" icon={<Dumbbell className="size-4" aria-hidden />}>
-                Start a workout
-              </ButtonLink>
-              <Button
-                variant="secondary"
-                icon={<FlaskConical className="size-4" aria-hidden />}
-                onClick={async () => {
-                  await loadDemoData(db);
-                  toast('Demo data loaded');
-                }}
-              >
-                Load demo data
-              </Button>
-            </>
+            signedIn ? (
+              <>
+                <ButtonLink to="/routines" icon={<CalendarRange className="size-4" aria-hidden />}>
+                  Pick a routine
+                </ButtonLink>
+                <ButtonLink
+                  to="/workout"
+                  variant="secondary"
+                  icon={<Dumbbell className="size-4" aria-hidden />}
+                >
+                  Start a workout
+                </ButtonLink>
+              </>
+            ) : (
+              <>
+                <ButtonLink to="/workout" icon={<Dumbbell className="size-4" aria-hidden />}>
+                  Start a workout
+                </ButtonLink>
+                <Button
+                  variant="secondary"
+                  icon={<FlaskConical className="size-4" aria-hidden />}
+                  onClick={async () => {
+                    await loadDemoData(db);
+                    toast('Demo data loaded');
+                  }}
+                >
+                  Load demo data
+                </Button>
+              </>
+            )
           }
         />
       ) : null}

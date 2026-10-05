@@ -29,6 +29,8 @@ export async function loadDemoData(
   db: WorkoutDatabase,
   now: Date = new Date(),
 ): Promise<DemoStatus> {
+  // Accounts only ever hold the person's own training.
+  if (db.syncEnabled) throw new Error('Demo data is only available without an account.');
   const status = await getDemoStatus(db);
   if (status.loaded) return status;
   const data = generateDemoDataset(now);

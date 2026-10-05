@@ -77,3 +77,13 @@ describe('demo data service', () => {
     expect(await db.exercises.count()).toBe(SYSTEM_EXERCISES.length);
   });
 });
+
+describe('demo data and accounts', () => {
+  it('can never be loaded into an account database', async () => {
+    const account = new WorkoutDatabase(`demo-account-${Math.random()}`, { syncEnabled: true });
+    await account.open();
+    await expect(loadDemoData(account)).rejects.toThrow('only available without an account');
+    expect(await account.workouts.count()).toBe(0);
+    await account.delete();
+  });
+});

@@ -28,10 +28,14 @@ describe('profile', () => {
   });
 
   it('never edits the demo profile, and the person’s own wins', async () => {
-    await loadDemoData(db);
-    const mine = await saveProfile(db, input);
-    expect((await loadTrainingData(db)).profile?.id).toBe(mine.id);
-    expect(await db.profiles.where('origin').equals('demo').count()).toBe(1);
+    // Demo data only exists in the device-only database.
+    const guest = new WorkoutDatabase(`profile-guest-${Math.random()}`);
+    await guest.open();
+    await loadDemoData(guest);
+    const mine = await saveProfile(guest, input);
+    expect((await loadTrainingData(guest)).profile?.id).toBe(mine.id);
+    expect(await guest.profiles.where('origin').equals('demo').count()).toBe(1);
+    await guest.delete();
   });
 
   it('rejects an empty name or an impossible birth date', async () => {

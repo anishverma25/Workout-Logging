@@ -26,6 +26,8 @@ export function niceDomain(
   max: number,
   count = 4,
   zero = false,
+  /** Whole-number data (reps, workouts): ticks never fall between whole numbers. */
+  integer = false,
 ): { domain: [number, number]; ticks: number[] } {
   let lo = zero ? Math.min(0, min) : min;
   let hi = zero ? Math.max(0, max) : max;
@@ -34,7 +36,8 @@ export function niceDomain(
     lo -= zero && lo === 0 ? 0 : pad;
     hi += pad;
   }
-  const step = niceStep(hi - lo, count);
+  let step = niceStep(hi - lo, count);
+  if (integer) step = step < 1 ? 1 : Number.isInteger(step) ? step : Math.floor(step);
   const start = Math.floor(lo / step) * step;
   const end = Math.ceil(hi / step) * step;
   const ticks: number[] = [];

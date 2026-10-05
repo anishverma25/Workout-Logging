@@ -11,6 +11,7 @@ import { WorkoutDock } from '@/features/workout/WorkoutDock';
 import { SyncBadge } from '@/features/account/SyncStatus';
 
 export function AppShell() {
+  const { pathname } = useLocation();
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[17rem_1fr]">
       <a
@@ -33,7 +34,9 @@ export function AppShell() {
           <AppNotices />
           <StartWorkoutProvider>
             <Suspense fallback={null}>
-              <Outlet />
+              <div key={pathname} className="page-in">
+                <Outlet />
+              </div>
             </Suspense>
             <WorkoutDock />
           </StartWorkoutProvider>

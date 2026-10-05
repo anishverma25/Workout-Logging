@@ -1,5 +1,7 @@
 import { isRouteErrorResponse, useRouteError } from 'react-router';
+import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { isChunkLoadError, reloadOnceForNewVersion } from './chunkReload';
 
 /**
  * Shown when a screen crashes. Says plainly that logged data is safe (it lives in the
@@ -7,6 +9,8 @@ import { AlertTriangle } from 'lucide-react';
  */
 export function RouteError() {
   const error = useRouteError();
+  const [reloading] = useState(() => isChunkLoadError(error) && reloadOnceForNewVersion());
+  if (reloading) return null;
   const message = isRouteErrorResponse(error)
     ? `${error.status} ${error.statusText}`
     : error instanceof Error

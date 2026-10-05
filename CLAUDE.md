@@ -74,4 +74,7 @@ Read README.md for setup, architecture and calculation rules.
   deployment guide (`docs/deployment.md`), CI with e2e.
 - Phase 9: QA audit (`docs/qa-report.md`): journey, integrity and accessibility e2e suites,
   performance on two years of data, profile editing, fixes listed in the report.
-- Next: Phase 10 (product polish, launch-readiness checklist, first-user testing docs).
+- Phase 10: polish (record celebration, page fade, whole-number chart axes, readable bar labels,
+  theme-coloured status bar, stale-tab auto reload, account-safe empty states) and
+  `docs/launch-readiness.md` (checklist, first-user testing, verdict).
+- Next: real Supabase project and Cloudflare deploy (`docs/deployment.md`), then first users.

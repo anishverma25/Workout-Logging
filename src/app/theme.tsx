@@ -52,9 +52,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.dataset.theme = resolved;
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', THEME_COLORS[resolved]);
+    // The phone's status bar and the installed app's title bar follow the chosen theme, not
+    // only the system setting the static tags in index.html start from.
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+      m.setAttribute('content', THEME_COLORS[resolved]);
+      m.removeAttribute('media');
+    });
   }, [resolved]);
 
   const setPreference = useCallback((p: ThemePreference) => {

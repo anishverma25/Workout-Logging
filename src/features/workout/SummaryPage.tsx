@@ -55,7 +55,7 @@ export function SummaryPage() {
         <p className="relative mt-2 text-muted">{formatLongDay(session.date)}</p>
       </header>
 
-      <dl className="grid grid-cols-3 gap-2">
+      <dl className="rise-in grid grid-cols-3 gap-2" style={{ animationDelay: '0.12s' }}>
         <Stat
           label="Duration"
           value={
@@ -82,9 +82,12 @@ export function SummaryPage() {
       ) : null}
 
       {summary.prs.length > 0 ? (
-        <Card className="mt-6 overflow-hidden border-accent-text/30 p-5">
+        <Card
+          className="rise-in record-sweep relative mt-6 overflow-hidden border-accent-text/30 p-5"
+          style={{ animationDelay: '0.24s' }}
+        >
           <h2 className="flex items-center gap-2 font-display text-xl font-semibold">
-            <Trophy className="size-5 text-accent-text" aria-hidden />
+            <Trophy className="trophy-lift size-5 text-accent-text" aria-hidden />
             {pluralize(summary.prs.length, 'new record')}
           </h2>
           <ul className="mt-3 divide-y divide-line">
@@ -114,7 +117,7 @@ export function SummaryPage() {
         </Card>
       ) : null}
 
-      <Card className="mt-4 p-5">
+      <Card className="rise-in mt-4 p-5" style={{ animationDelay: '0.32s' }}>
         <h2 className="font-display text-xl font-semibold">Exercises</h2>
         <ul className="mt-2 divide-y divide-line">
           {summary.exercises.map((e) => (

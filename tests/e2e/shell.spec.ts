@@ -109,7 +109,7 @@ test('setting up a profile greets you by name and keeps the demo profile separat
   await page.goto('/profile');
   await expect(page.getByText('Fictional demo profile')).toBeVisible();
   await page
-    .getByRole('button', { name: /Set up profile/ })
+    .getByRole('button', { name: /^Set up/ })
     .first()
     .click();
   const sheet = page.getByRole('dialog');

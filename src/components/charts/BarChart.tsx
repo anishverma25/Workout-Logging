@@ -23,6 +23,8 @@ interface Props {
   formatValue: (v: number) => string;
   valueName: string;
   orientation?: 'vertical' | 'horizontal';
+  /** Table header for the categories of horizontal bars (Exercise, Muscle group...). */
+  categoryName?: string;
   height?: number;
   color?: string;
   /** Muted colour for bars that are not highlighted, when some are. */
@@ -63,7 +65,14 @@ function Columns({
   const [active, setActive] = useState<number | null>(null);
   const titleId = useId();
   const { domain, ticks } = useMemo(
-    () => niceDomain(0, Math.max(0, ...bars.map((b) => b.value)), 4, true),
+    () =>
+      niceDomain(
+        0,
+        Math.max(0, ...bars.map((b) => b.value)),
+        4,
+        true,
+        bars.every((b) => Number.isInteger(b.value)),
+      ),
     [bars],
   );
   const left = Math.max(...ticks.map((t) => formatValue(t).length)) * 7 + 12;
@@ -192,33 +201,36 @@ function Columns({
 }
 
 /** Ranked horizontal bars: category on the left, value at the tip of each bar. */
-function HorizontalBars({ bars, label, formatValue, valueName, color = 'var(--chart-1)' }: Props) {
+function HorizontalBars({
+  bars,
+  label,
+  formatValue,
+  valueName,
+  categoryName = 'Category',
+  color = 'var(--chart-1)',
+}: Props) {
   const max = Math.max(0, ...bars.map((b) => b.value));
   return (
     <figure className="m-0">
-      <ul aria-label={label} className="flex flex-col gap-1.5">
+      <ul aria-label={label} className="flex flex-col gap-3">
         {bars.map((b) => {
           const pct = max > 0 ? (b.value / max) * 100 : 0;
           return (
-            <li
-              key={b.key}
-              className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-3 text-sm"
-              title={b.note}
-            >
-              <span className="truncate text-muted">{b.label}</span>
-              <span className="flex items-center gap-2">
-                <span className="flex h-[18px] min-w-0 flex-1 items-center" aria-hidden>
-                  {pct > 0 ? (
-                    <span
-                      className="block h-full rounded-r-[4px]"
-                      style={{ width: `${pct}%`, minWidth: 4, background: color }}
-                    />
-                  ) : null}
-                </span>
-                <span className="tabular w-12 shrink-0 text-right font-semibold">
+            <li key={b.key} className="flex flex-col gap-1 text-sm" title={b.note}>
+              <span className="flex items-baseline justify-between gap-3">
+                <span className="min-w-0 truncate text-muted">{b.label}</span>
+                <span className="tabular shrink-0 font-semibold">
                   {formatValue(b.value)}
                   <span className="sr-only"> {valueName}</span>
                 </span>
+              </span>
+              <span className="flex h-2 items-center rounded-full bg-surface-3" aria-hidden>
+                {pct > 0 ? (
+                  <span
+                    className="block h-full rounded-full"
+                    style={{ width: `${pct}%`, minWidth: 6, background: color }}
+                  />
+                ) : null}
               </span>
             </li>
           );
@@ -226,7 +238,7 @@ function HorizontalBars({ bars, label, formatValue, valueName, color = 'var(--ch
       </ul>
       <ChartTable
         caption={label}
-        columns={['Muscle group', valueName]}
+        columns={[categoryName, valueName]}
         rows={bars.map((b) => [b.longLabel ?? b.label, formatValue(b.value)])}
       />
     </figure>

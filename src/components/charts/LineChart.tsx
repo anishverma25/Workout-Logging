@@ -60,7 +60,13 @@ export function LineChart({
     if (all.length === 0) return null;
     const xs = [...new Set(all.map((p) => p.x))].sort((a, b) => a - b);
     const ys = all.map((p) => p.y);
-    const { domain, ticks } = niceDomain(Math.min(...ys), Math.max(...ys), 4, zeroBased);
+    const { domain, ticks } = niceDomain(
+      Math.min(...ys),
+      Math.max(...ys),
+      4,
+      zeroBased,
+      ys.every((y) => Number.isInteger(y)),
+    );
     const left = Math.max(...ticks.map((t) => formatY(t).length)) * 7 + 12;
     return { xs, domain, ticks, left };
   }, [series, formatY, zeroBased]);

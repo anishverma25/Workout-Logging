@@ -189,6 +189,7 @@ that every screen reads through the same tables:
 
 ## Status
 
-Phases 1 to 8 are in place: foundation, exercise library, routine builder, workout logger,
+Phases 1 to 10 are in place: foundation, exercise library, routine builder, workout logger,
 history, records, body metrics, progress analytics, accounts and sync, trial and Pro, offline
-PWA and deployment setup. See `CLAUDE.md`.
+PWA and deployment setup, QA audit and launch preparation. See `docs/qa-report.md` and
+`docs/launch-readiness.md`. See `CLAUDE.md`.

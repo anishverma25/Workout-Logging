@@ -63,6 +63,9 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole('heading', { name: 'Your training starts here' })).toBeVisible();
     await expect(page.getByText(/Arjun/)).toHaveCount(0);
+    // Accounts never get demo data; the next step is a routine.
+    await expect(page.getByRole('button', { name: 'Load demo data' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Pick a routine' })).toBeVisible();
     await shot(page, '04-home-empty');
   });
 

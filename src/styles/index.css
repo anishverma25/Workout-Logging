@@ -209,6 +209,59 @@
   animation: summary-pop 0.45s var(--ease-snap) 0.05s both;
 }
 
+/* Page change: a quick fade. Opacity only, because a transform would turn fixed elements
+   (rest timer, action bars) into children of the animating page for its duration. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+  }
+}
+.page-in {
+  animation: page-in 0.16s ease-out;
+}
+
+/* Summary sections arrive one after another. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.rise-in {
+  animation: rise-in 0.4s var(--ease-snap) both;
+}
+
+/* New records: the trophy lifts once and a light sweeps across the card once. */
+@keyframes trophy-lift {
+  0%,
+  100% {
+    transform: none;
+  }
+  40% {
+    transform: translateY(-4px) rotate(-8deg) scale(1.15);
+  }
+}
+.trophy-lift {
+  animation: trophy-lift 0.7s var(--ease-snap) 0.45s both;
+}
+@keyframes record-sweep {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(220%);
+  }
+}
+.record-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, var(--glow), transparent);
+  animation: record-sweep 1.1s ease-out 0.5s both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

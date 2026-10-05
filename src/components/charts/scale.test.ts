@@ -39,3 +39,11 @@ describe('chart scales', () => {
     expect(spacedIndices(10, 4)).toEqual([0, 3, 6, 9]);
   });
 });
+
+describe('whole-number axes', () => {
+  it('never puts ticks between whole numbers for counts', () => {
+    expect(niceDomain(0, 9, 4, true, true).ticks).toEqual([0, 2, 4, 6, 8, 10]);
+    expect(niceDomain(0, 3, 4, true, true).ticks).toEqual([0, 1, 2, 3]);
+    expect(niceDomain(0, 9, 4, true).ticks).toEqual([0, 2.5, 5, 7.5, 10]);
+  });
+});

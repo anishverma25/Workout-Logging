@@ -41,18 +41,6 @@ export function ProfilePage() {
       <PageHeader
         title="Profile"
         subtitle="Your name, goal and experience. Used to greet you and to label your training."
-        actions={
-          training.status === 'success' ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={<Pencil className="size-4" aria-hidden />}
-              onClick={() => setEditing(true)}
-            >
-              {editable ? 'Edit profile' : 'Set up profile'}
-            </Button>
-          ) : undefined
-        }
       />
       <Sheet open={editing} onClose={() => setEditing(false)} title="Your profile">
         {editing ? <ProfileForm initial={editable} onDone={() => setEditing(false)} /> : null}
@@ -83,6 +71,15 @@ export function ProfilePage() {
                 <p className="mt-1.5 text-sm text-warn">Fictional demo profile</p>
               ) : null}
             </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="ml-auto self-start"
+              icon={<Pencil className="size-4" aria-hidden />}
+              onClick={() => setEditing(true)}
+            >
+              {editable ? 'Edit' : 'Set up yours'}
+            </Button>
           </div>
           <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-line pt-5 sm:grid-cols-4">
             <Field
