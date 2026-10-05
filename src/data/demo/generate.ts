@@ -184,7 +184,13 @@ export function generateDemoDataset(now: Date, seed: number = DEMO_SEED): DemoDa
         exerciseName: exerciseNames.get(exerciseId) ?? ex.key,
         order,
         notes: null,
-        target: { sets: ex.sets, repMin: ex.repMin, repMax: ex.repMax, rir: ex.rir },
+        target: {
+          sets: ex.sets,
+          repMin: ex.repMin,
+          repMax: ex.repMax,
+          rir: ex.rir,
+          rest: ex.restSeconds,
+        },
       };
       workoutExercises.push(we);
 

@@ -134,6 +134,36 @@
   }
 }
 
+/* Sheets slide up on phones and settle in on larger screens. */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes sheet-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+.sheet[open] {
+  animation: sheet-up 0.26s var(--ease-snap);
+}
+.sheet[open]::backdrop {
+  animation: fade-in 0.2s ease-out;
+}
+@media (min-width: 640px) {
+  .sheet[open] {
+    animation-name: sheet-pop;
+    animation-duration: 0.2s;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

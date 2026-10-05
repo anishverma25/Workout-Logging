@@ -105,3 +105,16 @@ export function ageFromBirthDate(birthDate: string, now: Date = new Date()): num
   if (!hadBirthday) age -= 1;
   return age;
 }
+
+/** A known Sunday, used to name weekday numbers (0 = Sunday) in the user's locale. */
+const REFERENCE_SUNDAY = new Date(2026, 0, 4);
+
+export const weekdayShortName = (weekday: number) =>
+  formatWeekdayShort(addDays(REFERENCE_SUNDAY, weekday));
+export const weekdayLongName = (weekday: number) =>
+  formatWeekday(addDays(REFERENCE_SUNDAY, weekday));
+
+/** Weekday numbers in display order for the user's week start. */
+export function orderedWeekdays(weekStartsOn: WeekStartsOn): number[] {
+  return Array.from({ length: 7 }, (_, i) => (i + weekStartsOn) % 7);
+}

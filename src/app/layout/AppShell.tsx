@@ -5,6 +5,7 @@ import { cn } from '@/lib/cn';
 import { useDemoStatus } from '@/data/hooks';
 import { APP_NAME, PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '../navigation';
 import { BrandMark } from './BrandMark';
+import { StartWorkoutProvider } from '@/features/workout/StartWorkout';
 
 export function AppShell() {
   return (
@@ -15,9 +16,11 @@ export function AppShell() {
           id="main"
           className="mx-auto w-full max-w-[72rem] px-safe pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-safe lg:px-10 lg:pb-16"
         >
-          <Suspense fallback={null}>
-            <Outlet />
-          </Suspense>
+          <StartWorkoutProvider>
+            <Suspense fallback={null}>
+              <Outlet />
+            </Suspense>
+          </StartWorkoutProvider>
         </main>
       </div>
       <BottomNav />

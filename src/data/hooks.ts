@@ -1,6 +1,7 @@
 import { liveQuery } from 'dexie';
 import { useEffect, useState } from 'react';
-import { DEFAULT_PREFERENCES, type Preferences } from '@/domain/models/schemas';
+import { DEFAULT_PREFERENCES, type Exercise, type Preferences } from '@/domain/models/schemas';
+import { exerciseUsage, type ExerciseUsage } from '@/domain/exercises/search';
 import type { TrainingData } from '@/domain/analytics/sessions';
 import { db } from './db';
 import { getDemoStatus, type DemoStatus } from './demo/service';
@@ -45,3 +46,22 @@ export function usePreferences(): Preferences {
   const state = useLiveData<Preferences>(() => getPreferences(db));
   return state.data ?? DEFAULT_PREFERENCES;
 }
+
+export interface ExerciseCatalog {
+  exercises: Exercise[];
+  usage: ExerciseUsage[];
+}
+
+/** The exercise library plus when each exercise was last used. Lighter than useTrainingData. */
+export const useExerciseCatalog = () =>
+  useLiveData<ExerciseCatalog>(async () => {
+    const [exercises, workouts, workoutExercises] = await Promise.all([
+      db.exercises.toArray(),
+      db.workouts.toArray(),
+      db.workoutExercises.toArray(),
+    ]);
+    return {
+      exercises: exercises.filter((e) => e.deletedAt === null),
+      usage: exerciseUsage(workouts, workoutExercises),
+    };
+  });

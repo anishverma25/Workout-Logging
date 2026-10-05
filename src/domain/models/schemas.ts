@@ -139,6 +139,8 @@ export const TargetSnapshot = z.object({
   repMin: z.number().int(),
   repMax: z.number().int(),
   rir: z.number().nullable(),
+  /** Planned rest in seconds. Missing on workouts logged before it was recorded. */
+  rest: z.number().int().min(0).max(900).nullable().optional(),
 });
 export type TargetSnapshot = z.infer<typeof TargetSnapshot>;
 

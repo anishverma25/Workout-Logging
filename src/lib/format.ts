@@ -28,3 +28,25 @@ export function formatCompact(value: number): string {
 export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
+
+/** "8–12", or "8" when the range is a single number. */
+export function formatRepRange(min: number, max: number): string {
+  return min === max ? String(min) : `${min}–${max}`;
+}
+
+/** Rest or timer length: 45 s, 1:30, 3:00. */
+export function formatSeconds(totalSeconds: number): string {
+  const s = Math.max(0, Math.round(totalSeconds));
+  if (s < 60) return `${s} s`;
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/** Clock style for running timers: 0:45, 2:05, 1:02:10. */
+export function formatClock(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = String(s % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+}

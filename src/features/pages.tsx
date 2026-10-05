@@ -1,4 +1,4 @@
-import { ChartNoAxesColumnIncreasing, Crown, Dumbbell, Library, Scale } from 'lucide-react';
+import { ChartNoAxesColumnIncreasing, Crown, Dumbbell, Scale } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
 import { PlannedFeature } from './shared/PlannedFeature';
 import { PageHeader } from '@/app/layout/PageHeader';
@@ -32,21 +32,6 @@ export function ProgressPage() {
         'Training frequency and adherence to your plan',
         '7, 30, 90 day and all-time ranges',
         'A methodology page explaining exactly how every number is calculated',
-      ]}
-    />
-  );
-}
-
-export function ExercisesPage() {
-  return (
-    <PlannedFeature
-      title="Exercises"
-      subtitle="The movement library"
-      icon={<Library className="size-5" aria-hidden />}
-      points={[
-        'Search and filter by muscle group and equipment',
-        'Create your own exercises and choose how they are tracked',
-        'Add any exercise straight into a routine',
       ]}
     />
   );
