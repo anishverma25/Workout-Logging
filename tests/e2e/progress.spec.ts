@@ -9,6 +9,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('progress: ranges and exercise filter scope the whole page', async ({ page }) => {
+  // Long ranges are part of Pro; preview them with the development-only access state.
+  await page.evaluate(() => sessionStorage.setItem('overload.dev.entitlement', 'pro'));
   await page.goto('/progress');
   await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toBeVisible();
   const workouts = page

@@ -23,6 +23,7 @@ import {
   updateWorkoutExerciseNotes,
 } from '@/data/repositories/workouts';
 import { checkProgression } from '@/domain/analytics/progression';
+import { useFeature } from '@/app/entitlement';
 import type { Preferences, WorkoutSet } from '@/domain/models/schemas';
 import { matchingPreviousSet, suggestFor } from '@/domain/workout/previous';
 import {
@@ -67,8 +68,12 @@ function ExerciseCardImpl({ view, index, count, prefs, onSetCompleted }: Props) 
       s.distanceM === null,
   );
   // The same rule as the Progress page, applied to last time's sets with today's target.
+  const progressionIncluded = useFeature('progression');
   const readyToProgress =
-    previous && target && we.exerciseId === previous.workoutExercise.exerciseId
+    progressionIncluded &&
+    previous &&
+    target &&
+    we.exerciseId === previous.workoutExercise.exerciseId
       ? checkProgression(target, previous.sets, tracking)
       : null;
   const canCopy = previous && emptySets.some((s) => matchingPreviousSet(prevSets, sets, s.id));

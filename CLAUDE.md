@@ -29,6 +29,9 @@ Read README.md for setup, architecture and calculation rules.
   keep RLS on every user table, and extend `src/data/sync/rls.test.ts`.
 - Never say data is backed up or synced unless the outbox is empty and the server confirmed
   (`describeSync` in `src/data/sync/describe.ts`).
+- Pro gates go through `useFeature` / `hasFeature` only (`src/domain/entitlement`). Never read
+  plan data anywhere else, never gate history, and never trust client state for access.
+- Development-only code must sit behind `import.meta.env.DEV`; `pnpm build` verifies it is gone.
 - Workouts snapshot exercise names and routine targets. Routine code never touches workout tables.
 - Sheets: form state lives in a component mounted only while the sheet is open
   (`return open ? <Form/> : null`), so it starts fresh without reset effects.
@@ -59,4 +62,7 @@ Read README.md for setup, architecture and calculation rules.
   covers the whole previous period; partial periods are labelled.
 - Phase 6: Supabase schema with RLS, local-first sync (outbox, push, pull, conflicts, retry),
   auth (sign up, sign in, sign out, reset), per-account local databases, guest data import.
-- Next: Phase 7 (trial and Pro entitlement, manual UPI).
+- Phase 7: 168-hour server trial, `subscriptions` table with RPCs, central entitlement, Pro
+  gates on Progress and the logger, Pro page with configurable manual UPI, admin guide in
+  `docs/admin-pro-payments.md`, development-only access states.
+- Next: Phase 8 (PWA, offline caching, deployment).

@@ -49,6 +49,9 @@ const subscribe = (l: () => void) => {
   };
 };
 
+export const getAccountState = () => state;
+export const subscribeAccount = subscribe;
+
 export function useAccount(): AccountState {
   return useSyncExternalStore(subscribe, () => state);
 }

@@ -174,6 +174,8 @@ test('editing a routine target shows up in the next workout', async ({ page }) =
 test('lb input is shown back exactly as typed', async ({ page }) => {
   await page.goto('/settings');
   await page.getByRole('radio', { name: 'lb' }).click();
+  // Wait for the save to commit before a full page load.
+  await expect(page.getByText('Showing weights in lb')).toBeVisible();
   await page.goto('/workout');
   await page.getByRole('button', { name: 'Start empty workout' }).click();
   await page.getByRole('button', { name: 'Add exercise' }).click();

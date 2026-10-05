@@ -22,6 +22,8 @@ import { formatWeight, formatWeightValue, toDisplayWeight, type WeightUnit } fro
 import { useNow } from '@/lib/useNow';
 import { useStartWorkout } from '../workout/StartWorkout';
 import { InsightList, Suggestions } from './Insights';
+import { useFeature } from '@/app/entitlement';
+import { ProLock } from '../pro/ProLock';
 
 const RANGES: { value: ProgressRange; label: string }[] = [
   { value: '7d', label: '7 days' },
@@ -44,6 +46,10 @@ export function ProgressPage() {
   const range: ProgressRange = isRange(rangeParam) ? rangeParam : '30d';
   const exerciseId = params.get('exercise');
   const unit = prefs.weightUnit;
+  const longRangeIncluded = useFeature('long_range');
+  const muscleBalanceIncluded = useFeature('muscle_balance');
+  const progressionIncluded = useFeature('progression');
+  const rangeLocked = (range === '90d' || range === 'all') && !longRangeIncluded;
 
   const model = useMemo(
     () =>
@@ -117,7 +123,15 @@ export function ProgressPage() {
           <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-2 border-b border-transparent bg-bg/90 px-4 py-2 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between lg:-mx-10 lg:px-10">
             <Chips
               label="Date range"
-              options={RANGES}
+              options={
+                longRangeIncluded
+                  ? RANGES
+                  : RANGES.map((r) =>
+                      r.value === '90d' || r.value === 'all'
+                        ? { ...r, label: `${r.label} · Pro` }
+                        : r,
+                    )
+              }
               value={range}
               onChange={(r) => setParam('range', r === '30d' ? null : r)}
             />
@@ -134,38 +148,51 @@ export function ProgressPage() {
             ) : null}
           </div>
 
-          <p className="mt-2 text-sm text-faint">
-            {formatDayMonth(model.window.start)} to{' '}
-            {formatDayMonth(new Date(model.window.end.getTime() - 1))}
-            {model.sessionsInWindow === 0 ? '. No workouts logged in this period.' : ''}
-          </p>
+          {rangeLocked ? (
+            <ProLock
+              feature="long_range"
+              className="mt-6"
+              lead="Your history is all here. Trends over 90 days and all time are part of Pro."
+            />
+          ) : (
+            <>
+              <p className="mt-2 text-sm text-faint">
+                {formatDayMonth(model.window.start)} to{' '}
+                {formatDayMonth(new Date(model.window.end.getTime() - 1))}
+                {model.sessionsInWindow === 0 ? '. No workouts logged in this period.' : ''}
+              </p>
 
-          <Summary model={model} unit={unit} />
+              <Summary model={model} unit={unit} />
 
-          <Section
-            id="insights"
-            title="Insights"
-            detail="Rules applied to your records. Each one states what it is based on."
-          >
-            <InsightList insights={model.insights} />
-          </Section>
+              <Section
+                id="insights"
+                title="Insights"
+                detail="Rules applied to your records. Each one states what it is based on."
+              >
+                <InsightList insights={model.insights} />
+              </Section>
 
-          {model.progression.some((s) => !dismissed.has(s.id)) ? (
-            <Section
-              id="progression"
-              title="Ready to progress"
-              detail="Based on your last session of each exercise and its routine target."
-            >
-              <Suggestions suggestions={model.progression} dismissed={dismissed} unit={unit} />
-            </Section>
-          ) : null}
+              <ProgressionBlock
+                model={model}
+                dismissed={dismissed}
+                unit={unit}
+                included={progressionIncluded}
+              />
 
-          <StrengthSection model={model} unit={unit} />
-          <VolumeSection model={model} unit={unit} />
-          <MusclesSection model={model} />
-          <ConsistencySection model={model} />
-          <BodySection model={model} unit={unit} />
-          <RecordsSection model={model} unit={unit} />
+              <StrengthSection model={model} unit={unit} />
+              <VolumeSection model={model} unit={unit} />
+              {muscleBalanceIncluded ? (
+                <MusclesSection model={model} />
+              ) : (
+                <Section id="muscles" title="Sets per muscle group">
+                  <ProLock feature="muscle_balance" />
+                </Section>
+              )}
+              <ConsistencySection model={model} />
+              <BodySection model={model} unit={unit} />
+              <RecordsSection model={model} unit={unit} />
+            </>
+          )}
 
           <Link
             to="/progress/methodology"
@@ -202,6 +229,37 @@ export function ProgressPage() {
         />
       </Sheet>
     </>
+  );
+}
+
+function ProgressionBlock({
+  model,
+  dismissed,
+  unit,
+  included,
+}: {
+  model: ProgressModel;
+  dismissed: Set<string>;
+  unit: WeightUnit;
+  included: boolean;
+}) {
+  const open = model.progression.filter((s) => !dismissed.has(s.id));
+  if (open.length === 0) return null;
+  return (
+    <Section
+      id="progression"
+      title="Ready to progress"
+      detail="Based on your last session of each exercise and its routine target."
+    >
+      {included ? (
+        <Suggestions suggestions={model.progression} dismissed={dismissed} unit={unit} />
+      ) : (
+        <ProLock
+          feature="progression"
+          lead={`${pluralize(open.length, 'exercise')} ${open.length === 1 ? 'is' : 'are'} ready for more weight or reps.`}
+        />
+      )}
+    </Section>
   );
 }
 

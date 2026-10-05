@@ -107,6 +107,27 @@ ever has the public anon key; the app refuses to enable accounts if given a serv
 `src/data/sync/rls.test.ts` proves User A cannot read, modify or delete User B rows, in every
 table, against real Postgres (PGlite) running the migrations.
 
+### Trial and Pro
+
+- Every account gets exactly 168 hours of Pro, starting when the database creates the account.
+  The `subscriptions` row is created by a trigger; users can never write to it.
+- Access is decided in one place, `resolveEntitlement` in `src/domain/entitlement`, from the
+  server's record and the server's clock (`get_my_subscription`). Local storage, URL
+  parameters and the device clock change nothing. Gates call `useFeature(...)`.
+- Pro adds 90-day and all-time trends, sets per muscle group and progression suggestions.
+  Logging, routines, history, records, body weight, 7 and 30 day progress, insights and sync
+  stay free forever. History is never locked.
+- Payment is manual UPI. The UPI ID, payee name, price and period come from `VITE_UPI_ID`,
+  `VITE_UPI_PAYEE_NAME`, `VITE_PRO_PRICE_INR` and `VITE_PRO_PERIOD_DAYS`; without them the app
+  says payments are not open yet. The app only ever asks for the transaction reference.
+- Pro is granted by an administrator in the Supabase SQL editor: see
+  `docs/admin-pro-payments.md`.
+- Development builds have a Settings > Developer menu to preview trial and Pro states. It is
+  removed from production builds, and `scripts/verify-build.mjs` fails the build if it is not.
+- Limits, stated plainly: Pro views are computed on the device, so someone who edits the app's
+  code in their own browser can change what their own screen shows. They cannot change their
+  subscription, see anyone else's data, or affect any other user.
+
 ### Setting up Supabase (free tier)
 
 1. Create a project at supabase.com.
@@ -116,7 +137,8 @@ table, against real Postgres (PGlite) running the migrations.
    the app handles both.
 4. Authentication > URL configuration: set the Site URL to your app's address and add
    `<site>/account` and `<site>/reset-password` to the redirect URLs.
-5. Project settings > API: copy the project URL and the **anon / publishable** key into
+5. Optional, for Pro payments: set the four `VITE_UPI_*` / `VITE_PRO_*` variables above.
+6. Project settings > API: copy the project URL and the **anon / publishable** key into
    `.env.local` (never the service role or secret key):
 
    ```bash

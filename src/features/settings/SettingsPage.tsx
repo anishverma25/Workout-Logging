@@ -1,4 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import {
+  DEV_STATES,
+  getDevEntitlement,
+  onDevEntitlementChange,
+  setDevEntitlement,
+  type DevEntitlementState,
+} from '@/app/devEntitlement';
 import { FlaskConical, HardDrive, RotateCcw, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { useTheme, type ThemePreference } from '@/app/theme';
@@ -25,6 +32,7 @@ export function SettingsPage() {
         <UnitsSection />
         <StorageSection />
         <DemoSection />
+        {import.meta.env.DEV ? <DeveloperSection /> : null}
       </div>
     </>
   );
@@ -232,6 +240,33 @@ function GuestDemoSection() {
           </>
         )}
       </div>
+    </Card>
+  );
+}
+
+/** Development builds only: preview each access state. Removed from production builds. */
+function DeveloperSection() {
+  const value = useSyncExternalStore(onDevEntitlementChange, getDevEntitlement);
+  return (
+    <Card className="border-dashed p-5">
+      <h2 className="mb-1 font-display text-xl font-semibold">Developer</h2>
+      <p className="mb-4 text-sm text-muted">
+        Only in development builds. Changes what this browser tab shows, never the account.
+      </p>
+      <Row title="Access state" detail="Preview trial and Pro screens.">
+        <select
+          aria-label="Access state"
+          className="h-10 rounded-xl border border-line bg-surface-2 px-3"
+          value={value}
+          onChange={(e) => setDevEntitlement(e.target.value as DevEntitlementState)}
+        >
+          {DEV_STATES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </Row>
     </Card>
   );
 }
