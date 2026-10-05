@@ -7,6 +7,7 @@ import { APP_NAME, PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '../navigatio
 import { BrandMark } from './BrandMark';
 import { StartWorkoutProvider } from '@/features/workout/StartWorkout';
 import { WorkoutDock } from '@/features/workout/WorkoutDock';
+import { SyncBadge } from '@/features/account/SyncStatus';
 
 export function AppShell() {
   return (
@@ -98,8 +99,9 @@ function Sidebar() {
           ))}
         </div>
       </nav>
-      <div className="mt-auto px-2">
+      <div className="mt-auto flex flex-col items-start gap-2 px-2">
         <DemoPill />
+        <SyncBadge className="-mx-2 w-[calc(100%+1rem)]" />
       </div>
     </aside>
   );

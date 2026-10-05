@@ -22,6 +22,13 @@ Read README.md for setup, architecture and calculation rules.
 - All domain writes go through `src/data/repositories/write.ts` (`putRecords`, `patchRecord`,
   `softDelete`). It stamps `updatedAt`, soft deletes, and queues the outbox for sync in the same
   transaction. Repositories that use it must include `db.outbox` in their transaction tables.
+- The sync engine (`src/data/sync/engine.ts`) is the one exception: it writes records pulled
+  from the server directly, because they must not be queued to go back.
+- Only `origin: 'user'` records leave the device. Demo data lives only in the guest database.
+- Server schema changes: add a new file in `supabase/migrations` (never edit an applied one),
+  keep RLS on every user table, and extend `src/data/sync/rls.test.ts`.
+- Never say data is backed up or synced unless the outbox is empty and the server confirmed
+  (`describeSync` in `src/data/sync/describe.ts`).
 - Workouts snapshot exercise names and routine targets. Routine code never touches workout tables.
 - Sheets: form state lives in a component mounted only while the sheet is open
   (`return open ? <Form/> : null`), so it starts fresh without reset effects.
@@ -29,6 +36,8 @@ Read README.md for setup, architecture and calculation rules.
 ## Testing
 
 - `pnpm check` (typecheck, lint, unit tests, build) and `pnpm test:e2e` (mobile and desktop).
+- RLS and sync tests run real Postgres (PGlite) with the migrations: `src/test/server.ts`.
+- E2E runs against `tests/fake-supabase/server.ts` (vite `--mode e2e`, port 5175).
 - In a sandbox that cannot download Playwright's browser, point `PW_CHROMIUM_PATH` at a local
   Chromium, for example `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
 
@@ -48,4 +57,6 @@ Read README.md for setup, architecture and calculation rules.
   insights, progression suggestions (also shown in the logger), methodology page.
 - Rules worth remembering: e1RM only for compound lifts; period comparisons only when history
   covers the whole previous period; partial periods are labelled.
-- Next: Phase 6 (Supabase auth, schema, RLS, local-first sync).
+- Phase 6: Supabase schema with RLS, local-first sync (outbox, push, pull, conflicts, retry),
+  auth (sign up, sign in, sign out, reset), per-account local databases, guest data import.
+- Next: Phase 7 (trial and Pro entitlement, manual UPI).

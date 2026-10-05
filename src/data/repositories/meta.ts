@@ -9,6 +9,9 @@ export const META_KEYS = {
   demoAutoloadHandled: 'demo.autoloadHandled',
   restTimer: 'workout.restTimer',
   dismissedSuggestions: 'progress.dismissedSuggestions',
+  /** Sync bookkeeping: `${syncCursor}${table}` and the last confirmed sync time. */
+  syncCursor: 'sync.cursor.',
+  lastSyncedAt: 'sync.lastSyncedAt',
 } as const;
 
 export async function getMeta<T>(db: WorkoutDatabase, key: string): Promise<T | undefined> {
@@ -34,7 +37,21 @@ export async function updatePreferences(
   patch: Partial<Preferences>,
 ): Promise<Preferences> {
   const next = Preferences.parse({ ...(await getPreferences(db)), ...patch });
-  await setMeta(db, META_KEYS.preferences, next);
+  await db.transaction('rw', [db.meta, db.outbox], async () => {
+    const at = new Date().toISOString();
+    await db.meta.put({ key: META_KEYS.preferences, value: next, updatedAt: at });
+    if (db.syncEnabled) {
+      await db.outbox.put({
+        id: 'preferences:preferences',
+        table: 'preferences',
+        recordId: 'preferences',
+        recordUpdatedAt: at,
+        queuedAt: at,
+        attempts: 0,
+        lastError: null,
+      });
+    }
+  });
   return next;
 }
 

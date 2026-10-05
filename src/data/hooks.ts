@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { DEFAULT_PREFERENCES, type Exercise, type Preferences } from '@/domain/models/schemas';
 import { exerciseUsage, type ExerciseUsage } from '@/domain/exercises/search';
 import type { TrainingData } from '@/domain/analytics/sessions';
-import { db } from './db';
+import { db, guestDatabase } from './db';
+import { migrationHandled, summarizeGuestData, type GuestDataSummary } from './sync/migrate';
 import { getDemoStatus, type DemoStatus } from './demo/service';
 import { getDismissedSuggestions, getPreferences, getRestTimer } from './repositories/meta';
 import { getActiveWorkout } from './repositories/workouts';
@@ -89,4 +90,21 @@ export const useRestTimer = () => useLiveData(() => getRestTimer(db));
 export function useDismissedSuggestions(): Set<string> {
   const state = useLiveData(() => getDismissedSuggestions(db));
   return new Set(state.data ?? []);
+}
+
+export interface GuestImportState {
+  summary: GuestDataSummary;
+  handled: boolean;
+}
+
+/** Device-only data that could be moved into the signed-in account. */
+export function useGuestImport(userId: string | null) {
+  return useLiveData<GuestImportState | null>(async () => {
+    if (!userId) return null;
+    const guest = guestDatabase();
+    return {
+      summary: await summarizeGuestData(guest),
+      handled: await migrationHandled(guest, userId),
+    };
+  }, [userId]);
 }

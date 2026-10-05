@@ -17,6 +17,13 @@ import { WorkoutPage } from '@/features/workout/WorkoutPage';
 import { ProfilePage } from '@/features/profile/ProfilePage';
 import { RoutinesPage } from '@/features/routines/RoutinesPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
+import { AccountPage } from '@/features/account/AccountPage';
+import {
+  ForgotPasswordPage,
+  NewPasswordPage,
+  SignInPage,
+  SignUpPage,
+} from '@/features/account/AuthPages';
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +46,11 @@ export const router = createBrowserRouter([
       { path: 'settings', element: <SettingsPage /> },
       { path: 'pro', element: <ProPage /> },
       { path: 'more', element: <MorePage /> },
+      { path: 'account', element: <AccountPage /> },
+      { path: 'sign-in', element: <SignInPage /> },
+      { path: 'sign-up', element: <SignUpPage /> },
+      { path: 'forgot-password', element: <ForgotPasswordPage /> },
+      { path: 'reset-password', element: <NewPasswordPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

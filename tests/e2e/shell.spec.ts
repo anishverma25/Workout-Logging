@@ -61,7 +61,7 @@ test('demo data can be cleared, loaded and reset', async ({ page }) => {
 
   await page.goto('/settings');
   await page.getByRole('button', { name: 'Reset to today' }).click();
-  await expect(page.getByRole('status')).toContainText('workouts');
+  await expect(page.locator('#demo-data').getByRole('status')).toContainText('workouts');
 });
 
 test('clearing demo data survives a reload', async ({ page }) => {
@@ -89,6 +89,9 @@ test('no horizontal scrolling on any main page', async ({ page }) => {
     '/settings',
     '/more',
     '/profile',
+    '/sign-in',
+    '/sign-up',
+    '/forgot-password',
   ]) {
     await page.goto(path);
     await page.waitForLoadState('networkidle');

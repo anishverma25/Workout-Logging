@@ -11,7 +11,7 @@ export default defineConfig({
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5175',
     timezoneId: 'Asia/Kolkata',
     trace: 'retain-on-failure',
     ...(executablePath ? { launchOptions: { executablePath } } : {}),
@@ -23,9 +23,18 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
     },
   ],
-  webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      // Local stand-in for Supabase: real migrations and row level security on PGlite.
+      command: 'node tests/fake-supabase/server.ts',
+      url: 'http://localhost:54329/health',
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      // Its own port and mode, so a normal `pnpm dev` (no accounts) is never reused here.
+      command: 'pnpm exec vite --mode e2e --port 5175 --strictPort',
+      url: 'http://localhost:5175',
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });

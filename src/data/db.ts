@@ -30,6 +30,9 @@ export type DomainTable =
   | 'sets'
   | 'bodyWeights';
 
+/** What the outbox can hold: domain records, plus the preferences stored in meta. */
+export type SyncTable = DomainTable | 'preferences';
+
 /**
  * A pending change waiting to reach the server. One entry per record: a newer local change
  * replaces the older entry (same id), so a record is never sent twice for the same state.
@@ -37,7 +40,7 @@ export type DomainTable =
 export interface OutboxEntry {
   /** `${table}:${recordId}` */
   id: string;
-  table: DomainTable;
+  table: SyncTable;
   recordId: string;
   /** updatedAt of the record when queued; used to detect newer local edits during a push. */
   recordUpdatedAt: string;
@@ -142,4 +145,16 @@ export function switchDatabase(
 export function onDatabaseSwitch(listener: (db: WorkoutDatabase) => void): () => void {
   switchListeners.add(listener);
   return () => switchListeners.delete(listener);
+}
+
+let guestHandle: WorkoutDatabase | null = null;
+
+/**
+ * The guest (device-only) database, even while an account database is active. Used to offer
+ * moving device data into an account. Never synced.
+ */
+export function guestDatabase(): WorkoutDatabase {
+  if (db.name === GUEST_DB_NAME) return db;
+  guestHandle ??= new WorkoutDatabase(GUEST_DB_NAME);
+  return guestHandle;
 }

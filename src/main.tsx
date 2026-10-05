@@ -11,6 +11,7 @@ import './styles/index.css';
 import { bootstrap } from './app/bootstrap';
 import { router } from './app/router';
 import { ThemeProvider } from './app/theme';
+import { DatabaseScope } from './app/DatabaseScope';
 import { ToastProvider } from './components/ui/Toast';
 
 const root = createRoot(document.getElementById('root')!);
@@ -20,7 +21,9 @@ function render() {
     <StrictMode>
       <ThemeProvider>
         <ToastProvider>
-          <RouterProvider router={router} />
+          <DatabaseScope>
+            <RouterProvider router={router} />
+          </DatabaseScope>
         </ToastProvider>
       </ThemeProvider>
     </StrictMode>,

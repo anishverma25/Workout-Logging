@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { FlaskConical, HardDrive, RotateCcw, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { useTheme, type ThemePreference } from '@/app/theme';
-import { Button } from '@/components/ui/Button';
+import { Button, ButtonLink } from '@/components/ui/Button';
+import { useAccount } from '@/app/account';
+import { SyncSummary } from '@/features/account/SyncStatus';
 import { Card } from '@/components/ui/Card';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useToast } from '@/components/ui/Toast';
@@ -97,6 +99,8 @@ function UnitsSection() {
 }
 
 function StorageSection() {
+  const account = useAccount();
+  const signedIn = account.status === 'signedIn';
   const [state, setState] = useState<StorageState | null>(null);
   useEffect(() => {
     void getStorageState().then(setState);
@@ -115,9 +119,18 @@ function StorageSection() {
         <HardDrive className="size-5 text-faint" aria-hidden /> Data on this device
       </h2>
       <p className="mb-4 text-sm text-muted">
-        Workouts are saved on this device first. Account sync is not set up yet, so this device
-        holds your only copy.
+        {signedIn
+          ? 'Everything is saved on this device first, so the app works offline, and then synced to your account.'
+          : 'Workouts are saved on this device. Without an account, this device holds your only copy.'}
       </p>
+      <div className="mb-4 rounded-xl bg-surface-2 p-4">
+        <SyncSummary />
+        {account.status === 'signedOut' ? (
+          <ButtonLink to="/sign-in?next=/account" size="sm" className="mt-3">
+            Sign in to back up
+          </ButtonLink>
+        ) : null}
+      </div>
       <Row title="Storage protection" detail={label}>
         {state === 'best-effort' ? (
           <Button
@@ -134,6 +147,27 @@ function StorageSection() {
 }
 
 function DemoSection() {
+  const account = useAccount();
+  if (account.status === 'signedIn') {
+    return (
+      <Card className="p-5" id="demo-data" aria-labelledby="demo-title">
+        <h2
+          id="demo-title"
+          className="mb-1 flex items-center gap-2 font-display text-xl font-semibold"
+        >
+          <FlaskConical className="size-5 text-warn" aria-hidden /> Demo data
+        </h2>
+        <p className="text-sm text-muted">
+          Your account only ever holds your own training, so demo data is not available while you
+          are signed in. Sign out to explore the demo on this device.
+        </p>
+      </Card>
+    );
+  }
+  return <GuestDemoSection />;
+}
+
+function GuestDemoSection() {
   const demo = useDemoStatus();
   const toast = useToast();
   const [busy, setBusy] = useState(false);

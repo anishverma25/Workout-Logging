@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   CalendarRange,
+  CircleUserRound,
   ChartNoAxesColumnIncreasing,
   Crown,
   Dumbbell,
@@ -35,6 +36,7 @@ export const SECONDARY_NAV: NavItem[] = [
   { to: '/exercises', label: 'Exercises', icon: Library },
   { to: '/body', label: 'Body metrics', icon: Scale },
   { to: '/profile', label: 'Profile', icon: UserRound },
+  { to: '/account', label: 'Account', icon: CircleUserRound },
   { to: '/settings', label: 'Settings', icon: Settings },
   { to: '/pro', label: 'Pro', icon: Crown },
 ];

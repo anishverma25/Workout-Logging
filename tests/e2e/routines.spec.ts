@@ -32,7 +32,9 @@ test('routine from a template: rename, add a day and exercise, duplicate, delete
   await page.getByRole('searchbox', { name: 'Search exercises' }).fill('face pull');
   await page.getByRole('button', { name: /^Face pull/ }).click();
   await page.getByRole('button', { name: 'Add 1 exercise' }).click();
-  await expect(day3.getByText('Face pull')).toBeVisible();
+  // The picker lives inside the day section; wait for it to close before reading the day.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(day3.getByText('Face pull', { exact: true })).toBeVisible();
 
   // Duplicate and delete
   await page.getByRole('button', { name: 'Routine options' }).click();

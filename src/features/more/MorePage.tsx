@@ -2,11 +2,13 @@ import { Link } from 'react-router';
 import { ChevronRight } from 'lucide-react';
 import { SECONDARY_NAV } from '@/app/navigation';
 import { PageHeader } from '@/app/layout/PageHeader';
+import { SyncBadge } from '@/features/account/SyncStatus';
 
 export function MorePage() {
   return (
     <>
       <PageHeader title="More" />
+      <SyncBadge className="mb-3 -mx-2" />
       <nav
         aria-label="More"
         className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface"
