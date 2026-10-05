@@ -75,24 +75,23 @@ function SidebarLink({ item }: { item: NavItem }) {
 
 function Sidebar() {
   return (
-    <aside
-      className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-surface/40 px-4 py-6 lg:flex"
-      aria-label="Main navigation"
-    >
+    <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-surface/40 px-4 py-6 lg:flex">
       <Link to="/" className="mb-8 flex items-center gap-2.5 px-2" aria-label={`${APP_NAME} home`}>
         <BrandMark className="size-8" />
         <span className="font-display text-2xl font-bold tracking-[0.01em]">{APP_NAME}</span>
       </Link>
-      <nav className="flex flex-col gap-1">
-        {PRIMARY_NAV.map((item) => (
-          <SidebarLink key={item.to} item={item} />
-        ))}
-      </nav>
-      <div className="mx-3 my-5 h-px bg-line" />
-      <nav className="flex flex-col gap-1" aria-label="More">
-        {SECONDARY_NAV.map((item) => (
-          <SidebarLink key={item.to} item={item} />
-        ))}
+      <nav aria-label="Main navigation" className="flex flex-col">
+        <div className="flex flex-col gap-1">
+          {PRIMARY_NAV.map((item) => (
+            <SidebarLink key={item.to} item={item} />
+          ))}
+        </div>
+        <div className="mx-3 my-5 h-px bg-line" aria-hidden />
+        <div className="flex flex-col gap-1" role="group" aria-label="More">
+          {SECONDARY_NAV.map((item) => (
+            <SidebarLink key={item.to} item={item} />
+          ))}
+        </div>
       </nav>
       <div className="mt-auto px-2">
         <DemoPill />

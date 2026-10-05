@@ -1,5 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
+/**
+ * Optional override for sandboxes that cannot download Playwright's browser build.
+ * Point PW_CHROMIUM_PATH at a local Chromium; leave it unset everywhere else.
+ */
+const executablePath = process.env.PW_CHROMIUM_PATH;
+
 export default defineConfig({
   testDir: 'tests/e2e',
   fullyParallel: true,
@@ -8,6 +14,7 @@ export default defineConfig({
     baseURL: 'http://localhost:5173',
     timezoneId: 'Asia/Kolkata',
     trace: 'retain-on-failure',
+    ...(executablePath ? { launchOptions: { executablePath } } : {}),
   },
   projects: [
     { name: 'mobile', use: { ...devices['Pixel 7'] } },

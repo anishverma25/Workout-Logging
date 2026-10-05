@@ -124,7 +124,6 @@ export const accountDbName = (userId: string) => `overload-user-${userId}`;
  * The active database. An ES module live binding: after `switchDatabase`, every importer
  * sees the new instance. The app remounts its tree on switch so live queries re-subscribe.
  */
-// eslint-disable-next-line import/no-mutable-exports
 export let db = new WorkoutDatabase(GUEST_DB_NAME);
 
 const switchListeners = new Set<(db: WorkoutDatabase) => void>();

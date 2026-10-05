@@ -67,6 +67,8 @@ test('demo data can be cleared, loaded and reset', async ({ page }) => {
 test('clearing demo data survives a reload', async ({ page }) => {
   await page.goto('/settings');
   await page.getByRole('button', { name: 'Clear demo data' }).click();
+  // Wait for the write to commit before reloading, or the reload races it.
+  await expect(page.getByText('Demo data cleared')).toBeVisible();
   await page.reload();
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Your training starts here' })).toBeVisible();
