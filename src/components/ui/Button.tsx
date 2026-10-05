@@ -47,27 +47,33 @@ export function ButtonLink({
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
+  icon: ReactNode;
+  size?: 'sm' | 'md';
+  tone?: 'default' | 'danger' | 'accent';
 }
 
-export function IconButton({
-  label,
-  className,
-  children,
-  type = 'button',
-  ...props
-}: IconButtonProps) {
+/** Square icon-only button. The label is announced and shown as a tooltip. */
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
+  { label, icon, size = 'md', tone = 'default', className, type = 'button', ...props },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       type={type}
       aria-label={label}
       title={label}
       className={cn(
-        'inline-flex size-11 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-text active:scale-95',
+        'inline-flex shrink-0 items-center justify-center rounded-full transition-[background-color,color,transform] active:scale-95 disabled:opacity-35 disabled:active:scale-100',
+        size === 'md' ? 'size-11' : 'size-9',
+        tone === 'danger' && 'text-danger hover:bg-danger-soft',
+        tone === 'accent' && 'text-accent-text hover:bg-accent-soft',
+        tone === 'default' && 'text-muted hover:bg-surface-2 hover:text-text',
         className,
       )}
       {...props}
     >
-      {children}
+      {icon}
     </button>
   );
-}
+});

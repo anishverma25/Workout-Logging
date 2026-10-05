@@ -118,3 +118,11 @@ export const weekdayLongName = (weekday: number) =>
 export function orderedWeekdays(weekStartsOn: WeekStartsOn): number[] {
   return Array.from({ length: 7 }, (_, i) => (i + weekStartsOn) % 7);
 }
+
+/** For use inside a sentence: "today", "yesterday", "on Thursday", "on Thu, 2 Oct". */
+export function formatRelativeDayInline(date: Date, now: Date = new Date()): string {
+  const diff = differenceInCalendarDays(now, date);
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'yesterday';
+  return `on ${formatRelativeDay(date, now)}`;
+}

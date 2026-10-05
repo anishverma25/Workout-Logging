@@ -202,6 +202,8 @@ export const Preferences = z.object({
   effortMetric: z.enum(['rir', 'rpe']),
   weekStartsOn: z.union([z.literal(0), z.literal(1)]),
   defaultRestSeconds: z.number().int().min(15).max(900),
+  /** Start the rest timer automatically when a set is marked done. */
+  autoStartRest: z.boolean(),
 });
 export type Preferences = z.infer<typeof Preferences>;
 
@@ -238,4 +240,5 @@ export const DEFAULT_PREFERENCES: Preferences = {
   effortMetric: 'rir',
   weekStartsOn: 1,
   defaultRestSeconds: 120,
+  autoStartRest: true,
 };

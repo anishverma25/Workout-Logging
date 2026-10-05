@@ -1,4 +1,5 @@
 import { DEFAULT_PREFERENCES, Preferences } from '@/domain/models/schemas';
+import type { RestTimerState } from '@/domain/workout/restTimer';
 import type { WorkoutDatabase } from '../db';
 
 export const META_KEYS = {
@@ -6,6 +7,7 @@ export const META_KEYS = {
   demoLoadedAt: 'demo.loadedAt',
   /** Set once the app has decided whether to auto-load demo data, so clearing it sticks. */
   demoAutoloadHandled: 'demo.autoloadHandled',
+  restTimer: 'workout.restTimer',
 } as const;
 
 export async function getMeta<T>(db: WorkoutDatabase, key: string): Promise<T | undefined> {
@@ -33,4 +35,14 @@ export async function updatePreferences(
   const next = Preferences.parse({ ...(await getPreferences(db)), ...patch });
   await setMeta(db, META_KEYS.preferences, next);
   return next;
+}
+
+/** The rest timer is device state, not training data: it is never synced. */
+export async function getRestTimer(db: WorkoutDatabase): Promise<RestTimerState | null> {
+  return (await getMeta<RestTimerState>(db, META_KEYS.restTimer)) ?? null;
+}
+
+export async function saveRestTimer(db: WorkoutDatabase, state: RestTimerState | null) {
+  if (state === null) await db.meta.delete(META_KEYS.restTimer);
+  else await setMeta(db, META_KEYS.restTimer, state);
 }

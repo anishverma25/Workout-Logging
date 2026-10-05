@@ -5,7 +5,13 @@ import { exerciseUsage, type ExerciseUsage } from '@/domain/exercises/search';
 import type { TrainingData } from '@/domain/analytics/sessions';
 import { db } from './db';
 import { getDemoStatus, type DemoStatus } from './demo/service';
-import { getPreferences } from './repositories/meta';
+import { getPreferences, getRestTimer } from './repositories/meta';
+import { getActiveWorkout } from './repositories/workouts';
+import {
+  loadActiveWorkoutView,
+  loadWorkoutView,
+  type WorkoutView,
+} from './repositories/workoutView';
 import { loadTrainingData } from './repositories/training';
 
 export type QueryState<T> =
@@ -65,3 +71,17 @@ export const useExerciseCatalog = () =>
       usage: exerciseUsage(workouts, workoutExercises),
     };
   });
+
+export const useActiveWorkoutView = () =>
+  useLiveData<WorkoutView | null>(() => loadActiveWorkoutView(db));
+
+export const useWorkoutView = (workoutId: string | undefined) =>
+  useLiveData<WorkoutView | null>(
+    async () => (workoutId ? loadWorkoutView(db, workoutId) : null),
+    [workoutId],
+  );
+
+/** Only the id and start of the workout in progress: cheap enough for the app shell. */
+export const useActiveWorkout = () => useLiveData(() => getActiveWorkout(db));
+
+export const useRestTimer = () => useLiveData(() => getRestTimer(db));

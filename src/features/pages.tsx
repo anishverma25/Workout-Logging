@@ -1,24 +1,7 @@
-import { ChartNoAxesColumnIncreasing, Crown, Dumbbell, Scale } from 'lucide-react';
+import { ChartNoAxesColumnIncreasing, Crown, Scale } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/Button';
 import { PlannedFeature } from './shared/PlannedFeature';
 import { PageHeader } from '@/app/layout/PageHeader';
-
-export function WorkoutPage() {
-  return (
-    <PlannedFeature
-      title="Workout"
-      subtitle="Log sets faster than typing them into Notes"
-      icon={<Dumbbell className="size-5" aria-hidden />}
-      points={[
-        'Start from today’s routine day or an empty workout',
-        'See last time’s sets next to every exercise, and copy them in one tap',
-        'Log weight, reps and effort with a keyboard-friendly number pad',
-        'Built-in rest timer with 60, 90, 120 and 180 second presets',
-        'Your workout is saved on the device as you go, so a refresh or lost signal loses nothing',
-      ]}
-    />
-  );
-}
 
 export function ProgressPage() {
   return (

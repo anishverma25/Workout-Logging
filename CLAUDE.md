@@ -17,12 +17,26 @@ Read README.md for setup, architecture and calculation rules.
 - Schema changes: add a new Dexie version with a migration; never edit version 1.
 - Every new record: client UUID, timestamps, `deletedAt`, `origin`.
 
+## Writing data
+
+- All domain writes go through `src/data/repositories/write.ts` (`putRecords`, `patchRecord`,
+  `softDelete`). It stamps `updatedAt`, soft deletes, and queues the outbox for sync in the same
+  transaction. Repositories that use it must include `db.outbox` in their transaction tables.
+- Workouts snapshot exercise names and routine targets. Routine code never touches workout tables.
+- Sheets: form state lives in a component mounted only while the sheet is open
+  (`return open ? <Form/> : null`), so it starts fresh without reset effects.
+
+## Testing
+
+- `pnpm check` (typecheck, lint, unit tests, build) and `pnpm test:e2e` (mobile and desktop).
+- In a sandbox that cannot download Playwright's browser, point `PW_CHROMIUM_PATH` at a local
+  Chromium, for example `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
+
 ## Status
 
-- Phase 1 done: tooling, tokens, UI primitives, shell (bottom nav and sidebar), Home dashboard,
-  data layer, analytics core, demo data engine, Settings (theme, units, storage, demo data),
-  read-only Routines and History.
-- Phase 1 verification was done in a session without npm access, using a temporary esbuild preview.
-  First run in a normal environment: install dependencies (README), then `pnpm check` and
-  `pnpm test:e2e`, and visually confirm Barlow fonts load.
-- Next: Phase 2 (exercise library, custom exercises, routine builder).
+- Phase 1: tooling, tokens, primitives, shell, Home, data layer, analytics core, demo data.
+- Phase 2: exercise library (91, with instructions), search and filters, custom exercises,
+  routine builder with 7 templates.
+- Phase 3: workout logger (sets, previous performance, suggestions, rest timer, pause, finish,
+  discard, persistence) and the workout summary.
+- Next: Phase 4 (history timeline and detail, PR page, body metrics).

@@ -25,7 +25,10 @@ export interface SessionSpec {
   at: string;
   exercises: { key: string; sets: SetSpec[] }[];
   routineId?: string | null;
+  routineDayId?: string | null;
+  name?: string;
   minutes?: number;
+  pausedMinutes?: number;
 }
 
 /** Builds TrainingData from compact session descriptions. */
@@ -35,18 +38,20 @@ export function buildData(specs: SessionSpec[]): TrainingData {
   const sets: WorkoutSet[] = [];
   for (const spec of specs) {
     const workoutId = uuid();
-    const end = new Date(Date.parse(spec.at) + (spec.minutes ?? 60) * 60_000).toISOString();
+    const end = new Date(
+      Date.parse(spec.at) + ((spec.minutes ?? 60) + (spec.pausedMinutes ?? 0)) * 60_000,
+    ).toISOString();
     workouts.push({
       id: workoutId,
       ...meta(spec.at),
-      name: 'Session',
+      name: spec.name ?? 'Session',
       routineId: spec.routineId ?? null,
-      routineDayId: null,
+      routineDayId: spec.routineDayId ?? null,
       status: 'completed',
       startedAt: spec.at,
       endedAt: end,
       pausedAt: null,
-      pausedMs: 0,
+      pausedMs: (spec.pausedMinutes ?? 0) * 60_000,
       notes: null,
       timeZone: 'UTC',
     });

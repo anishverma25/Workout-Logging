@@ -164,6 +164,42 @@
   }
 }
 
+/* Completing a set: a quick press of the check and a brief glow on the row. */
+@keyframes check-pop {
+  0% {
+    transform: scale(0.82);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes row-flash {
+  from {
+    background-color: rgb(200 245 66 / 0.24);
+  }
+}
+.set-check {
+  animation: check-pop 0.26s var(--ease-snap);
+}
+.set-done {
+  animation: row-flash 0.6s ease-out;
+}
+@keyframes summary-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.06);
+  }
+}
+.summary-pop {
+  animation: summary-pop 0.45s var(--ease-snap) 0.05s both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

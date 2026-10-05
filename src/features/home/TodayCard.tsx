@@ -2,7 +2,8 @@ import { Link } from 'react-router';
 import { Check, Moon, Play, Plus } from 'lucide-react';
 import type { TodayPlan } from '@/domain/analytics/dashboard';
 import { sessionDurationMinutes } from '@/domain/analytics/sessions';
-import { ButtonLink } from '@/components/ui/Button';
+import { Button, ButtonLink } from '@/components/ui/Button';
+import { useStartWorkout } from '@/features/workout/StartWorkout';
 import { cn } from '@/lib/cn';
 import { formatRelativeDay, formatWeekday } from '@/lib/dates';
 import { formatCompact, formatDurationMinutes, pluralize } from '@/lib/format';
@@ -82,15 +83,7 @@ function Planned({ plan }: { plan: Extract<TodayPlan, { kind: 'planned' }> }) {
       {plan.lastSession ? (
         <p className="mt-1 text-sm text-faint">Last done {lastDoneLabel(plan.lastSession.date)}</p>
       ) : null}
-      <ButtonLink
-        to="/workout"
-        size="lg"
-        block
-        className="mt-5"
-        icon={<Play className="size-5 fill-current" aria-hidden />}
-      >
-        Start workout
-      </ButtonLink>
+      <StartButton dayId={plan.day.id} label={`Start ${plan.day.name}`} />
     </>
   );
 }
@@ -148,16 +141,7 @@ function Rest({ plan }: { plan: Extract<TodayPlan, { kind: 'rest' }> }) {
           ? `Nothing planned in ${plan.routineName} today. Next up: ${plan.next.day.name} on ${formatWeekday(plan.next.date)}.`
           : `Nothing planned in ${plan.routineName} today.`}
       </p>
-      <ButtonLink
-        to="/workout"
-        variant="secondary"
-        size="lg"
-        block
-        className="mt-5"
-        icon={<Plus className="size-5" aria-hidden />}
-      >
-        Start an empty workout
-      </ButtonLink>
+      <StartButton dayId={null} label="Start an empty workout" secondary />
     </>
   );
 }
@@ -174,19 +158,44 @@ function NoRoutine() {
         card show today’s plan.
       </p>
       <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-        <ButtonLink
-          to="/workout"
-          size="lg"
-          className="sm:flex-1"
-          icon={<Play className="size-5 fill-current" aria-hidden />}
-        >
-          Start workout
-        </ButtonLink>
+        <StartButton dayId={null} label="Start workout" className="sm:flex-1" />
         <ButtonLink to="/routines" variant="secondary" size="lg" className="sm:flex-1">
           Set up a routine
         </ButtonLink>
       </div>
     </>
+  );
+}
+
+function StartButton({
+  dayId,
+  label,
+  secondary,
+  className,
+}: {
+  dayId: string | null;
+  label: string;
+  secondary?: boolean;
+  className?: string;
+}) {
+  const start = useStartWorkout();
+  return (
+    <Button
+      size="lg"
+      block={!className}
+      variant={secondary ? 'secondary' : 'primary'}
+      className={className ?? 'mt-5'}
+      icon={
+        secondary ? (
+          <Plus className="size-5" aria-hidden />
+        ) : (
+          <Play className="size-5 fill-current" aria-hidden />
+        )
+      }
+      onClick={() => start(dayId)}
+    >
+      {label}
+    </Button>
   );
 }
 

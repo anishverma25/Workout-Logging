@@ -19,7 +19,11 @@ pnpm add -D vite @vitejs/plugin-react typescript @types/react @types/react-dom @
 pnpm exec playwright install chromium
 ```
 
-After that, `pnpm install` is enough (the lockfile pins everything).
+After that, `pnpm install` is enough (the lockfile pins everything). TypeScript is pinned to
+`~6.0` because typescript-eslint does not support 7.x yet.
+
+If Playwright cannot download its browser (some sandboxes block it), point it at a local Chromium:
+`PW_CHROMIUM_PATH=/path/to/chrome pnpm test:e2e`.
 
 ## Scripts
 
@@ -80,4 +84,5 @@ that every screen reads through the same tables:
 
 ## Status
 
-Phase 1 (foundation, design system, shell, Home, demo data) is in place. See `CLAUDE.md`.
+Phases 1 to 3 are in place: foundation, exercise library, routine builder, workout logger and
+summary. See `CLAUDE.md`.

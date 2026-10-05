@@ -6,6 +6,7 @@ import { useDemoStatus } from '@/data/hooks';
 import { APP_NAME, PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '../navigation';
 import { BrandMark } from './BrandMark';
 import { StartWorkoutProvider } from '@/features/workout/StartWorkout';
+import { WorkoutDock } from '@/features/workout/WorkoutDock';
 
 export function AppShell() {
   return (
@@ -20,6 +21,7 @@ export function AppShell() {
             <Suspense fallback={null}>
               <Outlet />
             </Suspense>
+            <WorkoutDock />
           </StartWorkoutProvider>
         </main>
       </div>
