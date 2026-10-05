@@ -20,7 +20,7 @@ describe('workout view sharing', () => {
       exerciseIdFor('pull-up'),
     ]);
     const first = await loadWorkoutCore(db, w.id);
-    const setA = (await db.sets.where('workoutExerciseId').equals(a!.id).first())!;
+    const setA = (await db.sets.where('workoutExerciseId').equals(a!.id).sortBy('order'))[0]!;
     await updateSet(db, setA.id, { weightKg: 80, reps: 5 });
     const second = shareWorkoutCore(first, await loadWorkoutCore(db, w.id))!;
 
