@@ -1,7 +1,7 @@
 import { buildData } from '@/test/fixtures';
 import type { Profile, RoutineDay, RoutineExercise } from '../models/schemas';
 import { buildSessions } from './sessions';
-import { cycleNext, plannedWeeklySets, weekRings, weeklyStreak } from './week';
+import { cycleNext, loggedDaysPerWeek, plannedWeeklySets, weekRings, weeklyStreak } from './week';
 
 const meta = {
   createdAt: '2026-01-01T00:00:00.000Z',
@@ -123,5 +123,22 @@ describe('cycle', () => {
     const s2 = buildSessions(buildData([bench('2026-10-05T10:00:00', 60, 'legs')]));
     expect(cycleNext(s2, days)?.id).toBe('push');
     expect(cycleNext([], days)).toBeNull();
+  });
+});
+
+describe('logged training days', () => {
+  it('averages the last four weeks once the history covers them', () => {
+    const recent = buildSessions(
+      buildData([
+        bench('2026-09-01T10:00:00'),
+        bench('2026-09-15T10:00:00'),
+        bench('2026-09-22T10:00:00'),
+        bench('2026-09-22T18:00:00'), // same day counts once
+        bench('2026-09-29T10:00:00'),
+        bench('2026-10-06T10:00:00'),
+      ]),
+    );
+    expect(loggedDaysPerWeek(recent, NOW)).toBe(1);
+    expect(loggedDaysPerWeek(recent.slice(2), NOW)).toBeNull();
   });
 });

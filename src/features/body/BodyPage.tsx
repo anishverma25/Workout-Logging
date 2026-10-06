@@ -28,6 +28,12 @@ import { pluralize } from '@/lib/format';
 import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { useNow } from '@/lib/useNow';
 import { BodyWeightSheet } from './BodyWeightSheet';
+import { BodyNumbers } from './BodyNumbers';
+import { MeasurementsSection } from './MeasurementsSection';
+import { bodySnapshot } from '@/domain/analytics/body';
+import { buildSessions } from '@/domain/analytics/sessions';
+import { loggedDaysPerWeek } from '@/domain/analytics/week';
+import { ageFromBirthDate } from '@/lib/dates';
 
 type Range = '30d' | '90d' | 'all';
 const RANGE_DAYS: Record<Exclude<Range, 'all'>, number> = { '30d': 30, '90d': 90 };
@@ -60,12 +66,33 @@ export function BodyPage() {
   }, [series, range, now]);
   const trend = bodyWeightTrend(inRange);
   const months = groupByMonth([...series].reverse());
+  const data = training.data;
+  const profile = data?.profile ?? null;
+  const snapshot = useMemo(
+    () =>
+      data
+        ? bodySnapshot({
+            profile,
+            age: profile?.birthDate ? ageFromBirthDate(profile.birthDate, now) : null,
+            bodyWeights: data.bodyWeights,
+            measurements: data.measurements,
+            loggedDaysPerWeek: loggedDaysPerWeek(buildSessions(data), now),
+            now,
+          })
+        : null,
+    [data, profile, now],
+  );
+  // The smoothed trend at each weigh-in, for the chart line.
+  const trendById = useMemo(
+    () => new Map((snapshot?.trend ?? []).map((t) => [t.date.getTime(), t.trendKg])),
+    [snapshot],
+  );
 
   return (
     <>
       <PageHeader
         title="Body metrics"
-        subtitle="Body weight over time. The trend matters more than any single weigh-in."
+        subtitle="Weight, measurements and the numbers worked out from them."
         actions={
           series.length > 0 ? (
             <Button
@@ -81,6 +108,19 @@ export function BodyPage() {
       />
       {training.status === 'loading' ? <Skeleton className="h-96" /> : null}
       {training.status === 'error' ? <ErrorState error={training.error} /> : null}
+
+      {snapshot && data ? (
+        <div className="mb-8">
+          <BodyNumbers
+            snapshot={snapshot}
+            goal={profile?.goal ?? null}
+            sex={profile?.sex ?? null}
+            heightCm={profile?.heightCm ?? null}
+            unit={unit}
+            hasProfile={!!profile}
+          />
+        </div>
+      ) : null}
 
       {training.status === 'success' && !summary ? (
         <EmptyState
@@ -103,7 +143,7 @@ export function BodyPage() {
                 Latest · {formatRelativeDay(new Date(summary.latest.measuredAt), now)}
               </p>
               <p className="mt-1 flex items-baseline gap-1.5">
-                <span className="font-display text-[2.3rem] font-bold leading-none">
+                <span className="tabular font-display text-[2.3rem] font-bold leading-none tracking-tight">
                   {formatWeightValue(summary.latest.weightKg, unit)}
                 </span>
                 <span className="text-lg text-muted">{unit}</span>
@@ -169,7 +209,7 @@ export function BodyPage() {
               </div>
               {inRange.length >= 2 ? (
                 <LineChart
-                  label={`Body weight in ${unit}: weigh-ins and ${ROLLING_WINDOW_DAYS}-day average`}
+                  label={`Body weight in ${unit}: weigh-ins and the smoothed trend`}
                   height={210}
                   series={[
                     {
@@ -183,15 +223,15 @@ export function BodyPage() {
                       })),
                     },
                     {
-                      id: 'avg',
-                      label: `${ROLLING_WINDOW_DAYS}-day average`,
+                      id: 'trend',
+                      label: 'Trend',
                       color: 'var(--chart-1)',
                       style: 'line',
                       points: inRange
-                        .filter((p) => p.averageKg !== null)
+                        .filter((p) => trendById.has(p.date.getTime()))
                         .map((p) => ({
                           x: p.date.getTime(),
-                          y: toDisplayWeight(p.averageKg!, unit),
+                          y: toDisplayWeight(trendById.get(p.date.getTime())!, unit),
                         })),
                     },
                   ]}
@@ -210,13 +250,25 @@ export function BodyPage() {
                 {trend
                   ? `Over ${pluralize(trend.days, 'day')}, your ${ROLLING_WINDOW_DAYS}-day average moved ${signed(trend.averageChangeKg, unit)}.`
                   : `A trend needs ${ROLLING_WINDOW_DAYS}-day averages at least a week apart in this range.`}{' '}
-                Day to day changes of a kilogram or so are normal and mostly water.
+                The line is a smoothed trend, so day to day swings of a kilogram or so (mostly
+                water) barely move it.
               </p>
             </Card>
           </div>
 
+          {data ? (
+            <MeasurementsSection
+              entries={data.measurements}
+              unit={prefs.lengthUnit}
+              sex={profile?.sex ?? null}
+            />
+          ) : null}
+
           <section aria-labelledby="weigh-ins" className="mt-8">
-            <h2 id="weigh-ins" className="mb-3 font-display text-xl font-semibold">
+            <h2
+              id="weigh-ins"
+              className="mb-3 font-display text-[1.3rem] font-semibold leading-tight tracking-tight"
+            >
               All weigh-ins
             </h2>
             <div className="flex flex-col gap-5">

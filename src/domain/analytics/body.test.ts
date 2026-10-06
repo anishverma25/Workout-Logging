@@ -1,7 +1,8 @@
-import type { BodyWeightEntry } from '../models/schemas';
+import type { BodyMeasurement, BodyWeightEntry } from '../models/schemas';
 import {
   activityFactor,
   bmi,
+  bodySnapshot,
   bmiBand,
   bmrKatch,
   bmrMifflin,
@@ -184,5 +185,84 @@ describe('latest measurements', () => {
     expect(latest.waistCm?.value).toBe(83);
     expect(latest.neckCm?.value).toBe(38);
     expect(latest.armCm).toBeNull();
+  });
+});
+
+describe('body snapshot', () => {
+  const m = (day: number, fields: Partial<BodyMeasurement>) => ({
+    id: crypto.randomUUID(),
+    createdAt: new Date(2026, 8, day).toISOString(),
+    updatedAt: new Date(2026, 8, day).toISOString(),
+    deletedAt: null,
+    origin: 'user' as const,
+    measuredAt: new Date(2026, 8, day, 7).toISOString(),
+    waistCm: null,
+    neckCm: null,
+    hipCm: null,
+    chestCm: null,
+    armCm: null,
+    thighCm: null,
+    calfCm: null,
+    bodyFatPct: null,
+    note: null,
+    ...fields,
+  });
+  const profile = {
+    sex: 'male' as const,
+    heightCm: 178,
+    goal: 'hypertrophy' as const,
+    experience: 'intermediate' as const,
+    dailyActivity: 'sitting' as const,
+    trainingDays: 4,
+  };
+  const weights = Array.from({ length: 20 }, (_, i) => entry(1 + i, 80));
+  const now = new Date(2026, 8, 21, 9);
+
+  it('combines the formulas and says which inputs are missing', () => {
+    const s = bodySnapshot({
+      profile,
+      age: 30,
+      bodyWeights: weights,
+      measurements: [m(10, { waistCm: 85, neckCm: 38 })],
+      loggedDaysPerWeek: null,
+      now,
+    });
+    expect(s.weightKg).toBe(80);
+    expect(s.bmi!.value).toBeCloseTo(25.25, 2);
+    expect(s.bmi!.band).toBe('over');
+    expect(s.bodyFat).toMatchObject({ source: 'navy' });
+    expect(s.bodyFat!.pct).toBeCloseTo(16.44, 1);
+    expect(s.leanKg).toBeCloseTo(80 * (1 - s.bodyFat!.pct / 100), 5);
+    expect(s.energy!.method).toBe('katch');
+    expect(s.rate?.verdict).toBe('too_slow');
+    expect(s.missing).toMatchObject({ height: false, sex: false, navy: false });
+  });
+
+  it('prefers a recent scale reading and shows nothing it cannot work out', () => {
+    const s = bodySnapshot({
+      profile,
+      age: 30,
+      bodyWeights: weights,
+      measurements: [m(10, { waistCm: 85, neckCm: 38 }), m(12, { bodyFatPct: 14 })],
+      loggedDaysPerWeek: null,
+      now,
+    });
+    expect(s.bodyFat).toMatchObject({ pct: 14, source: 'measured' });
+    const empty = bodySnapshot({
+      profile: null,
+      age: null,
+      bodyWeights: [],
+      measurements: [],
+      loggedDaysPerWeek: null,
+      now,
+    });
+    expect([empty.bmi, empty.bodyFat, empty.energy, empty.rate, empty.ffmi]).toEqual([
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
+    expect(empty.missing.weight).toBe(true);
   });
 });

@@ -119,3 +119,17 @@ export function cycleNext(sessions: Session[], days: RoutineDay[]): RoutineDay |
   const index = days.findIndex((d) => d.id === last.workout.routineDayId);
   return days[(index + 1) % days.length] ?? null;
 }
+
+/**
+ * Average training days a week over the last 4 weeks, from logged workouts. Null until the
+ * history covers all 4 weeks, so a new user's first week is not read as their routine.
+ */
+export function loggedDaysPerWeek(sessions: Session[], now: Date): number | null {
+  const first = sessions[0];
+  const start = addDays(now, -28);
+  if (!first || first.date > start) return null;
+  const days = new Set(
+    sessions.filter((s) => s.date > start && s.date <= now).map((s) => s.date.toDateString()),
+  );
+  return days.size / 4;
+}

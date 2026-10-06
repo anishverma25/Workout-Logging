@@ -355,3 +355,126 @@ export function latestMeasurements(entries: BodyMeasurement[]) {
     bodyFatPct: pick('bodyFatPct'),
   };
 }
+
+// ---------------------------------------------------------------------------------------------
+// Everything at once, for the body page
+// ---------------------------------------------------------------------------------------------
+
+export interface BodySnapshot {
+  weightKg: number | null;
+  age: number | null;
+  bmi: { value: number; band: BmiBand; asianBand: BmiBand } | null;
+  bodyFat: { pct: number; source: 'measured' | 'navy'; at: Date } | null;
+  leanKg: number | null;
+  ffmi: { value: number; normalized: number } | null;
+  energy: EnergyPlan | null;
+  trend: TrendPoint[];
+  rate: { kgPerWeek: number; verdict: RateVerdict; target: [number, number] } | null;
+  /** What to add to unlock each number, for the empty states. */
+  missing: {
+    weight: boolean;
+    height: boolean;
+    sex: boolean;
+    age: boolean;
+    trainingDays: boolean;
+    navy: boolean;
+  };
+}
+
+/** A body-fat reading from a scale or scan counts for 60 days before the tape estimate wins. */
+export const MEASURED_FAT_DAYS = 60;
+
+export function bodySnapshot(input: {
+  profile: {
+    sex?: Sex | null;
+    heightCm?: number | null;
+    goal: Goal;
+    experience: Experience;
+    dailyActivity?: DailyActivity | null;
+    trainingDays?: number | null;
+  } | null;
+  age: number | null;
+  bodyWeights: BodyWeightEntry[];
+  measurements: BodyMeasurement[];
+  loggedDaysPerWeek: number | null;
+  now: Date;
+}): BodySnapshot {
+  const { profile, age, now } = input;
+  const trend = weightTrend(input.bodyWeights);
+  const latest = trend[trend.length - 1] ?? null;
+  // The smoothed trend is a steadier basis for the formulas than one weigh-in.
+  const weightKg = latest ? latest.trendKg : null;
+  const heightCm = profile?.heightCm ?? null;
+  const m = latestMeasurements(input.measurements);
+
+  let bodyFat: BodySnapshot['bodyFat'] = null;
+  const measured = m.bodyFatPct;
+  const navyAt = [m.waistCm?.at, m.neckCm?.at].filter(Boolean) as Date[];
+  const navy = navyBodyFat({
+    sex: profile?.sex,
+    heightCm,
+    waistCm: m.waistCm?.value ?? null,
+    neckCm: m.neckCm?.value ?? null,
+    hipCm: m.hipCm?.value ?? null,
+  });
+  if (measured && now.getTime() - measured.at.getTime() <= MEASURED_FAT_DAYS * 86_400_000)
+    bodyFat = { pct: measured.value, source: 'measured', at: measured.at };
+  else if (navy !== null)
+    bodyFat = {
+      pct: navy,
+      source: 'navy',
+      at: new Date(Math.min(...navyAt.map((d) => d.getTime()))),
+    };
+  else if (measured) bodyFat = { pct: measured.value, source: 'measured', at: measured.at };
+
+  const leanKg = weightKg !== null && bodyFat ? leanMassKg(weightKg, bodyFat.pct) : null;
+  const rateValue = weeklyRate(trend, now);
+  return {
+    weightKg,
+    age,
+    bmi:
+      weightKg !== null && heightCm
+        ? {
+            value: bmi(weightKg, heightCm),
+            band: bmiBand(bmi(weightKg, heightCm)),
+            asianBand: bmiBand(bmi(weightKg, heightCm), true),
+          }
+        : null,
+    bodyFat,
+    leanKg,
+    ffmi:
+      leanKg !== null && heightCm
+        ? { value: ffmi(leanKg, heightCm), normalized: normalizedFfmi(leanKg, heightCm) }
+        : null,
+    energy: profile
+      ? energyPlan({
+          sex: profile.sex,
+          age,
+          heightCm,
+          weightKg,
+          bodyFatPct: bodyFat?.pct ?? null,
+          goal: profile.goal,
+          dailyActivity: profile.dailyActivity,
+          plannedDays: profile.trainingDays,
+          loggedDaysPerWeek: input.loggedDaysPerWeek,
+        })
+      : null,
+    trend,
+    rate:
+      rateValue !== null && weightKg !== null && profile
+        ? {
+            kgPerWeek: rateValue,
+            verdict: rateVerdict(rateValue, weightKg, profile.goal, profile.experience),
+            target: targetRate(profile.goal, profile.experience),
+          }
+        : null,
+    missing: {
+      weight: weightKg === null,
+      height: !heightCm,
+      sex: !profile?.sex || profile.sex === 'unspecified',
+      age: age === null,
+      trainingDays: !profile?.trainingDays && input.loggedDaysPerWeek === null,
+      navy: !m.waistCm || !m.neckCm || (profile?.sex === 'female' && !m.hipCm),
+    },
+  };
+}

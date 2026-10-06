@@ -124,7 +124,7 @@ function Form({ entry, defaultUnit, lastKg, onClose }: Props) {
               value={date}
               max={today}
               onChange={(e) => setDate(e.target.value)}
-              className="h-12 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3.5 text-[1rem] outline-none focus:border-accent-text"
+              className="h-12 rounded-[var(--radius-control)] border border-transparent bg-surface-2 px-3.5 text-[1rem] outline-none focus:border-accent-text"
             />
           </div>
           <TextArea
