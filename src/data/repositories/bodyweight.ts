@@ -22,7 +22,7 @@ const MAX_KG = 400;
  * When a weigh-in happened. Today means now; another day keeps its existing time when editing,
  * or 8:00 local (a typical morning weigh-in) for a new entry.
  */
-function measuredAtFor(date: string, now: Date, keepTimeFrom?: string): string {
+export function measuredAtFor(date: string, now: Date, keepTimeFrom?: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BodyWeightError('Pick a date.');
   const [y, m, d] = date.split('-').map(Number) as [number, number, number];
   if (keepTimeFrom && toDateKey(new Date(keepTimeFrom)) === date) return keepTimeFrom;

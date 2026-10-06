@@ -23,6 +23,8 @@ function twoYears(now: Date): TrainingData {
     workoutExercises: [],
     sets: [],
     bodyWeights: [],
+    measurements: [],
+    goals: [],
   };
   for (let block = 0; block < 21; block++) {
     const shifted = new Date(now.getTime() - block * 35 * 86_400_000);

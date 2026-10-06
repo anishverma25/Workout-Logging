@@ -16,7 +16,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function signUp(page: Page, email: string) {
-  await page.goto('/sign-up');
+  await page.goto('/sign-up?next=/account');
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();

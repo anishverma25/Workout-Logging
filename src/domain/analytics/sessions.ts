@@ -1,10 +1,12 @@
 import type {
+  BodyMeasurement,
   BodyWeightEntry,
   Exercise,
   Profile,
   Routine,
   RoutineDay,
   RoutineExercise,
+  TrainingGoal,
   Workout,
   WorkoutExercise,
   WorkoutSet,
@@ -21,6 +23,8 @@ export interface TrainingData {
   workoutExercises: WorkoutExercise[];
   sets: WorkoutSet[];
   bodyWeights: BodyWeightEntry[];
+  measurements: BodyMeasurement[];
+  goals: TrainingGoal[];
 }
 
 export interface SessionExercise {

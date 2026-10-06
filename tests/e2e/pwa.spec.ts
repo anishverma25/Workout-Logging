@@ -92,7 +92,7 @@ test('opens and works offline after the first visit', async ({ page, context }) 
 test('caches only the app itself, never account or training data from the server', async ({
   page,
 }) => {
-  await page.goto('/sign-up');
+  await page.goto('/sign-up?next=/account');
   await waitForServiceWorker(page);
   await page.getByRole('textbox', { name: 'Email' }).fill(`pwa-${Date.now()}@example.com`);
   await page.getByLabel('Password', { exact: true }).fill('correct-horse-9');

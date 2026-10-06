@@ -20,6 +20,7 @@ export interface GuestDataSummary {
   routines: number;
   customExercises: number;
   bodyWeights: number;
+  measurements: number;
   hasActiveWorkout: boolean;
 }
 
@@ -33,12 +34,15 @@ export async function summarizeGuestData(guest: WorkoutDatabase): Promise<GuestD
     routines: live(await guest.routines.where('origin').equals('user').toArray()).length,
     customExercises: live(await guest.exercises.where('origin').equals('user').toArray()).length,
     bodyWeights: live(await guest.bodyWeights.where('origin').equals('user').toArray()).length,
+    measurements: live(await guest.bodyMeasurements.where('origin').equals('user').toArray())
+      .length,
     hasActiveWorkout: workouts.some((w) => w.status === 'in_progress'),
   };
 }
 
 export const hasGuestData = (s: GuestDataSummary) =>
-  s.workouts + s.routines + s.customExercises + s.bodyWeights > 0 || s.hasActiveWorkout;
+  s.workouts + s.routines + s.customExercises + s.bodyWeights + s.measurements > 0 ||
+  s.hasActiveWorkout;
 
 /** Whether the person already answered the import question for this account. */
 export async function migrationHandled(guest: WorkoutDatabase, userId: string): Promise<boolean> {
@@ -101,7 +105,16 @@ export async function copyGuestData(
     weIds.has(s.workoutExerciseId),
   );
   const bodyWeights = await own<SyncedRecord>('bodyWeights');
+  const measurements = await own<SyncedRecord>('bodyMeasurements');
   const profiles = await own<SyncedRecord>('profiles');
+  const exerciseIds = new Set([
+    ...(await account.exercises.toCollection().primaryKeys()),
+    ...exercises.map((e) => e.id),
+  ]);
+  // A goal on a demo-only exercise cannot come along without it.
+  const goals = (await own<SyncedRecord & { exerciseId: string | null }>('goals')).filter(
+    (g) => g.exerciseId === null || exerciseIds.has(g.exerciseId),
+  );
 
   const plan: [DomainTable, SyncedRecord[]][] = [
     ['profiles', profiles],
@@ -113,6 +126,8 @@ export async function copyGuestData(
     ['workoutExercises', workoutExercises],
     ['sets', sets],
     ['bodyWeights', bodyWeights],
+    ['bodyMeasurements', measurements],
+    ['goals', goals],
   ];
 
   // Read before the account transaction: awaiting another database inside it would end it.

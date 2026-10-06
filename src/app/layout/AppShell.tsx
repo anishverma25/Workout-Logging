@@ -145,11 +145,7 @@ function BottomNav() {
                   active ? 'text-accent-text' : 'text-faint',
                 )}
               >
-                <Icon
-                  className="size-[1.45rem]"
-                  aria-hidden
-                  strokeWidth={active ? 2.3 : 1.85}
-                />
+                <Icon className="size-[1.45rem]" aria-hidden strokeWidth={active ? 2.3 : 1.85} />
                 <span>{item.label}</span>
               </NavLink>
             </li>

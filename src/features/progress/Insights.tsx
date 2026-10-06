@@ -27,10 +27,7 @@ export function InsightList({ insights }: { insights: Insight[] }) {
         const tone = INSIGHT_TONE[insight.tone];
         const Icon = tone.icon;
         return (
-          <li
-            key={insight.id}
-            className="rounded-[var(--radius-card)] bg-surface p-4"
-          >
+          <li key={insight.id} className="rounded-[var(--radius-card)] bg-surface p-4">
             <div className="flex gap-3">
               <span
                 className={cn(

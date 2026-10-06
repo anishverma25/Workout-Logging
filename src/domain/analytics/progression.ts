@@ -1,4 +1,10 @@
-import type { Exercise, TargetSnapshot, TrackingType, WorkoutSet } from '../models/schemas';
+import type {
+  Exercise,
+  Experience,
+  TargetSnapshot,
+  TrackingType,
+  WorkoutSet,
+} from '../models/schemas';
 import type { Session } from './sessions';
 
 export interface ProgressionSuggestion {
@@ -34,6 +40,7 @@ const RIR_TOLERANCE = 0.5;
 export function progressionSuggestions(
   sessions: Session[],
   exercises: Exercise[],
+  style: ProgressionStyle = 'double',
 ): ProgressionSuggestion[] {
   const byId = new Map(exercises.map((e) => [e.id, e]));
   const latest = new Map<string, { session: Session; index: number }>();
@@ -51,7 +58,7 @@ export function progressionSuggestions(
     const target = ex.workoutExercise.target;
     const exercise = byId.get(exerciseId);
     if (!target || !exercise) continue;
-    const check = checkProgression(target, ex.sets, exercise.trackingType);
+    const check = checkProgression(target, ex.sets, exercise.trackingType, style);
     if (!check) continue;
     const { working, effort } = check;
 
@@ -77,13 +84,16 @@ export function checkProgression(
   target: TargetSnapshot,
   sets: WorkoutSet[],
   tracking: TrackingType,
+  /** linear: add load once every set reaches the bottom of the range (beginners). */
+  style: ProgressionStyle = 'double',
 ): { working: WorkoutSet[]; effort: ProgressionSuggestion['effort'] } | null {
   if (tracking !== 'weight_reps' && tracking !== 'weighted_bodyweight') return null;
   const working = sets
     .filter((s) => s.completedAt !== null && s.setType === 'working')
     .slice(0, target.sets);
   if (working.length < target.sets) return null;
-  if (working.some((s) => s.reps === null || s.reps < target.repMax || s.weightKg === null)) {
+  const needed = style === 'linear' ? target.repMin : target.repMax;
+  if (working.some((s) => s.reps === null || s.reps < needed || s.weightKg === null)) {
     return null;
   }
   if (tracking === 'weight_reps' && working.some((s) => (s.weightKg ?? 0) <= 0)) return null;
@@ -94,4 +104,34 @@ export function checkProgression(
     if (logged.length === 0) effort = 'unknown';
   }
   return { working, effort };
+}
+
+/**
+ * How load goes up, by experience. Beginners progress linearly: once every set reaches the
+ * planned reps, add weight next session. Intermediate and advanced lifters use double
+ * progression: first reach the top of the rep range in every set, then add weight and start
+ * again from the bottom of the range.
+ */
+export type ProgressionStyle = 'linear' | 'double';
+
+export const progressionStyle = (experience: Experience | null | undefined): ProgressionStyle =>
+  experience === 'beginner' ? 'linear' : 'double';
+
+const LOWER_BODY = new Set(['quads', 'hamstrings', 'glutes']);
+
+/**
+ * The smallest sensible jump in load, in the display unit: 5 kg (10 lb) on lower-body barbell
+ * lifts for beginners, otherwise 2.5 kg (5 lb), the usual smallest plate pair or dumbbell step.
+ */
+export function loadIncrement(
+  exercise: Pick<Exercise, 'equipment' | 'primaryMuscle'> | undefined,
+  experience: Experience | null | undefined,
+  unit: 'kg' | 'lb',
+): number {
+  const big =
+    experience === 'beginner' &&
+    exercise?.equipment === 'barbell' &&
+    LOWER_BODY.has(exercise.primaryMuscle);
+  if (unit === 'lb') return big ? 10 : 5;
+  return big ? 5 : 2.5;
 }

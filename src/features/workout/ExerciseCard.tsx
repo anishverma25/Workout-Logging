@@ -22,9 +22,14 @@ import {
   updateSet,
   updateWorkoutExerciseNotes,
 } from '@/data/repositories/workouts';
-import { checkProgression } from '@/domain/analytics/progression';
+import {
+  checkProgression,
+  loadIncrement,
+  progressionStyle,
+} from '@/domain/analytics/progression';
+import { fromDisplayWeight, toDisplayWeight } from '@/lib/units';
 import { useFeature } from '@/app/entitlement';
-import type { Preferences, WorkoutSet } from '@/domain/models/schemas';
+import type { Experience, Preferences, WorkoutSet } from '@/domain/models/schemas';
 import { matchingPreviousSet, suggestFor } from '@/domain/workout/previous';
 import {
   differenceInCalendarDays,
@@ -45,10 +50,12 @@ interface Props {
   index: number;
   count: number;
   prefs: Preferences;
+  /** Sets how load goes up (linear for beginners, double progression otherwise). */
+  experience: Experience | null;
   onSetCompleted: (set: WorkoutSet, view: WorkoutExerciseView) => void;
 }
 
-function ExerciseCardImpl({ view, index, count, prefs, onSetCompleted }: Props) {
+function ExerciseCardImpl({ view, index, count, prefs, experience, onSetCompleted }: Props) {
   const { workoutExercise: we, exercise, sets, previous } = view;
   const tracking = trackingOf(exercise);
   const cols = columnsFor(tracking, prefs.weightUnit);
@@ -75,8 +82,25 @@ function ExerciseCardImpl({ view, index, count, prefs, onSetCompleted }: Props) 
     previous &&
     target &&
     we.exerciseId === previous.workoutExercise.exerciseId
-      ? checkProgression(target, previous.sets, tracking)
+      ? checkProgression(target, previous.sets, tracking, progressionStyle(experience))
       : null;
+  // Suggested next load: the heaviest working set last time plus the smallest sensible jump.
+  const unit = prefs.weightUnit;
+  const nextLoad = (() => {
+    if (!readyToProgress || tracking !== 'weight_reps') return null;
+    const heaviest = Math.max(...readyToProgress.working.map((s) => s.weightKg ?? 0));
+    const step = loadIncrement(exercise, experience, unit);
+    const shown = Math.round(toDisplayWeight(heaviest, unit) / step) * step + step;
+    return { shown, step, kg: fromDisplayWeight(shown, unit) };
+  })();
+  const fillable = emptySets.filter((s) => s.setType === 'working');
+
+  async function applyNextLoad() {
+    if (!nextLoad || !target) return;
+    for (const s of fillable) {
+      await updateSet(db, s.id, { weightKg: nextLoad.kg, reps: target.repMin });
+    }
+  }
   const canCopy = previous && emptySets.some((s) => matchingPreviousSet(prevSets, sets, s.id));
 
   const onCompleted = useCallback(
@@ -138,14 +162,30 @@ function ExerciseCardImpl({ view, index, count, prefs, onSetCompleted }: Props) 
       ) : null}
 
       {readyToProgress ? (
-        <p className="mx-4 mt-3 flex items-start gap-2 rounded-xl bg-accent-soft px-3 py-2 text-sm">
-          <TrendingUp className="mt-0.5 size-4 shrink-0 text-accent-text" aria-hidden />
-          <span>
-            Last time every set reached the top of the range
-            {readyToProgress.effort === 'met' ? ' at the planned effort' : ''}. Consider a little
-            more load today.
-          </span>
-        </p>
+        <div className="mx-4 mt-3 rounded-xl bg-accent-soft px-3 py-2.5 text-sm">
+          <p className="flex items-start gap-2">
+            <TrendingUp className="mt-0.5 size-4 shrink-0 text-accent-text" aria-hidden />
+            <span>
+              Last time every set reached{' '}
+              {progressionStyle(experience) === 'linear'
+                ? `${target!.repMin} reps`
+                : 'the top of the range'}
+              {readyToProgress.effort === 'met' ? ' at the planned effort' : ''}.{' '}
+              {nextLoad
+                ? `Add ${nextLoad.step} ${unit} today: ${nextLoad.shown} ${unit} for ${target!.repMin} reps.`
+                : 'Consider a little more load today.'}
+            </span>
+          </p>
+          {nextLoad && fillable.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => void applyNextLoad()}
+              className="ml-6 mt-1.5 inline-flex h-8 items-center rounded-full bg-accent px-3 text-[0.8125rem] font-semibold text-accent-ink"
+            >
+              Use {nextLoad.shown} {unit}
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="mx-4 mt-3 flex min-h-8 items-center justify-between gap-2 text-sm">

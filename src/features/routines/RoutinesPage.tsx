@@ -10,7 +10,10 @@ import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
-import { usePreferences, useTrainingData } from '@/data/hooks';
+import { usePreferences, useProfile, useTrainingData } from '@/data/hooks';
+import { recommendProgram } from '@/data/library/programs';
+import { Switch } from '@/components/ui/List';
+import { EQUIPMENT_LABEL, EXPERIENCE_LABEL, GOAL_LABEL } from '@/domain/models/labels';
 import {
   createRoutineFromTemplate,
   deleteRoutine,
@@ -156,9 +159,7 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
                 name ? 'bg-surface-2' : 'border border-dashed border-line',
               )}
             >
-              <span className="text-[0.7rem] font-medium text-faint">
-                {weekdayShortName(w)}
-              </span>
+              <span className="text-[0.7rem] font-medium text-faint">{weekdayShortName(w)}</span>
               <span className="w-full truncate px-1 text-xs font-semibold">
                 {name ?? <span className="sr-only">Rest</span>}
               </span>
@@ -225,8 +226,6 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
 }
 
 export function NewRoutineSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const navigate = useNavigate();
-  const [busy, setBusy] = useState(false);
   return (
     <Sheet
       open={open}
@@ -235,35 +234,97 @@ export function NewRoutineSheet({ open, onClose }: { open: boolean; onClose: () 
       title="New routine"
       description="Templates are starting points, not prescriptions. Every day, exercise and target is yours to change."
     >
-      <ul className="grid gap-2.5 sm:grid-cols-2">
-        {ROUTINE_TEMPLATES.map((t) => (
-          <li key={t.key}>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  const r = await createRoutineFromTemplate(db, t.key);
-                  onClose();
-                  navigate(`/routines/${r.id}`);
-                } finally {
-                  setBusy(false);
-                }
-              }}
-              className="flex h-full w-full flex-col items-start gap-1 rounded-2xl bg-surface-2 p-4 text-left transition-colors hover:border-line-strong hover:bg-surface-2"
-            >
-              <span className="flex w-full items-baseline justify-between gap-2">
-                <span className="font-display text-xl font-semibold">{t.name}</span>
-                <span className="shrink-0 text-sm text-faint">
-                  {t.daysPerWeek ? `${t.daysPerWeek} days a week` : 'Blank'}
-                </span>
-              </span>
-              <span className="text-sm text-muted">{t.summary}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      {open ? <TemplatePicker onClose={onClose} /> : null}
     </Sheet>
+  );
+}
+
+function TemplatePicker({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
+  const profile = useProfile().data;
+  const own = profile?.origin === 'user' ? profile : null;
+  const [busy, setBusy] = useState(false);
+  const [fit, setFit] = useState(!!own);
+  const recommendation = own ? recommendProgram(own) : null;
+  const ordered = recommendation
+    ? [
+        recommendation.template,
+        ...ROUTINE_TEMPLATES.filter((t) => t.key !== recommendation.template.key),
+      ]
+    : ROUTINE_TEMPLATES;
+
+  return (
+    <>
+      {own ? (
+        <div className="mb-4 flex items-center justify-between gap-4 rounded-2xl bg-surface-2 px-4 py-3">
+          <div className="min-w-0">
+            <p className="font-medium">Fit to my profile</p>
+            <p className="text-sm text-faint">
+              Reps and rest for {GOAL_LABEL[own.goal].toLowerCase()}, sets for{' '}
+              {EXPERIENCE_LABEL[own.experience].toLowerCase()}
+              {own.equipment && own.equipment !== 'full_gym'
+                ? `, exercises for ${EQUIPMENT_LABEL[own.equipment].toLowerCase()}`
+                : ''}
+              {own.sessionMinutes ? `, about ${own.sessionMinutes} minutes a session` : ''}.
+            </p>
+          </div>
+          <Switch checked={fit} onChange={setFit} label="Fit to my profile" />
+        </div>
+      ) : null}
+      <ul className="grid gap-2.5 sm:grid-cols-2">
+        {ordered.map((t) => {
+          const recommended = recommendation?.template.key === t.key;
+          return (
+            <li key={t.key} className={cn(recommended && 'sm:col-span-2')}>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const r = await createRoutineFromTemplate(
+                      db,
+                      t.key,
+                      undefined,
+                      fit && own
+                        ? {
+                            goal: own.goal,
+                            experience: own.experience,
+                            equipment: own.equipment ?? null,
+                            sessionMinutes: own.sessionMinutes ?? null,
+                          }
+                        : undefined,
+                    );
+                    onClose();
+                    navigate(`/routines/${r.id}`);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+                className={cn(
+                  'flex h-full w-full flex-col items-start gap-1 rounded-2xl bg-surface-2 p-4 text-left ring-2 transition-colors hover:bg-surface-3',
+                  recommended ? 'ring-accent-text' : 'ring-transparent',
+                )}
+              >
+                {recommended ? (
+                  <Badge tone="accent" className="mb-1">
+                    Recommended for you
+                  </Badge>
+                ) : null}
+                <span className="flex w-full items-baseline justify-between gap-2">
+                  <span className="font-display text-xl font-semibold">{t.name}</span>
+                  <span className="shrink-0 text-sm text-faint">
+                    {t.daysPerWeek ? `${t.daysPerWeek} days a week` : 'Blank'}
+                  </span>
+                </span>
+                <span className="text-sm text-muted">
+                  {recommended ? recommendation!.reason : t.summary}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }

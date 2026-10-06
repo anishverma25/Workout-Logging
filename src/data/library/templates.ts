@@ -81,13 +81,93 @@ const legs = (weekdays: number[]): TemplateDay => ({
   ],
 });
 
+/** Lighter upper day for the 5-day hybrids: different angles and more reps than Push and Pull. */
+const upperVolume = (weekdays: number[]): TemplateDay => ({
+  name: 'Upper',
+  weekdays,
+  exercises: [
+    c('incline-barbell-bench-press', 3, 8, 10),
+    c('chest-supported-row', 3, 8, 12),
+    c('machine-shoulder-press', 3, 10, 12),
+    c('close-grip-lat-pulldown', 3, 10, 12),
+    i('cable-fly', 2, 12, 15),
+    i('incline-dumbbell-curl', 2, 10, 15),
+    i('overhead-triceps-extension', 2, 10, 15),
+  ],
+});
+/** Lower day for the 5-day hybrids: hinge and single-leg focus, so legs are hit two ways. */
+const lowerVolume = (weekdays: number[]): TemplateDay => ({
+  name: 'Lower',
+  weekdays,
+  exercises: [
+    c('romanian-deadlift', 3, 6, 10, 2, 180),
+    c('hack-squat', 3, 8, 12),
+    c('bulgarian-split-squat', 3, 8, 12),
+    i('seated-leg-curl', 3, 10, 15),
+    i('seated-calf-raise', 3, 12, 15),
+    i('hanging-leg-raise', 2, 8, 15),
+  ],
+});
+
 export const ROUTINE_TEMPLATES: RoutineTemplate[] = [
   {
     key: 'ppl',
     name: 'Push Pull Legs',
-    summary: 'Each day twice a week. Pressing, pulling and legs on separate days.',
+    summary: 'Six days. Pressing, pulling and legs on separate days, each twice a week.',
     daysPerWeek: 6,
     days: [push([1, 4]), pull([2, 5]), legs([3, 6])],
+  },
+  {
+    key: 'pplul',
+    name: 'Push Pull Legs Upper Lower',
+    summary:
+      'Five days. Push, pull and legs, then an upper and a lower day, so every muscle is trained twice a week.',
+    daysPerWeek: 5,
+    days: [push([1]), pull([2]), legs([3]), upperVolume([5]), lowerVolume([6])],
+  },
+  {
+    key: 'ulppl',
+    name: 'Upper Lower Push Pull Legs',
+    summary:
+      'Five days. The same sessions as PPLUL in a different order: upper and lower first, then push, pull, legs.',
+    daysPerWeek: 5,
+    days: [upperVolume([1]), lowerVolume([2]), push([4]), pull([5]), legs([6])],
+  },
+  {
+    key: 'ppl-3',
+    name: 'Push Pull Legs, 3 days',
+    summary: 'Three days. Each session once a week: a simple start, or for a busy week.',
+    daysPerWeek: 3,
+    days: [push([1]), pull([3]), legs([5])],
+  },
+  {
+    key: 'beginner-full-body',
+    name: 'Beginner full body',
+    summary:
+      'Three days, two alternating workouts built on the main lifts. Add weight whenever every set hits its reps.',
+    daysPerWeek: 3,
+    days: [
+      {
+        name: 'Workout A',
+        weekdays: [1, 5],
+        exercises: [
+          c('back-squat', 3, 5, 8, 2, 180),
+          c('barbell-bench-press', 3, 5, 8, 2, 180),
+          c('barbell-row', 3, 6, 10),
+          i('plank', 2, 30, 60, null, 60),
+        ],
+      },
+      {
+        name: 'Workout B',
+        weekdays: [3],
+        exercises: [
+          c('romanian-deadlift', 3, 6, 10, 2, 180),
+          c('overhead-press', 3, 5, 8, 2, 180),
+          c('lat-pulldown', 3, 8, 12),
+          c('goblet-squat', 2, 10, 12),
+        ],
+      },
+    ],
   },
   {
     key: 'upper-lower',

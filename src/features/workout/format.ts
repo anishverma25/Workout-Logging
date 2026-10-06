@@ -27,6 +27,8 @@ export function columnsFor(tracking: TrackingType, unit: WeightUnit): Columns {
       return { load: null, amount: 'Sec', amountField: 'durationSec', showEffort: false };
     case 'distance':
       return { load: null, amount: 'm', amountField: 'distanceM', showEffort: false };
+    case 'cardio':
+      return { load: null, amount: 'Sec', amountField: 'durationSec', showEffort: false };
   }
 }
 
@@ -59,6 +61,8 @@ export function formatSetValues(
       return `${set.durationSec ?? '?'} s`;
     case 'distance':
       return `${set.distanceM ?? '?'} m`;
+    case 'cardio':
+      return `${set.durationSec ?? '?'} s`;
   }
 }
 

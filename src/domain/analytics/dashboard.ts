@@ -26,6 +26,7 @@ import {
   type TrainingData,
 } from './sessions';
 import { strengthTrends, type StrengthTrend } from './strength';
+import { cycleNext, weekRings, weeklyStreak, type WeekRings } from './week';
 import { sessionVolumeLoad, totalVolumeLoad } from './volume';
 
 export const RECENT_DAYS = 7;
@@ -48,9 +49,16 @@ export type TodayPlan =
       exercises: PlannedExercise[];
       lastSession: Session | null;
       estimatedMinutes: number | null;
+      /** What comes next in the routine's order, when that is not today's planned day. */
+      cycleNext: RoutineDay | null;
     }
   | { kind: 'done'; session: Session; volumeKg: number; workingSets: number }
-  | { kind: 'rest'; next: { day: RoutineDay; date: Date } | null; routineName: string }
+  | {
+      kind: 'rest';
+      next: { day: RoutineDay; date: Date } | null;
+      routineName: string;
+      cycleNext: RoutineDay | null;
+    }
   | { kind: 'no_routine' };
 
 export interface RecentWorkout {
@@ -63,6 +71,8 @@ export interface RecentWorkout {
 
 export interface DashboardModel {
   hasTrainingData: boolean;
+  week: WeekRings;
+  streak: { weeks: number; currentWeekMet: boolean };
   today: TodayPlan;
   recentWindow: {
     days: DayStatus[];
@@ -125,6 +135,7 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
   } else if (!routine) {
     todayPlan = { kind: 'no_routine' };
   } else if (plannedToday) {
+    const next = cycleNext(sessions, days);
     const lastSession =
       [...sessions].reverse().find((s) => s.workout.routineDayId === plannedToday.id) ?? null;
     todayPlan = {
@@ -134,10 +145,24 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
       exercises: plannedExercises(plannedToday, data.routineExercises, names),
       lastSession,
       estimatedMinutes: lastSession ? sessionDurationMinutes(lastSession) : null,
+      cycleNext: next && next.id !== plannedToday.id ? next : null,
     };
   } else {
-    todayPlan = { kind: 'rest', next: nextPlannedDay(now, days), routineName: routine.name };
+    todayPlan = {
+      kind: 'rest',
+      next: nextPlannedDay(now, days),
+      routineName: routine.name,
+      cycleNext: cycleNext(sessions, days),
+    };
   }
+  const week = weekRings(
+    sessions,
+    data.profile,
+    days,
+    data.routineExercises,
+    now,
+    prefs.weekStartsOn,
+  );
 
   // Rolling recent window: the last 7 days including today.
   const recentStart = addDays(today, -(RECENT_DAYS - 1));
@@ -203,6 +228,8 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
 
   return {
     hasTrainingData: sessions.length > 0,
+    week,
+    streak: weeklyStreak(sessions, week.sessions.target, now, prefs.weekStartsOn),
     today: todayPlan,
     recentWindow: {
       days: dayStatuses(sessions, days, recentStart, RECENT_DAYS, now),

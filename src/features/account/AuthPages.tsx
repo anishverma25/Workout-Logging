@@ -181,7 +181,9 @@ export function SignUpPage() {
   const { busy, error, onSubmit } = useSubmit(async () => {
     const result = await signUp(email.trim(), password);
     if (result === 'confirm') setSentTo(email.trim());
-    else navigate(next, { replace: true });
+    // A brand-new account starts with setup, unless the person was on their way somewhere.
+    else if (params.get('next')) navigate(next, { replace: true });
+    else navigate('/setup?next=/', { replace: true });
   });
 
   if (account.status === 'unavailable') return <AccountsUnavailable />;

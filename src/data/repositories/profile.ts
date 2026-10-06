@@ -7,6 +7,12 @@ export interface ProfileInput {
   birthDate: string | null;
   goal: Profile['goal'];
   experience: Profile['experience'];
+  sex?: Profile['sex'];
+  heightCm?: number | null;
+  trainingDays?: number | null;
+  sessionMinutes?: number | null;
+  equipment?: Profile['equipment'];
+  dailyActivity?: Profile['dailyActivity'];
 }
 
 export class ProfileError extends Error {}
@@ -32,7 +38,17 @@ export async function saveProfile(
     const age = (now.getTime() - born.getTime()) / (365.25 * 86_400_000);
     if (Number.isNaN(age) || age < 13 || age > 110) throw new ProfileError('Check the birth date.');
   }
-  const fields = { ...input, displayName };
+  if (input.heightCm != null && !(input.heightCm >= 100 && input.heightCm <= 250))
+    throw new ProfileError('Enter a height between 100 and 250 cm.');
+  if (input.trainingDays != null && !(input.trainingDays >= 1 && input.trainingDays <= 7))
+    throw new ProfileError('Pick between 1 and 7 training days.');
+  if (input.sessionMinutes != null && !(input.sessionMinutes >= 15 && input.sessionMinutes <= 240))
+    throw new ProfileError('Pick a session length between 15 and 240 minutes.');
+  // Fields left out keep their current value; null clears them.
+  const heightCm = input.heightCm == null ? input.heightCm : Math.round(input.heightCm * 10) / 10;
+  const fields = Object.fromEntries(
+    Object.entries({ ...input, displayName, heightCm }).filter(([, v]) => v !== undefined),
+  ) as Partial<Profile>;
   return db.transaction('rw', [db.profiles, db.outbox], async () => {
     const current = await ownProfile(db);
     if (current) return (await patchRecord<Profile>(db, 'profiles', current.id, fields))!;

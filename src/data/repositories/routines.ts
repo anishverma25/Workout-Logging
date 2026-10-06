@@ -8,6 +8,7 @@ import {
 import type { WorkoutDatabase } from '../db';
 import { exerciseIdFor } from '../library/exercises';
 import { templateByKey } from '../library/templates';
+import { personalizeTemplate, type PlanOptions } from '../library/programs';
 import { newRecordMeta, nowIso, patchRecord, patchRecords, putRecords, softDelete } from './write';
 
 /**
@@ -58,6 +59,10 @@ export function defaultTargets(exercise: Exercise | undefined) {
   if (exercise && exercise.trackingType === 'duration') {
     return { targetSets: 3, repMin: 30, repMax: 60, targetRir: null, restSeconds: 60 };
   }
+  if (exercise && exercise.trackingType === 'cardio') {
+    // One block of cardio, in minutes.
+    return { targetSets: 1, repMin: 20, repMax: 30, targetRir: null, restSeconds: 0 };
+  }
   if (exercise && exercise.trackingType === 'distance') {
     return { targetSets: 3, repMin: 20, repMax: 40, targetRir: null, restSeconds: 90 };
   }
@@ -73,9 +78,12 @@ export async function createRoutineFromTemplate(
   db: WorkoutDatabase,
   templateKey: string,
   name?: string,
+  /** Fit the template to a person's goal, experience, equipment and session length. */
+  personalize?: PlanOptions,
 ): Promise<Routine> {
-  const template = templateByKey(templateKey);
-  if (!template) throw new RoutineError('Unknown template.');
+  const base = templateByKey(templateKey);
+  if (!base) throw new RoutineError('Unknown template.');
+  const template = personalize ? personalizeTemplate(base, personalize) : base;
   return db.transaction('rw', ROUTINE_TABLES(db), async () => {
     const hasActive =
       (await db.routines.filter((r) => r.deletedAt === null && r.isActive).count()) > 0;
@@ -83,7 +91,7 @@ export async function createRoutineFromTemplate(
     const routine: Routine = {
       ...newRecordMeta('user', at),
       name: (name ?? template.name).trim() || template.name,
-      description: null,
+      description: personalize ? 'Fitted to your goal, experience and equipment.' : null,
       isActive: !hasActive,
     };
     const days: RoutineDay[] = [];

@@ -1,5 +1,5 @@
 import { differenceInCalendarDays } from '@/lib/dates';
-import { MUSCLE_GROUPS, type MuscleGroup } from '../models/schemas';
+import { MUSCLE_GROUPS, STRENGTH_MUSCLES, type MuscleGroup } from '../models/schemas';
 import { isWorkingSet, type Session } from './sessions';
 
 /** A working set counts fully for its primary muscle and half for each secondary muscle. */
@@ -36,7 +36,8 @@ export function muscleWorkload(sessions: Session[]): MuscleWorkload[] {
       }
     }
   }
-  return MUSCLE_GROUPS.map((muscle) => {
+  // Cardio is a kind of training, not a muscle: it never appears in set counts.
+  return STRENGTH_MUSCLES.map((muscle) => {
     const t = totals.get(muscle)!;
     return {
       muscle,
@@ -67,7 +68,7 @@ export function muscleRecency(sessions: Session[], now: Date): MuscleRecency[] {
       if (!prev || session.date > prev) last.set(exercise.primaryMuscle, session.date);
     }
   }
-  return MUSCLE_GROUPS.map((muscle) => {
+  return STRENGTH_MUSCLES.map((muscle) => {
     const date = last.get(muscle) ?? null;
     return {
       muscle,

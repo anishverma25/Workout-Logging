@@ -957,6 +957,115 @@ const SEEDS: ExerciseSeed[] = [
     instructions:
       'Hike the bell back between the legs, then snap the hips forward to float it to chest height. Let it fall back into the next rep.',
   },
+
+  // Added for training at home.
+  {
+    key: 'pike-push-up',
+    name: 'Pike push-up',
+    primary: 'shoulders',
+    secondary: ['triceps'],
+    equipment: 'bodyweight',
+    category: 'compound',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Start in a push-up with the hips high, so the body makes an upside-down V. Bend the elbows to bring the top of the head toward the floor, then press back up.',
+  },
+  {
+    key: 'band-pull-apart',
+    name: 'Band pull-apart',
+    primary: 'shoulders',
+    secondary: ['back'],
+    equipment: 'band',
+    category: 'isolation',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Hold a light band at shoulder height with straight arms. Pull it apart until it touches the chest, squeezing the shoulder blades, then return slowly.',
+  },
+
+  // Cardio: time and distance together. Pace is worked out from the two.
+  {
+    key: 'treadmill-run',
+    name: 'Treadmill run',
+    primary: 'cardio',
+    equipment: 'machine',
+    category: 'compound',
+    tracking: 'cardio',
+    instructions:
+      'Warm up with a few minutes of walking, then run at a pace you can hold. Log the minutes and the distance the display shows.',
+  },
+  {
+    key: 'outdoor-run',
+    name: 'Outdoor run',
+    primary: 'cardio',
+    equipment: 'bodyweight',
+    category: 'compound',
+    tracking: 'cardio',
+    instructions:
+      'Start easy for the first few minutes and settle into a steady rhythm. Log the time and the distance from your watch or phone.',
+  },
+  {
+    key: 'incline-walk',
+    name: 'Incline treadmill walk',
+    primary: 'cardio',
+    equipment: 'machine',
+    category: 'compound',
+    tracking: 'cardio',
+    instructions:
+      'Set a steep incline and a brisk walking pace. Walk tall without holding the rails. Log the minutes and distance.',
+  },
+  {
+    key: 'stationary-bike',
+    name: 'Stationary bike',
+    primary: 'cardio',
+    equipment: 'machine',
+    category: 'compound',
+    tracking: 'cardio',
+    instructions:
+      'Set the saddle so the knee stays slightly bent at the bottom of the stroke. Keep a steady cadence. Log the minutes and distance.',
+  },
+  {
+    key: 'rowing-machine',
+    name: 'Rowing machine',
+    primary: 'cardio',
+    secondary: ['back', 'quads'],
+    equipment: 'machine',
+    category: 'compound',
+    tracking: 'cardio',
+    instructions:
+      'Drive with the legs first, then lean back slightly and pull the handle to the lower ribs. Reverse the order on the way back. Log the minutes and metres.',
+  },
+  {
+    key: 'elliptical',
+    name: 'Elliptical',
+    primary: 'cardio',
+    equipment: 'machine',
+    category: 'compound',
+    tracking: 'cardio',
+    instructions:
+      'Stand tall, push and pull the handles with the stride, and keep the whole foot on the pedal. Log the minutes and distance.',
+  },
+  {
+    key: 'stair-climber',
+    name: 'Stair climber',
+    primary: 'cardio',
+    secondary: ['glutes', 'quads'],
+    equipment: 'machine',
+    category: 'compound',
+    tracking: 'duration',
+    instructions:
+      'Take full steps and keep a light grip on the rails, if any. Log the minutes worked.',
+  },
+  {
+    key: 'jump-rope',
+    name: 'Jump rope',
+    primary: 'cardio',
+    secondary: ['calves'],
+    equipment: 'other',
+    category: 'compound',
+    tracking: 'duration',
+    instructions:
+      'Small jumps on the balls of the feet, turning the rope from the wrists. Log the time skipped.',
+  },
 ];
 
 /** Fixed timestamp so system records are identical on every device and every load. */

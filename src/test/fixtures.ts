@@ -99,6 +99,8 @@ export function buildData(specs: SessionSpec[]): TrainingData {
     workoutExercises,
     sets,
     bodyWeights: [],
+    measurements: [],
+    goals: [],
   };
 }
 

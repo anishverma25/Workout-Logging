@@ -23,10 +23,7 @@ export function TodayCard({ plan, unit, className }: TodayCardProps) {
   return (
     <section
       aria-labelledby="today-title"
-      className={cn(
-        'relative overflow-hidden rounded-[1.6rem] bg-surface p-5 sm:p-6',
-        className,
-      )}
+      className={cn('relative overflow-hidden rounded-[1.6rem] bg-surface p-5 sm:p-6', className)}
     >
       <div
         aria-hidden
@@ -84,7 +81,29 @@ function Planned({ plan }: { plan: Extract<TodayPlan, { kind: 'planned' }> }) {
         <p className="mt-1 text-sm text-faint">Last done {lastDoneLabel(plan.lastSession.date)}</p>
       ) : null}
       <StartButton dayId={plan.day.id} label={`Start ${plan.day.name}`} />
+      {plan.cycleNext ? (
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-[0.9rem] bg-surface-2 px-3.5 py-2.5 text-sm">
+          <span className="min-w-0 text-muted">
+            Next in your cycle:{' '}
+            <span className="font-semibold text-text">{plan.cycleNext.name}</span>
+          </span>
+          <CycleButton dayId={plan.cycleNext.id} label={`Do ${plan.cycleNext.name}`} />
+        </div>
+      ) : null}
     </>
+  );
+}
+
+function CycleButton({ dayId, label }: { dayId: string; label: string }) {
+  const start = useStartWorkout();
+  return (
+    <button
+      type="button"
+      onClick={() => start(dayId)}
+      className="tap-target shrink-0 rounded-full font-semibold text-accent-text"
+    >
+      {label}
+    </button>
   );
 }
 
@@ -141,7 +160,15 @@ function Rest({ plan }: { plan: Extract<TodayPlan, { kind: 'rest' }> }) {
           ? `Nothing planned in ${plan.routineName} today. Next up: ${plan.next.day.name} on ${formatWeekday(plan.next.date)}.`
           : `Nothing planned in ${plan.routineName} today.`}
       </p>
-      <StartButton dayId={null} label="Start an empty workout" secondary />
+      {plan.cycleNext ? (
+        <StartButton
+          dayId={plan.cycleNext.id}
+          label={`Do ${plan.cycleNext.name} today`}
+          secondary
+        />
+      ) : (
+        <StartButton dayId={null} label="Start an empty workout" secondary />
+      )}
     </>
   );
 }

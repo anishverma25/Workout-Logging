@@ -38,7 +38,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
         id={inputId}
         aria-invalid={error ? true : undefined}
         aria-describedby={hint || error ? hintId : undefined}
-        className={cn(fieldBase, 'h-12', error ? 'border-danger' : 'border-line')}
+        className={cn(fieldBase, 'h-12', error ? 'border-danger' : 'border-transparent')}
         {...props}
       />
       {error ? (
@@ -74,7 +74,7 @@ export function TextArea({ label, hideLabel, hint, className, id, ...props }: Te
       <textarea
         id={inputId}
         rows={3}
-        className={cn(fieldBase, 'min-h-24 resize-y border-line py-3 leading-relaxed')}
+        className={cn(fieldBase, 'min-h-24 resize-y border-transparent py-3 leading-relaxed')}
         {...props}
       />
       {hint ? <p className="text-sm text-faint">{hint}</p> : null}
@@ -111,7 +111,7 @@ export function Chips<T extends string>({
       'h-9 shrink-0 rounded-full border px-3.5 text-sm font-semibold transition-colors',
       selected
         ? 'border-transparent bg-text text-bg'
-        : 'border-line bg-surface text-muted hover:border-line-strong hover:text-text',
+        : 'border-transparent bg-surface-2 text-muted hover:text-text',
     );
   return (
     <div
@@ -180,7 +180,7 @@ export function MultiChips<T extends string>({
               'h-9 rounded-full border px-3.5 text-sm font-semibold transition-colors',
               selected
                 ? 'border-transparent bg-accent-soft text-accent-text'
-                : 'border-line bg-surface text-muted hover:text-text',
+                : 'border-transparent bg-surface-2 text-muted hover:text-text',
             )}
           >
             {o.label}
@@ -236,7 +236,7 @@ export function Stepper({
       <div
         role="group"
         aria-labelledby={id}
-        className="flex h-12 items-center justify-between rounded-[var(--radius-control)] border border-line bg-surface-2"
+        className="flex h-12 items-center justify-between rounded-[var(--radius-control)] bg-surface-2"
       >
         <button
           type="button"

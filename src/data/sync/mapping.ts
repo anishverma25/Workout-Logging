@@ -1,5 +1,6 @@
 import type { ZodType } from 'zod';
 import {
+  BodyMeasurement,
   BodyWeightEntry,
   Exercise,
   Preferences,
@@ -7,6 +8,7 @@ import {
   Routine,
   RoutineDay,
   RoutineExercise,
+  TrainingGoal,
   Workout,
   WorkoutExercise,
   WorkoutSet,
@@ -28,7 +30,9 @@ export type ServerTable =
   | 'workouts'
   | 'workout_exercises'
   | 'sets'
-  | 'body_weight';
+  | 'body_weight'
+  | 'body_measurements'
+  | 'goals';
 
 export type ServerRow = Record<string, unknown>;
 
@@ -47,7 +51,18 @@ export const TABLE_SPECS: TableSpec[] = [
   {
     local: 'profiles',
     server: 'profiles',
-    fields: ['displayName', 'birthDate', 'goal', 'experience'],
+    fields: [
+      'displayName',
+      'birthDate',
+      'goal',
+      'experience',
+      'sex',
+      'heightCm',
+      'trainingDays',
+      'sessionMinutes',
+      'equipment',
+      'dailyActivity',
+    ],
     schema: Profile,
   },
   {
@@ -91,6 +106,7 @@ export const TABLE_SPECS: TableSpec[] = [
       'targetRir',
       'restSeconds',
       'notes',
+      'supersetGroup',
     ],
     schema: RoutineExercise,
   },
@@ -108,13 +124,23 @@ export const TABLE_SPECS: TableSpec[] = [
       'pausedMs',
       'notes',
       'timeZone',
+      'readiness',
+      'sessionRpe',
     ],
     schema: Workout,
   },
   {
     local: 'workoutExercises',
     server: 'workout_exercises',
-    fields: ['workoutId', 'exerciseId', 'exerciseName', 'order', 'notes', 'target'],
+    fields: [
+      'workoutId',
+      'exerciseId',
+      'exerciseName',
+      'order',
+      'notes',
+      'target',
+      'supersetGroup',
+    ],
     schema: WorkoutExercise,
   },
   {
@@ -143,13 +169,58 @@ export const TABLE_SPECS: TableSpec[] = [
     fields: ['measuredAt', 'weightKg', 'enteredUnit', 'note'],
     schema: BodyWeightEntry,
   },
+  {
+    local: 'bodyMeasurements',
+    server: 'body_measurements',
+    fields: [
+      'measuredAt',
+      'waistCm',
+      'neckCm',
+      'hipCm',
+      'chestCm',
+      'armCm',
+      'thighCm',
+      'calfCm',
+      'bodyFatPct',
+      'note',
+    ],
+    schema: BodyMeasurement,
+  },
+  {
+    local: 'goals',
+    server: 'goals',
+    fields: ['kind', 'exerciseId', 'targetValue', 'startValue', 'targetDate', 'achievedAt'],
+    schema: TrainingGoal,
+  },
 ];
 
 export const specFor = (table: DomainTable) => TABLE_SPECS.find((s) => s.local === table);
 
 const BASE_FIELDS = ['id', 'createdAt', 'updatedAt', 'deletedAt'];
 /** Postgres numeric comes back as a number or a string depending on the client. */
-const NUMERIC_FIELDS = new Set(['weightKg', 'rir', 'rpe', 'distanceM', 'targetRir', 'pausedMs']);
+const NUMERIC_FIELDS = new Set([
+  'weightKg',
+  'rir',
+  'rpe',
+  'distanceM',
+  'targetRir',
+  'pausedMs',
+  'heightCm',
+  'trainingDays',
+  'sessionMinutes',
+  'sessionRpe',
+  'supersetGroup',
+  'waistCm',
+  'neckCm',
+  'hipCm',
+  'chestCm',
+  'armCm',
+  'thighCm',
+  'calfCm',
+  'bodyFatPct',
+  'targetValue',
+  'startValue',
+]);
 
 export function toSnake(field: string): string {
   if (field === 'order') return 'order_index';
@@ -179,8 +250,10 @@ export function fromServerRow(spec: TableSpec, row: ServerRow): Record<string, u
   const record: Record<string, unknown> = { origin: 'user', ...spec.implied };
   for (const f of [...BASE_FIELDS, ...spec.fields]) {
     let value = row[toSnake(f)] ?? null;
-    if (value !== null && (f.endsWith('At') || f === 'measuredAt'))
-      value = normalizeTimestamp(value);
+    if (value !== null && f.endsWith('At')) value = normalizeTimestamp(value);
+    // `date` columns stay plain YYYY-MM-DD strings.
+    if (typeof value === 'string' && (f === 'birthDate' || f === 'targetDate'))
+      value = value.slice(0, 10);
     if (value !== null && NUMERIC_FIELDS.has(f)) value = Number(value);
     record[f] = value;
   }
@@ -198,6 +271,7 @@ export function preferencesToRow(prefs: Preferences, updatedAt: string, userId: 
     week_starts_on: prefs.weekStartsOn,
     default_rest_seconds: prefs.defaultRestSeconds,
     auto_start_rest: prefs.autoStartRest,
+    length_unit: prefs.lengthUnit,
     updated_at: updatedAt,
   };
 }
@@ -211,6 +285,7 @@ export function preferencesFromRow(
     weekStartsOn: Number(row.week_starts_on),
     defaultRestSeconds: Number(row.default_rest_seconds),
     autoStartRest: row.auto_start_rest,
+    lengthUnit: row.length_unit ?? 'cm',
   });
   const updatedAt = normalizeTimestamp(row.updated_at);
   return parsed.success && updatedAt ? { prefs: parsed.data, updatedAt } : null;

@@ -3,7 +3,10 @@ import type {
   Exercise,
   LoadMode,
   MuscleGroup,
+  DailyActivity,
+  GymAccess,
   Profile,
+  Sex,
   SetType,
   TrackingType,
 } from './schemas';
@@ -19,6 +22,7 @@ export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   glutes: 'Glutes',
   calves: 'Calves',
   abs: 'Abs',
+  cardio: 'Cardio',
 };
 
 export const EQUIPMENT_LABELS: Record<Equipment, string> = {
@@ -44,6 +48,7 @@ export const TRACKING_LABELS: Record<TrackingType, string> = {
   assisted_bodyweight: 'Assisted bodyweight',
   duration: 'Time',
   distance: 'Distance',
+  cardio: 'Time and distance',
 };
 
 export const TRACKING_HINTS: Record<TrackingType, string> = {
@@ -53,6 +58,7 @@ export const TRACKING_HINTS: Record<TrackingType, string> = {
   assisted_bodyweight: 'Log the assistance weight and reps.',
   duration: 'Log how long you held or worked.',
   distance: 'Log the distance covered.',
+  cardio: 'Log minutes and kilometres. Pace is worked out for you.',
 };
 
 export const LOAD_MODE_LABELS: Record<LoadMode, string> = {
@@ -81,14 +87,42 @@ export function exerciseMeta(exercise: Pick<Exercise, 'primaryMuscle' | 'equipme
 }
 
 export const GOAL_LABEL: Record<Profile['goal'], string> = {
-  strength: 'Strength',
-  hypertrophy: 'Muscle growth',
-  strength_hypertrophy: 'Strength and muscle growth',
+  hypertrophy: 'Build muscle',
+  strength: 'Get stronger',
+  strength_hypertrophy: 'Stronger and bigger',
+  fat_loss: 'Lose fat',
+  recomposition: 'Lose fat, keep building',
   general_fitness: 'General fitness',
+};
+
+export const GOAL_DETAIL: Record<Profile['goal'], string> = {
+  hypertrophy: 'More muscle. Moderate weights for 6 to 12 reps, plenty of sets.',
+  strength: 'Lift heavier. Fewer reps with heavy weights and long rests.',
+  strength_hypertrophy: 'Heavy compound lifts first, then muscle-building work.',
+  fat_loss: 'Drop body fat while keeping the muscle you have.',
+  recomposition: 'Slowly lose fat and gain muscle at the same time.',
+  general_fitness: 'Feel fitter and stronger without a specific target.',
 };
 
 export const EXPERIENCE_LABEL: Record<Profile['experience'], string> = {
   beginner: 'Beginner',
   intermediate: 'Intermediate',
   advanced: 'Advanced',
+};
+
+export const SEX_LABEL: Record<Sex, string> = {
+  male: 'Male',
+  female: 'Female',
+  unspecified: 'Prefer not to say',
+};
+export const EQUIPMENT_LABEL: Record<GymAccess, string> = {
+  full_gym: 'Full gym',
+  dumbbells: 'Dumbbells and a bench',
+  home: 'Body weight at home',
+};
+export const ACTIVITY_LABEL: Record<DailyActivity, string> = {
+  sitting: 'Mostly sitting',
+  mixed: 'Some walking',
+  on_feet: 'On my feet',
+  physical: 'Physical work',
 };

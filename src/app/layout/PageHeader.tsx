@@ -26,9 +26,12 @@ export function PageHeader({ title, subtitle, eyebrow, actions, compactTitle }: 
   useEffect(() => {
     const el = sentinel.current;
     if (!el || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver((entries) => setCompact(!entries[0]?.isIntersecting), {
-      rootMargin: '-8px 0px 0px 0px',
-    });
+    const observer = new IntersectionObserver(
+      (entries) => setCompact(!entries[0]?.isIntersecting),
+      {
+        rootMargin: '-8px 0px 0px 0px',
+      },
+    );
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -51,17 +54,18 @@ export function PageHeader({ title, subtitle, eyebrow, actions, compactTitle }: 
         </div>
       ) : null}
       <header className="pb-5 pt-5 lg:pt-10">
-        <div className="flex items-end justify-between gap-4">
-          <div className="min-w-0">
-            {eyebrow ? (
-              <p className="mb-0.5 text-[0.8125rem] font-semibold text-faint">{eyebrow}</p>
-            ) : null}
-            <h1 className="min-w-0 font-display text-[2.125rem] font-bold leading-[1.1] tracking-[-0.02em] lg:text-[2.5rem]">
-              {title}
-            </h1>
-          </div>
-          <div className="mb-0.5 flex shrink-0 items-center gap-2">
+        {eyebrow ? (
+          <div className="mb-0.5 flex min-h-7 items-center justify-between gap-3">
+            <p className="text-[0.8125rem] font-semibold text-faint">{eyebrow}</p>
             <DemoPill className="lg:hidden" />
+          </div>
+        ) : null}
+        <div className="flex items-end justify-between gap-4">
+          <h1 className="min-w-0 font-display text-[2.125rem] font-bold leading-[1.1] tracking-[-0.02em] lg:text-[2.5rem]">
+            {title}
+          </h1>
+          <div className="mb-0.5 flex shrink-0 items-center gap-2">
+            {eyebrow ? null : <DemoPill className="lg:hidden" />}
             {actions}
             <AvatarLink />
           </div>

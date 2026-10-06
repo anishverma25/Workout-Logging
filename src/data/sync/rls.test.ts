@@ -104,6 +104,24 @@ function rowsFor(userId: string) {
       entered_unit: 'kg',
       ...meta,
     },
+    body_measurements: {
+      id: id(),
+      user_id: userId,
+      measured_at: T0,
+      waist_cm: 82,
+      neck_cm: 38,
+      ...meta,
+    },
+    goals: {
+      id: id(),
+      user_id: userId,
+      kind: 'exercise_e1rm',
+      exercise_id: custom,
+      target_value: 100,
+      start_value: 80,
+      target_date: '2027-03-01',
+      ...meta,
+    },
     user_preferences: {
       user_id: userId,
       weight_unit: 'kg',
@@ -289,6 +307,51 @@ describe('row level security', () => {
     );
   });
 
+  it('User B cannot set a goal on User A custom exercise', async () => {
+    const rowsB = rowsFor(userB);
+    await expectError(
+      server.asUser(userB, (tx) =>
+        insertRow(tx, 'goals', { ...rowsB.goals, exercise_id: rowsA.user_exercises.id }),
+      ),
+      /Unknown exercise/,
+    );
+    // A body weight goal has no exercise; an exercise goal must have one.
+    await server.asUser(userB, (tx) =>
+      insertRow(tx, 'goals', {
+        ...rowsB.goals,
+        id: crypto.randomUUID(),
+        kind: 'body_weight',
+        exercise_id: null,
+      }),
+    );
+    await expectError(
+      server.asUser(userB, (tx) =>
+        insertRow(tx, 'goals', { ...rowsB.goals, id: crypto.randomUUID(), exercise_id: null }),
+      ),
+      /check constraint/,
+    );
+  });
+
+  it('delete_my_account removes only the caller and everything they own', async () => {
+    const userC = await server.createUser('c@example.com');
+    const rowsC = rowsFor(userC);
+    await insertAll(server, userC, rowsC);
+    await expectError(
+      server.asAnon((tx) => tx.query('select public.delete_my_account()')),
+      /permission denied/,
+    );
+    await server.asUser(userC, (tx) => tx.query('select public.delete_my_account()'));
+    const gone = await server.pg.query('select 1 from auth.users where id = $1', [userC]);
+    expect(gone.rows).toHaveLength(0);
+    for (const t of TABLES) {
+      const left = await server.pg.query(`select 1 from public.${t} where user_id = $1`, [userC]);
+      expect(left.rows, t).toHaveLength(0);
+    }
+    // Everyone else is untouched.
+    const a = await server.pg.query('select 1 from public.workouts where user_id = $1', [userA]);
+    expect(a.rows.length).toBeGreaterThan(0);
+  });
+
   it('signed-out visitors cannot read or write anything', async () => {
     for (const t of [...TABLES, 'exercises']) {
       await expectError(
@@ -374,6 +437,19 @@ describe('row level security', () => {
     await expectError(
       server.asUser(userA, (tx) =>
         insertRow(tx, 'body_weight', { ...rows.body_weight, weight_kg: 5 }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) => insertRow(tx, 'profiles', { ...rows.profiles, height_cm: 20 })),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'workouts', {
+          ...rows.workouts,
+          readiness: { sleep: 9, energy: 3, soreness: 2 },
+        }),
       ),
       /check constraint/,
     );

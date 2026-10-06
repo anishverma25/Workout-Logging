@@ -1,11 +1,13 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type {
+  BodyMeasurement,
   BodyWeightEntry,
   Exercise,
   Profile,
   Routine,
   RoutineDay,
   RoutineExercise,
+  TrainingGoal,
   Workout,
   WorkoutExercise,
   WorkoutSet,
@@ -28,7 +30,9 @@ export type DomainTable =
   | 'workouts'
   | 'workoutExercises'
   | 'sets'
-  | 'bodyWeights';
+  | 'bodyWeights'
+  | 'bodyMeasurements'
+  | 'goals';
 
 /** What the outbox can hold: domain records, plus the preferences stored in meta. */
 export type SyncTable = DomainTable | 'preferences';
@@ -69,6 +73,8 @@ export class WorkoutDatabase extends Dexie {
   workoutExercises!: EntityTable<WorkoutExercise, 'id'>;
   sets!: EntityTable<WorkoutSet, 'id'>;
   bodyWeights!: EntityTable<BodyWeightEntry, 'id'>;
+  bodyMeasurements!: EntityTable<BodyMeasurement, 'id'>;
+  goals!: EntityTable<TrainingGoal, 'id'>;
   meta!: EntityTable<MetaRecord, 'key'>;
   outbox!: EntityTable<OutboxEntry, 'id'>;
 
@@ -102,6 +108,12 @@ export class WorkoutDatabase extends Dexie {
             if (w.pausedMs === undefined) w.pausedMs = 0;
           }),
       );
+    // v3: body measurements and goals. New profile, workout and superset fields are optional,
+    // so older records stay valid as they are.
+    this.version(3).stores({
+      bodyMeasurements: 'id, measuredAt, origin',
+      goals: 'id, origin',
+    });
   }
 
   /** Tables that hold origin-tagged domain records. */
@@ -116,6 +128,8 @@ export class WorkoutDatabase extends Dexie {
       this.workoutExercises,
       this.sets,
       this.bodyWeights,
+      this.bodyMeasurements,
+      this.goals,
     ] as const;
   }
 }

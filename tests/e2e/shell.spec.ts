@@ -114,7 +114,7 @@ test('setting up a profile greets you by name and keeps the demo profile separat
     .click();
   const sheet = page.getByRole('dialog');
   await sheet.getByRole('textbox', { name: 'Name' }).fill('Asha Rao');
-  await sheet.getByRole('radio', { name: 'Muscle growth', exact: true }).click();
+  await sheet.getByRole('radio', { name: 'Build muscle', exact: true }).click();
   await sheet.getByRole('button', { name: 'Save profile' }).click();
   await expect(page.getByText('Profile saved')).toBeVisible();
   await expect(page.getByText('Asha Rao')).toBeVisible();

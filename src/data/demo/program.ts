@@ -34,6 +34,12 @@ export const DEMO_PROFILE = {
   birthMonthDay: '03-14',
   goal: 'strength_hypertrophy' as const,
   experience: 'intermediate' as const,
+  sex: 'male' as const,
+  heightCm: 176,
+  trainingDays: 6,
+  sessionMinutes: 60,
+  equipment: 'full_gym' as const,
+  dailyActivity: 'sitting' as const,
   /** Latest recorded body weight. */
   bodyWeightKg: 67,
   bodyWeightStartKg: 66.3,

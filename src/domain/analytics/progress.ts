@@ -19,7 +19,11 @@ import {
 import { generateInsights, type Insight } from './insights';
 import { muscleRecency, muscleWorkload, type MuscleRecency, type MuscleWorkload } from './muscles';
 import { performanceByExercise, performanceFor } from './performance';
-import { progressionSuggestions, type ProgressionSuggestion } from './progression';
+import {
+  progressionStyle,
+  progressionSuggestions,
+  type ProgressionSuggestion,
+} from './progression';
 import { detectPersonalRecords, type PersonalRecord } from './prs';
 import { activeRoutine, adherence, daysForRoutine, type Adherence } from './schedule';
 import { buildSessions, isWorkingSet, type Session, type TrainingData } from './sessions';
@@ -423,7 +427,11 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
       });
     }
   }
-  const progression = progressionSuggestions(sessions, data.exercises);
+  const progression = progressionSuggestions(
+    sessions,
+    data.exercises,
+    progressionStyle(data.profile?.experience),
+  );
   if (progression.length > 0) {
     insights.push({
       id: 'progression-ready',

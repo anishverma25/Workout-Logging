@@ -1,14 +1,17 @@
-import { addDays, addMinutes, differenceInCalendarDays, startOfDay } from '@/lib/dates';
+import { addDays, addMinutes, differenceInCalendarDays, startOfDay, toDateKey } from '@/lib/dates';
 import { seededId } from '@/lib/ids';
 import { createRng, type Rng } from '@/lib/random';
 import { roundTo } from '@/lib/units';
+import { estimateOneRepMax } from '@/domain/analytics/e1rm';
 import type {
+  BodyMeasurement,
   BodyWeightEntry,
   Profile,
   Routine,
   RoutineDay,
   RoutineExercise,
   SetType,
+  TrainingGoal,
   Workout,
   WorkoutExercise,
   WorkoutSet,
@@ -30,6 +33,8 @@ export interface DemoDataset {
   workoutExercises: WorkoutExercise[];
   sets: WorkoutSet[];
   bodyWeights: BodyWeightEntry[];
+  measurements: BodyMeasurement[];
+  goals: TrainingGoal[];
 }
 
 interface LiftState {
@@ -74,6 +79,12 @@ export function generateDemoDataset(now: Date, seed: number = DEMO_SEED): DemoDa
     birthDate: `${birthYear}-${DEMO_PROFILE.birthMonthDay}`,
     goal: DEMO_PROFILE.goal,
     experience: DEMO_PROFILE.experience,
+    sex: DEMO_PROFILE.sex,
+    heightCm: DEMO_PROFILE.heightCm,
+    trainingDays: DEMO_PROFILE.trainingDays,
+    sessionMinutes: DEMO_PROFILE.sessionMinutes,
+    equipment: DEMO_PROFILE.equipment,
+    dailyActivity: DEMO_PROFILE.dailyActivity,
   };
 
   // Routine
@@ -280,6 +291,75 @@ export function generateDemoDataset(now: Date, seed: number = DEMO_SEED): DemoDa
     });
   }
 
+  // Later additions draw from their own generator, so the original story stays identical.
+  const extra = createRng(seed ^ 0xbeef);
+
+  // Readiness before most sessions and effort after every one.
+  for (const w of workouts) {
+    w.sessionRpe = extra.int(6, 9);
+    w.readiness = extra.chance(0.7)
+      ? { sleep: extra.int(2, 5), energy: extra.int(2, 5), soreness: extra.int(1, 4) }
+      : null;
+  }
+
+  // Tape measurements once a week: a lean gain, waist steady, arms and chest slowly up.
+  const measurements: BodyMeasurement[] = [];
+  for (let d = addDays(firstDay, 2); d < today; d = addDays(d, 7)) {
+    const t = 1 - differenceInCalendarDays(today, d) / DEMO_HISTORY_DAYS;
+    const at = addMinutes(d, 7 * 60 + 20);
+    const cm = (from: number, to: number) => Math.round((from + (to - from) * t) * 10) / 10;
+    measurements.push({
+      id: id(),
+      ...meta(at),
+      measuredAt: iso(at),
+      waistCm: cm(79.5, 79.8),
+      neckCm: 37.5,
+      hipCm: null,
+      chestCm: cm(97.5, 98.6),
+      armCm: cm(34.4, 35.1),
+      thighCm: cm(55, 55.6),
+      calfCm: 36,
+      bodyFatPct: null,
+      note: null,
+    });
+  }
+
+  // Two goals: a bench press target and a slow bulk.
+  const bench = exerciseIdFor('barbell-bench-press');
+  const firstWeek = addDays(firstDay, 7);
+  const firstBench = sets
+    .filter(
+      (x) =>
+        x.exerciseId === bench &&
+        x.setType === 'working' &&
+        x.completedAt &&
+        new Date(x.completedAt) < firstWeek,
+    )
+    .map((x) => estimateOneRepMax(x.weightKg ?? 0, x.reps ?? 0) ?? 0);
+  const goalsCreated = addDays(firstDay, 1);
+  const goals: TrainingGoal[] = [
+    {
+      id: id(),
+      ...meta(goalsCreated),
+      kind: 'exercise_e1rm',
+      exerciseId: bench,
+      targetValue: 100,
+      startValue: firstBench.length ? Math.round(Math.max(...firstBench) * 10) / 10 : null,
+      targetDate: toDateKey(addDays(today, 70)),
+      achievedAt: null,
+    },
+    {
+      id: id(),
+      ...meta(goalsCreated),
+      kind: 'body_weight',
+      exerciseId: null,
+      targetValue: 70,
+      startValue: DEMO_PROFILE.bodyWeightStartKg,
+      targetDate: toDateKey(addDays(today, 120)),
+      achievedAt: null,
+    },
+  ];
+
   return {
     profile,
     routines: [routine],
@@ -289,6 +369,8 @@ export function generateDemoDataset(now: Date, seed: number = DEMO_SEED): DemoDa
     workoutExercises,
     sets,
     bodyWeights,
+    measurements,
+    goals,
   };
 }
 

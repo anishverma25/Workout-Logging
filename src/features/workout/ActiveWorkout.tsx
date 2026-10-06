@@ -7,6 +7,7 @@ import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { EmptyState } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
+import { useProfile } from '@/data/hooks';
 import type { WorkoutExerciseView, WorkoutView } from '@/data/repositories/workoutView';
 import {
   addExercisesToWorkout,
@@ -35,6 +36,7 @@ interface Props {
 }
 
 export function ActiveWorkout({ view, prefs }: Props) {
+  const experience = useProfile().data?.experience ?? null;
   const { workout, exercises } = view;
   const navigate = useNavigate();
   const toast = useToast();
@@ -148,6 +150,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
             index={i}
             count={exercises.length}
             prefs={prefs}
+            experience={experience}
             onSetCompleted={onSetCompleted}
           />
         ))}

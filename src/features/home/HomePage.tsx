@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { CalendarRange, Dumbbell, FlaskConical } from 'lucide-react';
+import { CalendarRange, Dumbbell, FlaskConical, Sparkles } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import { buildDashboard } from '@/domain/analytics/dashboard';
 import { db } from '@/data/db';
@@ -18,6 +18,8 @@ import { RecordCard } from './RecordCard';
 import { StrengthCard } from './StrengthCard';
 import { TodayCard } from './TodayCard';
 import { WeekCard } from './WeekCard';
+import { RingsCard } from './RingsCard';
+import { activeRoutine } from '@/domain/analytics/schedule';
 
 export function HomePage() {
   // Demo data lives only in the device-only space, never in an account.
@@ -34,10 +36,13 @@ export function HomePage() {
 
   const firstName = training.data?.profile?.displayName.split(' ')[0];
   const title = firstName ? `${greetingFor(now)}, ${firstName}` : greetingFor(now);
+  const ownProfile = training.data?.profile?.origin === 'user';
+  const routineName = training.data ? (activeRoutine(training.data.routines)?.name ?? null) : null;
 
   return (
     <>
-      <PageHeader title={title} subtitle={formatLongDay(now)} />
+      <PageHeader title={title} eyebrow={formatLongDay(now)} compactTitle="Home" />
+      {training.status === 'success' && !ownProfile ? <SetupPrompt /> : null}
 
       {training.status === 'loading' ? <HomeSkeleton /> : null}
       {training.status === 'error' ? (
@@ -65,7 +70,11 @@ export function HomePage() {
           actions={
             signedIn ? (
               <>
-                <ButtonLink to="/routines" icon={<CalendarRange className="size-4" aria-hidden />}>
+                <ButtonLink
+                  to="/routines"
+                  variant={ownProfile ? 'primary' : 'secondary'}
+                  icon={<CalendarRange className="size-4" aria-hidden />}
+                >
                   Pick a routine
                 </ButtonLink>
                 <ButtonLink
@@ -101,6 +110,12 @@ export function HomePage() {
         <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:items-start lg:gap-6">
           {/* Columns flatten on mobile so cards can be ordered by priority. */}
           <div className="contents lg:flex lg:flex-col lg:gap-6">
+            <RingsCard
+              week={model.week}
+              streak={model.streak}
+              routineName={routineName}
+              className="order-1"
+            />
             <TodayCard plan={model.today} unit={prefs.weightUnit} className="order-1" />
             <StrengthCard trends={model.strength} unit={prefs.weightUnit} className="order-4" />
             <RecentActivity items={model.recent} unit={prefs.weightUnit} className="order-6" />
@@ -125,6 +140,41 @@ export function HomePage() {
         </div>
       ) : null}
     </>
+  );
+}
+
+/** Shown until the person has their own profile: setup fits the whole app to them. */
+function SetupPrompt() {
+  return (
+    <section
+      aria-labelledby="setup-prompt-title"
+      className="relative mb-5 overflow-hidden rounded-[var(--radius-card)] bg-surface p-5"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full"
+        style={{ background: 'radial-gradient(closest-side, var(--glow), transparent)' }}
+      />
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-[0.9rem] bg-accent text-accent-ink">
+          <Sparkles className="size-6" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2
+            id="setup-prompt-title"
+            className="font-display text-[1.3rem] font-semibold leading-tight tracking-tight"
+          >
+            Make it yours
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Seven quick questions for a routine, rep ranges and daily calories fitted to you.
+          </p>
+        </div>
+        <ButtonLink to="/setup?next=/" className="shrink-0">
+          Set up my plan
+        </ButtonLink>
+      </div>
+    </section>
   );
 }
 

@@ -8,8 +8,12 @@ const literal = (value: string | null) =>
  * same stable ids the app uses on the device. A unit test keeps the migration file in step
  * with the library (run with UPDATE_SEED=1 to rewrite it).
  */
-export function exerciseSeedSql(): string {
-  const rows = SYSTEM_EXERCISES.map((e, i) => {
+/** The library as first released; later additions are seeded by later migrations. */
+export const FIRST_LIBRARY_SIZE = 91;
+
+export function exerciseSeedSql(from = 0, to = FIRST_LIBRARY_SIZE): string {
+  const rows = SYSTEM_EXERCISES.slice(from, to).map((e, j) => {
+    const i = from + j;
     const secondary = `array[${e.secondaryMuscles.map((m) => literal(m)).join(', ')}]::text[]`;
     return `  (${[
       literal(e.id),

@@ -33,6 +33,8 @@ export async function loadTrainingData(db: WorkoutDatabase): Promise<TrainingDat
       db.workoutExercises,
       db.sets,
       db.bodyWeights,
+      db.bodyMeasurements,
+      db.goals,
     ],
     async () => {
       const [
@@ -45,6 +47,8 @@ export async function loadTrainingData(db: WorkoutDatabase): Promise<TrainingDat
         workoutExercises,
         sets,
         bodyWeights,
+        measurements,
+        goals,
       ] = await Promise.all([
         db.profiles.toArray(),
         db.exercises.toArray(),
@@ -55,6 +59,8 @@ export async function loadTrainingData(db: WorkoutDatabase): Promise<TrainingDat
         db.workoutExercises.toArray(),
         db.sets.toArray(),
         db.bodyWeights.toArray(),
+        db.bodyMeasurements.toArray(),
+        db.goals.toArray(),
       ]);
       const profile = pickProfile(profiles);
       return {
@@ -67,6 +73,8 @@ export async function loadTrainingData(db: WorkoutDatabase): Promise<TrainingDat
         workoutExercises: alive(workoutExercises),
         sets: alive(sets),
         bodyWeights: alive(bodyWeights),
+        measurements: alive(measurements),
+        goals: alive(goals),
       };
     },
   );

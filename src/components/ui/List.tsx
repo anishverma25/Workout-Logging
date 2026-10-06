@@ -193,7 +193,11 @@ export function Panel({
   id?: string;
 }) {
   return (
-    <section id={id} className={className} aria-label={typeof title === 'string' ? title : undefined}>
+    <section
+      id={id}
+      className={className}
+      aria-label={typeof title === 'string' ? title : undefined}
+    >
       {title ? (
         <h2 className="mb-1.5 px-4 text-[0.8125rem] font-medium text-faint">{title}</h2>
       ) : null}
@@ -220,7 +224,9 @@ export function PanelRow({
     <div
       className={cn(
         'panel-row flex gap-3 py-3.5',
-        stack ? 'flex-col sm:flex-row sm:items-center sm:justify-between' : 'items-center justify-between',
+        stack
+          ? 'flex-col sm:flex-row sm:items-center sm:justify-between'
+          : 'items-center justify-between',
       )}
     >
       <div className="min-w-0">
