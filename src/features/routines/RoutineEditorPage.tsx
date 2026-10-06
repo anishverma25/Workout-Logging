@@ -418,6 +418,16 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
                   {s.notes ? (
                     <span className="block truncate text-sm text-faint">{s.notes}</span>
                   ) : null}
+                  {s.supersetGroup != null &&
+                  (slots[i + 1]?.supersetGroup === s.supersetGroup ||
+                    slots[i - 1]?.supersetGroup === s.supersetGroup) ? (
+                    <span className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted">
+                      <span aria-hidden className="size-2 rounded-full bg-[var(--ring-2)]" />
+                      {slots[i + 1]?.supersetGroup === s.supersetGroup
+                        ? 'Superset with the next exercise'
+                        : 'End of superset'}
+                    </span>
+                  ) : null}
                 </span>
               </button>
               {reordering ? (

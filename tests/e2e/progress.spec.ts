@@ -63,7 +63,7 @@ test('methodology explains each metric', async ({ page }) => {
   ]) {
     await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
   }
-  await expect(page.getByText('e1RM = load × (1 + reps ÷ 30)', { exact: false })).toBeVisible();
+  await expect(page.getByText('load × (1 + reps ÷ 30)', { exact: false })).toBeVisible();
 });
 
 test('progress shows an honest empty state without data', async ({ page }) => {

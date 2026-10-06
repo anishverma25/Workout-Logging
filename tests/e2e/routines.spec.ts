@@ -13,7 +13,7 @@ test('routine from a template: rename, add a day and exercise, duplicate, delete
 }) => {
   await page.goto('/routines');
   await page.getByRole('button', { name: 'New routine' }).filter({ visible: true }).first().click();
-  await page.getByRole('button', { name: /^Upper Lower/ }).click();
+  await page.getByRole('button', { name: /^Upper Lower 4 days a week/ }).click();
   await expect(page.getByRole('heading', { level: 1, name: /Upper Lower/ })).toBeVisible();
 
   // Rename

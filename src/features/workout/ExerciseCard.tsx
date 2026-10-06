@@ -4,8 +4,11 @@ import {
   ArrowUp,
   CopyPlus,
   Ellipsis,
+  Calculator,
   Flame,
+  Link2,
   NotebookPen,
+  Replace,
   Plus,
   Trash2,
   TrendingUp,
@@ -17,6 +20,9 @@ import { db } from '@/data/db';
 import type { WorkoutExerciseView } from '@/data/repositories/workoutView';
 import {
   addSet,
+  addWarmupSets,
+  swapWorkoutExercise,
+  toggleSupersetWithNext,
   moveWorkoutExercise,
   removeWorkoutExercise,
   updateSet,
@@ -40,8 +46,16 @@ import { SetRow, SET_GRID, SET_GRID_NO_EFFORT } from './SetRow';
 import { SetSheet } from './SetSheet';
 import { loadPreviousPerformance } from '@/data/repositories/workoutView';
 import { cn } from '@/lib/cn';
+import { useToast } from '@/components/ui/Toast';
+import { readableError } from '@/lib/errors';
+import { warmupSets } from '@/domain/workout/plates';
+import { ExercisePicker } from '@/features/exercises/ExercisePicker';
+import { PlateSheet } from './PlateSheet';
 
 interface Props {
+  /** Set when the exercise is part of a superset: its position label and links. */
+  superset?: { label: string; linkedNext: boolean; linkedPrev: boolean } | null;
+  hasNext: boolean;
   view: WorkoutExerciseView;
   index: number;
   count: number;
@@ -51,11 +65,23 @@ interface Props {
   onSetCompleted: (set: WorkoutSet, view: WorkoutExerciseView) => void;
 }
 
-function ExerciseCardImpl({ view, index, count, prefs, experience, onSetCompleted }: Props) {
+function ExerciseCardImpl({
+  view,
+  index,
+  count,
+  prefs,
+  experience,
+  onSetCompleted,
+  superset,
+  hasNext,
+}: Props) {
   const { workoutExercise: we, exercise, sets, previous } = view;
   const tracking = trackingOf(exercise);
   const cols = columnsFor(tracking, prefs.weightUnit);
   const [menu, setMenu] = useState(false);
+  const [plates, setPlates] = useState(false);
+  const [swapping, setSwapping] = useState(false);
+  const toast = useToast();
   const [editingNotes, setEditingNotes] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [optionsFor, setOptionsFor] = useState<string | null>(null);
@@ -98,6 +124,34 @@ function ExerciseCardImpl({ view, index, count, prefs, experience, onSetComplete
     }
   }
   const canCopy = previous && emptySets.some((s) => matchingPreviousSet(prevSets, sets, s.id));
+  // The weight warm-ups lead up to: today's first working set, else last time's.
+  const firstWorking = sets.find((s) => s.setType === 'working');
+  const workingKg =
+    firstWorking?.weightKg ??
+    (firstWorking ? suggestFor(prevSets, sets, firstWorking.id)?.weightKg : null) ??
+    null;
+  const barbell = exercise?.equipment === 'barbell';
+  const loadTracked = tracking === 'weight_reps';
+
+  async function addWarmups() {
+    if (!workingKg) {
+      toast('Enter the working weight first.');
+      return;
+    }
+    const shown = toDisplayWeight(workingKg, unit);
+    const bar = barbell ? (unit === 'kg' ? 20 : 45) : null;
+    const plan = warmupSets(shown, { bar, step: unit === 'kg' ? 2.5 : 5 });
+    if (plan.length === 0) {
+      toast('This weight is light enough to start without warm-ups.');
+      return;
+    }
+    await addWarmupSets(
+      db,
+      we.id,
+      plan.map((w) => ({ weightKg: fromDisplayWeight(w.weight, unit), reps: w.reps })),
+    );
+    toast(`${plan.length} warm-up ${plan.length === 1 ? 'set' : 'sets'} added`);
+  }
 
   const onCompleted = useCallback(
     (set: WorkoutSet) => onSetCompleted(set, view),
@@ -120,10 +174,23 @@ function ExerciseCardImpl({ view, index, count, prefs, experience, onSetComplete
   return (
     <section
       aria-labelledby={`ex-${we.id}`}
-      className="rounded-[var(--radius-card)] bg-surface py-4"
+      className={cn(
+        'relative rounded-[var(--radius-card)] bg-surface py-4',
+        superset && 'ring-2 ring-inset ring-[var(--ring-2)]/40',
+      )}
     >
+      {superset?.linkedNext ? (
+        <span aria-hidden className="absolute -bottom-4 left-8 h-4 w-0.5 bg-[var(--ring-2)]" />
+      ) : null}
       <header className="flex items-start justify-between gap-2 px-4">
         <div className="min-w-0">
+          {superset ? (
+            <p className="mb-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted">
+              <span aria-hidden className="size-2 rounded-full bg-[var(--ring-2)]" />
+              Superset {superset.label}
+              {superset.linkedNext ? ', no rest before the next exercise' : ', rest after this one'}
+            </p>
+          ) : null}
           <h2 id={`ex-${we.id}`} className="font-display text-[1.45rem] font-bold leading-tight">
             {we.exerciseName}
           </h2>
@@ -271,6 +338,32 @@ function ExerciseCardImpl({ view, index, count, prefs, experience, onSetComplete
         </Button>
       </div>
 
+      <PlateSheet
+        open={plates}
+        onClose={() => setPlates(false)}
+        unit={unit}
+        initial={
+          workingKg !== null ? Math.round(toDisplayWeight(workingKg, unit) * 100) / 100 : null
+        }
+      />
+      <ExercisePicker
+        open={swapping}
+        onClose={() => setSwapping(false)}
+        title={`Swap ${we.exerciseName}`}
+        mode="single"
+        presentIds={[we.exerciseId]}
+        suggestMuscle={exercise?.primaryMuscle}
+        onPick={async (ids) => {
+          if (!ids[0]) return;
+          try {
+            await swapWorkoutExercise(db, we.id, ids[0]);
+            setSwapping(false);
+          } catch (err) {
+            toast(readableError(err));
+          }
+        }}
+      />
+
       <SetSheet
         set={sets.find((s) => s.id === optionsFor) ?? null}
         label={optionsFor ? (labels.get(optionsFor) ?? '') : ''}
@@ -281,13 +374,67 @@ function ExerciseCardImpl({ view, index, count, prefs, experience, onSetComplete
       <Sheet open={menu} onClose={() => setMenu(false)} title={we.exerciseName}>
         <ActionList
           items={[
+            ...(loadTracked
+              ? [
+                  {
+                    label: 'Add warm-up sets',
+                    hint: barbell
+                      ? 'Empty bar, then about 40%, 60% and 80% of your working weight.'
+                      : 'About 40%, 60% and 80% of your working weight.',
+                    icon: <Flame className="size-5" aria-hidden />,
+                    onSelect: async () => {
+                      setMenu(false);
+                      await addWarmups();
+                    },
+                  },
+                ]
+              : []),
             {
-              label: 'Add warm-up set',
+              label: 'Add one warm-up set',
               hint: 'Warm-ups do not count toward volume, estimated 1RM or records.',
               icon: <Flame className="size-5" aria-hidden />,
               onSelect: async () => {
                 await addSet(db, we.id, 'warmup');
                 setMenu(false);
+              },
+            },
+            ...(barbell
+              ? [
+                  {
+                    label: 'Plate calculator',
+                    icon: <Calculator className="size-5" aria-hidden />,
+                    onSelect: () => {
+                      setMenu(false);
+                      setPlates(true);
+                    },
+                  },
+                ]
+              : []),
+            {
+              label: 'Swap exercise',
+              hint:
+                doneCount > 0
+                  ? 'Sets are already done. Add the other exercise instead.'
+                  : 'Machine taken? Pick another exercise for the same muscle.',
+              icon: <Replace className="size-5" aria-hidden />,
+              disabled: doneCount > 0,
+              onSelect: () => {
+                setMenu(false);
+                setSwapping(true);
+              },
+            },
+            {
+              label: superset?.linkedNext
+                ? 'Unlink from next exercise'
+                : 'Superset with next exercise',
+              hint: superset?.linkedNext
+                ? undefined
+                : 'Do the two back to back and rest after the round.',
+              icon: <Link2 className="size-5" aria-hidden />,
+              disabled: !hasNext,
+              onSelect: async () => {
+                setMenu(false);
+                await toggleSupersetWithNext(db, we.id);
               },
             },
             {

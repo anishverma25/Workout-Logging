@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useParams } from 'react-router';
-import { ArrowDownRight, ArrowUpRight, Check, Minus, Trophy } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Check, Medal, Minus, Trophy } from 'lucide-react';
+import { milestones } from '@/domain/analytics/milestones';
+import { buildSessions } from '@/domain/analytics/sessions';
 import { ButtonLink } from '@/components/ui/Button';
 import { SyncLine } from '@/features/account/SyncStatus';
 import { Card } from '@/components/ui/Card';
@@ -23,6 +25,17 @@ export function SummaryPage() {
     () => (training.data && workoutId ? summarizeWorkout(training.data, workoutId) : null),
     [training.data, workoutId],
   );
+  // Milestones this workout reached: counted over all history up to and including it.
+  const reached = useMemo(() => {
+    if (!training.data || !workoutId) return [];
+    return milestones(
+      buildSessions(training.data),
+      training.data.bodyWeights,
+      new Date(),
+      prefs.weekStartsOn,
+      training.data.profile?.trainingDays ?? null,
+    ).filter((m) => m.workoutId === workoutId);
+  }, [training.data, workoutId, prefs.weekStartsOn]);
 
   if (training.status === 'loading') return <Skeleton className="mt-10 h-96" />;
   if (training.status === 'error') return <ErrorState error={training.error} />;
@@ -79,6 +92,27 @@ export function SummaryPage() {
           Volume load {formatSignedPercent(summary.volumeVsLast.change)} vs your last{' '}
           {session.workout.name} on {formatDayMonth(summary.volumeVsLast.previousDate)}.
         </p>
+      ) : null}
+
+      {reached.length > 0 ? (
+        <section
+          aria-label="Milestones reached"
+          className="rise-in record-sweep relative mt-6 overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-[var(--tile-iris)] to-[var(--tile-plum)] p-5 text-white"
+          style={{ animationDelay: '0.18s' }}
+        >
+          <p className="flex items-center gap-2 text-sm font-semibold text-white/85">
+            <Medal className="trophy-lift size-4" aria-hidden />
+            {reached.length === 1 ? 'Milestone' : `${reached.length} milestones`}
+          </p>
+          {reached.map((m) => (
+            <div key={m.id} className="mt-2">
+              <p className="font-display text-[1.6rem] font-bold leading-tight tracking-tight">
+                {m.title}
+              </p>
+              <p className="text-sm text-white/85">{m.detail}</p>
+            </div>
+          ))}
+        </section>
       ) : null}
 
       {summary.prs.length > 0 ? (

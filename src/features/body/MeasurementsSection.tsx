@@ -81,7 +81,7 @@ export function MeasurementsSection({
           </Button>
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
           <ul className="grid grid-cols-2 gap-2.5 self-start">
             {available.map((f) => {
               const withValue = sorted.filter((e) => e[f] !== null);
@@ -167,7 +167,7 @@ export function MeasurementsSection({
                       <span className="shrink-0 whitespace-nowrap font-medium">
                         {formatShortDate(new Date(e.measuredAt))}
                       </span>
-                      <span className="truncate text-sm text-faint">
+                      <span className="min-w-0 truncate text-sm text-faint">
                         {[...MEASUREMENT_FIELDS, 'bodyFatPct' as const]
                           .filter((f) => e[f] !== null)
                           .map((f) => `${label(f)} ${show(f, e[f] as number)}`)

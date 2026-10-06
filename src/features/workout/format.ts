@@ -28,7 +28,8 @@ export function columnsFor(tracking: TrackingType, unit: WeightUnit): Columns {
     case 'distance':
       return { load: null, amount: 'm', amountField: 'distanceM', showEffort: false };
     case 'cardio':
-      return { load: null, amount: 'Sec', amountField: 'durationSec', showEffort: false };
+      // The first column holds minutes (durationSec), the second kilometres (distanceM).
+      return { load: 'Min', amount: 'km', amountField: 'distanceM', showEffort: false };
   }
 }
 
@@ -61,8 +62,11 @@ export function formatSetValues(
       return `${set.durationSec ?? '?'} s`;
     case 'distance':
       return `${set.distanceM ?? '?'} m`;
-    case 'cardio':
-      return `${set.durationSec ?? '?'} s`;
+    case 'cardio': {
+      const min = set.durationSec ? formatMinutes(set.durationSec) : '?';
+      const km = set.distanceM ? formatKm(set.distanceM) : null;
+      return compact ? `${min}′${km ? ` ${km}k` : ''}` : `${min} min${km ? `, ${km} km` : ''}`;
+    }
   }
 }
 
@@ -81,4 +85,18 @@ export function setLabels(sets: WorkoutSet[]): Map<string, string> {
   let n = 0;
   for (const s of sets) labels.set(s.id, s.setType === 'working' ? String(++n) : '');
   return labels;
+}
+
+const formatMinutes = (sec: number) =>
+  (Math.round((sec / 60) * 10) / 10).toLocaleString(undefined, { maximumFractionDigits: 1 });
+const formatKm = (m: number) => (m / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+/** Minutes per kilometre, "5:24", from a cardio set. Null without both values. */
+export function formatPace(durationSec: number | null, distanceM: number | null): string | null {
+  if (!durationSec || !distanceM) return null;
+  const secPerKm = durationSec / (distanceM / 1000);
+  if (!Number.isFinite(secPerKm) || secPerKm <= 0 || secPerKm > 3600) return null;
+  const m = Math.floor(secPerKm / 60);
+  const s = Math.round(secPerKm % 60);
+  return s === 60 ? `${m + 1}:00` : `${m}:${String(s).padStart(2, '0')}`;
 }

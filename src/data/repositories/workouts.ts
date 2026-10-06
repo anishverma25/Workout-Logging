@@ -8,6 +8,7 @@ import type {
   WorkoutSet,
 } from '@/domain/models/schemas';
 import { previousPerformance, type SetSuggestion } from '@/domain/workout/previous';
+import { toggleSupersetChanges } from '@/domain/workout/superset';
 import type { WorkoutDatabase } from '../db';
 import { newRecordMeta, nowIso, patchRecord, patchRecords, putRecords, softDelete } from './write';
 
@@ -164,6 +165,7 @@ export async function startWorkoutFromDay(
         order: order++,
         notes: slot.notes,
         target,
+        supersetGroup: slot.supersetGroup ?? null,
       };
       workoutExercises.push(we);
       for (let i = 0; i < slot.targetSets; i++) {
@@ -449,6 +451,8 @@ export function missingForCompletion(
 ): string | null {
   const t = exercise?.trackingType ?? 'weight_reps';
   if (t === 'duration') return set.durationSec ? null : 'Enter the time first.';
+  // Distance is optional for cardio (a bike without a display); time is not.
+  if (t === 'cardio') return set.durationSec ? null : 'Enter the minutes first.';
   if (t === 'distance') return set.distanceM ? null : 'Enter the distance first.';
   if (t === 'weight_reps' && set.weightKg === null) return 'Enter the weight first.';
   if (!set.reps) return 'Enter the reps first.';
@@ -635,4 +639,110 @@ export async function deleteWorkout(db: WorkoutDatabase, workoutId: string) {
     );
     await softDelete(db, 'workouts', [workoutId]);
   });
+}
+
+// Gym-floor tools
+
+/**
+ * Puts warm-up sets in front of an exercise's sets, replacing warm-ups that are not done yet.
+ * Weights are in kg.
+ */
+export async function addWarmupSets(
+  db: WorkoutDatabase,
+  workoutExerciseId: string,
+  warmups: { weightKg: number; reps: number }[],
+): Promise<void> {
+  await db.transaction('rw', WORKOUT_TABLES(db), async () => {
+    const we = await db.workoutExercises.get(workoutExerciseId);
+    if (!we || we.deletedAt !== null) throw new WorkoutError('Exercise not found.');
+    const current = await setsOf(db, workoutExerciseId);
+    const stale = current.filter((s) => s.setType === 'warmup' && s.completedAt === null);
+    if (stale.length)
+      await softDelete(
+        db,
+        'sets',
+        stale.map((s) => s.id),
+      );
+    const kept = current.filter((s) => !stale.includes(s));
+    const fresh = warmups.map((w, i) => ({
+      ...blankSet(we.workoutId, we.id, we.exerciseId, i, 'warmup'),
+      weightKg: w.weightKg,
+      reps: w.reps,
+    }));
+    await putRecords(db, 'sets', fresh);
+    // Done warm-ups stay first, then the new ones, then everything else.
+    const doneWarmups = kept.filter((s) => s.setType === 'warmup');
+    const rest = kept.filter((s) => s.setType !== 'warmup');
+    await renumber(db, 'sets', [...doneWarmups, ...fresh, ...rest]);
+  });
+}
+
+/**
+ * Swaps the exercise of a workout entry that has no completed sets yet (the machine is
+ * taken). Its unfinished sets move to the new exercise; history stays with each exercise.
+ */
+export async function swapWorkoutExercise(
+  db: WorkoutDatabase,
+  workoutExerciseId: string,
+  exerciseId: string,
+): Promise<void> {
+  await db.transaction('rw', WORKOUT_TABLES(db), async () => {
+    const we = await db.workoutExercises.get(workoutExerciseId);
+    if (!we || we.deletedAt !== null) throw new WorkoutError('Exercise not found.');
+    const exercise = await db.exercises.get(exerciseId);
+    if (!exercise || exercise.deletedAt !== null) throw new WorkoutError('Exercise not found.');
+    const sets = await setsOf(db, workoutExerciseId);
+    if (sets.some((s) => s.completedAt !== null))
+      throw new WorkoutError('Sets are already done. Add the new exercise instead.');
+    await patchRecord<WorkoutExercise>(db, 'workoutExercises', workoutExerciseId, {
+      exerciseId,
+      exerciseName: exercise.name,
+    });
+    // Numbers typed for the old exercise rarely fit the new one.
+    await patchRecords<WorkoutSet>(
+      db,
+      'sets',
+      sets.map((s) => ({
+        id: s.id,
+        changes: { exerciseId, weightKg: null, reps: null, durationSec: null, distanceM: null },
+      })),
+    );
+  });
+}
+
+/**
+ * Links an exercise with the one after it as a superset (done back to back, resting after the
+ * round), or unlinks it. Exercises in a superset share a group number.
+ */
+export async function toggleSupersetWithNext(
+  db: WorkoutDatabase,
+  workoutExerciseId: string,
+): Promise<void> {
+  await db.transaction('rw', WORKOUT_TABLES(db), async () => {
+    const we = await db.workoutExercises.get(workoutExerciseId);
+    if (!we || we.deletedAt !== null) throw new WorkoutError('Exercise not found.');
+    const all = alive(
+      await db.workoutExercises.where('workoutId').equals(we.workoutId).toArray(),
+    ).sort((a, b) => a.order - b.order);
+    const i = all.findIndex((e) => e.id === we.id);
+    if (!all[i + 1]) throw new WorkoutError('There is no exercise after this one.');
+    await patchRecords<WorkoutExercise>(db, 'workoutExercises', toggleSupersetChanges(all, i));
+  });
+}
+
+/**
+ * Whether to rest after a set: not when the next exercise in the same superset still has a
+ * set to do, so the round flows straight on.
+ */
+export function restAfterSet(
+  exerciseId: string,
+  exercises: { id: string; order: number; supersetGroup?: number | null; pending: number }[],
+): boolean {
+  const current = exercises.find((e) => e.id === exerciseId);
+  if (!current || current.supersetGroup == null) return true;
+  const group = exercises
+    .filter((e) => e.supersetGroup === current.supersetGroup)
+    .sort((a, b) => a.order - b.order);
+  const after = group.filter((e) => e.order > current.order);
+  return !after.some((e) => e.pending > 0);
 }

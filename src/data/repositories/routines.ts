@@ -9,6 +9,7 @@ import type { WorkoutDatabase } from '../db';
 import { exerciseIdFor } from '../library/exercises';
 import { templateByKey } from '../library/templates';
 import { personalizeTemplate, type PlanOptions } from '../library/programs';
+import { toggleSupersetChanges } from '@/domain/workout/superset';
 import { newRecordMeta, nowIso, patchRecord, patchRecords, putRecords, softDelete } from './write';
 
 /**
@@ -399,6 +400,17 @@ export async function moveExercise(
     const [moved] = slots.splice(from, 1);
     slots.splice(to, 0, moved!);
     await renumber(db, 'routineExercises', slots);
+  });
+}
+
+/** Links a routine exercise with the next one as a superset, or unlinks it. */
+export async function toggleSlotSuperset(db: WorkoutDatabase, slotId: string): Promise<void> {
+  await db.transaction('rw', ROUTINE_TABLES(db), async () => {
+    const slot = await db.routineExercises.get(slotId);
+    if (!slot || slot.deletedAt !== null) return;
+    const slots = await slotsOf(db, slot.routineDayId);
+    const i = slots.findIndex((s) => s.id === slotId);
+    await patchRecords<RoutineExercise>(db, 'routineExercises', toggleSupersetChanges(slots, i));
   });
 }
 

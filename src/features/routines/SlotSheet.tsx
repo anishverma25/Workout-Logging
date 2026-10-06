@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowDown, ArrowUp, Repeat2, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Link2, Repeat2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Stepper, TextArea } from '@/components/ui/Fields';
 import { Sheet } from '@/components/ui/Sheet';
@@ -9,6 +9,7 @@ import {
   moveExercise,
   removeExercise,
   swapExercise,
+  toggleSlotSuperset,
   updateTargets,
 } from '@/data/repositories/routines';
 import type { Exercise, RoutineExercise, RoutineTargets } from '@/domain/models/schemas';
@@ -144,7 +145,22 @@ function SlotEditor({
           onBlur={() => void updateTargets(db, slot.id, { ...targets, notes: notes || null })}
         />
 
-        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Button
+          variant="secondary"
+          size="sm"
+          className="mt-5"
+          disabled={isLast}
+          icon={<Link2 className="size-4" aria-hidden />}
+          onClick={async () => {
+            await toggleSlotSuperset(db, slot.id);
+            toast(
+              slot.supersetGroup != null ? 'Superset updated' : 'Superset with the next exercise',
+            );
+          }}
+        >
+          {slot.supersetGroup != null ? 'Change superset link' : 'Superset with next'}
+        </Button>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Button
             variant="secondary"
             size="sm"

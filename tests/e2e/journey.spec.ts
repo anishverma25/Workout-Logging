@@ -87,7 +87,7 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
       .filter({ visible: true })
       .first()
       .click();
-    await page.getByRole('button', { name: /^Push Pull Legs/ }).click();
+    await page.getByRole('button', { name: /^Push Pull Legs 6 days a week/ }).click();
     await expect(page.getByRole('heading', { level: 1, name: /Push Pull Legs/ })).toBeVisible();
     await page
       .getByRole('button', { name: /Barbell bench press/ })

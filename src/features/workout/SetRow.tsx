@@ -57,8 +57,19 @@ function SetRowImpl({
   const [pending, setPending] = useState(false);
   const effortKey = prefs.effortMetric;
 
-  const displayLoad = set.weightKg === null ? null : round2(toDisplayWeight(set.weightKg, unit));
-  const amount = set[cols.amountField];
+  const cardio = tracking === 'cardio';
+  const displayLoad = cardio
+    ? set.durationSec === null
+      ? null
+      : round2(set.durationSec / 60)
+    : set.weightKg === null
+      ? null
+      : round2(toDisplayWeight(set.weightKg, unit));
+  const amount = cardio
+    ? set.distanceM === null
+      ? null
+      : round2(set.distanceM / 1000)
+    : set[cols.amountField];
   const typeLabel = SET_TYPE_SHORT[set.setType] || label;
 
   async function toggleDone() {
@@ -101,12 +112,18 @@ function SetRowImpl({
     });
   }
 
-  const ghostLoad =
-    suggestion?.weightKg !== null && suggestion?.weightKg !== undefined
+  const ghostLoad = cardio
+    ? suggestion?.durationSec
+      ? String(round2(suggestion.durationSec / 60))
+      : undefined
+    : suggestion?.weightKg !== null && suggestion?.weightKg !== undefined
       ? String(round2(toDisplayWeight(suggestion.weightKg, unit)))
       : undefined;
-  const ghostAmount =
-    suggestion && suggestion[cols.amountField] !== null
+  const ghostAmount = cardio
+    ? suggestion?.distanceM
+      ? String(round2(suggestion.distanceM / 1000))
+      : undefined
+    : suggestion && suggestion[cols.amountField] !== null
       ? String(suggestion[cols.amountField])
       : undefined;
 
@@ -149,13 +166,19 @@ function SetRowImpl({
         {cols.load ? (
           <CellInput
             ref={loadRef}
-            label={`Set ${typeLabel} load in ${unit}`}
+            label={cardio ? `Set ${typeLabel} minutes` : `Set ${typeLabel} load in ${unit}`}
             value={displayLoad}
             placeholder={done ? undefined : ghostLoad}
-            max={tracking === 'weight_reps' ? 2000 : 500}
+            max={cardio ? 600 : tracking === 'weight_reps' ? 2000 : 500}
             done={done}
             onCommit={(v) =>
-              updateSet(db, set.id, { weightKg: v === null ? null : fromDisplayWeight(v, unit) })
+              cardio
+                ? updateSet(db, set.id, {
+                    durationSec: v === null ? null : Math.round(v * 60),
+                  })
+                : updateSet(db, set.id, {
+                    weightKg: v === null ? null : fromDisplayWeight(v, unit),
+                  })
             }
           />
         ) : (
@@ -168,13 +191,21 @@ function SetRowImpl({
       <div>
         <CellInput
           ref={amountRef}
-          label={`Set ${typeLabel} ${cols.amount === 'm' ? 'metres' : cols.amount.toLowerCase()}`}
+          label={`Set ${typeLabel} ${cols.amount === 'm' ? 'metres' : cols.amount === 'km' ? 'kilometres' : cols.amount.toLowerCase()}`}
           value={amount}
           placeholder={done ? undefined : ghostAmount}
           allowDecimal={cols.amountField === 'distanceM'}
-          max={cols.amountField === 'reps' ? 999 : 99_999}
+          max={cardio ? 500 : cols.amountField === 'reps' ? 999 : 99_999}
           done={done}
-          onCommit={(v) => updateSet(db, set.id, { [cols.amountField]: v })}
+          onCommit={(v) =>
+            updateSet(
+              db,
+              set.id,
+              cardio
+                ? { distanceM: v === null ? null : Math.round(v * 1000) }
+                : { [cols.amountField]: v },
+            )
+          }
         />
       </div>
 

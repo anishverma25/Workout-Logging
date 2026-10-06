@@ -8,6 +8,7 @@ import {
   History,
   House,
   Library,
+  Route,
   Scale,
   Settings,
   Trophy,
@@ -38,6 +39,7 @@ export const PRIMARY_NAV: NavItem[] = [
 ];
 
 export const SECONDARY_NAV: NavItem[] = [
+  { to: '/journey', label: 'Journey', icon: Route, tone: 'ember', group: 'you' },
   { to: '/body', label: 'Body metrics', icon: Scale, tone: 'sky', group: 'you' },
   { to: '/records', label: 'Records', icon: Trophy, tone: 'amber', group: 'training' },
   { to: '/exercises', label: 'Exercises', icon: Library, tone: 'lime', group: 'training' },

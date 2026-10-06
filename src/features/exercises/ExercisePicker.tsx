@@ -12,6 +12,7 @@ import {
   type ExerciseFilters,
 } from '@/domain/exercises/search';
 import { pluralize } from '@/lib/format';
+import type { MuscleGroup } from '@/domain/models/schemas';
 import { CustomExerciseSheet } from './CustomExerciseSheet';
 import { ExerciseFilterChips, SearchField } from './ExerciseFilters';
 import { ExerciseRow } from './ExerciseRow';
@@ -26,6 +27,8 @@ interface Props {
   /** Exercises already present; shown as such but still pickable. */
   presentIds?: string[];
   confirmLabel?: (count: number) => string;
+  /** Start filtered to this muscle (swapping an exercise for a similar one). */
+  suggestMuscle?: MuscleGroup;
 }
 
 export function ExercisePicker(props: Props) {
@@ -39,9 +42,12 @@ function PickerContent({
   onPick,
   presentIds = [],
   confirmLabel = (n) => `Add ${pluralize(n, 'exercise')}`,
+  suggestMuscle,
 }: Props) {
   const catalog = useExerciseCatalog();
-  const [filters, setFilters] = useState<ExerciseFilters>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<ExerciseFilters>(() =>
+    suggestMuscle ? { ...EMPTY_FILTERS, muscle: suggestMuscle } : EMPTY_FILTERS,
+  );
   const [selected, setSelected] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);

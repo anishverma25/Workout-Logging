@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Dumbbell, Pause, Play, Plus, Timer, Trash2 } from 'lucide-react';
 import { Button, IconButton } from '@/components/ui/Button';
@@ -19,6 +19,7 @@ import {
   resumeWorkout,
   updateWorkoutDetails,
   updateWorkoutFeel,
+  restAfterSet,
   type FinishCheck,
 } from '@/data/repositories/workouts';
 import type { Preferences, Workout, WorkoutSet } from '@/domain/models/schemas';
@@ -51,11 +52,49 @@ export function ActiveWorkout({ view, prefs }: Props) {
   const paused = workout.pausedAt !== null;
 
   const allSets = exercises.flatMap((e) => e.sets);
+  const exercisesRef = useRef(exercises);
+  useEffect(() => {
+    exercisesRef.current = exercises;
+  });
   const doneSets = allSets.filter((s) => s.completedAt !== null).length;
+
+  // Superset labels: A1, A2 for the first group, B1, B2 for the next.
+  const supersets = useMemo(() => {
+    const map = new Map<string, { label: string; linkedNext: boolean; linkedPrev: boolean }>();
+    let letter = 0;
+    exercises.forEach((ex, i) => {
+      const g = ex.workoutExercise.supersetGroup;
+      if (g == null) return;
+      const prev = exercises[i - 1]?.workoutExercise.supersetGroup === g;
+      const next = exercises[i + 1]?.workoutExercise.supersetGroup === g;
+      if (!prev && !next) return;
+      if (!prev) letter++;
+      const position = prev
+        ? Number(map.get(exercises[i - 1]!.workoutExercise.id)!.label.slice(1)) + 1
+        : 1;
+      map.set(ex.workoutExercise.id, {
+        label: `${String.fromCharCode(64 + letter)}${position}`,
+        linkedNext: next,
+        linkedPrev: prev,
+      });
+    });
+    return map;
+  }, [exercises]);
 
   const onSetCompleted = useCallback(
     (set: WorkoutSet, ex: WorkoutExerciseView) => {
       if (!prefs.autoStartRest) return;
+      // Inside a superset, go straight to the next exercise; rest after the round.
+      const flow = restAfterSet(
+        ex.workoutExercise.id,
+        exercisesRef.current.map((e, i) => ({
+          id: e.workoutExercise.id,
+          order: i,
+          supersetGroup: e.workoutExercise.supersetGroup,
+          pending: e.sets.filter((x) => x.completedAt === null && x.id !== set.id).length,
+        })),
+      );
+      if (!flow) return;
       const planned = ex.workoutExercise.target?.rest ?? prefs.defaultRestSeconds;
       const seconds = set.setType === 'warmup' ? Math.min(60, planned) : planned;
       if (seconds > 0) void restActions.start(seconds, workout.id);
@@ -162,6 +201,8 @@ export function ActiveWorkout({ view, prefs }: Props) {
             prefs={prefs}
             experience={experience}
             onSetCompleted={onSetCompleted}
+            superset={supersets.get(ex.workoutExercise.id) ?? null}
+            hasNext={i < exercises.length - 1}
           />
         ))}
       </div>

@@ -73,14 +73,22 @@ export function performanceFor(
         perf.heaviestLoadSet = set;
       }
     }
-    if (tracking === 'duration' && isWorkingSet(set) && (set.durationSec ?? 0) > 0) {
+    if (
+      (tracking === 'duration' || tracking === 'cardio') &&
+      isWorkingSet(set) &&
+      (set.durationSec ?? 0) > 0
+    ) {
       const d = set.durationSec ?? 0;
       if (perf.longestDuration === null || d > perf.longestDuration) {
         perf.longestDuration = d;
         perf.longestDurationSet = set;
       }
     }
-    if (tracking === 'distance' && isWorkingSet(set) && (set.distanceM ?? 0) > 0) {
+    if (
+      (tracking === 'distance' || tracking === 'cardio') &&
+      isWorkingSet(set) &&
+      (set.distanceM ?? 0) > 0
+    ) {
       const d = set.distanceM ?? 0;
       if (perf.longestDistance === null || d > perf.longestDistance) {
         perf.longestDistance = d;

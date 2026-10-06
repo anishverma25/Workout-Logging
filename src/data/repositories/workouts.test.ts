@@ -401,3 +401,66 @@ describe('previous performance', () => {
     expect(suggestFor([], await liveSets(we!.id), b!.id)).toMatchObject({ weightKg: 50, reps: 12 });
   });
 });
+
+describe('gym-floor tools', () => {
+  it('adds warm-ups in front, swaps an untouched exercise and links supersets', async () => {
+    const { addWarmupSets, swapWorkoutExercise, toggleSupersetWithNext, restAfterSet } =
+      await import('./workouts');
+    const { startEmptyWorkout, addExercisesToWorkout, completeSet } = await import('./workouts');
+    const { exerciseIdFor } = await import('../library/exercises');
+    const w = await startEmptyWorkout(db);
+    await addExercisesToWorkout(db, w.id, [
+      exerciseIdFor('barbell-bench-press'),
+      exerciseIdFor('barbell-row'),
+      exerciseIdFor('dumbbell-curl'),
+    ]);
+    const wes = (await db.workoutExercises.where('workoutId').equals(w.id).toArray()).sort(
+      (a, b) => a.order - b.order,
+    );
+    const bench = wes[0]!;
+    await addWarmupSets(db, bench.id, [
+      { weightKg: 20, reps: 10 },
+      { weightKg: 40, reps: 5 },
+    ]);
+    const sets = (await db.sets.where('workoutExerciseId').equals(bench.id).toArray())
+      .filter((s) => s.deletedAt === null)
+      .sort((a, b) => a.order - b.order);
+    expect(sets.slice(0, 2).map((s) => [s.setType, s.weightKg, s.reps])).toEqual([
+      ['warmup', 20, 10],
+      ['warmup', 40, 5],
+    ]);
+    // Again: unfinished warm-ups are replaced, not stacked.
+    await addWarmupSets(db, bench.id, [{ weightKg: 30, reps: 5 }]);
+    const again = (await db.sets.where('workoutExerciseId').equals(bench.id).toArray()).filter(
+      (s) => s.deletedAt === null && s.setType === 'warmup',
+    );
+    expect(again.map((s) => s.weightKg)).toEqual([30]);
+
+    await swapWorkoutExercise(db, wes[2]!.id, exerciseIdFor('hammer-curl'));
+    expect((await db.workoutExercises.get(wes[2]!.id))?.exerciseName).toBe('Hammer curl');
+    const done = (await db.sets.where('workoutExerciseId').equals(bench.id).toArray()).find(
+      (s) => s.deletedAt === null && s.setType === 'warmup',
+    )!;
+    await completeSet(db, done.id);
+    await expect(
+      swapWorkoutExercise(db, bench.id, exerciseIdFor('dumbbell-bench-press')),
+    ).rejects.toThrow(/already done/);
+
+    await toggleSupersetWithNext(db, wes[1]!.id);
+    const linked = await Promise.all(wes.map((e) => db.workoutExercises.get(e.id)));
+    expect(linked[1]!.supersetGroup).toBe(linked[2]!.supersetGroup);
+    expect(linked[1]!.supersetGroup).not.toBeNull();
+    expect(linked[0]!.supersetGroup ?? null).toBeNull();
+    const view = linked.map((e, i) => ({
+      id: e!.id,
+      order: i,
+      supersetGroup: e!.supersetGroup,
+      pending: 3,
+    }));
+    expect(restAfterSet(linked[1]!.id, view)).toBe(false);
+    expect(restAfterSet(linked[2]!.id, view)).toBe(true);
+    expect(restAfterSet(linked[0]!.id, view)).toBe(true);
+    await toggleSupersetWithNext(db, wes[1]!.id);
+    expect((await db.workoutExercises.get(wes[1]!.id))?.supersetGroup).toBeNull();
+  });
+});
