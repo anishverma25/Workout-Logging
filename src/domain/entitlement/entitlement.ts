@@ -92,7 +92,16 @@ export function serverNow(clockOffsetMs: number, deviceNow: number = Date.now())
   return new Date(deviceNow + clockOffsetMs);
 }
 
-export type ProFeature = 'long_range' | 'muscle_balance' | 'progression';
+export type ProFeature =
+  | 'long_range'
+  | 'muscle_balance'
+  | 'progression'
+  | 'strength_levels'
+  | 'training_balance'
+  | 'plateaus'
+  | 'weekly_checkin'
+  | 'goal_projection'
+  | 'recaps';
 
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
   long_range: {
@@ -107,13 +116,40 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
     title: 'Progression suggestions',
     description: 'When you hit the top of your rep range at the right effort, the app says so.',
   },
+  strength_levels: {
+    title: 'Strength levels and DOTS',
+    description:
+      'See how your main lifts compare with standard levels for your body weight, and your DOTS score.',
+  },
+  training_balance: {
+    title: 'Balance ratios',
+    description: 'Push against pull, quads against hamstrings, upper against lower body.',
+  },
+  plateaus: {
+    title: 'Plateau detection',
+    description: 'Spots lifts that have stalled for 3 weeks and suggests what to change.',
+  },
+  weekly_checkin: {
+    title: 'Weekly check-in',
+    description: 'Every Monday: what improved, what stalled and one thing to focus on.',
+  },
+  goal_projection: {
+    title: 'Goal projections',
+    description: 'When you will reach each goal at your current rate of progress.',
+  },
+  recaps: {
+    title: 'Monthly and yearly recaps',
+    description: 'Your month and your year in numbers, as a card you can share.',
+  },
 };
 
 /** Always free, during and after the trial. History is never locked. */
 export const FREE_FEATURES = [
   'Unlimited workout logging, routines and custom exercises',
   'Your full workout history and every personal record',
-  'Body weight tracking',
+  'Profile setup, every routine template and personalised routines',
+  'Body weight, measurements, calories, protein, BMI and body fat',
+  'Goals, milestones and progress photos',
   'Progress for the last 7 and 30 days, with insights',
   'Backup and sync across your devices',
 ];

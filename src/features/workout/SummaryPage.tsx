@@ -110,8 +110,8 @@ export function SummaryPage() {
           </ul>
           {summary.prs.some((p) => p.type === 'e1rm') ? (
             <p className="mt-2 text-xs text-faint">
-              Estimated 1RM is calculated from your sets with the Epley formula. It is not a lift
-              you performed.
+              Estimated 1RM is calculated from your sets (Brzycki up to 5 reps, Epley above). It is
+              not a lift you performed.
             </p>
           ) : null}
         </Card>

@@ -24,6 +24,7 @@ import { useStartWorkout } from '../workout/StartWorkout';
 import { InsightList, Suggestions } from './Insights';
 import { useFeature } from '@/app/entitlement';
 import { ProLock } from '../pro/ProLock';
+import { BalanceSection, LevelsSection, PlateausSection, RatesSection } from './StrengthExtras';
 
 const RANGES: { value: ProgressRange; label: string }[] = [
   { value: '7d', label: '7 days' },
@@ -84,7 +85,7 @@ export function ProgressPage() {
         actions={
           <Link
             to="/progress/methodology"
-            className="inline-flex h-11 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 text-sm font-semibold text-muted hover:text-text max-sm:hidden"
+            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-surface px-3.5 text-sm font-semibold text-muted hover:text-text max-sm:hidden"
           >
             <BookOpen className="size-4" aria-hidden /> How it is calculated
           </Link>
@@ -139,7 +140,7 @@ export function ProgressPage() {
               <button
                 type="button"
                 onClick={() => setPickingExercise(true)}
-                className="inline-flex h-9 w-fit items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 text-sm font-semibold hover:border-line-strong"
+                className="inline-flex h-9 w-fit items-center gap-1.5 rounded-full bg-surface-2 px-3.5 text-sm font-semibold"
               >
                 <span className="text-faint">Exercise</span>
                 <span className="max-w-44 truncate">{model.selected?.name}</span>
@@ -180,7 +181,21 @@ export function ProgressPage() {
               />
 
               <StrengthSection model={model} unit={unit} />
+              <RatesSection
+                model={model}
+                unit={unit}
+                names={new Map(training.data!.exercises.map((e) => [e.id, e.name]))}
+              />
+              <LevelsSection
+                model={model}
+                unit={unit}
+                sexKnown={
+                  training.data!.profile?.sex === 'male' || training.data!.profile?.sex === 'female'
+                }
+              />
+              <PlateausSection model={model} unit={unit} exercises={training.data!.exercises} />
               <VolumeSection model={model} unit={unit} />
+              <BalanceSection model={model} />
               {muscleBalanceIncluded ? (
                 <MusclesSection model={model} />
               ) : (
@@ -196,7 +211,7 @@ export function ProgressPage() {
 
           <Link
             to="/progress/methodology"
-            className="mt-10 flex items-center gap-3 rounded-[var(--radius-card)] border border-line bg-surface-2 p-4 text-sm hover:border-line-strong"
+            className="mt-10 flex items-center gap-3 rounded-[var(--radius-card)] bg-surface p-4 text-sm"
           >
             <BookOpen className="size-5 shrink-0 text-accent-text" aria-hidden />
             <span>
@@ -438,8 +453,8 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
               </ChartEmpty>
             )}
             <p className="mt-2 text-xs text-faint">
-              Epley: load × (1 + reps ÷ 30), sets of 12 reps or fewer. An estimate, not a lift you
-              performed.
+              Brzycki up to 5 reps, Epley above, reps in reserve counted, sets of 12 reps or fewer.
+              An estimate, not a lift you performed.
             </p>
           </Card>
 

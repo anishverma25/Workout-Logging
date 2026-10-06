@@ -19,6 +19,7 @@ import { StrengthCard } from './StrengthCard';
 import { TodayCard } from './TodayCard';
 import { WeekCard } from './WeekCard';
 import { RingsCard } from './RingsCard';
+import { CheckinCard } from './CheckinCard';
 import { activeRoutine } from '@/domain/analytics/schedule';
 
 export function HomePage() {
@@ -127,6 +128,7 @@ export function HomePage() {
               unit={prefs.weightUnit}
               className="order-2"
             />
+            <CheckinCard checkin={model.checkin} unit={prefs.weightUnit} className="order-3" />
             <InsightCard insights={model.insights} className="order-3" />
             <div className="order-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-1 lg:gap-6">
               <RecordCard

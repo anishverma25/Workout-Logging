@@ -164,8 +164,9 @@ export function ExerciseDetailSheet({ exercise, onClose }: Props) {
           )}
           {stats && exercise.trackingType === 'weight_reps' ? (
             <p className="mt-3 text-xs text-faint">
-              Estimated 1RM uses the Epley formula on sets of {E1RM_MAX_REPS} reps or fewer. It is
-              an estimate, not a lift you have done.
+              Estimated 1RM uses Brzycki up to 5 reps and Epley above, on sets of {E1RM_MAX_REPS}{' '}
+              reps or fewer, counting logged reps in reserve. It is an estimate, not a lift you have
+              done.
             </p>
           ) : null}
         </section>

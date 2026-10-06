@@ -46,7 +46,9 @@ export function performanceFor(
   const tracking = exercise?.trackingType;
   for (const set of sets) {
     if (isLoadEligible(set, exercise)) {
-      const e1rm = supportsE1rm(exercise) ? estimateOneRepMax(set.weightKg, set.reps) : null;
+      const e1rm = supportsE1rm(exercise)
+        ? estimateOneRepMax(set.weightKg, set.reps, set.rir)
+        : null;
       if (e1rm !== null && (perf.bestE1rm === null || e1rm > perf.bestE1rm)) {
         perf.bestE1rm = e1rm;
         perf.bestE1rmSet = set;

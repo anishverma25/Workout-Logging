@@ -9,6 +9,9 @@ import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { usePreferences, useTrainingData, useWorkoutView } from '@/data/hooks';
+import { buildSessions } from '@/domain/analytics/sessions';
+import { performanceByExercise } from '@/domain/analytics/performance';
+import { sessionLoad } from '@/domain/analytics/standards';
 import type { WorkoutExerciseView } from '@/data/repositories/workoutView';
 import { deleteWorkout, updateWorkoutDetails } from '@/data/repositories/workouts';
 import { estimateOneRepMax, supportsE1rm } from '@/domain/analytics/e1rm';
@@ -42,6 +45,20 @@ export function WorkoutDetailPage() {
     () => (training.data && workoutId ? summarizeWorkout(training.data, workoutId) : null),
     [training.data, workoutId],
   );
+  // Best estimated 1RM of each exercise before this workout, for % of 1RM on every set.
+  const startedAt = view.data?.workout.startedAt;
+  const references = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!training.data || !startedAt) return map;
+    const before = buildSessions(training.data).filter(
+      (s) => s.workout.startedAt < startedAt && s.workout.id !== workoutId,
+    );
+    for (const [id, list] of performanceByExercise(before)) {
+      const best = Math.max(...list.map((p) => p.bestE1rm ?? 0));
+      if (best > 0) map.set(id, best);
+    }
+    return map;
+  }, [training.data, startedAt, workoutId]);
 
   if (view.status === 'loading' || training.status === 'loading') {
     return <Skeleton className="mt-10 h-96" />;
@@ -131,6 +148,20 @@ export function WorkoutDetailPage() {
           />
         </dl>
       ) : null}
+      {workout.sessionRpe || workout.readiness ? (
+        <p className="mt-3 text-sm text-muted">
+          {workout.readiness
+            ? `Before: sleep ${workout.readiness.sleep}/5, energy ${workout.readiness.energy}/5, soreness ${workout.readiness.soreness}/5. `
+            : ''}
+          {workout.sessionRpe
+            ? `Session effort ${workout.sessionRpe}/10${
+                summary?.minutes
+                  ? `, training load ${sessionLoad(workout.sessionRpe, Math.round(summary.minutes))} (effort × minutes)`
+                  : ''
+              }.`
+            : ''}
+        </p>
+      ) : null}
 
       {workout.notes ? (
         <Card className="mt-4 p-4">
@@ -145,6 +176,7 @@ export function WorkoutDetailPage() {
             view={ex}
             prefs={prefs}
             prBySet={prBySet}
+            reference={references.get(ex.workoutExercise.exerciseId) ?? null}
             change={
               summary?.exercises.find((e) => e.exerciseId === ex.workoutExercise.exerciseId)
                 ?.change ?? null
@@ -228,12 +260,15 @@ function ExerciseBlock({
   prBySet,
   change,
   onEditSet,
+  reference,
 }: {
   view: WorkoutExerciseView;
   prefs: Preferences;
   prBySet: Map<string, PersonalRecord[]>;
   change: ExerciseChange | null;
   onEditSet: (id: string) => void;
+  /** Best e1RM before this workout; this workout's own best when there is none. */
+  reference?: number | null;
 }) {
   const { workoutExercise: we, exercise } = view;
   const sets = view.sets.filter((s) => s.completedAt !== null);
@@ -241,7 +276,7 @@ function ExerciseBlock({
   const labels = setLabels(sets);
   const best = sets.reduce<number | null>((b, s) => {
     if (!supportsE1rm(exercise) || s.setType === 'warmup') return b;
-    const e = estimateOneRepMax(s.weightKg, s.reps);
+    const e = estimateOneRepMax(s.weightKg, s.reps, s.rir);
     return e !== null && (b === null || e > b) ? e : b;
   }, null);
 
@@ -290,6 +325,11 @@ function ExerciseBlock({
             prs={prBySet.get(s.id) ?? []}
             unit={prefs.weightUnit}
             onEdit={() => onEditSet(s.id)}
+            percent={
+              supportsE1rm(exercise) && s.weightKg && (reference ?? best)
+                ? Math.round((s.weightKg / (reference ?? best)!) * 100)
+                : null
+            }
           />
         ))}
       </ol>
@@ -310,6 +350,7 @@ function SetLine({
   prs,
   unit,
   onEdit,
+  percent,
 }: {
   set: WorkoutSet;
   label: string;
@@ -317,6 +358,8 @@ function SetLine({
   prs: PersonalRecord[];
   unit: WeightUnit;
   onEdit: () => void;
+  /** Load as a share of the best estimated 1RM. */
+  percent: number | null;
 }) {
   const effort = set.rir !== null ? `RIR ${set.rir}` : set.rpe !== null ? `RPE ${set.rpe}` : null;
   return (
@@ -348,7 +391,14 @@ function SetLine({
             </span>
           ) : null}
         </span>
-        <span className="tabular text-sm text-faint">{effort ?? ''}</span>
+        <span className="tabular text-right text-sm text-faint">
+          {effort ?? ''}
+          {percent !== null ? (
+            <span className="block text-xs" title="Share of your best estimated 1RM">
+              {percent}% 1RM
+            </span>
+          ) : null}
+        </span>
       </button>
     </li>
   );

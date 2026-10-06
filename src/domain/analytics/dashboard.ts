@@ -27,6 +27,7 @@ import {
 } from './sessions';
 import { strengthTrends, type StrengthTrend } from './strength';
 import { cycleNext, weekRings, weeklyStreak, type WeekRings } from './week';
+import { weeklyCheckin, type WeeklyCheckin } from './checkin';
 import { sessionVolumeLoad, totalVolumeLoad } from './volume';
 
 export const RECENT_DAYS = 7;
@@ -73,6 +74,7 @@ export interface DashboardModel {
   hasTrainingData: boolean;
   week: WeekRings;
   streak: { weeks: number; currentWeekMet: boolean };
+  checkin: WeeklyCheckin | null;
   today: TodayPlan;
   recentWindow: {
     days: DayStatus[];
@@ -230,6 +232,14 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
     hasTrainingData: sessions.length > 0,
     week,
     streak: weeklyStreak(sessions, week.sessions.target, now, prefs.weekStartsOn),
+    checkin: weeklyCheckin({
+      sessions,
+      exercises: data.exercises,
+      target: week.sessions.target,
+      experience: data.profile?.experience,
+      now,
+      weekStartsOn: prefs.weekStartsOn,
+    }),
     today: todayPlan,
     recentWindow: {
       days: dayStatuses(sessions, days, recentStart, RECENT_DAYS, now),

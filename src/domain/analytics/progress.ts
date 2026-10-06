@@ -20,6 +20,17 @@ import { generateInsights, type Insight } from './insights';
 import { muscleRecency, muscleWorkload, type MuscleRecency, type MuscleWorkload } from './muscles';
 import { performanceByExercise, performanceFor } from './performance';
 import {
+  balanceRatios,
+  detectPlateaus,
+  readinessPattern,
+  loadSpike,
+  strengthProfile,
+  type BalanceRatio,
+  type Plateau,
+  type StrengthProfile,
+} from './standards';
+import { weightTrend } from './body';
+import {
   progressionStyle,
   progressionSuggestions,
   type ProgressionSuggestion,
@@ -116,6 +127,10 @@ export interface ProgressModel {
   records: PersonalRecord[];
   insights: Insight[];
   progression: ProgressionSuggestion[];
+  /** Current state, whatever the date range: levels, plateaus, balance. */
+  strength: StrengthProfile;
+  plateaus: Plateau[];
+  balance: BalanceRatio[];
 }
 
 export function progressWindow(range: ProgressRange, now: Date, firstSession: Date | null): Window {
@@ -438,9 +453,38 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
       tone: 'positive',
       title: `${progression.length} ${progression.length === 1 ? 'exercise is' : 'exercises are'} ready for a little more load.`,
       basis:
-        'Every target set reached the top of its rep range at the planned effort last time. See the suggestions below.',
+        progressionStyle(data.profile?.experience) === 'linear'
+          ? 'Every target set reached the planned reps at the planned effort last time. See the suggestions below.'
+          : 'Every target set reached the top of its rep range at the planned effort last time. See the suggestions below.',
       priority: 5.5,
     });
+  }
+  const spike = loadSpike(sessions, now);
+  if (spike) {
+    insights.push({
+      id: 'load-spike',
+      tone: 'attention',
+      title: `You did ${spike.acuteSets} working sets in the last 7 days, ${spike.ratio.toFixed(1)} times your usual week.`,
+      basis: `Your usual week over the 4 weeks before was ${Math.round(spike.chronicSetsPerWeek)} sets. Jumps above 1.5 times are linked with more injuries in sports science research. Build up over a few weeks instead.`,
+      priority: 6,
+    });
+  }
+  const history = performanceByExercise(sessions);
+  const trend = weightTrend(data.bodyWeights);
+  const pattern = readinessPattern(sessions, history);
+  if (pattern) {
+    const gap = (pattern.good.change - pattern.poor.change) * 100;
+    if (Math.abs(gap) >= 1)
+      insights.push({
+        id: 'readiness-pattern',
+        tone: 'neutral',
+        title:
+          gap > 0
+            ? `Your lifts go better after ${pattern.factor === 'sleep' ? 'a good night' : 'a high-energy day'}.`
+            : `${pattern.factor === 'sleep' ? 'Sleep' : 'Energy'} has not held your lifts back so far.`,
+        basis: `Best estimated 1RM against the previous session of each lift: ${formatPct(pattern.good.change)} on days you rated ${pattern.factor} 4 or 5 (${pattern.good.sessions} sessions), ${formatPct(pattern.poor.change)} on days you rated it 1 or 2 (${pattern.poor.sessions} sessions).`,
+        priority: 3,
+      });
   }
 
   return {
@@ -493,6 +537,15 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
     records,
     insights: insights.sort((a, b) => b.priority - a.priority),
     progression,
+    strength: strengthProfile(
+      history,
+      data.exercises,
+      trend[trend.length - 1]?.trendKg ?? null,
+      data.profile?.sex,
+      now,
+    ),
+    plateaus: detectPlateaus(history, now, data.profile?.experience),
+    balance: balanceRatios(sessions, now),
   };
 }
 
@@ -501,3 +554,5 @@ export function joinList(items: string[]): string {
   if (items.length <= 1) return items[0] ?? '';
   return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
+
+const formatPct = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(1)}%`;

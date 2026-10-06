@@ -22,11 +22,7 @@ import {
   updateSet,
   updateWorkoutExerciseNotes,
 } from '@/data/repositories/workouts';
-import {
-  checkProgression,
-  loadIncrement,
-  progressionStyle,
-} from '@/domain/analytics/progression';
+import { checkProgression, loadIncrement, progressionStyle } from '@/domain/analytics/progression';
 import { fromDisplayWeight, toDisplayWeight } from '@/lib/units';
 import { useFeature } from '@/app/entitlement';
 import type { Experience, Preferences, WorkoutSet } from '@/domain/models/schemas';

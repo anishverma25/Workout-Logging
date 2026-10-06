@@ -1,21 +1,30 @@
 /**
- * Estimated one-rep max using the Epley formula:
- *   e1RM = weight x (1 + reps / 30)
+ * Estimated one-rep max.
  *
- * This is an estimate, never an actual maximum. Accuracy drops as reps rise,
- * so sets above E1RM_MAX_REPS are not estimated. A single rep returns the load itself.
+ * - Up to 5 reps: Brzycki, load × 36 / (37 - reps). It tracks real maxes more closely at low
+ *   reps than Epley does.
+ * - 6 to 12 reps: Epley, load × (1 + reps / 30).
+ * - Reps in reserve count as reps you could have done: 8 reps with 2 in reserve is estimated
+ *   as 10. Only while the total stays at 12 or fewer, where the formulas hold up.
+ *
+ * This is an estimate, never an actual maximum. Sets above E1RM_MAX_REPS are not estimated.
+ * A single rep with nothing in reserve returns the load itself.
  */
 export const E1RM_MAX_REPS = 12;
+export const BRZYCKI_MAX_REPS = 5;
 
 export function estimateOneRepMax(
   weightKg: number | null,
   reps: number | null,
-  maxReps: number = E1RM_MAX_REPS,
+  rir: number | null = null,
 ): number | null {
   if (weightKg === null || reps === null) return null;
-  if (!(weightKg > 0) || !Number.isInteger(reps) || reps < 1 || reps > maxReps) return null;
-  if (reps === 1) return weightKg;
-  return weightKg * (1 + reps / 30);
+  if (!(weightKg > 0) || !Number.isInteger(reps) || reps < 1 || reps > E1RM_MAX_REPS) return null;
+  const reserve = rir !== null && rir > 0 && reps + rir <= E1RM_MAX_REPS ? rir : 0;
+  const effective = reps + reserve;
+  if (effective === 1) return weightKg;
+  if (effective <= BRZYCKI_MAX_REPS) return (weightKg * 36) / (37 - effective);
+  return weightKg * (1 + effective / 30);
 }
 
 /**

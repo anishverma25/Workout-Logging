@@ -81,7 +81,7 @@ function Body({ records: r, unit, onClose }: Props & { records: ExerciseRecords 
         <section className="mt-6">
           <h3 className="font-display text-lg font-semibold">Estimated 1RM by session</h3>
           <p className="mb-2 text-sm text-faint">
-            Best set each session, Epley formula, sets of 12 reps or fewer.
+            Best set each session, sets of 12 reps or fewer. Brzycki up to 5 reps, Epley above.
           </p>
           <LineChart
             label={`Estimated 1RM for ${r.name} by session, in ${unit}`}

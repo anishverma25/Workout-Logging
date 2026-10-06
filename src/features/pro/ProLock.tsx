@@ -32,7 +32,7 @@ export function ProLock({
   return (
     <div
       className={cn(
-        'flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-surface-2 p-5 sm:flex-row sm:items-center',
+        'flex flex-col gap-3 rounded-[var(--radius-card)] bg-surface p-5 sm:flex-row sm:items-center',
         className,
       )}
       data-pro-lock={feature}

@@ -1,4 +1,5 @@
 import type {
+  Readiness,
   Exercise,
   SetType,
   TargetSnapshot,
@@ -216,6 +217,29 @@ export async function updateWorkoutDetails(
   }
   if (changes.notes !== undefined) patch.notes = changes.notes?.trim() || null;
   await patchRecord<Workout>(db, 'workouts', workoutId, patch);
+}
+
+/** How the person felt before training, and how hard the session was. Both optional. */
+export async function updateWorkoutFeel(
+  db: WorkoutDatabase,
+  workoutId: string,
+  changes: { readiness?: Readiness | null; sessionRpe?: number | null },
+): Promise<void> {
+  const patch: Partial<Workout> = {};
+  if (changes.readiness !== undefined) {
+    const r = changes.readiness;
+    if (r && [r.sleep, r.energy, r.soreness].some((v) => !Number.isInteger(v) || v < 1 || v > 5))
+      throw new WorkoutError('Rate each from 1 to 5.');
+    patch.readiness = r;
+  }
+  if (changes.sessionRpe !== undefined) {
+    const v = changes.sessionRpe;
+    if (v !== null && !(v >= 1 && v <= 10)) throw new WorkoutError('Rate effort from 1 to 10.');
+    patch.sessionRpe = v;
+  }
+  await db.transaction('rw', [db.workouts, db.outbox], () =>
+    patchRecord<Workout>(db, 'workouts', workoutId, patch),
+  );
 }
 
 export async function pauseWorkout(db: WorkoutDatabase, workoutId: string, now = new Date()) {

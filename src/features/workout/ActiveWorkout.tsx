@@ -18,6 +18,7 @@ import {
   pauseWorkout,
   resumeWorkout,
   updateWorkoutDetails,
+  updateWorkoutFeel,
   type FinishCheck,
 } from '@/data/repositories/workouts';
 import type { Preferences, Workout, WorkoutSet } from '@/domain/models/schemas';
@@ -29,6 +30,7 @@ import { ExercisePicker } from '../exercises/ExercisePicker';
 import { ExerciseCard } from './ExerciseCard';
 import { restActions } from './restActions';
 import { RestTimerBar, RestTimerSheet } from './RestTimer';
+import { EffortPicker, ReadinessCard } from './Readiness';
 
 interface Props {
   view: WorkoutView;
@@ -45,6 +47,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
   const [finishing, setFinishing] = useState<FinishCheck | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const [readinessDone, setReadinessDone] = useState(false);
   const paused = workout.pausedAt !== null;
 
   const allSets = exercises.flatMap((e) => e.sets);
@@ -60,8 +63,9 @@ export function ActiveWorkout({ view, prefs }: Props) {
     [prefs.autoStartRest, prefs.defaultRestSeconds, workout.id],
   );
 
-  async function finish(keepUnconfirmed: boolean) {
+  async function finish(keepUnconfirmed: boolean, effort: number | null) {
     try {
+      if (effort !== null) await updateWorkoutFeel(db, workout.id, { sessionRpe: effort });
       await finishWorkout(db, workout.id, { keepUnconfirmed });
       await restActions.clear();
       navigate(`/workouts/${workout.id}/summary`, { replace: true });
@@ -131,8 +135,14 @@ export function ActiveWorkout({ view, prefs }: Props) {
         </div>
       </header>
 
+      {!readinessDone && !workout.readiness && doneSets === 0 ? (
+        <div className="mt-4">
+          <ReadinessCard workoutId={workout.id} onDone={() => setReadinessDone(true)} />
+        </div>
+      ) : null}
+
       {paused ? (
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-warn/30 bg-warn-soft px-4 py-3">
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-warn-soft px-4 py-3">
           <p className="text-sm font-medium text-warn">
             Paused. The workout clock is stopped; you can still edit sets.
           </p>
@@ -263,13 +273,14 @@ function FinishSheet({
 }: {
   check: FinishCheck;
   onClose: () => void;
-  onFinish: (keepUnconfirmed: boolean) => void;
+  onFinish: (keepUnconfirmed: boolean, effort: number | null) => void;
   onDiscard: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [effort, setEffort] = useState<number | null>(null);
   const run = (keep: boolean) => {
     setBusy(true);
-    onFinish(keep);
+    onFinish(keep, effort);
   };
   const nothingDone = check.completedSets === 0;
 
@@ -298,6 +309,9 @@ function FinishSheet({
         {pluralize(check.completedSets, 'set')} marked done.
         {check.emptySets > 0 ? ` ${pluralize(check.emptySets, 'empty set')} will be removed.` : ''}
       </p>
+      <div className="mt-4">
+        <EffortPicker value={effort} onChange={setEffort} />
+      </div>
       {check.unconfirmedSets > 0 ? (
         <div className="mt-4 rounded-2xl border border-warn/30 bg-warn-soft p-4">
           <p className="font-semibold text-warn">
