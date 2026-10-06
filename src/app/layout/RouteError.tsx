@@ -22,7 +22,7 @@ export function RouteError() {
         <AlertTriangle className="size-6" aria-hidden />
       </div>
       <div>
-        <h1 className="font-display text-[2rem] font-bold leading-tight">
+        <h1 className="font-display text-[1.35rem] font-bold leading-tight">
           This screen ran into a problem
         </h1>
         <p className="mt-2 text-muted">

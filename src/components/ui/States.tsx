@@ -16,15 +16,17 @@ export function EmptyState({ icon, title, body, actions, className }: EmptyState
   return (
     <div
       className={cn(
-        'flex flex-col items-start gap-4 rounded-[var(--radius-card)] border border-dashed border-line-strong p-6',
+        'flex flex-col items-start gap-4 rounded-[var(--radius-card)] bg-surface p-6',
         className,
       )}
     >
-      <div className="flex size-11 items-center justify-center rounded-2xl bg-accent-soft text-accent-text">
+      <div className="flex size-12 items-center justify-center rounded-[0.9rem] bg-accent-soft text-accent-text">
         {icon}
       </div>
       <div className="max-w-[46ch]">
-        <h2 className="font-display text-2xl font-semibold leading-tight">{title}</h2>
+        <h2 className="font-display text-[1.45rem] font-bold leading-tight tracking-tight">
+          {title}
+        </h2>
         <div className="mt-2 text-[0.95rem] leading-relaxed text-muted">{body}</div>
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
@@ -44,7 +46,7 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className="flex flex-col items-start gap-3 rounded-[var(--radius-card)] border border-line bg-danger-soft p-5"
+      className="flex flex-col items-start gap-3 rounded-[var(--radius-card)] bg-danger-soft p-5"
     >
       <div className="flex items-center gap-2 font-semibold text-danger">
         <AlertTriangle className="size-5" aria-hidden />
@@ -67,5 +69,5 @@ export function ErrorState({
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden className={cn('animate-pulse rounded-xl bg-surface-2', className)} />;
+  return <div aria-hidden className={cn('animate-pulse rounded-[var(--radius-card)] bg-surface', className)} />;
 }

@@ -1,9 +1,19 @@
 import type { TrainingData } from '@/domain/analytics/sessions';
+import type { Profile } from '@/domain/models/schemas';
 import { SYSTEM_EXERCISES } from '../library/exercises';
 import type { WorkoutDatabase } from '../db';
 
 const alive = <T extends { deletedAt: string | null }>(rows: T[]) =>
   rows.filter((r) => r.deletedAt === null);
+
+/** The profile to show: the person's own most recent one, else the demo athlete's. */
+export function pickProfile(profiles: Profile[]): Profile | null {
+  const live = alive(profiles);
+  const own = live
+    .filter((p) => p.origin === 'user')
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return own[0] ?? live[0] ?? null;
+}
 
 /**
  * Reads everything the dashboard and analytics need in one transaction.
@@ -46,12 +56,7 @@ export async function loadTrainingData(db: WorkoutDatabase): Promise<TrainingDat
         db.sets.toArray(),
         db.bodyWeights.toArray(),
       ]);
-      // Prefer a real profile over the demo one if both exist.
-      const liveProfiles = alive(profiles);
-      const own = liveProfiles
-        .filter((p) => p.origin === 'user')
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-      const profile = own[0] ?? liveProfiles[0] ?? null;
+      const profile = pickProfile(profiles);
       return {
         profile,
         exercises: alive(exercises),

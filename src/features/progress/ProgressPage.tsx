@@ -276,7 +276,7 @@ function Section({
 }) {
   return (
     <section aria-labelledby={`sec-${id}`} className="mt-9">
-      <h2 id={`sec-${id}`} className="font-display text-[1.6rem] font-bold leading-tight">
+      <h2 id={`sec-${id}`} className="font-display text-[1.3rem] font-bold leading-tight">
         {title}
       </h2>
       {detail ? (
@@ -301,9 +301,9 @@ function Tile({
   tone?: 'up' | 'down';
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface p-4">
+    <div className="rounded-2xl bg-surface-2 p-4">
       <dt className="text-sm text-faint">{label}</dt>
-      <dd className="mt-1 font-display text-[2rem] font-bold leading-none">{value}</dd>
+      <dd className="mt-1 font-display text-[1.35rem] font-bold leading-none">{value}</dd>
       {detail ? (
         <dd
           className={cn(
@@ -497,7 +497,7 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
             <h3 className="font-semibold">Relative strength</h3>
             {s.relativeStrength ? (
               <p className="mt-1">
-                <span className="tabular font-display text-[2rem] font-bold">
+                <span className="tabular font-display text-[1.35rem] font-bold">
                   {s.relativeStrength.ratio.toFixed(2)}×
                 </span>{' '}
                 <span className="text-muted">body weight</span>
@@ -679,7 +679,7 @@ function ConsistencySection({ model }: { model: ProgressModel }) {
             <h3 className="font-semibold">Adherence</h3>
             {a.rate !== null ? (
               <>
-                <p className="mt-1 font-display text-[2rem] font-bold leading-none">
+                <p className="mt-1 font-display text-[1.35rem] font-bold leading-none">
                   {Math.round(a.rate * 100)}%
                 </p>
                 <p className="mt-1 text-sm text-muted">

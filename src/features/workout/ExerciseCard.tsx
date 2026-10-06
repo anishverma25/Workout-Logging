@@ -100,7 +100,7 @@ function ExerciseCardImpl({ view, index, count, prefs, onSetCompleted }: Props) 
   return (
     <section
       aria-labelledby={`ex-${we.id}`}
-      className="rounded-[var(--radius-card)] border border-line bg-surface py-4 shadow-[var(--shadow-card)]"
+      className="rounded-[var(--radius-card)] bg-surface py-4"
     >
       <header className="flex items-start justify-between gap-2 px-4">
         <div className="min-w-0">
@@ -178,7 +178,7 @@ function ExerciseCardImpl({ view, index, count, prefs, onSetCompleted }: Props) 
           aria-hidden
           className={cn(
             cols.showEffort ? SET_GRID : SET_GRID_NO_EFFORT,
-            'px-1 pb-1 text-[0.7rem] font-semibold uppercase tracking-wide text-faint',
+            'px-1 pb-1 text-[0.7rem] font-medium text-faint',
           )}
         >
           <span className="text-center">Set</span>

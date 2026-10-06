@@ -96,7 +96,7 @@ export function RoutineEditorPage() {
             {routine.isActive ? <Badge tone="accent">Active</Badge> : null}
             {routine.origin === 'demo' ? <Badge tone="warn">Demo</Badge> : null}
           </div>
-          <h1 className="mt-2 font-display text-[2.1rem] font-bold leading-none sm:text-[2.6rem]">
+          <h1 className="mt-2 font-display text-[1.4rem] font-bold leading-none sm:text-[1.75rem]">
             <button
               type="button"
               onClick={() => setRenaming(true)}
@@ -315,12 +315,12 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
   return (
     <section
       aria-labelledby={`day-${day.id}`}
-      className="flex flex-col rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-card)]"
+      className="flex flex-col rounded-[var(--radius-card)] bg-surface"
     >
       <div className="flex items-start justify-between gap-2 p-5 pb-3">
         <div className="min-w-0">
           <p className="text-sm text-faint">Day {index + 1}</p>
-          <h2 id={`day-${day.id}`} className="font-display text-[1.7rem] font-bold leading-tight">
+          <h2 id={`day-${day.id}`} className="font-display text-[1.4rem] font-bold leading-tight">
             <button type="button" onClick={() => setRenaming(true)} className="text-left">
               {day.name}
             </button>

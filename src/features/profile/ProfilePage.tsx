@@ -11,21 +11,13 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { bodyWeightSummary } from '@/domain/analytics/bodyweight';
 import type { Profile } from '@/domain/models/schemas';
+import { EXPERIENCE_LABEL, GOAL_LABEL } from '@/domain/models/labels';
 import { usePreferences, useTrainingData } from '@/data/hooks';
 import { ageFromBirthDate } from '@/lib/dates';
 import { formatWeight } from '@/lib/units';
 
-const GOALS: Record<Profile['goal'], string> = {
-  strength: 'Strength',
-  hypertrophy: 'Muscle growth',
-  strength_hypertrophy: 'Strength and muscle growth',
-  general_fitness: 'General fitness',
-};
-const EXPERIENCE: Record<Profile['experience'], string> = {
-  beginner: 'Beginner',
-  intermediate: 'Intermediate',
-  advanced: 'Advanced',
-};
+const GOALS = GOAL_LABEL;
+const EXPERIENCE = EXPERIENCE_LABEL;
 
 export function ProfilePage() {
   const training = useTrainingData();
@@ -66,7 +58,7 @@ export function ProfilePage() {
                 .join('')}
             </span>
             <div>
-              <p className="font-display text-3xl font-bold leading-none">{profile.displayName}</p>
+              <p className="font-display text-[1.3rem] font-bold leading-none">{profile.displayName}</p>
               {profile.origin === 'demo' ? (
                 <p className="mt-1.5 text-sm text-warn">Fictional demo profile</p>
               ) : null}

@@ -79,7 +79,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
             className="min-w-0 flex-1 text-left"
             aria-label={`${workout.name}. Rename workout`}
           >
-            <span className="block truncate font-display text-[1.6rem] font-bold leading-tight">
+            <span className="block truncate font-display text-[1.3rem] font-bold leading-tight">
               {workout.name}
             </span>
             <span className="flex items-center gap-2 text-sm text-muted">

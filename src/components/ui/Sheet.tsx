@@ -77,7 +77,7 @@ export function Sheet({
         if (e.target === e.currentTarget) onCloseRef.current();
       }}
       className={cn(
-        'sheet m-0 mt-auto hidden max-h-[min(92dvh,52rem)] w-full max-w-none flex-col open:flex overflow-hidden rounded-t-[1.6rem] border border-b-0 border-line-strong bg-surface p-0 text-text shadow-2xl backdrop:bg-black/55 sm:m-auto sm:rounded-[1.4rem] sm:border-b',
+        'sheet m-0 mt-auto hidden max-h-[min(92dvh,52rem)] w-full max-w-none flex-col open:flex overflow-hidden rounded-t-[1.75rem] bg-surface p-0 text-text shadow-[var(--shadow-float)] backdrop:bg-black/50 backdrop:backdrop-blur-[2px] sm:m-auto sm:rounded-[1.5rem]',
         size === 'md' ? 'sm:max-w-lg' : 'sm:max-w-2xl',
         className,
       )}
@@ -85,12 +85,15 @@ export function Sheet({
       {open ? (
         <>
           <div
-            className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-line-strong sm:hidden"
+            className="mx-auto mt-2 h-[5px] w-9 shrink-0 rounded-full bg-line-strong sm:hidden"
             aria-hidden
           />
           <header className="flex shrink-0 items-start justify-between gap-3 px-5 pb-3 pt-3 sm:pt-5">
             <div className="min-w-0">
-              <h2 id={titleId} className="font-display text-[1.6rem] font-bold leading-tight">
+              <h2
+                id={titleId}
+                className="font-display text-[1.375rem] font-bold leading-tight tracking-tight"
+              >
                 {title}
               </h2>
               {description ? (
@@ -103,9 +106,9 @@ export function Sheet({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="-mr-1.5 inline-flex size-11 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-text"
+              className="tap-target mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--seg-track)] text-muted transition-colors hover:text-text"
             >
-              <X className="size-5" aria-hidden />
+              <X className="size-4" strokeWidth={2.5} aria-hidden />
             </button>
           </header>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5">
@@ -158,7 +161,7 @@ export function ConfirmSheet({
           <button
             type="button"
             onClick={onClose}
-            className="h-12 rounded-[var(--radius-control)] px-5 font-semibold text-muted hover:bg-surface-2 hover:text-text"
+            className="h-12 rounded-full px-5 font-semibold text-muted hover:bg-surface-2 hover:text-text"
           >
             {cancelLabel}
           </button>
@@ -167,7 +170,7 @@ export function ConfirmSheet({
             disabled={busy}
             onClick={onConfirm}
             className={cn(
-              'h-12 rounded-[var(--radius-control)] px-5 font-semibold transition-[filter] disabled:opacity-50',
+              'h-12 rounded-full px-6 font-semibold transition-[filter] disabled:opacity-50',
               danger ? 'bg-danger text-bg hover:brightness-110' : 'bg-accent text-accent-ink',
             )}
           >

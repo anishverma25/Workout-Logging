@@ -10,7 +10,7 @@ export function InsightCard({ insights, className }: { insights: Insight[]; clas
   return (
     <section
       aria-label="Training insight"
-      className={cn('rounded-[var(--radius-card)] border border-line bg-surface-2 p-5', className)}
+      className={cn('rounded-[var(--radius-card)] bg-surface p-5', className)}
     >
       <div className="flex gap-3.5">
         <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-full', ring)}>

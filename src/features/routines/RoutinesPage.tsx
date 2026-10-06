@@ -113,7 +113,7 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
   return (
     <article
       className={cn(
-        'relative rounded-[var(--radius-card)] border bg-surface p-5 shadow-[var(--shadow-card)] transition-colors',
+        'relative rounded-[var(--radius-card)] border bg-surface p-5 transition-colors',
         routine.isActive ? 'border-accent-text/40' : 'border-line',
       )}
     >
@@ -123,7 +123,7 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
             {routine.isActive ? <Badge tone="accent">Active</Badge> : null}
             {routine.origin === 'demo' ? <Badge tone="warn">Demo</Badge> : null}
           </div>
-          <h2 className="mt-2 font-display text-[1.75rem] font-bold leading-none">
+          <h2 className="mt-2 font-display text-[1.45rem] font-bold leading-none">
             <Link
               to={`/routines/${routine.id}`}
               className="after:absolute after:inset-0 after:rounded-[var(--radius-card)] focus-visible:outline-none"
@@ -156,7 +156,7 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
                 name ? 'bg-surface-2' : 'border border-dashed border-line',
               )}
             >
-              <span className="text-[0.7rem] font-medium uppercase tracking-wide text-faint">
+              <span className="text-[0.7rem] font-medium text-faint">
                 {weekdayShortName(w)}
               </span>
               <span className="w-full truncate px-1 text-xs font-semibold">
@@ -251,7 +251,7 @@ export function NewRoutineSheet({ open, onClose }: { open: boolean; onClose: () 
                   setBusy(false);
                 }
               }}
-              className="flex h-full w-full flex-col items-start gap-1 rounded-2xl border border-line bg-surface-2/50 p-4 text-left transition-colors hover:border-line-strong hover:bg-surface-2"
+              className="flex h-full w-full flex-col items-start gap-1 rounded-2xl bg-surface-2 p-4 text-left transition-colors hover:border-line-strong hover:bg-surface-2"
             >
               <span className="flex w-full items-baseline justify-between gap-2">
                 <span className="font-display text-xl font-semibold">{t.name}</span>

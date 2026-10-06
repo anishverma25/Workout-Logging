@@ -49,7 +49,7 @@ export function SummaryPage() {
         <span className="summary-pop relative mx-auto flex size-16 items-center justify-center rounded-full bg-accent text-accent-ink">
           <Check className="size-8" strokeWidth={3} aria-hidden />
         </span>
-        <h1 className="relative mt-4 font-display text-[2.6rem] font-bold leading-none">
+        <h1 className="relative mt-4 font-display text-[1.75rem] font-bold leading-none">
           {session.workout.name} done
         </h1>
         <p className="relative mt-2 text-muted">{formatLongDay(session.date)}</p>
@@ -167,9 +167,9 @@ export function SummaryPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface px-3 py-3.5 text-center">
+    <div className="rounded-2xl bg-surface-2 px-3 py-3.5 text-center">
       <dt className="text-xs font-medium text-faint">{label}</dt>
-      <dd className="tabular mt-1 font-display text-[1.6rem] font-bold leading-none">{value}</dd>
+      <dd className="tabular mt-1 font-display text-[1.3rem] font-bold leading-none">{value}</dd>
     </div>
   );
 }

@@ -21,7 +21,7 @@ export function BodyWeightCard({ summary, unit }: BodyWeightCardProps) {
         <>
           <div className="mt-3 flex items-end justify-between gap-3">
             <p className="flex items-baseline gap-1.5">
-              <span className="tabular font-display text-[2.6rem] font-bold leading-none">
+              <span className="tabular font-display text-[1.75rem] font-bold leading-none">
                 {formatWeightValue(summary.latest.weightKg, unit)}
               </span>
               <span className="text-muted">{unit}</span>

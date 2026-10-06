@@ -42,7 +42,7 @@ export function StrengthCard({ trends, unit, className }: StrengthCardProps) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{t.exerciseName}</p>
                   <p className="mt-0.5 flex items-baseline gap-2">
-                    <span className="tabular font-display text-[1.75rem] font-semibold leading-none">
+                    <span className="tabular font-display text-[1.45rem] font-semibold leading-none">
                       {formatWeightValue(t.latest, unit)}
                     </span>
                     <span className="text-sm text-faint">{unit} e1RM</span>

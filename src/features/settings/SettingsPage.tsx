@@ -6,14 +6,14 @@ import {
   setDevEntitlement,
   type DevEntitlementState,
 } from '@/app/devEntitlement';
-import { FlaskConical, HardDrive, RotateCcw, Smartphone, Trash2 } from 'lucide-react';
+import { FlaskConical, RotateCcw, Trash2 } from 'lucide-react';
 import { isIosSafari, promptInstall, usePwa } from '@/app/pwa';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { useTheme, type ThemePreference } from '@/app/theme';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { useAccount } from '@/app/account';
 import { SyncSummary } from '@/features/account/SyncStatus';
-import { Card } from '@/components/ui/Card';
+import { Panel, PanelRow } from '@/components/ui/List';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
@@ -28,9 +28,8 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader title="Settings" />
-      <div className="flex max-w-2xl flex-col gap-5">
+      <div className="flex max-w-2xl flex-col gap-7">
         <AppearanceSection />
-        <UnitsSection />
         <InstallSection />
         <StorageSection />
         <DemoSection />
@@ -40,32 +39,13 @@ export function SettingsPage() {
   );
 }
 
-function Row({
-  title,
-  detail,
-  children,
-}: {
-  title: string;
-  detail?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0">
-        <p className="font-medium">{title}</p>
-        {detail ? <p className="mt-0.5 text-sm text-faint">{detail}</p> : null}
-      </div>
-      <div className="shrink-0">{children}</div>
-    </div>
-  );
-}
-
 function AppearanceSection() {
   const { preference, setPreference } = useTheme();
+  const prefs = usePreferences();
+  const toast = useToast();
   return (
-    <Card className="p-5">
-      <h2 className="mb-3 font-display text-xl font-semibold">Appearance</h2>
-      <Row title="Theme" detail="System follows your phone or computer setting.">
+    <Panel title="Appearance and units">
+      <PanelRow title="Theme" detail="System follows your phone or computer setting." stack>
         <SegmentedControl<ThemePreference>
           label="Theme"
           value={preference}
@@ -76,20 +56,11 @@ function AppearanceSection() {
             { value: 'light', label: 'Light' },
           ]}
         />
-      </Row>
-    </Card>
-  );
-}
-
-function UnitsSection() {
-  const prefs = usePreferences();
-  const toast = useToast();
-  return (
-    <Card className="p-5">
-      <h2 className="mb-3 font-display text-xl font-semibold">Units</h2>
-      <Row
+      </PanelRow>
+      <PanelRow
         title="Weight"
         detail="Changes how weights are shown. Your logged numbers are never altered."
+        stack
       >
         <SegmentedControl
           label="Weight unit"
@@ -103,8 +74,8 @@ function UnitsSection() {
             { value: 'lb', label: 'lb' },
           ]}
         />
-      </Row>
-    </Card>
+      </PanelRow>
+    </Panel>
   );
 }
 
@@ -118,18 +89,15 @@ function InstallSection() {
   else if (isIosSafari()) detail = 'In Safari, tap Share, then Add to Home Screen.';
   else detail = "Use your browser's menu to install it or add it to your home screen.";
   return (
-    <Card className="p-5">
-      <h2 className="mb-3 flex items-center gap-2 font-display text-xl font-semibold">
-        <Smartphone className="size-5 text-faint" aria-hidden /> Install the app
-      </h2>
-      <Row title={installed ? 'Installed' : 'Home screen'} detail={detail}>
+    <Panel title="Install the app">
+      <PanelRow title={installed ? 'Installed' : 'Home screen'} detail={detail}>
         {installPrompt && !installed ? (
           <Button size="sm" variant="secondary" onClick={() => void promptInstall()}>
             Install
           </Button>
         ) : null}
-      </Row>
-    </Card>
+      </PanelRow>
+    </Panel>
   );
 }
 
@@ -149,16 +117,15 @@ function StorageSection() {
           ? 'This browser does not report storage protection.'
           : 'Checking...';
   return (
-    <Card className="p-5">
-      <h2 className="mb-1 flex items-center gap-2 font-display text-xl font-semibold">
-        <HardDrive className="size-5 text-faint" aria-hidden /> Data on this device
-      </h2>
-      <p className="mb-4 text-sm text-muted">
-        {signedIn
+    <Panel
+      title="Data on this device"
+      footer={
+        signedIn
           ? 'Everything is saved on this device first, so the app works offline, and then synced to your account.'
-          : 'Workouts are saved on this device. Without an account, this device holds your only copy.'}
-      </p>
-      <div className="mb-4 rounded-xl bg-surface-2 p-4">
+          : 'Workouts are saved on this device. Without an account, this device holds your only copy.'
+      }
+    >
+      <div className="py-4">
         <SyncSummary />
         {account.status === 'signedOut' ? (
           <ButtonLink to="/sign-in?next=/account" size="sm" className="mt-3">
@@ -166,7 +133,7 @@ function StorageSection() {
           </ButtonLink>
         ) : null}
       </div>
-      <Row title="Storage protection" detail={label}>
+      <PanelRow title="Storage protection" detail={label}>
         {state === 'best-effort' ? (
           <Button
             size="sm"
@@ -176,8 +143,8 @@ function StorageSection() {
             Protect my data
           </Button>
         ) : null}
-      </Row>
-    </Card>
+      </PanelRow>
+    </Panel>
   );
 }
 
@@ -185,18 +152,12 @@ function DemoSection() {
   const account = useAccount();
   if (account.status === 'signedIn') {
     return (
-      <Card className="p-5" id="demo-data" aria-labelledby="demo-title">
-        <h2
-          id="demo-title"
-          className="mb-1 flex items-center gap-2 font-display text-xl font-semibold"
-        >
-          <FlaskConical className="size-5 text-warn" aria-hidden /> Demo data
-        </h2>
-        <p className="text-sm text-muted">
+      <Panel title="Demo data" id="demo-data">
+        <p className="py-3.5 text-sm text-muted">
           Your account only ever holds your own training, so demo data is not available while you
           are signed in. Sign out to explore the demo on this device.
         </p>
-      </Card>
+      </Panel>
     );
   }
   return <GuestDemoSection />;
@@ -218,26 +179,19 @@ function GuestDemoSection() {
   const loaded = demo.data?.loaded ?? false;
 
   return (
-    <Card className="p-5" id="demo-data" aria-labelledby="demo-title">
-      <h2
-        id="demo-title"
-        className="mb-1 flex items-center gap-2 font-display text-xl font-semibold"
-      >
-        <FlaskConical className="size-5 text-warn" aria-hidden /> Demo data
-      </h2>
-      <p className="mb-4 text-sm text-muted">
-        A fictional athlete, Arjun, with {DEMO_HISTORY_DAYS / 7} weeks of Push Pull Legs training.
-        The last {DEMO_FEATURED_DAYS} days are the featured week. Demo records are kept separate and
-        clearing them never touches your own workouts.
-      </p>
-      <div className="mb-4 rounded-xl bg-surface-2 px-4 py-3 text-sm" role="status">
+    <Panel
+      title="Demo data"
+      id="demo-data"
+      footer={`A fictional athlete, Arjun, with ${DEMO_HISTORY_DAYS / 7} weeks of Push Pull Legs training. The last ${DEMO_FEATURED_DAYS} days are the featured week. Demo records are kept separate and clearing them never touches your own workouts.`}
+    >
+      <div className="py-3.5 text-sm" role="status">
         {demo.status === 'loading'
           ? 'Checking...'
           : loaded
             ? `Loaded: ${demo.data?.workouts ?? 0} workouts${demo.data?.loadedAt ? `, generated ${formatShortDate(new Date(demo.data.loadedAt))}` : ''}.`
             : 'Not loaded.'}
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 py-3.5">
         {!loaded ? (
           <Button
             disabled={busy}
@@ -267,7 +221,7 @@ function GuestDemoSection() {
           </>
         )}
       </div>
-    </Card>
+    </Panel>
   );
 }
 
@@ -275,15 +229,14 @@ function GuestDemoSection() {
 function DeveloperSection() {
   const value = useSyncExternalStore(onDevEntitlementChange, getDevEntitlement);
   return (
-    <Card className="border-dashed p-5">
-      <h2 className="mb-1 font-display text-xl font-semibold">Developer</h2>
-      <p className="mb-4 text-sm text-muted">
-        Only in development builds. Changes what this browser tab shows, never the account.
-      </p>
-      <Row title="Access state" detail="Preview trial and Pro screens.">
+    <Panel
+      title="Developer"
+      footer="Only in development builds. Changes what this browser tab shows, never the account."
+    >
+      <PanelRow title="Access state" detail="Preview trial and Pro screens.">
         <select
           aria-label="Access state"
-          className="h-10 rounded-xl border border-line bg-surface-2 px-3"
+          className="h-10 rounded-xl bg-surface-2 px-3"
           value={value}
           onChange={(e) => setDevEntitlement(e.target.value as DevEntitlementState)}
         >
@@ -293,7 +246,7 @@ function DeveloperSection() {
             </option>
           ))}
         </select>
-      </Row>
-    </Card>
+      </PanelRow>
+    </Panel>
   );
 }

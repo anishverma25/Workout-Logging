@@ -121,7 +121,7 @@ export function RecordsPage() {
             <Card className="overflow-hidden">
               <div
                 aria-hidden
-                className="hidden grid-cols-[minmax(0,1fr)_8rem_9rem_7rem_1.25rem] gap-4 border-b border-line px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-faint md:grid"
+                className="hidden grid-cols-[minmax(0,1fr)_8rem_9rem_7rem_1.25rem] gap-4 border-b border-line px-5 py-2.5 text-xs font-medium text-faint md:grid"
               >
                 <span>Exercise</span>
                 <span className="text-right">Heaviest lifted</span>
@@ -170,7 +170,7 @@ function RecordCard({
     <button
       type="button"
       onClick={onOpen}
-      className="flex h-full w-full flex-col rounded-[var(--radius-card)] border border-line bg-surface p-4 text-left shadow-[var(--shadow-card)] transition-colors hover:border-line-strong"
+      className="flex h-full w-full flex-col rounded-[var(--radius-card)] bg-surface p-4 text-left transition-colors hover:border-line-strong"
     >
       <span className="flex items-center justify-between gap-2">
         <Badge tone="accent">
@@ -180,7 +180,7 @@ function RecordCard({
         <span className="text-sm text-faint">{formatRelativeDay(record.date)}</span>
       </span>
       <span className="mt-3 truncate font-semibold">{record.exerciseName}</span>
-      <span className="tabular mt-1 font-display text-[2rem] font-bold leading-none">
+      <span className="tabular mt-1 font-display text-[1.35rem] font-bold leading-none">
         {formatRecordValue(record.type, record.value, unit)}
       </span>
       <span className="tabular mt-2 text-sm text-muted">

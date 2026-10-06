@@ -77,7 +77,7 @@ export function RestTimerBar({ onOpen }: { onOpen: () => void }) {
         <span className="min-w-0">
           <span
             aria-live="off"
-            className="tabular block font-display text-[1.75rem] font-bold leading-none"
+            className="tabular block font-display text-[1.45rem] font-bold leading-none"
           >
             {finished ? 'Rest done' : formatClock(Math.ceil(left / 1000))}
           </span>
@@ -208,7 +208,7 @@ function RestTimerSheetBody({
     >
       <div className="flex flex-col items-center py-2">
         <Timer className="size-5 text-faint" aria-hidden />
-        <p className="tabular mt-1 font-display text-[3.5rem] font-bold leading-none">
+        <p className="tabular mt-1 font-display text-[2.35rem] font-bold leading-none">
           {state ? formatClock(Math.ceil(left / 1000)) : formatClock(custom)}
         </p>
         {state ? (

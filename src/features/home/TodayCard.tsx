@@ -24,7 +24,7 @@ export function TodayCard({ plan, unit, className }: TodayCardProps) {
     <section
       aria-labelledby="today-title"
       className={cn(
-        'relative overflow-hidden rounded-[1.6rem] border border-line bg-surface p-5 shadow-[var(--shadow-card)] sm:p-6',
+        'relative overflow-hidden rounded-[1.6rem] bg-surface p-5 sm:p-6',
         className,
       )}
     >
@@ -56,7 +56,7 @@ function Planned({ plan }: { plan: Extract<TodayPlan, { kind: 'planned' }> }) {
       <Eyebrow>Today in {plan.routineName}</Eyebrow>
       <h2
         id="today-title"
-        className="mt-1 font-display text-[3.4rem] font-bold leading-[0.9] tracking-[-0.005em] sm:text-[4rem]"
+        className="mt-1 font-display text-[2.3rem] font-bold leading-[0.9] tracking-tight sm:text-[2.7rem]"
       >
         {plan.day.name}
       </h2>
@@ -102,7 +102,7 @@ function Done({ plan, unit }: { plan: Extract<TodayPlan, { kind: 'done' }>; unit
         <span className="flex size-10 items-center justify-center rounded-full bg-accent text-accent-ink">
           <Check className="size-5" strokeWidth={3} aria-hidden />
         </span>
-        <h2 id="today-title" className="font-display text-[2.6rem] font-bold leading-none">
+        <h2 id="today-title" className="font-display text-[1.75rem] font-bold leading-none">
           {plan.session.workout.name} done
         </h2>
       </div>
@@ -132,7 +132,7 @@ function Rest({ plan }: { plan: Extract<TodayPlan, { kind: 'rest' }> }) {
       <Eyebrow>Today</Eyebrow>
       <div className="mt-1 flex items-center gap-3">
         <Moon className="size-7 text-muted" aria-hidden />
-        <h2 id="today-title" className="font-display text-[3rem] font-bold leading-none">
+        <h2 id="today-title" className="font-display text-[2rem] font-bold leading-none">
           Rest day
         </h2>
       </div>
@@ -150,7 +150,7 @@ function NoRoutine() {
   return (
     <>
       <Eyebrow>Today</Eyebrow>
-      <h2 id="today-title" className="mt-1 font-display text-[2.6rem] font-bold leading-none">
+      <h2 id="today-title" className="mt-1 font-display text-[1.75rem] font-bold leading-none">
         Train your way
       </h2>
       <p className="mt-3 max-w-[42ch] text-muted">

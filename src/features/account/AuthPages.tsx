@@ -32,7 +32,7 @@ function AuthCard({
     <div className="mx-auto flex max-w-md flex-col gap-5 pt-8 lg:pt-16">
       <div className="flex items-center gap-3">
         <BrandMark className="size-9" />
-        <h1 className="font-display text-[2.1rem] font-bold leading-none">{title}</h1>
+        <h1 className="font-display text-[1.4rem] font-bold leading-none">{title}</h1>
       </div>
       {intro ? <p className="text-muted">{intro}</p> : null}
       <Card className="p-5">{children}</Card>

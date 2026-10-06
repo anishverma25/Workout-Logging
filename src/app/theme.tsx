@@ -12,7 +12,7 @@ export type ThemePreference = 'system' | 'dark' | 'light';
 export type ResolvedTheme = 'dark' | 'light';
 
 const STORAGE_KEY = 'overload.theme';
-const THEME_COLORS: Record<ResolvedTheme, string> = { dark: '#0e0f0d', light: '#f2f3ee' };
+const THEME_COLORS: Record<ResolvedTheme, string> = { dark: '#000000', light: '#f2f2f7' };
 
 interface ThemeContextValue {
   preference: ThemePreference;

@@ -27,7 +27,7 @@ export function RecordCard({ record, recentCount, unit }: RecordCardProps) {
         <>
           <p className="mt-3 truncate font-semibold">{record.exerciseName}</p>
           <p className="mt-1 flex items-baseline gap-1.5">
-            <span className="tabular font-display text-[2.6rem] font-bold leading-none">
+            <span className="tabular font-display text-[1.75rem] font-bold leading-none">
               {record.type === 'e1rm' || record.type === 'load'
                 ? formatWeightValue(record.value, unit)
                 : formatRecordValue(record.type, record.value, unit).split(' ')[0]}

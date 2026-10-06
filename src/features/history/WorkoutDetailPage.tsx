@@ -89,7 +89,7 @@ export function WorkoutDetailPage() {
       </div>
       <header className="flex items-start justify-between gap-3 pb-5 pt-1">
         <div className="min-w-0">
-          <h1 className="font-display text-[2.2rem] font-bold leading-none sm:text-[2.6rem]">
+          <h1 className="font-display text-[1.5rem] font-bold leading-none sm:text-[1.75rem]">
             {workout.name}
           </h1>
           <p className="mt-2 text-muted">
@@ -215,9 +215,9 @@ export function WorkoutDetailPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface px-3.5 py-3">
+    <div className="rounded-2xl bg-surface-2 px-3.5 py-3">
       <dt className="text-xs font-medium text-faint">{label}</dt>
-      <dd className="tabular mt-1 font-display text-[1.6rem] font-bold leading-none">{value}</dd>
+      <dd className="tabular mt-1 font-display text-[1.3rem] font-bold leading-none">{value}</dd>
     </div>
   );
 }

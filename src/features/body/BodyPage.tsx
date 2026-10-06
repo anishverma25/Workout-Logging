@@ -103,7 +103,7 @@ export function BodyPage() {
                 Latest · {formatRelativeDay(new Date(summary.latest.measuredAt), now)}
               </p>
               <p className="mt-1 flex items-baseline gap-1.5">
-                <span className="font-display text-[3.4rem] font-bold leading-none">
+                <span className="font-display text-[2.3rem] font-bold leading-none">
                   {formatWeightValue(summary.latest.weightKg, unit)}
                 </span>
                 <span className="text-lg text-muted">{unit}</span>

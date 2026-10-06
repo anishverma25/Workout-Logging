@@ -16,7 +16,7 @@ import {
   type WorkoutCore,
   type WorkoutView,
 } from './repositories/workoutView';
-import { loadTrainingData } from './repositories/training';
+import { loadTrainingData, pickProfile } from './repositories/training';
 
 export type QueryState<T> =
   | { status: 'loading'; data: undefined; error: undefined }
@@ -60,6 +60,8 @@ export function useLiveData<T>(
 }
 
 export const useTrainingData = () => useLiveData<TrainingData>(() => loadTrainingData(db));
+/** Just the profile: cheap enough for headers on every page. */
+export const useProfile = () => useLiveData(async () => pickProfile(await db.profiles.toArray()));
 export const useDemoStatus = () => useLiveData<DemoStatus>(() => getDemoStatus(db));
 
 export function usePreferences(): Preferences {

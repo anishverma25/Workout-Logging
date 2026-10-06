@@ -8,15 +8,15 @@ const base =
 
 const variants: Record<Variant, string> = {
   primary: 'bg-accent text-accent-ink hover:brightness-[1.04]',
-  secondary: 'bg-surface-2 text-text border border-line hover:border-line-strong',
-  ghost: 'text-muted hover:text-text hover:bg-surface-2',
+  secondary: 'bg-surface-2 text-text hover:bg-surface-3',
+  ghost: 'text-accent-text hover:bg-accent-soft',
   danger: 'bg-danger-soft text-danger hover:brightness-110',
 };
 
 const sizes: Record<Size, string> = {
-  sm: 'h-9 px-3.5 text-sm rounded-[0.75rem]',
-  md: 'h-11 px-4 text-[0.95rem] rounded-[var(--radius-control)]',
-  lg: 'h-14 px-6 text-[1.05rem] rounded-[1rem]',
+  sm: 'h-9 px-4 text-sm rounded-full',
+  md: 'h-11 px-5 text-[0.95rem] rounded-full',
+  lg: 'h-[3.25rem] px-6 text-[1.05rem] rounded-full',
 };
 
 export interface ButtonStyleProps {

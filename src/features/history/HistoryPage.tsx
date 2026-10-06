@@ -292,10 +292,10 @@ function EntryRow({ entry, unit }: { entry: HistoryEntry; unit: WeightUnit }) {
   return (
     <Link
       to={`/history/${session.workout.id}`}
-      className="group relative flex items-stretch gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-3.5 pr-3 shadow-[var(--shadow-card)] transition-colors hover:border-line-strong lg:grid lg:grid-cols-[4.5rem_minmax(0,1.4fr)_minmax(0,1fr)_6rem_6rem_1.5rem] lg:items-center lg:gap-5 lg:px-5"
+      className="group relative flex items-stretch gap-3 rounded-[var(--radius-card)] bg-surface p-3.5 pr-3 transition-colors hover:border-line-strong lg:grid lg:grid-cols-[4.5rem_minmax(0,1.4fr)_minmax(0,1fr)_6rem_6rem_1.5rem] lg:items-center lg:gap-5 lg:px-5"
     >
       <div className="relative z-[1] flex w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-surface-2 py-1.5 text-center lg:w-auto">
-        <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-faint">
+        <span className="text-[0.7rem] font-medium text-faint">
           {formatWeekdayShort(session.date)}
         </span>
         <span className="tabular font-display text-xl font-bold leading-tight">

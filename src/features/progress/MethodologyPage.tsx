@@ -27,7 +27,7 @@ export function MethodologyPage() {
         </Link>
       </div>
       <header className="pb-6 pt-1">
-        <h1 className="font-display text-[2.2rem] font-bold leading-none sm:text-[2.6rem]">
+        <h1 className="font-display text-[1.5rem] font-bold leading-none sm:text-[1.75rem]">
           How it is calculated
         </h1>
         <p className="mt-3 max-w-[60ch] text-muted">

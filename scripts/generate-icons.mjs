@@ -2,8 +2,8 @@
 // changing the mark: `node scripts/generate-icons.mjs`. Output goes to public/icons.
 import { chromium } from '@playwright/test';
 
-const BG = '#0E0F0D';
-const ACCENT = '#C8F542';
+const BG = '#000000';
+const ACCENT = '#C6F432';
 
 /** The rising bars, drawn in a 64-unit box; `pad` shrinks them into the maskable safe zone. */
 function svg({ size, rounded, pad }) {

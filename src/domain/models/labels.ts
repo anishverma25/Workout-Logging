@@ -1,4 +1,12 @@
-import type { Equipment, Exercise, LoadMode, MuscleGroup, SetType, TrackingType } from './schemas';
+import type {
+  Equipment,
+  Exercise,
+  LoadMode,
+  MuscleGroup,
+  Profile,
+  SetType,
+  TrackingType,
+} from './schemas';
 
 export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   chest: 'Chest',
@@ -71,3 +79,16 @@ export const SET_TYPE_SHORT: Record<SetType, string> = {
 export function exerciseMeta(exercise: Pick<Exercise, 'primaryMuscle' | 'equipment'>): string {
   return `${MUSCLE_LABELS[exercise.primaryMuscle]} · ${EQUIPMENT_LABELS[exercise.equipment]}`;
 }
+
+export const GOAL_LABEL: Record<Profile['goal'], string> = {
+  strength: 'Strength',
+  hypertrophy: 'Muscle growth',
+  strength_hypertrophy: 'Strength and muscle growth',
+  general_fitness: 'General fitness',
+};
+
+export const EXPERIENCE_LABEL: Record<Profile['experience'], string> = {
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
+};

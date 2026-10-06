@@ -14,12 +14,18 @@ import {
   UserRound,
 } from 'lucide-react';
 
+import type { TileTone } from '@/components/ui/List';
+
 export const APP_NAME = 'Overload';
 
 export interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
+  /** Icon tile colour in grouped lists. */
+  tone?: TileTone;
+  /** Group in the More list. */
+  group?: 'you' | 'training' | 'app';
 }
 
 /** Bottom navigation on mobile (Workout sits in the centre, in thumb reach). */
@@ -32,11 +38,11 @@ export const PRIMARY_NAV: NavItem[] = [
 ];
 
 export const SECONDARY_NAV: NavItem[] = [
-  { to: '/records', label: 'Records', icon: Trophy },
-  { to: '/exercises', label: 'Exercises', icon: Library },
-  { to: '/body', label: 'Body metrics', icon: Scale },
-  { to: '/profile', label: 'Profile', icon: UserRound },
-  { to: '/account', label: 'Account', icon: CircleUserRound },
-  { to: '/settings', label: 'Settings', icon: Settings },
-  { to: '/pro', label: 'Pro', icon: Crown },
+  { to: '/body', label: 'Body metrics', icon: Scale, tone: 'sky', group: 'you' },
+  { to: '/records', label: 'Records', icon: Trophy, tone: 'amber', group: 'training' },
+  { to: '/exercises', label: 'Exercises', icon: Library, tone: 'lime', group: 'training' },
+  { to: '/profile', label: 'Profile', icon: UserRound, tone: 'iris', group: 'you' },
+  { to: '/account', label: 'Account', icon: CircleUserRound, tone: 'graphite', group: 'app' },
+  { to: '/settings', label: 'Settings', icon: Settings, tone: 'graphite', group: 'app' },
+  { to: '/pro', label: 'Pro', icon: Crown, tone: 'plum', group: 'app' },
 ];

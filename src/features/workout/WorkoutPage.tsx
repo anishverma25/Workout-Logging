@@ -72,14 +72,14 @@ function StartScreen() {
                 <li key={day.id}>
                   <article
                     className={cn(
-                      'flex h-full flex-col rounded-[var(--radius-card)] border bg-surface p-5 shadow-[var(--shadow-card)]',
+                      'flex h-full flex-col rounded-[var(--radius-card)] border bg-surface p-5',
                       isToday ? 'border-accent-text/40' : 'border-line',
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         {isToday ? <Badge tone="accent">Planned today</Badge> : null}
-                        <h3 className="mt-1.5 font-display text-[1.9rem] font-bold leading-none">
+                        <h3 className="mt-1.5 font-display text-[1.55rem] font-bold leading-none">
                           {day.name}
                         </h3>
                         <p className="mt-1.5 text-sm text-muted">

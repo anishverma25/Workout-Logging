@@ -6,7 +6,7 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLElement>) {
   return (
     <section
       className={cn(
-        'rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-card)]',
+        'rounded-[var(--radius-card)] bg-surface',
         className,
       )}
       {...props}
@@ -28,11 +28,11 @@ export function SectionHeader({ title, detail, action, id }: SectionHeaderProps)
       <div className="min-w-0">
         <h2
           id={id}
-          className="font-display text-[1.35rem] font-semibold leading-none tracking-[0.005em]"
+          className="font-display text-[1.3rem] font-semibold leading-tight tracking-tight"
         >
           {title}
         </h2>
-        {detail ? <p className="mt-1.5 text-sm text-faint">{detail}</p> : null}
+        {detail ? <p className="mt-1 text-sm text-faint">{detail}</p> : null}
       </div>
       {action ? (
         <Link

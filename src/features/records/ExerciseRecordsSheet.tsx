@@ -184,7 +184,7 @@ function Best({
   estimate?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface-2/50 p-3.5">
+    <div className="rounded-2xl bg-surface-2 p-3.5">
       <dt className="flex items-center gap-1.5 text-xs font-medium text-faint">
         {label}
         {estimate ? (
@@ -193,7 +193,7 @@ function Best({
           </span>
         ) : null}
       </dt>
-      <dd className="tabular mt-1 font-display text-[1.6rem] font-bold leading-none">{value}</dd>
+      <dd className="tabular mt-1 font-display text-[1.3rem] font-bold leading-none">{value}</dd>
       <dd className="mt-1 text-xs text-faint">
         {detail ? `${detail} · ` : ''}
         {formatShortDate(best.date)}

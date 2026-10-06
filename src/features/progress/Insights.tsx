@@ -29,7 +29,7 @@ export function InsightList({ insights }: { insights: Insight[] }) {
         return (
           <li
             key={insight.id}
-            className="rounded-[var(--radius-card)] border border-line bg-surface p-4 shadow-[var(--shadow-card)]"
+            className="rounded-[var(--radius-card)] bg-surface p-4"
           >
             <div className="flex gap-3">
               <span
@@ -74,7 +74,7 @@ export function Suggestions({
       {shown.map((s) => (
         <li
           key={s.id}
-          className="rounded-[var(--radius-card)] border border-accent-text/30 bg-surface p-4 shadow-[var(--shadow-card)]"
+          className="rounded-[var(--radius-card)] border border-accent-text/30 bg-surface p-4"
         >
           <div className="flex items-start justify-between gap-2">
             <div className="flex gap-3">
