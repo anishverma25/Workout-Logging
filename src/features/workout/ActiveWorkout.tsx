@@ -8,6 +8,8 @@ import { EmptyState } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { useProfile } from '@/data/hooks';
+import { useDeviceSettings } from '@/app/deviceSettings';
+import { useWakeLock } from './useWakeLock';
 import type { WorkoutExerciseView, WorkoutView } from '@/data/repositories/workoutView';
 import {
   addExercisesToWorkout,
@@ -40,6 +42,8 @@ interface Props {
 
 export function ActiveWorkout({ view, prefs }: Props) {
   const experience = useProfile().data?.experience ?? null;
+  const device = useDeviceSettings();
+  useWakeLock(device.keepAwake && view.workout.pausedAt === null);
   const { workout, exercises } = view;
   const navigate = useNavigate();
   const toast = useToast();

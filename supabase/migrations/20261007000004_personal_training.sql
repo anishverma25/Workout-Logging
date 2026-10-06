@@ -135,7 +135,7 @@ create index body_measurements_measured_idx on public.body_measurements (user_id
 -- Deletes the signed-in user and, through the foreign keys, every row they own. It can only
 -- ever delete the caller: the id comes from the verified session, never from an argument.
 create or replace function public.delete_my_account()
-returns void
+returns boolean
 language plpgsql
 security definer
 set search_path = ''
@@ -147,6 +147,7 @@ begin
     raise exception 'Not signed in' using errcode = '42501';
   end if;
   delete from auth.users where id = uid;
+  return true;
 end;
 $$;
 

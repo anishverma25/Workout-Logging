@@ -1,4 +1,5 @@
 import { memo, useRef, useState } from 'react';
+import { unlockAudio } from '@/app/deviceSettings';
 import { Check } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
@@ -74,6 +75,7 @@ function SetRowImpl({
 
   async function toggleDone() {
     if (pending) return;
+    unlockAudio();
     setPending(true);
     try {
       if (done) {

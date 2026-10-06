@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { getDeviceSettings, playRestTone } from '@/app/deviceSettings';
 import { Pause, Play, RotateCcw, Timer, X } from 'lucide-react';
 import { Button, IconButton } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Fields';
@@ -20,8 +21,8 @@ import { restActions } from './restActions';
 const FINISHED_LINGER_MS = 45_000;
 
 /**
- * Buzzes once when rest ends, if the app is open and the device supports vibration.
- * No promise of alerts in the background: browsers do not allow it reliably.
+ * Buzzes and beeps once when rest ends, if the app is open (each can be turned off in
+ * Settings). No promise of alerts in the background: browsers do not allow it reliably.
  */
 function useFinishSignal(state: RestTimerState | null, now: Date) {
   const signalled = useRef<string | null>(null);
@@ -30,7 +31,11 @@ function useFinishSignal(state: RestTimerState | null, now: Date) {
   useEffect(() => {
     if (finished && key && signalled.current !== key) {
       signalled.current = key;
-      if (document.visibilityState === 'visible') navigator.vibrate?.([180, 90, 180]);
+      if (document.visibilityState === 'visible') {
+        const settings = getDeviceSettings();
+        if (settings.restVibrate) navigator.vibrate?.([180, 90, 180]);
+        if (settings.restSound) playRestTone();
+      }
     }
   }, [finished, key]);
 }

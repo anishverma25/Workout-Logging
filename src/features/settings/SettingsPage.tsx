@@ -6,23 +6,27 @@ import {
   setDevEntitlement,
   type DevEntitlementState,
 } from '@/app/devEntitlement';
-import { FlaskConical, RotateCcw, Trash2 } from 'lucide-react';
+import { CalendarPlus, Download, FlaskConical, RotateCcw, Trash2 } from 'lucide-react';
 import { isIosSafari, promptInstall, usePwa } from '@/app/pwa';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { useTheme, type ThemePreference } from '@/app/theme';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { useAccount } from '@/app/account';
 import { SyncSummary } from '@/features/account/SyncStatus';
-import { Panel, PanelRow } from '@/components/ui/List';
+import { Panel, PanelRow, Switch } from '@/components/ui/List';
+import { setDeviceSetting, useDeviceSettings } from '@/app/deviceSettings';
+import { bodyCsv, downloadText, setsCsv } from '@/data/export';
+import { trainingCalendar } from '@/data/calendar';
+import { activeRoutine, daysForRoutine } from '@/domain/analytics/schedule';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { clearDemoData, loadDemoData, resetDemoData } from '@/data/demo/service';
 import { DEMO_FEATURED_DAYS, DEMO_HISTORY_DAYS } from '@/data/demo/generate';
-import { useDemoStatus, usePreferences } from '@/data/hooks';
+import { useDemoStatus, usePreferences, useTrainingData } from '@/data/hooks';
 import { updatePreferences } from '@/data/repositories/meta';
 import { getStorageState, requestPersistentStorage, type StorageState } from '@/data/storage';
-import { formatShortDate } from '@/lib/dates';
+import { formatShortDate, toDateKey } from '@/lib/dates';
 
 export function SettingsPage() {
   return (
@@ -30,6 +34,9 @@ export function SettingsPage() {
       <PageHeader title="Settings" />
       <div className="flex max-w-2xl flex-col gap-7">
         <AppearanceSection />
+        <WorkoutSection />
+        <RemindersSection />
+        <ExportSection />
         <InstallSection />
         <StorageSection />
         <DemoSection />
@@ -74,6 +81,129 @@ function AppearanceSection() {
             { value: 'lb', label: 'lb' },
           ]}
         />
+      </PanelRow>
+    </Panel>
+  );
+}
+
+function WorkoutSection() {
+  const device = useDeviceSettings();
+  return (
+    <Panel title="During a workout" footer="These apply to this device only.">
+      <PanelRow title="Sound when rest ends" detail="Two short tones while the app is open.">
+        <Switch
+          label="Sound when rest ends"
+          checked={device.restSound}
+          onChange={(v) => setDeviceSetting('restSound', v)}
+        />
+      </PanelRow>
+      <PanelRow title="Vibrate when rest ends" detail="On phones that support it.">
+        <Switch
+          label="Vibrate when rest ends"
+          checked={device.restVibrate}
+          onChange={(v) => setDeviceSetting('restVibrate', v)}
+        />
+      </PanelRow>
+      <PanelRow title="Keep the screen on" detail="While a workout is open and not paused.">
+        <Switch
+          label="Keep the screen on"
+          checked={device.keepAwake}
+          onChange={(v) => setDeviceSetting('keepAwake', v)}
+        />
+      </PanelRow>
+    </Panel>
+  );
+}
+
+function RemindersSection() {
+  const training = useTrainingData();
+  const toast = useToast();
+  const [time, setTime] = useState('18:00');
+  const data = training.data;
+  const routine = data ? activeRoutine(data.routines) : null;
+  const days = routine && data ? daysForRoutine(routine, data.routineDays) : [];
+  const planned = days.filter((d) => d.weekdays.length > 0);
+  return (
+    <Panel
+      title="Training reminders"
+      footer="Your phone's calendar reminds you, even when the app is closed. Open the file and add it to your calendar."
+    >
+      {planned.length === 0 ? (
+        <p className="py-3.5 text-sm text-muted">
+          Set training days on your active routine first, and they can go in your calendar.
+        </p>
+      ) : (
+        <PanelRow
+          title={`${routine!.name} in your calendar`}
+          detail={`${planned.length} training ${planned.length === 1 ? 'day' : 'days'}, reminder 30 minutes before.`}
+          stack
+        >
+          <div className="flex items-center gap-2">
+            <input
+              type="time"
+              aria-label="Training time"
+              value={time}
+              onChange={(e) => setTime(e.target.value || '18:00')}
+              className="h-9 rounded-xl bg-surface-2 px-2.5 text-sm"
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<CalendarPlus className="size-4" aria-hidden />}
+              onClick={() => {
+                downloadText(
+                  trainingCalendar({
+                    routineName: routine!.name,
+                    days: planned,
+                    time,
+                    minutes: data?.profile?.sessionMinutes ?? 60,
+                    remindBefore: 30,
+                  }),
+                  'training-days.ics',
+                  'text/calendar',
+                );
+                toast('Calendar file downloaded');
+              }}
+            >
+              Add to calendar
+            </Button>
+          </div>
+        </PanelRow>
+      )}
+    </Panel>
+  );
+}
+
+function ExportSection() {
+  const training = useTrainingData();
+  const data = training.data;
+  const date = toDateKey(new Date());
+  return (
+    <Panel
+      title="Your data"
+      footer="CSV files open in Excel, Google Sheets and Numbers. Weights are in kg."
+    >
+      <PanelRow title="Workouts" detail="Every completed set, one per row.">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!data}
+          icon={<Download className="size-4" aria-hidden />}
+          onClick={() => data && downloadText(setsCsv(data), `workouts-${date}.csv`)}
+        >
+          Export
+        </Button>
+      </PanelRow>
+      <PanelRow title="Body" detail="Weigh-ins and measurements.">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!data}
+          icon={<Download className="size-4" aria-hidden />}
+          onClick={() => data && downloadText(bodyCsv(data), `body-${date}.csv`)}
+        >
+          Export
+        </Button>
       </PanelRow>
     </Panel>
   );

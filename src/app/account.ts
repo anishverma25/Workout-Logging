@@ -197,3 +197,19 @@ export async function signOut(): Promise<{ removedLocalCopy: boolean }> {
   }
   return { removedLocalCopy: false };
 }
+
+/**
+ * Deletes the account on the server (every row it owns goes with it) and then this device's
+ * copy. Photos and guest data on the device are not touched. Cannot be undone.
+ */
+export async function deleteAccount(): Promise<void> {
+  const client = requireClient();
+  const user = state.user;
+  if (!user) throw new AccountError('Sign in first.');
+  const { error } = await client.rpc('delete_my_account');
+  if (error) throw new AccountError(friendly(error.message));
+  syncController.stop();
+  await client.auth.signOut({ scope: 'local' });
+  await applySession(null);
+  await Dexie.delete(accountDbName(user.id));
+}

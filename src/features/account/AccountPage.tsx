@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router';
-import { HardDriveUpload, KeyRound, LogOut, RefreshCw } from 'lucide-react';
-import { signOut, useAccount, useSyncStatus } from '@/app/account';
+import { Navigate, useLocation, useNavigate } from 'react-router';
+import { HardDriveUpload, KeyRound, LogOut, RefreshCw, Trash2 } from 'lucide-react';
+import { deleteAccount, signOut, useAccount, useSyncStatus } from '@/app/account';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { ConfirmSheet } from '@/components/ui/Sheet';
+import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
+import { TextField } from '@/components/ui/Fields';
 import { useToast } from '@/components/ui/Toast';
 import { db, guestDatabase } from '@/data/db';
 import { useGuestImport } from '@/data/hooks';
@@ -61,6 +62,7 @@ function AccountContent() {
             <SignOutButton />
           </div>
         </Card>
+        <DeleteAccountCard />
       </div>
     </>
   );
@@ -238,5 +240,67 @@ function SignOutButton() {
         }
       />
     </>
+  );
+}
+
+/** Deleting the account: typed confirmation, because it cannot be undone. */
+function DeleteAccountCard() {
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <Card className="p-5">
+      <h2 className="mb-1 font-display text-xl font-semibold">Delete account</h2>
+      <p className="mb-4 text-sm text-muted">
+        Removes your account and every workout, routine, measurement and goal in it, from the server
+        and from this device. Export your data first if you want a copy (Settings). Photos on this
+        device are not affected.
+      </p>
+      <Button
+        variant="danger"
+        icon={<Trash2 className="size-4" aria-hidden />}
+        onClick={() => setOpen(true)}
+      >
+        Delete my account
+      </Button>
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Delete your account?"
+        description="This cannot be undone."
+        footer={
+          <Button
+            variant="danger"
+            block
+            disabled={busy || typed.trim().toLowerCase() !== 'delete'}
+            onClick={async () => {
+              setBusy(true);
+              setError(null);
+              try {
+                await deleteAccount();
+                toast('Account deleted');
+                navigate('/', { replace: true });
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'Could not delete the account.');
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? 'Deleting...' : 'Delete everything'}
+          </Button>
+        }
+      >
+        <TextField
+          label="Type DELETE to confirm"
+          value={typed}
+          autoComplete="off"
+          error={error}
+          onChange={(e) => setTyped(e.target.value)}
+        />
+      </Sheet>
+    </Card>
   );
 }
