@@ -129,8 +129,14 @@ describe('subscriptions', () => {
   it('the queries in the administrator guide work as written', async () => {
     const guide = readFileSync(join(process.cwd(), 'docs', 'admin-pro-payments.md'), 'utf8');
     const blocks = [...guide.matchAll(/```sql\n([\s\S]*?)```/g)].map((m) => m[1]!);
-    const [pending, grant, reject, revoke] = blocks;
-    expect(blocks).toHaveLength(4);
+    const [endEarlyAccess, founders, pending, grant, reject, revoke] = blocks;
+    expect(blocks).toHaveLength(6);
+    // Early access: list founding members, end it, then reopen it for the rest of the tests.
+    const listed = await server.pg.query<{ email: string }>(founders!);
+    expect(listed.rows.map((r) => r.email)).toContain('a@example.com');
+    await server.pg.exec(endEarlyAccess!);
+    expect(await mine(userA)).toMatchObject({ early_access: false, founding_member: true });
+    await server.pg.exec('update public.app_settings set early_access_ended_at = null');
     const userC = await server.createUser('person@example.com');
     await server.asUser(userC, (tx) =>
       tx.query(`select public.submit_payment_reference('UTR555666777')`),
