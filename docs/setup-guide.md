@@ -32,28 +32,29 @@ the Supabase publishable key, and your app address.
    - Leave any security or Data API options on their defaults.
 5. Click **Create new project** and wait one or two minutes until the dashboard finishes setting up.
 
-### 1.2 Create the tables (run three files, in order)
+### 1.2 Create the tables (run four files, in order)
 
-The database structure is in three files in your GitHub repository. You copy each one into Supabase and run it.
+The database structure is in four files in your GitHub repository. You copy each one into Supabase and run it.
 
 1. In a new browser tab, open your repository on GitHub: `github.com/anishverma25/Workout-Logging`.
 2. Click the branch dropdown (it may say `phase-1-foundation`) and choose **phase-2-wip**.
-3. Open the folder **supabase**, then **migrations**. You will see three files:
+3. Open the folder **supabase**, then **migrations**. You will see four files:
    - `20261005000001_schema.sql`
    - `20261005000002_exercise_library.sql`
    - `20261005000003_subscriptions.sql`
+   - `20261007000004_personal_training.sql`
 4. Click the **first** file. At the top right of the file view, click the **Copy raw file** button (two overlapping squares).
 5. Back in Supabase, click **SQL Editor** in the left sidebar, then **New query** (or the **+** tab).
 6. Paste with Ctrl+V (Cmd+V on a Mac) and click **Run** (or press Ctrl+Enter).
    - You should see **Success. No rows returned**.
    - If Supabase asks you to confirm because the query changes the database, choose to run it.
-7. Repeat steps 4 to 6 for the **second** file, then the **third** file. Always use a new query tab, and always keep this order.
+7. Repeat steps 4 to 6 for the **second**, **third** and **fourth** files. Always use a new query tab, and always keep this order.
 
 ### 1.3 Check it worked
 
 1. Click **Table Editor** in the left sidebar.
-2. You should see 12 tables: `body_weight`, `exercises`, `profiles`, `routine_days`, `routine_exercises`, `routines`, `sets`, `subscriptions`, `user_exercises`, `user_preferences`, `workout_exercises`, `workouts`.
-3. Click **exercises**: it should show **91 rows**. That is the built-in exercise library.
+2. You should see 14 tables: `body_measurements`, `body_weight`, `exercises`, `goals`, `profiles`, `routine_days`, `routine_exercises`, `routines`, `sets`, `subscriptions`, `user_exercises`, `user_preferences`, `workout_exercises`, `workouts`.
+3. Click **exercises**: it should show **101 rows**. That is the built-in exercise library.
 
 If a table is missing, rerun the file that creates it. If a file shows an error, copy the red error message and send it to me.
 
@@ -249,6 +250,16 @@ More queries (pending payments, revoking Pro) are in `docs/admin-pro-payments.md
 5. When someone pays, their transaction reference appears in Supabase. Match it against your UPI app, then grant Pro as above.
 
 ### Updates
+
+**If an update adds a database file, run it first.** When I tell you an update has a new file in
+`supabase/migrations`, open it on GitHub (branch `phase-2-wip`), copy it, and run it in the
+Supabase **SQL Editor** in a new query, exactly as in step 1.2. Only then should the new code go
+live. If the code goes first, phones keep the new data safely on the device and keep retrying,
+but nothing syncs until the file is run.
+
+The October update (setup, body numbers, goals, the tour) needs
+`20261007000004_personal_training.sql`. After running it, **Table Editor** shows the new
+tables `body_measurements` and `goals`, and `exercises` has 101 rows.
 
 When new code is pushed to `phase-2-wip`, Cloudflare rebuilds the site automatically within a few minutes. Open apps show **A new version of the app is ready** with a **Reload** button, so nobody is interrupted mid-workout.
 
