@@ -77,6 +77,15 @@ describe('day statuses', () => {
     // Mon done, Tue missed, Wed extra (unplanned), Thu missed, Fri planned today
     expect(states).toEqual(['completed', 'missed', 'extra', 'missed', 'planned']);
   });
+
+  it('plans nothing before the routine existed', () => {
+    const now = new Date(2026, 8, 11, 9);
+    const created = new Date(2026, 8, 10, 18); // Thursday evening
+    const states = dayStatuses([], DAYS, new Date(2026, 8, 7), 5, now, created).map((d) => d.state);
+    expect(states).toEqual(['rest', 'rest', 'rest', 'missed', 'planned']);
+    const result = adherence([], DAYS, ROUTINE, new Date(2026, 8, 7), now, now, created);
+    expect(result.planned).toBe(1);
+  });
 });
 
 describe('scheduling helpers', () => {

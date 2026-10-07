@@ -6,7 +6,13 @@ import type { TrainingData } from '@/domain/analytics/sessions';
 import { db, guestDatabase } from './db';
 import { migrationHandled, summarizeGuestData, type GuestDataSummary } from './sync/migrate';
 import { getDemoStatus, type DemoStatus } from './demo/service';
-import { getDismissedSuggestions, getPreferences, getRestTimer } from './repositories/meta';
+import {
+  getDismissedSuggestions,
+  getMeta,
+  getPreferences,
+  getRestTimer,
+  META_KEYS,
+} from './repositories/meta';
 import { getActiveWorkout } from './repositories/workouts';
 import {
   combineWorkoutView,
@@ -63,6 +69,10 @@ export const useTrainingData = () => useLiveData<TrainingData>(() => loadTrainin
 /** Just the profile: cheap enough for headers on every page. */
 export const useProfile = () => useLiveData(async () => pickProfile(await db.profiles.toArray()));
 export const useDemoStatus = () => useLiveData<DemoStatus>(() => getDemoStatus(db));
+
+/** True once on a brand-new install, until the preview tour is finished or skipped. */
+export const useTourPending = () =>
+  useLiveData(async () => (await getMeta<boolean>(db, META_KEYS.tourPending)) === true);
 
 export function usePreferences(): Preferences {
   const state = useLiveData<Preferences>(() => getPreferences(db));

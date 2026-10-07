@@ -120,6 +120,7 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
   const names = new Map(data.exercises.map((e) => [e.id, e.name]));
   const routine = activeRoutine(data.routines);
   const days = daysForRoutine(routine, data.routineDays);
+  const since = routine ? new Date(routine.createdAt) : null;
   const today = startOfDay(now);
   const tomorrow = addDays(today, 1);
 
@@ -181,6 +182,7 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
     recentStart,
     tomorrow,
     now,
+    since,
   );
 
   // Consistency over complete calendar weeks before the current one.
@@ -242,7 +244,7 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
     }),
     today: todayPlan,
     recentWindow: {
-      days: dayStatuses(sessions, days, recentStart, RECENT_DAYS, now),
+      days: dayStatuses(sessions, days, recentStart, RECENT_DAYS, now, since),
       sessions: recentSessions.length,
       workingSets: recentSessions.reduce((n, s) => n + workingSetCount(s), 0),
       volumeKg: recentVolume,
@@ -263,6 +265,7 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
         coveredWeeks[0]?.weekStart ?? weekStart,
         weekStart,
         now,
+        since,
       ),
     },
     featuredPr: featuredRecord(records.filter((r) => r.date >= addDays(today, -(TREND_DAYS - 1)))),

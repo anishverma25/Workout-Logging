@@ -60,14 +60,25 @@ UI (features/*, components/ui)
 
 ### Calculation rules (summary)
 
-| Metric               | Rule                                                                                                                                                    |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Volume load          | Sum of load x reps over completed, non-warm-up sets of load-tracked exercises. Per-hand dumbbell moves count both hands. Bodyweight moves are excluded. |
-| Estimated 1RM        | Epley, `weight x (1 + reps / 30)`, compound lifts only, sets of 12 reps or fewer. 1 rep = the load. Always labelled an estimate.                        |
-| Personal records     | Heaviest load, best e1RM, most reps (bodyweight), longest time or distance. The first session is a baseline, not a record.                              |
-| Adherence            | Completed planned sessions / planned sessions, over days that have passed. Hidden when nothing was planned.                                             |
-| Body weight          | 7-day average needs 3 or more entries in the window.                                                                                                    |
-| "Below best" insight | Compound lifts only, at least 4% under the best e1RM, and never when the load just went up.                                                             |
+Every rule below is a pure function in `src/domain/analytics` with unit tests, and the Methodology
+page in the app explains each one in plain words.
+
+| Metric               | Rule                                                                                                                                                                                     |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Volume load          | Sum of load x reps over completed, non-warm-up sets of load-tracked exercises. Per-hand dumbbell moves count both hands. Bodyweight excluded.                                            |
+| Estimated 1RM        | Brzycki `load x 36 / (37 - reps)` for 5 reps or fewer, Epley `load x (1 + reps / 30)` for 6 to 12. Logged RIR is added to reps when the total stays at 12 or fewer. Compound lifts only. |
+| Personal records     | Heaviest load, best e1RM, most reps (bodyweight), longest time or distance. The first session is a baseline, not a record.                                                               |
+| Adherence            | Completed planned sessions / planned sessions, over days that have passed since the routine was created. Hidden when nothing was planned.                                                |
+| Body weight trend    | Exponential moving average, alpha 0.1 per day. Weekly rate is a least-squares slope over 28 days (6 or more entries over 14 or more days).                                               |
+| BMR and calories     | Mifflin-St Jeor (Katch-McArdle when body fat is known) x activity factor from training days and daily activity, then a goal adjustment.                                                  |
+| Protein              | 1.6 to 2.2 g/kg (2.0 to 2.4 while losing fat, 1.2 to 1.6 for general fitness). Fat at least 0.8 g/kg.                                                                                    |
+| BMI, body fat, FFMI  | BMI with WHO and Asian cut-offs. Body fat by the US Navy tape formula. FFMI and height-normalised FFMI (Kouri).                                                                          |
+| Strength levels      | e1RM / body weight against published standards for squat, bench, deadlift, overhead press and row, by sex. DOTS for the big three.                                                       |
+| Plateaus             | No e1RM gain for 3 or more weeks over 4 or more sessions.                                                                                                                                |
+| Balance              | Push vs pull sets, quads vs hamstrings, upper vs lower over 4 weeks; balanced between 0.67 and 1.5 (2 for the leg and body ratios).                                                      |
+| Load spike           | Working sets in the last 7 days over the 28-day weekly average; flagged above 1.5.                                                                                                       |
+| Goal projection      | Current value plus the 8-week rate of change. Needs 4 sessions over 3 weeks.                                                                                                             |
+| "Below best" insight | Compound lifts only, at least 4% under the best e1RM, and never when the load just went up.                                                                                              |
 
 ## Accounts and sync
 
@@ -114,9 +125,11 @@ table, against real Postgres (PGlite) running the migrations.
 - Access is decided in one place, `resolveEntitlement` in `src/domain/entitlement`, from the
   server's record and the server's clock (`get_my_subscription`). Local storage, URL
   parameters and the device clock change nothing. Gates call `useFeature(...)`.
-- Pro adds 90-day and all-time trends, sets per muscle group and progression suggestions.
-  Logging, routines, history, records, body weight, 7 and 30 day progress, insights and sync
-  stay free forever. History is never locked.
+- Pro adds 90-day and all-time trends, sets per muscle group, progression suggestions,
+  strength levels, training balance, plateau detection, the weekly check-in, goal projections
+  and recaps. Logging, routines (including personalised ones), history, records, body weight,
+  measurements, calories and protein, 7 and 30 day progress, insights, gym tools and sync stay
+  free forever. History is never locked.
 - Payment is manual UPI. The UPI ID, payee name, price and period come from `VITE_UPI_ID`,
   `VITE_UPI_PAYEE_NAME`, `VITE_PRO_PRICE_INR` and `VITE_PRO_PERIOD_DAYS`; without them the app
   says payments are not open yet. The app only ever asks for the transaction reference.
@@ -186,10 +199,17 @@ that every screen reads through the same tables:
   Settings. Demo records are tagged `origin: 'demo'`; clearing never touches real data.
 - Auto-loads on first run in development (and when `VITE_DEMO_AUTOLOAD=true`). Clearing is remembered.
 - Lives only in the guest database. Accounts always start without it.
+- When demo data does not auto-load (production), a brand-new install opens the preview tour
+  (`/welcome`) once instead. The tour builds the same sample dataset in memory and never writes
+  it anywhere. New accounts also see it after sign-up; it ends in setup (`/setup`).
 
 ## Status
 
-Phases 1 to 10 are in place: foundation, exercise library, routine builder, workout logger,
+Phases 1 to 18 are in place: foundation, exercise library, routine builder, workout logger,
 history, records, body metrics, progress analytics, accounts and sync, trial and Pro, offline
-PWA and deployment setup, QA audit and launch preparation. See `docs/qa-report.md` and
+PWA and deployment setup, QA audit and launch preparation, then personal setup and profile,
+body science (calories, protein, body fat, trend), personalised programmes (including 5-day
+Push Pull Legs Upper Lower), strength levels and training balance, the journey page (goals,
+milestones, photos on the phone, recaps), gym tools (plates, warm-ups, supersets, swaps,
+readiness, effort), the premium redesign and the preview tour. See `docs/qa-report.md` and
 `docs/launch-readiness.md`. See `CLAUDE.md`.

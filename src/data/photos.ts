@@ -34,7 +34,9 @@ export const photoDb = () => (instance ??= new PhotoDatabase());
 export const MAX_PHOTO_SIDE = 1440;
 
 /** Scales a picture down to at most 1440 px on its longer side and re-encodes it as JPEG. */
-export async function compressPhoto(file: Blob): Promise<{ blob: Blob; width: number; height: number }> {
+export async function compressPhoto(
+  file: Blob,
+): Promise<{ blob: Blob; width: number; height: number }> {
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
   const scale = Math.min(1, MAX_PHOTO_SIDE / Math.max(bitmap.width, bitmap.height));
   const width = Math.round(bitmap.width * scale);
@@ -45,7 +47,11 @@ export async function compressPhoto(file: Blob): Promise<{ blob: Blob; width: nu
   canvas.getContext('2d')!.drawImage(bitmap, 0, 0, width, height);
   bitmap.close();
   const blob = await new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not read the photo.'))), 'image/jpeg', 0.85),
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error('Could not read the photo.'))),
+      'image/jpeg',
+      0.85,
+    ),
   );
   return { blob, width, height };
 }

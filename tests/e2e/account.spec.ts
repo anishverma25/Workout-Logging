@@ -20,8 +20,8 @@ async function signUp(page: Page, email: string) {
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page).toHaveURL(/\/account$/);
-  await expect(page.getByRole('heading', { level: 1, name: 'Account' })).toBeVisible();
+  await expect(page).toHaveURL(/:\d+\/account$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Account', exact: true })).toBeVisible();
 }
 
 async function signIn(page: Page, email: string, password = PASSWORD) {
@@ -92,7 +92,7 @@ test('sign up starts a clean account that syncs, survives reloads and comes back
 
   // The session persists across a reload.
   await page.reload();
-  await expect(page.getByRole('heading', { level: 1, name: 'Account' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Account', exact: true })).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
 
   // Signing out removes the account's local copy (everything was synced) and shows the guest.
@@ -102,7 +102,7 @@ test('sign up starts a clean account that syncs, survives reloads and comes back
 
   // Signing back in brings the data back from the server.
   await signIn(page, email);
-  await expect(page).toHaveURL(/\/account$/);
+  await expect(page).toHaveURL(/:\d+\/account$/);
   await page.goto('/body');
   await expect(page.getByRole('button', { name: /81\.4 kg/ }).first()).toBeVisible({
     timeout: 15_000,

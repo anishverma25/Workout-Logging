@@ -58,7 +58,12 @@ test('sends security headers', async ({ request }) => {
 });
 
 test('opens and works offline after the first visit', async ({ page, context }) => {
+  // A brand-new install opens with the preview tour, once; skipping it lands on Home.
   await page.goto('/');
+  await expect(page).toHaveURL(/\/welcome$/);
+  await expect(page.getByText('Sample data', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Skip' }).click();
+  await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await waitForServiceWorker(page);
 
@@ -97,7 +102,7 @@ test('caches only the app itself, never account or training data from the server
   await page.getByRole('textbox', { name: 'Email' }).fill(`pwa-${Date.now()}@example.com`);
   await page.getByLabel('Password', { exact: true }).fill('correct-horse-9');
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Account' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Account', exact: true })).toBeVisible();
   await expect(page.getByRole('status', { name: 'Sync status' })).toContainText(
     'Synced to your account',
     {

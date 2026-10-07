@@ -4,7 +4,8 @@ import { useAccount } from '@/app/account';
 import { buildDashboard } from '@/domain/analytics/dashboard';
 import { db } from '@/data/db';
 import { loadDemoData } from '@/data/demo/service';
-import { usePreferences, useTrainingData } from '@/data/hooks';
+import { usePreferences, useTourPending, useTrainingData } from '@/data/hooks';
+import { Navigate } from 'react-router';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
@@ -29,6 +30,7 @@ export function HomePage() {
   const prefs = usePreferences();
   const now = useNow();
   const toast = useToast();
+  const tour = useTourPending();
 
   const model = useMemo(
     () => (training.data ? buildDashboard(training.data, prefs, now) : null),
@@ -39,6 +41,9 @@ export function HomePage() {
   const title = firstName ? `${greetingFor(now)}, ${firstName}` : greetingFor(now);
   const ownProfile = training.data?.profile?.origin === 'user';
   const routineName = training.data ? (activeRoutine(training.data.routines)?.name ?? null) : null;
+
+  // A brand-new install opens with the preview tour, once.
+  if (tour.data) return <Navigate to="/welcome" replace />;
 
   return (
     <>

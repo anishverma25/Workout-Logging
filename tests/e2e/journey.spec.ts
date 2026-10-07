@@ -216,7 +216,7 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     await page.getByRole('textbox', { name: 'Email' }).fill(email);
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(/\/account$/);
+    await expect(page).toHaveURL(/:\d+\/account$/);
     await page.goto('/history');
     await expect(page.locator('a[href^="/history/"]')).toHaveCount(2, { timeout: 15_000 });
     await page.goto('/body');

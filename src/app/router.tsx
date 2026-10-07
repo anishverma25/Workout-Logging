@@ -16,7 +16,12 @@ const page =
   async () => ({ Component: (await load())[name] as React.ComponentType });
 
 export const router = createBrowserRouter([
-  // Full screen, without the navigation: first-time setup.
+  // Full screen, without the navigation: the preview tour and first-time setup.
+  {
+    path: 'welcome',
+    errorElement: <RouteError />,
+    lazy: page(() => import('@/features/tour/TourPage'), 'TourPage'),
+  },
   {
     path: 'setup',
     errorElement: <RouteError />,

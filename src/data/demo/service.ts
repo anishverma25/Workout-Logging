@@ -76,7 +76,14 @@ export async function resetDemoData(
  */
 export async function autoloadDemoIfFirstRun(db: WorkoutDatabase, enabled: boolean): Promise<void> {
   await ensureSystemExercises(db);
-  if (!enabled) return;
+  if (!enabled) {
+    // A brand-new install without the demo: show the preview tour once.
+    if ((await getMeta<boolean>(db, META_KEYS.tourPending)) === undefined) {
+      const used = (await db.workouts.count()) + (await db.profiles.count());
+      await setMeta(db, META_KEYS.tourPending, used === 0);
+    }
+    return;
+  }
   if (await getMeta<boolean>(db, META_KEYS.demoAutoloadHandled)) return;
   const userWorkouts = await db.workouts.where('origin').equals('user').count();
   if (userWorkouts === 0) await loadDemoData(db);

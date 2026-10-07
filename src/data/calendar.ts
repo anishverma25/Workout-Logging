@@ -11,7 +11,11 @@ const pad = (n: number) => String(n).padStart(2, '0');
 /** Floating local time, so the event stays at the same clock time wherever you are. */
 const local = (d: Date) =>
   `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-const utc = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+const utc = (d: Date) =>
+  d
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}/, '');
 const escape = (s: string) => s.replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\n/g, '\\n');
 
 export interface CalendarDay {
@@ -50,7 +54,10 @@ export function trainingCalendar(input: {
       `DTSTAMP:${utc(now)}`,
       `DTSTART:${local(first)}`,
       `DTEND:${local(end)}`,
-      `RRULE:FREQ=WEEKLY;BYDAY=${[...day.weekdays].sort().map((d) => DAY[d]).join(',')}`,
+      `RRULE:FREQ=WEEKLY;BYDAY=${[...day.weekdays]
+        .sort()
+        .map((d) => DAY[d])
+        .join(',')}`,
       `SUMMARY:${escape(`${day.name} (${input.routineName})`)}`,
       `DESCRIPTION:${escape(`Training day from ${APP_NAME}.`)}`,
       'BEGIN:VALARM',

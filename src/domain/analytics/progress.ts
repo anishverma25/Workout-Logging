@@ -399,6 +399,7 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
   // Consistency
   const routine = activeRoutine(data.routines);
   const days = daysForRoutine(routine, data.routineDays);
+  const since = routine ? new Date(routine.createdAt) : null;
   const weeks = window.days / 7;
   const firstEver = sessions[0]?.date ?? null;
   // Rates need enough time to mean something, and never count days before the first workout.
@@ -416,7 +417,15 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
     history: performanceByExercise(sessions),
     exerciseNames: names,
     compoundIds: new Set(data.exercises.filter((e) => e.category === 'compound').map((e) => e.id)),
-    recentAdherence: adherence(sessions, days, routine?.id ?? null, window.start, window.end, now),
+    recentAdherence: adherence(
+      sessions,
+      days,
+      routine?.id ?? null,
+      window.start,
+      window.end,
+      now,
+      since,
+    ),
     volumeThisPeriod: totalKg,
     volumePreviousPeriod: previousTotalKg ?? 0,
     periodDays: window.days,
@@ -519,7 +528,15 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
       total: inWindow.length,
       perWeek: coveredDays >= 7 ? inWindow.length / (coveredDays / 7) : null,
       perMonth: coveredDays >= 28 ? inWindow.length / (coveredDays / 30.4375) : null,
-      adherence: adherence(sessions, days, routine?.id ?? null, window.start, window.end, now),
+      adherence: adherence(
+        sessions,
+        days,
+        routine?.id ?? null,
+        window.start,
+        window.end,
+        now,
+        since,
+      ),
       minutes: inWindow.reduce((n, s) => {
         const { startedAt, endedAt, pausedMs } = s.workout;
         return endedAt

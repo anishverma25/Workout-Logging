@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Sparkles } from 'lucide-react';
 import { SECONDARY_NAV, type NavItem } from '@/app/navigation';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { ListGroup, ListRow } from '@/components/ui/List';
@@ -24,6 +24,9 @@ export function MorePage() {
             {SECONDARY_NAV.filter((i) => i.group === g.key && i.to !== '/profile').map((i) => (
               <ListRow key={i.to} to={i.to} icon={i.icon} tone={i.tone} title={i.label} />
             ))}
+            {g.key === 'app' ? (
+              <ListRow to="/welcome" icon={Sparkles} tone="lime" title="Take the tour" />
+            ) : null}
           </ListGroup>
         ))}
         <SyncBadge className="-mt-2 px-4" />

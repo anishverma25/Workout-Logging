@@ -8,8 +8,10 @@ Read README.md for setup, architecture and calculation rules.
 - Mobile-first. Test 390px wide and 1440px wide, dark and light themes.
 - Colors come from tokens in `src/styles/index.css` (`bg-surface`, `text-muted`, `text-accent-text`...).
   Never hardcode hex values in components. `accent` is a fill; use `accent-text` for accent-colored text.
-- Typography: Barlow for text, Barlow Condensed (`font-display`) for headings and numbers.
-  Add `tabular` to any number that changes.
+- Typography: the system text stack for text; `font-display` (SF Pro Rounded, Rubik fallback)
+  for headings and numbers. Add `tabular` to any number that changes.
+- Layout: Apple-style grouped lists (`components/ui/List.tsx`), large-title `PageHeader`, rings
+  (`components/ui/Rings.tsx`). Tile and ring colours come from `--tile-*` and `--ring-*` tokens.
 - Copy: sentence case, plain verbs, no ALL-CAPS labels, no em dashes, no emoji as icons.
 - Components never touch Dexie directly. Read through `src/data/hooks.ts`, write through repositories.
 - Analytics are pure functions in `src/domain/analytics` with unit tests. No AI for numbers.
@@ -77,4 +79,14 @@ Read README.md for setup, architecture and calculation rules.
 - Phase 10: polish (record celebration, page fade, whole-number chart axes, readable bar labels,
   theme-coloured status bar, stale-tab auto reload, account-safe empty states) and
   `docs/launch-readiness.md` (checklist, first-user testing, verdict).
-- Next: real Supabase project and Cloudflare deploy (`docs/deployment.md`), then first users.
+- Phases 11 to 18: setup (`/setup`) and profile (sex, height, days, session length, equipment,
+  activity), body science (`domain/analytics/body.ts`), measurements and goals tables (Dexie v3,
+  migration `20261007000004_personal_training.sql`), personalised programmes
+  (`data/library/programs.ts`), strength levels, plateaus and balance (`standards.ts`), weekly
+  rings and check-in, journey page (goals, milestones, phone-only photos, recaps), gym tools
+  (plates, warm-ups, supersets, swaps, readiness, session effort, wake lock), CSV and calendar
+  export, account deletion, the premium redesign, and the preview tour (`/welcome`, sample data
+  in memory only, shown once on a new install and after sign-up).
+- Schedules plan nothing before the routine's `createdAt`, so a new routine has no missed days.
+- Deployed on Cloudflare Pages from `phase-2-wip`. Each new Supabase migration must be applied
+  in the SQL editor before the code that needs it is pushed.

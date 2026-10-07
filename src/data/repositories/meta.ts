@@ -9,6 +9,8 @@ export const META_KEYS = {
   demoAutoloadHandled: 'demo.autoloadHandled',
   restTimer: 'workout.restTimer',
   dismissedSuggestions: 'progress.dismissedSuggestions',
+  /** Set on a brand-new install: Home opens the preview tour once. */
+  tourPending: 'onboarding.tourPending',
   /** Sync bookkeeping: `${syncCursor}${table}` and the last confirmed sync time. */
   syncCursor: 'sync.cursor.',
   lastSyncedAt: 'sync.lastSyncedAt',
