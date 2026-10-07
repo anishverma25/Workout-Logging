@@ -9,22 +9,38 @@ import {
 } from 'react';
 import { Check } from 'lucide-react';
 
+export interface ToastAction {
+  label: string;
+  onSelect: () => void;
+}
+
 interface ToastItem {
   id: number;
   message: string;
+  action?: ToastAction;
 }
 
-const ToastContext = createContext<(message: string) => void>(() => {});
+type Show = (message: string, action?: ToastAction) => void;
+
+const ToastContext = createContext<Show>(() => {});
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const counter = useRef(0);
 
-  const show = useCallback((message: string) => {
-    const id = ++counter.current;
-    setItems((list) => [...list, { id, message }]);
-    window.setTimeout(() => setItems((list) => list.filter((t) => t.id !== id)), 2800);
+  const dismiss = useCallback((id: number) => {
+    setItems((list) => list.filter((t) => t.id !== id));
   }, []);
+
+  const show = useCallback<Show>(
+    (message, action) => {
+      const id = ++counter.current;
+      setItems((list) => [...list, action ? { id, message, action } : { id, message }]);
+      // Longer when there is something to undo, so there is time to reach it.
+      window.setTimeout(() => dismiss(id), action ? 5000 : 2800);
+    },
+    [dismiss],
+  );
 
   const value = useMemo(() => show, [show]);
 
@@ -42,6 +58,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           >
             <Check className="size-4 text-accent-text" aria-hidden />
             {t.message}
+            {t.action ? (
+              <button
+                type="button"
+                onClick={() => {
+                  t.action!.onSelect();
+                  dismiss(t.id);
+                }}
+                className="pointer-events-auto -my-1.5 -mr-2 ml-1 rounded-full px-3 py-1.5 font-semibold text-accent-text hover:bg-surface-2"
+              >
+                {t.action.label}
+              </button>
+            ) : null}
           </div>
         ))}
       </div>

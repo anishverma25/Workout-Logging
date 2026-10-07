@@ -6,10 +6,12 @@ import type { SubscriptionSnapshot } from '@/domain/entitlement/entitlement';
  * removed, and `scripts/verify-build.mjs` fails the build if any trace of it remains.
  */
 
-export type DevEntitlementState = 'real' | 'trial' | 'trial_expired' | 'pro' | 'pro_expired';
+export type DevEntitlementState =
+  'real' | 'founding' | 'trial' | 'trial_expired' | 'pro' | 'pro_expired';
 
 export const DEV_STATES: { value: DevEntitlementState; label: string }[] = [
   { value: 'real', label: 'Real' },
+  { value: 'founding', label: 'Early access' },
   { value: 'trial', label: 'Active trial' },
   { value: 'trial_expired', label: 'Expired trial' },
   { value: 'pro', label: 'Active Pro' },
@@ -60,7 +62,10 @@ export function devSnapshot(state: DevEntitlementState, now: Date): Subscription
     payment_submitted_at: null,
     updated_at: now,
     server_now: now,
+    early_access: false,
+    founding_member: false,
   };
+  if (state === 'founding') return { ...base, early_access: true, founding_member: true };
   if (state === 'trial') return base;
   if (state === 'trial_expired') return { ...base, status: 'expired' };
   if (state === 'pro')

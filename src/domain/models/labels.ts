@@ -126,3 +126,7 @@ export const ACTIVITY_LABEL: Record<DailyActivity, string> = {
   on_feet: 'On my feet',
   physical: 'Physical work',
 };
+
+/** Session lengths offered on the wheel: 15 minutes to 3 hours, in 5 minute steps. */
+export const SESSION_MINUTES = Array.from({ length: 34 }, (_, i) => 15 + i * 5);
+export const DEFAULT_SESSION = 60;

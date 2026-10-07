@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
-import { ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronRight, Crown, Sparkles } from 'lucide-react';
+import { useEntitlement } from '@/app/entitlement';
 import { SECONDARY_NAV, type NavItem } from '@/app/navigation';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { ListGroup, ListRow } from '@/components/ui/List';
@@ -38,6 +39,7 @@ export function MorePage() {
 /** The person at the top, as in iOS Settings. Opens the profile. */
 function ProfileCard() {
   const profile = useProfile().data;
+  const founding = useEntitlement().foundingMember;
   const initials = profile?.displayName
     .split(/\s+/)
     .filter(Boolean)
@@ -64,6 +66,12 @@ function ProfileCard() {
             ? `${GOAL_LABEL[profile.goal]}, ${EXPERIENCE_LABEL[profile.experience].toLowerCase()}`
             : 'Goal, experience and body details'}
         </span>
+        {founding ? (
+          <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent-text">
+            <Crown className="size-3.5" aria-hidden />
+            Founding member
+          </span>
+        ) : null}
       </span>
       <ChevronRight className="size-4 shrink-0 text-faint/70" aria-hidden />
     </Link>

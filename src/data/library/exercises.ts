@@ -1066,6 +1066,17 @@ const SEEDS: ExerciseSeed[] = [
     instructions:
       'Small jumps on the balls of the feet, turning the rope from the wrists. Log the time skipped.',
   },
+
+  // Added later: keep new entries at the end, each release seeds its own slice.
+  {
+    key: 'hip-adduction',
+    name: 'Hip adduction machine',
+    primary: 'glutes',
+    equipment: 'machine',
+    category: 'isolation',
+    instructions:
+      'Also called the adductor machine; it works the inner thighs. Sit tall with the pads on the inside of the knees, squeeze the legs together, pause, then let them open slowly.',
+  },
 ];
 
 /** Fixed timestamp so system records are identical on every device and every load. */

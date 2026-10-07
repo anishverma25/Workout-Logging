@@ -26,10 +26,14 @@ export const SubscriptionSnapshot = z.object({
   payment_submitted_at: ts,
   updated_at: ts,
   server_now: ts,
+  /** Early access is open: every account has every Pro feature, with no clock. */
+  early_access: z.boolean().optional().default(false),
+  /** Joined during early access. Stays true after it ends. */
+  founding_member: z.boolean().optional().default(false),
 });
 export type SubscriptionSnapshot = z.infer<typeof SubscriptionSnapshot>;
 
-export type Plan = 'guest' | 'free' | 'trial' | 'pro';
+export type Plan = 'guest' | 'free' | 'trial' | 'pro' | 'founding';
 
 export interface Entitlement {
   plan: Plan;
@@ -45,6 +49,8 @@ export interface Entitlement {
   paymentReference: string | null;
   /** Time left in the current trial or Pro period. */
   remainingMs: number | null;
+  /** Joined during early access. */
+  foundingMember: boolean;
 }
 
 const GUEST: Entitlement = {
@@ -57,6 +63,7 @@ const GUEST: Entitlement = {
   paymentPending: false,
   paymentReference: null,
   remainingMs: null,
+  foundingMember: false,
 };
 
 /** `now` must already be on the server's clock (see `serverNow`). */
@@ -68,19 +75,22 @@ export function resolveEntitlement(sub: SubscriptionSnapshot | null, now: Date):
   const proActive =
     !revoked && !!sub.pro_expires_at && proStarted && t < sub.pro_expires_at.getTime();
   const trialActive = !!sub.trial_expires_at && t < sub.trial_expires_at.getTime();
-  const plan: Plan = proActive ? 'pro' : trialActive ? 'trial' : 'free';
+  // Early access comes from the server's setting; a revoked account does not get it.
+  const founding = sub.early_access && !revoked;
+  const plan: Plan = founding ? 'founding' : proActive ? 'pro' : trialActive ? 'trial' : 'free';
   const endsAt =
     plan === 'pro' ? sub.pro_expires_at : plan === 'trial' ? sub.trial_expires_at : null;
   return {
     plan,
-    pro: plan === 'pro' || plan === 'trial',
+    pro: plan === 'pro' || plan === 'trial' || plan === 'founding',
     trialEndsAt: sub.trial_expires_at,
-    trialEnded: !trialActive,
+    trialEnded: !trialActive && !founding,
     proEndsAt: sub.pro_expires_at,
     proEnded: !proActive && !!sub.pro_expires_at && sub.pro_expires_at.getTime() <= t,
-    paymentPending: sub.status === 'payment_pending' && !proActive,
+    paymentPending: sub.status === 'payment_pending' && !proActive && !founding,
     paymentReference: sub.payment_reference,
     remainingMs: endsAt ? Math.max(0, endsAt.getTime() - t) : null,
+    foundingMember: sub.founding_member,
   };
 }
 

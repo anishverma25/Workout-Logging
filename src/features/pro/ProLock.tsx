@@ -26,7 +26,7 @@ export function ProLock({
   const cta = guest
     ? account.status === 'unavailable'
       ? null
-      : { to: '/sign-up?next=/pro', label: 'Create an account to try it free' }
+      : { to: '/sign-up?next=/pro', label: 'Create a free account' }
     : { to: '/pro', label: entitlement.trialEnded ? 'See Pro' : 'See your plan' };
 
   return (
@@ -50,7 +50,7 @@ export function ProLock({
         </p>
         <p className="mt-1 text-sm text-muted">
           {description}
-          {guest ? ' Every new account includes 7 days of Pro, free.' : ''}
+          {guest ? ' Unlocked free for everyone who joins during early access.' : ''}
         </p>
       </div>
       {cta ? (

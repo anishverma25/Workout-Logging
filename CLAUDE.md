@@ -88,5 +88,11 @@ Read README.md for setup, architecture and calculation rules.
   export, account deletion, the premium redesign, and the preview tour (`/welcome`, sample data
   in memory only, shown once on a new install and after sign-up).
 - Schedules plan nothing before the routine's `createdAt`, so a new routine has no missed days.
+- Early access (migration 0005): `app_settings.early_access_ended_at` null means every account
+  has Pro (plan `founding`) and is a founding member. Ending it is one SQL update
+  (`docs/admin-pro-payments.md`); guest-facing early access copy in `ProPage`, `ProLock` and
+  sign-up must change in the same release.
+- Routine days: swipe left or long press (`SwipeRow`) to delete, with undo in the toast.
+  Session length uses `WheelPicker`. Search understands gym words (`SYNONYMS` in search.ts).
 - Deployed on Cloudflare Pages from `phase-2-wip`. Each new Supabase migration must be applied
   in the SQL editor before the code that needs it is pushed.

@@ -10,6 +10,8 @@ const literal = (value: string | null) =>
  */
 /** The library as first released; later additions are seeded by later migrations. */
 export const FIRST_LIBRARY_SIZE = 91;
+/** End of the personal training release (migration 0004); later entries go in 0005. */
+export const PERSONAL_TRAINING_LIBRARY_SIZE = 101;
 
 export function exerciseSeedSql(from = 0, to = FIRST_LIBRARY_SIZE): string {
   const rows = SYSTEM_EXERCISES.slice(from, to).map((e, j) => {

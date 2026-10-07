@@ -369,6 +369,14 @@ const server = createServer(async (req, res) => {
     }
     const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
     if (url.pathname === '/health') return send(res, 200, { ok: true });
+    // Test control, standing in for the administrator's SQL: open or end early access.
+    if (url.pathname === '/__test/early-access' && req.method === 'POST') {
+      const { open } = (await readJson(req)) as { open: boolean };
+      await pg.query('update public.app_settings set early_access_ended_at = $1', [
+        open ? null : new Date().toISOString(),
+      ]);
+      return send(res, 200, { open });
+    }
     if (url.pathname.startsWith('/auth/v1')) {
       return await handleAuth(req, res, url.pathname.slice('/auth/v1'.length), url);
     }

@@ -48,6 +48,44 @@ test('routine from a template: rename, add a day and exercise, duplicate, delete
   await expect(page.getByRole('link', { name: 'Off-season (copy)' })).toHaveCount(0);
 });
 
+test('remove an exercise from a day by swiping or long pressing, with undo', async ({ page }) => {
+  await page.goto('/routines');
+  await page
+    .getByRole('link', { name: /Push Pull Legs/ })
+    .first()
+    .click();
+  const push = page.locator('section', { has: page.getByRole('heading', { name: 'Push' }) });
+  const row = (name: string) => push.getByRole('button', { name: new RegExp(`^\\d+ ${name}`) });
+  await expect(row('Barbell bench press')).toBeVisible();
+
+  // Swipe left, then tap the revealed Delete.
+  const box = (await row('Barbell bench press').boundingBox())!;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + box.width - 20, y);
+  await page.mouse.down();
+  for (let i = 1; i <= 6; i++) await page.mouse.move(box.x + box.width - 20 - i * 20, y + 1);
+  await page.mouse.up();
+  await push.getByRole('button', { name: 'Delete Barbell bench press' }).click();
+  await expect(page.getByText('Barbell bench press removed')).toBeVisible();
+  await expect(row('Barbell bench press')).toHaveCount(0);
+
+  // Undo puts it back first in the list.
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(row('Barbell bench press')).toBeVisible();
+  await expect(push.getByRole('listitem').first()).toContainText('Barbell bench press');
+
+  // Press and hold opens the menu; Delete from there.
+  const second = (await row('Incline dumbbell press').boundingBox())!;
+  await page.mouse.move(second.x + 60, second.y + second.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(700);
+  await page.mouse.up();
+  const menu = page.getByRole('dialog', { name: 'Incline dumbbell press' });
+  await expect(menu.getByRole('button', { name: 'Move up' })).toBeVisible();
+  await menu.getByRole('button', { name: 'Delete from this day' }).click();
+  await expect(row('Incline dumbbell press')).toHaveCount(0);
+});
+
 test('custom exercise: create, find, edit, delete', async ({ page }) => {
   await page.goto('/exercises');
   await page.getByRole('searchbox', { name: 'Search exercises' }).fill('Landmine press');

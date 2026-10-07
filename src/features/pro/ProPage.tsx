@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Check, Copy, Crown, ShieldCheck, Smartphone } from 'lucide-react';
+import { Check, Copy, Crown, ShieldCheck, Smartphone, Sparkles } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import {
   PaymentReferenceError,
@@ -44,8 +44,8 @@ export function ProPage() {
       />
       <div className="flex max-w-3xl flex-col gap-5">
         <PlanCard entitlement={entitlement} />
-        <Benefits />
-        {signedIn ? (
+        <Benefits unlocked={entitlement.plan === 'founding'} />
+        {signedIn && entitlement.plan !== 'founding' ? (
           <PaymentCard entitlement={entitlement} userId={account.user!.id} config={paymentConfig} />
         ) : null}
       </div>
@@ -70,13 +70,15 @@ function PlanCard({ entitlement: e }: { entitlement: EntitlementView }) {
   if (account.status !== 'signedIn') {
     return (
       <Card className="p-5">
-        <p className="font-display text-2xl font-bold">Try Pro free for 7 days</p>
+        <ExclusivePill />
+        <p className="mt-3 font-display text-2xl font-bold">Join while early access is open</p>
         <p className="mt-1 text-muted">
-          Every new account starts with {TRIAL_HOURS / 24} days of Pro. No payment details needed,
-          and nothing renews by itself.
+          Overload is opening to a small group first. Create a free account now and you become a
+          founding member, with every Pro feature unlocked for as long as early access lasts. No
+          payment details, nothing to cancel.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <ButtonLink to="/sign-up?next=/pro">Create an account</ButtonLink>
+          <ButtonLink to="/sign-up?next=/pro">Become a founding member</ButtonLink>
           <ButtonLink to="/sign-in?next=/pro" variant="ghost">
             Sign in
           </ButtonLink>
@@ -91,6 +93,8 @@ function PlanCard({ entitlement: e }: { entitlement: EntitlementView }) {
       </Card>
     );
   }
+
+  if (e.plan === 'founding') return <FoundingCard offline={e.offline} />;
 
   let title: string;
   let detail: string;
@@ -158,11 +162,64 @@ function PlanCard({ entitlement: e }: { entitlement: EntitlementView }) {
   );
 }
 
-function Benefits() {
+function ExclusivePill({ onDark }: { onDark?: boolean }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
+        onDark ? 'bg-black/25 text-white' : 'bg-accent-soft text-accent-text',
+      )}
+    >
+      <Sparkles className="size-3.5" aria-hidden />
+      Exclusive early access
+    </span>
+  );
+}
+
+/** Early access: no clock, no payment, and the person is told why they are special. */
+function FoundingCard({ offline }: { offline: boolean }) {
+  return (
+    <section
+      aria-labelledby="plan-title"
+      className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-[var(--tile-iris)] to-[var(--tile-plum)] p-6 text-white"
+    >
+      <Crown
+        className="pointer-events-none absolute -right-6 -top-6 size-36 rotate-12 text-white/10"
+        aria-hidden
+      />
+      <ExclusivePill onDark />
+      <h2 id="plan-title" className="mt-4 font-display text-[1.9rem] font-bold leading-[1.1]">
+        You are a founding member
+      </h2>
+      <p className="mt-3 max-w-[52ch] text-[1.02rem] leading-relaxed text-white">
+        Overload is opening to a small, invited group before anyone else, and you are one of them.
+        Every Pro feature is unlocked on your account for the whole of early access: no trial clock,
+        no payment, nothing to cancel.
+      </p>
+      <p className="mt-3 max-w-[52ch] leading-relaxed text-white">
+        Founding members shape what Overload becomes. Tell us what works and what does not; the next
+        updates are built around what you say.
+      </p>
+      <p className="mt-5 border-t border-white/20 pt-4 text-sm leading-relaxed text-white">
+        Early access will not stay open forever. You will hear from us before anything changes, and
+        your founding member status stays on your account for good.
+      </p>
+      {offline ? (
+        <p className="mt-2 text-sm text-white">
+          Showing your plan as of the last check. It updates when you are back online.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+function Benefits({ unlocked }: { unlocked: boolean }) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
       <Card className="p-5">
-        <h2 className="mb-3 font-display text-xl font-semibold">What Pro adds</h2>
+        <h2 className="mb-3 font-display text-xl font-semibold">
+          {unlocked ? 'Unlocked for you' : 'What Pro adds'}
+        </h2>
         <ul className="flex flex-col gap-3">
           {Object.values(PRO_FEATURES).map((f) => (
             <li key={f.title} className="flex gap-3">

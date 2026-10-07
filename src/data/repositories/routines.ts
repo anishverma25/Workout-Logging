@@ -414,6 +414,20 @@ export async function toggleSlotSuperset(db: WorkoutDatabase, slotId: string): P
   });
 }
 
+/** Puts a removed exercise back where it was (the undo after a swipe or long-press delete). */
+export async function restoreExercise(db: WorkoutDatabase, slotId: string): Promise<void> {
+  await db.transaction('rw', ROUTINE_TABLES(db), async () => {
+    const slot = await db.routineExercises.get(slotId);
+    if (!slot || slot.deletedAt === null) return;
+    await patchRecord<RoutineExercise>(db, 'routineExercises', slotId, { deletedAt: null });
+    // Its old position is now shared with the exercise that moved up into it: it goes first.
+    const slots = (await slotsOf(db, slot.routineDayId)).sort(
+      (a, b) => a.order - b.order || (a.id === slotId ? -1 : b.id === slotId ? 1 : 0),
+    );
+    await renumber(db, 'routineExercises', slots);
+  });
+}
+
 export async function removeExercise(db: WorkoutDatabase, slotId: string): Promise<void> {
   await db.transaction('rw', ROUTINE_TABLES(db), async () => {
     const slot = await db.routineExercises.get(slotId);

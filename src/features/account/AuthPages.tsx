@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
-import { CloudOff, MailCheck } from 'lucide-react';
+import { CloudOff, Crown, MailCheck } from 'lucide-react';
 import {
   AccountError,
   MIN_PASSWORD_LENGTH,
@@ -209,7 +209,18 @@ export function SignUpPage() {
   return (
     <AuthCard
       title="Create account"
-      intro={ACCOUNT_PITCH}
+      intro={
+        <>
+          {ACCOUNT_PITCH}
+          <span className="mt-3 flex items-start gap-2.5 rounded-[1rem] bg-accent-soft px-3.5 py-3 text-sm text-text">
+            <Crown className="mt-0.5 size-4 shrink-0 text-accent-text" aria-hidden />
+            <span>
+              <strong className="font-semibold">Exclusive early access is open.</strong> Join now as
+              a founding member and every Pro feature is unlocked for you, free.
+            </span>
+          </span>
+        </>
+      }
       footer={
         <p>
           Already have an account?{' '}

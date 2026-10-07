@@ -226,3 +226,21 @@ describe('recent exercises', () => {
     ]);
   });
 });
+
+describe('gym words', () => {
+  const search = (query: string) =>
+    names(filterExercises(SYSTEM_EXERCISES, { ...EMPTY_FILTERS, query })).slice(0, 3);
+
+  it('finds the adductor and abductor machines by the names people use', () => {
+    expect(search('adductor')[0]).toBe('Hip adduction machine');
+    expect(search('abductor')[0]).toBe('Hip abduction machine');
+    expect(search('abductor machine')[0]).toBe('Hip abduction machine');
+    expect(search('inner thigh')).toContain('Hip adduction machine');
+  });
+
+  it('understands common short forms', () => {
+    expect(search('rdl')[0]).toBe('Romanian deadlift');
+    expect(search('ohp')[0]).toBe('Overhead press');
+    expect(search('db row')).toContain(byKey('one-arm-dumbbell-row').name);
+  });
+});

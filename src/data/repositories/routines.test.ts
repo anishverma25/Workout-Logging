@@ -14,6 +14,7 @@ import {
   moveDay,
   moveExercise,
   removeExercise,
+  restoreExercise,
   renameDay,
   RoutineError,
   setActiveRoutine,
@@ -212,9 +213,17 @@ describe('exercises in a day', () => {
     expect(slots[0]).toMatchObject({ targetSets: 4, repMin: 5, notes: 'pause at the bottom' });
     expect(slots[2]).toMatchObject({ repMin: 10, repMax: 15 }); // swap kept the targets
 
-    await removeExercise(db, slots[1]!.id);
+    const removed = slots[1]!;
+    const order = slots.map((s) => s.id);
+    await removeExercise(db, removed.id);
     slots = await liveSlots(day!.id);
     expect(slots.map((s) => s.order)).toEqual([0, 1]);
+
+    // Undo puts it back in the same place.
+    await restoreExercise(db, removed.id);
+    slots = await liveSlots(day!.id);
+    expect(slots.map((s) => s.id)).toEqual(order);
+    expect(slots.map((s) => s.order)).toEqual([0, 1, 2]);
   });
 });
 

@@ -42,6 +42,34 @@ export function normalize(text: string): string {
 const COMPACT = (s: string) => s.replace(/ /g, '');
 
 /**
+ * Gym words people type that the library names differently. Each query word also matches the
+ * words it maps to, so "abductor" finds the hip abduction machine and "rdl" the Romanian deadlift.
+ */
+const SYNONYMS: Record<string, string[]> = {
+  abductor: ['abduction'],
+  abductors: ['abduction'],
+  adductor: ['adduction'],
+  adductors: ['adduction'],
+  inner: ['adduction'],
+  outer: ['abduction'],
+  thigh: ['adduction', 'abduction'],
+  rdl: ['romanian'],
+  ohp: ['overhead'],
+  db: ['dumbbell'],
+  bb: ['barbell'],
+  pec: ['pec', 'chest', 'fly'],
+  pecs: ['chest'],
+  lats: ['lat', 'pulldown'],
+  traps: ['shrug'],
+  delt: ['delt', 'lateral', 'shoulder'],
+  delts: ['delt', 'lateral', 'shoulder'],
+  crossover: ['fly'],
+  pushdown: ['pushdown'],
+  bicep: ['biceps', 'curl'],
+  tricep: ['triceps'],
+};
+
+/**
  * Relevance of an exercise for a query. Higher is better, 0 means no match.
  * Every query word must match the name, a muscle or the equipment.
  * Name matches rank above metadata matches, and earlier matches above later ones.
@@ -65,13 +93,19 @@ export function matchScore(exercise: Exercise, query: string): number {
 
   let score = 0;
   for (const word of q.split(' ')) {
-    const wordIndex = nameWords.findIndex((w) => w.startsWith(word));
-    if (wordIndex >= 0) score += 100 - Math.min(wordIndex, 9) * 5;
-    else if (name.includes(word)) score += 40;
-    else if (meta.split(' ').some((w) => w.startsWith(word))) score += 20;
-    else return 0;
+    const best = Math.max(...[word, ...(SYNONYMS[word] ?? [])].map((w) => wordScore(w)));
+    if (best === 0) return 0;
+    score += best;
   }
   return score;
+
+  function wordScore(word: string): number {
+    const wordIndex = nameWords.findIndex((w) => w.startsWith(word));
+    if (wordIndex >= 0) return 100 - Math.min(wordIndex, 9) * 5;
+    if (name.includes(word)) return 40;
+    if (meta.split(' ').some((w) => w.startsWith(word))) return 20;
+    return 0;
+  }
 }
 
 export function filterExercises(exercises: Exercise[], filters: ExerciseFilters): Exercise[] {

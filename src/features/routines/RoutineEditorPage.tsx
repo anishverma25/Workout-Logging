@@ -16,6 +16,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
+import { SwipeRow } from '@/components/ui/SwipeRow';
 import { Button } from '@/components/ui/Button';
 import { ActionList, TextArea, TextField } from '@/components/ui/Fields';
 import { IconButton } from '@/components/ui/Button';
@@ -33,7 +34,9 @@ import {
   duplicateRoutine,
   moveDay,
   moveExercise,
+  removeExercise,
   renameDay,
+  restoreExercise,
   setActiveRoutine,
   setDayWeekdays,
   updateRoutine,
@@ -297,11 +300,24 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
   const [picking, setPicking] = useState(false);
   const [reordering, setReordering] = useState(false);
   const [openSlot, setOpenSlot] = useState<string | null>(null);
+  const [slotMenu, setSlotMenu] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const owner = new Map<number, string>();
   allDays.forEach((d) => d.weekdays.forEach((w) => owner.set(w, d.name)));
   const totalSets = slots.reduce((n, s) => n + s.targetSets, 0);
   const slot = slots.find((s) => s.id === openSlot) ?? null;
+  const menuIndex = slots.findIndex((s) => s.id === slotMenu);
+  const menuSlot = slots[menuIndex] ?? null;
+  const nameOf = (s: RoutineExercise) => exerciseById.get(s.exerciseId)?.name ?? 'Exercise';
+
+  /** Removes an exercise from the day, with an undo in the toast. */
+  const remove = async (s: RoutineExercise) => {
+    await removeExercise(db, s.id);
+    toast(`${nameOf(s)} removed`, {
+      label: 'Undo',
+      onSelect: () => void restoreExercise(db, s.id),
+    });
+  };
 
   const toggleWeekday = async (w: number) => {
     const next = day.weekdays.includes(w)
@@ -397,39 +413,49 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
           const exercise = exerciseById.get(s.exerciseId);
           return (
             <li key={s.id} className="flex items-center gap-1">
-              <button
-                type="button"
-                disabled={reordering}
-                onClick={() => setOpenSlot(s.id)}
-                className="flex min-h-15 min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-surface-2 disabled:hover:bg-transparent"
-              >
-                <span className="tabular w-5 shrink-0 text-sm font-semibold text-faint">
-                  {i + 1}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold">
-                    {exercise?.name ?? 'Deleted exercise'}
-                  </span>
-                  <span className="tabular block truncate text-sm text-muted">
-                    {s.targetSets} × {formatRepRange(s.repMin, s.repMax)}
-                    {s.targetRir !== null ? ` · RIR ${s.targetRir}` : ''}
-                    {` · ${formatSeconds(s.restSeconds)} rest`}
-                  </span>
-                  {s.notes ? (
-                    <span className="block truncate text-sm text-faint">{s.notes}</span>
-                  ) : null}
-                  {s.supersetGroup != null &&
-                  (slots[i + 1]?.supersetGroup === s.supersetGroup ||
-                    slots[i - 1]?.supersetGroup === s.supersetGroup) ? (
-                    <span className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted">
-                      <span aria-hidden className="size-2 rounded-full bg-[var(--ring-2)]" />
-                      {slots[i + 1]?.supersetGroup === s.supersetGroup
-                        ? 'Superset with the next exercise'
-                        : 'End of superset'}
+              <div className="min-w-0 flex-1">
+                <SwipeRow
+                  disabled={reordering}
+                  deleteLabel={`Delete ${nameOf(s)}`}
+                  onDelete={() => void remove(s)}
+                  onLongPress={() => setSlotMenu(s.id)}
+                >
+                  <button
+                    type="button"
+                    disabled={reordering}
+                    onClick={() => setOpenSlot(s.id)}
+                    aria-haspopup="dialog"
+                    className="flex min-h-15 w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-surface-2 disabled:hover:bg-transparent"
+                  >
+                    <span className="tabular w-5 shrink-0 text-sm font-semibold text-faint">
+                      {i + 1}
                     </span>
-                  ) : null}
-                </span>
-              </button>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold">
+                        {exercise?.name ?? 'Deleted exercise'}
+                      </span>
+                      <span className="tabular block truncate text-sm text-muted">
+                        {s.targetSets} × {formatRepRange(s.repMin, s.repMax)}
+                        {s.targetRir !== null ? ` · RIR ${s.targetRir}` : ''}
+                        {` · ${formatSeconds(s.restSeconds)} rest`}
+                      </span>
+                      {s.notes ? (
+                        <span className="block truncate text-sm text-faint">{s.notes}</span>
+                      ) : null}
+                      {s.supersetGroup != null &&
+                      (slots[i + 1]?.supersetGroup === s.supersetGroup ||
+                        slots[i - 1]?.supersetGroup === s.supersetGroup) ? (
+                        <span className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted">
+                          <span aria-hidden className="size-2 rounded-full bg-[var(--ring-2)]" />
+                          {slots[i + 1]?.supersetGroup === s.supersetGroup
+                            ? 'Superset with the next exercise'
+                            : 'End of superset'}
+                        </span>
+                      ) : null}
+                    </span>
+                  </button>
+                </SwipeRow>
+              </div>
               {reordering ? (
                 <span className="flex shrink-0">
                   <IconButton
@@ -481,6 +507,59 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
           toast(`${pluralize(ids.length, 'exercise')} added to ${day.name}`);
         }}
       />
+      <Sheet
+        open={menuSlot !== null}
+        onClose={() => setSlotMenu(null)}
+        title={menuSlot ? nameOf(menuSlot) : ''}
+      >
+        {menuSlot ? (
+          <ActionList
+            items={[
+              {
+                label: 'Edit sets, reps and rest',
+                icon: <Pencil className="size-5" aria-hidden />,
+                onSelect: () => {
+                  setSlotMenu(null);
+                  setOpenSlot(menuSlot.id);
+                },
+              },
+              ...(menuIndex > 0
+                ? [
+                    {
+                      label: 'Move up',
+                      icon: <ArrowUp className="size-5" aria-hidden />,
+                      onSelect: () => {
+                        setSlotMenu(null);
+                        void moveExercise(db, menuSlot.id, -1);
+                      },
+                    },
+                  ]
+                : []),
+              ...(menuIndex < slots.length - 1
+                ? [
+                    {
+                      label: 'Move down',
+                      icon: <ArrowDown className="size-5" aria-hidden />,
+                      onSelect: () => {
+                        setSlotMenu(null);
+                        void moveExercise(db, menuSlot.id, 1);
+                      },
+                    },
+                  ]
+                : []),
+              {
+                label: 'Delete from this day',
+                icon: <Trash2 className="size-5" aria-hidden />,
+                danger: true,
+                onSelect: () => {
+                  setSlotMenu(null);
+                  void remove(menuSlot);
+                },
+              },
+            ]}
+          />
+        ) : null}
+      </Sheet>
       <SlotSheet
         slot={slot}
         exercise={slot ? exerciseById.get(slot.exerciseId) : undefined}

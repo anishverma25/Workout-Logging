@@ -37,6 +37,8 @@ import type {
 } from '@/domain/models/schemas';
 import { cn } from '@/lib/cn';
 import { BirthDateField } from '@/components/ui/BirthDateField';
+import { WheelPicker } from '@/components/ui/WheelPicker';
+import { DEFAULT_SESSION, SESSION_MINUTES } from '@/domain/models/labels';
 import { ageFromBirthDate, toDateKey } from '@/lib/dates';
 import { fromDisplayWeight } from '@/lib/units';
 import { CM_PER_INCH } from '@/data/repositories/measurements';
@@ -173,7 +175,7 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
     goal: own?.goal ?? null,
     experience: own?.experience ?? null,
     trainingDays: own?.trainingDays ?? null,
-    sessionMinutes: own?.sessionMinutes ?? null,
+    sessionMinutes: own?.sessionMinutes ?? DEFAULT_SESSION,
     equipment: own?.equipment ?? null,
     sex: own?.sex ?? null,
     birthDate: own?.birthDate ?? '',
@@ -379,13 +381,16 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
                 onChange={(v) => set('trainingDays', v)}
               />
               <p className="mb-2.5 mt-7 text-sm font-medium text-muted">Time per session</p>
-              <NumberPicker
+              <WheelPicker
                 label="Minutes per session"
-                values={[30, 45, 60, 75, 90, 120]}
-                value={draft.sessionMinutes}
+                values={SESSION_MINUTES}
+                value={draft.sessionMinutes ?? DEFAULT_SESSION}
                 onChange={(v) => set('sessionMinutes', v)}
-                suffix="min"
+                unit="min"
               />
+              <p className="mt-2 text-center text-sm text-faint">
+                Scroll to choose, in 5 minute steps. Include warm-up and rests.
+              </p>
             </Question>
           ) : null}
 

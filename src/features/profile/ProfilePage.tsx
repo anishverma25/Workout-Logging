@@ -37,12 +37,15 @@ import {
   ACTIVITY_LABEL,
   EQUIPMENT_LABEL,
   EXPERIENCE_LABEL,
+  DEFAULT_SESSION,
   GOAL_LABEL,
+  SESSION_MINUTES,
   SEX_LABEL,
 } from '@/domain/models/labels';
 import { usePreferences, useTrainingData } from '@/data/hooks';
 import { ageFromBirthDate } from '@/lib/dates';
 import { BirthDateField } from '@/components/ui/BirthDateField';
+import { WheelPicker } from '@/components/ui/WheelPicker';
 import { formatWeight } from '@/lib/units';
 import { formatLength } from '@/features/body/format';
 
@@ -289,15 +292,12 @@ function ProfileForm({ initial, onDone }: { initial: Profile | null; onDone: () 
           />
         </Field>
         <Field label="Session length">
-          <Chips
+          <WheelPicker
             label="Session length"
-            allLabel="Not set"
-            options={['30', '45', '60', '75', '90', '120'].map((v) => ({
-              value: v,
-              label: `${v} min`,
-            }))}
-            value={minutes}
-            onChange={setMinutes}
+            values={SESSION_MINUTES}
+            value={minutes ? Number(minutes) : DEFAULT_SESSION}
+            onChange={(v) => setMinutes(String(v))}
+            unit="min"
           />
         </Field>
       </div>

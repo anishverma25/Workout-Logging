@@ -172,7 +172,7 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     await expect(workouts).toHaveText('2');
     await page.getByRole('radio', { name: '7 days' }).click();
     await expect(workouts).toHaveText('2');
-    // In the trial, long ranges are open.
+    // During early access every account has Pro, so long ranges are open.
     await page.getByRole('radio', { name: 'All time', exact: true }).click();
     await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
     await page.getByRole('button', { name: /^Exercise/ }).click();
@@ -187,14 +187,14 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     await shot(page, '25-progress');
   });
 
-  await test.step('26-29. Pro page: trial, expired and Pro states', async () => {
+  await test.step('26-29. Pro page: early access, expired and Pro states', async () => {
     await page.goto('/pro');
-    await expect(page.getByRole('heading', { name: /^Free trial: / })).toBeVisible();
-    await shot(page, '27-trial');
+    await expect(page.getByRole('heading', { name: 'You are a founding member' })).toBeVisible();
+    await shot(page, '27-founding');
     for (const [state, heading] of [
       ['trial_expired', 'Your free trial has ended'],
       ['pro', 'Pro is active'],
-      ['real', /^Free trial: /],
+      ['real', 'You are a founding member'],
     ] as const) {
       await page.goto('/settings');
       await page.getByRole('combobox', { name: 'Access state' }).selectOption(state);

@@ -15,6 +15,8 @@ interface Sub {
   pro_expires_at: string | null;
   payment_reference: string | null;
   server_now: string;
+  early_access: boolean;
+  founding_member: boolean;
   admin_note?: string;
 }
 
@@ -158,5 +160,25 @@ describe('subscriptions', () => {
     expect((await mine(userC)).status).toBe('revoked');
     await server.pg.exec(reject!);
     expect((await mine(userC)).status).toBe('trialing');
+  });
+
+  it('gives everyone early access until it ends, and keeps founding members marked', async () => {
+    expect(await mine(userA)).toMatchObject({ early_access: true, founding_member: true });
+    // A signed-in user cannot read or change the setting directly.
+    await expect(
+      server.asUser(userA, (tx) =>
+        tx.query('update public.app_settings set early_access_ended_at = null'),
+      ),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      server.asUser(userA, (tx) => tx.query('select * from public.app_settings')),
+    ).rejects.toThrow(/permission denied/);
+
+    // The administrator ends it, as in the guide.
+    await server.pg.exec('update public.app_settings set early_access_ended_at = now()');
+    const later = await server.createUser('later@example.com');
+    expect(await mine(userA)).toMatchObject({ early_access: false, founding_member: true });
+    expect(await mine(later)).toMatchObject({ early_access: false, founding_member: false });
+    await server.pg.exec('update public.app_settings set early_access_ended_at = null');
   });
 });

@@ -82,6 +82,22 @@ describe('resolveEntitlement', () => {
     });
   });
 
+  it('early access gives every Pro feature with no clock, and marks founding members', () => {
+    const e = resolveEntitlement(sub({ early_access: true, founding_member: true }), at(500));
+    expect(e).toMatchObject({ plan: 'founding', pro: true, remainingMs: null, trialEnded: false });
+    expect(e.foundingMember).toBe(true);
+    expect(hasFeature(e, 'recaps')).toBe(true);
+    // A revoked account does not get it.
+    expect(resolveEntitlement(sub({ early_access: true, status: 'revoked' }), at(500)).pro).toBe(
+      false,
+    );
+    // After it ends, the normal rules apply and the founding mark stays.
+    const ended = resolveEntitlement(sub({ early_access: false, founding_member: true }), at(500));
+    expect(ended).toMatchObject({ plan: 'free', pro: false, foundingMember: true });
+    // Answers from before this release (no field) mean no early access.
+    expect(resolveEntitlement(sub(), at(0)).plan).toBe('trial');
+  });
+
   it('rejects malformed server data instead of guessing', () => {
     expect(() => sub({ status: 'gold' })).toThrow();
     expect(() => sub({ trial_expires_at: 'not a date' })).toThrow();

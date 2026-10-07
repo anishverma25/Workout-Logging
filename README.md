@@ -120,7 +120,9 @@ table, against real Postgres (PGlite) running the migrations.
 
 ### Trial and Pro
 
-- Every account gets exactly 168 hours of Pro, starting when the database creates the account.
+- Early access is open: every account has Pro and is a founding member until
+  `app_settings.early_access_ended_at` is set (see `docs/admin-pro-payments.md`).
+- After that, every account gets exactly 168 hours of Pro, starting when the database creates the account.
   The `subscriptions` row is created by a trigger; users can never write to it.
 - Access is decided in one place, `resolveEntitlement` in `src/domain/entitlement`, from the
   server's record and the server's clock (`get_my_subscription`). Local storage, URL

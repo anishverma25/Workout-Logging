@@ -184,6 +184,33 @@ test('lb input is shown back exactly as typed', async ({ page }) => {
   const load = firstCard(page).getByRole('textbox', { name: 'Set 1 load in lb' });
   await load.fill('225');
   await load.blur();
+  // Wait for the save to reach the device database, as a person would, before reloading.
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        for (const { name } of await indexedDB.databases()) {
+          const db = await new Promise<IDBDatabase>((resolve, reject) => {
+            const req = indexedDB.open(name!);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
+          if (!db.objectStoreNames.contains('sets')) {
+            db.close();
+            continue;
+          }
+          const rows = await new Promise<{ weightKg: number | null }[]>((resolve) => {
+            const req = db.transaction('sets').objectStore('sets').getAll();
+            req.onsuccess = () => resolve(req.result);
+          });
+          db.close();
+          // 225 lb is 102.06 kg.
+          if (rows.some((r) => r.weightKg !== null && Math.abs(r.weightKg - 102.058) < 0.01))
+            return true;
+        }
+        return false;
+      }),
+    )
+    .toBe(true);
   await page.reload();
   await expect(firstCard(page).getByRole('textbox', { name: 'Set 1 load in lb' })).toHaveValue(
     '225',

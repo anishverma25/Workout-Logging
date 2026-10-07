@@ -11,6 +11,8 @@ export const META_KEYS = {
   dismissedSuggestions: 'progress.dismissedSuggestions',
   /** Set on a brand-new install: Home opens the preview tour once. */
   tourPending: 'onboarding.tourPending',
+  /** Set once the founding member welcome has been shown on this account. */
+  foundingWelcomed: 'earlyAccess.welcomed',
   /** Sync bookkeeping: `${syncCursor}${table}` and the last confirmed sync time. */
   syncCursor: 'sync.cursor.',
   lastSyncedAt: 'sync.lastSyncedAt',

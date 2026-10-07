@@ -42,7 +42,13 @@ test('a new account sees the tour, then setup builds a personalised plan', async
   await page.getByRole('radio', { name: /Intermediate/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: '5', exact: true }).click();
-  await page.getByRole('radio', { name: '60 minutes' }).click();
+  // Session length is a scroll wheel; it starts at 60 and the arrow keys move it by 5.
+  const wheel = page.getByRole('spinbutton', { name: 'Minutes per session' });
+  await expect(wheel).toHaveAttribute('aria-valuenow', '60');
+  await wheel.focus();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await expect(wheel).toHaveAttribute('aria-valuetext', '70 min');
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: /Full gym/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();

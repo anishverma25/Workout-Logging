@@ -76,8 +76,10 @@ describe('starting', () => {
       'Barbell bench press',
       'Incline dumbbell press',
       'Seated dumbbell shoulder press',
+      'Pec deck',
       'Cable lateral raise',
       'Triceps rope pushdown',
+      'Overhead triceps extension',
     ]);
     expect(wes[0]!.target).toEqual({ sets: 3, repMin: 5, repMax: 8, rir: 2, rest: 180 });
     const sets = await liveSets(wes[0]!.id);
