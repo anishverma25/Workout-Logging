@@ -41,7 +41,8 @@ import {
   SEX_LABEL,
 } from '@/domain/models/labels';
 import { usePreferences, useTrainingData } from '@/data/hooks';
-import { ageFromBirthDate, toDateKey } from '@/lib/dates';
+import { ageFromBirthDate } from '@/lib/dates';
+import { BirthDateField } from '@/components/ui/BirthDateField';
 import { formatWeight } from '@/lib/units';
 import { formatLength } from '@/features/body/format';
 
@@ -320,13 +321,7 @@ function ProfileForm({ initial, onDone }: { initial: Profile | null; onDone: () 
         />
       </Field>
       <div className="grid gap-6 sm:grid-cols-2">
-        <TextField
-          label="Birth date"
-          type="date"
-          max={toDateKey(new Date())}
-          value={birthDate}
-          onChange={(e) => setBirthDate(e.target.value)}
-        />
+        <BirthDateField value={birthDate} onChange={setBirthDate} />
         <NumberField
           label="Height"
           unit="cm"

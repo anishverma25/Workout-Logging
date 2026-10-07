@@ -108,27 +108,33 @@ export function bmrMifflin(
 /** Katch-McArdle: 370 + 21.6 × lean kg. Needs no sex or age, so it is used when body fat is known. */
 export const bmrKatch = (leanKg: number) => 370 + 21.6 * leanKg;
 
-/** The standard activity factors (Harris-Benedict tradition), lightest to heaviest. */
-export const ACTIVITY_STEPS = [1.2, 1.375, 1.55, 1.725, 1.9] as const;
-
-const DAILY_STEP: Record<DailyActivity, number> = {
-  sitting: 0,
-  mixed: 0.5,
-  on_feet: 1,
-  physical: 2,
+/**
+ * Physical activity level of the day without planned exercise (total energy ÷ BMR). From the
+ * FAO/WHO/UNU expert consultation on human energy requirements (2004): a sedentary lifestyle is
+ * 1.40 to 1.69, an active one 1.70 to 1.99, a vigorous one 2.00 to 2.40. Training is counted
+ * separately below, so a desk day uses the bottom of the sedentary band.
+ */
+export const LIFESTYLE_PAL: Record<DailyActivity, number> = {
+  sitting: 1.4,
+  mixed: 1.5,
+  on_feet: 1.6,
+  physical: 1.8,
 };
 
 /**
- * Activity factor from training days a week and the rest of the day:
- * 0 to 1 days 1.2, 2 to 3 days 1.375, 4 to 5 days 1.55, 6 to 7 days 1.725, then up by half a
- * step for a mixed day, one step for a day on your feet, two for physical work (at most 1.9).
+ * Average MET of a resistance training session, rests included: "resistance training, multiple
+ * exercises, 8 to 15 repetitions at varied resistance" in the Compendium of Physical Activities.
  */
-export function activityFactor(trainingDays: number, daily: DailyActivity | null | undefined) {
-  const base = trainingDays <= 1 ? 0 : trainingDays <= 3 ? 1 : trainingDays <= 5 ? 2 : 3;
-  const position = Math.min(base + DAILY_STEP[daily ?? 'sitting'], ACTIVITY_STEPS.length - 1);
-  const lo = ACTIVITY_STEPS[Math.floor(position)]!;
-  const hi = ACTIVITY_STEPS[Math.ceil(position)]!;
-  return lo + (hi - lo) * (position - Math.floor(position));
+export const TRAINING_MET = 3.5;
+/** Session length when the profile does not say. */
+export const DEFAULT_SESSION_MINUTES = 60;
+
+/**
+ * Extra energy of training, averaged over the week: one MET is 1 kcal per kg per hour, and the
+ * resting MET is subtracted because the lifestyle factor already covers that time.
+ */
+export function trainingKcalPerDay(daysPerWeek: number, minutes: number, weightKg: number) {
+  return (daysPerWeek * (minutes / 60) * (TRAINING_MET - 1) * weightKg) / 7;
 }
 
 /** Change to daily energy for each goal, as a share of maintenance. */
@@ -158,8 +164,15 @@ export const GOAL_PROTEIN: Record<Goal, [number, number]> = {
 export interface EnergyPlan {
   bmr: number;
   method: 'mifflin' | 'katch';
-  factor: number;
-  /** Maintenance: BMR × activity factor. */
+  /** Lifestyle physical activity level, without training, and the day it describes. */
+  pal: number;
+  dailyActivity: DailyActivity;
+  /** BMR × lifestyle level. */
+  dailyKcal: number;
+  /** Training energy, averaged per day of the week. */
+  trainingKcal: number;
+  sessionMinutes: number;
+  /** Maintenance: BMR × lifestyle level + training energy. */
   tdee: number;
   /** Daily target for the goal, rounded to 50 kcal. */
   targetKcal: number;
@@ -185,25 +198,33 @@ export interface EnergyInput {
   plannedDays: number | null | undefined;
   /** Average sessions a week over the last 4 weeks, when there are 4 weeks of history. */
   loggedDaysPerWeek: number | null;
+  sessionMinutes?: number | null | undefined;
 }
 
 export function energyPlan(input: EnergyInput): EnergyPlan | null {
   const { weightKg } = input;
   if (!weightKg) return null;
+  // Mifflin-St Jeor is the most accurate of the common equations in validation studies
+  // (Frankenfield and colleagues, 2005). Katch-McArdle needs only lean mass, so it covers people
+  // who did not give their sex but have a body-fat reading.
   let bmr: number | null = null;
   let method: EnergyPlan['method'] = 'mifflin';
-  if (input.bodyFatPct !== null) {
+  if (input.sex && input.sex !== 'unspecified' && input.heightCm && input.age !== null) {
+    bmr = bmrMifflin(input.sex, weightKg, input.heightCm, input.age);
+  } else if (input.bodyFatPct !== null) {
     bmr = bmrKatch(leanMassKg(weightKg, input.bodyFatPct));
     method = 'katch';
-  } else if (input.sex && input.heightCm && input.age !== null) {
-    bmr = bmrMifflin(input.sex, weightKg, input.heightCm, input.age);
   }
   if (bmr === null) return null;
   const trainingDays =
     input.loggedDaysPerWeek !== null ? input.loggedDaysPerWeek : (input.plannedDays ?? null);
   if (trainingDays === null) return null;
-  const factor = activityFactor(Math.round(trainingDays), input.dailyActivity);
-  const tdee = bmr * factor;
+  const pal = LIFESTYLE_PAL[input.dailyActivity ?? 'sitting'];
+  const sessionMinutes = input.sessionMinutes ?? DEFAULT_SESSION_MINUTES;
+  // Each part rounded to 10 kcal, so the sum shown on screen adds up exactly.
+  const dailyKcal = round(bmr * pal, 10);
+  const trainingKcal = round(trainingKcalPerDay(trainingDays, sessionMinutes, weightKg), 10);
+  const tdee = dailyKcal + trainingKcal;
   const adjustment = GOAL_ENERGY[input.goal];
   const targetKcal = round(tdee * (1 + adjustment), 50);
   const [pLo, pHi] = GOAL_PROTEIN[input.goal];
@@ -214,8 +235,12 @@ export function energyPlan(input: EnergyInput): EnergyPlan | null {
   return {
     bmr: round(bmr),
     method,
-    factor: Math.round(factor * 1000) / 1000,
-    tdee: round(tdee, 10),
+    pal,
+    dailyActivity: input.dailyActivity ?? 'sitting',
+    dailyKcal,
+    trainingKcal,
+    sessionMinutes,
+    tdee,
     targetKcal,
     adjustment,
     proteinG,
@@ -392,6 +417,7 @@ export function bodySnapshot(input: {
     experience: Experience;
     dailyActivity?: DailyActivity | null;
     trainingDays?: number | null;
+    sessionMinutes?: number | null;
   } | null;
   age: number | null;
   bodyWeights: BodyWeightEntry[];
@@ -457,6 +483,7 @@ export function bodySnapshot(input: {
           dailyActivity: profile.dailyActivity,
           plannedDays: profile.trainingDays,
           loggedDaysPerWeek: input.loggedDaysPerWeek,
+          sessionMinutes: profile.sessionMinutes,
         })
       : null,
     trend,

@@ -1,6 +1,7 @@
 import type { BodyMeasurement, BodyWeightEntry } from '../models/schemas';
 import {
-  activityFactor,
+  LIFESTYLE_PAL,
+  trainingKcalPerDay,
   bmi,
   bodySnapshot,
   bmiBand,
@@ -78,14 +79,12 @@ describe('energy', () => {
     expect(bmrKatch(64)).toBeCloseTo(1752.4, 1);
   });
 
-  it('builds the activity factor from training days and the rest of the day', () => {
-    expect(activityFactor(0, 'sitting')).toBe(1.2);
-    expect(activityFactor(3, 'sitting')).toBe(1.375);
-    expect(activityFactor(4, 'sitting')).toBe(1.55);
-    expect(activityFactor(6, 'sitting')).toBe(1.725);
-    expect(activityFactor(4, 'mixed')).toBeCloseTo(1.6375, 4);
-    expect(activityFactor(4, 'on_feet')).toBe(1.725);
-    expect(activityFactor(6, 'physical')).toBe(1.9);
+  it('uses the FAO/WHO/UNU lifestyle levels and net MET energy for training', () => {
+    expect(LIFESTYLE_PAL.sitting).toBe(1.4);
+    expect(LIFESTYLE_PAL.physical).toBe(1.8);
+    // 4 × 1 h × (3.5 − 1) MET × 80 kg ÷ 7 days
+    expect(trainingKcalPerDay(4, 60, 80)).toBeCloseTo(114.29, 2);
+    expect(trainingKcalPerDay(0, 60, 80)).toBe(0);
   });
 
   const base = {
@@ -103,19 +102,25 @@ describe('energy', () => {
   it('sets calories and protein for the goal', () => {
     const plan = energyPlan(base)!;
     expect(plan.bmr).toBe(1780);
-    expect(plan.factor).toBe(1.55);
-    expect(plan.tdee).toBe(2760); // 1780 × 1.55 = 2759, to the nearest 10
-    expect(plan.targetKcal).toBe(3050); // +10%, to the nearest 50
+    expect(plan.pal).toBe(1.4);
+    expect(plan.dailyKcal).toBe(2490); // 1780 × 1.4 = 2492, to the nearest 10
+    expect(plan.trainingKcal).toBe(110); // 114, to the nearest 10
+    expect(plan.tdee).toBe(2600);
+    expect(plan.targetKcal).toBe(2850); // +10% = 2860, to the nearest 50
     expect(plan.proteinG).toEqual([130, 175]); // 1.6 and 2.2 g/kg, to the nearest 5
     const cut = energyPlan({ ...base, goal: 'fat_loss' })!;
-    expect(cut.targetKcal).toBe(2200); // -20%
+    expect(cut.targetKcal).toBe(2100); // -20% = 2080, to the nearest 50
     expect(cut.proteinG).toEqual([160, 190]);
   });
 
-  it('prefers logged training days and uses lean mass when body fat is known', () => {
+  it('uses session length, prefers logged training days, and lean mass without sex', () => {
+    const long = energyPlan({ ...base, sessionMinutes: 90 })!;
+    expect(long.trainingKcal).toBe(170); // 4 × 1.5 h × 2.5 × 80 ÷ 7 = 171
     const logged = energyPlan({ ...base, loggedDaysPerWeek: 2.4 })!;
     expect(logged.trainingDaysSource).toBe('logged');
-    expect(logged.factor).toBe(1.375);
+    expect(logged.trainingKcal).toBe(70); // 2.4 × 1 h × 2.5 × 80 ÷ 7 = 69
+    const both = energyPlan({ ...base, bodyFatPct: 20 })!;
+    expect(both.method).toBe('mifflin');
     const katch = energyPlan({ ...base, bodyFatPct: 20, sex: 'unspecified' })!;
     expect(katch.method).toBe('katch');
     expect(katch.bmr).toBe(Math.round(370 + 21.6 * 64));
@@ -233,7 +238,7 @@ describe('body snapshot', () => {
     expect(s.bodyFat).toMatchObject({ source: 'navy' });
     expect(s.bodyFat!.pct).toBeCloseTo(16.44, 1);
     expect(s.leanKg).toBeCloseTo(80 * (1 - s.bodyFat!.pct / 100), 5);
-    expect(s.energy!.method).toBe('katch');
+    expect(s.energy!.method).toBe('mifflin'); // sex, age and height are known;
     expect(s.rate?.verdict).toBe('too_slow');
     expect(s.missing).toMatchObject({ height: false, sex: false, navy: false });
   });

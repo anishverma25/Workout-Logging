@@ -3,14 +3,15 @@ import { Link } from 'react-router';
 import { ChevronRight } from 'lucide-react';
 import { Sheet } from '@/components/ui/Sheet';
 import {
-  ACTIVITY_STEPS,
+  LIFESTYLE_PAL,
+  TRAINING_MET,
   GOAL_ENERGY,
   GOAL_PROTEIN,
   type BodySnapshot,
   type BmiBand,
   type RateVerdict,
 } from '@/domain/analytics/body';
-import { GOAL_LABEL } from '@/domain/models/labels';
+import { ACTIVITY_LABEL, GOAL_LABEL } from '@/domain/models/labels';
 import type { Goal, Sex } from '@/domain/models/schemas';
 import { cn } from '@/lib/cn';
 import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
@@ -261,16 +262,17 @@ function Explanation({
   switch (topic) {
     case 'energy': {
       const e = s.energy!;
-      const factorText = `${fmt(e.factor, 3)} for ${fmt(e.trainingDays, 1)} training days a week (${
-        e.trainingDaysSource === 'logged' ? 'from your last 4 weeks' : 'from your profile'
+      const days = `${fmt(e.trainingDays, 1)} sessions a week (${
+        e.trainingDaysSource === 'logged'
+          ? 'your average over the last 4 weeks'
+          : 'from your profile'
       })`;
       return (
         <div className={text}>
           <p>
-            Your body burns about{' '}
-            <strong className="text-text">{e.bmr.toLocaleString()} kcal</strong> a day at rest
-            (basal metabolic rate).
+            Maintenance is worked out in three parts, the way energy-requirement research does it.
           </p>
+          <p className="mt-3 font-semibold text-text">1. At rest</p>
           <Formula>
             {e.method === 'mifflin' ? (
               <>
@@ -284,9 +286,23 @@ function Explanation({
               </>
             )}
           </Formula>
-          <p>Multiplied by an activity factor of {factorText}, maintenance is about:</p>
+          <p className="mt-3 font-semibold text-text">2. Your day, without the gym</p>
           <Formula>
-            {e.bmr.toLocaleString()} × {fmt(e.factor, 3)} ≈ {e.tdee.toLocaleString()} kcal
+            {e.bmr.toLocaleString()} × {e.pal} ({ACTIVITY_LABEL[e.dailyActivity].toLowerCase()}) ≈{' '}
+            {e.dailyKcal.toLocaleString()} kcal
+          </Formula>
+          <p className="mt-3 font-semibold text-text">3. Training</p>
+          <Formula>
+            {fmt(e.trainingDays, 1)} × {fmt(e.sessionMinutes / 60, 2)} h × ({TRAINING_MET} − 1) MET
+            × {w} kg ÷ 7 days ≈ {e.trainingKcal.toLocaleString()} kcal a day
+          </Formula>
+          <p className="text-sm text-faint">
+            {days}, {e.sessionMinutes} minutes each.
+          </p>
+          <p className="mt-3">Maintenance, the calories that keep your weight steady:</p>
+          <Formula>
+            {e.dailyKcal.toLocaleString()} + {e.trainingKcal.toLocaleString()} ={' '}
+            <strong className="text-text">{e.tdee.toLocaleString()} kcal</strong>
           </Formula>
           <p>
             For {goal ? GOAL_LABEL[goal].toLowerCase() : 'your goal'} the target is{' '}
@@ -298,9 +314,13 @@ function Explanation({
             {e.carbsG} g of carbohydrate fills the rest.
           </p>
           <p className="mt-3 text-sm text-faint">
-            Factors run from {ACTIVITY_STEPS[0]} (little exercise) to {ACTIVITY_STEPS[4]} (hard
-            physical work and training). Every formula is an estimate: if your weight trend moves
-            differently from your goal for 2 to 3 weeks, adjust by 100 to 200 kcal.
+            Day levels are from the FAO/WHO/UNU report on human energy requirements: mostly sitting{' '}
+            {LIFESTYLE_PAL.sitting}, some walking {LIFESTYLE_PAL.mixed}, on your feet{' '}
+            {LIFESTYLE_PAL.on_feet}, physical work {LIFESTYLE_PAL.physical}. Training uses{' '}
+            {TRAINING_MET} MET for weight training with rests, from the Compendium of Physical
+            Activities. Equations like these land within about 10% for most people. Your weight
+            trend is the final word: if it moves differently from your goal for 2 to 3 weeks, change
+            your intake by 100 to 200 kcal.
           </p>
         </div>
       );

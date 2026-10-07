@@ -11,7 +11,9 @@ import {
 } from '@/domain/analytics/insights';
 import { PRIMARY_SET_WEIGHT, SECONDARY_SET_WEIGHT } from '@/domain/analytics/muscles';
 import {
-  ACTIVITY_STEPS,
+  DEFAULT_SESSION_MINUTES,
+  LIFESTYLE_PAL,
+  TRAINING_MET,
   MEASURED_FAT_DAYS,
   RATE_MIN_DAYS,
   RATE_MIN_ENTRIES,
@@ -215,16 +217,24 @@ export function MethodologyPage() {
           id="energy"
           title="Calories and protein"
           formula={`BMR (Mifflin-St Jeor) = 10 × kg + 6.25 × cm − 5 × age + 5 (men) or − 161 (women)
-BMR (Katch-McArdle, when body fat is known) = 370 + 21.6 × lean kg
-Maintenance = BMR × activity factor`}
+BMR (Katch-McArdle, only without sex but with body fat) = 370 + 21.6 × lean kg
+Maintenance = BMR × day level + training kcal
+Training kcal a day = sessions a week × hours × (3.5 − 1) MET × kg ÷ 7`}
         >
           <p>
-            The activity factor starts from your training days a week (your logged average over the
-            last 4 weeks once you have that much history, otherwise the days in your profile): 0 to
-            1 days {ACTIVITY_STEPS[0]}, 2 to 3 days {ACTIVITY_STEPS[1]}, 4 to 5 days{' '}
-            {ACTIVITY_STEPS[2]}, 6 or more {ACTIVITY_STEPS[3]}. It goes up half a step for a day
-            with some walking, one step for a day on your feet and two for physical work, to at most{' '}
-            {ACTIVITY_STEPS[4]}. Weight is the smoothed trend, not a single weigh-in.
+            This is the factorial method used in energy-requirement research, rather than one
+            activity multiplier for everything. The day level covers everything except training,
+            from the FAO/WHO/UNU report on human energy requirements (2004): mostly sitting{' '}
+            {LIFESTYLE_PAL.sitting}, some walking {LIFESTYLE_PAL.mixed}, on your feet{' '}
+            {LIFESTYLE_PAL.on_feet}, physical work {LIFESTYLE_PAL.physical}. Training is added from
+            the Compendium of Physical Activities: weight training with rests averages{' '}
+            {TRAINING_MET} MET, and one MET is 1 kcal per kg per hour. The resting MET is taken off,
+            because the day level already counts that time. Sessions a week are your logged average
+            over the last 4 weeks once you have that much history, otherwise your plan; session
+            length is from your profile ({DEFAULT_SESSION_MINUTES} minutes if not set). Mifflin-St
+            Jeor is used whenever sex, age and height are known, because it was the most accurate
+            common equation in validation studies (Frankenfield and colleagues, 2005). Weight is the
+            smoothed trend, not a single weigh-in.
           </p>
           <p className="mt-2">
             Daily target: maintenance plus 10% to build muscle, plus 5% for strength, minus 20% to

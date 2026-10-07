@@ -36,6 +36,7 @@ import type {
   Sex,
 } from '@/domain/models/schemas';
 import { cn } from '@/lib/cn';
+import { BirthDateField } from '@/components/ui/BirthDateField';
 import { ageFromBirthDate, toDateKey } from '@/lib/dates';
 import { fromDisplayWeight } from '@/lib/units';
 import { CM_PER_INCH } from '@/data/repositories/measurements';
@@ -213,6 +214,7 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
     dailyActivity: draft.dailyActivity,
     plannedDays: draft.trainingDays,
     loggedDaysPerWeek: null,
+    sessionMinutes: draft.sessionMinutes,
   });
 
   const canContinue = step !== 'name' || draft.name.trim().length > 0;
@@ -414,13 +416,7 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
                     ]}
                   />
                 </div>
-                <TextField
-                  label="Birth date"
-                  type="date"
-                  max={toDateKey(new Date())}
-                  value={draft.birthDate}
-                  onChange={(e) => set('birthDate', e.target.value)}
-                />
+                <BirthDateField value={draft.birthDate} onChange={(v) => set('birthDate', v)} />
                 <div>
                   <div className="mb-1.5 flex items-center justify-between">
                     <p className="text-sm font-medium text-muted">Height</p>
@@ -744,8 +740,8 @@ function PlanSummary({
             unit="kcal"
             detail={
               energy.adjustment === 0
-                ? 'Maintenance'
-                : `${energy.adjustment > 0 ? '+' : ''}${Math.round(energy.adjustment * 100)}% vs maintenance`
+                ? 'Your maintenance'
+                : `Maintenance ${energy.tdee.toLocaleString()}, ${energy.adjustment > 0 ? '+' : '−'}${Math.round(Math.abs(energy.adjustment) * 100)}% for your goal`
             }
           />
           <Stat

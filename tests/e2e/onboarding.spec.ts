@@ -47,7 +47,10 @@ test('a new account sees the tour, then setup builds a personalised plan', async
   await page.getByRole('radio', { name: /Full gym/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: 'Female', exact: true }).click();
-  await page.getByLabel('Birth date').fill('1996-03-14');
+  // Birth date: three number boxes, focus moves on by itself as each fills.
+  await page.getByRole('textbox', { name: 'Birth date, day' }).click();
+  await page.keyboard.type('14031996');
+  await expect(page.getByText('14 March 1996, age')).toBeVisible();
   await page.getByLabel('Height in centimetres').fill('163');
   await page.getByLabel(/Weight/).fill('58');
   await page.getByLabel(/Weight/).blur();
@@ -57,6 +60,7 @@ test('a new account sees the tour, then setup builds a personalised plan', async
 
   // The plan: numbers worked out from what was entered, and a recommended routine.
   await expect(page.getByText('Daily calories')).toBeVisible();
+  await expect(page.getByText(/^Maintenance [\d,]+, \+10% for your goal$/)).toBeVisible();
   await expect(page.getByRole('radio', { name: /Push Pull Legs Upper Lower/ })).toBeVisible();
   await page.getByRole('button', { name: 'Create my routine' }).click();
   await expect(page).toHaveURL(/\/routines\/[\w-]+$/);
