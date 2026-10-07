@@ -113,10 +113,10 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
 
     // 9. Add an exercise that is not in the plan.
     await page.getByRole('button', { name: 'Add exercise' }).click();
-    await page.getByRole('searchbox', { name: 'Search exercises' }).fill('pec deck');
-    await page.getByRole('button', { name: /^Pec deck/ }).click();
+    await page.getByRole('searchbox', { name: 'Search exercises' }).fill('dumbbell fly');
+    await page.getByRole('button', { name: /^Dumbbell fly/ }).click();
     await page.getByRole('button', { name: 'Add 1 exercise' }).click();
-    await expect(page.getByRole('heading', { name: 'Pec deck' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Dumbbell fly' })).toBeVisible();
     await shot(page, '12-workout');
     await finish(page);
     await expect(page.getByText('Working sets', { exact: true })).toBeVisible();

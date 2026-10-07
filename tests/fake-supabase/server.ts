@@ -370,6 +370,15 @@ const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
     if (url.pathname === '/health') return send(res, 200, { ok: true });
     // Test control, standing in for the administrator's SQL: open or end early access.
+    // Test control, standing in for the administrator replying to feedback.
+    if (url.pathname === '/__test/feedback-reply' && req.method === 'POST') {
+      const { reply } = (await readJson(req)) as { reply: string };
+      await pg.query(
+        'update public.feedback set reply = $1, replied_at = now(), seen_at = now() where reply is null',
+        [reply],
+      );
+      return send(res, 200, {});
+    }
     if (url.pathname === '/__test/early-access' && req.method === 'POST') {
       const { open } = (await readJson(req)) as { open: boolean };
       await pg.query('update public.app_settings set early_access_ended_at = $1', [

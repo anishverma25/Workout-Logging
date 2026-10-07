@@ -91,6 +91,7 @@ test('no horizontal scrolling on any main page', async ({ page }) => {
     '/more',
     '/profile',
     '/journey',
+    '/feedback',
     '/welcome',
     '/setup',
     '/sign-in',

@@ -1,5 +1,14 @@
 import { useState, type FormEvent } from 'react';
-import { Check, Copy, Crown, ShieldCheck, Smartphone, Sparkles } from 'lucide-react';
+import { Link } from 'react-router';
+import {
+  Check,
+  Copy,
+  Crown,
+  MessageSquareHeart,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+} from 'lucide-react';
 import { useAccount } from '@/app/account';
 import {
   PaymentReferenceError,
@@ -200,6 +209,13 @@ function FoundingCard({ offline }: { offline: boolean }) {
         Founding members shape what Overload becomes. Tell us what works and what does not; the next
         updates are built around what you say.
       </p>
+      <Link
+        to="/feedback?from=pro"
+        className="mt-4 inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 font-semibold text-[var(--tile-iris)] transition-transform active:scale-[0.97]"
+      >
+        <MessageSquareHeart className="size-4" aria-hidden />
+        Share your feedback
+      </Link>
       <p className="mt-5 border-t border-white/20 pt-4 text-sm leading-relaxed text-white">
         Early access will not stay open forever. You will hear from us before anything changes, and
         your founding member status stays on your account for good.

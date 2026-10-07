@@ -15,6 +15,7 @@ const PAGES = [
   '/body',
   '/profile',
   '/journey',
+  '/feedback',
   '/welcome',
   '/setup',
   '/settings',

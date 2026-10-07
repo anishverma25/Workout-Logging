@@ -8,6 +8,7 @@ import { SyncLine } from '@/features/account/SyncStatus';
 import { Card } from '@/components/ui/Card';
 import { ErrorState, Skeleton } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
+import { FeedbackPrompt } from '@/features/feedback/FeedbackPrompt';
 import { formatRecordValue, PR_LABELS } from '@/domain/analytics/prs';
 import { summarizeWorkout, type ExerciseChange } from '@/domain/workout/summary';
 import { cn } from '@/lib/cn';
@@ -180,6 +181,14 @@ export function SummaryPage() {
           <p className="mt-1 whitespace-pre-line text-muted">{session.workout.notes}</p>
         </Card>
       ) : null}
+
+      <FeedbackPrompt
+        finishedWorkouts={
+          training.data.workouts.filter(
+            (w) => w.deletedAt === null && w.origin === 'user' && w.status === 'completed',
+          ).length
+        }
+      />
 
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
         <ButtonLink to="/" size="lg" className="sm:flex-1">

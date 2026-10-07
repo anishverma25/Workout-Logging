@@ -45,6 +45,12 @@ export function RouteError() {
         >
           Go to Home
         </a>
+        <a
+          href={`/feedback?from=error&tag=bug&screen=${encodeURIComponent(window.location.pathname)}`}
+          className="inline-flex h-12 items-center px-2 font-semibold text-accent-text"
+        >
+          Report this problem
+        </a>
       </div>
     </main>
   );

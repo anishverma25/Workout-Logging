@@ -92,6 +92,10 @@ Read README.md for setup, architecture and calculation rules.
   has Pro (plan `founding`) and is a founding member. Ending it is one SQL update
   (`docs/admin-pro-payments.md`); guest-facing early access copy in `ProPage`, `ProLock` and
   sign-up must change in the same release.
+- Feedback (migration 0006): `submit_feedback` / `get_my_feedback` RPCs only, 10 a day, ids
+  made on the phone so offline feedback is sent once (`src/app/feedback.ts`). Page `/feedback`,
+  one-time prompt on the 3rd workout summary, links from Pro and the error screen. Reading and
+  replying is SQL in `docs/admin-feedback.md` (tested in `feedback.test.ts`); no admin pages.
 - Routine days: swipe left or long press (`SwipeRow`) to delete, with undo in the toast.
   Session length uses `WheelPicker`. Search understands gym words (`SYNONYMS` in search.ts).
 - Deployed on Cloudflare Pages from `phase-2-wip`. Each new Supabase migration must be applied

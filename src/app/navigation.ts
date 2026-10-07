@@ -8,6 +8,7 @@ import {
   History,
   House,
   Library,
+  MessageSquareHeart,
   Route,
   Scale,
   Settings,
@@ -47,4 +48,11 @@ export const SECONDARY_NAV: NavItem[] = [
   { to: '/account', label: 'Account', icon: CircleUserRound, tone: 'graphite', group: 'app' },
   { to: '/settings', label: 'Settings', icon: Settings, tone: 'graphite', group: 'app' },
   { to: '/pro', label: 'Pro', icon: Crown, tone: 'plum', group: 'app' },
+  {
+    to: '/feedback',
+    label: 'Send feedback',
+    icon: MessageSquareHeart,
+    tone: 'rose',
+    group: 'app',
+  },
 ];
