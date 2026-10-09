@@ -17,10 +17,21 @@ export interface Insight {
   priority: number;
 }
 
-/** Thresholds are deliberately conservative so small fluctuations are not reported as trends. */
-export const STRENGTH_CHANGE_THRESHOLD = 0.02;
-export const BELOW_BEST_THRESHOLD = 0.04;
+/**
+ * What counts as real change (Evidence Corner, metric 13). A tested 1RM varies about 4.2% from
+ * test to test (median coefficient of variation, Grgic et al. 2020), and an estimate from a rep
+ * set is noisier, so strength changes are only called above 5%.
+ */
+export const STRENGTH_CHANGE_THRESHOLD = 0.05;
+export const BELOW_BEST_THRESHOLD = 0.05;
 export const VOLUME_CHANGE_THRESHOLD = 0.05;
+/**
+ * Strength scaled for body size: e1RM ÷ body weight^0.67 (Jaric 2002). Force scales with muscle
+ * cross-section, which scales with mass to the two-thirds power.
+ */
+export const SIZE_EXPONENT = 0.67;
+export const sizeAdjustedStrength = (e1rmKg: number, bodyKg: number) =>
+  e1rmKg / Math.pow(bodyKg, SIZE_EXPONENT);
 
 interface InsightInput {
   trends: StrengthTrend[];
@@ -35,6 +46,8 @@ interface InsightInput {
   unit: WeightUnit;
   /** Only flag drops in sessions after this date. */
   recentSince: Date;
+  /** Body weight on a date, for the size-adjusted trend. */
+  bodyKgAt?: (date: Date) => number | null;
 }
 
 export function generateInsights(input: InsightInput): Insight[] {
@@ -69,16 +82,35 @@ export function generateInsights(input: InsightInput): Insight[] {
   // Strength trend for the most-trained lifts.
   const flagged = new Set(insights.map((i) => i.id.split(':')[1]));
   for (const trend of input.trends.slice(0, 3)) {
-    if (Math.abs(trend.change) < STRENGTH_CHANGE_THRESHOLD) continue;
     if (flagged.has(trend.exerciseId)) continue; // one insight per exercise
-    const up = trend.change > 0;
     const first = trend.points[0]!;
     const last = trend.points[trend.points.length - 1]!;
+    // Size-adjusted change, when body weight is known at both ends and moved.
+    const b0 = input.bodyKgAt?.(first.date) ?? null;
+    const b1 = input.bodyKgAt?.(last.date) ?? null;
+    const adjusted =
+      b0 && b1 && Math.abs(b1 - b0) / b0 >= 0.02
+        ? sizeAdjustedStrength(last.e1rm, b1) / sizeAdjustedStrength(first.e1rm, b0) - 1
+        : null;
+    if (Math.abs(trend.change) < STRENGTH_CHANGE_THRESHOLD) {
+      // Flat on the bar but clearly stronger for your size, e.g. while losing weight.
+      if (adjusted !== null && adjusted >= STRENGTH_CHANGE_THRESHOLD) {
+        insights.push({
+          id: `relative:${trend.exerciseId}`,
+          tone: 'positive',
+          title: `For your body weight, your ${trend.exerciseName} is ${Math.round(adjusted * 100)}% stronger since ${formatDayMonth(first.date)}.`,
+          basis: `Estimated 1RM ÷ body weight^0.67, which accounts for body size: body weight ${formatWeight(b0!, unit)} to ${formatWeight(b1!, unit)}, e1RM ${formatWeight(first.e1rm, unit)} to ${formatWeight(last.e1rm, unit)}.`,
+          priority: 6 + adjusted * 50,
+        });
+      }
+      continue;
+    }
+    const up = trend.change > 0;
     insights.push({
       id: `trend:${trend.exerciseId}`,
       tone: up ? 'positive' : 'attention',
       title: `Your ${trend.exerciseName} estimated 1RM ${up ? 'rose' : 'fell'} ${formatSignedPercent(trend.change).replace(/^[+−]/, '')} since ${formatDayMonth(first.date)}.`,
-      basis: `Best e1RM per session: ${formatWeight(first.e1rm, unit)} on ${formatDayMonth(first.date)} to ${formatWeight(last.e1rm, unit)} on ${formatDayMonth(last.date)}, across ${trend.points.length} sessions.`,
+      basis: `Best e1RM per session: ${formatWeight(first.e1rm, unit)} on ${formatDayMonth(first.date)} to ${formatWeight(last.e1rm, unit)} on ${formatDayMonth(last.date)}, across ${trend.points.length} sessions.${adjusted !== null ? ` Adjusted for body weight: ${formatSignedPercent(adjusted)}.` : ''}`,
       priority: 6 + Math.abs(trend.change) * 50,
     });
   }

@@ -1,17 +1,19 @@
 /**
- * Estimated one-rep max.
+ * Estimated one-rep max (Evidence Corner, metric 1).
  *
- * - Up to 5 reps: Brzycki, load × 36 / (37 - reps). It tracks real maxes more closely at low
- *   reps than Epley does.
- * - 6 to 12 reps: Epley, load × (1 + reps / 30).
+ * - Epley throughout: load × (1 + reps / 30). It was among the most accurate linear equations
+ *   in Reynolds et al. 2006 (Table 5), with only a slight tendency to overestimate.
  * - Reps in reserve count as reps you could have done: 8 reps with 2 in reserve is estimated
- *   as 10. Only while the total stays at 12 or fewer, where the formulas hold up.
+ *   as 10, while the total stays within the cap.
+ * - No more than 10 reps: Reynolds et al. concluded "no more than 10 repetitions should be used
+ *   in linear equations". Sets above the cap are not estimated.
+ * - A single rep with nothing in reserve returns the load itself.
  *
- * This is an estimate, never an actual maximum. Sets above E1RM_MAX_REPS are not estimated.
- * A single rep with nothing in reserve returns the load itself.
+ * This is an estimate, never an actual maximum.
  */
-export const E1RM_MAX_REPS = 12;
-export const BRZYCKI_MAX_REPS = 5;
+export const E1RM_MAX_REPS = 10;
+/** Progress charts prefer the best set in this rep range when the session has one. */
+export const E1RM_PREFERRED_MAX_REPS = 6;
 
 export function estimateOneRepMax(
   weightKg: number | null,
@@ -23,7 +25,6 @@ export function estimateOneRepMax(
   const reserve = rir !== null && rir > 0 && reps + rir <= E1RM_MAX_REPS ? rir : 0;
   const effective = reps + reserve;
   if (effective === 1) return weightKg;
-  if (effective <= BRZYCKI_MAX_REPS) return (weightKg * 36) / (37 - effective);
   return weightKg * (1 + effective / 30);
 }
 

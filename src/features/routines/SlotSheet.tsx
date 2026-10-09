@@ -1,7 +1,16 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Link2, Repeat2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { DurationPicker } from '@/components/ui/DurationPicker';
 import { Stepper, TextArea } from '@/components/ui/Fields';
+import { WheelPicker } from '@/components/ui/WheelPicker';
+import {
+  angleKind,
+  DECLINE_DEGREES,
+  DEFAULT_ANGLE,
+  INCLINE_DEGREES,
+  signedAngle,
+} from '@/domain/workout/angle';
 import { Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
@@ -10,6 +19,7 @@ import {
   removeExercise,
   swapExercise,
   toggleSlotSuperset,
+  updateSlotAngle,
   updateTargets,
 } from '@/data/repositories/routines';
 import type { Exercise, RoutineExercise, RoutineTargets } from '@/domain/models/schemas';
@@ -62,6 +72,14 @@ function SlotEditor({
     setTargets(next);
     void updateTargets(db, slot.id, { ...next, notes: notes || null });
   };
+  // The rest wheel reports every second it passes: save once it settles.
+  const timer = useRef<number | null>(null);
+  const saveSoon = (next: RoutineTargets) => {
+    setTargets(next);
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => save(next), 400);
+  };
+  const angle = angleKind(exercise);
 
   return (
     <>
@@ -118,16 +136,42 @@ function SlotEditor({
               onChange={(v) => save({ ...targets, targetRir: v })}
             />
           ) : null}
-          <Stepper
-            label="Rest"
+        </div>
+        <div className="mt-5">
+          <p className="mb-1 text-sm font-medium text-muted">Rest after each set</p>
+          <DurationPicker
+            label="Rest after each set"
             value={targets.restSeconds}
-            min={0}
-            max={600}
-            step={15}
-            format={formatSeconds}
-            onChange={(v) => v !== null && save({ ...targets, restSeconds: v })}
+            max={900}
+            onChange={(v) => saveSoon({ ...targets, restSeconds: v })}
           />
         </div>
+        {angle ? (
+          <div className="mt-5">
+            <div className="mb-1 flex items-baseline justify-between gap-3">
+              <p className="text-sm font-medium text-muted">
+                Bench angle{slot.angleDeg == null ? ', not set' : ''}
+              </p>
+              {slot.angleDeg != null ? (
+                <button
+                  type="button"
+                  onClick={() => void updateSlotAngle(db, slot.id, null)}
+                  className="text-sm font-medium text-accent-text"
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+            <WheelPicker
+              label={`${angle === 'incline' ? 'Incline' : 'Decline'} angle in degrees`}
+              values={angle === 'incline' ? INCLINE_DEGREES : DECLINE_DEGREES}
+              value={Math.abs(slot.angleDeg ?? DEFAULT_ANGLE[angle])}
+              onChange={(d) => void updateSlotAngle(db, slot.id, signedAngle(angle, d))}
+              unit={`° ${angle}`}
+              valueText={(d) => `${d} degrees ${angle}`}
+            />
+          </div>
+        ) : null}
         {!timed && !distance ? (
           <p className="mt-2 text-xs text-faint">
             RIR is reps in reserve: how many more reps you could have done. RIR 2 means you stopped

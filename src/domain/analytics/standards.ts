@@ -199,7 +199,7 @@ export function detectPlateaus(
 
 export const PULL: MuscleGroup[] = ['back', 'biceps'];
 export const UPPER: MuscleGroup[] = ['chest', 'back', 'shoulders', 'biceps', 'triceps'];
-export const LOWER: MuscleGroup[] = ['quads', 'hamstrings', 'glutes', 'calves'];
+export const LOWER: MuscleGroup[] = ['quads', 'hamstrings', 'glutes', 'adductors', 'calves'];
 
 export interface BalanceRatio {
   key: 'push_pull' | 'quad_ham' | 'upper_lower';

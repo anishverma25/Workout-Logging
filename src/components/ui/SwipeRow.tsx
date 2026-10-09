@@ -8,8 +8,9 @@ const LONG_PRESS_MS = 480;
 const SLOP = 8;
 
 /**
- * A list row with the two iOS gestures: swipe left to reveal Delete (a long swipe deletes
- * straight away), and press and hold for a menu. Right click opens the menu on a computer.
+ * A list row with the iOS gestures: swipe left to reveal Delete (a long swipe deletes
+ * straight away), and press and hold, which lifts the row to drag it (see useDragReorder) or
+ * opens its menu when released without moving. Right click opens the menu on a computer.
  * Vertical scrolling is left to the browser; a drag only becomes a swipe once it is clearly
  * sideways. Whatever the gestures do must also be reachable from the menu or a tap, for
  * keyboard and screen reader users.
@@ -23,7 +24,8 @@ export function SwipeRow({
 }: {
   children: ReactNode;
   onDelete: () => void;
-  onLongPress: () => void;
+  /** Pressed and held at this point, or asked for the menu (right click). */
+  onLongPress: (clientY: number, via: 'press' | 'menu') => void;
   /** Accessible name of the revealed button, for example "Delete Barbell bench press". */
   deleteLabel: string;
   disabled?: boolean;
@@ -75,7 +77,7 @@ export function SwipeRow({
         swallowClick.current = true;
         navigator.vibrate?.(10);
         setOffset(0);
-        onLongPress();
+        onLongPress(g.y, 'press');
       }, LONG_PRESS_MS),
     };
   }
@@ -124,7 +126,7 @@ export function SwipeRow({
         if (disabled) return;
         e.preventDefault();
         clearTimer();
-        onLongPress();
+        onLongPress(e.clientY, 'menu');
       }}
     >
       <button

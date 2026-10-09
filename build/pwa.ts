@@ -78,7 +78,9 @@ export function pwa(env: Record<string, string | undefined>): Plugin {
     name: 'overload-pwa',
     apply: 'build',
     generateBundle(_options, bundle) {
-      const files = Object.keys(bundle).filter((f) => !f.endsWith('.map'));
+      // Older font formats (KaTeX ships woff and ttf beside woff2) are fallbacks every browser
+      // that can install the app skips, so they are not worth precaching.
+      const files = Object.keys(bundle).filter((f) => !/\.(map|ttf|woff)$/.test(f));
       const publicFiles = [
         '/manifest.webmanifest',
         '/icon.svg',

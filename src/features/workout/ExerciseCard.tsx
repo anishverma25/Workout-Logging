@@ -1,5 +1,6 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import {
+  GripVertical,
   ArrowDown,
   ArrowUp,
   CopyPlus,
@@ -26,8 +27,20 @@ import {
   moveWorkoutExercise,
   removeWorkoutExercise,
   updateSet,
+  updateWorkoutExerciseAngle,
   updateWorkoutExerciseNotes,
 } from '@/data/repositories/workouts';
+import { WheelPicker } from '@/components/ui/WheelPicker';
+import { useLongPress } from '@/components/ui/useLongPress';
+import {
+  angleKind,
+  DECLINE_DEGREES,
+  DEFAULT_ANGLE,
+  formatAngle,
+  INCLINE_DEGREES,
+  signedAngle,
+  type AngleKind,
+} from '@/domain/workout/angle';
 import { checkProgression, loadIncrement, progressionStyle } from '@/domain/analytics/progression';
 import { fromDisplayWeight, toDisplayWeight } from '@/lib/units';
 import { useFeature } from '@/app/entitlement';
@@ -51,6 +64,8 @@ import { readableError } from '@/lib/errors';
 import { warmupSets } from '@/domain/workout/plates';
 import { ExercisePicker } from '@/features/exercises/ExercisePicker';
 import { PlateSheet } from './PlateSheet';
+import { sharesFor, sharesSummary } from '@/data/library/shares';
+import { MuscleShares } from '@/features/exercises/MuscleShares';
 
 interface Props {
   /** Set when the exercise is part of a superset: its position label and links. */
@@ -63,6 +78,8 @@ interface Props {
   /** Sets how load goes up (linear for beginners, double progression otherwise). */
   experience: Experience | null;
   onSetCompleted: (set: WorkoutSet, view: WorkoutExerciseView) => void;
+  /** Opens the reorder list (press and hold the exercise name). */
+  onReorder?: () => void;
 }
 
 function ExerciseCardImpl({
@@ -72,6 +89,7 @@ function ExerciseCardImpl({
   prefs,
   experience,
   onSetCompleted,
+  onReorder,
   superset,
   hasNext,
 }: Props) {
@@ -79,6 +97,10 @@ function ExerciseCardImpl({
   const tracking = trackingOf(exercise);
   const cols = columnsFor(tracking, prefs.weightUnit);
   const [menu, setMenu] = useState(false);
+  const [editingAngle, setEditingAngle] = useState(false);
+  const [showingShares, setShowingShares] = useState(false);
+  const shares = sharesFor(we.exerciseId);
+  const holdToReorder = useLongPress(() => onReorder?.());
   const [plates, setPlates] = useState(false);
   const [swapping, setSwapping] = useState(false);
   const toast = useToast();
@@ -131,6 +153,9 @@ function ExerciseCardImpl({
     (firstWorking ? suggestFor(prevSets, sets, firstWorking.id)?.weightKg : null) ??
     null;
   const barbell = exercise?.equipment === 'barbell';
+  const angle = angleKind(exercise);
+  // Dumbbell and single-side moves: the weight typed is one dumbbell (or one side).
+  const perHand = exercise?.loadMode === 'per_hand' && cols.load !== null && tracking !== 'cardio';
   const loadTracked = tracking === 'weight_reps';
 
   async function addWarmups() {
@@ -175,7 +200,8 @@ function ExerciseCardImpl({
     <section
       aria-labelledby={`ex-${we.id}`}
       className={cn(
-        'relative rounded-[var(--radius-card)] bg-surface py-4',
+        // min-w-0: a grid item must not grow to fit the one-line muscle summary.
+        'relative min-w-0 rounded-[var(--radius-card)] bg-surface py-4',
         superset && 'ring-2 ring-inset ring-[var(--ring-2)]/40',
       )}
     >
@@ -191,7 +217,11 @@ function ExerciseCardImpl({
               {superset.linkedNext ? ', no rest before the next exercise' : ', rest after this one'}
             </p>
           ) : null}
-          <h2 id={`ex-${we.id}`} className="font-display text-[1.45rem] font-bold leading-tight">
+          <h2
+            id={`ex-${we.id}`}
+            {...holdToReorder}
+            className="select-none font-display text-[1.45rem] font-bold leading-tight [-webkit-touch-callout:none]"
+          >
             {we.exerciseName}
           </h2>
           <p className="tabular mt-0.5 text-sm text-muted">
@@ -205,6 +235,34 @@ function ExerciseCardImpl({
               · {doneCount} of {sets.length} done
             </span>
           </p>
+          {shares ? (
+            <button
+              type="button"
+              onClick={() => setShowingShares(true)}
+              className="tabular mt-0.5 block max-w-full truncate text-left text-xs font-medium text-muted underline decoration-dotted underline-offset-2"
+              aria-label={`Muscles worked: ${sharesSummary(shares, 3)}. Show the breakdown`}
+            >
+              {sharesSummary(shares)}
+            </button>
+          ) : null}
+          {angle ? (
+            <button
+              type="button"
+              onClick={() => setEditingAngle(true)}
+              className={cn(
+                'mt-1.5 inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-sm font-semibold',
+                we.angleDeg != null ? 'bg-accent-soft text-accent-text' : 'bg-surface-2 text-muted',
+              )}
+            >
+              {we.angleDeg != null ? `Bench ${formatAngle(we.angleDeg)}` : 'Set bench angle'}
+            </button>
+          ) : null}
+          {perHand ? (
+            <p className="mt-1 text-xs text-faint">
+              Enter the weight of one dumbbell: 25 in each hand is 25, not 50. Volume counts both
+              hands.
+            </p>
+          ) : null}
         </div>
         <IconButton
           label={`Options for ${we.exerciseName}`}
@@ -286,7 +344,7 @@ function ExerciseCardImpl({
         >
           <span className="text-center">Set</span>
           <span>Last</span>
-          <span className="text-center">{cols.load ?? ''}</span>
+          <span className="text-center">{perHand ? `${cols.load} each` : (cols.load ?? '')}</span>
           <span className="text-center">{cols.amount}</span>
           {cols.showEffort ? (
             <span className="text-center">{prefs.effortMetric.toUpperCase()}</span>
@@ -300,6 +358,7 @@ function ExerciseCardImpl({
               set={s}
               label={labels.get(s.id) ?? ''}
               tracking={tracking}
+              perHand={perHand}
               prefs={prefs}
               previous={matchingPreviousSet(prevSets, sets, s.id)}
               suggestion={suggestFor(prevSets, sets, s.id)}
@@ -371,6 +430,24 @@ function ExerciseCardImpl({
         onClose={() => setOptionsFor(null)}
       />
 
+      {editingAngle && angle ? (
+        <AngleSheet
+          kind={angle}
+          value={we.angleDeg ?? null}
+          onChange={(deg) => void updateWorkoutExerciseAngle(db, we.id, deg)}
+          onClose={() => setEditingAngle(false)}
+        />
+      ) : null}
+      {shares ? (
+        <Sheet
+          open={showingShares}
+          onClose={() => setShowingShares(false)}
+          title="What it works"
+          description={we.exerciseName}
+        >
+          {showingShares ? <MuscleShares shares={shares} /> : null}
+        </Sheet>
+      ) : null}
       <Sheet open={menu} onClose={() => setMenu(false)} title={we.exerciseName}>
         <ActionList
           items={[
@@ -463,6 +540,19 @@ function ExerciseCardImpl({
                 setMenu(false);
               },
             },
+            ...(onReorder && count > 1
+              ? [
+                  {
+                    label: 'Reorder exercises',
+                    hint: 'Or press and hold an exercise name.',
+                    icon: <GripVertical className="size-5" aria-hidden />,
+                    onSelect: () => {
+                      setMenu(false);
+                      onReorder();
+                    },
+                  },
+                ]
+              : []),
             {
               label: 'Remove from workout',
               icon: <Trash2 className="size-5" aria-hidden />,
@@ -550,3 +640,66 @@ export function NotesSheet({
 }
 
 export const ExerciseCard = memo(ExerciseCardImpl);
+
+/** Bench angle as a scroll wheel of degrees. Saves as it settles. */
+function AngleSheet({
+  kind,
+  value,
+  onChange,
+  onClose,
+}: {
+  kind: AngleKind;
+  value: number | null;
+  onChange: (deg: number | null) => void;
+  onClose: () => void;
+}) {
+  const [deg, setDeg] = useState(Math.abs(value ?? DEFAULT_ANGLE[kind]));
+  return (
+    <Sheet
+      open
+      onClose={() => {
+        onChange(signedAngle(kind, deg));
+        onClose();
+      }}
+      title="Bench angle"
+      description={
+        kind === 'incline'
+          ? 'A steeper incline moves work toward the upper chest and front delts.'
+          : 'A decline moves work toward the lower chest.'
+      }
+      footer={
+        <div className="flex gap-2">
+          {value !== null ? (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                onChange(null);
+                onClose();
+              }}
+            >
+              Clear
+            </Button>
+          ) : null}
+          <Button
+            block
+            onClick={() => {
+              onChange(signedAngle(kind, deg));
+              onClose();
+            }}
+          >
+            Save {deg}° {kind}
+          </Button>
+        </div>
+      }
+    >
+      <WheelPicker
+        label={`${kind === 'incline' ? 'Incline' : 'Decline'} angle in degrees`}
+        values={kind === 'incline' ? INCLINE_DEGREES : DECLINE_DEGREES}
+        value={deg}
+        onChange={setDeg}
+        unit={`° ${kind}`}
+        valueText={(d) => `${d} degrees ${kind}`}
+      />
+    </Sheet>
+  );
+}

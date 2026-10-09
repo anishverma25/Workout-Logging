@@ -107,6 +107,7 @@ export const TABLE_SPECS: TableSpec[] = [
       'restSeconds',
       'notes',
       'supersetGroup',
+      'angleDeg',
     ],
     schema: RoutineExercise,
   },
@@ -140,6 +141,7 @@ export const TABLE_SPECS: TableSpec[] = [
       'notes',
       'target',
       'supersetGroup',
+      'angleDeg',
     ],
     schema: WorkoutExercise,
   },
@@ -210,6 +212,8 @@ const NUMERIC_FIELDS = new Set([
   'sessionMinutes',
   'sessionRpe',
   'supersetGroup',
+  'angleDeg',
+  'exerciseChangeRestSeconds',
   'waistCm',
   'neckCm',
   'hipCm',
@@ -272,6 +276,7 @@ export function preferencesToRow(prefs: Preferences, updatedAt: string, userId: 
     default_rest_seconds: prefs.defaultRestSeconds,
     auto_start_rest: prefs.autoStartRest,
     length_unit: prefs.lengthUnit,
+    exercise_change_rest_seconds: prefs.exerciseChangeRestSeconds,
     updated_at: updatedAt,
   };
 }
@@ -286,6 +291,8 @@ export function preferencesFromRow(
     defaultRestSeconds: Number(row.default_rest_seconds),
     autoStartRest: row.auto_start_rest,
     lengthUnit: row.length_unit ?? 'cm',
+    exerciseChangeRestSeconds:
+      row.exercise_change_rest_seconds == null ? null : Number(row.exercise_change_rest_seconds),
   });
   const updatedAt = normalizeTimestamp(row.updated_at);
   return parsed.success && updatedAt ? { prefs: parsed.data, updatedAt } : null;

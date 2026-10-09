@@ -37,20 +37,21 @@ test('history filters narrow the timeline and clear again', async ({ page }) => 
 
 test('workout detail: correcting a set saves it and recalculates', async ({ page }) => {
   await page.goto('/history');
-  // Open the most recent Push, which holds the demo bench press record.
+  // The most recent Push holds an overhead press record: 40 × 8 for an estimated 53.3 kg.
   await page.locator('a[href^="/history/"]', { hasText: 'Push' }).first().click();
   const records = page.locator('dt', { hasText: 'Records' }).locator('xpath=following-sibling::dd');
   const before = Number(await records.textContent());
   expect(before).toBeGreaterThan(0);
+  await expect(page.getByText('Best estimated 1RM 53.3 kg.')).toBeVisible();
 
-  const recordSet = page.getByRole('button', { name: /Working set 1: .*Edit/ }).first();
-  await recordSet.click();
+  await page.getByRole('button', { name: /^Working set 1: 40 × 8,/ }).click();
   await page.getByRole('textbox', { name: 'Reps' }).fill('3');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Set updated')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Working set 1: .* × 3/ }).first()).toBeVisible();
-  // A 3-rep top set beats nothing, so this workout holds fewer records now.
-  await expect.poll(async () => Number(await records.textContent())).toBeLessThan(before);
+  await expect(page.getByRole('button', { name: /^Working set 1: 40 × 3,/ })).toBeVisible();
+  // The best estimate now comes from set 2 (40 × 7 with 1 in reserve), and the totals follow.
+  await expect(page.getByText('Best estimated 1RM 53.3 kg.')).toHaveCount(0);
+  await expect(page.getByText('Best estimated 1RM 50.7 kg.')).toBeVisible();
 });
 
 test('deleting a workout removes it from history', async ({ page }) => {

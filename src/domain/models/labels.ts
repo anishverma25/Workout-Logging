@@ -20,6 +20,7 @@ export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   quads: 'Quads',
   hamstrings: 'Hamstrings',
   glutes: 'Glutes',
+  adductors: 'Adductors',
   calves: 'Calves',
   abs: 'Abs',
   cardio: 'Cardio',
@@ -63,7 +64,7 @@ export const TRACKING_HINTS: Record<TrackingType, string> = {
 
 export const LOAD_MODE_LABELS: Record<LoadMode, string> = {
   total: 'Total load',
-  per_hand: 'Per dumbbell or side',
+  per_hand: 'One dumbbell or side (volume counts both)',
 };
 
 export const SET_TYPE_LABELS: Record<SetType, string> = {
@@ -87,21 +88,22 @@ export function exerciseMeta(exercise: Pick<Exercise, 'primaryMuscle' | 'equipme
 }
 
 export const GOAL_LABEL: Record<Profile['goal'], string> = {
-  hypertrophy: 'Build muscle',
-  strength: 'Get stronger',
-  strength_hypertrophy: 'Stronger and bigger',
-  fat_loss: 'Lose fat',
-  recomposition: 'Lose fat, keep building',
-  general_fitness: 'General fitness',
+  hypertrophy: 'Hypertrophy',
+  strength: 'Strength',
+  strength_hypertrophy: 'Strength + Hypertrophy',
+  fat_loss: 'Fat Loss',
+  recomposition: 'Body Recomposition',
+  general_fitness: 'General Fitness',
 };
 
+/** The line under each goal, explaining it. */
 export const GOAL_DETAIL: Record<Profile['goal'], string> = {
-  hypertrophy: 'More muscle. Moderate weights for 6 to 12 reps, plenty of sets.',
-  strength: 'Lift heavier. Fewer reps with heavy weights and long rests.',
-  strength_hypertrophy: 'Heavy compound lifts first, then muscle-building work.',
-  fat_loss: 'Drop body fat while keeping the muscle you have.',
-  recomposition: 'Slowly lose fat and gain muscle at the same time.',
-  general_fitness: 'Feel fitter and stronger without a specific target.',
+  hypertrophy: 'Maximize muscle growth.',
+  strength: 'Build maximal strength and lift heavier.',
+  strength_hypertrophy: 'Build strength and muscle together.',
+  fat_loss: 'Reduce body fat while preserving muscle.',
+  recomposition: 'Lose fat while building muscle.',
+  general_fitness: 'Improve strength, conditioning and fitness.',
 };
 
 export const EXPERIENCE_LABEL: Record<Profile['experience'], string> = {

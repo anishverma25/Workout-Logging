@@ -24,6 +24,8 @@ import { formatRelativeDay } from '@/lib/dates';
 import { pluralize } from '@/lib/format';
 import { formatWeight } from '@/lib/units';
 import { CustomExerciseSheet } from './CustomExerciseSheet';
+import { MuscleShares } from './MuscleShares';
+import { sharesFor } from '@/data/library/shares';
 import { readableError } from '@/lib/errors';
 
 interface Props {
@@ -58,6 +60,7 @@ export function ExerciseDetailSheet({ exercise, onClose }: Props) {
   }, [exercise, training.data]);
 
   if (!exercise) return null;
+  const shares = sharesFor(exercise.id);
   const meta: [string, string][] = [
     ['Primary', MUSCLE_LABELS[exercise.primaryMuscle]],
     [
@@ -131,6 +134,15 @@ export function ExerciseDetailSheet({ exercise, onClose }: Props) {
           ))}
         </dl>
 
+        {shares ? (
+          <section className="mt-6" aria-labelledby="shares-heading">
+            <h3 id="shares-heading" className="mb-3 font-display text-lg font-semibold">
+              What it works
+            </h3>
+            <MuscleShares shares={shares} />
+          </section>
+        ) : null}
+
         {exercise.instructions ? (
           <section className="mt-6">
             <h3 className="mb-1.5 font-display text-lg font-semibold">How to do it</h3>
@@ -164,9 +176,8 @@ export function ExerciseDetailSheet({ exercise, onClose }: Props) {
           )}
           {stats && exercise.trackingType === 'weight_reps' ? (
             <p className="mt-3 text-xs text-faint">
-              Estimated 1RM uses Brzycki up to 5 reps and Epley above, on sets of {E1RM_MAX_REPS}{' '}
-              reps or fewer, counting logged reps in reserve. It is an estimate, not a lift you have
-              done.
+              Estimated 1RM uses the Epley formula on sets of {E1RM_MAX_REPS} reps or fewer,
+              counting logged reps in reserve. It is an estimate, not a lift you have done.
             </p>
           ) : null}
         </section>

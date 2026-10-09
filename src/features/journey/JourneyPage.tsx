@@ -106,8 +106,8 @@ function MilestonesSection({ list }: { list: Milestone[] }) {
       </h2>
       {recent.length === 0 ? (
         <p className="rounded-[var(--radius-card)] bg-surface p-5 text-sm text-muted">
-          Your first workout is your first milestone. More follow: plate lifts, body-weight lifts,
-          streaks and totals, all from your own log.
+          Your first logged session sets the baseline. Milestones follow: plate lifts, body-weight
+          lifts, streaks and totals, all from your own log.
         </p>
       ) : (
         <ul className="grid gap-2.5 sm:grid-cols-2">

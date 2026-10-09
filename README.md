@@ -60,25 +60,28 @@ UI (features/*, components/ui)
 
 ### Calculation rules (summary)
 
-Every rule below is a pure function in `src/domain/analytics` with unit tests, and the Methodology
-page in the app explains each one in plain words.
+Every rule below is a pure function in `src/domain/analytics` with unit tests. The science page
+(`/science`, `src/features/science`) explains each one with the formula typeset in KaTeX, the
+research behind it and DOI links; citations live in `src/domain/analytics/citations.ts`.
 
 | Metric               | Rule                                                                                                                                                                                     |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Volume load          | Sum of load x reps over completed, non-warm-up sets of load-tracked exercises. Per-hand dumbbell moves count both hands. Bodyweight excluded.                                            |
-| Estimated 1RM        | Brzycki `load x 36 / (37 - reps)` for 5 reps or fewer, Epley `load x (1 + reps / 30)` for 6 to 12. Logged RIR is added to reps when the total stays at 12 or fewer. Compound lifts only. |
+| Estimated 1RM        | Epley `load x (1 + (reps + RIR) / 30)`, RIR counted when reps + RIR stays at 10 or fewer; sets above 10 reps are not estimated; 1 rep is its load. Charts prefer the best set of 1 to 6 reps (Reynolds 2006, Nuzzo 2024). |
 | Personal records     | Heaviest load, best e1RM, most reps (bodyweight), longest time or distance. The first session is a baseline, not a record.                                                               |
 | Adherence            | Completed planned sessions / planned sessions, over days that have passed since the routine was created. Hidden when nothing was planned.                                                |
-| Body weight trend    | Exponential moving average, alpha 0.1 per day. Weekly rate is a least-squares slope over 28 days (6 or more entries over 14 or more days).                                               |
+| Body weight trend    | Mean of the weigh-ins in the last 7 days (Orsama 2014). Weekly rate is a least-squares slope over 28 days (6 or more entries over 14 or more days); a pace verdict only for fat loss, 0.5 to 1% a week (Helms 2014). |
 | BMR and calories     | Mifflin-St Jeor (Katch-McArdle when body fat is known) x activity factor from training days and daily activity, then a goal adjustment.                                                  |
-| Protein              | 1.6 to 2.2 g/kg (2.0 to 2.4 while losing fat, 1.2 to 1.6 for general fitness). Fat at least 0.8 g/kg.                                                                                    |
+| Protein              | Exact to 0.1 g. 1.6 to 2.2 g/kg (2.0 to 2.4 while losing fat, 1.2 to 1.6 for general fitness). Fat at least 0.8 g/kg.                                                                                    |
 | BMI, body fat, FFMI  | BMI with WHO and Asian cut-offs. Body fat by the US Navy tape formula. FFMI and height-normalised FFMI (Kouri).                                                                          |
 | Strength levels      | e1RM / body weight against published standards for squat, bench, deadlift, overhead press and row, by sex. DOTS for the big three.                                                       |
 | Plateaus             | No e1RM gain for 3 or more weeks over 4 or more sessions.                                                                                                                                |
 | Balance              | Push vs pull sets, quads vs hamstrings, upper vs lower over 4 weeks; balanced between 0.67 and 1.5 (2 for the leg and body ratios).                                                      |
 | Load spike           | Working sets in the last 7 days over the 28-day weekly average; flagged above 1.5.                                                                                                       |
 | Goal projection      | Current value plus the 8-week rate of change. Needs 4 sessions over 3 weeks.                                                                                                             |
-| "Below best" insight | Compound lifts only, at least 4% under the best e1RM, and never when the load just went up.                                                                                              |
+| Muscle sets          | Direct sets 1, indirect 0.5 (Pelland 2026), only sets at RIR 4 or closer (or with no effort logged).                                                                                    |
+| Insights             | Strength, volume and below-best thresholds 5% (Grgic 2020: 1RM test noise about 4.2%). Size-adjusted strength e1RM / BW^0.67 (Jaric 2002) can trigger its own insight.             |
+| "Below best" insight | Compound lifts only, at least 5% under the best e1RM, and never when the load just went up.                                                                                              |
 
 ## Accounts and sync
 

@@ -83,8 +83,11 @@ export function milestones(
       add({
         id: `workouts-${workouts}`,
         kind: 'count',
-        title: workouts === 1 ? 'First workout' : `${workouts} workouts`,
-        detail: workouts === 1 ? 'The hardest one to start.' : `${workouts} workouts logged.`,
+        title: workouts === 1 ? 'Baseline set' : `${workouts} workouts`,
+        detail:
+          workouts === 1
+            ? 'Every number from here is measured against today.'
+            : `${workouts} workouts logged.`,
         achievedAt: s.date,
         workoutId: s.workout.id,
       });

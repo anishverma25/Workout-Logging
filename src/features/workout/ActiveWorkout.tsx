@@ -26,6 +26,8 @@ import {
 } from '@/data/repositories/workouts';
 import type { Preferences, Workout, WorkoutSet } from '@/domain/models/schemas';
 import { cn } from '@/lib/cn';
+import { restSecondsAfterSet } from '@/domain/workout/rest';
+import { ReorderSheet } from './ReorderSheet';
 import { readableError } from '@/lib/errors';
 import { formatClock, pluralize } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
@@ -49,6 +51,8 @@ export function ActiveWorkout({ view, prefs }: Props) {
   const toast = useToast();
   const [picking, setPicking] = useState(false);
   const [timerOpen, setTimerOpen] = useState(false);
+  const [reordering, setReordering] = useState(false);
+  const openReorder = useCallback(() => setReordering(true), []);
   const [finishing, setFinishing] = useState<FinishCheck | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -99,11 +103,22 @@ export function ActiveWorkout({ view, prefs }: Props) {
         })),
       );
       if (!flow) return;
-      const planned = ex.workoutExercise.target?.rest ?? prefs.defaultRestSeconds;
-      const seconds = set.setType === 'warmup' ? Math.min(60, planned) : planned;
+      const all = exercisesRef.current;
+      const pendingOf = (e: WorkoutExerciseView) =>
+        e.sets.filter((x) => x.completedAt === null && x.id !== set.id).length;
+      const seconds = restSecondsAfterSet({
+        plannedSec: ex.workoutExercise.target?.rest ?? null,
+        defaultSec: prefs.defaultRestSeconds,
+        warmup: set.setType === 'warmup',
+        lastOfExercise: pendingOf(ex) === 0,
+        moreToCome: all.some(
+          (e) => e.workoutExercise.id !== ex.workoutExercise.id && pendingOf(e) > 0,
+        ),
+        changeSec: prefs.exerciseChangeRestSeconds,
+      });
       if (seconds > 0) void restActions.start(seconds, workout.id);
     },
-    [prefs.autoStartRest, prefs.defaultRestSeconds, workout.id],
+    [prefs.autoStartRest, prefs.defaultRestSeconds, prefs.exerciseChangeRestSeconds, workout.id],
   );
 
   async function finish(keepUnconfirmed: boolean, effort: number | null) {
@@ -205,6 +220,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
             prefs={prefs}
             experience={experience}
             onSetCompleted={onSetCompleted}
+            onReorder={openReorder}
             superset={supersets.get(ex.workoutExercise.id) ?? null}
             hasNext={i < exercises.length - 1}
           />
@@ -258,6 +274,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
           await addExercisesToWorkout(db, workout.id, ids);
         }}
       />
+      <ReorderSheet open={reordering} exercises={exercises} onClose={() => setReordering(false)} />
       <RestTimerSheet
         open={timerOpen}
         onClose={() => setTimerOpen(false)}

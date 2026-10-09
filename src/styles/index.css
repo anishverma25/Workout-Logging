@@ -372,3 +372,23 @@
     transform: translate(-50%, -50%);
   }
 }
+
+/* Typeset formulas (components/ui/Tex.tsx). Long equations scroll sideways on a phone instead of
+   overflowing the card. */
+.tex-block {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+  -webkit-overflow-scrolling: touch;
+}
+.tex-block .katex-display {
+  margin: 0.35rem 0;
+}
+.tex-block .katex {
+  font-size: 0.98em;
+}
+@media (min-width: 640px) {
+  .tex-block .katex {
+    font-size: 1.12em;
+  }
+}

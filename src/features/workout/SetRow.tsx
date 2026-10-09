@@ -23,6 +23,8 @@ interface Props {
   /** "1", "2"... for working sets; letters for other types. */
   label: string;
   tracking: TrackingType;
+  /** The load is one dumbbell or one side. */
+  perHand?: boolean;
   prefs: Preferences;
   previous: WorkoutSet | null;
   suggestion: SetSuggestion | null;
@@ -40,6 +42,7 @@ function SetRowImpl({
   set,
   label,
   tracking,
+  perHand = false,
   prefs,
   previous,
   suggestion,
@@ -168,7 +171,11 @@ function SetRowImpl({
         {cols.load ? (
           <CellInput
             ref={loadRef}
-            label={cardio ? `Set ${typeLabel} minutes` : `Set ${typeLabel} load in ${unit}`}
+            label={
+              cardio
+                ? `Set ${typeLabel} minutes`
+                : `Set ${typeLabel} load in ${unit}${perHand ? ', one dumbbell' : ''}`
+            }
             value={displayLoad}
             placeholder={done ? undefined : ghostLoad}
             max={cardio ? 600 : tracking === 'weight_reps' ? 2000 : 500}

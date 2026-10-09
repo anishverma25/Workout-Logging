@@ -49,21 +49,41 @@ test('progress: every chart has a table view and insights state their basis', as
   await expect(page.getByText(/planned sessions/).first()).toBeVisible();
 });
 
-test('methodology explains each metric', async ({ page }) => {
+test('the science page explains each number with typeset formulas and sources', async ({
+  page,
+}) => {
   await page.goto('/progress');
-  await page.getByRole('link', { name: /How every number here is calculated/ }).click();
+  await page.getByRole('link', { name: /The science behind these numbers/ }).click();
+  await expect(page).toHaveURL(/\/science$/);
   for (const name of [
-    'Volume load',
     'Estimated 1RM',
     'Relative strength',
+    'Hard sets per muscle',
+    'Volume load',
     'Adherence',
-    'Sets per muscle group',
-    'Body weight',
+    'Body weight trend',
+    'Protein',
     'Recovery',
   ]) {
     await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
   }
-  await expect(page.getByText('load × (1 + reps ÷ 30)', { exact: false })).toBeVisible();
+  // Formulas are typeset with KaTeX and read out in words.
+  const e1rm = page.locator('#e1rm');
+  await expect(e1rm.locator('.katex').first()).toBeVisible();
+  await expect(e1rm.getByRole('math').first()).toHaveAttribute('aria-label', /30/);
+  await expect(
+    e1rm.getByRole('link', { name: /doi\.org\/10\.1007\/s40279-023-01937-7/ }),
+  ).toBeVisible();
+
+  // Each Progress section links straight to its explanation.
+  await page.goto('/progress');
+  await page.getByRole('link', { name: 'The science behind strength', exact: true }).click();
+  await expect(page).toHaveURL(/\/science#e1rm$/);
+  await expect(page.locator('#e1rm')).toBeInViewport();
+
+  // The old address still works.
+  await page.goto('/progress/methodology#protein');
+  await expect(page).toHaveURL(/\/science#protein$/);
 });
 
 test('progress shows an honest empty state without data', async ({ page }) => {

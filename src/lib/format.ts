@@ -50,3 +50,11 @@ export function formatClock(totalSeconds: number): string {
   const sec = String(s % 60).padStart(2, '0');
   return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
 }
+
+/** "2 min 05 sec", for screen readers and summaries. */
+export function spokenDuration(totalSec: number): string {
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  if (m === 0) return `${s} seconds`;
+  return s === 0 ? `${m} ${m === 1 ? 'minute' : 'minutes'}` : `${m} min ${s} sec`;
+}

@@ -37,9 +37,9 @@ test('a new account sees the tour, then setup builds a personalised plan', async
   await expect(page).toHaveURL(/\/setup/);
   await page.getByRole('textbox', { name: 'Your name' }).fill('Meera Shah');
   await page.getByRole('button', { name: 'Continue' }).click();
-  await page.getByRole('radio', { name: /Build muscle/ }).click();
+  await page.getByRole('radio', { name: /^Hypertrophy/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
-  await page.getByRole('radio', { name: /Intermediate/ }).click();
+  await page.getByRole('radio', { name: /^Beginner/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: '5', exact: true }).click();
   // Session length is a scroll wheel; it starts at 60 and the arrow keys move it by 5.
@@ -79,6 +79,27 @@ test('a new account sees the tour, then setup builds a personalised plan', async
   await expect(page.getByText('Today in Push Pull Legs Upper Lower')).toBeVisible();
   // Days before the routine existed are not counted as missed.
   await expect(page.getByRole('listitem').filter({ hasText: 'missed' })).toHaveCount(0);
+});
+
+test('intermediate and advanced lifters build their own routine instead of a recommendation', async ({
+  page,
+}) => {
+  await page.goto('/setup?next=/');
+  await page.getByRole('textbox', { name: 'Your name' }).fill('Ravi');
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: /^Strength \+ Hypertrophy/ }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: /^Advanced/ }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: '4', exact: true }).click();
+  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByRole('heading', { name: 'Bring your own split' })).toBeVisible();
+  await expect(page.getByText('Recommended routine')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Build my routine' }).click();
+  await expect(page).toHaveURL(/\/routines\/[\w-]+$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('My routine');
+  for (const day of ['Day 1', 'Day 2', 'Day 3', 'Day 4'])
+    await expect(page.getByRole('heading', { name: day, exact: true })).toBeVisible();
 });
 
 test('the tour can be replayed from More and skipped', async ({ page }) => {

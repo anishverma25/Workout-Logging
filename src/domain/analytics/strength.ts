@@ -35,8 +35,8 @@ export function strengthTrends(
     const exercise = byId.get(exerciseId);
     if (!exercise || exercise.trackingType !== 'weight_reps') continue;
     const points = perfs
-      .filter((p) => p.bestE1rm !== null)
-      .map((p) => ({ date: p.date, e1rm: p.bestE1rm as number, workoutId: p.workoutId }));
+      .filter((p) => p.chartE1rm !== null)
+      .map((p) => ({ date: p.date, e1rm: p.chartE1rm as number, workoutId: p.workoutId }));
     if (points.length < MIN_TREND_SESSIONS) continue;
     const first = points[0]!.e1rm;
     const latest = points[points.length - 1]!.e1rm;

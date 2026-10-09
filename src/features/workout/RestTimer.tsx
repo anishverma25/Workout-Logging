@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { getDeviceSettings, playRestTone } from '@/app/deviceSettings';
 import { Pause, Play, RotateCcw, Timer, X } from 'lucide-react';
 import { Button, IconButton } from '@/components/ui/Button';
-import { Stepper } from '@/components/ui/Fields';
 import { Sheet } from '@/components/ui/Sheet';
 import { useRestTimer } from '@/data/hooks';
 import {
@@ -10,12 +9,15 @@ import {
   remainingMs,
   REST_PRESETS,
   restProgress,
+  restedSec,
   type RestTimerState,
 } from '@/domain/workout/restTimer';
 import { cn } from '@/lib/cn';
 import { formatClock, formatSeconds } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { restActions } from './restActions';
+import { useToast } from '@/components/ui/Toast';
+import { DurationPicker } from '@/components/ui/DurationPicker';
 
 /** How long a finished timer stays on screen before it tidies itself away. */
 const FINISHED_LINGER_MS = 45_000;
@@ -42,6 +44,7 @@ function useFinishSignal(state: RestTimerState | null, now: Date) {
 
 /** Floating bar above the tab bar while resting. Hidden when there is no timer. */
 export function RestTimerBar({ onOpen }: { onOpen: () => void }) {
+  const toast = useToast();
   const timer = useRestTimer();
   const now = useNow(250);
   const state = timer.data ?? null;
@@ -88,7 +91,7 @@ export function RestTimerBar({ onOpen }: { onOpen: () => void }) {
           </span>
           <span className={cn('block text-xs', finished ? 'text-accent-ink/75' : 'text-faint')}>
             {finished
-              ? 'Next set when ready'
+              ? `Rested ${formatClock(state.durationSec)}, next set when ready`
               : paused
                 ? 'Paused'
                 : `of ${formatSeconds(state.durationSec)}`}
@@ -129,7 +132,10 @@ export function RestTimerBar({ onOpen }: { onOpen: () => void }) {
       <IconButton
         label={finished ? 'Dismiss' : 'Skip rest'}
         icon={<X className="size-5" aria-hidden />}
-        onClick={() => restActions.clear()}
+        onClick={() => {
+          if (!finished) toast(`Rested ${formatClock(restedSec(state, new Date()))}`);
+          void restActions.clear();
+        }}
         className={finished ? 'text-accent-ink hover:bg-black/10 hover:text-accent-ink' : undefined}
       />
     </div>
@@ -259,20 +265,11 @@ function RestTimerSheetBody({
           </button>
         ))}
       </div>
-      <div className="mt-4 grid grid-cols-[1fr_auto] items-end gap-2">
-        <Stepper
-          label="Custom length"
-          value={custom}
-          min={15}
-          max={600}
-          step={15}
-          format={formatSeconds}
-          onChange={(v) => v !== null && setCustom(v)}
-        />
-        <Button className="h-12" onClick={() => start(custom)}>
-          Start
-        </Button>
-      </div>
+      <h3 className="mb-1 mt-6 text-sm font-medium text-muted">Custom length</h3>
+      <DurationPicker label="Custom rest length" value={custom} min={5} onChange={setCustom} />
+      <Button block className="mt-3" onClick={() => start(custom)}>
+        Start {formatClock(custom)}
+      </Button>
     </Sheet>
   );
 }

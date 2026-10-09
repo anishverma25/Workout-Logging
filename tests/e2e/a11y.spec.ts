@@ -8,7 +8,7 @@ const PAGES = [
   '/workout',
   '/routines',
   '/progress',
-  '/progress/methodology',
+  '/science',
   '/history',
   '/records',
   '/exercises',

@@ -128,7 +128,7 @@ describe('recaps', () => {
     expect(r.workouts).toBe(2);
     expect(r.workingSets).toBe(3);
     expect(r.volumeKg).toBe(82.5 * 10 + 85 * 5);
-    expect(r.topLift!.toKg).toBeCloseTo(85 * (36 / 32), 6);
+    expect(r.topLift!.toKg).toBeCloseTo(85 * (35 / 30), 6);
     expect(r.favourite?.sets).toBe(3);
     expect(yearRecap(sessions, SYSTEM_EXERCISES, NOW)).toBeNull();
     expect(yearRecap(sessions, SYSTEM_EXERCISES, new Date(2027, 0, 5))!.workouts).toBe(4);

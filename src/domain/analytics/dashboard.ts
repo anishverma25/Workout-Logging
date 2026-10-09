@@ -1,3 +1,4 @@
+import { bodyWeightAt } from './progress';
 import { addDays, isSameDay, startOfDay, startOfWeek } from '@/lib/dates';
 import type { Preferences, RoutineDay, RoutineExercise } from '../models/schemas';
 import { bodyWeightSummary, type BodyWeightSummary } from './bodyweight';
@@ -220,6 +221,7 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
     periodDays: RECENT_DAYS,
     unit: prefs.weightUnit,
     recentSince: recentStart,
+    bodyKgAt: (d) => bodyWeightAt(data.bodyWeights, d),
   });
 
   // Count exercises with a record, not record types: one great set is one PR, not three.

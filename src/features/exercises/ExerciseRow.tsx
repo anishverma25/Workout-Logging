@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { exerciseMeta, MUSCLE_LABELS } from '@/domain/models/labels';
 import type { Exercise } from '@/domain/models/schemas';
 import { cn } from '@/lib/cn';
+import { sharesFor, sharesSummary } from '@/data/library/shares';
 
 /** Two-letter muscle marker, so a long list scans by body part at a glance. */
 export function MuscleMark({ exercise, className }: { exercise: Exercise; className?: string }) {
@@ -30,6 +31,7 @@ interface RowProps {
 }
 
 export function ExerciseRow({ exercise, onSelect, selected, selectable, trailing }: RowProps) {
+  const shares = sharesFor(exercise.id);
   return (
     <button
       type="button"
@@ -50,6 +52,11 @@ export function ExerciseRow({ exercise, onSelect, selected, selectable, trailing
           {exercise.isCustom ? <Badge tone="accent">Yours</Badge> : null}
         </span>
         <span className="mt-0.5 block truncate text-sm text-faint">{exerciseMeta(exercise)}</span>
+        {shares ? (
+          <span className="mt-0.5 block truncate text-xs font-medium text-muted tabular">
+            {sharesSummary(shares)}
+          </span>
+        ) : null}
       </span>
       {selectable ? (
         <span

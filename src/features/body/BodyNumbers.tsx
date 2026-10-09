@@ -73,7 +73,7 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
           Your numbers
         </h2>
         <Link
-          to="/progress/methodology#body"
+          to="/science#maintenance"
           className="tap-target text-sm font-medium text-accent-text"
         >
           How they are worked out
@@ -106,7 +106,11 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
         <Tile
           label="Protein a day"
           onOpen={s.energy ? () => setTopic('protein') : undefined}
-          value={s.energy ? `${s.energy.proteinG[0]}–${s.energy.proteinG[1]}` : null}
+          value={
+            s.energy
+              ? `${s.energy.proteinG[0].toFixed(1)}–${s.energy.proteinG[1].toFixed(1)}`
+              : null
+          }
           unit="g"
           detail={
             s.energy && goal
@@ -154,7 +158,13 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
               : null
           }
           unit={unit}
-          detail={s.rate ? RATE_LABEL[s.rate.verdict] : 'Needs 2 weeks of weigh-ins'}
+          detail={
+            !s.rate
+              ? 'Needs 2 weeks of weigh-ins'
+              : s.rate.verdict
+                ? RATE_LABEL[s.rate.verdict]
+                : 'Over the last 4 weeks'
+          }
           tone={s.rate?.verdict === 'on_track' ? 1 : 2}
         />
       </div>
@@ -331,7 +341,8 @@ function Explanation({
       return (
         <div className={text}>
           <Formula>
-            {lo} to {hi} g × {w} kg = {e.proteinG[0]} to {e.proteinG[1]} g a day
+            {lo} to {hi} g × {w} kg = {e.proteinG[0].toFixed(1)} to {e.proteinG[1].toFixed(1)} g a
+            day
           </Formula>
           <p>
             1.6 g per kg is where extra protein stops adding muscle on average, and 2.2 g the upper
@@ -427,21 +438,27 @@ function Explanation({
       return (
         <div className={text}>
           <p>
-            The slope of your smoothed weight trend over the last 4 weeks:{' '}
+            The slope of your 7-day average weight over the last 4 weeks:{' '}
             <strong className="text-text">
               {r.kgPerWeek >= 0 ? '+' : '−'}
               {fmt(Math.abs(toDisplayWeight(r.kgPerWeek, unit)), 2)} {unit} a week
             </strong>
             .
           </p>
-          <p className="mt-3">
-            For {goal ? GOAL_LABEL[goal].toLowerCase() : 'your goal'} a good pace is{' '}
-            {pct(r.target[0])} to {pct(r.target[1])} of body weight a week.
-          </p>
+          {r.target ? (
+            <p className="mt-3">
+              While cutting, losing about {pct(r.target[1])} to {pct(r.target[0])} of body weight a
+              week protects muscle (Helms, Aragon and Fitschen, 2014). Faster is not better here.
+            </p>
+          ) : (
+            <p className="mt-3">
+              A target pace is shown for the fat loss goal, the one with research behind a specific
+              rate. For other goals this is your measured rate.
+            </p>
+          )}
           <p className="mt-3 text-sm text-faint">
-            The trend moves 10% of the way to each weigh-in per day, so water and food swings barely
-            move it. Losing 0.5 to 1% a week keeps muscle in a deficit; gaining faster than 0.25 to
-            0.5% mostly adds fat.
+            Weight swings across the week, higher after the weekend and lowest near Friday, so a
+            7-day average shows the real direction (Orsama et al., 2014).
           </p>
         </div>
       );

@@ -1071,11 +1071,32 @@ const SEEDS: ExerciseSeed[] = [
   {
     key: 'hip-adduction',
     name: 'Hip adduction machine',
-    primary: 'glutes',
+    primary: 'adductors',
     equipment: 'machine',
     category: 'isolation',
     instructions:
       'Also called the adductor machine; it works the inner thighs. Sit tall with the pads on the inside of the knees, squeeze the legs together, pause, then let them open slowly.',
+  },
+  {
+    key: 'decline-bench-press',
+    name: 'Decline barbell bench press',
+    primary: 'chest',
+    secondary: ['triceps', 'shoulders'],
+    equipment: 'barbell',
+    category: 'compound',
+    instructions:
+      'Hook the feet under the pads on a bench set 15 to 30 degrees head-down. Lower the bar to the lower chest with control, then press up over the shoulders.',
+  },
+  {
+    key: 'decline-dumbbell-press',
+    name: 'Decline dumbbell press',
+    primary: 'chest',
+    secondary: ['triceps', 'shoulders'],
+    equipment: 'dumbbell',
+    category: 'compound',
+    loadMode: 'per_hand',
+    instructions:
+      'On a bench set 15 to 30 degrees head-down, press the dumbbells up over the lower chest and lower them slowly to chest level. Log one dumbbell.',
   },
 ];
 

@@ -68,7 +68,7 @@ describe('rate and plateaus', () => {
     );
     const history = [...performanceByExercise(buildSessions(data)).values()][0]!;
     const rate = e1rmRate(history, NOW)!;
-    expect(rate).toBeCloseTo(2.5 * (36 / 32), 5);
+    expect(rate).toBeCloseTo(2.5 * (35 / 30), 5);
     expect(e1rmRate(history.slice(0, 3), NOW)).toBeNull();
   });
 

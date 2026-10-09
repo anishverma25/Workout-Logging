@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { SwipeRow } from '@/components/ui/SwipeRow';
+import { useDragReorder } from '@/components/ui/useDragReorder';
 import { Button } from '@/components/ui/Button';
 import { ActionList, TextArea, TextField } from '@/components/ui/Fields';
 import { IconButton } from '@/components/ui/Button';
@@ -34,6 +35,7 @@ import {
   duplicateRoutine,
   moveDay,
   moveExercise,
+  moveExerciseTo,
   removeExercise,
   renameDay,
   restoreExercise,
@@ -44,6 +46,7 @@ import {
 import { daysForRoutine } from '@/domain/analytics/schedule';
 import type { Exercise, Routine, RoutineDay, RoutineExercise } from '@/domain/models/schemas';
 import { cn } from '@/lib/cn';
+import { formatAngle } from '@/domain/workout/angle';
 import { orderedWeekdays, weekdayLongName, weekdayShortName } from '@/lib/dates';
 import { formatRepRange, formatSeconds, pluralize } from '@/lib/format';
 import { ExercisePicker } from '../exercises/ExercisePicker';
@@ -310,6 +313,13 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
   const menuSlot = slots[menuIndex] ?? null;
   const nameOf = (s: RoutineExercise) => exerciseById.get(s.exerciseId)?.name ?? 'Exercise';
 
+  // Press, hold and drag a row to reorder; release without moving to open its menu.
+  const reorder = useDragReorder({
+    ids: slots.map((s) => s.id),
+    onMove: (id, to) => void moveExerciseTo(db, id, to),
+    onPress: (id) => setSlotMenu(id),
+  });
+
   /** Removes an exercise from the day, with an undo in the toast. */
   const remove = async (s: RoutineExercise) => {
     await removeExercise(db, s.id);
@@ -412,13 +422,19 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
         {slots.map((s, i) => {
           const exercise = exerciseById.get(s.exerciseId);
           return (
-            <li key={s.id} className="flex items-center gap-1">
+            <li
+              key={s.id}
+              className="flex items-center gap-1 bg-surface"
+              {...reorder.itemProps(s.id)}
+            >
               <div className="min-w-0 flex-1">
                 <SwipeRow
                   disabled={reordering}
                   deleteLabel={`Delete ${nameOf(s)}`}
                   onDelete={() => void remove(s)}
-                  onLongPress={() => setSlotMenu(s.id)}
+                  onLongPress={(y, via) =>
+                    via === 'menu' ? setSlotMenu(s.id) : reorder.start(s.id, y)
+                  }
                 >
                   <button
                     type="button"
@@ -438,6 +454,7 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
                         {s.targetSets} × {formatRepRange(s.repMin, s.repMax)}
                         {s.targetRir !== null ? ` · RIR ${s.targetRir}` : ''}
                         {` · ${formatSeconds(s.restSeconds)} rest`}
+                        {s.angleDeg != null ? ` · ${formatAngle(s.angleDeg)}` : ''}
                       </span>
                       {s.notes ? (
                         <span className="block truncate text-sm text-faint">{s.notes}</span>

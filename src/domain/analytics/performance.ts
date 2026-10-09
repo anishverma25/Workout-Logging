@@ -1,5 +1,5 @@
 import type { Exercise, WorkoutSet } from '../models/schemas';
-import { estimateOneRepMax, supportsE1rm } from './e1rm';
+import { estimateOneRepMax, E1RM_PREFERRED_MAX_REPS, supportsE1rm } from './e1rm';
 import { isLoadEligible, isWorkingSet, type Session } from './sessions';
 
 /** Best values for one exercise within one session. */
@@ -7,8 +7,11 @@ export interface ExercisePerformance {
   workoutId: string;
   date: Date;
   exerciseId: string;
+  /** Best estimate from any set up to 10 reps: used for records. */
   bestE1rm: number | null;
   bestE1rmSet: WorkoutSet | null;
+  /** For progress charts: the best 1 to 6 rep set when there is one, else bestE1rm. */
+  chartE1rm: number | null;
   heaviestLoad: number | null;
   heaviestLoadSet: WorkoutSet | null;
   mostReps: number | null;
@@ -34,6 +37,7 @@ export function performanceFor(
     exerciseId,
     bestE1rm: null,
     bestE1rmSet: null,
+    chartE1rm: null,
     heaviestLoad: null,
     heaviestLoadSet: null,
     mostReps: null,
@@ -44,6 +48,7 @@ export function performanceFor(
     longestDistanceSet: null,
   };
   const tracking = exercise?.trackingType;
+  let chartLow: number | null = null;
   for (const set of sets) {
     if (isLoadEligible(set, exercise)) {
       const e1rm = supportsE1rm(exercise)
@@ -52,6 +57,12 @@ export function performanceFor(
       if (e1rm !== null && (perf.bestE1rm === null || e1rm > perf.bestE1rm)) {
         perf.bestE1rm = e1rm;
         perf.bestE1rmSet = set;
+      }
+      // Charts prefer the best set of 1 to 6 reps when there is one: low-rep sets estimate a
+      // max most reliably (Reynolds et al. 2006). Otherwise the best set up to 10 reps.
+      if (e1rm !== null) {
+        const low = (set.reps ?? 0) <= E1RM_PREFERRED_MAX_REPS;
+        if (low && (chartLow === null || e1rm > chartLow)) chartLow = e1rm;
       }
       const w = set.weightKg ?? 0;
       if (perf.heaviestLoad === null || w > perf.heaviestLoad) {
@@ -103,6 +114,7 @@ export function performanceFor(
       }
     }
   }
+  perf.chartE1rm = chartLow ?? perf.bestE1rm;
   return perf;
 }
 

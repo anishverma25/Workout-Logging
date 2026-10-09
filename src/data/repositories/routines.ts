@@ -7,7 +7,7 @@ import {
 } from '@/domain/models/schemas';
 import type { WorkoutDatabase } from '../db';
 import { exerciseIdFor } from '../library/exercises';
-import { templateByKey } from '../library/templates';
+import { templateByKey, type RoutineTemplate } from '../library/templates';
 import { personalizeTemplate, type PlanOptions } from '../library/programs';
 import { toggleSupersetChanges } from '@/domain/workout/superset';
 import { newRecordMeta, nowIso, patchRecord, patchRecords, putRecords, softDelete } from './write';
@@ -84,7 +84,49 @@ export async function createRoutineFromTemplate(
 ): Promise<Routine> {
   const base = templateByKey(templateKey);
   if (!base) throw new RoutineError('Unknown template.');
-  const template = personalize ? personalizeTemplate(base, personalize) : base;
+  return writeRoutine(
+    db,
+    personalize ? personalizeTemplate(base, personalize) : base,
+    name,
+    !!personalize,
+  );
+}
+
+/**
+ * An empty routine with one blank day per training day, for people who already know their
+ * split and want to enter it themselves.
+ */
+export async function createBlankRoutine(
+  db: WorkoutDatabase,
+  dayCount: number,
+  name = 'My routine',
+): Promise<Routine> {
+  const days = Math.min(Math.max(Math.round(dayCount) || 1, 1), 7);
+  return writeRoutine(
+    db,
+    {
+      key: 'custom',
+      name,
+      summary: '',
+      daysPerWeek: days,
+      days: Array.from({ length: days }, (_, i) => ({
+        name: `Day ${i + 1}`,
+        weekdays: [],
+        exercises: [],
+      })),
+    },
+    name,
+    false,
+  );
+}
+
+async function writeRoutine(
+  db: WorkoutDatabase,
+  template: RoutineTemplate,
+  name: string | undefined,
+  personalized: boolean,
+): Promise<Routine> {
+  const personalize = personalized;
   return db.transaction('rw', ROUTINE_TABLES(db), async () => {
     const hasActive =
       (await db.routines.filter((r) => r.deletedAt === null && r.isActive).count()) > 0;
@@ -374,6 +416,17 @@ export async function updateTargets(
   });
 }
 
+/** Bench angle for a routine exercise, copied into each workout started from it. */
+export async function updateSlotAngle(
+  db: WorkoutDatabase,
+  slotId: string,
+  angleDeg: number | null,
+): Promise<void> {
+  await patchRecord<RoutineExercise>(db, 'routineExercises', slotId, {
+    angleDeg: angleDeg === null ? null : Math.max(-45, Math.min(90, Math.round(angleDeg))),
+  });
+}
+
 /** Replaces the exercise in a slot and keeps its targets. */
 export async function swapExercise(
   db: WorkoutDatabase,
@@ -397,6 +450,25 @@ export async function moveExercise(
     const from = slots.findIndex((s) => s.id === slotId);
     const to = from + delta;
     if (from < 0 || to < 0 || to >= slots.length) return;
+    const [moved] = slots.splice(from, 1);
+    slots.splice(to, 0, moved!);
+    await renumber(db, 'routineExercises', slots);
+  });
+}
+
+/** Moves a routine exercise to a position in its day (drag to reorder). */
+export async function moveExerciseTo(
+  db: WorkoutDatabase,
+  slotId: string,
+  toIndex: number,
+): Promise<void> {
+  await db.transaction('rw', ROUTINE_TABLES(db), async () => {
+    const slot = await db.routineExercises.get(slotId);
+    if (!slot) return;
+    const slots = await slotsOf(db, slot.routineDayId);
+    const from = slots.findIndex((s) => s.id === slotId);
+    const to = Math.max(0, Math.min(slots.length - 1, toIndex));
+    if (from < 0 || from === to) return;
     const [moved] = slots.splice(from, 1);
     slots.splice(to, 0, moved!);
     await renumber(db, 'routineExercises', slots);

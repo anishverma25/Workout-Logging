@@ -16,7 +16,7 @@ import {
   type BodyWeightPoint,
   type BodyWeightTrend,
 } from './bodyweight';
-import { generateInsights, type Insight } from './insights';
+import { generateInsights, sizeAdjustedStrength, type Insight } from './insights';
 import { muscleRecency, muscleWorkload, type MuscleRecency, type MuscleWorkload } from './muscles';
 import { performanceByExercise, performanceFor } from './performance';
 import {
@@ -89,7 +89,14 @@ export interface ExerciseProgress {
   points: ExerciseSessionPoint[];
   /** e1RM change from the first to the last session in the window; needs 2 sessions. */
   e1rmChange: { first: number; last: number; fraction: number } | null;
-  relativeStrength: { e1rm: number; bodyKg: number; ratio: number; date: Date } | null;
+  /** e1RM ÷ body weight, and the size-adjusted index e1RM ÷ body weight^0.67 (Jaric 2002). */
+  relativeStrength: {
+    e1rm: number;
+    bodyKg: number;
+    ratio: number;
+    index: number;
+    date: Date;
+  } | null;
   records: PersonalRecord[];
 }
 
@@ -261,7 +268,8 @@ function exerciseProgress(
     points.push({
       date: session.date,
       workoutId: session.workout.id,
-      bestE1rm: perf.bestE1rm,
+      // Charts use the best 1 to 6 rep set when there is one (Evidence Corner, metric 1).
+      bestE1rm: perf.chartE1rm,
       topLoad,
       topLoadReps:
         topLoad === null
@@ -291,6 +299,7 @@ function exerciseProgress(
         e1rm: last.bestE1rm!,
         bodyKg,
         ratio: last.bestE1rm! / bodyKg,
+        index: sizeAdjustedStrength(last.bestE1rm!, bodyKg),
         date: last.date,
       };
   }
@@ -429,6 +438,7 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
     volumeThisPeriod: totalKg,
     volumePreviousPeriod: previousTotalKg ?? 0,
     periodDays: window.days,
+    bodyKgAt: (d) => bodyWeightAt(data.bodyWeights, d),
     unit,
     recentSince: window.start,
   });

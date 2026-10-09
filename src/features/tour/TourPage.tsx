@@ -30,6 +30,7 @@ import { buildProgress } from '@/domain/analytics/progress';
 import { buildSessions, type TrainingData } from '@/domain/analytics/sessions';
 import { loggedDaysPerWeek } from '@/domain/analytics/week';
 import { cn } from '@/lib/cn';
+import { DEFAULT_PREFERENCES } from '@/domain/models/schemas';
 import { ageFromBirthDate, formatDayMonth, formatShortDate } from '@/lib/dates';
 import { formatClock } from '@/lib/format';
 import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
@@ -187,18 +188,7 @@ function buildSample(unit: WeightUnit) {
   const ds = generateDemoDataset(now);
   const data: TrainingData = { ...ds, exercises: SYSTEM_EXERCISES };
   const sessions = buildSessions(data);
-  const dashboard = buildDashboard(
-    data,
-    {
-      weightUnit: unit,
-      effortMetric: 'rir',
-      weekStartsOn: 1,
-      defaultRestSeconds: 120,
-      autoStartRest: true,
-      lengthUnit: 'cm',
-    },
-    now,
-  );
+  const dashboard = buildDashboard(data, { ...DEFAULT_PREFERENCES, weightUnit: unit }, now);
   const progress = buildProgress(data, {
     range: 'all',
     exerciseId: null,
@@ -507,7 +497,11 @@ function Body({ sample, unit }: SlideProps) {
   const b = sample.body;
   const tiles: [string, string, string][] = [
     ['Daily calories', b.energy ? `${b.energy.targetKcal.toLocaleString()}` : '–', 'kcal'],
-    ['Protein', b.energy ? `${b.energy.proteinG[0]}–${b.energy.proteinG[1]}` : '–', 'g'],
+    [
+      'Protein',
+      b.energy ? `${b.energy.proteinG[0].toFixed(1)}–${b.energy.proteinG[1].toFixed(1)}` : '–',
+      'g',
+    ],
     ['BMI', b.bmi ? b.bmi.value.toFixed(1) : '–', ''],
     ['Body fat', b.bodyFat ? b.bodyFat.pct.toFixed(1) : '–', '%'],
   ];

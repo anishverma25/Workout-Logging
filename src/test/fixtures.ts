@@ -19,6 +19,7 @@ export interface SetSpec {
   r: number;
   type?: SetType;
   done?: boolean;
+  rir?: number;
 }
 
 export interface SessionSpec {
@@ -79,7 +80,7 @@ export function buildData(specs: SessionSpec[]): TrainingData {
           setType: s.type ?? 'working',
           weightKg: s.w,
           reps: s.r,
-          rir: null,
+          rir: s.rir ?? null,
           rpe: null,
           durationSec: null,
           distanceM: null,

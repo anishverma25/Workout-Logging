@@ -453,5 +453,32 @@ describe('row level security', () => {
       ),
       /check constraint/,
     );
+    // Bench angle: 45 degrees of decline to 90 of incline.
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'routine_exercises', {
+          ...rowsA.routine_exercises,
+          id: crypto.randomUUID(),
+          angle_deg: 120,
+        }),
+      ),
+      /check constraint/,
+    );
+    await server.asUser(userA, (tx) =>
+      insertRow(tx, 'routine_exercises', {
+        ...rowsA.routine_exercises,
+        id: crypto.randomUUID(),
+        angle_deg: -15,
+      }),
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        tx.query(
+          'update public.user_preferences set exercise_change_rest_seconds = 5000 where user_id = $1',
+          [userA],
+        ),
+      ),
+      /check constraint/,
+    );
   });
 });

@@ -107,10 +107,10 @@ describe('energy', () => {
     expect(plan.trainingKcal).toBe(110); // 114, to the nearest 10
     expect(plan.tdee).toBe(2600);
     expect(plan.targetKcal).toBe(2850); // +10% = 2860, to the nearest 50
-    expect(plan.proteinG).toEqual([130, 175]); // 1.6 and 2.2 g/kg, to the nearest 5
+    expect(plan.proteinG).toEqual([128, 176]); // 1.6 and 2.2 g/kg, exact to one decimal
     const cut = energyPlan({ ...base, goal: 'fat_loss' })!;
     expect(cut.targetKcal).toBe(2100); // -20% = 2080, to the nearest 50
-    expect(cut.proteinG).toEqual([160, 190]);
+    expect(cut.proteinG).toEqual([160, 192]);
   });
 
   it('uses session length, prefers logged training days, and lean mass without sex', () => {
@@ -135,11 +135,13 @@ describe('energy', () => {
 });
 
 describe('weight trend', () => {
-  it('smooths day-to-day swings', () => {
-    const t = weightTrend([entry(1, 80), entry(2, 82), entry(3, 80)]);
+  it('averages the weigh-ins of the last 7 days', () => {
+    const t = weightTrend([entry(1, 80), entry(2, 82), entry(3, 80), entry(9, 78)]);
     expect(t[0]!.trendKg).toBe(80);
-    expect(t[1]!.trendKg).toBeCloseTo(80.2, 5);
-    expect(t[2]!.trendKg).toBeCloseTo(80.18, 5);
+    expect(t[1]!.trendKg).toBeCloseTo(81, 5);
+    expect(t[2]!.trendKg).toBeCloseTo(80.6667, 3);
+    // Day 9 looks back to day 3: days 1 and 2 have left the window.
+    expect(t[3]!.trendKg).toBeCloseTo(79, 5);
   });
 
   it('measures the weekly rate only with enough history', () => {
@@ -239,7 +241,17 @@ describe('body snapshot', () => {
     expect(s.bodyFat!.pct).toBeCloseTo(16.44, 1);
     expect(s.leanKg).toBeCloseTo(80 * (1 - s.bodyFat!.pct / 100), 5);
     expect(s.energy!.method).toBe('mifflin'); // sex, age and height are known;
-    expect(s.rate?.verdict).toBe('too_slow');
+    // Only the fat loss goal has an evidence-based pace (Helms 2014), so no verdict here.
+    expect(s.rate?.verdict ?? null).toBeNull();
+    const cutting = bodySnapshot({
+      profile: { ...profile, goal: 'fat_loss' },
+      age: 30,
+      bodyWeights: weights,
+      measurements: [],
+      loggedDaysPerWeek: null,
+      now,
+    });
+    expect(cutting.rate?.verdict).toBe('too_slow');
     expect(s.missing).toMatchObject({ height: false, sex: false, navy: false });
   });
 

@@ -166,6 +166,7 @@ export async function startWorkoutFromDay(
         notes: slot.notes,
         target,
         supersetGroup: slot.supersetGroup ?? null,
+        angleDeg: slot.angleDeg ?? null,
       };
       workoutExercises.push(we);
       for (let i = 0; i < slot.targetSets; i++) {
@@ -353,6 +354,38 @@ export async function moveWorkoutExercise(
     await renumber(db, 'workoutExercises', list);
   });
 }
+
+/** Moves an exercise to a position in the workout (drag to reorder). */
+export async function moveWorkoutExerciseTo(
+  db: WorkoutDatabase,
+  workoutExerciseId: string,
+  toIndex: number,
+) {
+  await db.transaction('rw', WORKOUT_TABLES(db), async () => {
+    const we = await db.workoutExercises.get(workoutExerciseId);
+    if (!we) return;
+    const list = await exercisesOf(db, we.workoutId);
+    const from = list.findIndex((x) => x.id === workoutExerciseId);
+    const to = Math.max(0, Math.min(list.length - 1, toIndex));
+    if (from < 0 || from === to) return;
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved!);
+    await renumber(db, 'workoutExercises', list);
+  });
+}
+
+/** Bench angle for this exercise in this workout: positive incline, negative decline. */
+export async function updateWorkoutExerciseAngle(
+  db: WorkoutDatabase,
+  workoutExerciseId: string,
+  angleDeg: number | null,
+): Promise<void> {
+  await patchRecord<WorkoutExercise>(db, 'workoutExercises', workoutExerciseId, {
+    angleDeg: angleDeg === null ? null : clampAngle(angleDeg),
+  });
+}
+
+export const clampAngle = (deg: number) => Math.max(-45, Math.min(90, Math.round(deg)));
 
 export async function updateWorkoutExerciseNotes(
   db: WorkoutDatabase,

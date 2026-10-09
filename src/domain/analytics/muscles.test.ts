@@ -20,6 +20,8 @@ describe('muscle workload', () => {
             { w: 80, r: 8 },
             { w: 80, r: 8 },
             { w: 80, r: 8, done: false },
+            // Logged as 6 reps in reserve: not a hard set, so it does not count.
+            { w: 60, r: 8, rir: 6 },
           ],
         },
         {

@@ -131,7 +131,7 @@ These setup items would block launch until done:
 completes with last time's numbers in one tap, decimals type naturally, and it keeps working
 offline. Close behind is the honesty of the numbers: every figure traces back to logged sets,
 estimates are labelled, comparisons only appear when the history supports them, and the
-methodology page explains each one.
+science page explains each one.
 
 **What the final pass improved.** Records now get a short celebration on the summary, pages fade
 in, the per-exercise chart shows full names, count axes use whole numbers, the profile is

@@ -1,5 +1,6 @@
 import {
   adjustRest,
+  restedSec,
   isFinished,
   isRunning,
   pauseRest,
@@ -41,13 +42,20 @@ describe('rest timer', () => {
     expect(resumeRest(resumed, at(400))).toBe(resumed);
   });
 
-  it('adds and removes time, never below zero', () => {
+  it('adds and removes time, and the total follows in both directions', () => {
     const s = startRest(60, t0, 'w');
+    // 10 s in, 50 s left; +15 makes 65 s left and a 75 s rest in total.
     const more = adjustRest(s, 15, at(10));
     expect(remainingMs(more, at(10))).toBe(65_000);
-    expect(more.durationSec).toBe(65);
+    expect(more.durationSec).toBe(75);
+    const shorter = adjustRest(more, -15, at(10));
+    expect(shorter.durationSec).toBe(60);
+    // Never below what was already rested.
     const less = adjustRest(more, -120, at(10));
     expect(remainingMs(less, at(10))).toBe(0);
+    expect(less.durationSec).toBe(10);
+    expect(restedSec(less, at(10))).toBe(10);
+    expect(restedSec(more, at(40))).toBe(40);
     const pausedMore = adjustRest(pauseRest(s, at(10)), 30, at(10));
     expect(remainingMs(pausedMore, at(999))).toBe(80_000);
   });

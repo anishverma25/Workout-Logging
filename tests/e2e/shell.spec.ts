@@ -82,7 +82,7 @@ test('no horizontal scrolling on any main page', async ({ page }) => {
     '/workout',
     '/progress',
     '/progress?range=7d',
-    '/progress/methodology',
+    '/science',
     '/history',
     '/records',
     '/exercises',
@@ -118,7 +118,7 @@ test('setting up a profile greets you by name and keeps the demo profile separat
     .click();
   const sheet = page.getByRole('dialog');
   await sheet.getByRole('textbox', { name: 'Name' }).fill('Asha Rao');
-  await sheet.getByRole('radio', { name: 'Build muscle', exact: true }).click();
+  await sheet.getByRole('radio', { name: 'Hypertrophy', exact: true }).click();
   await sheet.getByRole('button', { name: 'Save profile' }).click();
   await expect(page.getByText('Profile saved')).toBeVisible();
   await expect(page.getByText('Asha Rao')).toBeVisible();

@@ -7,6 +7,7 @@ import type {
   Sex,
 } from '../models/schemas';
 import { isAlive } from './sessions';
+import { startOfDay } from '@/lib/dates';
 
 /**
  * Body composition and energy, from published formulas. Every function is pure, takes metric
@@ -228,7 +229,9 @@ export function energyPlan(input: EnergyInput): EnergyPlan | null {
   const adjustment = GOAL_ENERGY[input.goal];
   const targetKcal = round(tdee * (1 + adjustment), 50);
   const [pLo, pHi] = GOAL_PROTEIN[input.goal];
-  const proteinG: [number, number] = [round(pLo * weightKg, 5), round(pHi * weightKg, 5)];
+  // Exact to one decimal: g/kg × the smoothed body weight, no rounding to 5.
+  const tenth = (v: number) => Math.round(v * 10) / 10;
+  const proteinG: [number, number] = [tenth(pLo * weightKg), tenth(pHi * weightKg)];
   const fatMinG = round(0.8 * weightKg, 5);
   const proteinMid = (proteinG[0] + proteinG[1]) / 2;
   const carbsG = Math.max(0, round((targetKcal - proteinMid * 4 - fatMinG * 9) / 4, 5));
@@ -255,37 +258,33 @@ export function energyPlan(input: EnergyInput): EnergyPlan | null {
 // Smoothed weight trend
 // ---------------------------------------------------------------------------------------------
 
-/** Share of the gap to each new weigh-in that the trend moves, per day (Hacker's Diet). */
-export const TREND_ALPHA = 0.1;
+/**
+ * Rolling average window (Evidence Corner, metric 11). Weight swings across the week, higher
+ * after the weekend and lowest near Friday (Orsama et al. 2014, who used a 7-day moving
+ * average themselves), so a 7-day mean shows the real direction.
+ */
+export const TREND_DAYS = 7;
 
 export interface TrendPoint {
   date: Date;
   kg: number;
+  /** Mean of the weigh-ins in the 7 days ending on this one. */
   trendKg: number;
 }
 
-/**
- * Exponentially smoothed weight. Each weigh-in pulls the trend 10% of the way toward it per
- * day elapsed (1 - 0.9^days for gaps), so a salty dinner barely moves it but a real change
- * shows within a couple of weeks.
- */
 export function weightTrend(entries: BodyWeightEntry[]): TrendPoint[] {
   const sorted = entries.filter(isAlive).sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
-  const out: TrendPoint[] = [];
-  let trend: number | null = null;
-  let last: Date | null = null;
-  for (const e of sorted) {
-    const date = new Date(e.measuredAt);
-    if (trend === null || last === null) trend = e.weightKg;
-    else {
-      const days = Math.max((date.getTime() - last.getTime()) / 86_400_000, 1 / 24);
-      const alpha = 1 - Math.pow(1 - TREND_ALPHA, Math.min(days, 30));
-      trend = trend + alpha * (e.weightKg - trend);
+  const dated = sorted.map((e) => ({ date: new Date(e.measuredAt), kg: e.weightKg }));
+  return dated.map((p, i) => {
+    const from = startOfDay(p.date).getTime() - (TREND_DAYS - 1) * 86_400_000;
+    let sum = 0;
+    let n = 0;
+    for (let j = i; j >= 0 && dated[j]!.date.getTime() >= from; j--) {
+      sum += dated[j]!.kg;
+      n++;
     }
-    last = date;
-    out.push({ date, kg: e.weightKg, trendKg: trend });
-  }
-  return out;
+    return { date: p.date, kg: p.kg, trendKg: sum / n };
+  });
 }
 
 export const RATE_MIN_DAYS = 14;
@@ -315,10 +314,12 @@ export function weeklyRate(points: TrendPoint[], now: Date): number | null {
 }
 
 /**
- * Healthy weekly change for a goal, as a share of body weight per week. Losing 0.5 to 1% a
- * week keeps muscle in a deficit (Helms et al., 2014); gaining 0.25 to 0.5% a week limits fat
- * gain, less for experienced lifters who build muscle more slowly.
+ * Weekly change that keeps muscle while cutting (Evidence Corner, metric 12): losing about 0.5
+ * to 1% of body weight a week (Helms, Aragon and Fitschen 2014). Only the cutting goal has an
+ * evidence-backed target; other goals see their measured rate without a verdict.
  */
+export const hasRateTarget = (goal: Goal) => goal === 'fat_loss';
+
 export function targetRate(goal: Goal, experience: Experience): [number, number] {
   switch (goal) {
     case 'fat_loss':
@@ -394,7 +395,12 @@ export interface BodySnapshot {
   ffmi: { value: number; normalized: number } | null;
   energy: EnergyPlan | null;
   trend: TrendPoint[];
-  rate: { kgPerWeek: number; verdict: RateVerdict; target: [number, number] } | null;
+  /** Verdict and target only for the cutting goal, the one with an evidence-backed target. */
+  rate: {
+    kgPerWeek: number;
+    verdict: RateVerdict | null;
+    target: [number, number] | null;
+  } | null;
   /** What to add to unlock each number, for the empty states. */
   missing: {
     weight: boolean;
@@ -491,8 +497,12 @@ export function bodySnapshot(input: {
       rateValue !== null && weightKg !== null && profile
         ? {
             kgPerWeek: rateValue,
-            verdict: rateVerdict(rateValue, weightKg, profile.goal, profile.experience),
-            target: targetRate(profile.goal, profile.experience),
+            verdict: hasRateTarget(profile.goal)
+              ? rateVerdict(rateValue, weightKg, profile.goal, profile.experience)
+              : null,
+            target: hasRateTarget(profile.goal)
+              ? targetRate(profile.goal, profile.experience)
+              : null,
           }
         : null,
     missing: {

@@ -86,6 +86,33 @@ test('remove an exercise from a day by swiping or long pressing, with undo', asy
   await expect(row('Incline dumbbell press')).toHaveCount(0);
 });
 
+test('press, hold and drag reorders the exercises of a day', async ({ page }) => {
+  await page.goto('/routines');
+  await page
+    .getByRole('link', { name: /Push Pull Legs/ })
+    .first()
+    .click();
+  const push = page.locator('section', { has: page.getByRole('heading', { name: 'Push' }) });
+  const names = async () =>
+    (await push.getByRole('listitem').allInnerTexts()).map(
+      (t) => t.replace(/^\d+\s*/, '').split('\n')[0],
+    );
+  await expect(push.getByRole('listitem').first()).toContainText('Barbell bench press');
+  const before = await names();
+  const first = push.getByRole('listitem').first();
+  const box = (await first.boundingBox())!;
+  const x = box.x + 80;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.waitForTimeout(700);
+  for (let i = 1; i <= 10; i++) await page.mouse.move(x, y + i * box.height * 0.18);
+  await page.mouse.up();
+  await expect.poll(names).toEqual([before[1], before[0], ...before.slice(2)]);
+  await page.reload();
+  await expect.poll(names).toEqual([before[1], before[0], ...before.slice(2)]);
+});
+
 test('custom exercise: create, find, edit, delete', async ({ page }) => {
   await page.goto('/exercises');
   await page.getByRole('searchbox', { name: 'Search exercises' }).fill('Landmine press');
@@ -109,4 +136,21 @@ test('custom exercise: create, find, edit, delete', async ({ page }) => {
 
   await page.getByRole('searchbox', { name: 'Search exercises' }).fill('landmine');
   await expect(page.getByText('Nothing matches those filters.')).toBeVisible();
+});
+
+test('each library exercise shows what it works, with its sources', async ({ page }) => {
+  await page.goto('/exercises');
+  await page.getByRole('searchbox', { name: 'Search exercises' }).fill('incline dumbbell press');
+  const row = page.getByRole('button', { name: /^Incline dumbbell press/ }).first();
+  // The list row carries the top two regions.
+  await expect(row).toContainText(/Upper chest \d+%/);
+  await row.click();
+  const sheet = page.getByRole('dialog', { name: 'Incline dumbbell press' });
+  await expect(sheet.getByRole('heading', { name: 'What it works' })).toBeVisible();
+  const shares = sheet.getByRole('list', { name: 'Approximate share of the work' });
+  const values = (await shares.getByRole('listitem').allInnerTexts()).map((t) =>
+    Number(/(\d+)%/.exec(t)![1]),
+  );
+  expect(values.reduce((a, b) => a + b, 0)).toBe(100);
+  await expect(sheet.getByRole('link').first()).toHaveAttribute('href', /^https:\/\//);
 });

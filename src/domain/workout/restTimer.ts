@@ -60,14 +60,23 @@ export function resumeRest(state: RestTimerState, now: Date): RestTimerState {
   };
 }
 
-/** Adds or removes time. Never below zero; the total length grows with additions. */
+/**
+ * Adds or removes time. The total length moves with it in both directions, so "of 2:15" always
+ * shows the rest you will actually have taken. Never below the time already rested.
+ */
 export function adjustRest(state: RestTimerState, deltaSec: number, now: Date): RestTimerState {
-  const left = remainingMs(state, now) + deltaSec * 1000;
-  const nextLeft = Math.max(0, Math.min(MAX_REST_SEC * 1000, left));
-  const durationSec = Math.max(state.durationSec, Math.ceil(nextLeft / 1000));
+  const leftMs = remainingMs(state, now);
+  const elapsedMs = Math.max(0, state.durationSec * 1000 - leftMs);
+  const nextLeft = Math.max(0, Math.min(MAX_REST_SEC * 1000 - elapsedMs, leftMs + deltaSec * 1000));
+  const durationSec = Math.max(1, Math.round((elapsedMs + nextLeft) / 1000));
   if (state.pausedRemainingMs !== null)
     return { ...state, durationSec, pausedRemainingMs: nextLeft };
   return { ...state, durationSec, endsAt: new Date(now.getTime() + nextLeft).toISOString() };
+}
+
+/** Seconds rested so far: the full length once it has run out. */
+export function restedSec(state: RestTimerState, now: Date): number {
+  return Math.round((state.durationSec * 1000 - remainingMs(state, now)) / 1000);
 }
 
 /** Back to the full length, stopped, ready to start again. */

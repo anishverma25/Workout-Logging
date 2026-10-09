@@ -63,7 +63,7 @@ Read README.md for setup, architecture and calculation rules.
   are validated for contrast and colour-vision separation; use them for marks.
 - Phase 5: Progress page from one engine (`domain/analytics/progress.ts`): strength (e1RM,
   top load, reps, relative strength), volume, muscle sets, consistency, body weight, records,
-  insights, progression suggestions (also shown in the logger), methodology page.
+  insights, progression suggestions (also shown in the logger).
 - Rules worth remembering: e1RM only for compound lifts; period comparisons only when history
   covers the whole previous period; partial periods are labelled.
 - Phase 6: Supabase schema with RLS, local-first sync (outbox, push, pull, conflicts, retry),
@@ -98,5 +98,17 @@ Read README.md for setup, architecture and calculation rules.
   replying is SQL in `docs/admin-feedback.md` (tested in `feedback.test.ts`); no admin pages.
 - Routine days: swipe left or long press (`SwipeRow`) to delete, with undo in the toast.
   Session length uses `WheelPicker`. Search understands gym words (`SYNONYMS` in search.ts).
+- Evidence batch (migration 0007, Dexie unchanged, nullish fields): every number follows the
+  Evidence Corner (Project doc `claude/evidence-corner.md`): Epley e1RM capped at 10 reps, hard
+  sets at RIR 4 or closer, 7-day mean weight trend, pace verdict only for fat loss, 5% insight
+  threshold, size-adjusted strength. The science page `/science` (`features/science/topics.tsx`)
+  typesets formulas with KaTeX (`components/ui/Tex.tsx`) and cites `citations.ts`; Progress
+  sections link to it with `EvidenceLink`. Change a rule and its topic in the same commit.
+- Muscle shares per exercise (`data/library/muscleShares.ts`, `shares.ts`) show in the
+  exercise sheet, list rows and the logger; they must sum to 100 in steps of 5 and cite sources.
+- Bench angle (`angleDeg`) on routine and workout exercises; rest to the second
+  (`DurationPicker`); `exerciseChangeRestSeconds` rest between exercises; long press and drag
+  reorder (`useDragReorder`) in routines and the workout (`ReorderSheet`). Weight on dumbbell
+  moves is per dumbbell; volume counts both. Non-beginners build their own routine in setup.
 - Deployed on Cloudflare Pages from `phase-2-wip`. Each new Supabase migration must be applied
   in the SQL editor before the code that needs it is pushed.

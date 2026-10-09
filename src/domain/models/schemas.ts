@@ -28,6 +28,7 @@ export const MUSCLE_GROUPS = [
   'quads',
   'hamstrings',
   'glutes',
+  'adductors',
   'calves',
   'abs',
   'cardio',
@@ -120,6 +121,8 @@ export const RoutineExercise = z.object({
   notes: z.string().nullable(),
   /** Exercises of one day that share a number are done as a superset (no rest between). */
   supersetGroup: z.number().int().min(1).max(50).nullish(),
+  /** Bench angle in degrees: positive for incline, negative for decline. */
+  angleDeg: z.number().int().min(-45).max(90).nullish(),
 });
 export type RoutineExercise = z.infer<typeof RoutineExercise>;
 
@@ -176,6 +179,8 @@ export const WorkoutExercise = z.object({
   /** Snapshot of the routine targets at logging time. */
   target: TargetSnapshot.nullable(),
   supersetGroup: z.number().int().min(1).max(50).nullish(),
+  /** Bench angle in degrees: positive for incline, negative for decline. */
+  angleDeg: z.number().int().min(-45).max(90).nullish(),
 });
 export type WorkoutExercise = z.infer<typeof WorkoutExercise>;
 
@@ -296,6 +301,8 @@ export const Preferences = z.object({
   /** Start the rest timer automatically when a set is marked done. */
   autoStartRest: z.boolean(),
   lengthUnit: z.enum(['cm', 'in']).default('cm'),
+  /** Rest when moving on to the next exercise; null uses each exercise's own rest. */
+  exerciseChangeRestSeconds: z.number().int().min(0).max(900).nullable().default(null),
 });
 export type Preferences = z.infer<typeof Preferences>;
 
@@ -334,4 +341,5 @@ export const DEFAULT_PREFERENCES: Preferences = {
   defaultRestSeconds: 120,
   autoStartRest: true,
   lengthUnit: 'cm',
+  exerciseChangeRestSeconds: null,
 };

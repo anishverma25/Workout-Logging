@@ -2,9 +2,23 @@ import { differenceInCalendarDays } from '@/lib/dates';
 import { MUSCLE_GROUPS, STRENGTH_MUSCLES, type MuscleGroup } from '../models/schemas';
 import { isWorkingSet, type Session } from './sessions';
 
-/** A working set counts fully for its primary muscle and half for each secondary muscle. */
+/**
+ * Fractional sets (Evidence Corner, metric 3): a working set counts fully for its primary
+ * muscle and half for each secondary muscle, the method that best predicted growth and
+ * strength in Pelland et al. 2026.
+ */
 export const PRIMARY_SET_WEIGHT = 1;
 export const SECONDARY_SET_WEIGHT = 0.5;
+/**
+ * Only hard sets count: within about 4 reps of failure (Baz-Valle et al. 2021). A set with no
+ * effort logged is counted, since most people do not log it and working sets are usually hard.
+ */
+export const HARD_SET_MAX_RIR = 4;
+
+export function isHardSet(set: { rir: number | null; rpe: number | null }): boolean {
+  const rir = set.rir ?? (set.rpe !== null ? 10 - set.rpe : null);
+  return rir === null || rir <= HARD_SET_MAX_RIR;
+}
 
 export interface MuscleWorkload {
   muscle: MuscleGroup;
@@ -17,8 +31,8 @@ export interface MuscleWorkload {
 }
 
 /**
- * Working sets per muscle group over the given sessions, from exercise metadata.
- * Warm-ups and unfinished sets are excluded. Every exercise type counts, including bodyweight
+ * Hard working sets per muscle group over the given sessions, from exercise metadata.
+ * Warm-ups, unfinished sets and sets logged with more than 4 reps in reserve are excluded. Every exercise type counts, including bodyweight
  * and timed work, because a hard set is a hard set whatever the load.
  */
 export function muscleWorkload(sessions: Session[]): MuscleWorkload[] {
@@ -28,7 +42,7 @@ export function muscleWorkload(sessions: Session[]): MuscleWorkload[] {
   for (const session of sessions) {
     for (const { exercise, sets } of session.exercises) {
       if (!exercise) continue;
-      const n = sets.filter(isWorkingSet).length;
+      const n = sets.filter((set) => isWorkingSet(set) && isHardSet(set)).length;
       if (n === 0) continue;
       totals.get(exercise.primaryMuscle)!.direct += n;
       for (const m of exercise.secondaryMuscles) {

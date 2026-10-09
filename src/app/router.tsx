@@ -1,4 +1,5 @@
 import { createBrowserRouter } from 'react-router';
+import { MethodologyRedirect } from './layout/MethodologyRedirect';
 import { AppShell } from './layout/AppShell';
 import { RouteError } from './layout/RouteError';
 import { HomePage } from '@/features/home/HomePage';
@@ -47,9 +48,11 @@ export const router = createBrowserRouter([
         lazy: page(() => import('@/features/progress/ProgressPage'), 'ProgressPage'),
       },
       {
-        path: 'progress/methodology',
-        lazy: page(() => import('@/features/progress/MethodologyPage'), 'MethodologyPage'),
+        path: 'science',
+        lazy: page(() => import('@/features/science/SciencePage'), 'SciencePage'),
       },
+      // The old address of the methodology page, kept for bookmarks and installed shortcuts.
+      { path: 'progress/methodology', Component: MethodologyRedirect },
       {
         path: 'history',
         lazy: page(() => import('@/features/history/HistoryPage'), 'HistoryPage'),

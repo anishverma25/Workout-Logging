@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { BookOpen, ChartNoAxesColumnIncreasing, ChevronDown, Dumbbell, Trophy } from 'lucide-react';
+import {
+  ChartNoAxesColumnIncreasing,
+  ChevronDown,
+  ChevronRight,
+  Dumbbell,
+  FlaskConical,
+  Trophy,
+} from 'lucide-react';
+import { EvidenceLink } from '@/features/science/EvidenceLink';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { BarChart } from '@/components/charts/BarChart';
 import { ChartEmpty } from '@/components/charts/ChartParts';
@@ -82,15 +90,22 @@ export function ProgressPage() {
       <PageHeader
         title="Progress"
         subtitle="Strength, volume and consistency, calculated from your logged sets."
-        actions={
-          <Link
-            to="/progress/methodology"
-            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-surface px-3.5 text-sm font-semibold text-muted hover:text-text max-sm:hidden"
-          >
-            <BookOpen className="size-4" aria-hidden /> How it is calculated
-          </Link>
-        }
       />
+      <Link
+        to="/science"
+        className="mb-2 flex items-center gap-3 rounded-[var(--radius-card)] bg-surface p-4 text-sm shadow-card"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--tile-sky)] text-white">
+          <FlaskConical className="size-5" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold">The science behind these numbers</span>
+          <span className="text-muted">
+            Formulas and research sources for everything on this page.
+          </span>
+        </span>
+        <ChevronRight className="size-5 shrink-0 text-faint" aria-hidden />
+      </Link>
       {training.status === 'loading' ? <Skeleton className="h-96" /> : null}
       {training.status === 'error' ? <ErrorState error={training.error} /> : null}
 
@@ -98,7 +113,7 @@ export function ProgressPage() {
         <EmptyState
           icon={<ChartNoAxesColumnIncreasing className="size-5" aria-hidden />}
           title="Your progress starts with your first workout"
-          body="Once you log workouts, this page shows your estimated 1RM over time, weekly volume, sets per muscle group, how consistently you train and your records. Every number is calculated from your own sets, and the methodology page explains how."
+          body="Once you log workouts, this page shows your estimated 1RM over time, weekly volume, sets per muscle group, how consistently you train and your records. Every number is calculated from your own sets, and the science page explains how."
           actions={
             <>
               <Button
@@ -108,7 +123,7 @@ export function ProgressPage() {
                 Start a workout
               </Button>
               <Link
-                to="/progress/methodology"
+                to="/science"
                 className="inline-flex h-11 items-center px-3 text-sm font-semibold text-accent-text"
               >
                 How it is calculated
@@ -168,6 +183,7 @@ export function ProgressPage() {
               <Section
                 id="insights"
                 title="Insights"
+                science="insights"
                 detail="Rules applied to your records. Each one states what it is based on."
               >
                 <InsightList insights={model.insights} />
@@ -199,7 +215,7 @@ export function ProgressPage() {
               {muscleBalanceIncluded ? (
                 <MusclesSection model={model} />
               ) : (
-                <Section id="muscles" title="Sets per muscle group">
+                <Section id="muscles" title="Sets per muscle group" science="muscles">
                   <ProLock feature="muscle_balance" />
                 </Section>
               )}
@@ -208,20 +224,6 @@ export function ProgressPage() {
               <RecordsSection model={model} unit={unit} />
             </>
           )}
-
-          <Link
-            to="/progress/methodology"
-            className="mt-10 flex items-center gap-3 rounded-[var(--radius-card)] bg-surface p-4 text-sm"
-          >
-            <BookOpen className="size-5 shrink-0 text-accent-text" aria-hidden />
-            <span>
-              <span className="block font-semibold">How every number here is calculated</span>
-              <span className="text-muted">
-                Volume, estimated 1RM, relative strength, frequency, adherence, muscle sets and
-                body-weight trends.
-              </span>
-            </span>
-          </Link>
         </>
       ) : null}
 
@@ -264,6 +266,7 @@ function ProgressionBlock({
     <Section
       id="progression"
       title="Ready to progress"
+      science="progression"
       detail="Based on your last session of each exercise and its routine target."
     >
       {included ? (
@@ -282,18 +285,24 @@ function Section({
   id,
   title,
   detail,
+  science,
   children,
 }: {
   id: string;
   title: string;
   detail?: string;
+  /** Section of the science page that explains these numbers. */
+  science?: string;
   children: React.ReactNode;
 }) {
   return (
     <section aria-labelledby={`sec-${id}`} className="mt-9">
-      <h2 id={`sec-${id}`} className="font-display text-[1.3rem] font-bold leading-tight">
-        {title}
-      </h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 id={`sec-${id}`} className="font-display text-[1.3rem] font-bold leading-tight">
+          {title}
+        </h2>
+        {science ? <EvidenceLink topic={science} about={title.toLowerCase()} /> : null}
+      </div>
       {detail ? (
         <p className="mb-3 mt-0.5 text-sm text-faint">{detail}</p>
       ) : (
@@ -384,6 +393,7 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
     <Section
       id="strength"
       title="Strength"
+      science="e1rm"
       detail={s ? `${s.name}, best set each session.` : undefined}
     >
       {!s ? (
@@ -548,6 +558,7 @@ function VolumeSection({ model, unit }: { model: ProgressModel; unit: WeightUnit
     <Section
       id="volume"
       title="Volume"
+      science="volume"
       detail={`Load × reps on completed working sets, per ${per}. A measure of work done, not of muscle growth.`}
     >
       <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
@@ -609,6 +620,7 @@ function MusclesSection({ model }: { model: ProgressModel }) {
     <Section
       id="muscles"
       title="Sets per muscle group"
+      science="muscles"
       detail={`Working sets: 1 for the primary muscle, 0.5 for each secondary muscle${perWeek ? ', averaged per week' : ''}.`}
     >
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] [&>*]:min-w-0">
@@ -670,7 +682,7 @@ function ConsistencySection({ model }: { model: ProgressModel }) {
   const per = model.bucket === 'day' ? 'day' : model.bucket === 'week' ? 'week' : 'month';
   const a = consistency.adherence;
   return (
-    <Section id="consistency" title="Consistency">
+    <Section id="consistency" title="Consistency" science="frequency">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] [&>*]:min-w-0">
         <Card className="p-4 sm:p-5">
           <h3 className="mb-2 font-semibold">Workouts per {per}</h3>
@@ -735,7 +747,7 @@ function ConsistencySection({ model }: { model: ProgressModel }) {
 function BodySection({ model, unit }: { model: ProgressModel; unit: WeightUnit }) {
   const { points, trend } = model.body;
   return (
-    <Section id="body" title="Body weight">
+    <Section id="body" title="Body weight" science="body-weight">
       <Card className="p-4 sm:p-5">
         {points.length >= 2 ? (
           <>
@@ -788,7 +800,7 @@ function BodySection({ model, unit }: { model: ProgressModel; unit: WeightUnit }
 
 function RecordsSection({ model, unit }: { model: ProgressModel; unit: WeightUnit }) {
   return (
-    <Section id="records" title="Records in this period">
+    <Section id="records" title="Records in this period" science="records">
       {model.records.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-line-strong p-5 text-sm text-muted">
           No records in this period. They come from beating an earlier best, so they arrive in

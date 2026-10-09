@@ -31,7 +31,7 @@ describe('weekly check-in', () => {
     expect(c.sessions).toBe(3);
     expect(c.workingSets).toBe(9);
     expect(c.improved).toHaveLength(1);
-    expect(c.improved[0]!.gainKg).toBeCloseTo(2.5 * (36 / 32), 6);
+    expect(c.improved[0]!.gainKg).toBeCloseTo(2.5 * (35 / 30), 6);
     expect(c.records).toBeGreaterThan(0);
     expect(c.focus.kind).toBe('keep_going');
   });

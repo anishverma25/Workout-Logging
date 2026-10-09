@@ -27,6 +27,9 @@ import { useDemoStatus, usePreferences, useTrainingData } from '@/data/hooks';
 import { updatePreferences } from '@/data/repositories/meta';
 import { getStorageState, requestPersistentStorage, type StorageState } from '@/data/storage';
 import { formatShortDate, toDateKey } from '@/lib/dates';
+import { formatClock, spokenDuration } from '@/lib/format';
+import { Sheet } from '@/components/ui/Sheet';
+import { DurationPicker } from '@/components/ui/DurationPicker';
 
 export function SettingsPage() {
   return (
@@ -34,6 +37,7 @@ export function SettingsPage() {
       <PageHeader title="Settings" />
       <div className="flex max-w-2xl flex-col gap-7">
         <AppearanceSection />
+        <RestSection />
         <WorkoutSection />
         <RemindersSection />
         <ExportSection />
@@ -83,6 +87,120 @@ function AppearanceSection() {
         />
       </PanelRow>
     </Panel>
+  );
+}
+
+/** Rest lengths, to the second, saved to the account so they follow you between devices. */
+function RestSection() {
+  const prefs = usePreferences();
+  const [editing, setEditing] = useState<'default' | 'change' | null>(null);
+  const change = prefs.exerciseChangeRestSeconds;
+  return (
+    <Panel
+      title="Rest"
+      footer="Each exercise in a routine can have its own rest; the default is used where it has none."
+    >
+      <PanelRow title="Start rest automatically" detail="When you tick a set done.">
+        <Switch
+          label="Start rest automatically"
+          checked={prefs.autoStartRest}
+          onChange={(v) => void updatePreferences(db, { autoStartRest: v })}
+        />
+      </PanelRow>
+      <PanelRow
+        title="Default rest"
+        detail="Research supports 90 to 120 seconds between hard sets."
+      >
+        <button
+          type="button"
+          onClick={() => setEditing('default')}
+          aria-label={`Default rest, ${spokenDuration(prefs.defaultRestSeconds)}. Change`}
+          className="tabular h-10 rounded-full bg-surface-2 px-4 font-display text-[1.05rem] font-semibold"
+        >
+          {formatClock(prefs.defaultRestSeconds)}
+        </button>
+      </PanelRow>
+      <PanelRow
+        title="Rest between exercises"
+        detail={
+          change === null
+            ? 'Off: the exercise you just finished decides.'
+            : 'Used after the last set of an exercise, before the next one.'
+        }
+      >
+        <div className="flex items-center gap-2">
+          {change !== null ? (
+            <button
+              type="button"
+              onClick={() => setEditing('change')}
+              aria-label={`Rest between exercises, ${spokenDuration(change)}. Change`}
+              className="tabular h-10 rounded-full bg-surface-2 px-4 font-display text-[1.05rem] font-semibold"
+            >
+              {formatClock(change)}
+            </button>
+          ) : null}
+          <Switch
+            label="Rest between exercises"
+            checked={change !== null}
+            onChange={(on) =>
+              void updatePreferences(db, { exerciseChangeRestSeconds: on ? 180 : null })
+            }
+          />
+        </div>
+      </PanelRow>
+      {editing ? (
+        <RestLengthSheet
+          title={editing === 'default' ? 'Default rest' : 'Rest between exercises'}
+          initial={editing === 'default' ? prefs.defaultRestSeconds : (change ?? 180)}
+          min={editing === 'default' ? 15 : 0}
+          onSave={(sec) =>
+            void updatePreferences(
+              db,
+              editing === 'default'
+                ? { defaultRestSeconds: sec }
+                : { exerciseChangeRestSeconds: sec },
+            )
+          }
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
+    </Panel>
+  );
+}
+
+function RestLengthSheet({
+  title,
+  initial,
+  min,
+  onSave,
+  onClose,
+}: {
+  title: string;
+  initial: number;
+  min: number;
+  onSave: (seconds: number) => void;
+  onClose: () => void;
+}) {
+  const [sec, setSec] = useState(initial);
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title={title}
+      footer={
+        <Button
+          block
+          onClick={() => {
+            onSave(sec);
+            onClose();
+          }}
+        >
+          Save {formatClock(sec)}
+        </Button>
+      }
+    >
+      <DurationPicker label={title} value={sec} min={min} onChange={setSec} />
+    </Sheet>
   );
 }
 

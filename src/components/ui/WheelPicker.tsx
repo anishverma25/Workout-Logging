@@ -16,6 +16,7 @@ export function WheelPicker({
   onChange,
   unit,
   valueText,
+  format = String,
   className,
 }: {
   label: string;
@@ -25,6 +26,8 @@ export function WheelPicker({
   /** Shown fixed beside the selected row, for example "min". */
   unit?: string;
   valueText?: (value: number) => string;
+  /** How each number is drawn on the wheel, for example two-digit seconds. */
+  format?: (value: number) => string;
   className?: string;
 }) {
   const list = useRef<HTMLDivElement>(null);
@@ -138,7 +141,7 @@ export function WheelPicker({
               )}
               style={{ height: ITEM }}
             >
-              {v}
+              {format(v)}
             </div>
           );
         })}

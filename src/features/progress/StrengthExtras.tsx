@@ -9,6 +9,15 @@ import { formatDayMonth } from '@/lib/dates';
 import { pluralize } from '@/lib/format';
 import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { ProLock } from '../pro/ProLock';
+import { EvidenceLink } from '../science/EvidenceLink';
+
+/** Which section of the science page explains each block. */
+const BLOCK_SCIENCE: Record<string, string> = {
+  levels: 'levels',
+  rates: 'plateaus',
+  plateaus: 'plateaus',
+  balance: 'load',
+};
 
 function Block({
   id,
@@ -21,14 +30,18 @@ function Block({
   detail?: string;
   children: ReactNode;
 }) {
+  const science = BLOCK_SCIENCE[id];
   return (
     <section aria-labelledby={`sec-${id}`} className="mt-9">
-      <h2
-        id={`sec-${id}`}
-        className="font-display text-[1.3rem] font-bold leading-tight tracking-tight"
-      >
-        {title}
-      </h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2
+          id={`sec-${id}`}
+          className="font-display text-[1.3rem] font-bold leading-tight tracking-tight"
+        >
+          {title}
+        </h2>
+        {science ? <EvidenceLink topic={science} about={title.toLowerCase()} /> : null}
+      </div>
       {detail ? (
         <p className="mb-3 mt-0.5 text-sm text-faint">{detail}</p>
       ) : (

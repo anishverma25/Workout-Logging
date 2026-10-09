@@ -24,7 +24,11 @@ import { usePreferences, useTrainingData } from '@/data/hooks';
 import { recommendProgram, personalizeTemplate } from '@/data/library/programs';
 import { addBodyWeight } from '@/data/repositories/bodyweight';
 import { ProfileError, saveProfile } from '@/data/repositories/profile';
-import { createRoutineFromTemplate, setActiveRoutine } from '@/data/repositories/routines';
+import {
+  createBlankRoutine,
+  createRoutineFromTemplate,
+  setActiveRoutine,
+} from '@/data/repositories/routines';
 import { energyPlan } from '@/domain/analytics/body';
 import { EXPERIENCE_LABEL, GOAL_DETAIL, GOAL_LABEL } from '@/domain/models/labels';
 import type {
@@ -196,12 +200,15 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
   const goal = draft.goal ?? 'strength_hypertrophy';
   const experience = draft.experience ?? 'beginner';
 
+  // Only beginners get a recommended routine. Intermediate and advanced lifters usually have a
+  // split they trust, so they are offered a blank routine to enter it instead.
+  const guided = experience === 'beginner';
   const recommendation = useMemo(
     () =>
-      draft.trainingDays
+      guided && draft.trainingDays
         ? recommendProgram({ trainingDays: draft.trainingDays, experience, goal })
         : null,
-    [draft.trainingDays, experience, goal],
+    [guided, draft.trainingDays, experience, goal],
   );
   const [chosen, setChosen] = useState<string | null>(null);
   const templateKey = chosen ?? recommendation?.template.key ?? null;
@@ -225,7 +232,7 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
     setIndex((i) => Math.min(Math.max(i + delta, 0), STEPS.length - 1));
   };
 
-  async function finish(createRoutine: boolean) {
+  async function finish(createRoutine: boolean | 'blank') {
     setBusy(true);
     setError(null);
     try {
@@ -248,6 +255,13 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
           date: toDateKey(new Date()),
           note: null,
         });
+      }
+      if (createRoutine === 'blank') {
+        const routine = await createBlankRoutine(db, draft.trainingDays ?? 3);
+        await setActiveRoutine(db, routine.id);
+        toast('Add your exercises to each day');
+        navigate(`/routines/${routine.id}`, { replace: true });
+        return;
       }
       if (createRoutine && templateKey) {
         const routine = await createRoutineFromTemplate(db, templateKey, undefined, {
@@ -523,7 +537,22 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
           ) : null}
 
           <div className="mt-auto flex flex-col gap-2 pt-8">
-            {step === 'plan' ? (
+            {step === 'plan' && !guided ? (
+              <>
+                <Button size="lg" block disabled={busy} onClick={() => void finish('blank')}>
+                  {busy ? 'Saving...' : 'Build my routine'}
+                </Button>
+                <Button
+                  size="lg"
+                  block
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => void finish(false)}
+                >
+                  Save, I will set it up later
+                </Button>
+              </>
+            ) : step === 'plan' ? (
               <>
                 {templateKey ? (
                   <Button size="lg" block disabled={busy} onClick={() => void finish(true)}>
@@ -751,7 +780,7 @@ function PlanSummary({
           />
           <Stat
             label="Protein"
-            value={`${energy.proteinG[0]}–${energy.proteinG[1]}`}
+            value={`${energy.proteinG[0].toFixed(1)}–${energy.proteinG[1].toFixed(1)}`}
             unit="g"
             detail="A day, spread over meals"
           />
@@ -763,7 +792,21 @@ function PlanSummary({
         </p>
       )}
 
-      {recommendation ? (
+      {experience !== 'beginner' ? (
+        <div className="mt-6 rounded-[1.1rem] bg-surface p-5">
+          <h2 className="font-display text-[1.2rem] font-semibold leading-tight">
+            Bring your own split
+          </h2>
+          <p className="mt-1.5 text-muted">
+            At an {EXPERIENCE_LABEL[experience].toLowerCase()} level you most likely train to a
+            routine that already works for you, so we will not swap it for ours. Set it up once, day
+            by day, and every session after that opens with last time&rsquo;s numbers ready.
+          </p>
+          <p className="mt-3 text-sm text-faint">
+            Prefer a starting point? Every template is still under Routines.
+          </p>
+        </div>
+      ) : recommendation ? (
         <div className="mt-6">
           <h2 className="mb-2.5 text-sm font-medium text-muted">Recommended routine</h2>
           <div role="radiogroup" aria-label="Routine" className="flex flex-col gap-2">
