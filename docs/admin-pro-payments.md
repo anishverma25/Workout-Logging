@@ -1,6 +1,6 @@
 # Pro payments: administrator guide
 
-Until automatic billing (Razorpay) is built, Pro is only granted by hand. There is no admin screen, admin flag,
+Pro is bought through Razorpay (`docs/razorpay-setup.md`) and can also be granted by hand. There is no admin screen, admin flag,
 unlock code or shared password in the app. All of this happens in the Supabase dashboard
 (SQL editor), which runs with the database owner's rights. Never paste these queries into the
 app or share the service role key.
@@ -11,9 +11,8 @@ The app no longer shows any founding member or early access wording. While the s
 below is still open, every signed-in account simply sees "Pro is active" with no clock. That is
 a single server setting, so nothing on a phone can turn it on.
 
-Payments: the app takes none at the moment. The manual UPI flow was removed from the app;
-automatic billing (Razorpay subscriptions, monthly, 3 months and yearly) comes after the UI
-redesign. Until then, the grant query below gives Pro by hand.
+Payments are Razorpay subscriptions (monthly, 3 months, yearly); see
+`docs/razorpay-setup.md`. The grant query below still gives Pro by hand when needed.
 
 End early access in the SQL editor when you are ready for the trial rules to apply:
 

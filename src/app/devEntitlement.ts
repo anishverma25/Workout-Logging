@@ -64,11 +64,21 @@ export function devSnapshot(state: DevEntitlementState, now: Date): Subscription
     server_now: now,
     early_access: false,
     founding_member: false,
+    billing_plan: null,
+    billing_status: null,
+    cancel_at_period_end: false,
   };
   if (state === 'founding') return { ...base, early_access: true, founding_member: true };
   if (state === 'trial') return base;
   if (state === 'trial_expired') return { ...base, status: 'expired' };
   if (state === 'pro')
-    return { ...base, status: 'active', pro_started_at: h(-48), pro_expires_at: h(24 * 28) };
+    return {
+      ...base,
+      status: 'active',
+      pro_started_at: h(-48),
+      pro_expires_at: h(24 * 28),
+      billing_plan: 'monthly',
+      billing_status: 'active',
+    };
   return { ...base, status: 'expired', pro_started_at: h(-24 * 40), pro_expires_at: h(-24 * 10) };
 }

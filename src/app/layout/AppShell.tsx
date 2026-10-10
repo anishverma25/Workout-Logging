@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { haptic } from '@/lib/haptics';
 import { useDemoStatus } from '@/data/hooks';
 import { APP_NAME, PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '../navigation';
 import { BrandMark } from './BrandMark';
@@ -144,6 +145,9 @@ function BottomNav() {
               <NavLink
                 to={item.to}
                 end={item.to === '/'}
+                onClick={() => {
+                  if (!active) haptic('light');
+                }}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'pressable type-caption flex flex-1 flex-col items-center justify-center gap-0.5',

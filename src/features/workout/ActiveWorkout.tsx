@@ -12,6 +12,7 @@ import {
   TextLink,
 } from '@/components/kit';
 import { KeyboardToolbar } from './KeyboardToolbar';
+import { haptic } from '@/lib/haptics';
 import { TextArea, TextField } from '@/components/ui/Fields';
 import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { EmptyState } from '@/components/ui/States';
@@ -180,6 +181,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
     try {
       if (effort !== null) await updateWorkoutFeel(db, workout.id, { sessionRpe: effort });
       await finishWorkout(db, workout.id, { keepUnconfirmed });
+      haptic('success');
       await restActions.clear();
       navigate(`/workouts/${workout.id}/summary`, { replace: true });
     } catch (err) {

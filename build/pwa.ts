@@ -19,12 +19,14 @@ export function securityHeaders(supabaseUrl: string | undefined): Record<string,
   }
   const csp = [
     "default-src 'self'",
-    "script-src 'self'",
+    // Razorpay Checkout for Pro plans: its script, its payment window and its API.
+    "script-src 'self' https://checkout.razorpay.com",
     // React sets inline style attributes (chart sizes, progress bars).
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: https://cdn.razorpay.com",
+    'frame-src https://api.razorpay.com https://checkout.razorpay.com',
     "font-src 'self'",
-    `connect-src 'self'${api}`,
+    `connect-src 'self'${api} https://api.razorpay.com https://lumberjack.razorpay.com`,
     "manifest-src 'self'",
     "worker-src 'self'",
     "frame-ancestors 'none'",
@@ -36,9 +38,11 @@ export function securityHeaders(supabaseUrl: string | undefined): Record<string,
     'Content-Security-Policy': csp,
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+    'Permissions-Policy':
+      'camera=(), microphone=(), geolocation=(), usb=(), payment=(self "https://api.razorpay.com")',
     'X-Frame-Options': 'DENY',
-    'Cross-Origin-Opener-Policy': 'same-origin',
+    // Razorpay opens bank and wallet pages in a popup, which same-origin would cut off.
+    'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
   };
 }
 
@@ -71,7 +75,7 @@ ${all}
  * Bumped by hand at the end of every UI redesign part (UI rules 3.1), so installed apps always
  * fetch a fresh shell even when only public files changed. Part of the cache name and hash.
  */
-export const CACHE_EPOCH = 'ui-8';
+export const CACHE_EPOCH = 'ui-9';
 
 const TEMPLATE = fileURLToPath(new URL('./sw-template.js', import.meta.url));
 

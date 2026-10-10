@@ -135,10 +135,11 @@ table, against real Postgres (PGlite) running the migrations.
   and recaps. Logging, routines (including personalised ones), history, records, body weight,
   measurements, calories and protein, 7 and 30 day progress, insights, gym tools and sync stay
   free forever. History is never locked.
-- Payments: the app takes none yet. The Pro page announces monthly, 3-month and yearly plans,
-  which will open with automatic billing (Razorpay, planned after the UI redesign). The old
-  manual UPI flow was removed from the app; its server RPC stays in the migrations, unused.
-- Until then, Pro can be granted by an administrator in the Supabase SQL editor: see
+- Payments: Razorpay subscriptions (monthly, 3 months, yearly). Prices live in the server's
+  `billing_plans` table; the `billing` Edge Function (`supabase/functions`) creates
+  subscriptions, verifies Checkout and webhook signatures and turns Pro on. Setup:
+  `docs/razorpay-setup.md`.
+- Pro can also be granted by hand by an administrator in the Supabase SQL editor: see
   `docs/admin-pro-payments.md`.
 - Development builds have a Settings > Developer menu to preview trial and Pro states. It is
   removed from production builds, and `scripts/verify-build.mjs` fails the build if it is not.

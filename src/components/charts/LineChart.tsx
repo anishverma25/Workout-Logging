@@ -1,4 +1,5 @@
 import { useId, useMemo, useState } from 'react';
+import { firstPlay } from './motion';
 import { ChartTable, Legend, Tooltip } from './ChartParts';
 import { useWidth } from './useWidth';
 import { linearScale, nearestIndex, niceDomain, spacedIndices } from './scale';
@@ -16,6 +17,8 @@ export interface LineSeries {
   points: LinePoint[];
   /** line: connected; dots: raw measurements; both: line with markers. */
   style?: 'line' | 'dots' | 'both';
+  /** Lime area under the line, 18% to 0%. On by default for the main (--chart-1) line. */
+  area?: boolean;
 }
 
 interface Props {
@@ -54,6 +57,8 @@ export function LineChart({
   const [ref, width] = useWidth<HTMLDivElement>();
   const [active, setActive] = useState<number | null>(null);
   const titleId = useId();
+  const gradientId = useId();
+  const [draw] = useState(() => firstPlay(`line:${label}`));
 
   const model = useMemo(() => {
     const all = series.flatMap((s) => s.points);
@@ -63,11 +68,11 @@ export function LineChart({
     const { domain, ticks } = niceDomain(
       Math.min(...ys),
       Math.max(...ys),
-      4,
+      3,
       zeroBased,
       ys.every((y) => Number.isInteger(y)),
     );
-    const left = Math.max(...ticks.map((t) => formatY(t).length)) * 7 + 12;
+    const left = Math.max(...ticks.map((t) => formatY(t).length)) * 7.5 + 12;
     return { xs, domain, ticks, left };
   }, [series, formatY, zeroBased]);
 
@@ -105,7 +110,7 @@ export function LineChart({
             role="img"
             aria-labelledby={titleId}
             tabIndex={0}
-            className="touch-pan-y overflow-visible rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent-text"
+            className="touch-pan-y overflow-visible rounded-tile"
             onPointerMove={(e) => {
               const box = e.currentTarget.getBoundingClientRect();
               setActive(nearestIndex(xPositions, e.clientX - box.left));
@@ -127,6 +132,12 @@ export function LineChart({
             }}
           >
             <title id={titleId}>{label}</title>
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--lime)" stopOpacity={0.18} />
+                <stop offset="100%" stopColor="var(--lime)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
             {ticks.map((t) => (
               <g key={t}>
                 <line
@@ -142,7 +153,7 @@ export function LineChart({
                   y={yScale(t)}
                   dy="0.32em"
                   textAnchor="end"
-                  className="tabular fill-faint text-[11px]"
+                  className="type-meta tabular fill-text-2"
                 >
                   {formatY(t)}
                 </text>
@@ -154,7 +165,7 @@ export function LineChart({
                 x={xPositions[i]}
                 y={height - 6}
                 textAnchor={i === 0 ? 'start' : i === xs.length - 1 ? 'end' : 'middle'}
-                className="fill-faint text-[11px]"
+                className="type-meta tabular fill-text-2"
               >
                 {formatX(xs[i]!)}
               </text>
@@ -166,7 +177,7 @@ export function LineChart({
                 x2={xScale(activeX)}
                 y1={M.top}
                 y2={M.top + plotH}
-                stroke="var(--line-strong)"
+                stroke="var(--border-strong)"
                 strokeWidth={1}
               />
             ) : null}
@@ -174,16 +185,38 @@ export function LineChart({
             {series.map((s) => {
               const style = s.style ?? 'line';
               const showDots = style !== 'line' || s.points.length <= 12;
+              const area = (s.area ?? s.color === 'var(--chart-1)') && style !== 'dots';
+              const lastPoint = s.points[s.points.length - 1];
               return (
                 <g key={s.id}>
+                  {area && s.points.length > 1 ? (
+                    <path
+                      d={`${pathFor(s.points)}L${xScale(lastPoint!.x).toFixed(1)},${M.top + plotH}L${xScale(s.points[0]!.x).toFixed(1)},${M.top + plotH}Z`}
+                      fill={`url(#${gradientId})`}
+                      className={draw ? 'chart-fade' : undefined}
+                    />
+                  ) : null}
                   {style !== 'dots' && s.points.length > 1 ? (
                     <path
                       d={pathFor(s.points)}
+                      pathLength={1}
                       fill="none"
                       stroke={s.color}
                       strokeWidth={2}
                       strokeLinejoin="round"
                       strokeLinecap="round"
+                      className={draw ? 'chart-draw' : undefined}
+                    />
+                  ) : null}
+                  {area && lastPoint && !showDots ? (
+                    <circle
+                      cx={xScale(lastPoint.x)}
+                      cy={yScale(lastPoint.y)}
+                      r={4}
+                      fill={s.color}
+                      stroke="var(--surface)"
+                      strokeWidth={3}
+                      className={draw ? 'chart-fade' : undefined}
                     />
                   ) : null}
                   {showDots || s.points.length === 1
@@ -219,7 +252,7 @@ export function LineChart({
                 x={Math.min(xScale(last.x), left + plotW)}
                 y={yScale(last.y) - 12}
                 textAnchor="end"
-                className="tabular fill-text text-[12px] font-semibold"
+                className="type-meta tabular fill-text-1 font-semibold"
               >
                 {formatY(last.y)}
               </text>

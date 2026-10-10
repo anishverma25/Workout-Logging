@@ -75,8 +75,11 @@ Read README.md for setup, architecture and calculation rules.
   auth (sign up, sign in, sign out, reset), per-account local databases, guest data import.
 - Phase 7: 168-hour server trial, `subscriptions` table with RPCs, central entitlement, Pro
   gates on Progress and the logger, admin guide in `docs/admin-pro-payments.md`,
-  development-only access states. Manual UPI was removed from the app (October 2026): the Pro page
-  announces monthly, 3-month and yearly plans, and Razorpay subscriptions come after the redesign.
+  development-only access states. Manual UPI was removed (October 2026).
+- Billing (migration 0008): Razorpay subscriptions. Plans and prices in `billing_plans`; logic in
+  `supabase/functions/_shared/billing.ts`, shared by the `billing` Edge Function and the fake
+  Supabase; only `billing_*` functions (service role) grant Pro, after a signature check. App side
+  `src/app/billing.ts` and `features/pro/Plans.tsx`. Setup and going live: `docs/razorpay-setup.md`.
 - Phase 8: PWA (manifest, icons, service worker precaching the build, update prompt, install),
   offline notice, route code splitting, security headers and CSP, Cloudflare Pages and Supabase
   deployment guide (`docs/deployment.md`), CI with e2e.

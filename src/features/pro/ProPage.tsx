@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import { useEntitlement, type EntitlementView } from '@/app/entitlement';
+import { formatRupees, perMonth, usePlans, type BillingPlan } from '@/app/billing';
+import { PlansSection } from './Plans';
 import { ButtonLink } from '@/components/ui/Button';
 import {
   Badge,
@@ -22,6 +24,7 @@ import {
   InlineNotice,
   ProgressBar,
   PushedHeader,
+  Skeleton,
   TextLink,
 } from '@/components/kit';
 import { buttonClasses } from '@/components/ui/buttonStyles';
@@ -55,19 +58,22 @@ const endedOn = (d: Date) => {
 export function ProPage() {
   const account = useAccount();
   const entitlement = useEntitlement();
+  const plans = usePlans();
   const signedIn = account.status === 'signedIn';
   const unavailable = account.status === 'unavailable';
   // A trial is still a sale: the hero keeps its offer until Pro is paid for.
   const hasPro =
     signedIn && entitlement.pro && !entitlement.loading && entitlement.plan !== 'trial';
-  const showPlans =
-    signedIn && !entitlement.loading && (!entitlement.pro || entitlement.plan === 'trial');
-
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-8">
       <div>
         <PushedHeader backLabel="More" backTo="/more" />
         <Hero
+          fromMonthly={
+            plans && plans.length > 0
+              ? formatRupees(Math.round(Math.min(...plans.map(perMonth)) * 100) / 100)
+              : null
+          }
           hasPro={hasPro}
           signedIn={signedIn}
           unavailable={unavailable}
@@ -88,13 +94,9 @@ export function ProPage() {
       <Compare />
       <Evidence />
 
-      {showPlans ? (
-        <PlansSoon trial={entitlement.plan === 'trial'} />
-      ) : !signedIn && !unavailable ? (
-        <GuestOffer />
-      ) : null}
+      {!unavailable ? <PlansSection entitlement={entitlement} /> : null}
 
-      <Faq />
+      <Faq plans={plans} />
     </div>
   );
 }
@@ -103,11 +105,13 @@ export function ProPage() {
 // Hero
 
 function Hero({
+  fromMonthly,
   hasPro,
   signedIn,
   unavailable,
   entitlement: e,
 }: {
+  fromMonthly: string | null;
   hasPro: boolean;
   signedIn: boolean;
   unavailable: boolean;
@@ -137,7 +141,8 @@ function Hero({
             Try Pro free for {TRIAL_DAYS} days
           </ButtonLink>
           <p className="type-meta text-text-2">
-            Free account. No payment details. The trial ends on its own.{' '}
+            Free account. No payment details. The trial ends on its own.
+            {fromMonthly ? ` Plans from ${fromMonthly} a month after that.` : ''}{' '}
             <TextLink to="/sign-in?next=/pro" small className="align-baseline">
               Sign in
             </TextLink>
@@ -207,9 +212,9 @@ function InsightPreview() {
 function PlanCard({ entitlement: e }: { entitlement: EntitlementView }) {
   if (e.loading) {
     return (
-      <Card aria-busy>
-        <p className="type-body text-text-2">Checking your plan...</p>
-      </Card>
+      <div aria-busy aria-label="Checking your plan">
+        <Skeleton height="8.5rem" radius="panel" />
+      </div>
     );
   }
 
@@ -499,61 +504,11 @@ function Evidence() {
 // ---------------------------------------------------------------------------------------------
 // Getting Pro
 
-/** Plans named here open with automatic billing. No prices until they are real. */
-const PLANS = ['Monthly', '3 months', 'Yearly'];
-
-function GuestOffer() {
-  return (
-    <Card emphasis aria-labelledby="offer-title" id="get-pro">
-      <Badge tone="lime">{TRIAL_DAYS} days free</Badge>
-      <h2 id="offer-title" className="type-title mt-3 text-text-1">
-        Try every Pro feature free
-      </h2>
-      <p className="type-meta mt-1 text-text-2">
-        Create a free account and Pro is on for your first {TRIAL_DAYS} days. No payment details,
-        and the trial simply ends on its own.
-      </p>
-      <ButtonLink to="/sign-up?next=/pro" size="lg" block className="mt-5">
-        Start {TRIAL_DAYS} days free
-      </ButtonLink>
-    </Card>
-  );
-}
-
-/** Where buying Pro will live. Plans open soon; nothing here takes a payment yet. */
-function PlansSoon({ trial }: { trial: boolean }) {
-  return (
-    <Card emphasis aria-labelledby="plans-title" id="get-pro" as="section">
-      <h2 id="plans-title" className="type-title text-text-1">
-        Pro plans
-      </h2>
-      <p className="type-meta mt-1 text-text-2">
-        Pro opens soon as a monthly, 3-month or yearly plan. This page will show the prices and let
-        you subscribe in a few taps.
-      </p>
-      <ul className="mt-4 grid grid-cols-3 gap-2">
-        {PLANS.map((plan) => (
-          <li
-            key={plan}
-            className="type-meta flex h-12 items-center justify-center rounded-field bg-surface-2 font-semibold text-text-1"
-          >
-            {plan}
-          </li>
-        ))}
-      </ul>
-      <p className="type-meta mt-4 text-text-2">
-        {trial
-          ? 'Until then, your trial keeps every Pro feature on, and everything you log stays yours.'
-          : 'Until then, every free feature keeps working and everything you log stays yours.'}
-      </p>
-    </Card>
-  );
-}
-
 // ---------------------------------------------------------------------------------------------
 // Questions
 
-function Faq() {
+function Faq({ plans }: { plans: BillingPlan[] | null }) {
+  const priced = (plans ?? []).map((p) => `${p.label} ${formatRupees(p.priceInr)}`).join(', ');
   const items: [string, string][] = [
     [
       'What happens when the trial or Pro ends?',
@@ -561,19 +516,25 @@ function Faq() {
     ],
     [
       'Do I need to enter payment details for the trial?',
-      `No. Create a free account and every Pro feature is on for ${TRIAL_DAYS} days. When the trial ends, nothing is charged.`,
+      `No. Create a free account and every Pro feature is on for ${TRIAL_DAYS} days. When the trial ends, nothing is charged unless you chose a plan.`,
     ],
     [
-      'Which plans will there be?',
-      'Monthly, 3 months and yearly. The prices appear on this page when the plans open.',
+      'Which plans are there?',
+      priced
+        ? `${priced}. Longer plans cost less per month. Every plan includes every Pro feature.`
+        : 'Monthly, 3 months and yearly. Every plan includes every Pro feature.',
+    ],
+    [
+      'Does it renew? Can I cancel?',
+      'Plans renew automatically so Pro never stops mid-training. Cancel any time on this page: you are not charged again, and Pro stays on until the end of the period you paid for.',
+    ],
+    [
+      'How do I pay, and is it safe?',
+      'Through Razorpay, a regulated Indian payment gateway: UPI autopay, cards and more. Overload never sees your card number or UPI PIN.',
     ],
     [
       'Can I use Pro on more than one device?',
       'Yes. Pro belongs to your account, and your workouts sync to every device you sign in on.',
-    ],
-    [
-      'Where do the numbers come from?',
-      'From your own sets and published formulas, worked out on your device. Each one links to the method and research behind it.',
     ],
   ];
   return (

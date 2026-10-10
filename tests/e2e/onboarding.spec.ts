@@ -77,7 +77,12 @@ test('a new account sees the tour, then setup builds a personalised plan', async
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Meera');
   await expect(page.getByText(/Arjun/)).toHaveCount(0);
-  await expect(page.getByText('Today in Push Pull Legs Upper Lower')).toBeVisible();
+  // Today is a planned day of the new routine, or its rest day (the plan has no Sunday session).
+  await expect(
+    page
+      .getByText('Today in Push Pull Legs Upper Lower')
+      .or(page.getByRole('heading', { name: 'Rest day', level: 2 })),
+  ).toBeVisible();
   // Days before the routine existed are not counted as missed.
   await expect(page.getByRole('listitem').filter({ hasText: 'missed' })).toHaveCount(0);
 });

@@ -30,6 +30,12 @@ export const SubscriptionSnapshot = z.object({
   early_access: z.boolean().optional().default(false),
   /** Joined during early access. Stays true after it ends. */
   founding_member: z.boolean().optional().default(false),
+  /** The Razorpay plan the account is on (monthly, quarterly, yearly), if any. */
+  billing_plan: z.string().nullable().optional().default(null),
+  /** Razorpay's state of that subscription: active, pending, halted, cancelled... */
+  billing_status: z.string().nullable().optional().default(null),
+  /** Renewal is off: Pro runs to the end of the paid period, then stops. */
+  cancel_at_period_end: z.boolean().optional().default(false),
 });
 export type SubscriptionSnapshot = z.infer<typeof SubscriptionSnapshot>;
 
@@ -51,6 +57,12 @@ export interface Entitlement {
   remainingMs: number | null;
   /** Joined during early access. */
   foundingMember: boolean;
+  /** The paid plan, when Pro comes from a Razorpay subscription. */
+  billingPlan: string | null;
+  /** The subscription renews by itself at the end of the period. */
+  renews: boolean;
+  /** Razorpay could not take the last renewal (pending or halted). */
+  paymentIssue: boolean;
 }
 
 const GUEST: Entitlement = {
@@ -64,6 +76,9 @@ const GUEST: Entitlement = {
   paymentReference: null,
   remainingMs: null,
   foundingMember: false,
+  billingPlan: null,
+  renews: false,
+  paymentIssue: false,
 };
 
 /** `now` must already be on the server's clock (see `serverNow`). */
@@ -91,6 +106,12 @@ export function resolveEntitlement(sub: SubscriptionSnapshot | null, now: Date):
     paymentReference: sub.payment_reference,
     remainingMs: endsAt ? Math.max(0, endsAt.getTime() - t) : null,
     foundingMember: sub.founding_member,
+    billingPlan: sub.billing_plan,
+    renews:
+      !!sub.billing_plan &&
+      (sub.billing_status === 'active' || sub.billing_status === 'authenticated') &&
+      !sub.cancel_at_period_end,
+    paymentIssue: sub.billing_status === 'pending' || sub.billing_status === 'halted',
   };
 }
 

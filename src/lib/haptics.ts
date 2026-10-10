@@ -4,9 +4,9 @@
  * a finished workout and a new record.
  */
 const PATTERNS = {
-  light: 8,
+  light: 10,
   medium: 20,
-  success: [14, 70, 28],
+  success: [15, 40, 15],
 } as const;
 
 export type Haptic = keyof typeof PATTERNS;

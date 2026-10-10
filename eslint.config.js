@@ -25,4 +25,9 @@ export default tseslint.config(
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
+  {
+    // Supabase Edge Functions run on Deno.
+    files: ['supabase/functions/**/*.ts'],
+    languageOptions: { globals: { Deno: 'readonly' } },
+  },
 );

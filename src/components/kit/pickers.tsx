@@ -2,7 +2,6 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatSeconds } from '@/lib/format';
-import { haptic } from '@/lib/haptics';
 import { PrimaryButton, SecondaryButton, TextLink } from './actions';
 import { Stepper } from './inputs';
 import { Chip } from './selection';
@@ -108,7 +107,6 @@ export function RestPicker({
   const [typing, setTyping] = useState(false);
   const shown = clampTo(value, min, max);
   const set = (v: number) => {
-    haptic('light');
     onChange(clampTo(v, min, max));
   };
   return (
@@ -261,7 +259,6 @@ export function AnglePicker({
   const deg = value === null ? null : clampTo(Math.abs(value), 0, max);
   const signed = (d: number) => (kind === 'decline' ? -Math.abs(d) : Math.abs(d));
   const set = (d: number) => {
-    haptic('light');
     onChange(signed(clampTo(Math.round(d), 0, max)));
   };
   const kindLabel = kind === 'incline' ? 'Incline' : 'Decline';
@@ -340,7 +337,6 @@ export function RirPicker({
   onChange: (rir: number | null) => void;
 }) {
   const set = (v: number | null) => {
-    haptic('light');
     onChange(v);
   };
   return (

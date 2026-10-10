@@ -12,7 +12,7 @@ export interface LegendItem {
 export function Legend({ items, className }: { items: LegendItem[]; className?: string }) {
   if (items.length < 2) return null;
   return (
-    <ul className={cn('flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted', className)}>
+    <ul className={cn('type-meta flex flex-wrap gap-x-4 gap-y-1 text-text-2', className)}>
       {items.map((item) => (
         <li key={item.label} className="flex items-center gap-1.5">
           <svg width="16" height="10" aria-hidden className="shrink-0">
@@ -57,9 +57,9 @@ export function ChartTable({
         <ChevronRight className="size-4 text-text-2 group-open:rotate-90" aria-hidden />
       </summary>
       <div className="mt-2 max-h-72 overflow-auto rounded-xl border border-line">
-        <table className="w-full text-left text-sm">
+        <table className="type-meta tabular w-full text-left text-text-1">
           <caption className="sr-only">{caption}</caption>
-          <thead className="sticky top-0 bg-surface-2 text-xs text-faint">
+          <thead className="type-caption sticky top-0 bg-surface-2 text-text-2">
             <tr>
               {columns.map((c) => (
                 <th key={c} scope="col" className="px-3 py-2 font-medium">
@@ -72,7 +72,7 @@ export function ChartTable({
             {rows.map((r, i) => (
               <tr key={i}>
                 {r.map((cell, j) => (
-                  <td key={j} className={cn('px-3 py-1.5', j > 0 && 'text-muted')}>
+                  <td key={j} className={cn('px-3 py-1.5', j > 0 && 'text-text-2')}>
                     {cell}
                   </td>
                 ))}
@@ -106,7 +106,7 @@ export function Tooltip({
       className="pointer-events-none absolute z-10 w-40 rounded-field bg-surface-2 px-3 py-2"
       style={{ left, top: Math.max(0, y) }}
     >
-      <p className="text-xs text-faint">{title}</p>
+      <p className="type-meta text-text-2">{title}</p>
       {rows.map((r) => (
         <p key={r.label} className="mt-0.5 flex items-center gap-2">
           <svg width="12" height="8" aria-hidden className="shrink-0">
@@ -126,8 +126,8 @@ export function Tooltip({
               />
             )}
           </svg>
-          <span className="tabular font-semibold text-text">{r.value}</span>
-          <span className="truncate text-xs text-muted">{r.label}</span>
+          <span className="type-headline tabular text-text-1">{r.value}</span>
+          <span className="type-meta truncate text-text-2">{r.label}</span>
         </p>
       ))}
     </div>

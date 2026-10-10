@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { AlertCircle, Eye, EyeOff, Minus, Plus, Search, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { haptic } from '@/lib/haptics';
 import { isValidDraft, parseDraft, toDraft } from '@/lib/numberInput';
 import { stepValue } from './stepValue';
 
@@ -350,6 +351,7 @@ export function Stepper({
     const next = stepValue(valueRef.current, delta, min, max, step);
     if (next === valueRef.current) return false;
     valueRef.current = next;
+    haptic('light');
     onChange(next);
     return true;
   };

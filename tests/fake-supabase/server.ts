@@ -15,6 +15,14 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { join } from 'node:path';
 import { PGlite, type Transaction } from '@electric-sql/pglite';
+import {
+  handleCancel,
+  handleSubscribe,
+  handleVerify,
+  handleWebhook,
+  hmacSha256Hex,
+  type BillingDeps,
+} from '../../supabase/functions/_shared/billing.ts';
 
 export const FAKE_SUPABASE_PORT = Number(process.env.FAKE_SUPABASE_PORT ?? 54329);
 export const JWT_SECRET = 'local-e2e-secret-not-used-anywhere-else';
@@ -335,6 +343,102 @@ async function handleRest(req: IncomingMessage, res: ServerResponse, path: strin
 }
 
 // ---------------------------------------------------------------------------------------------
+// Billing: the real Edge Function logic with a stand-in for the Razorpay API
+// ---------------------------------------------------------------------------------------------
+
+export const FAKE_RAZORPAY = {
+  keyId: 'rzp_test_e2e',
+  keySecret: 'e2e-key-secret',
+  webhookSecret: 'e2e-webhook-secret',
+};
+
+interface FakeRazorpaySub {
+  id: string;
+  status: string;
+  current_end: number | null;
+  notes: Record<string, string>;
+  plan_id: string;
+}
+const fakeSubs = new Map<string, FakeRazorpaySub>();
+const PLAN_MONTHS: Record<string, number> = { plan_e2eM: 1, plan_e2eQ: 3, plan_e2eY: 12 };
+
+const billingDeps: BillingDeps = {
+  config: FAKE_RAZORPAY,
+  async razorpay(method, path, body) {
+    if (method === 'POST' && path === '/subscriptions') {
+      const b = body as { plan_id: string; notes: Record<string, string> };
+      const sub = {
+        id: `sub_${randomBytes(6).toString('hex')}`,
+        status: 'created',
+        current_end: null,
+        notes: b.notes,
+        plan_id: b.plan_id,
+      };
+      fakeSubs.set(sub.id, sub);
+      return sub;
+    }
+    const cancel = /^\/subscriptions\/(\w+)\/cancel$/.exec(path);
+    if (cancel) return fakeSubs.get(cancel[1]!) ?? null;
+    const get = /^\/subscriptions\/(\w+)$/.exec(path);
+    if (get) {
+      // Checkout finished: the first charge went through for one period.
+      const sub = fakeSubs.get(get[1]!);
+      if (!sub) return null;
+      if (sub.status === 'created') {
+        const end = new Date();
+        end.setMonth(end.getMonth() + (PLAN_MONTHS[sub.plan_id] ?? 1));
+        sub.status = 'active';
+        sub.current_end = Math.floor(end.getTime() / 1000);
+      }
+      return sub;
+    }
+    return null;
+  },
+  async rpc(fn, args) {
+    const keys = Object.keys(args);
+    const sql = `select public.${fn}(${keys.map((k, i) => `${k} => $${i + 1}`).join(', ')}) as r`;
+    return pg.transaction(async (tx) => {
+      await tx.exec('set local role service_role');
+      const res = await tx.query<{ r: unknown }>(
+        sql,
+        keys.map((k) => args[k]),
+      );
+      return res.rows[0]?.r ?? null;
+    });
+  },
+};
+
+async function handleBilling(req: IncomingMessage, res: ServerResponse, route: string) {
+  if (route === 'webhook') {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    const raw = Buffer.concat(chunks).toString();
+    const sig = req.headers['x-razorpay-signature'];
+    const id = req.headers['x-razorpay-event-id'];
+    const r = await handleWebhook(
+      billingDeps,
+      raw,
+      typeof sig === 'string' ? sig : null,
+      typeof id === 'string' ? id : null,
+    );
+    return send(res, r.status, r.body);
+  }
+  const claims = bearerClaims(req);
+  const userId = claims?.role === 'authenticated' ? String(claims.sub) : null;
+  if (!userId) return send(res, 401, { error: 'Sign in first.' });
+  const body = await readJson(req);
+  const r =
+    route === 'subscribe'
+      ? await handleSubscribe(billingDeps, userId, body)
+      : route === 'verify'
+        ? await handleVerify(billingDeps, userId, body)
+        : route === 'cancel'
+          ? await handleCancel(billingDeps, userId)
+          : { status: 404, body: { error: 'Not found' } };
+  return send(res, r.status, r.body);
+}
+
+// ---------------------------------------------------------------------------------------------
 // HTTP plumbing
 // ---------------------------------------------------------------------------------------------
 
@@ -385,6 +489,28 @@ const server = createServer(async (req, res) => {
         open ? null : new Date().toISOString(),
       ]);
       return send(res, 200, { open });
+    }
+    // Test control, standing in for the administrator connecting Razorpay plans.
+    if (url.pathname === '/__test/billing-plans' && req.method === 'POST') {
+      const { connected } = (await readJson(req)) as { connected: boolean };
+      await pg.exec(
+        connected
+          ? `update public.billing_plans set razorpay_plan_id = case id
+               when 'monthly' then 'plan_e2eM' when 'quarterly' then 'plan_e2eQ'
+               else 'plan_e2eY' end`
+          : 'update public.billing_plans set razorpay_plan_id = null',
+      );
+      return send(res, 200, { connected });
+    }
+    // Test control, standing in for Razorpay Checkout's signature on a finished payment.
+    if (url.pathname === '/__test/razorpay-sign' && req.method === 'POST') {
+      const { payment_id, subscription_id } = (await readJson(req)) as Record<string, string>;
+      return send(res, 200, {
+        signature: await hmacSha256Hex(FAKE_RAZORPAY.keySecret, `${payment_id}|${subscription_id}`),
+      });
+    }
+    if (url.pathname.startsWith('/functions/v1/billing/')) {
+      return await handleBilling(req, res, url.pathname.slice('/functions/v1/billing/'.length));
     }
     if (url.pathname.startsWith('/auth/v1')) {
       return await handleAuth(req, res, url.pathname.slice('/auth/v1'.length), url);

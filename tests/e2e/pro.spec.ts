@@ -139,15 +139,17 @@ test.describe('after early access ends', () => {
     await expect(page.getByRole('heading', { name: /^Free trial:/ })).toBeVisible();
   });
 
-  test('plans are announced without prices or a payment form', async ({ page }) => {
+  test('before Razorpay plans are connected, prices show and nothing can be bought', async ({
+    page,
+  }) => {
     await signUp(page);
     const plans = page.getByRole('region', { name: 'Pro plans' });
-    await expect(plans).toContainText('Monthly');
-    await expect(plans).toContainText('3 months');
-    await expect(plans).toContainText('Yearly');
-    // No payment is taken on this page until automatic billing is set up.
+    await expect(plans.getByRole('radio', { name: /^Monthly/ })).toContainText('₹29');
+    await expect(plans.getByRole('radio', { name: /^3 months/ })).toContainText('₹69');
+    await expect(plans.getByRole('radio', { name: /^Yearly/ })).toContainText('₹249');
+    await expect(plans.getByRole('button', { name: 'Plans open soon' })).toBeDisabled();
+    // No payment details are ever typed into this page.
     await expect(page.getByRole('textbox')).toHaveCount(0);
-    await expect(page.getByText(/UPI|₹/)).toHaveCount(0);
   });
 
   test('development access states preview expired and Pro screens', async ({ page }) => {

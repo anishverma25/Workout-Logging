@@ -3,6 +3,7 @@ import { cn } from '@/lib/cn';
 import { ChartTable, Tooltip } from './ChartParts';
 import { useWidth } from './useWidth';
 import { linearScale, niceDomain, spacedIndices } from './scale';
+import { firstPlay } from './motion';
 
 export interface Bar {
   key: string;
@@ -32,7 +33,7 @@ interface Props {
 }
 
 const BAR_MAX = 24;
-const RADIUS = 4;
+const RADIUS = 6;
 
 /** Rectangle rounded only at the data end, square at the baseline. */
 function barPath(x: number, y: number, w: number, h: number, horizontal: boolean): string {
@@ -64,24 +65,26 @@ function Columns({
   const [ref, width] = useWidth<HTMLDivElement>();
   const [active, setActive] = useState<number | null>(null);
   const titleId = useId();
+  const [draw] = useState(() => firstPlay(`bars:${label}`));
   const { domain, ticks } = useMemo(
     () =>
       niceDomain(
         0,
         Math.max(0, ...bars.map((b) => b.value)),
-        4,
+        3,
         true,
         bars.every((b) => Number.isInteger(b.value)),
       ),
     [bars],
   );
-  const left = Math.max(...ticks.map((t) => formatValue(t).length)) * 7 + 12;
+  const left = Math.max(...ticks.map((t) => formatValue(t).length)) * 7.5 + 12;
   const top = 18;
   const bottom = 26;
   const plotW = Math.max(0, width - left - 6);
   const plotH = height - top - bottom;
   const band = bars.length ? plotW / bars.length : 0;
-  const barW = Math.min(BAR_MAX, Math.max(4, band - 2));
+  // 16px between bars where there is room, never more than 40% of the band.
+  const barW = Math.min(BAR_MAX, Math.max(4, band - Math.min(16, band * 0.4)));
   const y = linearScale(domain, [top + plotH, top], ticks);
   const labels = new Set(spacedIndices(bars.length, Math.max(2, Math.floor(plotW / 56))));
   const anyHighlight = bars.some((b) => b.highlight);
@@ -99,7 +102,7 @@ function Columns({
             role="img"
             aria-labelledby={titleId}
             tabIndex={0}
-            className="touch-pan-y overflow-visible rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent-text"
+            className="touch-pan-y overflow-visible rounded-tile"
             onPointerLeave={(e) => e.pointerType === 'mouse' && setActive(null)}
             onBlur={() => setActive(null)}
             onKeyDown={(e) => {
@@ -121,7 +124,7 @@ function Columns({
                   y={y(t)}
                   dy="0.32em"
                   textAnchor="end"
-                  className="tabular fill-faint text-[11px]"
+                  className="type-meta tabular fill-text-2"
                 >
                   {formatValue(t)}
                 </text>
@@ -130,7 +133,8 @@ function Columns({
             {bars.map((b, i) => {
               const cx = left + band * i + band / 2;
               const h = y(0) - y(b.value);
-              const fill = anyHighlight && !b.highlight ? (baseColor ?? color) : color;
+              const fill =
+                anyHighlight && !b.highlight ? (baseColor ?? 'var(--border-strong)') : color;
               return (
                 <g key={b.key}>
                   <rect
@@ -146,14 +150,15 @@ function Columns({
                     d={barPath(cx - barW / 2, y(b.value), barW, h, false)}
                     fill={fill}
                     opacity={active !== null && active !== i ? 0.55 : 1}
-                    className="pointer-events-none transition-opacity"
+                    className={cn('pointer-events-none transition-opacity', draw && 'chart-grow')}
+                    style={draw ? { animationDelay: `${Math.min(i, 12) * 30}ms` } : undefined}
                   />
                   {i === labelled && b.value > 0 ? (
                     <text
                       x={cx}
                       y={y(b.value) - 6}
                       textAnchor="middle"
-                      className="tabular fill-text text-[11px] font-semibold"
+                      className="type-meta tabular fill-text-1 font-semibold"
                     >
                       {formatValue(b.value)}
                     </text>
@@ -164,8 +169,8 @@ function Columns({
                       y={height - 6}
                       textAnchor="middle"
                       className={cn(
-                        'text-[11px]',
-                        b.highlight ? 'fill-text font-semibold' : 'fill-faint',
+                        'type-meta tabular',
+                        b.highlight ? 'fill-text-1 font-semibold' : 'fill-text-2',
                       )}
                     >
                       {b.label}

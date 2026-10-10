@@ -105,7 +105,12 @@
 
 /* Weekly rings draw in once, with a soft spring at the end. */
 .ring-arc {
-  transition: stroke-dashoffset 1.1s cubic-bezier(0.25, 1, 0.4, 1);
+  transition: stroke-dashoffset 600ms var(--ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ring-arc {
+    transition: none;
+  }
 }
 
 /* Grouped list hairlines start after the row's icon, as on iOS. */
@@ -336,7 +341,38 @@
   }
 }
 .page-in {
-  animation: page-in 0.16s ease-out;
+  animation: page-in 150ms var(--ease-standard);
+}
+
+/* Lists: the first six rows fade in 30 ms apart; the rest are simply there. */
+@keyframes list-in {
+  from {
+    opacity: 0;
+  }
+}
+.list-stagger > :nth-child(-n + 6) {
+  animation: list-in 250ms var(--ease-standard) both;
+}
+.list-stagger > :nth-child(2) {
+  animation-delay: 30ms;
+}
+.list-stagger > :nth-child(3) {
+  animation-delay: 60ms;
+}
+.list-stagger > :nth-child(4) {
+  animation-delay: 90ms;
+}
+.list-stagger > :nth-child(5) {
+  animation-delay: 120ms;
+}
+.list-stagger > :nth-child(6) {
+  animation-delay: 150ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-in,
+  .list-stagger > * {
+    animation: none;
+  }
 }
 
 /* Summary sections arrive one after another. */
@@ -492,5 +528,45 @@
   .rest-bar {
     animation: none;
     transition: none;
+  }
+}
+
+/* Charts (UI Part 8): draw once per session over 600 ms, then sit still. */
+@keyframes chart-draw {
+  from {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+.chart-draw {
+  animation: chart-draw 600ms var(--ease-standard) both;
+}
+@keyframes chart-fade {
+  from {
+    opacity: 0;
+  }
+}
+.chart-fade {
+  animation: chart-fade 600ms var(--ease-standard) both;
+}
+@keyframes chart-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+.chart-grow {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: chart-grow 600ms var(--ease-standard) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart-draw,
+  .chart-fade,
+  .chart-grow {
+    animation: none;
   }
 }

@@ -2,6 +2,7 @@ import { memo, type ElementType, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { CountUp } from './CountUp';
 
 interface StatTileProps {
   label: string;
@@ -24,7 +25,9 @@ export function StatTile({ label, value, unit, caption, className }: StatTilePro
         <p className="type-headline mt-1.5 text-text-2">None yet</p>
       ) : (
         <p className="mt-1 flex items-baseline gap-1">
-          <span className="type-stat text-text-1">{value}</span>
+          <span className="type-stat text-text-1">
+            {typeof value === 'string' ? <CountUp value={value} playKey={label} /> : value}
+          </span>
           {unit ? <span className="type-meta text-text-2">{unit}</span> : null}
         </p>
       )}
@@ -152,7 +155,7 @@ export function ListGroup({
   return (
     <section className={className}>
       {label ? <h2 className="type-label mb-2 px-1 text-text-2">{label}</h2> : null}
-      <As className="divide-y-[0.5px] divide-divider rounded-panel border border-border bg-surface px-4 [&>li]:list-none">
+      <As className="list-stagger divide-y-[0.5px] divide-divider rounded-panel border border-border bg-surface px-4 [&>li]:list-none">
         {children}
       </As>
     </section>

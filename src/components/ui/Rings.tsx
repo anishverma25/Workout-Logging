@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/cn';
+import { firstPlay } from '@/components/charts/motion';
+import { CountUp } from '@/components/kit/CountUp';
 
 export interface RingSpec {
   /** 1, 2 or 3: outer to inner, drawn lime at 100%, 60% and 30%. */
@@ -26,11 +28,14 @@ export function Rings({
   size?: number;
   className?: string;
 }) {
-  const [drawn, setDrawn] = useState(false);
+  // Fill from zero once per session (UI Part 8); later visits show the rings at rest.
+  const [animate] = useState(() => firstPlay(`rings:${rings.map((r) => r.label).join(',')}`));
+  const [drawn, setDrawn] = useState(!animate);
   useEffect(() => {
+    if (drawn) return;
     const frame = requestAnimationFrame(() => setDrawn(true));
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [drawn]);
 
   return (
     <svg
@@ -100,7 +105,9 @@ export function RingLegend({
             {r.label}
           </dt>
           <dd className="tabular flex items-baseline">
-            <span className="type-stat text-text-1">{format(r.value)}</span>
+            <span className="type-stat text-text-1">
+              <CountUp value={format(r.value)} playKey={`ring:${r.label}`} />
+            </span>
             <span className="type-meta text-text-2">
               /{format(r.target)}
               {r.unit ? <span className="ml-0.5">{r.unit}</span> : null}

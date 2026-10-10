@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
+import { haptic } from '@/lib/haptics';
 
 /*
  * Selection rule (UI rules 3.5): selected = white fill, black text; unselected = surface-2,
@@ -37,7 +38,14 @@ export function Chip({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={
+        onClick
+          ? () => {
+              haptic('light');
+              onClick();
+            }
+          : undefined
+      }
       disabled={disabled}
       aria-pressed={toggle ? selected : undefined}
       className={cn(
@@ -213,7 +221,10 @@ export function Switch({ checked, onChange, disabled, ...aria }: SwitchProps) {
       role="switch"
       aria-checked={checked}
       disabled={disabled}
-      onClick={() => onChange(!checked)}
+      onClick={() => {
+        haptic('light');
+        onChange(!checked);
+      }}
       className={cn(
         'chrome tap-target relative inline-flex h-[1.9375rem] w-[3.1875rem] shrink-0 items-center rounded-full transition-colors duration-[var(--dur-move)] disabled:opacity-35',
         checked ? 'bg-lime' : 'bg-surface-2',
