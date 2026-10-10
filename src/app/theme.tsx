@@ -12,7 +12,7 @@ export type ThemePreference = 'system' | 'dark' | 'light';
 export type ResolvedTheme = 'dark' | 'light';
 
 const STORAGE_KEY = 'overload.theme';
-const THEME_COLORS: Record<ResolvedTheme, string> = { dark: '#000000', light: '#f2f2f7' };
+const THEME_COLOR = '#000000';
 
 interface ThemeContextValue {
   preference: ThemePreference;
@@ -31,31 +31,20 @@ function readPreference(): ThemePreference {
   }
 }
 
-const systemDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
-
 /**
- * Theme is a per-device display setting, so it lives in localStorage (read before first paint
- * by the inline script in index.html) rather than in the synced database.
+ * The app is dark only (decision D3). A stored preference is read and kept, but ignored: the
+ * resolved theme is always dark. The picker that writes it is removed in UI Part 2.
+
+ * index.html sets data-theme="dark" statically, so there is no pre-paint script.
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [preference, setPreferenceState] = useState<ThemePreference>(readPreference);
-  const [system, setSystem] = useState<ResolvedTheme>(() => (systemDark() ? 'dark' : 'light'));
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const onChange = () => setSystem(mq.matches ? 'dark' : 'light');
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-
-  const resolved: ResolvedTheme = preference === 'system' ? system : preference;
+  const resolved: ResolvedTheme = 'dark';
 
   useEffect(() => {
     document.documentElement.dataset.theme = resolved;
-    // The phone's status bar and the installed app's title bar follow the chosen theme, not
-    // only the system setting the static tags in index.html start from.
     document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
-      m.setAttribute('content', THEME_COLORS[resolved]);
+      m.setAttribute('content', THEME_COLOR);
       m.removeAttribute('media');
     });
   }, [resolved]);

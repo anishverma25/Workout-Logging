@@ -5,11 +5,14 @@ Read README.md for setup, architecture and calculation rules.
 
 ## Conventions
 
-- Mobile-first. Test 390px wide and 1440px wide, dark and light themes.
-- Colors come from tokens in `src/styles/index.css` (`bg-surface`, `text-muted`, `text-accent-text`...).
-  Never hardcode hex values in components. `accent` is a fill; use `accent-text` for accent-colored text.
-- Typography: the system text stack for text; `font-display` (SF Pro Rounded, Rubik fallback)
-  for headings and numbers. Add `tabular` to any number that changes.
+- UI redesign in progress on `ui-premium`: read `docs/UI_REDESIGN_BRIEF.md` and
+  `docs/UI_RULES.md` first. New UI uses the kit in `src/components/kit` only.
+- Mobile-first. Test 390px wide and 1440px wide. Dark only (decision D3).
+- Colors come from `src/styles/tokens.css` (`bg-surface`, `text-text-2`, `bg-lime`...). Never
+  hardcode hex values in components. Legacy tokens (`text-muted`, `accent-text`...) stay only
+  until each screen moves to the kit.
+- Typography: self-hosted Inter (Latin subset, `public/fonts`), Inter Display for Display and
+  Stat. Use the `type-*` utilities. Add `tabular` to any number that changes.
 - Layout: Apple-style grouped lists (`components/ui/List.tsx`), large-title `PageHeader`, rings
   (`components/ui/Rings.tsx`). Tile and ring colours come from `--tile-*` and `--ring-*` tokens.
 - Copy: sentence case, plain verbs, no ALL-CAPS labels, no em dashes, no emoji as icons.

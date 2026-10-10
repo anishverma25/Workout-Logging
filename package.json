@@ -21,7 +21,6 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
   },
   "dependencies": {
-    "@fontsource-variable/rubik": "^5.3.0",
     "@supabase/supabase-js": "^2.117.2",
     "clsx": "^2.1.1",
     "dexie": "^4.4.6",

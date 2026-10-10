@@ -1,113 +1,9 @@
 @import 'tailwindcss';
 
-/*
- * Design tokens. Components use these through Tailwind utilities (bg-surface, text-muted...).
- * Dark is the primary theme. Light mirrors every token so both stay complete.
- */
+@import './tokens.css';
 
+/* Every token is defined in tokens.css. Dark only (decision D3). */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
-
-:root,
-[data-theme='light'] {
-  /* Grouped backgrounds, like iOS: a soft grey page with white cards on it. */
-  --bg: #f2f2f7;
-  --surface: #ffffff;
-  --surface-2: #f2f2f7;
-  --surface-3: #e5e5ea;
-  --line: rgb(60 60 67 / 0.13);
-  --line-strong: rgb(60 60 67 / 0.26);
-  --text: #1c1c1e;
-  --text-muted: #48484a;
-  --text-faint: #636366;
-  --accent: #c6f432;
-  --accent-ink: #0b0d05;
-  --accent-text: #3f6a00;
-  --accent-soft: rgb(110 170 0 / 0.14);
-  --data-2: #3f5bd6;
-  --warn: #8a5300;
-  --warn-soft: rgb(214 140 0 / 0.14);
-  --danger: #c42218;
-  --danger-soft: rgb(196 34 24 / 0.1);
-  --shadow-card: 0 0 0 0 transparent;
-  --shadow-float: 0 10px 30px -12px rgb(0 0 0 / 0.25);
-  --glow: rgb(150 205 0 / 0.18);
-  --nav-bg: rgb(249 249 251 / 0.78);
-  /* Weekly rings: one hue per family (training, effort, time). Deeper in light so they stay
-     visible on white; every ring also shows its number as text. */
-  --ring-1: #5a9600;
-  --ring-2: #e5531c;
-  --ring-3: #4f4bea;
-  --ring-1-to: #8ccf0a;
-  --ring-2-to: #ff8a4c;
-  --ring-3-to: #8a7dff;
-  --ring-track: rgb(60 60 67 / 0.1);
-  --seg-track: rgb(118 118 128 / 0.12);
-  --seg-thumb: #ffffff;
-  --switch-on: #5fa800;
-  --tile-lime: #5a9600;
-  --tile-ember: #e5531c;
-  --tile-iris: #5e5ce6;
-  --tile-sky: #0a7cff;
-  --tile-amber: #c26d00;
-  --tile-rose: #e0345a;
-  --tile-graphite: #7c7c82;
-  --tile-plum: #b0379f;
-
-  /* Chart marks: validated for lightness, contrast and colour-vision separation. */
-  --chart-1: #466600;
-  --chart-2: #3f5bd6;
-  --chart-grid: rgb(60 60 67 / 0.1);
-  color-scheme: light;
-}
-
-[data-theme='dark'] {
-  /* True black page and raised grey cards, like the Fitness app. */
-  --bg: #000000;
-  --surface: #1c1c1e;
-  --surface-2: #2c2c2e;
-  --surface-3: #3a3a3c;
-  --line: rgb(84 84 88 / 0.42);
-  --line-strong: rgb(120 120 128 / 0.5);
-  --text: #f5f5f7;
-  --text-muted: #c7c7cc;
-  --text-faint: #a1a1a6;
-  --accent: #c6f432;
-  --accent-ink: #0b0d05;
-  --accent-text: #c6f432;
-  --accent-soft: rgb(198 244 50 / 0.13);
-  --data-2: #93abff;
-  --warn: #ffc24d;
-  --warn-soft: rgb(255 194 77 / 0.13);
-  --danger: #ff6b5e;
-  --danger-soft: rgb(255 107 94 / 0.14);
-  --shadow-card: 0 0 0 0 transparent;
-  --shadow-float: 0 16px 40px -12px rgb(0 0 0 / 0.9);
-  --glow: rgb(198 244 50 / 0.12);
-  --nav-bg: rgb(22 22 24 / 0.78);
-  --ring-1: #b4f000;
-  --ring-2: #ff5a2e;
-  --ring-3: #7d7bff;
-  --ring-1-to: #e2ff6b;
-  --ring-2-to: #ff9a5a;
-  --ring-3-to: #b3a6ff;
-  --ring-track: rgb(255 255 255 / 0.1);
-  --seg-track: rgb(118 118 128 / 0.24);
-  --seg-thumb: #636366;
-  --switch-on: #9ed400;
-  --tile-lime: #5a9600;
-  --tile-ember: #e5531c;
-  --tile-iris: #5e5ce6;
-  --tile-sky: #0a7cff;
-  --tile-amber: #c26d00;
-  --tile-rose: #e0345a;
-  --tile-graphite: #7c7c82;
-  --tile-plum: #b0379f;
-
-  --chart-1: #8bbd12;
-  --chart-2: #6d89ee;
-  --chart-grid: rgb(255 255 255 / 0.08);
-  color-scheme: dark;
-}
 
 @theme inline {
   --color-bg: var(--bg);
@@ -129,20 +25,40 @@
   --color-chart-grid: var(--chart-grid);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
-  --color-danger: var(--danger);
+  /* Legacy screens read text-danger and bg-danger as the AA-safe text red until Part 7. */
+  --color-danger: var(--danger-text);
   --color-danger-soft: var(--danger-soft);
   --color-ring-1: var(--ring-1);
   --color-ring-2: var(--ring-2);
   --color-ring-3: var(--ring-3);
 
-  /* Text in the platform's own face (San Francisco on Apple devices, Roboto on Android).
-     Headings and numbers in a rounded face: SF Pro Rounded where the system has it, Rubik
-     elsewhere (only downloaded when the system face is missing). */
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto,
-    'Helvetica Neue', sans-serif;
-  --font-display:
-    ui-rounded, 'SF Pro Rounded', 'Rubik Variable', -apple-system, system-ui, sans-serif;
+  /* Premium kit colours (UI rules 3.3). */
+  --color-bar: var(--bar);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-divider: var(--divider);
+  --color-grid: var(--grid);
+  --color-track: var(--track);
+  --color-overlay: var(--overlay);
+  --color-text-1: var(--text-1);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-lime: var(--lime);
+  --color-lime-dim: var(--lime-dim);
+  --color-on-lime: var(--on-lime);
+  --color-focus: var(--focus);
+  --color-warning: var(--warning);
+  --color-danger-text: var(--danger-text);
+
+  --breakpoint-tab: 37.5rem;
+
+  --radius-tile: 0.625rem;
+  --radius-field: 0.75rem;
+  --radius-nested: 1rem;
+  --radius-panel: 1.5rem;
+
+  --font-sans: var(--font-text);
+  --font-display: var(--font-heading);
 
   --radius-card: 1.375rem;
   --radius-control: 0.875rem;
@@ -151,25 +67,12 @@
   --ease-spring: cubic-bezier(0.34, 1.32, 0.5, 1);
 }
 
-/* Rounded face for headings and numbers where the system has no SF Pro Rounded. Latin only, and
-   only downloaded when a heading actually needs it. */
-@font-face {
-  font-family: 'Rubik Variable';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 300 900;
-  src: url('../../node_modules/@fontsource-variable/rubik/files/rubik-latin-wght-normal.woff2')
-    format('woff2-variations');
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
-    U+2000-206F, U+20AC, U+20B9, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
 @layer base {
   html {
     background: var(--bg);
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   body {
     @apply bg-bg text-text font-sans antialiased;
@@ -189,9 +92,8 @@
     color: var(--accent-ink);
   }
   :focus-visible {
-    outline: 2px solid var(--accent-text);
+    outline: 2px solid var(--focus);
     outline-offset: 2px;
-    border-radius: 6px;
   }
   button {
     cursor: pointer;
@@ -217,6 +119,81 @@
   /* Numbers line up in columns and do not jitter as they change. */
   font-variant-numeric: tabular-nums lining-nums;
 }
+/* The seven type styles (UI rules 3.2). Sizes in rem so text follows the browser setting. */
+@utility type-display {
+  font-family: var(--font-heading);
+  font-size: 2.125rem;
+  line-height: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.024em;
+}
+@utility type-stat {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+}
+@utility type-title {
+  font-family: var(--font-text);
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+}
+@utility type-headline {
+  font-family: var(--font-text);
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+@utility type-body {
+  font-family: var(--font-text);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  font-weight: 400;
+  letter-spacing: -0.007em;
+}
+@utility type-meta {
+  font-family: var(--font-text);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+@utility type-caption {
+  font-family: var(--font-text);
+  font-size: 0.6875rem;
+  line-height: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.009em;
+}
+/* Group labels: Meta 600, uppercase, 0.05em (Parts 5 and 6). */
+@utility type-label {
+  font-family: var(--font-text);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+/* UI chrome is not text to select; inputs and readable content stay selectable. */
+@utility chrome {
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* Press feedback (UI rules 3.4): opacity 0.7 and scale 0.98 over 150 ms. */
+@utility pressable {
+  transition-property: opacity, transform, background-color, color;
+  transition-duration: var(--dur-press);
+  transition-timing-function: var(--ease-standard);
+  &:active:not(:disabled):not([aria-disabled='true']) {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+}
+
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -256,6 +233,55 @@
     animation-name: sheet-pop;
     animation-duration: 0.2s;
   }
+}
+
+/* Kit sheets (components/kit/overlays.tsx): slide up on phones, settle in as a dialog from
+   1024px. 250 ms on the standard curve. */
+@keyframes kit-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes kit-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.kit-sheet[open] {
+  animation: kit-sheet-up var(--dur-move) var(--ease-standard);
+}
+.kit-sheet[open]::backdrop {
+  animation: fade-in var(--dur-move) var(--ease-standard);
+}
+.kit-sheet.kit-dialog[open] {
+  animation-name: kit-pop;
+}
+@media (min-width: 1024px) {
+  .kit-sheet[open] {
+    animation-name: kit-pop;
+  }
+}
+
+/* Skeleton shimmer: a white 4% band every 1.2 s. Off with reduced motion. */
+@keyframes kit-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+.skeleton {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.04) 50%,
+    transparent 100%
+  );
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  animation: kit-shimmer 1.2s linear infinite;
 }
 
 /* Completing a set: a quick press of the check and a brief glow on the row. */

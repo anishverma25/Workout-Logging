@@ -40,10 +40,11 @@ test('secondary areas are reachable', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Settings');
 });
 
-test('theme and units can be changed', async ({ page }) => {
+test('the app stays dark and units can be changed', async ({ page }) => {
   await page.goto('/settings');
+  // Dark only (D3): a light choice, picked or stored, never changes the theme.
   await page.getByRole('radio', { name: 'Light' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.getByRole('radio', { name: 'lb' }).click();
   await expect(page.getByText('Showing weights in lb')).toBeVisible();
   await page.goto('/');

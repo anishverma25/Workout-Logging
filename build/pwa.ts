@@ -67,6 +67,12 @@ ${all}
 `;
 }
 
+/**
+ * Bumped by hand at the end of every UI redesign part (UI rules 3.1), so installed apps always
+ * fetch a fresh shell even when only public files changed. Part of the cache name and hash.
+ */
+export const CACHE_EPOCH = 'ui-1';
+
 const TEMPLATE = fileURLToPath(new URL('./sw-template.js', import.meta.url));
 
 /**
@@ -84,7 +90,11 @@ export function pwa(env: Record<string, string | undefined>): Plugin {
       const publicFiles = [
         '/manifest.webmanifest',
         '/icon.svg',
-        '/theme-init.js',
+        '/fonts/inter-400.woff2',
+        '/fonts/inter-500.woff2',
+        '/fonts/inter-600.woff2',
+        '/fonts/inter-700.woff2',
+        '/fonts/inter-display-700.woff2',
         '/icons/icon-192.png',
         '/icons/icon-512.png',
         '/icons/apple-touch-icon.png',
@@ -95,6 +105,7 @@ export function pwa(env: Record<string, string | undefined>): Plugin {
         ...publicFiles,
       ];
       const version = createHash('sha256')
+        .update(CACHE_EPOCH)
         .update(JSON.stringify(precache))
         .update(
           Object.values(bundle)
@@ -104,7 +115,7 @@ export function pwa(env: Record<string, string | undefined>): Plugin {
         .digest('hex')
         .slice(0, 12);
       const source = readFileSync(TEMPLATE, 'utf8')
-        .replace('__VERSION__', version)
+        .replace('__VERSION__', `${CACHE_EPOCH}-${version}`)
         .replace('__PRECACHE__', JSON.stringify(precache));
       this.emitFile({ type: 'asset', fileName: 'sw.js', source });
       this.emitFile({

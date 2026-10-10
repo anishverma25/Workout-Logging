@@ -4,8 +4,8 @@ import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units
 
 const W = 1080;
 const H = 1350;
-const DISPLAY = "ui-rounded, 'SF Pro Rounded', 'Rubik Variable', system-ui, sans-serif";
-const TEXT = "-apple-system, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif";
+const DISPLAY = "'Inter Display', 'Inter', system-ui, sans-serif";
+const TEXT = "'Inter', system-ui, sans-serif";
 
 export function recapTitle(recap: Recap): string {
   return recap.kind === 'year'

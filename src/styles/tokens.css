@@ -1,0 +1,137 @@
+/*
+ * Design tokens. Dark only (UI rules 3.3, decision D3). This file is the only place colours,
+ * type sizes, radii and the font faces are defined; components use them through the Tailwind
+ * utilities declared in index.css (bg-surface, text-text-2, type-meta, rounded-panel...).
+ */
+
+/* Inter 4, Latin subset, self-hosted (public/fonts, SIL Open Font License). 400 and 600 are
+   preloaded in index.html; all five are precached by the service worker. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/inter-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/inter-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/inter-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/inter-display-700.woff2') format('woff2');
+}
+/* Metric-matched fallback so text does not jump when Inter arrives. */
+@font-face {
+  font-family: 'Inter Fallback';
+  src: local('Arial'), local('Helvetica'), local('Liberation Sans');
+  size-adjust: 107%;
+  ascent-override: 90%;
+  descent-override: 22.5%;
+  line-gap-override: 0%;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg: #000000;
+  --bar: #0a0a0a;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --border: rgb(255 255 255 / 0.08);
+  --border-strong: rgb(255 255 255 / 0.16);
+  --divider: rgb(255 255 255 / 0.08);
+  --grid: rgb(255 255 255 / 0.06);
+  --track: rgb(255 255 255 / 0.1);
+  --overlay: rgb(0 0 0 / 0.6);
+
+  /* Text */
+  --text-1: #ffffff;
+  --text-2: rgb(235 235 245 / 0.6);
+  --text-3: rgb(235 235 245 / 0.38);
+
+  /* The one accent, sampled from the Start button. Dimmer lime is the same hue with opacity. */
+  --lime: #c6f432;
+  --lime-dim: rgb(198 244 50 / 0.14);
+  --on-lime: #000000;
+
+  --focus: #ffffff;
+  --warning: #ffb340;
+  --danger: #ff453a;
+  /* Destructive text and field errors: --danger is 4.1:1 on --surface-2, this is 5.0:1. */
+  --danger-text: #ff6b5e;
+
+  /* Type */
+  --font-text: 'Inter', 'Inter Fallback', system-ui, sans-serif;
+  --font-heading: 'Inter Display', 'Inter', 'Inter Fallback', system-ui, sans-serif;
+
+  /* Motion (UI rules 3.4 and Part 8) */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --dur-press: 150ms;
+  --dur-move: 250ms;
+
+  /*
+   * Legacy tokens. Screens not yet moved to the kit still read these (Parts 2 to 7 replace
+   * them). New code never uses them.
+   */
+  --surface-3: #3a3a3c;
+  --line: rgb(84 84 88 / 0.42);
+  --line-strong: rgb(120 120 128 / 0.5);
+  --text: #f5f5f7;
+  --text-muted: #c7c7cc;
+  --text-faint: #a1a1a6;
+  --accent: var(--lime);
+  --accent-ink: var(--on-lime);
+  --accent-text: var(--lime);
+  --accent-soft: rgb(198 244 50 / 0.13);
+  --data-2: #93abff;
+  --warn: var(--warning);
+  --warn-soft: rgb(255 179 64 / 0.13);
+  --danger-soft: rgb(255 69 58 / 0.14);
+  --shadow-card: 0 0 0 0 transparent;
+  --shadow-float: 0 16px 40px -12px rgb(0 0 0 / 0.9);
+  --glow: rgb(198 244 50 / 0.12);
+  --nav-bg: rgb(22 22 24 / 0.78);
+  --ring-1: #b4f000;
+  --ring-2: #ff5a2e;
+  --ring-3: #7d7bff;
+  --ring-1-to: #e2ff6b;
+  --ring-2-to: #ff9a5a;
+  --ring-3-to: #b3a6ff;
+  --ring-track: rgb(255 255 255 / 0.1);
+  --seg-track: rgb(118 118 128 / 0.24);
+  --seg-thumb: #636366;
+  --switch-on: #9ed400;
+  --tile-lime: #5a9600;
+  --tile-ember: #e5531c;
+  --tile-iris: #5e5ce6;
+  --tile-sky: #0a7cff;
+  --tile-amber: #c26d00;
+  --tile-rose: #e0345a;
+  --tile-graphite: #7c7c82;
+  --tile-plum: #b0379f;
+  --chart-1: #8bbd12;
+  --chart-2: #6d89ee;
+  --chart-grid: rgb(255 255 255 / 0.08);
+}
