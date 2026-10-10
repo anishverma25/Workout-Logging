@@ -1,8 +1,7 @@
-import { useDeferredValue, useMemo, useState } from 'react';
+import { memo, useDeferredValue, useMemo, useState } from 'react';
 import { ChevronRight, Trophy } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
-import { Badge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/kit';
 import { Chips } from '@/components/ui/Fields';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
@@ -16,11 +15,17 @@ import { addDays, formatRelativeDay, startOfDay } from '@/lib/dates';
 import { pluralize } from '@/lib/format';
 import { formatWeight, type WeightUnit } from '@/lib/units';
 import { useNow } from '@/lib/useNow';
+import { cn } from '@/lib/cn';
 import { SearchField } from '../exercises/ExerciseFilters';
 import { ExerciseRecordsSheet } from './ExerciseRecordsSheet';
 import { improvementText } from './format';
 
 const RECENT_DAYS = 30;
+/** Records set in the last 7 days (today included) carry a "New" badge. */
+const NEW_DAYS = 7;
+
+const rowCls =
+  'pressable chrome flex min-h-14 w-full items-center gap-3 py-3 text-left rounded-field';
 
 export function RecordsPage() {
   const training = useTrainingData();
@@ -43,6 +48,7 @@ export function RecordsPage() {
       .filter((p) => p.date >= since)
       .sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [records, now]);
+  const newSince = useMemo(() => addDays(startOfDay(now), -(NEW_DAYS - 1)), [now]);
   const shown = records.filter(
     (r) =>
       (!muscle || r.primaryMuscle === muscle) &&
@@ -62,7 +68,7 @@ export function RecordsPage() {
 
       {training.status === 'success' && records.length === 0 ? (
         <EmptyState
-          icon={<Trophy className="size-5" aria-hidden />}
+          icon={<Trophy aria-hidden />}
           title="No records yet"
           body="Your first session with an exercise sets the baseline. Beat it later, with more weight, more reps or a higher estimated 1RM, and the record appears here with the date and how much you improved."
         />
@@ -71,40 +77,41 @@ export function RecordsPage() {
       {records.length > 0 ? (
         <>
           <section aria-labelledby="recent-prs">
-            <h2 id="recent-prs" className="mb-3 font-display text-xl font-semibold">
+            <h2 id="recent-prs" className="type-title mb-3 text-text-1">
               Last {RECENT_DAYS} days
             </h2>
             {recent.length === 0 ? (
-              <p className="flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center type-meta text-text-2">
+              <p className="type-meta flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center text-text-2 [text-wrap:balance]">
                 No new records in the last {RECENT_DAYS} days. Records come from beating an earlier
                 best, so they arrive in bursts, not every week.
               </p>
             ) : (
-              <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <ul className="divide-y-[0.5px] divide-divider rounded-panel border border-border bg-surface px-4">
                 {recent.slice(0, 9).map((pr) => (
                   <li key={pr.id}>
-                    <RecordCard
+                    <RecordRow
                       record={pr}
                       unit={prefs.weightUnit}
-                      onOpen={() => setOpenId(pr.exerciseId)}
+                      isNew={pr.date >= newSince}
+                      onOpen={setOpenId}
                     />
                   </li>
                 ))}
               </ul>
             )}
             {recent.length > 9 ? (
-              <p className="mt-2 text-sm text-faint">
+              <p className="type-meta mt-2 px-1 text-text-2">
                 and {pluralize(recent.length - 9, 'more record')}. Open an exercise to see all of
                 them.
               </p>
             ) : null}
           </section>
 
-          <section aria-labelledby="all-bests" className="mt-9">
-            <h2 id="all-bests" className="mb-3 font-display text-xl font-semibold">
+          <section aria-labelledby="all-bests" className="mt-8">
+            <h2 id="all-bests" className="type-title mb-3 text-text-1">
               Bests by exercise
             </h2>
-            <div className="mb-3 flex flex-col gap-2.5">
+            <div className="mb-3 flex flex-col gap-3">
               <SearchField value={query} onChange={setQuery} label="Search your exercises" />
               <Chips
                 label="Muscle group"
@@ -119,32 +126,24 @@ export function RecordsPage() {
                 onChange={setMuscle}
               />
             </div>
-            <Card className="overflow-hidden">
-              <div
-                aria-hidden
-                className="hidden grid-cols-[minmax(0,1fr)_8rem_9rem_7rem_1.25rem] gap-4 border-b border-line px-5 py-2.5 text-xs font-medium text-faint md:grid"
-              >
-                <span>Exercise</span>
-                <span className="text-right">Heaviest lifted</span>
-                <span className="text-right">Estimated 1RM</span>
-                <span className="text-right">Other best</span>
-                <span />
-              </div>
-              <ul className="divide-y divide-line">
+            {shown.length === 0 ? (
+              <p className="type-meta flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center text-text-2">
+                No exercises match.
+              </p>
+            ) : (
+              <ul className="divide-y-[0.5px] divide-divider rounded-panel border border-border bg-surface px-4">
                 {shown.map((r) => (
                   <li key={r.exerciseId}>
                     <BestRow
                       record={r}
                       unit={prefs.weightUnit}
-                      onOpen={() => setOpenId(r.exerciseId)}
+                      isNew={r.history.some((p) => p.date >= newSince)}
+                      onOpen={setOpenId}
                     />
                   </li>
                 ))}
               </ul>
-              {shown.length === 0 ? (
-                <p className="p-5 text-sm text-muted">No exercises match.</p>
-              ) : null}
-            </Card>
+            )}
           </section>
         </>
       ) : null}
@@ -158,102 +157,107 @@ export function RecordsPage() {
   );
 }
 
-function RecordCard({
+/** A value (Headline, tabular) with what it is beneath (Meta --text-2), right aligned. */
+function Value({ value, label, className }: { value: string; label: string; className?: string }) {
+  return (
+    <span className={cn('shrink-0 text-right', className)}>
+      <span className="type-headline tabular block text-text-1">{value}</span>
+      <span className="type-meta block text-text-2">{label}</span>
+    </span>
+  );
+}
+
+const RecordRow = memo(function RecordRow({
   record,
   unit,
+  isNew,
   onOpen,
 }: {
   record: PersonalRecord;
   unit: WeightUnit;
-  onOpen: () => void;
+  isNew: boolean;
+  onOpen: (exerciseId: string) => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="flex h-full w-full flex-col rounded-[var(--radius-card)] bg-surface p-4 text-left transition-colors hover:border-line-strong"
-    >
-      <span className="flex items-center justify-between gap-2">
-        <Badge tone="accent">
-          <Trophy className="size-3" aria-hidden />
-          {PR_LABELS[record.type]}
-        </Badge>
-        <span className="text-sm text-faint">{formatRelativeDay(record.date)}</span>
-      </span>
-      <span className="mt-3 truncate font-semibold">{record.exerciseName}</span>
-      <span className="tabular mt-1 font-display text-[1.35rem] font-bold leading-none">
-        {formatRecordValue(record.type, record.value, unit)}
-      </span>
-      <span className="tabular mt-2 text-sm text-muted">
-        <span className="font-semibold text-accent-text">{improvementText(record, unit)}</span> over{' '}
-        {formatRecordValue(record.type, record.previousBest, unit)}
-      </span>
-      {record.type === 'e1rm' && record.weightKg !== null && record.reps !== null ? (
-        <span className="mt-1 text-xs text-faint">
-          Estimated from {formatWeight(record.weightKg, unit)} × {record.reps}
+    <button type="button" onClick={() => onOpen(record.exerciseId)} className={rowCls}>
+      <span className="min-w-0 flex-1">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="type-headline truncate text-text-1">{record.exerciseName}</span>
+          {isNew ? <Badge tone="lime">New</Badge> : null}
         </span>
-      ) : null}
+        <span className="type-meta tabular mt-0.5 block text-text-2">
+          {formatRelativeDay(record.date)} · {improvementText(record, unit)} over{' '}
+          {formatRecordValue(record.type, record.previousBest, unit)}
+        </span>
+        {record.type === 'e1rm' && record.weightKg !== null && record.reps !== null ? (
+          <span className="type-meta tabular block text-text-2">
+            Estimated from {formatWeight(record.weightKg, unit)} × {record.reps}
+          </span>
+        ) : null}
+      </span>
+      <Value
+        value={formatRecordValue(record.type, record.value, unit)}
+        label={PR_LABELS[record.type]}
+      />
+      <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
     </button>
   );
-}
+});
 
-function BestRow({
+const BestRow = memo(function BestRow({
   record: r,
   unit,
+  isNew,
   onOpen,
 }: {
   record: ExerciseRecords;
   unit: WeightUnit;
-  onOpen: () => void;
+  isNew: boolean;
+  onOpen: (exerciseId: string) => void;
 }) {
   const other = r.mostReps
-    ? formatRecordValue('reps', r.mostReps.value, unit)
+    ? { value: formatRecordValue('reps', r.mostReps.value, unit), label: 'Most reps' }
     : r.longestDuration
-      ? formatRecordValue('duration', r.longestDuration.value, unit)
+      ? {
+          value: formatRecordValue('duration', r.longestDuration.value, unit),
+          label: 'Longest time',
+        }
       : r.longestDistance
-        ? formatRecordValue('distance', r.longestDistance.value, unit)
+        ? {
+            value: formatRecordValue('distance', r.longestDistance.value, unit),
+            label: 'Longest distance',
+          }
         : null;
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3 text-left transition-colors hover:bg-surface-2 md:grid-cols-[minmax(0,1fr)_8rem_9rem_7rem_1.25rem] md:px-5"
-    >
-      <span className="min-w-0">
-        <span className="block truncate font-semibold">{r.name}</span>
-        <span className="text-sm text-faint">
+    <button type="button" onClick={() => onOpen(r.exerciseId)} className={rowCls}>
+      <span className="min-w-0 flex-1">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="type-headline truncate text-text-1">{r.name}</span>
+          {isNew ? <Badge tone="lime">New</Badge> : null}
+        </span>
+        <span className="type-meta mt-0.5 block truncate text-text-2">
           {MUSCLE_LABELS[r.primaryMuscle]} · {pluralize(r.sessions, 'session')}
         </span>
       </span>
-      <span className="tabular text-right md:block">
-        {r.heaviest ? (
-          <>
-            <span className="block font-display text-lg font-semibold leading-tight">
-              {formatWeight(r.heaviest.value, unit)}
-            </span>
-            <span className="text-xs text-faint md:hidden">heaviest</span>
-            <span className="hidden text-xs text-faint md:inline">× {r.heaviest.reps}</span>
-          </>
-        ) : other ? (
-          <span className="font-display text-lg font-semibold md:hidden">{other}</span>
-        ) : null}
-      </span>
-      <span className="tabular hidden text-right md:block">
-        {r.bestE1rm ? (
-          <>
-            <span className="block font-display text-lg font-semibold leading-tight">
-              {formatWeight(r.bestE1rm.value, unit)}
-            </span>
-            <span className="text-xs text-faint">estimate</span>
-          </>
-        ) : (
-          <span className="text-faint">n/a</span>
-        )}
-      </span>
-      <span className="tabular hidden text-right font-display text-lg font-semibold md:block">
-        {other ?? <span className="font-sans text-base font-normal text-faint">n/a</span>}
-      </span>
-      <ChevronRight className="hidden size-4 text-faint md:block" aria-hidden />
+      {r.heaviest ? (
+        <Value
+          value={formatWeight(r.heaviest.value, unit)}
+          label={r.heaviest.reps ? `Heaviest × ${r.heaviest.reps}` : 'Heaviest'}
+        />
+      ) : other ? (
+        <Value value={other.value} label={other.label} />
+      ) : null}
+      {r.bestE1rm ? (
+        <Value
+          value={formatWeight(r.bestE1rm.value, unit)}
+          label="Estimated 1RM"
+          className="hidden tab:block"
+        />
+      ) : null}
+      {r.heaviest && other ? (
+        <Value value={other.value} label={other.label} className="hidden lg:block" />
+      ) : null}
+      <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
     </button>
   );
-}
+});

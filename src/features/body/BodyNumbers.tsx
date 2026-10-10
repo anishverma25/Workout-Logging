@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ChevronRight } from 'lucide-react';
-import { Sheet } from '@/components/ui/Sheet';
+import { BottomSheet, SectionHeader, TextLink } from '@/components/kit';
 import {
   LIFESTYLE_PAL,
   TRAINING_MET,
@@ -65,27 +65,29 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
 
   return (
     <section aria-labelledby="numbers-title">
-      <div className="mb-2.5 flex items-end justify-between gap-3">
-        <h2
-          id="numbers-title"
-          className="font-display text-[1.3rem] font-semibold leading-tight tracking-tight"
-        >
-          Your numbers
-        </h2>
-        <Link to="/science#maintenance" className="tap-target text-sm font-medium text-accent-text">
-          How they are worked out
-        </Link>
-      </div>
+      <SectionHeader
+        id="numbers-title"
+        title="Your numbers"
+        className="items-center"
+        action={
+          <TextLink to="/science#maintenance" small chevron>
+            How they are worked out
+          </TextLink>
+        }
+      />
       {!hasProfile ? (
-        <p className="mb-3 rounded-[1rem] bg-surface p-4 text-sm text-muted">
+        <p className="type-meta mb-3 rounded-nested bg-surface-2 px-4 py-3 text-text-2">
           These use your profile.{' '}
-          <Link to="/setup?next=/body" className="font-medium text-accent-text">
+          <Link
+            to="/setup?next=/body"
+            className="font-medium text-text-1 underline underline-offset-4"
+          >
             Set up your profile
           </Link>{' '}
           to see daily calories, protein, BMI and more.
         </p>
       ) : null}
-      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <Tile
           label="Daily calories"
           onOpen={s.energy ? () => setTopic('energy') : undefined}
@@ -98,7 +100,6 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
                 ? needs(missingFor.energy)
                 : 'Needs your profile'
           }
-          tone={1}
         />
         <Tile
           label="Protein a day"
@@ -114,14 +115,12 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
               ? `${GOAL_PROTEIN[goal][0]} to ${GOAL_PROTEIN[goal][1]} g per kg`
               : 'Needs your weight and goal'
           }
-          tone={1}
         />
         <Tile
           label="BMI"
           onOpen={s.bmi ? () => setTopic('bmi') : undefined}
           value={s.bmi ? fmt(s.bmi.value) : null}
           detail={s.bmi ? BMI_LABEL[s.bmi.band] : needs(missingFor.bmi)}
-          tone={3}
         />
         <Tile
           label="Body fat"
@@ -137,14 +136,12 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
                 ? 'Add a reading from a scale or scan'
                 : 'Add waist and neck measurements'
           }
-          tone={2}
         />
         <Tile
           label="Lean mass index"
           onOpen={s.ffmi ? () => setTopic('ffmi') : undefined}
           value={s.ffmi ? fmt(s.ffmi.normalized) : null}
           detail={s.ffmi ? `Lean mass ${kg(s.leanKg!)}` : 'Needs body fat and height'}
-          tone={2}
         />
         <Tile
           label="Weekly change"
@@ -162,11 +159,10 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
                 ? RATE_LABEL[s.rate.verdict]
                 : 'Over the last 4 weeks'
           }
-          tone={s.rate?.verdict === 'on_track' ? 1 : 2}
         />
       </div>
 
-      <Sheet
+      <BottomSheet
         open={topic !== null}
         onClose={() => setTopic(null)}
         title={topic ? TITLES[topic] : ''}
@@ -174,7 +170,7 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
         {topic ? (
           <Explanation topic={topic} s={s} goal={goal} sex={sex} heightCm={heightCm} unit={unit} />
         ) : null}
-      </Sheet>
+      </BottomSheet>
     </section>
   );
 }
@@ -194,44 +190,40 @@ function Tile({
   unit,
   detail,
   onOpen,
-  tone,
 }: {
   label: string;
   value: string | null;
   unit?: string;
   detail: string;
   onOpen?: () => void;
-  tone: 1 | 2 | 3;
 }) {
   const body = (
     <>
-      <span className="flex items-center gap-1.5 text-[0.8125rem] font-medium text-faint">
-        <span
-          aria-hidden
-          className="size-2 rounded-full"
-          style={{ background: value ? `var(--ring-${tone})` : 'var(--line-strong)' }}
-        />
+      <span className="type-meta flex items-center gap-1 text-text-2">
         {label}
-        {onOpen ? <ChevronRight className="ml-auto size-4 text-faint/70" aria-hidden /> : null}
+        {onOpen ? <ChevronRight className="ml-auto size-4 text-text-3" aria-hidden /> : null}
       </span>
       {value ? (
-        <span className="tabular mt-1.5 block font-display text-[1.6rem] font-semibold leading-tight tracking-tight">
-          {value}
-          {unit ? <span className="ml-1 text-base font-medium text-faint">{unit}</span> : null}
+        <span className="mt-1 flex flex-wrap items-baseline gap-x-1">
+          <span
+            className={cn(
+              'tabular text-text-1',
+              value.includes(' to ') ? 'type-title' : 'type-stat',
+            )}
+          >
+            {value}
+          </span>
+          {unit ? <span className="type-meta text-text-2">{unit}</span> : null}
         </span>
       ) : (
         <span className="type-headline mt-1.5 block text-text-2">None yet</span>
       )}
-      <span className="mt-0.5 block text-xs leading-snug text-faint">{detail}</span>
+      <span className="type-meta mt-1 block text-text-2">{detail}</span>
     </>
   );
-  const cls = 'block w-full rounded-[1.1rem] bg-surface p-4 text-left';
+  const cls = 'block w-full rounded-panel border border-border bg-surface p-4 text-left';
   return onOpen ? (
-    <button
-      type="button"
-      onClick={onOpen}
-      className={cn(cls, 'transition-colors active:bg-surface-2')}
-    >
+    <button type="button" onClick={onOpen} className={cn(cls, 'pressable chrome')}>
       {body}
     </button>
   ) : (
@@ -241,10 +233,18 @@ function Tile({
 
 function Formula({ children }: { children: ReactNode }) {
   return (
-    <p className="tabular my-3 rounded-xl bg-surface-2 px-3.5 py-3 text-[0.9rem] leading-relaxed">
+    <p className="type-body tabular my-3 rounded-nested bg-surface-2 px-4 py-3 text-text-1">
       {children}
     </p>
   );
+}
+
+function Step({ children }: { children: ReactNode }) {
+  return <p className="type-headline mt-4 text-text-1">{children}</p>;
+}
+
+function Note({ children }: { children: ReactNode }) {
+  return <p className="type-meta mt-3 text-text-2">{children}</p>;
 }
 
 function Explanation({
@@ -263,7 +263,7 @@ function Explanation({
   unit: WeightUnit;
 }) {
   const w = s.weightKg !== null ? fmt(s.weightKg) : '?';
-  const text = 'text-[0.95rem] leading-relaxed text-muted';
+  const text = 'type-body pb-2 text-text-2';
   switch (topic) {
     case 'energy': {
       const e = s.energy!;
@@ -277,7 +277,7 @@ function Explanation({
           <p>
             Maintenance is worked out in three parts, the way energy-requirement research does it.
           </p>
-          <p className="mt-3 font-semibold text-text">1. At rest</p>
+          <Step>1. At rest</Step>
           <Formula>
             {e.method === 'mifflin' ? (
               <>
@@ -291,35 +291,35 @@ function Explanation({
               </>
             )}
           </Formula>
-          <p className="mt-3 font-semibold text-text">2. Your day, without the gym</p>
+          <Step>2. Your day, without the gym</Step>
           <Formula>
             {e.bmr.toLocaleString('en-GB')} × {e.pal} (
             {ACTIVITY_LABEL[e.dailyActivity].toLowerCase()}) ≈ {e.dailyKcal.toLocaleString('en-GB')}{' '}
             kcal
           </Formula>
-          <p className="mt-3 font-semibold text-text">3. Training</p>
+          <Step>3. Training</Step>
           <Formula>
             {fmt(e.trainingDays, 1)} × {fmt(e.sessionMinutes / 60, 2)} h × ({TRAINING_MET} − 1) MET
             × {w} kg ÷ 7 days ≈ {e.trainingKcal.toLocaleString('en-GB')} kcal a day
           </Formula>
-          <p className="text-sm text-faint">
+          <p className="type-meta text-text-2">
             {days}, {e.sessionMinutes} minutes each.
           </p>
           <p className="mt-3">Maintenance, the calories that keep your weight steady:</p>
           <Formula>
             {e.dailyKcal.toLocaleString('en-GB')} + {e.trainingKcal.toLocaleString('en-GB')} ={' '}
-            <strong className="text-text">{e.tdee.toLocaleString('en-GB')} kcal</strong>
+            <strong className="text-text-1">{e.tdee.toLocaleString('en-GB')} kcal</strong>
           </Formula>
           <p>
             For {goal ? GOAL_LABEL[goal].toLowerCase() : 'your goal'} the target is{' '}
             {e.adjustment === 0
               ? 'maintenance'
               : `${e.adjustment > 0 ? '+' : '−'}${Math.round(Math.abs(e.adjustment) * 100)}%`}
-            : <strong className="text-text">{e.targetKcal.toLocaleString('en-GB')} kcal</strong> a
+            : <strong className="text-text-1">{e.targetKcal.toLocaleString('en-GB')} kcal</strong> a
             day. With protein in the middle of its range and at least {e.fatMinG} g of fat, about{' '}
             {e.carbsG} g of carbohydrate fills the rest.
           </p>
-          <p className="mt-3 text-sm text-faint">
+          <Note>
             Day levels are from the FAO/WHO/UNU report on human energy requirements: mostly sitting{' '}
             {LIFESTYLE_PAL.sitting}, some walking {LIFESTYLE_PAL.mixed}, on your feet{' '}
             {LIFESTYLE_PAL.on_feet}, physical work {LIFESTYLE_PAL.physical}. Training uses{' '}
@@ -327,7 +327,7 @@ function Explanation({
             Activities. Equations like these land within about 10% for most people. Your weight
             trend is the final word: if it moves differently from your goal for 2 to 3 weeks, change
             your intake by 100 to 200 kcal.
-          </p>
+          </Note>
         </div>
       );
     }
@@ -347,13 +347,13 @@ function Explanation({
             it over 3 to 5 meals.
           </p>
           {goal ? (
-            <p className="mt-3 text-sm text-faint">
+            <Note>
               Calories for {GOAL_LABEL[goal].toLowerCase()}:{' '}
               {GOAL_ENERGY[goal] === 0
                 ? 'maintenance'
                 : `${GOAL_ENERGY[goal] > 0 ? '+' : '−'}${Math.abs(GOAL_ENERGY[goal]) * 100}% of maintenance`}
               .
-            </p>
+            </Note>
           ) : null}
         </div>
       );
@@ -371,10 +371,10 @@ function Explanation({
             health risk starts at a lower BMI. On those cut-offs you are in the{' '}
             {BMI_LABEL[b.asianBand].toLowerCase()} band.
           </p>
-          <p className="mt-3 text-sm text-faint">
+          <Note>
             BMI cannot tell muscle from fat, so it reads many lifters as overweight. Body fat and
             the lean mass index describe a lifter better.
-          </p>
+          </Note>
         </div>
       );
     }
@@ -435,7 +435,7 @@ function Explanation({
         <div className={text}>
           <p>
             The slope of your 7-day average weight over the last 4 weeks:{' '}
-            <strong className="text-text">
+            <strong className="text-text-1">
               {r.kgPerWeek >= 0 ? '+' : '−'}
               {fmt(Math.abs(toDisplayWeight(r.kgPerWeek, unit)), 2)} {unit} a week
             </strong>
@@ -452,10 +452,10 @@ function Explanation({
               rate. For other goals this is your measured rate.
             </p>
           )}
-          <p className="mt-3 text-sm text-faint">
+          <Note>
             Weight swings across the week, higher after the weekend and lowest near Friday, so a
             7-day average shows the real direction (Orsama et al., 2014).
-          </p>
+          </Note>
         </div>
       );
     }

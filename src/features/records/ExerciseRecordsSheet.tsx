@@ -1,6 +1,6 @@
 import { Trophy } from 'lucide-react';
 import { LineChart } from '@/components/charts/LineChart';
-import { Sheet } from '@/components/ui/Sheet';
+import { BottomSheet } from '@/components/kit';
 import { useTrainingData } from '@/data/hooks';
 import { performanceByExercise } from '@/domain/analytics/performance';
 import { formatRecordValue, PR_LABELS } from '@/domain/analytics/prs';
@@ -31,14 +31,13 @@ function Body({ records: r, unit, onClose }: Props & { records: ExerciseRecords 
       : [];
 
   return (
-    <Sheet
+    <BottomSheet
       open
       onClose={onClose}
-      size="lg"
       title={r.name}
-      description={`${pluralize(r.sessions, 'session')} logged`}
+      subtitle={`${pluralize(r.sessions, 'session')} logged`}
     >
-      <dl className="grid grid-cols-2 gap-2">
+      <dl className="grid grid-cols-2 gap-3 pt-1">
         {r.heaviest ? (
           <Best
             label={
@@ -78,9 +77,9 @@ function Body({ records: r, unit, onClose }: Props & { records: ExerciseRecords 
       </dl>
 
       {e1rmPoints.length >= 2 ? (
-        <section className="mt-6">
-          <h3 className="font-display text-lg font-semibold">Estimated 1RM by session</h3>
-          <p className="mb-2 text-sm text-faint">
+        <section className="mt-8">
+          <h3 className="type-title text-text-1">Estimated 1RM by session</h3>
+          <p className="type-meta mt-0.5 mb-3 text-text-2">
             Best set each session, sets of 12 reps or fewer. Brzycki up to 5 reps, Epley above.
           </p>
           <LineChart
@@ -104,32 +103,36 @@ function Body({ records: r, unit, onClose }: Props & { records: ExerciseRecords 
       ) : null}
 
       {r.repsAtLoad.length > 0 ? (
-        <section className="mt-6">
-          <h3 className="font-display text-lg font-semibold">Best reps at each load</h3>
-          <p className="mb-2 text-sm text-faint">
+        <section className="mt-8">
+          <h3 className="type-title text-text-1">Best reps at each load</h3>
+          <p className="type-meta mt-0.5 mb-3 text-text-2">
             Warm-ups excluded. Beat a number here and you have a rep record at that load.
           </p>
-          <div className="max-h-64 overflow-auto rounded-xl border border-line">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-surface-2 text-left text-xs text-faint">
-                <tr>
-                  <th scope="col" className="px-3 py-2 font-medium">
+          <div className="max-h-64 overflow-auto rounded-nested bg-surface-2">
+            <table className="type-body w-full">
+              <thead className="type-caption sticky top-0 bg-surface-2 text-left text-text-2">
+                <tr className="border-b-[0.5px] border-divider">
+                  <th scope="col" className="px-4 py-2.5 font-medium">
                     Load
                   </th>
-                  <th scope="col" className="px-3 py-2 font-medium">
+                  <th scope="col" className="px-4 py-2.5 font-medium">
                     Best reps
                   </th>
-                  <th scope="col" className="px-3 py-2 text-right font-medium">
+                  <th scope="col" className="px-4 py-2.5 text-right font-medium">
                     Date
                   </th>
                 </tr>
               </thead>
-              <tbody className="tabular divide-y divide-line">
+              <tbody className="tabular divide-y-[0.5px] divide-divider">
                 {r.repsAtLoad.map((row) => (
                   <tr key={row.weightKg}>
-                    <td className="px-3 py-2 font-semibold">{formatWeight(row.weightKg, unit)}</td>
-                    <td className="px-3 py-2">{row.reps}</td>
-                    <td className="px-3 py-2 text-right text-faint">{formatShortDate(row.date)}</td>
+                    <td className="px-4 py-2.5 font-semibold text-text-1">
+                      {formatWeight(row.weightKg, unit)}
+                    </td>
+                    <td className="px-4 py-2.5 text-text-1">{row.reps}</td>
+                    <td className="type-meta px-4 py-2.5 text-right text-text-2">
+                      {formatShortDate(row.date)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -138,35 +141,39 @@ function Body({ records: r, unit, onClose }: Props & { records: ExerciseRecords 
         </section>
       ) : null}
 
-      <section className="mt-6">
-        <h3 className="font-display text-lg font-semibold">Record history</h3>
+      <section className="mt-8">
+        <h3 className="type-title text-text-1">Record history</h3>
         {r.history.length === 0 ? (
-          <p className="mt-1 text-sm text-muted">
+          <p className="type-meta mt-2 flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center text-text-2">
             No records yet beyond your first session, which is the baseline.
           </p>
         ) : (
-          <ol className="mt-2 divide-y divide-line">
+          <ol className="mt-2 divide-y-[0.5px] divide-divider">
             {r.history.map((pr) => (
-              <li key={pr.id} className="flex items-center justify-between gap-3 py-2.5">
+              <li key={pr.id} className="flex min-h-14 items-center justify-between gap-3 py-3">
                 <span className="min-w-0">
-                  <span className="flex items-center gap-1.5 text-sm font-semibold">
-                    <Trophy className="size-3.5 text-accent-text" aria-hidden />
+                  <span className="type-headline flex items-center gap-2 text-text-1">
+                    <Trophy className="size-4 shrink-0 text-text-2" aria-hidden />
                     {PR_LABELS[pr.type]}
                   </span>
-                  <span className="text-xs text-faint">{formatShortDate(pr.date)}</span>
+                  <span className="type-meta mt-0.5 block text-text-2">
+                    {formatShortDate(pr.date)}
+                  </span>
                 </span>
-                <span className="tabular text-right">
-                  <span className="block font-display text-lg font-semibold">
+                <span className="shrink-0 text-right">
+                  <span className="type-headline tabular block text-text-1">
                     {formatRecordValue(pr.type, pr.value, unit)}
                   </span>
-                  <span className="text-xs text-accent-text">{improvementText(pr, unit)}</span>
+                  <span className="type-meta tabular mt-0.5 block text-text-2">
+                    {improvementText(pr, unit)}
+                  </span>
                 </span>
               </li>
             ))}
           </ol>
         )}
       </section>
-    </Sheet>
+    </BottomSheet>
   );
 }
 
@@ -184,17 +191,17 @@ function Best({
   estimate?: boolean;
 }) {
   return (
-    <div className="rounded-2xl bg-surface-2 p-3.5">
-      <dt className="flex items-center gap-1.5 text-xs font-medium text-faint">
+    <div className="min-w-0 rounded-nested bg-surface-2 p-4">
+      <dt className="type-meta flex flex-wrap items-center gap-1.5 text-text-2">
         {label}
         {estimate ? (
-          <span className="rounded-full border border-line-strong px-1.5 text-[0.65rem]">
+          <span className="type-caption inline-flex h-5 items-center rounded-full bg-surface px-2 font-semibold text-text-2">
             estimate
           </span>
         ) : null}
       </dt>
-      <dd className="tabular mt-1 font-display text-[1.3rem] font-bold leading-none">{value}</dd>
-      <dd className="mt-1 text-xs text-faint">
+      <dd className="type-title tabular mt-1 text-text-1">{value}</dd>
+      <dd className="type-meta tabular mt-0.5 text-text-2">
         {detail ? `${detail} · ` : ''}
         {formatShortDate(best.date)}
       </dd>

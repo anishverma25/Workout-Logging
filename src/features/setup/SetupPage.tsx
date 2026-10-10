@@ -3,21 +3,27 @@ import { useNavigate, useSearchParams } from 'react-router';
 import {
   Armchair,
   Briefcase,
-  Check,
   ChevronLeft,
   Dumbbell,
   Footprints,
   Hammer,
   Home,
-  Info,
   Warehouse,
   type LucideIcon,
 } from 'lucide-react';
 import { APP_NAME } from '@/app/navigation';
-import { Button } from '@/components/ui/Button';
-import { TextField } from '@/components/ui/Fields';
-import { NumberField } from '@/components/ui/NumberField';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import {
+  NumberField,
+  OptionCard,
+  PrimaryButton,
+  SecondaryButton,
+  SegmentedControl,
+  StatTile,
+  TextField,
+  TextLink,
+} from '@/components/kit';
+// The kit control gives no tab stop while nothing is selected, and sex starts unanswered.
+import { SegmentedControl as OptionalSegmentedControl } from '@/components/ui/SegmentedControl';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { usePreferences, useTrainingData } from '@/data/hooks';
@@ -285,41 +291,33 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg pt-safe">
-      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-safe pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-        <header className="flex h-14 items-center justify-between gap-3">
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-safe">
+        <header className="chrome flex h-14 items-center justify-between gap-3">
           {index > 0 ? (
             <button
               type="button"
               onClick={() => go(-1)}
-              className="tap-target -ml-2 inline-flex h-10 items-center gap-0.5 rounded-full pl-1 pr-3 font-medium text-accent-text"
+              className="pressable tap-target type-body -ml-2 inline-flex h-11 items-center gap-0.5 rounded-field pr-2 font-medium text-text-1"
             >
-              <ChevronLeft className="size-5" aria-hidden />
+              <ChevronLeft className="size-6" strokeWidth={1.75} aria-hidden />
               Back
             </button>
           ) : (
-            <span className="font-display text-[1.05rem] font-semibold">{APP_NAME}</span>
+            <span className="type-headline text-text-1">{APP_NAME}</span>
           )}
           {step !== 'plan' && step !== 'name' ? (
-            <button
-              type="button"
-              onClick={() => go(1)}
-              className="tap-target rounded-full px-3 py-2 font-medium text-faint hover:text-text"
-            >
+            <TextLink onClick={() => go(1)} className="px-2">
               Skip
-            </button>
+            </TextLink>
           ) : (
-            <button
-              type="button"
-              onClick={() => navigate(next, { replace: true })}
-              className="tap-target rounded-full px-3 py-2 font-medium text-faint hover:text-text"
-            >
+            <TextLink onClick={() => navigate(next, { replace: true })} className="px-2">
               {own ? 'Cancel' : 'Not now'}
-            </button>
+            </TextLink>
           )}
         </header>
 
         <div
-          className="mt-1 flex gap-1.5"
+          className="mt-1 flex gap-1"
           role="progressbar"
           aria-label="Setup progress"
           aria-valuemin={1}
@@ -330,8 +328,8 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
             <span
               key={s}
               className={cn(
-                'h-1 flex-1 rounded-full transition-colors duration-300',
-                i <= index ? 'bg-accent' : 'bg-[var(--seg-track)]',
+                'h-1 flex-1 rounded-full transition-colors duration-[var(--dur-move)]',
+                i <= index ? 'bg-lime' : 'bg-track',
               )}
             />
           ))}
@@ -387,14 +385,14 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
 
           {step === 'schedule' ? (
             <Question title="How often can you train?" usedFor={USED_FOR.schedule}>
-              <p className="mb-2.5 text-sm font-medium text-muted">Days a week</p>
+              <p className="type-meta mb-2 text-text-2">Days a week</p>
               <NumberPicker
                 label="Days a week"
                 values={[2, 3, 4, 5, 6, 7]}
                 value={draft.trainingDays}
                 onChange={(v) => set('trainingDays', v)}
               />
-              <p className="mb-2.5 mt-7 text-sm font-medium text-muted">Time per session</p>
+              <p className="type-meta mt-8 mb-2 text-text-2">Time per session</p>
               <WheelPicker
                 label="Minutes per session"
                 values={SESSION_MINUTES}
@@ -402,7 +400,7 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
                 onChange={(v) => set('sessionMinutes', v)}
                 unit="min"
               />
-              <p className="mt-2 text-center text-sm text-faint">
+              <p className="type-meta mt-2 text-center text-text-2">
                 Scroll to choose, in 5 minute steps. Include warm-up and rests.
               </p>
             </Question>
@@ -423,8 +421,8 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
             <Question title="A little about you" usedFor={USED_FOR.body}>
               <div className="flex flex-col gap-6">
                 <div>
-                  <p className="mb-2.5 text-sm font-medium text-muted">Sex</p>
-                  <SegmentedControl<Sex>
+                  <p className="type-meta mb-2 text-text-2">Sex</p>
+                  <OptionalSegmentedControl<Sex>
                     label="Sex"
                     value={draft.sex ?? ('' as Sex)}
                     onChange={(v) => set('sex', v)}
@@ -438,7 +436,7 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
                 <BirthDateField value={draft.birthDate} onChange={(v) => set('birthDate', v)} />
                 <div>
                   <div className="mb-1.5 flex items-center justify-between">
-                    <p className="text-sm font-medium text-muted">Height</p>
+                    <p className="type-meta text-text-2">Height</p>
                     <SegmentedControl
                       label="Height unit"
                       value={heightUnit}
@@ -531,48 +529,42 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
           ) : null}
 
           {error ? (
-            <p role="alert" className="mt-4 text-sm text-danger">
+            <p role="alert" className="type-meta mt-4 text-danger-text">
               {error}
             </p>
           ) : null}
 
-          <div className="mt-auto flex flex-col gap-2 pt-8">
+          <div className="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 bg-bg pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
             {step === 'plan' && !guided ? (
               <>
-                <Button size="lg" block disabled={busy} onClick={() => void finish('blank')}>
+                <PrimaryButton block disabled={busy} onClick={() => void finish('blank')}>
                   {busy ? 'Saving...' : 'Build my routine'}
-                </Button>
-                <Button
-                  size="lg"
-                  block
-                  variant="secondary"
-                  disabled={busy}
-                  onClick={() => void finish(false)}
-                >
+                </PrimaryButton>
+                <SecondaryButton block disabled={busy} onClick={() => void finish(false)}>
                   Save, I will set it up later
-                </Button>
+                </SecondaryButton>
               </>
             ) : step === 'plan' ? (
               <>
                 {templateKey ? (
-                  <Button size="lg" block disabled={busy} onClick={() => void finish(true)}>
+                  <PrimaryButton block disabled={busy} onClick={() => void finish(true)}>
                     {busy ? 'Saving...' : 'Create my routine'}
-                  </Button>
+                  </PrimaryButton>
                 ) : null}
-                <Button
-                  size="lg"
-                  block
-                  variant={templateKey ? 'secondary' : 'primary'}
-                  disabled={busy}
-                  onClick={() => void finish(false)}
-                >
-                  {templateKey ? 'Save, I will pick a routine later' : 'Save and finish'}
-                </Button>
+                {templateKey ? (
+                  <SecondaryButton block disabled={busy} onClick={() => void finish(false)}>
+                    Save, I will pick a routine later
+                  </SecondaryButton>
+                ) : (
+                  <PrimaryButton block disabled={busy} onClick={() => void finish(false)}>
+                    Save and finish
+                  </PrimaryButton>
+                )}
               </>
             ) : (
-              <Button size="lg" block disabled={!canContinue} onClick={() => go(1)}>
+              <PrimaryButton block disabled={!canContinue} onClick={() => go(1)}>
                 Continue
-              </Button>
+              </PrimaryButton>
             )}
           </div>
         </main>
@@ -595,17 +587,10 @@ function Question({
 }) {
   return (
     <section aria-labelledby="setup-question">
-      <h1
-        id="setup-question"
-        tabIndex={-1}
-        className="font-display text-[2rem] font-bold leading-[1.1] tracking-[-0.02em] outline-none"
-      >
+      <h1 id="setup-question" tabIndex={-1} className="type-display text-text-1 outline-none">
         {title}
       </h1>
-      <p className="mb-7 mt-2.5 flex items-start gap-1.5 text-sm text-faint">
-        <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
-        {usedFor}
-      </p>
+      <p className="type-body mt-2 mb-8 text-text-2 [text-wrap:balance]">{usedFor}</p>
       {children}
     </section>
   );
@@ -631,49 +616,18 @@ function Options<T extends string>({
   options: Option<T>[];
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-col gap-2.5">
+    <div role="radiogroup" aria-label={label} className="flex flex-col gap-2">
       {options.map((o) => {
-        const selected = value === o.value;
         const Icon = o.icon;
         return (
-          <button
+          <OptionCard
             key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => onChange(o.value)}
-            className={cn(
-              'flex w-full items-center gap-3.5 rounded-[1.1rem] bg-surface px-4 py-3.5 text-left ring-2 transition-[box-shadow,background-color] duration-150 active:scale-[0.99]',
-              selected ? 'ring-accent-text' : 'ring-transparent hover:bg-surface-2',
-            )}
-          >
-            {Icon ? (
-              <span
-                aria-hidden
-                className={cn(
-                  'flex size-10 shrink-0 items-center justify-center rounded-[0.75rem] transition-colors',
-                  selected ? 'bg-accent text-accent-ink' : 'bg-surface-2 text-muted',
-                )}
-              >
-                <Icon className="size-5" />
-              </span>
-            ) : null}
-            <span className="min-w-0 flex-1">
-              <span className="block font-semibold leading-snug">{o.label}</span>
-              {o.detail ? (
-                <span className="mt-0.5 block text-sm leading-snug text-faint">{o.detail}</span>
-              ) : null}
-            </span>
-            <span
-              aria-hidden
-              className={cn(
-                'flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
-                selected ? 'border-accent bg-accent text-accent-ink' : 'border-line-strong',
-              )}
-            >
-              {selected ? <Check className="size-3.5" strokeWidth={3.5} /> : null}
-            </span>
-          </button>
+            title={o.label}
+            description={o.detail}
+            icon={Icon ? <Icon /> : undefined}
+            selected={value === o.value}
+            onSelect={() => onChange(o.value)}
+          />
         );
       })}
     </div>
@@ -706,20 +660,13 @@ function NumberPicker({
             aria-label={suffix ? `${v} ${suffix === 'min' ? 'minutes' : suffix}` : String(v)}
             onClick={() => onChange(v)}
             className={cn(
-              'flex aspect-square flex-col items-center justify-center rounded-[1rem] transition-colors active:scale-95',
-              selected ? 'bg-accent text-accent-ink' : 'bg-surface text-text hover:bg-surface-2',
+              'pressable chrome flex min-h-14 flex-col items-center justify-center rounded-nested',
+              selected ? 'bg-text-1 text-bg' : 'bg-surface-2 text-text-1',
             )}
           >
-            <span className="tabular font-display text-[1.4rem] font-semibold leading-none">
-              {v}
-            </span>
+            <span className="type-title tabular">{v}</span>
             {suffix ? (
-              <span
-                className={cn(
-                  'mt-0.5 text-[0.7rem]',
-                  selected ? 'text-accent-ink/70' : 'text-faint',
-                )}
-              >
+              <span className={cn('type-caption', selected ? 'text-bg/75' : 'text-text-2')}>
                 {suffix}
               </span>
             ) : null}
@@ -754,93 +701,75 @@ function PlanSummary({
   const preview = picked ? personalizeTemplate(picked, planOptions) : null;
   return (
     <section aria-labelledby="setup-question">
-      <h1
-        id="setup-question"
-        tabIndex={-1}
-        className="font-display text-[2rem] font-bold leading-[1.1] tracking-[-0.02em] outline-none"
-      >
+      <h1 id="setup-question" tabIndex={-1} className="type-display text-text-1 outline-none">
         {name ? `${name.split(/\s+/)[0]}, here is your plan` : 'Here is your plan'}
       </h1>
-      <p className="mt-2.5 text-muted">
+      <p className="type-body mt-2 text-text-2 [text-wrap:balance]">
         {GOAL_LABEL[goal]}, {EXPERIENCE_LABEL[experience].toLowerCase()}. Change any of it later in
         your profile.
       </p>
 
       {energy ? (
-        <div className="mt-6 grid grid-cols-2 gap-2.5">
-          <Stat
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <StatTile
             label="Daily calories"
             value={energy.targetKcal.toLocaleString('en-GB')}
             unit="kcal"
-            detail={
+            caption={
               energy.adjustment === 0
                 ? 'Your maintenance'
                 : `Maintenance ${energy.tdee.toLocaleString('en-GB')}, ${energy.adjustment > 0 ? '+' : '−'}${Math.round(Math.abs(energy.adjustment) * 100)}% for your goal`
             }
           />
-          <Stat
+          <StatTile
             label="Protein"
             value={`${energy.proteinG[0].toFixed(1)} to ${energy.proteinG[1].toFixed(1)}`}
             unit="g"
-            detail="A day, spread over meals"
+            caption="A day, spread over meals"
           />
         </div>
       ) : (
-        <p className="mt-6 rounded-[1rem] bg-surface p-4 text-sm text-muted">
+        <p className="type-meta mt-6 rounded-nested bg-surface-2 px-4 py-3 text-text-2">
           Add your sex, birth date, height and weight in your profile to see daily calories and
           protein worked out for you.
         </p>
       )}
 
       {experience !== 'beginner' ? (
-        <div className="mt-6 rounded-[1.1rem] bg-surface p-5">
-          <h2 className="font-display text-[1.2rem] font-semibold leading-tight">
-            Bring your own split
-          </h2>
-          <p className="mt-1.5 text-muted">
+        <div className="mt-6 rounded-panel border border-border bg-surface p-5">
+          <h2 className="type-title text-text-1">Bring your own split</h2>
+          <p className="type-body mt-2 text-text-2">
             At an {EXPERIENCE_LABEL[experience].toLowerCase()} level you most likely train to a
             routine that already works for you, so we will not swap it for ours. Set it up once, day
             by day, and every session after that opens with last time&rsquo;s numbers ready.
           </p>
-          <p className="mt-3 text-sm text-faint">
+          <p className="type-meta mt-3 text-text-2">
             Prefer a starting point? Every template is still under Routines.
           </p>
         </div>
       ) : recommendation ? (
         <div className="mt-6">
-          <h2 className="mb-2.5 text-sm font-medium text-muted">Recommended routine</h2>
+          <h2 className="type-title mb-3 text-text-1">Recommended routine</h2>
           <div role="radiogroup" aria-label="Routine" className="flex flex-col gap-2">
-            {options.map((t, i) => {
-              const selected = t.key === templateKey;
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => onChoose(t.key)}
-                  className={cn(
-                    'rounded-[1.1rem] bg-surface px-4 py-3.5 text-left ring-2 transition-[box-shadow] duration-150',
-                    selected ? 'ring-accent-text' : 'ring-transparent',
-                  )}
-                >
-                  <span className="flex items-baseline justify-between gap-3">
-                    <span className="font-semibold">{t.name}</span>
-                    <span className="shrink-0 text-sm text-faint">
-                      {i === 0 ? 'Best fit' : `${t.daysPerWeek} days`}
-                    </span>
-                  </span>
-                  <span className="mt-0.5 block text-sm text-faint">
-                    {i === 0 ? recommendation.reason : t.summary}
-                  </span>
-                </button>
-              );
-            })}
+            {options.map((t, i) => (
+              <OptionCard
+                key={t.key}
+                title={t.name}
+                description={`${i === 0 ? 'Best fit' : `${t.daysPerWeek} days`} · ${
+                  i === 0 ? recommendation.reason : t.summary
+                }`}
+                selected={t.key === templateKey}
+                onSelect={() => onChoose(t.key)}
+              />
+            ))}
           </div>
           {preview ? (
-            <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Days in this routine">
+            <ul className="mt-3 flex flex-wrap gap-2" aria-label="Days in this routine">
               {preview.days.map((d) => (
-                <li key={d.name} className="rounded-full bg-surface-2 px-3 py-1 text-sm text-muted">
+                <li
+                  key={d.name}
+                  className="type-meta rounded-full bg-surface-2 px-3 py-1.5 text-text-2"
+                >
                   {d.name} · {d.exercises.length} exercises
                 </li>
               ))}
@@ -848,33 +777,10 @@ function PlanSummary({
           ) : null}
         </div>
       ) : (
-        <p className="mt-6 text-sm text-muted">
+        <p className="type-meta mt-6 rounded-nested bg-surface-2 px-4 py-3 text-text-2">
           Tell us how many days you can train to get a routine recommendation.
         </p>
       )}
     </section>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  unit,
-  detail,
-}: {
-  label: string;
-  value: string;
-  unit: string;
-  detail: string;
-}) {
-  return (
-    <div className="rounded-[1.1rem] bg-surface p-4">
-      <p className="text-[0.8125rem] font-medium text-faint">{label}</p>
-      <p className="tabular mt-1 font-display text-[1.6rem] font-semibold leading-tight tracking-tight">
-        {value}
-        <span className="ml-1 text-base font-medium text-faint">{unit}</span>
-      </p>
-      <p className="mt-0.5 text-xs text-faint">{detail}</p>
-    </div>
   );
 }

@@ -1,11 +1,30 @@
-import { useMemo, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router';
-import { ArrowLeft, Ellipsis, NotebookPen, Pencil, Trash2, Trophy } from 'lucide-react';
-import { Button, IconButton } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { ActionList, TextArea, TextField } from '@/components/ui/Fields';
-import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
-import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
+import { useId, useMemo, useState } from 'react';
+import { Navigate, useNavigate, useParams } from 'react-router';
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  ChevronRight,
+  Ellipsis,
+  Minus,
+  NotebookPen,
+  Pencil,
+  Trash2,
+  Trophy,
+} from 'lucide-react';
+import { PageHeader } from '@/app/layout/PageHeader';
+import {
+  Badge,
+  BottomSheet,
+  Card,
+  ConfirmSheet,
+  DestructiveButton,
+  IconButton,
+  IconTile,
+  PrimaryButton,
+  SecondaryButton,
+} from '@/components/kit';
+import { TextArea, TextField } from '@/components/ui/Fields';
+import { ErrorState, Skeleton } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { usePreferences, useTrainingData, useWorkoutView } from '@/data/hooks';
@@ -17,15 +36,15 @@ import { deleteWorkout, updateWorkoutDetails } from '@/data/repositories/workout
 import { estimateOneRepMax, supportsE1rm } from '@/domain/analytics/e1rm';
 import { formatRecordValue, PR_LABELS, type PersonalRecord } from '@/domain/analytics/prs';
 import { SET_TYPE_LABELS, SET_TYPE_SHORT } from '@/domain/models/labels';
-import type { Preferences, WorkoutSet } from '@/domain/models/schemas';
+import type { Preferences, TrackingType, WorkoutSet } from '@/domain/models/schemas';
 import { summarizeWorkout, type ExerciseChange } from '@/domain/workout/summary';
-import { cn } from '@/lib/cn';
 import { formatLongDay } from '@/lib/dates';
 import { readableError } from '@/lib/errors';
-import { formatCompact, formatDurationMinutes, formatSignedPercent, pluralize } from '@/lib/format';
-import { formatWeight, toDisplayWeight, type WeightUnit } from '@/lib/units';
-import { formatSetValues, setLabels, SET_TYPE_STYLES, trackingOf } from '../workout/format';
+import { formatCompact, formatSignedPercent, pluralize } from '@/lib/format';
+import { formatWeight, formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
+import { columnsFor, formatSetValues, setLabels, trackingOf } from '../workout/format';
 import { EditLoggedSetSheet } from './EditLoggedSetSheet';
+import { DurationValue, StatItem } from './StatItem';
 
 const timeFormat = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
 
@@ -39,6 +58,7 @@ export function WorkoutDetailPage() {
   const [menu, setMenu] = useState(false);
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [editSet, setEditSet] = useState<string | null>(null);
 
   const summary = useMemo(
@@ -68,16 +88,18 @@ export function WorkoutDetailPage() {
   if (!data || data.workout.status === 'cancelled') {
     return (
       <div className="pt-10">
-        <EmptyState
-          icon={<Trash2 className="size-5" aria-hidden />}
-          title="Workout not found"
-          body="It may have been deleted. Your other workouts are not affected."
-          actions={
-            <Button variant="secondary" onClick={() => navigate('/history')}>
-              Back to history
-            </Button>
-          }
-        />
+        <Card className="flex flex-col items-center gap-3 px-5 py-8 text-center">
+          <IconTile icon={<Trash2 />} />
+          <div>
+            <h1 className="type-headline text-text-1">Workout not found</h1>
+            <p className="type-meta mt-1 max-w-[36ch] text-text-2 [text-wrap:balance]">
+              It may have been deleted. Your other workouts are not affected.
+            </p>
+          </div>
+          <SecondaryButton compact onClick={() => navigate('/history')}>
+            Back to history
+          </SecondaryButton>
+        </Card>
       </div>
     );
   }
@@ -96,60 +118,46 @@ export function WorkoutDetailPage() {
 
   return (
     <div className="pb-8">
-      <div className="pt-4 lg:pt-8">
-        <Link
-          to="/history"
-          className="-ml-2 inline-flex h-10 items-center gap-1.5 rounded-full px-2 text-sm font-medium text-muted hover:text-text"
-        >
-          <ArrowLeft className="size-4" aria-hidden /> History
-        </Link>
-      </div>
-      <header className="flex items-start justify-between gap-3 pb-5 pt-1">
-        <div className="min-w-0">
-          <h1 className="font-display text-[1.5rem] font-bold leading-none sm:text-[1.75rem]">
-            {workout.name}
-          </h1>
-          <p className="mt-2 text-muted">
+      <PageHeader
+        back={{ to: '/history', label: 'History' }}
+        title={workout.name}
+        subtitle={
+          <>
             {formatLongDay(start)} at {timeFormat.format(start)}
-            {routine ? <span className="text-faint"> · {routine.name}</span> : null}
-          </p>
-        </div>
-        <IconButton
-          label="Workout options"
-          icon={<Ellipsis className="size-5" aria-hidden />}
-          onClick={() => setMenu(true)}
-        />
-      </header>
+            {routine ? ` · ${routine.name}` : null}
+          </>
+        }
+        actions={
+          <IconButton
+            label="Workout options"
+            icon={<Ellipsis aria-hidden />}
+            onClick={() => setMenu(true)}
+          />
+        }
+      />
 
       {summary ? (
-        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Stat
+        <dl className="grid grid-cols-2 gap-3 tab:grid-cols-4">
+          <StatItem
             label="Duration"
-            value={
-              summary.minutes === null
-                ? 'n/a'
-                : summary.minutes < 1
-                  ? '<1 min'
-                  : formatDurationMinutes(summary.minutes)
-            }
+            value={summary.minutes !== null ? <DurationValue minutes={summary.minutes} /> : null}
+            empty={summary.minutes === null ? 'Not recorded' : undefined}
           />
-          <Stat label="Working sets" value={String(summary.workingSets)} />
-          <Stat
-            label={`Volume (${prefs.weightUnit})`}
-            value={
-              summary.volumeKg > 0
-                ? formatCompact(toDisplayWeight(summary.volumeKg, prefs.weightUnit))
-                : 'n/a'
-            }
+          <StatItem label="Working sets" value={String(summary.workingSets)} />
+          <StatItem
+            label="Volume load"
+            value={formatCompact(toDisplayWeight(summary.volumeKg, prefs.weightUnit))}
+            unit={prefs.weightUnit}
+            empty={summary.volumeKg > 0 ? undefined : 'None'}
           />
-          <Stat
+          <StatItem
             label="Records"
             value={String(new Set(summary.prs.map((p) => p.exerciseId)).size)}
           />
         </dl>
       ) : null}
       {workout.sessionRpe || workout.readiness ? (
-        <p className="mt-3 text-sm text-muted">
+        <p className="type-meta tabular mt-3 text-text-2">
           {workout.readiness
             ? `Before: sleep ${workout.readiness.sleep}/5, energy ${workout.readiness.energy}/5, soreness ${workout.readiness.soreness}/5. `
             : ''}
@@ -164,12 +172,12 @@ export function WorkoutDetailPage() {
       ) : null}
 
       {workout.notes ? (
-        <Card className="mt-4 p-4">
-          <p className="whitespace-pre-line text-muted">{workout.notes}</p>
-        </Card>
+        <p className="type-body mt-4 rounded-nested bg-surface-2 px-4 py-3 whitespace-pre-line text-text-2">
+          {workout.notes}
+        </p>
       ) : null}
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-2 lg:items-start">
+      <div className="mt-6 grid gap-4 lg:grid-cols-2 lg:items-start">
         {exercises.map((ex) => (
           <ExerciseBlock
             key={ex.workoutExercise.id}
@@ -185,34 +193,42 @@ export function WorkoutDetailPage() {
           />
         ))}
       </div>
-      <p className="mt-4 text-sm text-faint">
+      <p className="type-meta mt-4 text-text-2">
         Tap a set to correct it. Records and analytics update automatically.
       </p>
 
-      <Sheet open={menu} onClose={() => setMenu(false)} title={workout.name}>
-        <ActionList
-          items={[
-            {
-              label: 'Rename and edit notes',
-              icon: <Pencil className="size-5" aria-hidden />,
-              onSelect: () => {
-                setMenu(false);
-                setEditing(true);
-              },
-            },
-            {
-              label: 'Delete workout',
-              hint: 'Removes it from history, records and analytics.',
-              icon: <Trash2 className="size-5" aria-hidden />,
-              danger: true,
-              onSelect: () => {
+      <BottomSheet open={menu} onClose={() => setMenu(false)} title={workout.name}>
+        <div className="flex flex-col gap-4 pt-1">
+          <button
+            type="button"
+            onClick={() => {
+              setMenu(false);
+              setEditing(true);
+            }}
+            className="pressable chrome flex min-h-14 w-full items-center gap-3 rounded-field text-left"
+          >
+            <IconTile icon={<Pencil />} />
+            <span className="type-headline min-w-0 flex-1 text-text-1">Rename and edit notes</span>
+            <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
+          </button>
+          <div>
+            <DestructiveButton
+              block
+              icon={<Trash2 aria-hidden />}
+              aria-describedby="delete-workout-hint"
+              onClick={() => {
                 setMenu(false);
                 setConfirmDelete(true);
-              },
-            },
-          ]}
-        />
-      </Sheet>
+              }}
+            >
+              Delete workout
+            </DestructiveButton>
+            <p id="delete-workout-hint" className="type-meta mt-2 text-center text-text-2">
+              Removes it from history, records and analytics.
+            </p>
+          </div>
+        </div>
+      </BottomSheet>
       {editing ? (
         <EditWorkoutSheet
           name={workout.name}
@@ -226,12 +242,19 @@ export function WorkoutDetailPage() {
         title={`Delete ${workout.name}?`}
         body={`This removes ${pluralize(allSets.filter((s) => s.completedAt).length, 'logged set')} from your history. Records and analytics are recalculated without it. This cannot be undone.`}
         confirmLabel="Delete workout"
-        danger
+        destructive
+        busy={deleting}
         onClose={() => setConfirmDelete(false)}
         onConfirm={async () => {
-          await deleteWorkout(db, workout.id);
-          toast('Workout deleted');
-          navigate('/history', { replace: true });
+          setDeleting(true);
+          try {
+            await deleteWorkout(db, workout.id);
+            toast('Workout deleted');
+            navigate('/history', { replace: true });
+          } catch (err) {
+            setDeleting(false);
+            toast(readableError(err));
+          }
         }}
       />
       <EditLoggedSetSheet
@@ -245,13 +268,22 @@ export function WorkoutDetailPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl bg-surface-2 px-3.5 py-3">
-      <dt className="text-xs font-medium text-faint">{label}</dt>
-      <dd className="tabular mt-1 font-display text-[1.3rem] font-bold leading-none">{value}</dd>
-    </div>
-  );
+const round2 = (v: number) => Math.round(v * 100) / 100;
+
+/** The numbers in the load and amount columns, as the logger shows them. */
+function cellValues(set: WorkoutSet, tracking: TrackingType, unit: WeightUnit) {
+  const cols = columnsFor(tracking, unit);
+  if (tracking === 'cardio') {
+    return {
+      load: set.durationSec === null ? null : String(round2(set.durationSec / 60)),
+      amount: set.distanceM === null ? null : String(round2(set.distanceM / 1000)),
+    };
+  }
+  const amount = set[cols.amountField];
+  return {
+    load: set.weightKg === null ? null : formatWeightValue(set.weightKg, unit, 2),
+    amount: amount === null ? null : String(amount),
+  };
 }
 
 function ExerciseBlock({
@@ -271,42 +303,68 @@ function ExerciseBlock({
   reference?: number | null;
 }) {
   const { workoutExercise: we, exercise } = view;
+  const headingId = useId();
+  const unit = prefs.weightUnit;
   const sets = view.sets.filter((s) => s.completedAt !== null);
   const tracking = trackingOf(exercise);
+  const cols = columnsFor(tracking, unit);
   const labels = setLabels(sets);
   const best = sets.reduce<number | null>((b, s) => {
     if (!supportsE1rm(exercise) || s.setType === 'warmup') return b;
     const e = estimateOneRepMax(s.weightKg, s.reps, s.rir);
     return e !== null && (b === null || e > b) ? e : b;
   }, null);
+  const percentOf = (s: WorkoutSet) =>
+    supportsE1rm(exercise) && s.weightKg && (reference ?? best)
+      ? Math.round((s.weightKg / (reference ?? best)!) * 100)
+      : null;
+
+  // The effort column follows what was logged: RIR, or RPE when only RPE was recorded.
+  const effortKey: 'rir' | 'rpe' | null = !cols.showEffort
+    ? null
+    : sets.some((s) => s.rir !== null)
+      ? 'rir'
+      : sets.some((s) => s.rpe !== null)
+        ? 'rpe'
+        : null;
+  const showPercent = sets.some((s) => percentOf(s) !== null);
+  const perHand = exercise?.loadMode === 'per_hand' && cols.load !== null && tracking !== 'cardio';
+  const columns = [
+    '28px',
+    ...(cols.load !== null ? ['minmax(0,1fr)'] : []),
+    'minmax(0,1fr)',
+    ...(effortKey ? ['minmax(0,0.8fr)'] : []),
+    ...(showPercent ? ['minmax(0,0.9fr)'] : []),
+  ].join(' ');
+  const same = change && change.kind !== 'first' && Math.abs(change.change) < 0.0005;
+  const TrendIcon =
+    change && change.kind !== 'first'
+      ? change.change > 0.0005
+        ? ArrowUpRight
+        : change.change < -0.0005
+          ? ArrowDownRight
+          : Minus
+      : null;
 
   return (
-    <Card className="p-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="min-w-0 truncate font-display text-[1.35rem] font-bold">
+    <Card as="section" aria-labelledby={headingId}>
+      <div className="flex items-start justify-between gap-3">
+        <h2 id={headingId} className="type-headline min-w-0 truncate text-text-1">
           {we.exerciseName}
         </h2>
-        {change && change.kind !== 'first' ? (
+        {change && change.kind !== 'first' && TrendIcon ? (
           <span
-            className={cn(
-              'tabular shrink-0 text-sm font-semibold',
-              change.change > 0.0005
-                ? 'text-accent-text'
-                : change.change < -0.0005
-                  ? 'text-warn'
-                  : 'text-muted',
-            )}
+            className="type-meta tabular flex shrink-0 items-center gap-1 text-text-2"
             title="Best set compared with the previous session"
           >
-            {Math.abs(change.change) < 0.0005
-              ? 'Same as last time'
-              : formatSignedPercent(change.change, 1)}
+            <TrendIcon className="size-4" aria-hidden />
+            {same ? 'Same as last time' : formatSignedPercent(change.change, 1)}
             <span className="sr-only"> compared with the previous session</span>
           </span>
         ) : null}
       </div>
       {we.target ? (
-        <p className="tabular text-sm text-faint">
+        <p className="type-meta tabular mt-0.5 text-text-2">
           Target {we.target.sets} ×{' '}
           {we.target.repMin === we.target.repMax
             ? we.target.repMin
@@ -314,29 +372,47 @@ function ExerciseBlock({
           {we.target.rir !== null ? ` · RIR ${we.target.rir}` : ''}
         </p>
       ) : null}
-      {we.notes ? <p className="mt-1 text-sm text-muted">{we.notes}</p> : null}
-      <ol className="mt-3 flex flex-col">
+      {we.notes ? <p className="type-meta mt-1 text-text-2">{we.notes}</p> : null}
+
+      <div
+        aria-hidden
+        className="type-caption mt-4 grid items-center gap-1.5 px-1.5 pb-1 text-text-2"
+        style={{ gridTemplateColumns: columns }}
+      >
+        <span className="text-center">Set</span>
+        {cols.load !== null ? (
+          <span className="text-center">{perHand ? `${cols.load} each` : cols.load}</span>
+        ) : null}
+        <span className="text-center">{cols.amount}</span>
+        {effortKey ? <span className="text-center">{effortKey.toUpperCase()}</span> : null}
+        {showPercent ? (
+          <span className="text-center" title="Share of your best estimated 1RM">
+            % 1RM
+          </span>
+        ) : null}
+      </div>
+      <ol className="flex flex-col gap-0.5">
         {sets.map((s) => (
           <SetLine
             key={s.id}
             set={s}
             label={SET_TYPE_SHORT[s.setType] || labels.get(s.id) || ''}
-            text={formatSetValues(s, tracking, prefs.weightUnit)}
+            text={formatSetValues(s, tracking, unit)}
+            cells={cellValues(s, tracking, unit)}
+            hasLoad={cols.load !== null}
+            effortKey={effortKey}
+            columns={columns}
             prs={prBySet.get(s.id) ?? []}
-            unit={prefs.weightUnit}
+            unit={unit}
             onEdit={() => onEditSet(s.id)}
-            percent={
-              supportsE1rm(exercise) && s.weightKg && (reference ?? best)
-                ? Math.round((s.weightKg / (reference ?? best)!) * 100)
-                : null
-            }
+            percent={showPercent ? percentOf(s) : undefined}
           />
         ))}
       </ol>
       {best !== null ? (
-        <p className="mt-2 text-xs text-faint">
-          Best estimated 1RM {formatWeight(best, prefs.weightUnit)}. An estimate from the set, not a
-          lift performed.
+        <p className="type-meta mt-3 text-text-2">
+          Best estimated 1RM {formatWeight(best, unit)}. An estimate from the set, not a lift
+          performed.
         </p>
       ) : null}
     </Card>
@@ -347,6 +423,10 @@ function SetLine({
   set,
   label,
   text,
+  cells,
+  hasLoad,
+  effortKey,
+  columns,
   prs,
   unit,
   onEdit,
@@ -355,50 +435,78 @@ function SetLine({
   set: WorkoutSet;
   label: string;
   text: string;
+  cells: { load: string | null; amount: string | null };
+  hasLoad: boolean;
+  effortKey: 'rir' | 'rpe' | null;
+  columns: string;
   prs: PersonalRecord[];
   unit: WeightUnit;
   onEdit: () => void;
-  /** Load as a share of the best estimated 1RM. */
-  percent: number | null;
+  /** Load as a share of the best estimated 1RM; undefined when the column is not shown. */
+  percent?: number | null;
 }) {
   const effort = set.rir !== null ? `RIR ${set.rir}` : set.rpe !== null ? `RPE ${set.rpe}` : null;
+  // The column shows the bare number; a set logged in the other scale keeps its label.
+  const effortCell =
+    effortKey === 'rir'
+      ? set.rir !== null
+        ? String(set.rir)
+        : effort
+      : effortKey === 'rpe'
+        ? set.rpe !== null
+          ? String(set.rpe)
+          : effort
+        : null;
   return (
     <li>
       <button
         type="button"
         onClick={onEdit}
         aria-label={`${SET_TYPE_LABELS[set.setType]} set ${label}: ${text}${effort ? `, ${effort}` : ''}. Edit`}
-        className="grid w-full grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-xl px-1.5 py-2 text-left transition-colors hover:bg-surface-2"
+        className="pressable w-full rounded-field px-1.5 py-1.5 text-left transition-colors hover:bg-surface-2"
       >
-        <span
-          className={cn('tabular text-center font-display font-bold', SET_TYPE_STYLES[set.setType])}
-        >
-          {label}
-        </span>
-        <span className="min-w-0">
-          <span className="tabular font-semibold">{text}</span>
-          {set.notes ? (
-            <span className="block truncate text-xs text-faint">{set.notes}</span>
+        <span className="grid items-center gap-1.5" style={{ gridTemplateColumns: columns }}>
+          <span className="type-caption tabular flex size-7 items-center justify-center rounded-full bg-surface-2 font-semibold text-text-2">
+            {label}
+          </span>
+          {hasLoad ? (
+            <span className="type-headline tabular truncate text-center text-text-1">
+              {cells.load ?? ''}
+            </span>
           ) : null}
-          {prs.length > 0 ? (
-            <span className="mt-0.5 flex flex-wrap gap-x-2 text-xs font-semibold text-accent-text">
-              {prs.map((p) => (
-                <span key={p.id} className="inline-flex items-center gap-1">
-                  <Trophy className="size-3" aria-hidden />
-                  {PR_LABELS[p.type]} {formatRecordValue(p.type, p.value, unit)}
+          <span className="type-headline tabular truncate text-center text-text-1">
+            {cells.amount ?? ''}
+          </span>
+          {effortKey ? (
+            <span className="type-body tabular truncate text-center text-text-2">
+              {effortCell ?? ''}
+            </span>
+          ) : null}
+          {percent !== undefined ? (
+            <span className="type-meta tabular truncate text-center text-text-2">
+              {percent !== null ? `${percent}%` : ''}
+            </span>
+          ) : null}
+        </span>
+        {prs.length > 0 || set.notes ? (
+          <span className="mt-1 flex flex-col gap-1 pl-[34px]">
+            {prs.length > 0 ? (
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <Badge tone="lime" icon={<Trophy aria-hidden />}>
+                  Record
+                </Badge>
+                <span className="type-meta tabular text-text-2">
+                  {prs
+                    .map((p) => `${PR_LABELS[p.type]} ${formatRecordValue(p.type, p.value, unit)}`)
+                    .join(' · ')}
                 </span>
-              ))}
-            </span>
-          ) : null}
-        </span>
-        <span className="tabular text-right text-sm text-faint">
-          {effort ?? ''}
-          {percent !== null ? (
-            <span className="block text-xs" title="Share of your best estimated 1RM">
-              {percent}% 1RM
-            </span>
-          ) : null}
-        </span>
+              </span>
+            ) : null}
+            {set.notes ? (
+              <span className="type-meta block truncate text-text-2">{set.notes}</span>
+            ) : null}
+          </span>
+        ) : null}
       </button>
     </li>
   );
@@ -418,26 +526,29 @@ function EditWorkoutSheet({
   const [name, setName] = useState(initialName);
   const [notes, setNotes] = useState(initialNotes);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const save = async () => {
+    setSaving(true);
     try {
       await onSave(name, notes);
       onClose();
     } catch (err) {
       setError(readableError(err));
+      setSaving(false);
     }
   };
   return (
-    <Sheet
+    <BottomSheet
       open
       onClose={onClose}
       title="Edit workout"
       footer={
-        <Button block onClick={save}>
+        <PrimaryButton block loading={saving} onClick={save}>
           Save
-        </Button>
+        </PrimaryButton>
       }
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 pt-1">
         <TextField
           label="Name"
           value={name}
@@ -452,10 +563,10 @@ function EditWorkoutSheet({
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Energy, sleep, anything worth remembering"
         />
-        <p className="flex items-center gap-2 text-sm text-faint">
-          <NotebookPen className="size-4" aria-hidden /> Sets are edited by tapping them.
+        <p className="type-meta flex items-center gap-2 text-text-2">
+          <NotebookPen className="size-4 shrink-0" aria-hidden /> Sets are edited by tapping them.
         </p>
       </div>
-    </Sheet>
+    </BottomSheet>
   );
 }

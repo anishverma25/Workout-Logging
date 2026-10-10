@@ -2,10 +2,19 @@ import { COPY } from '@/domain/analytics/thresholdCopy';
 import { useState } from 'react';
 import { Plus, Target, Trash2, Trophy } from 'lucide-react';
 import { useFeature } from '@/app/entitlement';
-import { Button } from '@/components/ui/Button';
-import { Chips, TextField } from '@/components/ui/Fields';
-import { NumberField } from '@/components/ui/NumberField';
-import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
+import {
+  BottomSheet,
+  Card,
+  Chip,
+  ConfirmSheet,
+  DestructiveButton,
+  IconTile,
+  NumberField,
+  PrimaryButton,
+  SecondaryButton,
+  TextField,
+} from '@/components/kit';
+import { Chips } from '@/components/ui/Fields';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { addGoal, deleteGoal, GoalError, updateGoal } from '@/data/repositories/goals';
@@ -19,6 +28,7 @@ import {
   type WeightUnit,
 } from '@/lib/units';
 import { ExercisePicker } from '@/features/exercises/ExercisePicker';
+import { cn } from '@/lib/cn';
 import { goalTitle } from './format';
 
 const KIND_LABEL: Record<GoalKind, string> = {
@@ -47,47 +57,36 @@ export function GoalsSection({
 
   return (
     <section aria-labelledby="goals-title">
-      <div className="mb-2.5 flex items-end justify-between gap-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h2 id="goals-title" className="type-title text-text-1">
           Goals
         </h2>
         {progress.length > 0 ? (
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={<Plus className="size-4" aria-hidden />}
-            onClick={() => setEditing('new')}
-          >
+          <Chip toggle={false} leading={<Plus aria-hidden />} onClick={() => setEditing('new')}>
             Add goal
-          </Button>
+          </Chip>
         ) : null}
       </div>
 
       {progress.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 rounded-panel border border-border bg-surface p-5">
-          <span className="flex size-9 items-center justify-center rounded-tile bg-surface-2 text-text-2">
-            <Target className="size-5" aria-hidden />
-          </span>
-          <p className="type-meta max-w-[48ch] text-text-2">
+        <Card className="flex flex-col items-start gap-4">
+          <IconTile icon={<Target />} />
+          <p className="type-body max-w-[48ch] text-text-2 [text-wrap:balance]">
             Set a target for a lift or your body weight, with a date if you like. The app tracks it
             from your logged sets and works out when you will get there at your current rate.
           </p>
-          <Button
-            variant="secondary"
-            icon={<Plus className="size-4" aria-hidden />}
-            onClick={() => setEditing('new')}
-          >
+          <SecondaryButton icon={<Plus aria-hidden />} onClick={() => setEditing('new')}>
             Add a goal
-          </Button>
-        </div>
+          </SecondaryButton>
+        </Card>
       ) : (
-        <ul className="flex flex-col gap-2.5">
+        <ul className="flex flex-col gap-3">
           {[...open, ...reached].map((p) => (
             <li key={p.goal.id}>
               <button
                 type="button"
                 onClick={() => setEditing(p.goal)}
-                className="pressable block w-full rounded-panel border border-border bg-surface p-4 text-left"
+                className="pressable chrome block w-full rounded-panel border border-border bg-surface p-5 text-left"
               >
                 <span className="flex items-start justify-between gap-3">
                   <span className="type-headline text-text-1">
@@ -95,7 +94,7 @@ export function GoalsSection({
                   </span>
                   {p.reached ? (
                     <span className="type-meta inline-flex shrink-0 items-center gap-1 font-semibold text-text-1">
-                      <Trophy className="size-4" aria-hidden /> Reached
+                      <Trophy className="size-4 text-text-2" aria-hidden /> Reached
                     </span>
                   ) : p.goal.targetDate ? (
                     <span className="type-meta shrink-0 text-text-2">
@@ -105,7 +104,7 @@ export function GoalsSection({
                 </span>
                 <span className="mt-2.5 block h-1.5 overflow-hidden rounded-full bg-track">
                   <span
-                    className="block h-full rounded-full bg-lime transition-[width] duration-700"
+                    className="block h-full rounded-full bg-lime transition-[width] duration-[var(--dur-move)] ease-[var(--ease-standard)]"
                     style={{ width: `${(p.fraction ?? 0) * 100}%` }}
                   />
                 </span>
@@ -203,30 +202,32 @@ function GoalSheet({
 
   return (
     <>
-      <Sheet
+      <BottomSheet
         open={!picking && !confirmDelete}
         onClose={onClose}
         title={goal ? 'Edit goal' : 'New goal'}
         footer={
           <div className="flex items-center justify-between gap-2">
             {goal ? (
-              <Button
-                variant="danger"
-                icon={<Trash2 className="size-4" aria-hidden />}
+              <DestructiveButton
+                icon={<Trash2 aria-hidden />}
                 onClick={() => setConfirmDelete(true)}
               >
                 Delete
-              </Button>
+              </DestructiveButton>
             ) : (
               <span />
             )}
-            <Button onClick={save}>{goal ? 'Save changes' : 'Add goal'}</Button>
+            <PrimaryButton onClick={save}>{goal ? 'Save changes' : 'Add goal'}</PrimaryButton>
           </div>
         }
       >
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium text-muted">Goal type</p>
+        <div className="flex flex-col gap-5 pt-1">
+          <div>
+            <p className="type-meta mb-1.5 text-text-2" aria-hidden>
+              Goal type
+            </p>
+            {/* Chips with radio semantics: one goal type at a time. */}
             <Chips
               label="Goal type"
               options={(Object.keys(KIND_LABEL) as GoalKind[]).map((k) => ({
@@ -238,15 +239,15 @@ function GoalSheet({
             />
           </div>
           {kind !== 'body_weight' ? (
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium text-muted">Exercise</p>
-              <Button
-                variant="secondary"
+            <div>
+              <p className="type-meta mb-1.5 text-text-2">Exercise</p>
+              <SecondaryButton
+                block
                 onClick={() => setPicking(true)}
-                className="justify-start"
+                className={cn('justify-start', !exerciseId && 'text-text-2')}
               >
                 {exerciseId ? names.get(exerciseId) : 'Choose an exercise'}
-              </Button>
+              </SecondaryButton>
             </div>
           ) : null}
           <NumberField
@@ -257,7 +258,7 @@ function GoalSheet({
             max={unit === 'kg' ? 1000 : 2200}
           />
           {current !== null ? (
-            <p className="-mt-3 text-sm text-faint">
+            <p className="type-meta -mt-3 text-text-2">
               You are at {formatWeightValue(current, unit)} {unit} now.
             </p>
           ) : null}
@@ -269,12 +270,12 @@ function GoalSheet({
             onChange={(e) => setDate(e.target.value)}
           />
           {error ? (
-            <p role="alert" className="text-sm text-danger">
+            <p role="alert" className="type-meta text-danger-text">
               {error}
             </p>
           ) : null}
         </div>
-      </Sheet>
+      </BottomSheet>
       <ExercisePicker
         open={picking}
         onClose={() => setPicking(false)}
@@ -290,7 +291,7 @@ function GoalSheet({
         title="Delete this goal?"
         body="Your logged sets are not affected."
         confirmLabel="Delete"
-        danger
+        destructive
         onClose={() => setConfirmDelete(false)}
         onConfirm={async () => {
           await deleteGoal(db, goal!.id);

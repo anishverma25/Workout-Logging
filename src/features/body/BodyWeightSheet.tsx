@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import {
+  BottomSheet,
+  ConfirmSheet,
+  DestructiveButton,
+  NumberField,
+  PrimaryButton,
+  SegmentedControl,
+  TextField,
+} from '@/components/kit';
 import { TextArea } from '@/components/ui/Fields';
-import { NumberField } from '@/components/ui/NumberField';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { addBodyWeight, deleteBodyWeight, updateBodyWeight } from '@/data/repositories/bodyweight';
@@ -59,36 +64,35 @@ function Form({ entry, defaultUnit, lastKg, onClose }: Props) {
 
   return (
     <>
-      <Sheet
+      <BottomSheet
         open={!confirmDelete}
         onClose={onClose}
         title={entry ? 'Edit weigh-in' : 'Add weigh-in'}
-        description="Weighing at a similar time each day, for example in the morning, makes the trend easier to read."
+        subtitle="Weighing at a similar time each day, for example in the morning, makes the trend easier to read."
         footer={
           <div className="flex items-center justify-between gap-2">
             {entry ? (
-              <Button
-                variant="danger"
-                icon={<Trash2 className="size-4" aria-hidden />}
+              <DestructiveButton
+                icon={<Trash2 aria-hidden />}
                 onClick={() => setConfirmDelete(true)}
               >
                 Delete
-              </Button>
+              </DestructiveButton>
             ) : (
               <span />
             )}
-            <Button onClick={save}>{entry ? 'Save changes' : 'Save weigh-in'}</Button>
+            <PrimaryButton onClick={save}>{entry ? 'Save changes' : 'Save weigh-in'}</PrimaryButton>
           </div>
         }
       >
         <form
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-4 pt-1"
           onSubmit={(e) => {
             e.preventDefault();
             void save();
           }}
         >
-          <div className="grid grid-cols-[1fr_auto] items-end gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
             <NumberField
               label="Weight"
               value={weight}
@@ -101,6 +105,8 @@ function Form({ entry, defaultUnit, lastKg, onClose }: Props) {
             <SegmentedControl
               label="Unit"
               value={unit}
+              tall
+              className="mb-1.5"
               options={[
                 { value: 'kg', label: 'kg' },
                 { value: 'lb', label: 'lb' },
@@ -114,19 +120,13 @@ function Form({ entry, defaultUnit, lastKg, onClose }: Props) {
               }}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="bw-date" className="text-sm font-medium text-muted">
-              Date
-            </label>
-            <input
-              id="bw-date"
-              type="date"
-              value={date}
-              max={today}
-              onChange={(e) => setDate(e.target.value)}
-              className="h-12 rounded-[var(--radius-control)] border border-transparent bg-surface-2 px-3.5 text-[1rem] outline-none focus:border-accent-text"
-            />
-          </div>
+          <TextField
+            label="Date"
+            type="date"
+            value={date}
+            max={today}
+            onChange={(e) => setDate(e.target.value)}
+          />
           <TextArea
             label="Note (optional)"
             value={note}
@@ -135,18 +135,18 @@ function Form({ entry, defaultUnit, lastKg, onClose }: Props) {
             placeholder="After a late dinner, travel day"
           />
           {error ? (
-            <p role="alert" className="text-sm text-danger">
+            <p role="alert" className="type-meta text-danger-text">
               {error}
             </p>
           ) : null}
         </form>
-      </Sheet>
+      </BottomSheet>
       <ConfirmSheet
         open={confirmDelete}
         title="Delete this weigh-in?"
         body="It is removed from your body-weight history and averages."
         confirmLabel="Delete"
-        danger
+        destructive
         onClose={() => setConfirmDelete(false)}
         onConfirm={async () => {
           await deleteBodyWeight(db, entry!.id);

@@ -10,51 +10,92 @@ import {
   updatePassword,
   useAccount,
 } from '@/app/account';
-import { BrandMark } from '@/app/layout/BrandMark';
-import { Button, ButtonLink } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { TextField } from '@/components/ui/Fields';
+import { APP_NAME } from '@/app/navigation';
+import {
+  IconTile,
+  InlineNotice,
+  PasswordField,
+  PrimaryButton,
+  TextField,
+  TextLink,
+} from '@/components/kit';
+import { buttonClasses } from '@/components/ui/buttonStyles';
 import { useToast } from '@/components/ui/Toast';
 import { TRIAL_HOURS } from '@/domain/entitlement/entitlement';
 import { safeNext } from './next';
 
 const TRIAL_DAYS = Math.round(TRIAL_HOURS / 24);
 
-function AuthCard({
+/**
+ * Centred column, max width 400: the app name in Title, the screen title in Display and one
+ * Body --text-2 line under it. Secondary actions sit below as text links.
+ */
+function AuthLayout({
   title,
   intro,
   children,
   footer,
 }: {
-  title: string;
+  /** Omitted when the content shows its own heading (the email sent state). */
+  title?: string;
   intro?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
 }) {
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-5 pt-8 lg:pt-16">
-      <div className="flex items-center gap-3">
-        <BrandMark className="size-9" />
-        <h1 className="font-display text-[1.4rem] font-bold leading-none">{title}</h1>
-      </div>
-      {intro ? <p className="text-muted">{intro}</p> : null}
-      <Card className="p-5">{children}</Card>
-      {footer ? <div className="flex flex-col gap-2 text-sm text-muted">{footer}</div> : null}
+    <div className="mx-auto flex w-full max-w-100 flex-col pt-8 pb-8 lg:pt-16">
+      <p className="type-title text-text-1">{APP_NAME}</p>
+      {title ? (
+        <h1 className="type-display mt-6 text-text-1 [text-wrap:balance]">{title}</h1>
+      ) : null}
+      {intro ? <p className="type-body mt-2 text-text-2 [text-wrap:balance]">{intro}</p> : null}
+      <div className={title ? 'mt-8' : 'mt-6'}>{children}</div>
+      {footer ? <div className="mt-6 flex flex-col items-center gap-1">{footer}</div> : null}
     </div>
+  );
+}
+
+/** A full-width link drawn as a button, for the one action on a state screen. */
+function BlockLink({
+  to,
+  children,
+  variant = 'secondary',
+}: {
+  to: string;
+  children: ReactNode;
+  variant?: 'primary' | 'secondary';
+}) {
+  return (
+    <Link to={to} className={buttonClasses({ variant, size: 'lg', block: true })}>
+      {children}
+    </Link>
+  );
+}
+
+/** Email sent: mail icon tile, Headline, Meta --text-2 with the address. */
+function EmailSent({ children, action }: { children: ReactNode; action: ReactNode }) {
+  return (
+    <AuthLayout>
+      <div className="flex flex-col items-start gap-4">
+        <IconTile icon={<MailCheck />} />
+        <div>
+          <h1 className="type-headline text-text-1">Check your email</h1>
+          <p className="type-meta mt-1 text-text-2 [text-wrap:balance]">{children}</p>
+        </div>
+      </div>
+      <div className="mt-8">{action}</div>
+    </AuthLayout>
   );
 }
 
 export function AccountsUnavailable() {
   return (
-    <AuthCard title="Accounts">
-      <div className="flex gap-3">
-        <CloudOff className="mt-0.5 size-5 shrink-0 text-faint" aria-hidden />
-        <p className="text-muted">
-          Accounts are not set up in this version of the app. Everything you log is saved on this
-          device.
-        </p>
-      </div>
-    </AuthCard>
+    <AuthLayout title="Accounts">
+      <InlineNotice icon={<CloudOff />}>
+        Accounts are not set up in this version of the app. Everything you log is saved on this
+        device.
+      </InlineNotice>
+    </AuthLayout>
   );
 }
 
@@ -80,25 +121,18 @@ function useSubmit(action: () => Promise<void>) {
   return { busy, error, onSubmit };
 }
 
+/** Server errors: one form-level notice, read out as an alert. */
 function FormError({ error }: { error: string | null }) {
-  return error ? (
-    <p role="alert" className="rounded-xl bg-danger-soft px-3.5 py-2.5 text-sm text-danger">
-      {error}
-    </p>
-  ) : null;
+  return error ? <InlineNotice tone="warning">{error}</InlineNotice> : null;
 }
 
-function ShowPassword({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+/** "New here? Create an account": Body --text-2 lead-in with a neutral text link. */
+function FooterLine({ lead, children }: { lead?: string; children: ReactNode }) {
   return (
-    <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-sm text-muted">
-      <input
-        type="checkbox"
-        className="size-4 accent-[var(--color-accent)]"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      Show password
-    </label>
+    <p className="type-body text-center text-text-2">
+      {lead ? <>{lead} </> : null}
+      {children}
+    </p>
   );
 }
 
@@ -112,7 +146,6 @@ export function SignInPage() {
   const next = safeNext(params.get('next'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [show, setShow] = useState(false);
   const { busy, error, onSubmit } = useSubmit(async () => {
     await signIn(email.trim(), password);
     navigate(next, { replace: true });
@@ -122,25 +155,17 @@ export function SignInPage() {
   if (account.status === 'signedIn' && !busy) return <Navigate to={next} replace />;
 
   return (
-    <AuthCard
+    <AuthLayout
       title="Sign in"
       intro={ACCOUNT_PITCH}
       footer={
         <>
-          <p>
-            New here?{' '}
-            <Link
-              className="tap-target font-semibold text-accent-text"
-              to={`/sign-up?next=${encodeURIComponent(next)}`}
-            >
-              Create an account
-            </Link>
-          </p>
-          <p>
-            <Link className="tap-target font-semibold text-accent-text" to="/forgot-password">
-              Forgot your password?
-            </Link>
-          </p>
+          <FooterLine lead="New here?">
+            <TextLink to={`/sign-up?next=${encodeURIComponent(next)}`}>Create an account</TextLink>
+          </FooterLine>
+          <FooterLine>
+            <TextLink to="/forgot-password">Forgot your password?</TextLink>
+          </FooterLine>
         </>
       }
     >
@@ -150,25 +175,25 @@ export function SignInPage() {
           type="email"
           autoComplete="email"
           inputMode="email"
+          autoCapitalize="none"
+          spellCheck={false}
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <TextField
+        <PasswordField
           label="Password"
-          type={show ? 'text' : 'password'}
           autoComplete="current-password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <ShowPassword checked={show} onChange={setShow} />
         <FormError error={error} />
-        <Button type="submit" size="lg" block disabled={busy}>
+        <PrimaryButton type="submit" block disabled={busy} className="mt-2">
           {busy ? 'Signing in...' : 'Sign in'}
-        </Button>
+        </PrimaryButton>
       </form>
-    </AuthCard>
+    </AuthLayout>
   );
 }
 
@@ -179,7 +204,6 @@ export function SignUpPage() {
   const next = safeNext(params.get('next'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [show, setShow] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const { busy, error, onSubmit } = useSubmit(async () => {
     const result = await signUp(email.trim(), password);
@@ -194,63 +218,46 @@ export function SignUpPage() {
 
   if (sentTo) {
     return (
-      <AuthCard title="Check your email">
-        <div className="flex gap-3">
-          <MailCheck className="mt-0.5 size-5 shrink-0 text-accent-text" aria-hidden />
-          <p className="text-muted">
-            We sent a link to <span className="font-semibold text-text">{sentTo}</span>. Open it to
-            confirm your account, then sign in. It can take a minute to arrive.
-          </p>
-        </div>
-        <ButtonLink to="/sign-in" variant="secondary" block className="mt-5">
-          Go to sign in
-        </ButtonLink>
-      </AuthCard>
+      <EmailSent action={<BlockLink to="/sign-in">Go to sign in</BlockLink>}>
+        We sent a link to <span className="font-semibold text-text-1">{sentTo}</span>. Open it to
+        confirm your account, then sign in. It can take a minute to arrive.
+      </EmailSent>
     );
   }
 
   return (
-    <AuthCard
+    <AuthLayout
       title="Create account"
-      intro={
-        <>
-          {ACCOUNT_PITCH}
-          <span className="mt-3 flex items-start gap-2.5 rounded-[1rem] bg-accent-soft px-3.5 py-3 text-sm text-text">
-            <Crown className="mt-0.5 size-4 shrink-0 text-accent-text" aria-hidden />
-            <span>
-              <strong className="font-semibold">
-                Pro is free for your first {TRIAL_DAYS} days.
-              </strong>{' '}
-              Every analysis feature, no payment details needed.
-            </span>
-          </span>
-        </>
-      }
+      intro={ACCOUNT_PITCH}
       footer={
-        <p>
-          Already have an account?{' '}
-          <Link
-            className="tap-target font-semibold text-accent-text"
-            to={`/sign-in?next=${encodeURIComponent(next)}`}
-          >
-            Sign in
-          </Link>
-        </p>
+        <FooterLine lead="Already have an account?">
+          <TextLink to={`/sign-in?next=${encodeURIComponent(next)}`}>Sign in</TextLink>
+        </FooterLine>
       }
     >
+      <div className="mb-6 flex items-start gap-3 rounded-nested bg-surface-2 px-4 py-3">
+        <IconTile pro icon={<Crown />} />
+        <p className="type-meta text-text-2">
+          <strong className="font-semibold text-text-1">
+            Pro is free for your first {TRIAL_DAYS} days.
+          </strong>{' '}
+          Every analysis feature, no payment details needed.
+        </p>
+      </div>
       <form className="flex flex-col gap-4" onSubmit={onSubmit}>
         <TextField
           label="Email"
           type="email"
           autoComplete="email"
           inputMode="email"
+          autoCapitalize="none"
+          spellCheck={false}
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <TextField
+        <PasswordField
           label="Password"
-          type={show ? 'text' : 'password'}
           autoComplete="new-password"
           required
           minLength={MIN_PASSWORD_LENGTH}
@@ -258,17 +265,16 @@ export function SignUpPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <ShowPassword checked={show} onChange={setShow} />
         <FormError error={error} />
-        <Button type="submit" size="lg" block disabled={busy}>
+        <PrimaryButton type="submit" block disabled={busy} className="mt-2">
           {busy ? 'Creating account...' : 'Create account'}
-        </Button>
-        <p className="text-sm text-faint">
+        </PrimaryButton>
+        <p className="type-meta text-text-2">
           Your account starts empty. If you have logged workouts on this device, you can choose to
           add them after signing in.
         </p>
       </form>
-    </AuthCard>
+    </AuthLayout>
   );
 }
 
@@ -285,31 +291,21 @@ export function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <AuthCard title="Check your email">
-        <div className="flex gap-3">
-          <MailCheck className="mt-0.5 size-5 shrink-0 text-accent-text" aria-hidden />
-          <p className="text-muted">
-            If there is an account for that email, a link to choose a new password is on its way. It
-            can take a minute to arrive.
-          </p>
-        </div>
-        <ButtonLink to="/sign-in" variant="secondary" block className="mt-5">
-          Back to sign in
-        </ButtonLink>
-      </AuthCard>
+      <EmailSent action={<BlockLink to="/sign-in">Back to sign in</BlockLink>}>
+        If there is an account for that email, a link to choose a new password is on its way. It can
+        take a minute to arrive.
+      </EmailSent>
     );
   }
 
   return (
-    <AuthCard
+    <AuthLayout
       title="Reset password"
       intro="Enter the email you signed up with and we will send you a link to choose a new password."
       footer={
-        <p>
-          <Link className="tap-target font-semibold text-accent-text" to="/sign-in">
-            Back to sign in
-          </Link>
-        </p>
+        <FooterLine>
+          <TextLink to="/sign-in">Back to sign in</TextLink>
+        </FooterLine>
       }
     >
       <form className="flex flex-col gap-4" onSubmit={onSubmit}>
@@ -318,16 +314,18 @@ export function ForgotPasswordPage() {
           type="email"
           autoComplete="email"
           inputMode="email"
+          autoCapitalize="none"
+          spellCheck={false}
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <FormError error={error} />
-        <Button type="submit" size="lg" block disabled={busy}>
+        <PrimaryButton type="submit" block disabled={busy} className="mt-2">
           {busy ? 'Sending...' : 'Send reset link'}
-        </Button>
+        </PrimaryButton>
       </form>
-    </AuthCard>
+    </AuthLayout>
   );
 }
 
@@ -337,7 +335,6 @@ export function NewPasswordPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const [password, setPassword] = useState('');
-  const [show, setShow] = useState(false);
   const { busy, error, onSubmit } = useSubmit(async () => {
     await updatePassword(password);
     toast('Password updated');
@@ -348,27 +345,25 @@ export function NewPasswordPage() {
   if (account.status === 'loading') return null;
   if (account.status !== 'signedIn') {
     return (
-      <AuthCard title="Link expired">
-        <p className="text-muted">
-          This reset link has expired or was already used. Request a new one to choose a new
-          password.
-        </p>
-        <ButtonLink to="/forgot-password" block className="mt-5">
+      <AuthLayout
+        title="Link expired"
+        intro="This reset link has expired or was already used. Request a new one to choose a new password."
+      >
+        <BlockLink to="/forgot-password" variant="primary">
           Request a new link
-        </ButtonLink>
-      </AuthCard>
+        </BlockLink>
+      </AuthLayout>
     );
   }
 
   return (
-    <AuthCard
+    <AuthLayout
       title="New password"
       intro={account.user?.email ? `For ${account.user.email}.` : undefined}
     >
       <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-        <TextField
+        <PasswordField
           label="New password"
-          type={show ? 'text' : 'password'}
           autoComplete="new-password"
           required
           minLength={MIN_PASSWORD_LENGTH}
@@ -376,12 +371,11 @@ export function NewPasswordPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <ShowPassword checked={show} onChange={setShow} />
         <FormError error={error} />
-        <Button type="submit" size="lg" block disabled={busy}>
+        <PrimaryButton type="submit" block disabled={busy} className="mt-2">
           {busy ? 'Saving...' : 'Save new password'}
-        </Button>
+        </PrimaryButton>
       </form>
-    </AuthCard>
+    </AuthLayout>
   );
 }

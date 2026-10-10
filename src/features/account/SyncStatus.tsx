@@ -1,16 +1,23 @@
 import { Link } from 'react-router';
-import { AlertTriangle, CloudCheck, HardDrive, RefreshCw, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, Check, HardDrive, RefreshCw, type LucideIcon } from 'lucide-react';
 import { useAccount, useSyncStatus } from '@/app/account';
+import { IconTile } from '@/components/kit';
 import { describeSync, type SyncTone } from '@/data/sync/describe';
 import { cn } from '@/lib/cn';
 import { useNow } from '@/lib/useNow';
 
-const TONE: Record<SyncTone, { icon: LucideIcon; className: string }> = {
-  local: { icon: HardDrive, className: 'text-faint' },
-  pending: { icon: RefreshCw, className: 'text-warn' },
-  synced: { icon: CloudCheck, className: 'text-accent-text' },
-  problem: { icon: AlertTriangle, className: 'text-danger' },
+/*
+ * The same icons and colours as the kit's SyncStatus: neutral --text-2, the problem icon in
+ * --warning, never lime. These wrappers add the "Sync status" name and the detail line.
+ */
+const ICON: Record<SyncTone, LucideIcon> = {
+  local: HardDrive,
+  pending: RefreshCw,
+  synced: Check,
+  problem: AlertTriangle,
 };
+
+const toneClass = (tone: SyncTone) => (tone === 'problem' ? 'text-warning' : 'text-text-2');
 
 function useSyncDescription() {
   const account = useAccount();
@@ -19,38 +26,37 @@ function useSyncDescription() {
   return describeSync(sync, account.status === 'signedIn', now);
 }
 
-/** Compact line for the sidebar and settings: where your data is right now. */
+/** Compact line for the sidebar and More: where your data is right now. */
 export function SyncBadge({ className }: { className?: string }) {
   const account = useAccount();
   const description = useSyncDescription();
   if (account.status === 'unavailable' || account.status === 'loading') return null;
-  const { icon: Icon, className: tone } = TONE[description.tone];
+  const Icon = ICON[description.tone];
   return (
     <Link
       to={account.status === 'signedIn' ? '/account' : '/sign-in'}
       className={cn(
-        'flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm text-muted hover:bg-surface-2 hover:text-text',
+        'type-meta flex items-center gap-2 rounded-field px-2 py-1.5 text-text-2 hover:bg-surface-2 hover:text-text-1',
         className,
       )}
       title={description.detail}
     >
-      <Icon className={cn('size-4 shrink-0', tone)} aria-hidden />
+      <Icon className={cn('size-4 shrink-0', toneClass(description.tone))} aria-hidden />
       <span className="truncate">{description.title}</span>
     </Link>
   );
 }
 
+/** Row for Account and Settings: icon tile, Headline title, Meta --text-2 detail. */
 export function SyncSummary() {
   const description = useSyncDescription();
-  const { icon: Icon, className: tone } = TONE[description.tone];
+  const Icon = ICON[description.tone];
   return (
-    <div className="flex gap-3" role="status" aria-label="Sync status">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2">
-        <Icon className={cn('size-5', tone)} aria-hidden />
-      </span>
-      <div className="min-w-0">
-        <p className="font-semibold">{description.title}</p>
-        <p className="mt-0.5 text-sm text-muted">{description.detail}</p>
+    <div className="flex min-h-14 items-center gap-3 py-2" role="status" aria-label="Sync status">
+      <IconTile icon={<Icon className={toneClass(description.tone)} />} />
+      <div className="min-w-0 flex-1">
+        <p className="type-headline text-text-1">{description.title}</p>
+        <p className="type-meta mt-0.5 text-text-2">{description.detail}</p>
       </div>
     </div>
   );
@@ -60,15 +66,15 @@ export function SyncSummary() {
 export function SyncLine({ className }: { className?: string }) {
   const account = useAccount();
   const description = useSyncDescription();
-  const { icon: Icon, className: tone } = TONE[description.tone];
+  const Icon = ICON[description.tone];
   const signedIn = account.status === 'signedIn';
   return (
     <p
-      className={cn('flex items-center gap-2 text-sm text-faint', className)}
+      className={cn('type-meta flex items-center gap-2 text-text-2', className)}
       role="status"
       aria-label="Sync status"
     >
-      <Icon className={cn('size-4 shrink-0', tone)} aria-hidden />
+      <Icon className={cn('size-4 shrink-0', toneClass(description.tone))} aria-hidden />
       <span>
         {signedIn ? description.title : 'Saved on this device only.'}
         {account.status === 'unavailable' || account.status === 'loading' ? null : (
@@ -76,7 +82,7 @@ export function SyncLine({ className }: { className?: string }) {
             {' '}
             <Link
               to={signedIn ? '/account' : '/sign-in?next=/account'}
-              className="underline underline-offset-4"
+              className="font-medium text-text-1 underline underline-offset-4"
             >
               {signedIn ? 'Details' : 'Back it up'}
             </Link>

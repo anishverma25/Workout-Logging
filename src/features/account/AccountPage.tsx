@@ -1,12 +1,21 @@
 import { useState, type ReactNode } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
-import { HardDriveUpload, KeyRound, LogOut, RefreshCw, Trash2 } from 'lucide-react';
+import { HardDriveUpload, KeyRound, LogOut, Mail, RefreshCw, Trash2 } from 'lucide-react';
 import { deleteAccount, signOut, useAccount, useSyncStatus } from '@/app/account';
-import { PageHeader } from '@/app/layout/PageHeader';
-import { Button, ButtonLink } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
-import { TextField } from '@/components/ui/Fields';
+import {
+  BottomSheet,
+  Card,
+  ConfirmSheet,
+  DestructiveButton,
+  IconTile,
+  ListGroup,
+  ListRow,
+  PrimaryButton,
+  PushedHeader,
+  SecondaryButton,
+  SectionHeader,
+  TextField,
+} from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import { db, guestDatabase } from '@/data/db';
 import { useGuestImport } from '@/data/hooks';
@@ -40,39 +49,45 @@ export function AccountPage() {
 
 function AccountContent() {
   const account = useAccount();
+  const email = account.user?.email ?? undefined;
   return (
-    <>
-      <PageHeader
-        back={{ to: '/more', label: 'More' }}
-        title="Account"
-        subtitle={account.user?.email ?? undefined}
-      />
-      <div className="flex max-w-2xl flex-col gap-5">
-        <SyncCard />
+    <div className="mx-auto flex w-full max-w-180 flex-col">
+      <PushedHeader backLabel="More" backTo="/more" title="Account" />
+      <div className="flex flex-col gap-8">
+        <SyncSection />
         <GuestImportCard userId={account.user!.id} />
-        <Card className="p-5">
-          <h2 className="mb-1 font-display text-xl font-semibold">Sign-in and security</h2>
-          <p className="mb-4 text-sm text-muted">
-            Your account is protected by your password. Nobody else can see your training data.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <ButtonLink
-              to="/reset-password"
-              variant="secondary"
-              icon={<KeyRound className="size-4" aria-hidden />}
-            >
-              Change password
-            </ButtonLink>
-            <SignOutButton />
-          </div>
-        </Card>
+        <section aria-labelledby="security-title">
+          <SectionHeader
+            id="security-title"
+            title="Sign-in and security"
+            description="Your account is protected by your password. Nobody else can see your training data."
+          />
+          <ListGroup>
+            {email ? (
+              <li>
+                <ListRow leading={<IconTile icon={<Mail />} />} title="Email" subtitle={email} />
+              </li>
+            ) : null}
+            <li>
+              <ListRow
+                to="/reset-password"
+                leading={<IconTile icon={<KeyRound />} />}
+                title="Change password"
+                chevron
+              />
+            </li>
+            <li>
+              <SignOutRow />
+            </li>
+          </ListGroup>
+        </section>
         <DeleteAccountCard />
       </div>
-    </>
+    </div>
   );
 }
 
-function SyncCard() {
+function SyncSection() {
   const sync = useSyncStatus();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -85,18 +100,20 @@ function SyncCard() {
     }
   };
   return (
-    <Card className="p-5">
-      <h2 className="mb-4 font-display text-xl font-semibold">Sync</h2>
-      <SyncSummary />
-      <p className="mt-4 text-sm text-faint">
+    <section aria-labelledby="sync-title">
+      <SectionHeader id="sync-title" title="Sync" />
+      <ListGroup as="div">
+        <SyncSummary />
+      </ListGroup>
+      <p className="type-meta mt-3 px-1 text-text-2">
         Everything is saved on this device first, so the app works offline. Changes go to your
         account as soon as there is a connection.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
+        <SecondaryButton
+          compact
           disabled={busy || sync.phase === 'syncing'}
-          icon={<RefreshCw className="size-4" aria-hidden />}
+          icon={<RefreshCw aria-hidden />}
           onClick={() =>
             run(async () => {
               await syncController.syncNow();
@@ -106,10 +123,10 @@ function SyncCard() {
           }
         >
           Sync now
-        </Button>
+        </SecondaryButton>
         {sync.rejected > 0 ? (
-          <Button
-            variant="secondary"
+          <SecondaryButton
+            compact
             disabled={busy}
             onClick={() =>
               run(async () => {
@@ -119,10 +136,10 @@ function SyncCard() {
             }
           >
             Try failed changes again
-          </Button>
+          </SecondaryButton>
         ) : null}
       </div>
-    </Card>
+    </section>
   );
 }
 
@@ -162,37 +179,37 @@ function GuestImportCard({ userId }: { userId: string }) {
   };
 
   return (
-    <Card className="border-accent/40 p-5" aria-labelledby="import-title">
-      <h2
-        id="import-title"
-        className="mb-1 flex items-center gap-2 font-display text-xl font-semibold"
-      >
-        <HardDriveUpload className="size-5 text-accent-text" aria-hidden /> Data on this device
-      </h2>
-      <p className="text-[0.95rem] text-muted">
+    <Card as="section" aria-labelledby="import-title">
+      <div className="flex items-center gap-3">
+        <IconTile icon={<HardDriveUpload />} />
+        <h2 id="import-title" className="type-title text-text-1">
+          Data on this device
+        </h2>
+      </div>
+      <p className="type-body mt-3 text-text-2">
         Before you signed in, this device saved {parts.join(', ')}. Add a copy to your account to
         back it up and see it everywhere you sign in.
       </p>
-      <p className="mt-2 text-sm text-faint">
+      <p className="type-meta mt-2 text-text-2">
         Demo data is never added. The copy on this device stays as it is.
       </p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button disabled={busy} onClick={copy}>
+      <div className="mt-5 flex flex-wrap gap-2">
+        <PrimaryButton compact disabled={busy} onClick={copy}>
           {busy ? 'Adding...' : 'Add to my account'}
-        </Button>
-        <Button
-          variant="ghost"
+        </PrimaryButton>
+        <SecondaryButton
+          compact
           disabled={busy}
           onClick={() => markMigrationHandled(guestDatabase(), userId, 'skipped')}
         >
           Not now
-        </Button>
+        </SecondaryButton>
       </div>
     </Card>
   );
 }
 
-function SignOutButton() {
+function SignOutRow() {
   const sync = useSyncStatus();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -212,18 +229,17 @@ function SignOutButton() {
   };
   return (
     <>
-      <Button
-        variant="ghost"
-        icon={<LogOut className="size-4" aria-hidden />}
+      <ListRow
+        leading={<IconTile icon={<LogOut />} />}
+        title={<span className="text-danger-text">Sign out</span>}
         onClick={() => setOpen(true)}
-      >
-        Sign out
-      </Button>
+      />
       <ConfirmSheet
         open={open}
         onClose={() => setOpen(false)}
         title="Sign out?"
         busy={busy}
+        destructive
         confirmLabel="Sign out"
         onConfirm={confirm}
         body={
@@ -256,30 +272,33 @@ function DeleteAccountCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
-    <Card className="p-5">
-      <h2 className="mb-1 font-display text-xl font-semibold">Delete account</h2>
-      <p className="mb-4 text-sm text-muted">
+    <Card as="section" aria-labelledby="delete-title">
+      <h2 id="delete-title" className="type-title text-text-1">
+        Delete account
+      </h2>
+      <p className="type-meta mt-1 text-text-2">
         Removes your account and every workout, routine, measurement and goal in it, from the server
         and from this device. Export your data first if you want a copy (Settings). Photos on this
         device are not affected.
       </p>
-      <Button
-        variant="danger"
-        icon={<Trash2 className="size-4" aria-hidden />}
+      <DestructiveButton
+        compact
+        className="mt-4"
+        icon={<Trash2 aria-hidden />}
         onClick={() => setOpen(true)}
       >
         Delete my account
-      </Button>
-      <Sheet
+      </DestructiveButton>
+      <BottomSheet
         open={open}
         onClose={() => setOpen(false)}
         title="Delete your account?"
-        description="This cannot be undone."
+        subtitle="This cannot be undone."
         footer={
-          <Button
-            variant="danger"
+          <DestructiveButton
             block
-            disabled={busy || typed.trim().toLowerCase() !== 'delete'}
+            loading={busy}
+            disabled={typed.trim().toLowerCase() !== 'delete'}
             onClick={async () => {
               setBusy(true);
               setError(null);
@@ -294,17 +313,19 @@ function DeleteAccountCard() {
             }}
           >
             {busy ? 'Deleting...' : 'Delete everything'}
-          </Button>
+          </DestructiveButton>
         }
       >
         <TextField
           label="Type DELETE to confirm"
           value={typed}
           autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
           error={error}
           onChange={(e) => setTyped(e.target.value)}
         />
-      </Sheet>
+      </BottomSheet>
     </Card>
   );
 }

@@ -3,10 +3,8 @@ import { Plus, Scale } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { LineChart } from '@/components/charts/LineChart';
 import { ChartEmpty } from '@/components/charts/ChartParts';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Chips } from '@/components/ui/Fields';
-import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
+import { Card, ListRow, PrimaryButton, SegmentedControl, Skeleton } from '@/components/kit';
+import { EmptyState, ErrorState } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
 import {
   bodyWeightSeries,
@@ -96,18 +94,18 @@ export function BodyPage() {
         subtitle="Weight, measurements and the numbers worked out from them."
         actions={
           series.length > 0 ? (
-            <Button
-              size="sm"
-              icon={<Plus className="size-4" aria-hidden />}
+            <PrimaryButton
+              compact
+              icon={<Plus aria-hidden />}
               onClick={() => setAdding(true)}
               className="max-sm:hidden"
             >
               Add weigh-in
-            </Button>
+            </PrimaryButton>
           ) : undefined
         }
       />
-      {training.status === 'loading' ? <Skeleton className="h-96" /> : null}
+      {training.status === 'loading' ? <Skeleton height="24rem" radius="panel" /> : null}
       {training.status === 'error' ? <ErrorState error={training.error} /> : null}
 
       {snapshot && data ? (
@@ -129,9 +127,9 @@ export function BodyPage() {
           title="Track your body weight"
           body={`Log a weigh-in whenever you like. With ${ROLLING_MIN_ENTRIES} or more in a week you get a ${ROLLING_WINDOW_DAYS}-day average, which smooths out the daily swings from water and food. It also lets the app show strength relative to body weight.`}
           actions={
-            <Button icon={<Plus className="size-4" aria-hidden />} onClick={() => setAdding(true)}>
+            <PrimaryButton icon={<Plus aria-hidden />} onClick={() => setAdding(true)}>
               Add your first weigh-in
-            </Button>
+            </PrimaryButton>
           }
         />
       ) : null}
@@ -139,52 +137,52 @@ export function BodyPage() {
       {summary ? (
         <>
           <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
-            <Card className="p-5">
-              <p className="text-sm text-faint">
+            <Card>
+              <p className="type-meta text-text-2">
                 Latest · {formatRelativeDay(new Date(summary.latest.measuredAt), now)}
               </p>
-              <p className="mt-1 flex items-baseline gap-1.5">
-                <span className="tabular font-display text-[2.3rem] font-bold leading-none tracking-tight">
+              <p className="mt-1 flex items-baseline gap-1">
+                <span className="type-stat text-text-1">
                   {formatWeightValue(summary.latest.weightKg, unit)}
                 </span>
-                <span className="text-lg text-muted">{unit}</span>
+                <span className="type-meta text-text-2">{unit}</span>
               </p>
-              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                <div>
-                  <dt className="text-faint">Previous</dt>
-                  <dd className="tabular font-semibold">
+              <dl className="type-meta mt-4 flex flex-col gap-2">
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="text-text-2">Previous</dt>
+                  <dd className="tabular text-right text-text-1">
                     {summary.previous ? (
                       <>
                         {formatWeightValue(summary.previous.weightKg, unit)} {unit}{' '}
-                        <span className="font-normal text-muted">
+                        <span className="text-text-2">
                           ({signed(summary.latest.weightKg - summary.previous.weightKg, unit)})
                         </span>
                       </>
                     ) : (
-                      'None yet'
+                      <span className="text-text-2">None yet</span>
                     )}
                   </dd>
                 </div>
-                <div>
-                  <dt className="text-faint">{ROLLING_WINDOW_DAYS}-day average</dt>
-                  <dd className="tabular font-semibold">
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="shrink-0 text-text-2">{ROLLING_WINDOW_DAYS}-day average</dt>
+                  <dd className="tabular text-right text-text-1">
                     {summary.rollingAverageKg !== null ? (
                       `${formatWeightValue(summary.rollingAverageKg, unit)} ${unit}`
                     ) : (
-                      <span className="font-normal text-muted">
+                      <span className="text-text-2">
                         Needs {ROLLING_MIN_ENTRIES} weigh-ins in {ROLLING_WINDOW_DAYS} days (
                         {summary.rollingCount} so far)
                       </span>
                     )}
                   </dd>
                 </div>
-                <div className="col-span-2">
-                  <dt className="text-faint">Change vs a week earlier</dt>
-                  <dd className="tabular font-semibold">
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="shrink-0 text-text-2">Change vs a week earlier</dt>
+                  <dd className="tabular text-right text-text-1">
                     {summary.weekChangeKg !== null ? (
                       signed(summary.weekChangeKg, unit)
                     ) : (
-                      <span className="font-normal text-muted">
+                      <span className="text-text-2">
                         Needs a weigh-in from at least a week before the latest
                       </span>
                     )}
@@ -193,10 +191,10 @@ export function BodyPage() {
               </dl>
             </Card>
 
-            <Card className="p-5">
+            <Card>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="font-display text-xl font-semibold">Trend</h2>
-                <Chips
+                <h2 className="type-title text-text-1">Trend</h2>
+                <SegmentedControl
                   label="Range"
                   options={[
                     { value: '30d', label: '30 days' },
@@ -204,8 +202,7 @@ export function BodyPage() {
                     { value: 'all', label: 'All' },
                   ]}
                   value={range}
-                  onChange={(r) => r && setRange(r)}
-                  className="mx-0 px-0"
+                  onChange={setRange}
                 />
               </div>
               {inRange.length >= 2 ? (
@@ -247,7 +244,7 @@ export function BodyPage() {
                     : 'One weigh-in in this range. Add another to start a trend line.'}
                 </ChartEmpty>
               )}
-              <p className="mt-3 text-sm text-muted">
+              <p className="type-meta mt-3 text-text-2 [text-wrap:balance]">
                 {trend
                   ? `Over ${pluralize(trend.days, 'day')}, your ${ROLLING_WINDOW_DAYS}-day average moved ${signed(trend.averageChangeKg, unit)}.`
                   : `A trend needs ${ROLLING_WINDOW_DAYS}-day averages at least a week apart in this range.`}{' '}
@@ -266,18 +263,15 @@ export function BodyPage() {
           ) : null}
 
           <section aria-labelledby="weigh-ins" className="mt-8">
-            <h2
-              id="weigh-ins"
-              className="mb-3 font-display text-[1.3rem] font-semibold leading-tight tracking-tight"
-            >
+            <h2 id="weigh-ins" className="type-title mb-3 text-text-1">
               All weigh-ins
             </h2>
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-6">
               {months.map((m) => (
                 <div key={m.key}>
-                  <h3 className="mb-1.5 text-sm font-semibold text-faint">{m.label}</h3>
-                  <Card className="overflow-hidden">
-                    <ul className="divide-y divide-line">
+                  <h3 className="type-meta mb-2 px-1 font-semibold text-text-2">{m.label}</h3>
+                  <Card flush>
+                    <ul className="divide-y-[0.5px] divide-divider px-4">
                       {m.points.map((p) => (
                         <li key={p.entry.id}>
                           <EntryRow
@@ -295,13 +289,13 @@ export function BodyPage() {
             </div>
           </section>
 
-          <Button
+          <PrimaryButton
             onClick={() => setAdding(true)}
-            icon={<Plus className="size-5" aria-hidden />}
-            className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-30 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.5)] sm:hidden"
+            icon={<Plus aria-hidden />}
+            className="fixed right-4 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-30 sm:hidden"
           >
             Weigh-in
-          </Button>
+          </PrimaryButton>
         </>
       ) : null}
 
@@ -333,26 +327,24 @@ function EntryRow({
   onOpen: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <ListRow
       onClick={onOpen}
-      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2"
-    >
-      <span className="min-w-0">
-        <span className="block font-medium">{formatShortDate(point.date)}</span>
-        {point.entry.note ? (
-          <span className="block truncate text-sm text-faint">{point.entry.note}</span>
-        ) : null}
-      </span>
-      <span className="tabular shrink-0 text-right">
-        <span className="block font-display text-lg font-semibold">
-          {formatWeightValue(point.kg, unit)} {unit}
+      title={formatShortDate(point.date)}
+      subtitle={point.entry.note || undefined}
+      titleWeight={500}
+      trailing={
+        <span className="tabular shrink-0 text-right">
+          <span className="type-headline block text-text-1">
+            {formatWeightValue(point.kg, unit)} {unit}
+          </span>
+          {previous ? (
+            <span className="type-meta block text-text-2">
+              {signed(point.kg - previous.kg, unit)}
+            </span>
+          ) : null}
         </span>
-        {previous ? (
-          <span className="text-xs text-faint">{signed(point.kg - previous.kg, unit)}</span>
-        ) : null}
-      </span>
-    </button>
+      }
+    />
   );
 }
 

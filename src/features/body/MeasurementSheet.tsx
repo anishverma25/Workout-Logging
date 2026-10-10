@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import {
+  BottomSheet,
+  ConfirmSheet,
+  DestructiveButton,
+  NumberField,
+  PrimaryButton,
+  SegmentedControl,
+  TextField,
+} from '@/components/kit';
 import { TextArea } from '@/components/ui/Fields';
-import { NumberField } from '@/components/ui/NumberField';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import {
@@ -86,52 +91,48 @@ function Form({ entry, unit: startUnit, sex, onClose }: Props) {
 
   return (
     <>
-      <Sheet
+      <BottomSheet
         open={!confirmDelete}
         onClose={onClose}
-        size="lg"
         title={entry ? 'Edit measurements' : 'Add measurements'}
-        description="Fill in any you like. Waist and neck give a body-fat estimate."
+        subtitle="Fill in any you like. Waist and neck give a body-fat estimate."
         footer={
           <div className="flex items-center justify-between gap-2">
             {entry ? (
-              <Button
-                variant="danger"
-                icon={<Trash2 className="size-4" aria-hidden />}
+              <DestructiveButton
+                icon={<Trash2 aria-hidden />}
                 onClick={() => setConfirmDelete(true)}
               >
                 Delete
-              </Button>
+              </DestructiveButton>
             ) : (
               <span />
             )}
-            <Button onClick={save}>{entry ? 'Save changes' : 'Save measurements'}</Button>
+            <PrimaryButton onClick={save}>
+              {entry ? 'Save changes' : 'Save measurements'}
+            </PrimaryButton>
           </div>
         }
       >
         <form
-          className="flex flex-col gap-5"
+          className="flex flex-col gap-5 pt-1"
           onSubmit={(e) => {
             e.preventDefault();
             void save();
           }}
         >
-          <div className="flex items-end justify-between gap-3">
-            <div className="flex flex-1 flex-col gap-1.5">
-              <label htmlFor="m-date" className="text-sm font-medium text-muted">
-                Date
-              </label>
-              <input
-                id="m-date"
-                type="date"
-                value={date}
-                max={toDateKey(new Date())}
-                onChange={(e) => setDate(e.target.value)}
-                className="h-12 rounded-[var(--radius-control)] border border-transparent bg-surface-2 px-3.5 text-[1rem] outline-none focus:border-accent-text"
-              />
-            </div>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+            <TextField
+              label="Date"
+              type="date"
+              value={date}
+              max={toDateKey(new Date())}
+              onChange={(e) => setDate(e.target.value)}
+            />
             <SegmentedControl
               label="Length unit"
+              tall
+              className="mb-1.5"
               value={unit}
               options={[
                 { value: 'cm', label: 'cm' },
@@ -151,7 +152,7 @@ function Form({ entry, unit: startUnit, sex, onClose }: Props) {
               }}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-4">
             {fields.map((f) => (
               <div key={f}>
                 <NumberField
@@ -160,7 +161,7 @@ function Form({ entry, unit: startUnit, sex, onClose }: Props) {
                   value={values[f] ?? null}
                   onValueChange={(v) => setValues((cur) => ({ ...cur, [f]: v }))}
                 />
-                <p className="mt-1 text-xs leading-snug text-faint">{HOW[f]}</p>
+                <p className="type-meta mt-1.5 text-text-2">{HOW[f]}</p>
               </div>
             ))}
             <div>
@@ -171,7 +172,7 @@ function Form({ entry, unit: startUnit, sex, onClose }: Props) {
                 max={70}
                 onValueChange={setBodyFat}
               />
-              <p className="mt-1 text-xs leading-snug text-faint">From a smart scale or a scan</p>
+              <p className="type-meta mt-1.5 text-text-2">From a smart scale or a scan</p>
             </div>
           </div>
           <TextArea
@@ -181,18 +182,18 @@ function Form({ entry, unit: startUnit, sex, onClose }: Props) {
             onChange={(e) => setNote(e.target.value)}
           />
           {error ? (
-            <p role="alert" className="text-sm text-danger">
+            <p role="alert" className="type-meta text-danger-text">
               {error}
             </p>
           ) : null}
         </form>
-      </Sheet>
+      </BottomSheet>
       <ConfirmSheet
         open={confirmDelete}
         title="Delete these measurements?"
         body="They are removed from your history and charts."
         confirmLabel="Delete"
-        danger
+        destructive
         onClose={() => setConfirmDelete(false)}
         onConfirm={async () => {
           await deleteMeasurement(db, entry!.id);

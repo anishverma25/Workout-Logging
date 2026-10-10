@@ -1,11 +1,14 @@
 import { isRouteErrorResponse, useRouteError } from 'react-router';
 import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { IconTile, PrimaryButton } from '@/components/kit';
+import { buttonClasses } from '@/components/ui/buttonStyles';
 import { isChunkLoadError, reloadOnceForNewVersion } from './chunkReload';
 
 /**
  * Shown when a screen crashes. Says plainly that logged data is safe (it lives in the
- * on-device database, not in the screen) and offers a way back.
+ * on-device database, not in the screen) and offers a way back. Drawn like the kit's
+ * ErrorState: neutral icon tile, title, Body --text-2, then the actions.
  */
 export function RouteError() {
   const error = useRouteError();
@@ -17,37 +20,28 @@ export function RouteError() {
       ? error.message
       : 'Unknown error';
   return (
-    <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-5 px-6 py-10">
-      <div className="flex size-12 items-center justify-center rounded-2xl bg-danger-soft text-danger">
-        <AlertTriangle className="size-6" aria-hidden />
-      </div>
+    <main className="mx-auto flex min-h-dvh w-full max-w-100 flex-col justify-center gap-6 px-4 pt-safe pb-safe tab:px-6">
+      <IconTile icon={<AlertTriangle />} />
       <div>
-        <h1 className="font-display text-[1.35rem] font-bold leading-tight">
+        <h1 className="type-title text-text-1 [text-wrap:balance]">
           This screen ran into a problem
         </h1>
-        <p className="mt-2 text-muted">
+        <p className="type-body mt-2 text-text-2 [text-wrap:balance]">
           Your workouts are saved on this device and were not affected. Reloading usually fixes it.
           If it keeps happening, tell us what you tapped just before.
         </p>
-        <p className="mt-3 break-words font-mono text-xs text-faint">{message}</p>
+        <p className="type-meta mt-3 font-mono break-words text-text-2">{message}</p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="h-12 rounded-[var(--radius-control)] bg-accent px-5 font-semibold text-accent-ink"
-        >
+      <div className="flex flex-col gap-2">
+        <PrimaryButton block onClick={() => window.location.reload()}>
           Reload
-        </button>
-        <a
-          href="/"
-          className="inline-flex h-12 items-center rounded-[var(--radius-control)] border border-line bg-surface-2 px-5 font-semibold"
-        >
+        </PrimaryButton>
+        <a href="/" className={buttonClasses({ variant: 'secondary', size: 'lg', block: true })}>
           Go to Home
         </a>
         <a
           href={`/feedback?from=error&tag=bug&screen=${encodeURIComponent(window.location.pathname)}`}
-          className="inline-flex h-12 items-center px-2 font-semibold text-accent-text"
+          className="pressable tap-target type-body mx-auto inline-flex items-center rounded-tile px-2 font-medium text-text-1 underline-offset-4 hover:underline"
         >
           Report this problem
         </a>

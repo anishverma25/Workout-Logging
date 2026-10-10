@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Plus, Ruler } from 'lucide-react';
 import { LineChart } from '@/components/charts/LineChart';
 import { ChartEmpty } from '@/components/charts/ChartParts';
-import { Button } from '@/components/ui/Button';
+import { Card, IconTile, ListRow, SecondaryButton, SectionHeader } from '@/components/kit';
 import { Chips } from '@/components/ui/Fields';
 import { MEASUREMENT_LABELS, type LengthUnit } from '@/data/repositories/measurements';
 import { isAlive } from '@/domain/analytics/sessions';
@@ -48,71 +48,69 @@ export function MeasurementsSection({
 
   return (
     <section aria-labelledby="measurements-title" className="mt-8">
-      <div className="mb-2.5 flex items-end justify-between gap-3">
-        <h2
-          id="measurements-title"
-          className="font-display text-[1.3rem] font-semibold leading-tight tracking-tight"
-        >
-          Measurements
-        </h2>
-        {sorted.length > 0 ? (
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={<Plus className="size-4" aria-hidden />}
-            onClick={() => setAdding(true)}
-          >
-            Add measurements
-          </Button>
-        ) : null}
-      </div>
+      <SectionHeader
+        id="measurements-title"
+        title="Measurements"
+        className="items-center"
+        action={
+          sorted.length > 0 ? (
+            <SecondaryButton compact icon={<Plus aria-hidden />} onClick={() => setAdding(true)}>
+              Add measurements
+            </SecondaryButton>
+          ) : null
+        }
+      />
 
       {sorted.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 rounded-[var(--radius-card)] bg-surface p-5">
-          <span className="flex size-11 items-center justify-center rounded-[0.8rem] bg-[var(--tile-sky)] text-white">
-            <Ruler className="size-5" aria-hidden />
-          </span>
-          <p className="max-w-[48ch] text-sm text-muted">
+        <Card className="flex flex-col items-start gap-4">
+          <IconTile icon={<Ruler />} />
+          <p className="type-body max-w-[48ch] text-text-2 [text-wrap:balance]">
             A tape measure shows what the scale cannot: a waist that shrinks while weight holds
             steady means fat lost and muscle gained. Waist and neck also give a body-fat estimate.
           </p>
-          <Button icon={<Plus className="size-4" aria-hidden />} onClick={() => setAdding(true)}>
+          <SecondaryButton icon={<Plus aria-hidden />} onClick={() => setAdding(true)}>
             Add measurements
-          </Button>
-        </div>
+          </SecondaryButton>
+        </Card>
       ) : (
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
-          <ul className="grid grid-cols-2 gap-2.5 self-start">
-            {available.map((f) => {
-              const withValue = sorted.filter((e) => e[f] !== null);
-              const last = withValue[withValue.length - 1]!;
-              const first = withValue[0]!;
-              const change = (last[f] as number) - (first[f] as number);
-              const shownChange =
-                f === 'bodyFatPct'
-                  ? change
-                  : toDisplayLength(Math.abs(change), unit) * Math.sign(change);
-              return (
-                <li key={f} className="rounded-[1.1rem] bg-surface p-4">
-                  <p className="text-[0.8125rem] font-medium text-faint">{label(f)}</p>
-                  <p className="tabular mt-1 font-display text-[1.35rem] font-semibold leading-tight tracking-tight">
-                    {show(f, last[f] as number)}
-                  </p>
-                  <p className="tabular mt-0.5 text-xs text-faint">
-                    {withValue.length > 1
-                      ? `${shownChange > 0 ? '+' : shownChange < 0 ? '−' : ''}${Math.abs(
-                          Math.round(shownChange * 10) / 10,
-                        ).toLocaleString(
-                          'en-GB',
-                        )}${f === 'bodyFatPct' ? ' points' : ` ${unit}`} since ${formatDayMonth(new Date(first.measuredAt))}`
-                      : `On ${formatDayMonth(new Date(last.measuredAt))}`}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
+          <Card flush className="self-start">
+            <ul className="divide-y-[0.5px] divide-divider px-4" aria-label="Latest measurements">
+              {available.map((f) => {
+                const withValue = sorted.filter((e) => e[f] !== null);
+                const last = withValue[withValue.length - 1]!;
+                const first = withValue[0]!;
+                const change = (last[f] as number) - (first[f] as number);
+                const shownChange =
+                  f === 'bodyFatPct'
+                    ? change
+                    : toDisplayLength(Math.abs(change), unit) * Math.sign(change);
+                return (
+                  <li key={f}>
+                    <ListRow
+                      title={label(f)}
+                      subtitle={
+                        withValue.length > 1
+                          ? `${shownChange > 0 ? '+' : shownChange < 0 ? '−' : ''}${Math.abs(
+                              Math.round(shownChange * 10) / 10,
+                            ).toLocaleString(
+                              'en-GB',
+                            )}${f === 'bodyFatPct' ? ' points' : ` ${unit}`} since ${formatDayMonth(new Date(first.measuredAt))}`
+                          : `On ${formatDayMonth(new Date(last.measuredAt))}`
+                      }
+                      trailing={
+                        <span className="type-headline tabular shrink-0 text-text-1">
+                          {show(f, last[f] as number)}
+                        </span>
+                      }
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
 
-          <div className="rounded-[var(--radius-card)] bg-surface p-5">
+          <Card>
             {field ? (
               <>
                 <Chips
@@ -155,31 +153,29 @@ export function MeasurementsSection({
                 )}
               </>
             ) : null}
-            <ul className="mt-4 divide-y divide-line border-t border-line">
+            <ul
+              className="mt-4 divide-y-[0.5px] divide-divider border-t-[0.5px] border-divider"
+              aria-label="Measurement entries"
+            >
               {[...sorted]
                 .reverse()
                 .slice(0, 8)
                 .map((e) => (
                   <li key={e.id}>
-                    <button
-                      type="button"
+                    <ListRow
                       onClick={() => setEditing(e)}
-                      className="flex w-full items-center justify-between gap-3 py-2.5 text-left"
-                    >
-                      <span className="shrink-0 whitespace-nowrap font-medium">
-                        {formatShortDate(new Date(e.measuredAt))}
-                      </span>
-                      <span className="min-w-0 truncate text-sm text-faint">
-                        {[...MEASUREMENT_FIELDS, 'bodyFatPct' as const]
-                          .filter((f) => e[f] !== null)
-                          .map((f) => `${label(f)} ${show(f, e[f] as number)}`)
-                          .join(', ')}
-                      </span>
-                    </button>
+                      titleWeight={500}
+                      title={formatShortDate(new Date(e.measuredAt))}
+                      subtitle={[...MEASUREMENT_FIELDS, 'bodyFatPct' as const]
+                        .filter((f) => e[f] !== null)
+                        .map((f) => `${label(f)} ${show(f, e[f] as number)}`)
+                        .join(', ')}
+                      chevron
+                    />
                   </li>
                 ))}
             </ul>
-          </div>
+          </Card>
         </div>
       )}
 
