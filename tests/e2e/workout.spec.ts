@@ -262,6 +262,9 @@ test('a finished exercise folds to one row, opens again, and can take another se
 test('finishing with sets left asks first and says how many are done (B3)', async ({ page }) => {
   await startRoutineWorkout(page);
   await firstCard(page).getByRole('button', { name: 'Mark set 1 done' }).click();
+  await expect(
+    firstCard(page).getByRole('button', { name: 'Set 1 done. Tap to undo.' }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Finish' }).click();
   const sheet = page.getByRole('dialog', { name: 'Finish anyway?' });
   await expect(sheet).toContainText(/1 of \d+ sets done\./);
@@ -305,4 +308,58 @@ test('rest and bench angle use steppers, presets and a keypad (B5)', async ({ pa
   );
   await sheet.getByRole('button', { name: 'Done', exact: true }).last().click();
   await expect(page.getByText('50° incline').first()).toBeVisible();
+});
+
+test('rest bar: 15 seconds more or less, and Skip', async ({ page }) => {
+  await startRoutineWorkout(page);
+  await firstCard(page).getByRole('button', { name: 'Mark set 1 done' }).click();
+  const bar = page.getByRole('timer', { name: 'Rest timer' });
+  await expect(bar).toBeVisible();
+  const open = bar.getByRole('button', { name: /^Rest \d+:\d{2} left/ });
+  const seconds = async () => {
+    const m = /Rest (\d+):(\d{2}) left/.exec((await open.getAttribute('aria-label')) ?? '');
+    return Number(m![1]) * 60 + Number(m![2]);
+  };
+  const before = await seconds();
+  await bar.getByRole('button', { name: '15 seconds more' }).click();
+  await expect.poll(seconds).toBeGreaterThan(before + 10);
+  const raised = await seconds();
+  await bar.getByRole('button', { name: '15 seconds less' }).click();
+  await expect.poll(seconds).toBeLessThan(raised - 10);
+  await bar.getByRole('button', { name: 'Skip rest' }).click();
+  await expect(bar).toHaveCount(0);
+});
+
+test('the Last column says New when there is no history, never a lone dot', async ({ page }) => {
+  await page.goto('/workout');
+  await page.getByRole('button', { name: 'Start empty workout' }).click();
+  await page.getByRole('button', { name: 'Add exercise' }).click();
+  await page.getByRole('searchbox', { name: 'Search exercises' }).fill('pec deck');
+  await page.getByRole('button', { name: /^Pec deck/ }).click();
+  await page.getByRole('button', { name: 'Add 1 exercise' }).click();
+  const last = firstCard(page).getByRole('button', { name: 'No matching set last time' }).first();
+  await expect(last).toHaveText('New');
+});
+
+test('keyboard toolbar steps the focused cell and moves to the next one', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'The toolbar is for touch screens.');
+  await startRoutineWorkout(page);
+  const card = firstCard(page);
+  const load = card.getByRole('textbox', { name: 'Set 1 load in kg' });
+  await load.fill('60');
+  const toolbar = page.getByRole('toolbar', { name: 'Number keys' });
+  await expect(toolbar).toBeVisible();
+  await toolbar.getByRole('button', { name: '+2.5' }).click();
+  await expect(load).toHaveValue('62.5');
+  await toolbar.getByRole('button', { name: '−2.5' }).click();
+  await toolbar.getByRole('button', { name: '−2.5' }).click();
+  await expect(load).toHaveValue('57.5');
+  await toolbar.getByRole('button', { name: 'Next' }).click();
+  const reps = card.getByRole('textbox', { name: 'Set 1 reps' });
+  await expect(reps).toBeFocused();
+  await reps.fill('8');
+  await toolbar.getByRole('button', { name: '+1' }).click();
+  await expect(reps).toHaveValue('9');
 });

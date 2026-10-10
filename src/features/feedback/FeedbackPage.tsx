@@ -96,9 +96,7 @@ function FeedbackForm() {
         <span className="flex size-12 items-center justify-center rounded-full bg-accent text-accent-ink">
           <Check className="size-6" strokeWidth={3} aria-hidden />
         </span>
-        <h2 className="font-display text-[1.5rem] font-bold leading-tight">
-          Thank you
-        </h2>
+        <h2 className="font-display text-[1.5rem] font-bold leading-tight">Thank you</h2>
         <p className="text-muted">
           {done === 'sent'
             ? 'It went straight to the person building Overload. If you asked something, the reply shows up below.'

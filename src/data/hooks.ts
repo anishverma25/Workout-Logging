@@ -74,7 +74,6 @@ export const useDemoStatus = () => useLiveData<DemoStatus>(() => getDemoStatus(d
 export const useTourPending = () =>
   useLiveData(async () => (await getMeta<boolean>(db, META_KEYS.tourPending)) === true);
 
-
 export function usePreferences(): Preferences {
   const state = useLiveData<Preferences>(() => getPreferences(db));
   return state.data ?? DEFAULT_PREFERENCES;

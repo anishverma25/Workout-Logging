@@ -3,7 +3,6 @@ import { ChevronRight, Dumbbell } from 'lucide-react';
 import { useActiveWorkout, useRestTimer } from '@/data/hooks';
 import { elapsedMs } from '@/data/repositories/workouts';
 import { isFinished, remainingMs } from '@/domain/workout/restTimer';
-import { cn } from '@/lib/cn';
 import { formatClock } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 
@@ -30,23 +29,21 @@ function Dock({
   const timer = useRestTimer().data ?? null;
   const resting = timer && timer.workoutId === workout.id && !isFinished(timer, now);
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5.4rem+env(safe-area-inset-bottom))] z-30 px-3 lg:bottom-6 lg:left-[17rem]">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(49px+1rem+env(safe-area-inset-bottom))] z-30 px-4 lg:bottom-6 lg:left-60">
       <Link
         to="/workout"
-        className="pointer-events-auto mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-accent px-4 py-2.5 text-accent-ink shadow-[0_12px_32px_-12px_rgb(0_0_0/0.6)]"
+        className="pressable chrome pointer-events-auto mx-auto flex h-14 max-w-md items-center gap-3 rounded-full bg-lime pr-4 pl-5 text-on-lime"
       >
         <Dumbbell className="size-5 shrink-0" aria-hidden />
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-semibold leading-tight">
-            {workoutName} in progress
-          </span>
-          <span className="tabular block text-sm text-accent-ink/75">
+          <span className="type-headline block truncate">{workoutName} in progress</span>
+          <span className="type-meta tabular block text-on-lime/75">
             {formatClock(elapsedMs(workout, now) / 1000)}
             {workout.pausedAt ? ' · paused' : ''}
             {resting ? ` · rest ${formatClock(Math.ceil(remainingMs(timer, now) / 1000))}` : ''}
           </span>
         </span>
-        <span className={cn('flex shrink-0 items-center gap-0.5 text-sm font-semibold')}>
+        <span className="type-meta flex shrink-0 items-center gap-0.5 font-semibold">
           Resume <ChevronRight className="size-4" aria-hidden />
         </span>
       </Link>

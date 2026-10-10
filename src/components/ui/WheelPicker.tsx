@@ -98,7 +98,7 @@ export function WheelPicker({
       {/* The selection band, behind the numbers. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 rounded-[0.9rem] bg-surface shadow-[var(--shadow-card)]"
+        className="pointer-events-none absolute inset-x-0 rounded-field border border-border bg-surface"
         style={{ top: ITEM * 2, height: ITEM }}
       />
       {unit ? (

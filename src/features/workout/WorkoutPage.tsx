@@ -67,7 +67,7 @@ function StartScreen() {
               Edit routine
             </TextLink>
           </div>
-          <ul className="grid gap-3 md:grid-cols-2">
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2 [&>li]:min-w-0">
             {ordered.map((day) => {
               const slots = data.routineExercises
                 .filter((re) => re.routineDayId === day.id)

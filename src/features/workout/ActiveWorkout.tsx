@@ -191,7 +191,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
   }
 
   return (
-    <div className="pb-32">
+    <div className="mx-auto max-w-[640px] pb-32">
       <header className="chrome sticky top-0 z-20 -mx-4 border-b-[0.5px] border-divider bg-bg px-4 pt-[max(0.5rem,env(safe-area-inset-top))] lg:-mx-10 lg:px-10 lg:pt-5">
         <div className="flex min-h-14 items-center gap-2">
           <button
@@ -272,7 +272,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
         </InlineNotice>
       ) : null}
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-2 xl:items-start">
+      <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4">
         {exercises.map((ex, i) => (
           <ExerciseCard
             key={ex.workoutExercise.id}

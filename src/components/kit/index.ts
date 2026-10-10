@@ -26,13 +26,7 @@ export {
 } from './actions';
 export { TextField, PasswordField, SearchField, NumberField, Stepper } from './inputs';
 export { stepValue } from './stepValue';
-export {
-  RestPicker,
-  AnglePicker,
-  RirPicker,
-  BenchDiagram,
-  SavedFlash,
-} from './pickers';
+export { RestPicker, AnglePicker, RirPicker, BenchDiagram, SavedFlash } from './pickers';
 export { REST_PRESETS_SEC } from './keypad';
 export {
   EmptyState,

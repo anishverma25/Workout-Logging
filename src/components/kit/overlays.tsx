@@ -26,6 +26,8 @@ interface BottomSheetProps {
   footer?: ReactNode;
   /** Always a centred dialog, never a bottom sheet. */
   presentation?: 'sheet' | 'dialog';
+  /** Wider on desktop (672 instead of 480), for forms with columns. */
+  wide?: boolean;
   className?: string;
 }
 
@@ -46,6 +48,7 @@ export function BottomSheet({
   children,
   footer,
   presentation = 'sheet',
+  wide,
   className,
 }: BottomSheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -86,6 +89,9 @@ export function BottomSheet({
 
   const onPointerDown = (e: PointerEvent) => {
     if (presentation === 'dialog' || window.matchMedia('(min-width: 1024px)').matches) return;
+    // Taps on the close button and other controls must stay clicks, not start a drag: pointer
+    // capture would send their click to the header instead.
+    if ((e.target as HTMLElement).closest('button, a, input, select, textarea')) return;
     dragStart.current = { y: e.clientY, t: performance.now() };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
@@ -127,7 +133,10 @@ export function BottomSheet({
         'transition-transform duration-[var(--dur-move)] ease-[var(--ease-standard)]',
         dialogLike
           ? 'kit-dialog m-auto max-h-[85dvh] max-w-[min(30rem,calc(100vw-2rem))] rounded-panel'
-          : 'm-0 mt-auto max-h-[85dvh] rounded-t-panel lg:m-auto lg:max-w-[30rem] lg:rounded-panel',
+          : cn(
+              'm-0 mt-auto max-h-[85dvh] rounded-t-panel lg:m-auto lg:rounded-panel',
+              wide ? 'lg:max-w-2xl' : 'lg:max-w-[30rem]',
+            ),
         className,
       )}
     >

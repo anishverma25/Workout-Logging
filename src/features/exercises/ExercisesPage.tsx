@@ -160,7 +160,7 @@ export function ExercisesPage() {
       <Button
         onClick={() => setCreating(true)}
         icon={<Plus className="size-5" aria-hidden />}
-        className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-30 shadow-[0_8px_24px_-8px_rgb(0_0_0/0.5)] sm:hidden"
+        className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-30 sm:hidden"
       >
         New
       </Button>

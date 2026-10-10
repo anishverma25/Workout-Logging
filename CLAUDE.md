@@ -7,7 +7,7 @@ Read README.md for setup, architecture and calculation rules.
 
 - UI redesign in progress on `ui-premium`: read `docs/UI_REDESIGN_BRIEF.md` and
   `docs/UI_RULES.md` first. New UI uses the kit in `src/components/kit` only.
-  Parts 1 to 7 are done; Parts 8 (feel) and 9 (QA, merge) remain. Pickers (`RestPicker`,
+  Parts 1 to 9 are done (`docs/ui-redesign-report.md`); the owner merges into `phase-2-wip`. Pickers (`RestPicker`,
   `AnglePicker`, `RirPicker`) and haptics (`src/lib/haptics.ts`) replace the old wheels.
 - Mobile-first. Test 390px wide and 1440px wide. Dark only (decision D3).
 - Colors come from `src/styles/tokens.css` (`bg-surface`, `text-text-2`, `bg-lime`...). Never
