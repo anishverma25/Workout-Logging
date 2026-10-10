@@ -20,7 +20,12 @@ interface Props {
   className?: string;
   /** Completed sets render their values brighter. */
   done?: boolean;
+  /** Step for the keyboard toolbar's − and + buttons (2.5 for kg, 1 for reps). */
+  step?: number;
 }
+
+/** Sent by the keyboard toolbar to the focused cell: adds `detail` to its value. */
+export const CELL_STEP_EVENT = 'cellstep';
 
 const SAVE_DELAY_MS = 350;
 
@@ -43,9 +48,11 @@ export const CellInput = forwardRef<CellInputHandle, Props>(function CellInput(
     onCommit,
     className,
     done,
+    step = 1,
   },
   ref,
 ) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(() => toDraft(value));
   const [invalid, setInvalid] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -82,6 +89,31 @@ export const CellInput = forwardRef<CellInputHandle, Props>(function CellInput(
 
   useImperativeHandle(ref, () => ({ flush: () => commit(draftRef.current) }));
 
+  // The keyboard toolbar nudges the focused cell by its step, starting from the typed value,
+  // else the suggestion shown, else zero.
+  const nudge = useRef<(delta: number) => void>(() => {});
+  useEffect(() => {
+    nudge.current = (delta: number) => {
+      const opts = { allowDecimal, min, max };
+      const base =
+        parseDraft(draftRef.current, opts) ?? (placeholder ? parseDraft(placeholder, opts) : null);
+      const next = Math.min(max, Math.max(min, Math.round(((base ?? 0) + delta) * 100) / 100));
+      const text = toDraft(next);
+      setDraft(text);
+      draftRef.current = text;
+      setInvalid(false);
+      if (timer.current !== null) window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => void commit(text), SAVE_DELAY_MS);
+    };
+  });
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const onStep = (e: Event) => nudge.current((e as CustomEvent<number>).detail);
+    el.addEventListener(CELL_STEP_EVENT, onStep);
+    return () => el.removeEventListener(CELL_STEP_EVENT, onStep);
+  }, []);
+
   useEffect(
     () => () => {
       // Leaving the screen mid-typing still saves.
@@ -96,6 +128,7 @@ export const CellInput = forwardRef<CellInputHandle, Props>(function CellInput(
 
   return (
     <input
+      ref={inputRef}
       type="text"
       inputMode={allowDecimal ? 'decimal' : 'numeric'}
       autoComplete="off"
@@ -105,6 +138,7 @@ export const CellInput = forwardRef<CellInputHandle, Props>(function CellInput(
       aria-label={label}
       aria-invalid={invalid || undefined}
       data-cell
+      data-step={step}
       value={draft}
       placeholder={placeholder}
       onFocus={(e) => {
@@ -140,8 +174,8 @@ export const CellInput = forwardRef<CellInputHandle, Props>(function CellInput(
         else e.currentTarget.blur();
       }}
       className={cn(
-        'tabular h-11 w-full min-w-0 rounded-[0.7rem] border bg-surface-2 px-1 text-center font-display text-[1.15rem] font-semibold outline-none transition-colors placeholder:font-medium placeholder:text-faint/70 focus:border-accent-text focus:bg-surface-3',
-        invalid ? 'border-danger' : 'border-transparent',
+        'type-title tabular h-13 w-full min-w-0 rounded-field border bg-surface-2 px-1 text-center text-text-1 outline-none transition-colors placeholder:text-text-3 focus:border-text-2',
+        invalid ? 'border-danger-text' : 'border-transparent',
         done && 'bg-transparent',
         className,
       )}

@@ -28,7 +28,7 @@ import { getStorageState, requestPersistentStorage, type StorageState } from '@/
 import { formatShortDate, toDateKey } from '@/lib/dates';
 import { formatClock, spokenDuration } from '@/lib/format';
 import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
-import { DurationPicker } from '@/components/ui/DurationPicker';
+import { RestPicker } from '@/components/kit';
 
 export function SettingsPage() {
   return (
@@ -197,7 +197,7 @@ function RestLengthSheet({
         </Button>
       }
     >
-      <DurationPicker label={title} value={sec} min={min} onChange={setSec} />
+      <RestPicker label={title} value={sec} min={Math.max(15, min)} onChange={setSec} />
     </Sheet>
   );
 }

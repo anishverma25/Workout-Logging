@@ -47,7 +47,7 @@ export function formatSetValues(
   compact = false,
 ): string {
   const w = set.weightKg !== null ? formatWeightValue(set.weightKg, unit, 2) : null;
-  const x = compact ? '×' : ' × ';
+  const x = compact ? '\u2009×\u2009' : ' × ';
   const reps = compact ? `${set.reps ?? '?'}` : `${set.reps ?? '?'} reps`;
   switch (tracking) {
     case 'weight_reps':

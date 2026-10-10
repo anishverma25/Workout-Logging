@@ -10,13 +10,14 @@ import type { SetSuggestion } from '@/domain/workout/previous';
 import { cn } from '@/lib/cn';
 import { fromDisplayWeight, toDisplayWeight } from '@/lib/units';
 import { CellInput, type CellInputHandle } from './CellInput';
-import { columnsFor, formatSetValues, SET_TYPE_STYLES } from './format';
+import { columnsFor, formatSetValues } from './format';
+import { haptic } from '@/lib/haptics';
 
-/** Sized so a 360px phone still shows last time's set in full ("102.5 × 10"). */
+/** UI Part 6: Set 28, Last 72, then flexible inputs, and the 48px check. */
 export const SET_GRID =
-  'grid grid-cols-[1.6rem_minmax(0,1fr)_3.9rem_3.1rem_2.6rem_2.75rem] items-center gap-[5px]';
+  'grid grid-cols-[28px_72px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_48px] items-center gap-1.5';
 export const SET_GRID_NO_EFFORT =
-  'grid grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_4rem_2.75rem] items-center gap-[5px]';
+  'grid grid-cols-[28px_72px_minmax(0,1fr)_minmax(0,1fr)_48px] items-center gap-1.5';
 
 interface Props {
   set: WorkoutSet;
@@ -99,7 +100,7 @@ function SetRowImpl({
         return;
       }
       if (!result.alreadyCompleted) {
-        navigator.vibrate?.(12);
+        haptic('medium');
         onCompleted(result.set);
       }
     } finally {
@@ -136,21 +137,24 @@ function SetRowImpl({
     <div
       className={cn(
         cols.showEffort ? SET_GRID : SET_GRID_NO_EFFORT,
-        'rounded-xl px-1 py-1 transition-colors duration-200',
-        done && 'set-done bg-accent-soft',
+        'rounded-field px-1.5 py-1 transition-colors duration-200',
+        done && 'set-done bg-lime-dim',
       )}
     >
       <button
         type="button"
         onClick={() => onOpenOptions(set)}
         aria-label={`${SET_TYPE_LABELS[set.setType]} set ${label}, options`}
-        className={cn(
-          'tabular flex h-11 items-center justify-center rounded-lg font-display text-[1.05rem] font-bold transition-colors hover:bg-surface-2',
-          SET_TYPE_STYLES[set.setType],
-          done && set.setType === 'working' && 'text-text',
-        )}
+        className="tap-target pressable flex h-11 items-center justify-center"
       >
-        {typeLabel}
+        <span
+          className={cn(
+            'type-caption tabular flex size-7 items-center justify-center rounded-full font-semibold transition-colors',
+            done ? 'bg-lime text-on-lime' : 'bg-surface-2 text-text-2',
+          )}
+        >
+          {typeLabel}
+        </span>
       </button>
 
       <button
@@ -162,9 +166,9 @@ function SetRowImpl({
             ? `Last time ${formatSetValues(previous, tracking, unit)}. Copy into this set.`
             : 'No matching set last time'
         }
-        className="tabular h-11 min-w-0 truncate rounded-lg px-1 text-left text-[0.92rem] text-faint transition-colors enabled:hover:bg-surface-2 enabled:hover:text-text"
+        className="type-meta tabular h-11 min-w-0 truncate rounded-tile px-1 text-left text-text-2 transition-colors enabled:hover:bg-surface-2 enabled:hover:text-text-1"
       >
-        {previous ? formatSetValues(previous, tracking, unit, true) : <span aria-hidden>·</span>}
+        {previous ? formatSetValues(previous, tracking, unit, true) : 'New'}
       </button>
 
       <div>
@@ -179,6 +183,7 @@ function SetRowImpl({
             value={displayLoad}
             placeholder={done ? undefined : ghostLoad}
             max={cardio ? 600 : tracking === 'weight_reps' ? 2000 : 500}
+            step={cardio ? 1 : unit === 'kg' ? 2.5 : 5}
             done={done}
             onCommit={(v) =>
               cardio
@@ -191,7 +196,7 @@ function SetRowImpl({
             }
           />
         ) : (
-          <span className="flex h-11 items-center justify-center text-sm font-medium text-faint">
+          <span className="type-meta flex h-13 items-center justify-center font-medium text-text-2">
             {tracking === 'bodyweight_reps' ? 'BW' : ''}
           </span>
         )}
@@ -205,6 +210,7 @@ function SetRowImpl({
           placeholder={done ? undefined : ghostAmount}
           allowDecimal={cols.amountField === 'distanceM'}
           max={cardio ? 500 : cols.amountField === 'reps' ? 999 : 99_999}
+          step={cardio ? 0.5 : cols.amountField === 'durationSec' ? 5 : 1}
           done={done}
           onCommit={(v) =>
             updateSet(
@@ -232,7 +238,6 @@ function SetRowImpl({
             min={effortKey === 'rir' ? 0 : 1}
             max={10}
             done={done}
-            className="text-[1.05rem]"
             onCommit={(v) => updateSet(db, set.id, { [effortKey]: v })}
           />
         </div>
@@ -245,13 +250,11 @@ function SetRowImpl({
           aria-pressed={done}
           aria-label={done ? `Set ${typeLabel} done. Tap to undo.` : `Mark set ${typeLabel} done`}
           className={cn(
-            'flex size-11 items-center justify-center rounded-xl border-2 transition-[background-color,border-color,transform] duration-150 active:scale-90',
-            done
-              ? 'set-check border-accent bg-accent text-accent-ink'
-              : 'border-line-strong bg-surface-2 text-faint hover:border-accent-text hover:text-accent-text',
+            'chrome flex size-12 items-center justify-center rounded-field transition-[background-color,transform] duration-150 active:scale-[0.92]',
+            done ? 'bg-lime text-on-lime' : 'bg-surface-2 text-text-2 hover:text-text-1',
           )}
         >
-          <Check className="size-5" strokeWidth={3} aria-hidden />
+          <Check className={cn('size-5', done && 'set-check')} strokeWidth={3} aria-hidden />
         </button>
       </div>
     </div>

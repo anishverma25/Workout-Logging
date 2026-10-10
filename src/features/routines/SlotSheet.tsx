@@ -1,16 +1,17 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { ArrowDown, ArrowUp, Link2, Repeat2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { DurationPicker } from '@/components/ui/DurationPicker';
-import { Stepper, TextArea } from '@/components/ui/Fields';
-import { WheelPicker } from '@/components/ui/WheelPicker';
+import { TextArea } from '@/components/ui/Fields';
 import {
-  angleKind,
-  DECLINE_DEGREES,
-  DEFAULT_ANGLE,
-  INCLINE_DEGREES,
-  signedAngle,
-} from '@/domain/workout/angle';
+  AnglePicker,
+  PrimaryButton,
+  RestPicker,
+  RirPicker,
+  SavedFlash,
+  Stepper as KitStepper,
+} from '@/components/kit';
+import { usePreferences } from '@/data/hooks';
+import { angleKind, DEFAULT_ANGLE } from '@/domain/workout/angle';
 import { Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
@@ -60,6 +61,7 @@ function SlotEditor({
   onClose,
 }: Props & { slot: RoutineExercise }) {
   const toast = useToast();
+  const prefs = usePreferences();
   const [targets, setTargets] = useState<RoutineTargets>(() => targetsOf(slot));
   const [notes, setNotes] = useState(slot.notes ?? '');
   const [swapping, setSwapping] = useState(false);
@@ -68,18 +70,14 @@ function SlotEditor({
   const distance = exercise?.trackingType === 'distance';
   const unitLabel = timed ? 'seconds' : distance ? 'metres' : 'reps';
 
+  const [savedTick, setSavedTick] = useState(0);
   const save = (next: RoutineTargets) => {
     setTargets(next);
+    setSavedTick((t) => t + 1);
     void updateTargets(db, slot.id, { ...next, notes: notes || null });
   };
-  // The rest wheel reports every second it passes: save once it settles.
-  const timer = useRef<number | null>(null);
-  const saveSoon = (next: RoutineTargets) => {
-    setTargets(next);
-    if (timer.current) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => save(next), 400);
-  };
   const angle = angleKind(exercise);
+  const effortTracked = !timed && !distance;
 
   return (
     <>
@@ -90,98 +88,118 @@ function SlotEditor({
           onClose();
         }}
         title={exercise?.name ?? 'Exercise'}
-        description={`${targets.targetSets} × ${formatRepRange(targets.repMin, targets.repMax)} ${unitLabel}${
-          targets.targetRir !== null ? ` · RIR ${targets.targetRir}` : ''
-        } · ${formatSeconds(targets.restSeconds)} rest. Changes save as you go.`}
+        description={
+          <span className="tabular">
+            {targets.targetSets} × {formatRepRange(targets.repMin, targets.repMax)} {unitLabel}
+            {targets.targetRir !== null ? ` · RIR ${targets.targetRir}` : ''} ·{' '}
+            {formatSeconds(targets.restSeconds)} rest
+          </span>
+        }
+        footer={
+          <div className="flex flex-col gap-3">
+            {effortTracked ? (
+              <p className="type-meta text-text-2">
+                RIR is reps in reserve: how many more reps you could have done. RIR 2 means you
+                stopped about two reps short of failure.
+              </p>
+            ) : null}
+            <div className="flex items-center gap-3">
+              <PrimaryButton
+                block
+                onClick={() => {
+                  void updateTargets(db, slot.id, { ...targets, notes: notes || null });
+                  onClose();
+                }}
+              >
+                Done
+              </PrimaryButton>
+            </div>
+          </div>
+        }
       >
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
-            <Stepper
+        <section aria-labelledby="slot-sets">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 id="slot-sets" className="type-label text-text-2">
+              Sets and {unitLabel}
+            </h3>
+            <SavedFlash tick={savedTick} />
+          </div>
+          <div className="flex flex-col gap-5">
+            <KitStepper
               label="Sets"
               value={targets.targetSets}
               min={1}
               max={10}
-              onChange={(v) => v !== null && save({ ...targets, targetSets: v })}
+              step={1}
+              size="headline"
+              format={(v) => `${v} ${v === 1 ? 'set' : 'sets'}`}
+              onChange={(v) => save({ ...targets, targetSets: v })}
+            />
+            <KitStepper
+              label={`Lowest ${unitLabel}`}
+              value={targets.repMin}
+              min={1}
+              max={timed ? 600 : 100}
+              step={timed ? 5 : 1}
+              size="headline"
+              format={(v) => `From ${v}`}
+              onChange={(v) => save({ ...targets, repMin: v, repMax: Math.max(v, targets.repMax) })}
+            />
+            <KitStepper
+              label={`Highest ${unitLabel}`}
+              value={targets.repMax}
+              min={1}
+              max={timed ? 600 : 100}
+              step={timed ? 5 : 1}
+              size="headline"
+              format={(v) => `To ${v}`}
+              onChange={(v) => save({ ...targets, repMax: v, repMin: Math.min(v, targets.repMin) })}
             />
           </div>
-          <Stepper
-            label={`Lowest ${unitLabel}`}
-            value={targets.repMin}
-            min={1}
-            max={timed ? 600 : 100}
-            step={timed ? 5 : 1}
-            onChange={(v) =>
-              v !== null && save({ ...targets, repMin: v, repMax: Math.max(v, targets.repMax) })
-            }
-          />
-          <Stepper
-            label={`Highest ${unitLabel}`}
-            value={targets.repMax}
-            min={1}
-            max={timed ? 600 : 100}
-            step={timed ? 5 : 1}
-            onChange={(v) =>
-              v !== null && save({ ...targets, repMax: v, repMin: Math.min(v, targets.repMin) })
-            }
-          />
-          {!timed && !distance ? (
-            <Stepper
-              label="Target RIR"
+        </section>
+
+        {effortTracked ? (
+          <section aria-labelledby="slot-rir" className="mt-6">
+            <h3 id="slot-rir" className="type-label mb-3 text-text-2">
+              Target RIR
+            </h3>
+            <RirPicker
               value={targets.targetRir}
-              min={0}
-              max={5}
-              step={0.5}
-              allowEmpty
-              emptyLabel="None"
               onChange={(v) => save({ ...targets, targetRir: v })}
             />
-          ) : null}
-        </div>
-        <div className="mt-5">
-          <p className="mb-1 text-sm font-medium text-muted">Rest after each set</p>
-          <DurationPicker
+          </section>
+        ) : null}
+
+        <section aria-labelledby="slot-rest" className="mt-6">
+          <h3 id="slot-rest" className="type-label mb-3 text-text-2">
+            Rest after each set
+          </h3>
+          <RestPicker
             label="Rest after each set"
             value={targets.restSeconds}
-            max={900}
-            onChange={(v) => saveSoon({ ...targets, restSeconds: v })}
+            onChange={(v) => save({ ...targets, restSeconds: v })}
+            defaultSeconds={prefs.defaultRestSeconds}
+            footnote="Applies to every set of this exercise."
           />
-        </div>
+        </section>
+
         {angle ? (
-          <div className="mt-5">
-            <div className="mb-1 flex items-baseline justify-between gap-3">
-              <p className="text-sm font-medium text-muted">
-                Bench angle{slot.angleDeg == null ? ', not set' : ''}
-              </p>
-              {slot.angleDeg != null ? (
-                <button
-                  type="button"
-                  onClick={() => void updateSlotAngle(db, slot.id, null)}
-                  className="text-sm font-medium text-accent-text"
-                >
-                  Clear
-                </button>
-              ) : null}
-            </div>
-            <WheelPicker
-              label={`${angle === 'incline' ? 'Incline' : 'Decline'} angle in degrees`}
-              values={angle === 'incline' ? INCLINE_DEGREES : DECLINE_DEGREES}
-              value={Math.abs(slot.angleDeg ?? DEFAULT_ANGLE[angle])}
-              onChange={(d) => void updateSlotAngle(db, slot.id, signedAngle(angle, d))}
-              unit={`° ${angle}`}
-              valueText={(d) => `${d} degrees ${angle}`}
+          <section className="mt-6">
+            <AnglePicker
+              kind={angle}
+              value={slot.angleDeg ?? null}
+              startAt={DEFAULT_ANGLE[angle]}
+              onChange={(deg) => {
+                setSavedTick((t) => t + 1);
+                void updateSlotAngle(db, slot.id, deg);
+              }}
             />
-          </div>
-        ) : null}
-        {!timed && !distance ? (
-          <p className="mt-2 text-xs text-faint">
-            RIR is reps in reserve: how many more reps you could have done. RIR 2 means you stopped
-            about two reps short of failure.
-          </p>
+          </section>
         ) : null}
 
         <TextArea
           label="Notes (optional)"
-          className="mt-4"
+          className="mt-6"
           value={notes}
           maxLength={500}
           placeholder="Cues, tempo, machine settings"

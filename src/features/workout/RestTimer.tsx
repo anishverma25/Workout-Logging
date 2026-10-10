@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getDeviceSettings, playRestTone } from '@/app/deviceSettings';
-import { Pause, Play, RotateCcw, Timer, X } from 'lucide-react';
-import { Button, IconButton } from '@/components/ui/Button';
+import { Pause, Play, RotateCcw, Timer } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { Sheet } from '@/components/ui/Sheet';
 import { useRestTimer } from '@/data/hooks';
 import {
@@ -17,14 +17,16 @@ import { formatClock, formatSeconds } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { restActions } from './restActions';
 import { useToast } from '@/components/ui/Toast';
-import { DurationPicker } from '@/components/ui/DurationPicker';
+import { haptic } from '@/lib/haptics';
+import { PrimaryButton, RestPicker, TextLink } from '@/components/kit';
 
-/** How long a finished timer stays on screen before it tidies itself away. */
-const FINISHED_LINGER_MS = 45_000;
+/** "Go" shows for a second at zero, then the bar slides away (UI Part 6 D). */
+const GO_MS = 1000;
+const SLIDE_MS = 250;
 
 /**
- * Buzzes and beeps once when rest ends, if the app is open (each can be turned off in
- * Settings). No promise of alerts in the background: browsers do not allow it reliably.
+ * At zero: a medium haptic and the tones, each only if turned on in Settings and only while
+ * the app is open. No promise of alerts in the background: browsers do not allow it reliably.
  */
 function useFinishSignal(state: RestTimerState | null, now: Date) {
   const signalled = useRef<string | null>(null);
@@ -35,14 +37,14 @@ function useFinishSignal(state: RestTimerState | null, now: Date) {
       signalled.current = key;
       if (document.visibilityState === 'visible') {
         const settings = getDeviceSettings();
-        if (settings.restVibrate) navigator.vibrate?.([180, 90, 180]);
+        if (settings.restVibrate) haptic('medium');
         if (settings.restSound) playRestTone();
       }
     }
   }, [finished, key]);
 }
 
-/** Floating bar above the tab bar while resting. Hidden when there is no timer. */
+/** Floating pill above the tab bar while resting. Hidden when there is no timer. */
 export function RestTimerBar({ onOpen }: { onOpen: () => void }) {
   const toast = useToast();
   const timer = useRestTimer();
@@ -50,52 +52,42 @@ export function RestTimerBar({ onOpen }: { onOpen: () => void }) {
   const state = timer.data ?? null;
   useFinishSignal(state, now);
 
+  const over = state?.endsAt ? now.getTime() - Date.parse(state.endsAt) : -1;
+  const paused = state?.pausedRemainingMs != null;
   useEffect(() => {
-    if (!state?.endsAt) return;
-    const over = now.getTime() - Date.parse(state.endsAt);
-    if (state.pausedRemainingMs === null && over > FINISHED_LINGER_MS) void restActions.clear();
-  }, [state, now]);
+    if (state && !paused && over >= GO_MS) void restActions.clear();
+  }, [state, paused, over]);
 
   if (!state) return null;
   const left = remainingMs(state, now);
-  const paused = state.pausedRemainingMs !== null;
   const finished = !paused && left === 0;
-  const progress = restProgress(state, now);
+  const leaving = finished && over >= GO_MS - SLIDE_MS;
+  const progress = finished ? 1 : restProgress(state, now);
+  const round =
+    'pressable chrome type-meta tabular inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-surface font-semibold text-text-1';
 
   return (
     <div
       role="timer"
       aria-label="Rest timer"
       className={cn(
-        'pointer-events-auto mx-auto flex w-full max-w-md items-center gap-2 overflow-hidden rounded-2xl border p-1.5 pl-2 shadow-[0_12px_32px_-12px_rgb(0_0_0/0.6)] backdrop-blur-xl transition-colors',
-        finished
-          ? 'border-transparent bg-accent text-accent-ink'
-          : 'border-line-strong bg-surface-3/95',
+        'rest-bar pointer-events-auto relative mx-auto flex h-14 w-full max-w-md items-center gap-2 overflow-hidden rounded-full bg-surface-2 pl-1 pr-4',
+        leaving && 'rest-bar-leave',
       )}
     >
       <button
         type="button"
         onClick={onOpen}
-        className="relative flex min-w-0 flex-1 items-center gap-3 rounded-xl px-1.5 py-1 text-left"
+        className="pressable flex h-full min-w-0 flex-1 items-center gap-2 rounded-full pl-4 text-left"
         aria-label={
           finished ? 'Rest done. Open timer.' : `Rest ${formatClock(left / 1000)} left. Open timer.`
         }
       >
-        <ProgressRing progress={finished ? 1 : progress} finished={finished} />
-        <span className="min-w-0">
-          <span
-            aria-live="off"
-            className="tabular block font-display text-[1.45rem] font-bold leading-none"
-          >
-            {finished ? 'Rest done' : formatClock(Math.ceil(left / 1000))}
-          </span>
-          <span className={cn('block text-xs', finished ? 'text-accent-ink/75' : 'text-faint')}>
-            {finished
-              ? `Rested ${formatClock(state.durationSec)}, next set when ready`
-              : paused
-                ? 'Paused'
-                : `of ${formatSeconds(state.durationSec)}`}
-          </span>
+        <span aria-live="off" className="type-stat tabular text-text-1">
+          {finished ? 'Go' : formatClock(Math.ceil(left / 1000))}
+        </span>
+        <span className="type-meta truncate text-text-2">
+          {finished ? 'next set' : paused ? 'Paused' : `of ${formatSeconds(state.durationSec)}`}
         </span>
       </button>
       {!finished ? (
@@ -103,7 +95,7 @@ export function RestTimerBar({ onOpen }: { onOpen: () => void }) {
           <button
             type="button"
             onClick={() => restActions.adjust(state, -15)}
-            className="tabular h-11 rounded-xl px-2.5 text-sm font-semibold text-muted hover:bg-surface-2 hover:text-text"
+            className={round}
             aria-label="15 seconds less"
           >
             −15
@@ -111,65 +103,29 @@ export function RestTimerBar({ onOpen }: { onOpen: () => void }) {
           <button
             type="button"
             onClick={() => restActions.adjust(state, 15)}
-            className="tabular h-11 rounded-xl px-2.5 text-sm font-semibold text-muted hover:bg-surface-2 hover:text-text"
+            className={round}
             aria-label="15 seconds more"
           >
             +15
           </button>
-          <IconButton
-            label={paused ? 'Resume rest' : 'Pause rest'}
-            icon={
-              paused ? (
-                <Play className="size-5" aria-hidden />
-              ) : (
-                <Pause className="size-5" aria-hidden />
-              )
-            }
-            onClick={() => (paused ? restActions.resume(state) : restActions.pause(state))}
-          />
+          <TextLink
+            small
+            aria-label="Skip rest"
+            onClick={() => {
+              toast(`Rested ${formatClock(restedSec(state, new Date()))}`);
+              void restActions.clear();
+            }}
+          >
+            Skip
+          </TextLink>
         </>
       ) : null}
-      <IconButton
-        label={finished ? 'Dismiss' : 'Skip rest'}
-        icon={<X className="size-5" aria-hidden />}
-        onClick={() => {
-          if (!finished) toast(`Rested ${formatClock(restedSec(state, new Date()))}`);
-          void restActions.clear();
-        }}
-        className={finished ? 'text-accent-ink hover:bg-black/10 hover:text-accent-ink' : undefined}
+      <span
+        aria-hidden
+        className="absolute inset-x-0 bottom-0 h-[3px] origin-left bg-lime transition-transform duration-300 ease-linear"
+        style={{ transform: `scaleX(${1 - progress})` }}
       />
     </div>
-  );
-}
-
-function ProgressRing({ progress, finished }: { progress: number; finished: boolean }) {
-  const r = 17;
-  const c = 2 * Math.PI * r;
-  return (
-    <svg viewBox="0 0 40 40" className="size-10 shrink-0 -rotate-90" aria-hidden>
-      <circle
-        cx="20"
-        cy="20"
-        r={r}
-        fill="none"
-        strokeWidth="4"
-        className={finished ? 'stroke-accent-ink/20' : 'stroke-line-strong'}
-      />
-      <circle
-        cx="20"
-        cy="20"
-        r={r}
-        fill="none"
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeDasharray={c}
-        strokeDashoffset={c * (1 - Math.min(1, Math.max(0, progress)))}
-        className={cn(
-          'transition-[stroke-dashoffset] duration-300 ease-linear',
-          finished ? 'stroke-accent-ink' : 'stroke-accent',
-        )}
-      />
-    </svg>
   );
 }
 
@@ -218,8 +174,8 @@ function RestTimerSheetBody({
       description="Runs while the app is open. Your phone may not alert you if the app is in the background."
     >
       <div className="flex flex-col items-center py-2">
-        <Timer className="size-5 text-faint" aria-hidden />
-        <p className="tabular mt-1 font-display text-[2.35rem] font-bold leading-none">
+        <Timer className="size-5 text-text-2" aria-hidden />
+        <p className="type-display tabular mt-1 text-text-1">
           {state ? formatClock(Math.ceil(left / 1000)) : formatClock(custom)}
         </p>
         {state ? (
@@ -252,24 +208,30 @@ function RestTimerSheetBody({
         ) : null}
       </div>
 
-      <h3 className="mb-2 mt-5 text-sm font-medium text-muted">Start a new rest</h3>
+      <h3 className="type-label mb-3 mt-6 text-text-2">Start a new rest</h3>
       <div className="grid grid-cols-4 gap-2">
         {REST_PRESETS.map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => start(s)}
-            className="tabular h-14 rounded-2xl border border-line bg-surface-2 font-display text-xl font-semibold transition-colors hover:border-accent-text"
+            className="pressable chrome type-headline tabular h-13 rounded-field bg-surface-2 text-text-1"
           >
             {formatSeconds(s)}
           </button>
         ))}
       </div>
-      <h3 className="mb-1 mt-6 text-sm font-medium text-muted">Custom length</h3>
-      <DurationPicker label="Custom rest length" value={custom} min={5} onChange={setCustom} />
-      <Button block className="mt-3" onClick={() => start(custom)}>
+      <h3 className="type-label mb-3 mt-6 text-text-2">Custom length</h3>
+      <RestPicker
+        label="Custom rest length"
+        value={custom}
+        onChange={setCustom}
+        presets={[]}
+        defaultSeconds={defaultSeconds}
+      />
+      <PrimaryButton block className="mt-4" onClick={() => start(custom)}>
         Start {formatClock(custom)}
-      </Button>
+      </PrimaryButton>
     </Sheet>
   );
 }

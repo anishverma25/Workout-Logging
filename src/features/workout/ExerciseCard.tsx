@@ -6,6 +6,8 @@ import {
   CopyPlus,
   Ellipsis,
   Calculator,
+  Check,
+  ChevronDown,
   Flame,
   Link2,
   NotebookPen,
@@ -14,7 +16,7 @@ import {
   Trash2,
   TrendingUp,
 } from 'lucide-react';
-import { Button, IconButton } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { ActionList, TextArea } from '@/components/ui/Fields';
 import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { db } from '@/data/db';
@@ -30,31 +32,25 @@ import {
   updateWorkoutExerciseAngle,
   updateWorkoutExerciseNotes,
 } from '@/data/repositories/workouts';
-import { WheelPicker } from '@/components/ui/WheelPicker';
-import { useLongPress } from '@/components/ui/useLongPress';
 import {
-  angleKind,
-  DECLINE_DEGREES,
-  DEFAULT_ANGLE,
-  formatAngle,
-  INCLINE_DEGREES,
-  signedAngle,
-  type AngleKind,
-} from '@/domain/workout/angle';
+  AnglePicker,
+  IconButton as KitIconButton,
+  PrimaryButton,
+  SecondaryButton,
+  TextLink,
+} from '@/components/kit';
+import { formatWeightValue, type WeightUnit } from '@/lib/units';
+import type { TrackingType } from '@/domain/models/schemas';
+import { useLongPress } from '@/components/ui/useLongPress';
+import { angleKind, DEFAULT_ANGLE, formatAngle, type AngleKind } from '@/domain/workout/angle';
 import { checkProgression, loadIncrement, progressionStyle } from '@/domain/analytics/progression';
 import { fromDisplayWeight, toDisplayWeight } from '@/lib/units';
 import { useFeature } from '@/app/entitlement';
 import type { Experience, Preferences, WorkoutSet } from '@/domain/models/schemas';
 import { matchingPreviousSet, suggestFor } from '@/domain/workout/previous';
-import {
-  differenceInCalendarDays,
-  formatDayMonth,
-  formatRelativeDayInline,
-  formatShortDate,
-  formatWeekday,
-} from '@/lib/dates';
-import { formatRepRange } from '@/lib/format';
-import { columnsFor, setLabels, trackingOf } from './format';
+import { differenceInCalendarDays, formatRelativeDayInline } from '@/lib/dates';
+import { formatCalendarDate, formatRepRange } from '@/lib/format';
+import { columnsFor, formatSetValues, setLabels, trackingOf } from './format';
 import { SetRow, SET_GRID, SET_GRID_NO_EFFORT } from './SetRow';
 import { SetSheet } from './SetSheet';
 import { loadPreviousPerformance } from '@/data/repositories/workoutView';
@@ -80,6 +76,8 @@ interface Props {
   onSetCompleted: (set: WorkoutSet, view: WorkoutExerciseView) => void;
   /** Opens the reorder list (press and hold the exercise name). */
   onReorder?: () => void;
+  /** The first exercise with sets still to do: drawn with a stronger border. */
+  active?: boolean;
 }
 
 function ExerciseCardImpl({
@@ -92,6 +90,7 @@ function ExerciseCardImpl({
   onReorder,
   superset,
   hasNext,
+  active = false,
 }: Props) {
   const { workoutExercise: we, exercise, sets, previous } = view;
   const tracking = trackingOf(exercise);
@@ -110,6 +109,10 @@ function ExerciseCardImpl({
   const labels = useMemo(() => setLabels(sets), [sets]);
   const prevSets = useMemo(() => previous?.sets ?? [], [previous]);
   const doneCount = sets.filter((s) => s.completedAt !== null).length;
+  // B2: once every set is ticked the card folds to one row; a tap opens it again.
+  const allDone = sets.length > 0 && doneCount === sets.length;
+  const [expanded, setExpanded] = useState(false);
+  const collapsed = allDone && !expanded;
   const target = we.target;
   const emptySets = sets.filter(
     (s) =>
@@ -199,203 +202,209 @@ function ExerciseCardImpl({
   return (
     <section
       aria-labelledby={`ex-${we.id}`}
+      data-exercise-card={we.id}
       className={cn(
         // min-w-0: a grid item must not grow to fit the one-line muscle summary.
-        'relative min-w-0 rounded-[var(--radius-card)] bg-surface py-4',
-        superset && 'ring-2 ring-inset ring-[var(--ring-2)]/40',
+        'relative min-w-0 scroll-mt-32 rounded-panel border bg-surface',
+        collapsed ? 'py-0' : 'py-4',
+        active && !collapsed ? 'border-border-strong' : 'border-border',
       )}
     >
       {superset?.linkedNext ? (
-        <span aria-hidden className="absolute -bottom-4 left-8 h-4 w-0.5 bg-[var(--ring-2)]" />
+        <span aria-hidden className="absolute -bottom-4 left-8 h-4 w-0.5 bg-border-strong" />
       ) : null}
-      <header className="flex items-start justify-between gap-2 px-4">
-        <div className="min-w-0">
-          {superset ? (
-            <p className="mb-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted">
-              <span aria-hidden className="size-2 rounded-full bg-[var(--ring-2)]" />
-              Superset {superset.label}
-              {superset.linkedNext ? ', no rest before the next exercise' : ', rest after this one'}
-            </p>
-          ) : null}
-          <h2
-            id={`ex-${we.id}`}
-            {...holdToReorder}
-            className="select-none font-display text-[1.45rem] font-bold leading-tight [-webkit-touch-callout:none]"
-          >
-            {we.exerciseName}
-          </h2>
-          <p className="tabular mt-0.5 text-sm text-muted">
-            {target
-              ? `Target ${target.sets} × ${formatRepRange(target.repMin, target.repMax)}${
-                  target.rir !== null ? ` · RIR ${target.rir}` : ''
-                }`
-              : 'No target'}
-            <span className="text-faint">
-              {' '}
-              · {doneCount} of {sets.length} done
-            </span>
-          </p>
-          {shares ? (
+      {collapsed ? (
+        <CollapsedRow
+          headingId={`ex-${we.id}`}
+          name={we.exerciseName}
+          done={doneCount}
+          total={sets.length}
+          summary={bestSetSummary(sets, tracking, unit)}
+          onExpand={() => setExpanded(true)}
+        />
+      ) : (
+        <>
+          <header className="flex items-start justify-between gap-2 px-4">
+            <div className="min-w-0">
+              {superset ? (
+                <p className="type-caption mb-0.5 flex items-center gap-1.5 font-semibold text-text-2">
+                  <Link2 className="size-3.5" aria-hidden />
+                  Superset {superset.label}
+                  {superset.linkedNext
+                    ? ', no rest before the next exercise'
+                    : ', rest after this one'}
+                </p>
+              ) : null}
+              <h2
+                id={`ex-${we.id}`}
+                {...holdToReorder}
+                className="type-title select-none text-text-1 [-webkit-touch-callout:none]"
+              >
+                {we.exerciseName}
+              </h2>
+              <p className="type-meta tabular mt-0.5 text-text-2">
+                {target
+                  ? `Target ${target.sets} × ${formatRepRange(target.repMin, target.repMax)}${
+                      target.rir !== null ? ` · RIR ${target.rir}` : ''
+                    }`
+                  : 'No target'}
+              </p>
+              {shares ? (
+                <button
+                  type="button"
+                  onClick={() => setShowingShares(true)}
+                  className="type-meta tabular mt-0.5 block max-w-full truncate text-left text-text-2 hover:text-text-1"
+                  aria-label={`Muscles worked: ${sharesSummary(shares, 3)}. Show the breakdown`}
+                >
+                  {sharesSummary(shares)}
+                </button>
+              ) : null}
+              {angle ? (
+                <button
+                  type="button"
+                  onClick={() => setEditingAngle(true)}
+                  className={cn(
+                    'pressable chrome type-meta mt-2 inline-flex h-8 items-center gap-1.5 rounded-full bg-surface-2 px-3 font-semibold',
+                    we.angleDeg != null ? 'text-text-1' : 'text-text-2',
+                  )}
+                >
+                  {we.angleDeg != null ? `Bench ${formatAngle(we.angleDeg)}` : 'Set bench angle'}
+                </button>
+              ) : null}
+              {perHand ? (
+                <p className="type-caption mt-1 text-text-2">
+                  Enter the weight of one dumbbell: 25 in each hand is 25, not 50. Volume counts
+                  both hands.
+                </p>
+              ) : null}
+            </div>
+            <KitIconButton
+              label={`Options for ${we.exerciseName}`}
+              icon={<Ellipsis />}
+              onClick={() => setMenu(true)}
+              className="-mt-1"
+            />
+          </header>
+
+          {we.notes ? (
             <button
               type="button"
-              onClick={() => setShowingShares(true)}
-              className="tabular mt-0.5 block max-w-full truncate text-left text-xs font-medium text-muted underline decoration-dotted underline-offset-2"
-              aria-label={`Muscles worked: ${sharesSummary(shares, 3)}. Show the breakdown`}
+              onClick={() => setEditingNotes(true)}
+              className="pressable type-meta mx-4 mt-2 block w-[calc(100%-2rem)] rounded-field bg-surface-2 px-3 py-2 text-left text-text-2"
             >
-              {sharesSummary(shares)}
+              {we.notes}
             </button>
           ) : null}
-          {angle ? (
-            <button
-              type="button"
-              onClick={() => setEditingAngle(true)}
+
+          {readyToProgress ? (
+            <div className="type-meta mx-4 mt-3 rounded-field bg-lime-dim px-3 py-2.5 text-text-1">
+              <p className="flex items-start gap-2">
+                <TrendingUp className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
+                <span>
+                  Last time every set reached{' '}
+                  {progressionStyle(experience) === 'linear'
+                    ? `${target!.repMin} reps`
+                    : 'the top of the range'}
+                  {readyToProgress.effort === 'met' ? ' at the planned effort' : ''}.{' '}
+                  {nextLoad
+                    ? `Add ${nextLoad.step} ${unit} today: ${nextLoad.shown} ${unit} for ${target!.repMin} reps.`
+                    : 'Consider a little more load today.'}
+                </span>
+              </p>
+              {nextLoad && fillable.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => void applyNextLoad()}
+                  className="pressable chrome type-meta tabular ml-6 mt-2 inline-flex h-9 items-center rounded-full bg-text-1 px-4 font-semibold text-bg"
+                >
+                  Use {nextLoad.shown} {unit}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div className="type-meta mx-4 mt-2 flex min-h-11 items-center justify-between gap-2 text-text-2">
+            {previous ? (
+              <span className="tabular">
+                Last: {lastTimeLabel(new Date(previous.workout.startedAt))}
+              </span>
+            ) : previous === null ? (
+              <span>First time logging this exercise</span>
+            ) : (
+              <span aria-hidden />
+            )}
+            {canCopy ? (
+              <TextLink small icon={<CopyPlus />} onClick={() => void copyAll()}>
+                Copy last time
+              </TextLink>
+            ) : null}
+          </div>
+
+          <div className="mt-1 px-2">
+            <div
+              aria-hidden
               className={cn(
-                'mt-1.5 inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-sm font-semibold',
-                we.angleDeg != null ? 'bg-accent-soft text-accent-text' : 'bg-surface-2 text-muted',
+                cols.showEffort ? SET_GRID : SET_GRID_NO_EFFORT,
+                'type-caption px-1.5 pb-1 text-text-2',
               )}
             >
-              {we.angleDeg != null ? `Bench ${formatAngle(we.angleDeg)}` : 'Set bench angle'}
-            </button>
-          ) : null}
-          {perHand ? (
-            <p className="mt-1 text-xs text-faint">
-              Enter the weight of one dumbbell: 25 in each hand is 25, not 50. Volume counts both
-              hands.
-            </p>
-          ) : null}
-        </div>
-        <IconButton
-          label={`Options for ${we.exerciseName}`}
-          icon={<Ellipsis className="size-5" aria-hidden />}
-          onClick={() => setMenu(true)}
-          className="-mr-2 -mt-1.5"
-        />
-      </header>
+              <span className="text-center">Set</span>
+              <span>Last</span>
+              <span className="text-center">
+                {perHand ? `${cols.load} each` : (cols.load ?? '')}
+              </span>
+              <span className="text-center">{cols.amount}</span>
+              {cols.showEffort ? (
+                <span className="text-center">{prefs.effortMetric.toUpperCase()}</span>
+              ) : null}
+              <span />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              {sets.map((s) => (
+                <SetRow
+                  key={s.id}
+                  set={s}
+                  label={labels.get(s.id) ?? ''}
+                  tracking={tracking}
+                  perHand={perHand}
+                  prefs={prefs}
+                  previous={matchingPreviousSet(prevSets, sets, s.id)}
+                  suggestion={suggestFor(prevSets, sets, s.id)}
+                  loadSuggestion={
+                    previous === undefined
+                      ? async () => {
+                          const workout = await db.workouts.get(we.workoutId);
+                          if (!workout) return null;
+                          const map = await loadPreviousPerformance(
+                            db,
+                            [we.exerciseId],
+                            workout.startedAt,
+                            we.workoutId,
+                          );
+                          return suggestFor(map.get(we.exerciseId)?.sets ?? [], sets, s.id);
+                        }
+                      : undefined
+                  }
+                  targetRir={target?.rir ?? null}
+                  onOpenOptions={(set) => setOptionsFor(set.id)}
+                  onCompleted={onCompleted}
+                />
+              ))}
+            </div>
+          </div>
 
-      {we.notes ? (
-        <button
-          type="button"
-          onClick={() => setEditingNotes(true)}
-          className="mx-4 mt-2 block w-[calc(100%-2rem)] rounded-xl bg-surface-2 px-3 py-2 text-left text-sm text-muted"
-        >
-          {we.notes}
-        </button>
-      ) : null}
-
-      {readyToProgress ? (
-        <div className="mx-4 mt-3 rounded-xl bg-accent-soft px-3 py-2.5 text-sm">
-          <p className="flex items-start gap-2">
-            <TrendingUp className="mt-0.5 size-4 shrink-0 text-accent-text" aria-hidden />
-            <span>
-              Last time every set reached{' '}
-              {progressionStyle(experience) === 'linear'
-                ? `${target!.repMin} reps`
-                : 'the top of the range'}
-              {readyToProgress.effort === 'met' ? ' at the planned effort' : ''}.{' '}
-              {nextLoad
-                ? `Add ${nextLoad.step} ${unit} today: ${nextLoad.shown} ${unit} for ${target!.repMin} reps.`
-                : 'Consider a little more load today.'}
-            </span>
-          </p>
-          {nextLoad && fillable.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => void applyNextLoad()}
-              className="ml-6 mt-1.5 inline-flex h-8 items-center rounded-full bg-accent px-3 text-[0.8125rem] font-semibold text-accent-ink"
-            >
-              Use {nextLoad.shown} {unit}
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="mx-4 mt-3 flex min-h-8 items-center justify-between gap-2 text-sm">
-        {previous ? (
-          <span className="text-faint">
-            Last time{' '}
-            <span className="font-medium text-muted">
-              {lastTimeLabel(new Date(previous.workout.startedAt))}
-            </span>
-          </span>
-        ) : previous === null ? (
-          <span className="text-faint">First time logging this exercise</span>
-        ) : (
-          <span aria-hidden />
-        )}
-        {canCopy ? (
-          <button
-            type="button"
-            onClick={copyAll}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 font-semibold text-accent-text hover:bg-accent-soft"
-          >
-            <CopyPlus className="size-4" aria-hidden />
-            Copy last time
-          </button>
-        ) : null}
-      </div>
-
-      <div className="mt-1 px-2">
-        <div
-          aria-hidden
-          className={cn(
-            cols.showEffort ? SET_GRID : SET_GRID_NO_EFFORT,
-            'px-1 pb-1 text-[0.7rem] font-medium text-faint',
-          )}
-        >
-          <span className="text-center">Set</span>
-          <span>Last</span>
-          <span className="text-center">{perHand ? `${cols.load} each` : (cols.load ?? '')}</span>
-          <span className="text-center">{cols.amount}</span>
-          {cols.showEffort ? (
-            <span className="text-center">{prefs.effortMetric.toUpperCase()}</span>
-          ) : null}
-          <span />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          {sets.map((s) => (
-            <SetRow
-              key={s.id}
-              set={s}
-              label={labels.get(s.id) ?? ''}
-              tracking={tracking}
-              perHand={perHand}
-              prefs={prefs}
-              previous={matchingPreviousSet(prevSets, sets, s.id)}
-              suggestion={suggestFor(prevSets, sets, s.id)}
-              loadSuggestion={
-                previous === undefined
-                  ? async () => {
-                      const workout = await db.workouts.get(we.workoutId);
-                      if (!workout) return null;
-                      const map = await loadPreviousPerformance(
-                        db,
-                        [we.exerciseId],
-                        workout.startedAt,
-                        we.workoutId,
-                      );
-                      return suggestFor(map.get(we.exerciseId)?.sets ?? [], sets, s.id);
-                    }
-                  : undefined
-              }
-              targetRir={target?.rir ?? null}
-              onOpenOptions={(set) => setOptionsFor(set.id)}
-              onCompleted={onCompleted}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-2 px-4">
-        <Button
-          variant="ghost"
-          block
-          icon={<Plus className="size-4" aria-hidden />}
-          onClick={() => addSet(db, we.id)}
-          className="h-11 bg-surface-2/60 text-text"
-        >
-          Add set
-        </Button>
-      </div>
+          <div className="mt-3 flex items-center justify-between gap-3 px-4">
+            <SecondaryButton compact icon={<Plus />} onClick={() => void addSet(db, we.id)}>
+              Add set
+            </SecondaryButton>
+            {allDone && expanded ? (
+              <TextLink small onClick={() => setExpanded(false)}>
+                Hide sets
+              </TextLink>
+            ) : null}
+          </div>
+        </>
+      )}
 
       <PlateSheet
         open={plates}
@@ -590,11 +599,65 @@ function ExerciseCardImpl({
   );
 }
 
+/** The best completed working set, for the folded card: "70 kg × 8". */
+function bestSetSummary(sets: WorkoutSet[], tracking: TrackingType, unit: WeightUnit): string {
+  const done = sets.filter((s) => s.completedAt !== null && s.setType !== 'warmup');
+  if (done.length === 0) return '';
+  const best = [...done].sort(
+    (a, b) => (b.weightKg ?? 0) - (a.weightKg ?? 0) || (b.reps ?? 0) - (a.reps ?? 0),
+  )[0]!;
+  if (tracking === 'weight_reps' && best.weightKg !== null)
+    return `${formatWeightValue(best.weightKg, unit, 2)} ${unit} × ${best.reps ?? '?'}`;
+  return formatSetValues(best, tracking, unit);
+}
+
+function CollapsedRow({
+  headingId,
+  name,
+  done,
+  total,
+  summary,
+  onExpand,
+}: {
+  headingId: string;
+  name: string;
+  done: number;
+  total: number;
+  summary: string;
+  onExpand: () => void;
+}) {
+  return (
+    <>
+      <h2 id={headingId} className="sr-only">
+        {name}
+      </h2>
+      <button
+        type="button"
+        onClick={onExpand}
+        aria-expanded={false}
+        aria-label={`${name}, all ${total} sets done. Show sets`}
+        className="pressable chrome flex min-h-16 w-full items-center gap-3 rounded-panel px-4 text-left"
+      >
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-lime text-on-lime">
+          <Check className="size-4" strokeWidth={3} aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="type-headline block truncate text-text-1">{name}</span>
+          <span className="type-meta tabular block truncate text-text-2">
+            {done} of {total}
+            {summary ? ` · ${summary}` : ''}
+          </span>
+        </span>
+        <ChevronDown className="size-5 shrink-0 text-text-2" aria-hidden />
+      </button>
+    </>
+  );
+}
+
 function lastTimeLabel(date: Date): string {
   const diff = differenceInCalendarDays(new Date(), date);
   if (diff <= 1) return formatRelativeDayInline(date);
-  if (diff < 7) return `${formatWeekday(date)}, ${formatDayMonth(date)}`;
-  return formatShortDate(date);
+  return formatCalendarDate(date);
 }
 
 export function NotesSheet({
@@ -641,7 +704,7 @@ export function NotesSheet({
 
 export const ExerciseCard = memo(ExerciseCardImpl);
 
-/** Bench angle as a scroll wheel of degrees. Saves as it settles. */
+/** Bench angle for this workout's exercise: stepper, presets, keypad and a bench diagram. */
 function AngleSheet({
   kind,
   value,
@@ -653,14 +716,11 @@ function AngleSheet({
   onChange: (deg: number | null) => void;
   onClose: () => void;
 }) {
-  const [deg, setDeg] = useState(Math.abs(value ?? DEFAULT_ANGLE[kind]));
+  const [deg, setDeg] = useState<number | null>(value);
   return (
     <Sheet
       open
-      onClose={() => {
-        onChange(signedAngle(kind, deg));
-        onClose();
-      }}
+      onClose={onClose}
       title="Bench angle"
       description={
         kind === 'incline'
@@ -668,38 +728,18 @@ function AngleSheet({
           : 'A decline moves work toward the lower chest.'
       }
       footer={
-        <div className="flex gap-2">
-          {value !== null ? (
-            <Button
-              variant="secondary"
-              onClick={() => {
-                onChange(null);
-                onClose();
-              }}
-            >
-              Clear
-            </Button>
-          ) : null}
-          <Button
-            block
-            onClick={() => {
-              onChange(signedAngle(kind, deg));
-              onClose();
-            }}
-          >
-            Save {deg}° {kind}
-          </Button>
-        </div>
+        <PrimaryButton
+          block
+          onClick={() => {
+            onChange(deg);
+            onClose();
+          }}
+        >
+          {deg === null ? 'Done' : `Save ${formatAngle(deg).toLowerCase()}`}
+        </PrimaryButton>
       }
     >
-      <WheelPicker
-        label={`${kind === 'incline' ? 'Incline' : 'Decline'} angle in degrees`}
-        values={kind === 'incline' ? INCLINE_DEGREES : DECLINE_DEGREES}
-        value={deg}
-        onChange={setDeg}
-        unit={`° ${kind}`}
-        valueText={(d) => `${d} degrees ${kind}`}
-      />
+      <AnglePicker kind={kind} value={deg} startAt={DEFAULT_ANGLE[kind]} onChange={setDeg} />
     </Sheet>
   );
 }

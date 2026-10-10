@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Dumbbell, Pause, Play, Plus, Timer, Trash2 } from 'lucide-react';
-import { Button, IconButton } from '@/components/ui/Button';
+import { Check, Dumbbell, Pause, Play, Plus, Timer, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import {
+  DestructiveButton,
+  IconButton as KitIconButton,
+  InlineNotice,
+  PrimaryButton,
+  ProgressBar,
+  SecondaryButton,
+  TextLink,
+} from '@/components/kit';
+import { KeyboardToolbar } from './KeyboardToolbar';
 import { TextArea, TextField } from '@/components/ui/Fields';
 import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { EmptyState } from '@/components/ui/States';
@@ -56,7 +66,8 @@ export function ActiveWorkout({ view, prefs }: Props) {
   const [finishing, setFinishing] = useState<FinishCheck | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [renaming, setRenaming] = useState(false);
-  const [readinessDone, setReadinessDone] = useState(false);
+  const [readinessHidden, setReadinessHidden] = useState(false);
+  const [editingReadiness, setEditingReadiness] = useState(false);
   const paused = workout.pausedAt !== null;
 
   const allSets = exercises.flatMap((e) => e.sets);
@@ -65,6 +76,41 @@ export function ActiveWorkout({ view, prefs }: Props) {
     exercisesRef.current = exercises;
   });
   const doneSets = allSets.filter((s) => s.completedAt !== null).length;
+  const activeId =
+    exercises.find((e) => e.sets.some((s) => s.completedAt === null))?.workoutExercise.id ?? null;
+
+  // B2: after an exercise's last set, move to the next one, but only if the person has not
+  // touched, scrolled or focused anything in the second since.
+  const lastInteraction = useRef(0);
+  useEffect(() => {
+    const mark = () => (lastInteraction.current = performance.now());
+    const opts = { passive: true, capture: true } as const;
+    window.addEventListener('touchstart', mark, opts);
+    window.addEventListener('wheel', mark, opts);
+    window.addEventListener('scroll', mark, opts);
+    window.addEventListener('keydown', mark, opts);
+    return () => {
+      window.removeEventListener('touchstart', mark, opts);
+      window.removeEventListener('wheel', mark, opts);
+      window.removeEventListener('scroll', mark, opts);
+      window.removeEventListener('keydown', mark, opts);
+    };
+  }, []);
+  const scrollToNext = useCallback((finishedId: string) => {
+    const started = performance.now();
+    window.setTimeout(() => {
+      if (lastInteraction.current > started + 50) return;
+      const focused = document.activeElement;
+      if (focused instanceof HTMLInputElement || focused instanceof HTMLTextAreaElement) return;
+      const list = exercisesRef.current;
+      const from = list.findIndex((e) => e.workoutExercise.id === finishedId);
+      const next = list.slice(from + 1).find((e) => e.sets.some((s) => s.completedAt === null));
+      if (!next) return;
+      const el = document.querySelector(`[data-exercise-card="${next.workoutExercise.id}"]`);
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      el?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    }, 1000);
+  }, []);
 
   // Superset labels: A1, A2 for the first group, B1, B2 for the next.
   const supersets = useMemo(() => {
@@ -91,6 +137,9 @@ export function ActiveWorkout({ view, prefs }: Props) {
 
   const onSetCompleted = useCallback(
     (set: WorkoutSet, ex: WorkoutExerciseView) => {
+      if (ex.sets.every((x) => x.id === set.id || x.completedAt !== null)) {
+        scrollToNext(ex.workoutExercise.id);
+      }
       if (!prefs.autoStartRest) return;
       // Inside a superset, go straight to the next exercise; rest after the round.
       const flow = restAfterSet(
@@ -118,7 +167,13 @@ export function ActiveWorkout({ view, prefs }: Props) {
       });
       if (seconds > 0) void restActions.start(seconds, workout.id);
     },
-    [prefs.autoStartRest, prefs.defaultRestSeconds, prefs.exerciseChangeRestSeconds, workout.id],
+    [
+      prefs.autoStartRest,
+      prefs.defaultRestSeconds,
+      prefs.exerciseChangeRestSeconds,
+      workout.id,
+      scrollToNext,
+    ],
   );
 
   async function finish(keepUnconfirmed: boolean, effort: number | null) {
@@ -135,79 +190,84 @@ export function ActiveWorkout({ view, prefs }: Props) {
 
   return (
     <div className="pb-32">
-      <header className="sticky top-0 z-20 -mx-4 border-b border-line bg-bg/90 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-xl lg:-mx-10 lg:px-10 lg:pt-6">
-        <div className="flex items-center gap-2">
+      <header className="chrome sticky top-0 z-20 -mx-4 border-b-[0.5px] border-divider bg-bg px-4 pt-[max(0.5rem,env(safe-area-inset-top))] lg:-mx-10 lg:px-10 lg:pt-5">
+        <div className="flex min-h-14 items-center gap-2">
           <button
             type="button"
             onClick={() => setRenaming(true)}
-            className="min-w-0 flex-1 text-left"
+            className="pressable min-w-0 flex-1 text-left"
             aria-label={`${workout.name}. Rename workout`}
           >
-            <span className="block truncate font-display text-[1.3rem] font-bold leading-tight">
-              {workout.name}
-            </span>
-            <span className="flex items-center gap-2 text-sm text-muted">
+            <span className="type-headline block truncate text-text-1">{workout.name}</span>
+            <span className="type-meta tabular flex items-center gap-1.5 text-text-2">
               <Clock workout={workout} />
-              <span className="text-faint">·</span>
-              <span className="tabular">
+              <span aria-hidden>·</span>
+              <span>
                 {doneSets} of {allSets.length} sets
               </span>
             </span>
           </button>
-          <IconButton
-            label="Rest timer"
-            icon={<Timer className="size-5" aria-hidden />}
-            onClick={() => setTimerOpen(true)}
-          />
-          <IconButton
+          <KitIconButton label="Rest timer" icon={<Timer />} onClick={() => setTimerOpen(true)} />
+          <KitIconButton
             label={paused ? 'Resume workout' : 'Pause workout'}
-            icon={
-              paused ? (
-                <Play className="size-5" aria-hidden />
-              ) : (
-                <Pause className="size-5" aria-hidden />
-              )
-            }
+            icon={paused ? <Play /> : <Pause />}
             onClick={() => (paused ? resumeWorkout(db, workout.id) : pauseWorkout(db, workout.id))}
           />
-          <Button
-            size="sm"
-            className="h-11 px-4"
+          <button
+            type="button"
             onClick={async () => setFinishing(await finishCheck(db, workout.id))}
+            className="pressable chrome type-headline tap-target h-9 shrink-0 rounded-full bg-lime px-4 text-on-lime"
           >
             Finish
-          </Button>
+          </button>
         </div>
-        <div
-          className="mt-3 h-1 overflow-hidden rounded-full bg-surface-2"
-          role="progressbar"
-          aria-label="Sets done"
-          aria-valuemin={0}
-          aria-valuemax={allSets.length}
-          aria-valuenow={doneSets}
-        >
-          <div
-            className="h-full rounded-full bg-accent transition-[width] duration-300"
-            style={{ width: `${allSets.length ? (doneSets / allSets.length) * 100 : 0}%` }}
-          />
-        </div>
+        <ProgressBar
+          value={doneSets}
+          max={Math.max(1, allSets.length)}
+          label="Sets done"
+          thickness={4}
+          className="mb-2 mt-2"
+        />
       </header>
 
-      {!readinessDone && !workout.readiness && doneSets === 0 ? (
+      {doneSets === 0 && !readinessHidden ? (
         <div className="mt-4">
-          <ReadinessCard workoutId={workout.id} onDone={() => setReadinessDone(true)} />
+          {workout.readiness && !editingReadiness ? (
+            <div className="flex min-h-11 items-center justify-between gap-3 rounded-panel border border-border bg-surface px-4 py-2">
+              <span className="type-meta flex items-center gap-2 text-text-2">
+                <Check className="size-4" aria-hidden />
+                Check-in saved
+              </span>
+              <TextLink small onClick={() => setEditingReadiness(true)}>
+                Edit
+              </TextLink>
+            </div>
+          ) : (
+            <ReadinessCard
+              workoutId={workout.id}
+              initial={workout.readiness ?? null}
+              onSaved={() => setEditingReadiness(false)}
+              onClose={() => {
+                setEditingReadiness(false);
+                if (!workout.readiness) setReadinessHidden(true);
+              }}
+            />
+          )}
         </div>
       ) : null}
 
       {paused ? (
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-warn-soft px-4 py-3">
-          <p className="text-sm font-medium text-warn">
-            Paused. The workout clock is stopped; you can still edit sets.
-          </p>
-          <Button size="sm" variant="secondary" onClick={() => resumeWorkout(db, workout.id)}>
-            Resume
-          </Button>
-        </div>
+        <InlineNotice
+          icon={<Pause />}
+          className="mt-4"
+          action={
+            <SecondaryButton compact onClick={() => resumeWorkout(db, workout.id)}>
+              Resume
+            </SecondaryButton>
+          }
+        >
+          Paused. The workout clock is stopped; you can still edit sets.
+        </InlineNotice>
       ) : null}
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2 xl:items-start">
@@ -223,6 +283,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
             onReorder={openReorder}
             superset={supersets.get(ex.workoutExercise.id) ?? null}
             hasNext={i < exercises.length - 1}
+            active={ex.workoutExercise.id === activeId}
           />
         ))}
       </div>
@@ -260,9 +321,10 @@ export function ActiveWorkout({ view, prefs }: Props) {
         </Button>
       </div>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5.4rem+env(safe-area-inset-bottom))] z-30 px-3 lg:bottom-6 lg:left-[17rem]">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(49px+1rem+env(safe-area-inset-bottom))] z-30 px-4 lg:bottom-6 lg:left-60">
         <RestTimerBar onOpen={() => setTimerOpen(true)} />
       </div>
+      <KeyboardToolbar />
 
       <ExercisePicker
         open={picking}
@@ -321,7 +383,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
 function Clock({ workout }: { workout: Workout }) {
   const now = useNow(1000);
   return (
-    <span className={cn('tabular font-medium', workout.pausedAt ? 'text-warn' : 'text-text')}>
+    <span className={cn('tabular', workout.pausedAt ? 'text-warning' : 'text-text-2')}>
       {formatClock(elapsedMs(workout, now) / 1000)}
     </span>
   );
@@ -345,75 +407,82 @@ function FinishSheet({
     onFinish(keep, effort);
   };
   const nothingDone = check.completedSets === 0;
+  const total = check.completedSets + check.unconfirmedSets + check.emptySets;
+  const unticked = total - check.completedSets;
 
   if (nothingDone && check.unconfirmedSets === 0) {
     return (
-      <Sheet open onClose={onClose} title="Nothing logged yet">
-        <p className="text-muted">
+      <Sheet
+        open
+        onClose={onClose}
+        title="Nothing logged yet"
+        footer={
+          <div className="flex flex-col gap-2">
+            <SecondaryButton block onClick={onClose}>
+              Keep going
+            </SecondaryButton>
+            <DestructiveButton block onClick={onDiscard}>
+              Discard workout
+            </DestructiveButton>
+          </div>
+        }
+      >
+        <p className="type-body text-text-2">
           No sets are marked done, so there is nothing to save. Mark a set done with the check
           button, or discard this workout.
         </p>
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-          <Button variant="secondary" onClick={onClose} className="sm:flex-1">
-            Keep logging
-          </Button>
-          <Button variant="danger" onClick={onDiscard} className="sm:flex-1">
-            Discard workout
-          </Button>
-        </div>
       </Sheet>
     );
   }
 
   return (
-    <Sheet open onClose={onClose} title="Finish workout?">
-      <p className="text-muted">
-        {pluralize(check.completedSets, 'set')} marked done.
-        {check.emptySets > 0 ? ` ${pluralize(check.emptySets, 'empty set')} will be removed.` : ''}
+    <Sheet
+      open
+      onClose={onClose}
+      title={unticked > 0 ? 'Finish anyway?' : 'Finish workout?'}
+      footer={
+        check.unconfirmedSets > 0 ? (
+          <div className="flex flex-col gap-2">
+            <PrimaryButton block loading={busy} onClick={() => run(true)}>
+              Yes, save {check.unconfirmedSets === 1 ? 'it' : 'them'}
+            </PrimaryButton>
+            <SecondaryButton block disabled={busy || nothingDone} onClick={() => run(false)}>
+              No, leave {check.unconfirmedSets === 1 ? 'it' : 'them'} out
+            </SecondaryButton>
+            <TextLink onClick={onClose} className="self-center">
+              Keep going
+            </TextLink>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <PrimaryButton block loading={busy} onClick={() => run(false)}>
+              Finish and save
+            </PrimaryButton>
+            <SecondaryButton block onClick={onClose}>
+              Keep going
+            </SecondaryButton>
+          </div>
+        )
+      }
+    >
+      <p className="type-headline tabular text-text-1">
+        {check.completedSets} of {total} sets done.
       </p>
-      <div className="mt-4">
+      {check.emptySets > 0 ? (
+        <p className="type-meta mt-1 text-text-2">
+          {pluralize(check.emptySets, 'empty set')} will be removed.
+        </p>
+      ) : null}
+      {check.unconfirmedSets > 0 ? (
+        <InlineNotice tone="warning" className="mt-4">
+          {pluralize(check.unconfirmedSets, 'set has', 'sets have')} numbers but{' '}
+          {check.unconfirmedSets === 1 ? 'is' : 'are'} not marked done. Did you do{' '}
+          {check.unconfirmedSets === 1 ? 'it' : 'them'}?
+        </InlineNotice>
+      ) : null}
+      <div className="mt-5">
         <EffortPicker value={effort} onChange={setEffort} />
       </div>
-      {check.unconfirmedSets > 0 ? (
-        <div className="mt-4 rounded-2xl border border-warn/30 bg-warn-soft p-4">
-          <p className="font-semibold text-warn">
-            {pluralize(check.unconfirmedSets, 'set has', 'sets have')} numbers but{' '}
-            {check.unconfirmedSets === 1 ? 'is' : 'are'} not marked done.
-          </p>
-          <p className="mt-1 text-sm text-muted">
-            Did you do {check.unconfirmedSets === 1 ? 'it' : 'them'}?
-          </p>
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <Button disabled={busy} onClick={() => run(true)} className="sm:flex-1">
-              Yes, save {check.unconfirmedSets === 1 ? 'it' : 'them'}
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={busy || nothingDone}
-              onClick={() => run(false)}
-              className="sm:flex-1"
-            >
-              No, leave {check.unconfirmedSets === 1 ? 'it' : 'them'} out
-            </Button>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="mt-3 w-full text-center text-sm font-medium text-muted underline-offset-4 hover:underline"
-          >
-            Keep logging
-          </button>
-        </div>
-      ) : (
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
-          <Button size="lg" disabled={busy} onClick={() => run(false)} className="sm:flex-1">
-            Finish and save
-          </Button>
-          <Button size="lg" variant="secondary" onClick={onClose} className="sm:flex-1">
-            Keep logging
-          </Button>
-        </div>
-      )}
     </Sheet>
   );
 }

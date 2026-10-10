@@ -126,7 +126,7 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
   await test.step('13. second workout shows last time, and a heavier set is a record', async () => {
     await startPush(page);
     const card = firstCard(page);
-    await expect(card.getByText(/^Last time/)).toBeVisible();
+    await expect(card.getByText(/^Last: /)).toBeVisible();
     await expect(card.getByRole('button', { name: /^Last time 60 × 8/ }).first()).toBeVisible();
     await // Only two sets were done last time, so only two rows show a last time.
     await expect(card.getByRole('button', { name: /^Last time / })).toHaveCount(2);

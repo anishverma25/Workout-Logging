@@ -27,7 +27,7 @@ test('logging a set from a routine, with last time visible and rest starting', a
   await startRoutineWorkout(page);
   const card = firstCard(page);
   // Last time is shown inline, without leaving the workout.
-  await expect(card.getByText(/^Last time/)).toBeVisible();
+  await expect(card.getByText(/^Last: /)).toBeVisible();
   await expect(
     card.getByRole('button', { name: /^Last time .* Copy into this set\.$/ }).first(),
   ).toBeVisible();
@@ -50,7 +50,7 @@ test('an empty set is completed with last time’s numbers in one tap', async ({
   await startRoutineWorkout(page);
   const card = firstCard(page);
   const load = card.getByRole('textbox', { name: 'Set 1 load in kg' });
-  await expect(card.getByText(/^Last time/)).toBeVisible();
+  await expect(card.getByText(/^Last: /)).toBeVisible();
   const hint = await load.getAttribute('placeholder');
   expect(hint).toBeTruthy();
   await card.getByRole('button', { name: 'Mark set 1 done' }).click();
@@ -237,4 +237,72 @@ test('lb input is shown back exactly as typed', async ({ page }) => {
   await expect(firstCard(page).getByRole('textbox', { name: 'Set 1 load in lb' })).toHaveValue(
     '225',
   );
+});
+
+test('a finished exercise folds to one row, opens again, and can take another set (B2)', async ({
+  page,
+}) => {
+  await startRoutineWorkout(page);
+  const card = firstCard(page);
+  const name = (await card.getByRole('heading').first().textContent())!.trim();
+  const checks = card.getByRole('button', { name: /^Mark set \d+ done$/ });
+  const count = await checks.count();
+  for (let i = 0; i < count; i++) {
+    await checks.first().click();
+    await expect(checks).toHaveCount(count - i - 1);
+  }
+  const folded = card.getByRole('button', { name: `${name}, all ${count} sets done. Show sets` });
+  await expect(folded).toBeVisible();
+  await expect(folded).toContainText(`${count} of ${count}`);
+  await folded.click();
+  await card.getByRole('button', { name: 'Add set' }).click();
+  await expect(card.getByRole('button', { name: `Mark set ${count + 1} done` })).toBeVisible();
+});
+
+test('finishing with sets left asks first and says how many are done (B3)', async ({ page }) => {
+  await startRoutineWorkout(page);
+  await firstCard(page).getByRole('button', { name: 'Mark set 1 done' }).click();
+  await page.getByRole('button', { name: 'Finish' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Finish anyway?' });
+  await expect(sheet).toContainText(/1 of \d+ sets done\./);
+  await sheet.getByRole('button', { name: 'Keep going' }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Finish' })).toBeVisible();
+});
+
+test('rest and bench angle use steppers, presets and a keypad (B5)', async ({ page }) => {
+  await page.goto('/routines');
+  await page.getByRole('link', { name: 'Push Pull Legs' }).click();
+  await page
+    .getByRole('button', { name: /Incline dumbbell press/ })
+    .first()
+    .click();
+  const sheet = page.getByRole('dialog');
+  // Keypad: 230 reads as 2:30.
+  await sheet.getByRole('spinbutton', { name: 'Rest after each set' }).click();
+  await sheet.getByRole('textbox', { name: 'Rest after each set, type a time' }).fill('230');
+  await sheet.getByRole('button', { name: 'Done' }).first().click();
+  await expect(sheet.getByRole('spinbutton', { name: 'Rest after each set' })).toHaveAttribute(
+    'aria-valuetext',
+    '2:30',
+  );
+  await sheet.getByRole('button', { name: 'Increase Rest after each set' }).click();
+  await expect(sheet.getByRole('spinbutton', { name: 'Rest after each set' })).toHaveAttribute(
+    'aria-valuetext',
+    '2:45',
+  );
+  await sheet.getByRole('button', { name: '3:00', exact: true }).click();
+  await expect(sheet).toContainText('3:00 rest');
+
+  // Bench angle: preset, then a step.
+  const add = sheet.getByRole('button', { name: 'Add angle' });
+  if (await add.count()) await add.click();
+  await sheet.getByRole('button', { name: '45°' }).click();
+  await sheet.getByRole('button', { name: 'Increase Incline angle' }).click();
+  await expect(sheet.getByRole('spinbutton', { name: 'Incline angle' })).toHaveAttribute(
+    'aria-valuetext',
+    '50°',
+  );
+  await sheet.getByRole('button', { name: 'Done', exact: true }).last().click();
+  await expect(page.getByText('50° incline').first()).toBeVisible();
 });

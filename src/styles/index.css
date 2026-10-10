@@ -301,8 +301,16 @@
     background-color: rgb(200 245 66 / 0.24);
   }
 }
+@keyframes check-in {
+  from {
+    transform: scale(0.8);
+  }
+  to {
+    transform: scale(1);
+  }
+}
 .set-check {
-  animation: check-pop 0.26s var(--ease-snap);
+  animation: check-in 200ms var(--ease-standard);
 }
 .set-done {
   animation: row-flash 0.6s ease-out;
@@ -436,5 +444,53 @@
 @media (prefers-reduced-motion: reduce) {
   .pro-rise {
     animation: none;
+  }
+}
+
+/* "Saved" in sheets that save as you go: visible for a second, then fades. */
+@keyframes saved-flash {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.saved-flash {
+  animation: saved-flash 1200ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .saved-flash {
+    animation-duration: 1ms;
+    animation-delay: 1000ms;
+  }
+}
+
+/* Rest bar: slides up when rest starts, and away after "Go". */
+@keyframes rest-bar-in {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.rest-bar {
+  animation: rest-bar-in 250ms var(--ease-standard);
+  transition:
+    transform 250ms var(--ease-standard),
+    opacity 250ms var(--ease-standard);
+}
+.rest-bar-leave {
+  transform: translateY(16px);
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rest-bar {
+    animation: none;
+    transition: none;
   }
 }
