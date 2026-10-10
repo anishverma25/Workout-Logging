@@ -235,19 +235,13 @@ where user_id = (select id from auth.users where email = 'friend@example.com');
 
 3. It should say **1 row affected**. The friend sees Pro within ten minutes, or immediately after reopening the app.
 
-More queries (pending payments, revoking Pro) are in `docs/admin-pro-payments.md` in the repository.
+More queries (granting and revoking Pro) are in `docs/admin-pro-payments.md` in the repository.
 
-### Open payments when you are ready
+### Payments
 
-1. Decide your UPI ID, the name shown to payers, the price in rupees, and the days one payment buys.
-2. In Cloudflare: open your project, then **Settings > Variables and Secrets** (or **Environment variables**). Add these for **Production**:
-   - `VITE_UPI_ID`: for example `yourname@okhdfcbank`
-   - `VITE_UPI_PAYEE_NAME`: your name
-   - `VITE_PRO_PRICE_INR`: for example `99`
-   - `VITE_PRO_PERIOD_DAYS`: for example `30`
-3. Go to **Deployments**, open the menu (three dots) on the latest deployment, and click **Retry deployment**. Variables only take effect after a new build.
-4. On your phone, open **Pro** and check the price and UPI ID are right. Tap **Open a UPI app** and check the payee name before sharing with anyone.
-5. When someone pays, their transaction reference appears in Supabase. Match it against your UPI app, then grant Pro as above.
+The app does not take payments yet. Automatic billing (Razorpay subscriptions: monthly, 3
+months and yearly) is planned after the UI redesign. Until then you can grant Pro by hand with
+the query above.
 
 ### Updates
 

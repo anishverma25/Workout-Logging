@@ -143,22 +143,6 @@ export function refreshEntitlement(): Promise<void> {
   return state.userId ? fetchFromServer(state.userId) : Promise.resolve();
 }
 
-export class PaymentReferenceError extends Error {}
-
-/** Records the UPI transaction reference for the administrator. Grants nothing by itself. */
-export async function submitPaymentReference(reference: string): Promise<void> {
-  if (!supabase || !state.userId) throw new PaymentReferenceError('Sign in first.');
-  const { error } = await supabase.rpc('submit_payment_reference', { reference });
-  if (error) {
-    throw new PaymentReferenceError(
-      /transaction reference/i.test(error.message)
-        ? 'Enter the transaction reference from your UPI app: 6 to 40 letters or numbers.'
-        : 'Could not send it. Check your connection and try again.',
-    );
-  }
-  await fetchFromServer(state.userId);
-}
-
 const subscribe = (l: () => void) => {
   listeners.add(l);
   return () => {

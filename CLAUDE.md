@@ -72,8 +72,9 @@ Read README.md for setup, architecture and calculation rules.
 - Phase 6: Supabase schema with RLS, local-first sync (outbox, push, pull, conflicts, retry),
   auth (sign up, sign in, sign out, reset), per-account local databases, guest data import.
 - Phase 7: 168-hour server trial, `subscriptions` table with RPCs, central entitlement, Pro
-  gates on Progress and the logger, Pro page with configurable manual UPI, admin guide in
-  `docs/admin-pro-payments.md`, development-only access states.
+  gates on Progress and the logger, admin guide in `docs/admin-pro-payments.md`,
+  development-only access states. Manual UPI was removed from the app (October 2026): the Pro page
+  announces monthly, 3-month and yearly plans, and Razorpay subscriptions come after the redesign.
 - Phase 8: PWA (manifest, icons, service worker precaching the build, update prompt, install),
   offline notice, route code splitting, security headers and CSP, Cloudflare Pages and Supabase
   deployment guide (`docs/deployment.md`), CI with e2e.

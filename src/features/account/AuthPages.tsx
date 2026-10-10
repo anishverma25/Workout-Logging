@@ -221,7 +221,7 @@ export function SignUpPage() {
               <strong className="font-semibold">
                 Pro is free for your first {TRIAL_DAYS} days.
               </strong>{' '}
-              Every analysis feature, no payment details, nothing renews by itself.
+              Every analysis feature, no payment details needed.
             </span>
           </span>
         </>

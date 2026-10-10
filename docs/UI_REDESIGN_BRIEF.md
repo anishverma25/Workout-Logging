@@ -33,38 +33,38 @@ brief, corrected with the owner's decisions, plus the screens the original did n
 
 **Part map**
 
-| Part | Scope | Approx. 5-hour Pro windows |
-|---|---|---|
-| 1 | Foundation: rules file, dark-only tokens, fonts, shared components incl. sheets and fields | 1 |
-| 2 | Global fixes: tab bar, sidebar, headers, theme removal, formatters, copy, shared rows, desktop rules | 1.5 |
-| 3 | Home, Routines, Routine editor, Workout tab | 1 |
-| 4 | Progress | 1 to 1.5 |
-| 5 | History, More, Journey, Exercises, Settings | 1 |
-| 6 | Active workout and pickers | 1.5 to 2 |
-| 7 | Everything else: auth, summary, workout detail, Records, Body metrics, methodology, Pro and UPI, setup, tour, system UI, all sheets | 1 to 1.5 |
-| 8 | Feel: motion, haptics, loading, charts | 1 |
-| 9 | Final QA, test sweep, merge readiness | 1 |
-| | **Total** | **about 10 to 12** |
+| Part | Scope                                                                                                                               | Approx. 5-hour Pro windows |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| 1    | Foundation: rules file, dark-only tokens, fonts, shared components incl. sheets and fields                                          | 1                          |
+| 2    | Global fixes: tab bar, sidebar, headers, theme removal, formatters, copy, shared rows, desktop rules                                | 1.5                        |
+| 3    | Home, Routines, Routine editor, Workout tab                                                                                         | 1                          |
+| 4    | Progress                                                                                                                            | 1 to 1.5                   |
+| 5    | History, More, Journey, Exercises, Settings                                                                                         | 1                          |
+| 6    | Active workout and pickers                                                                                                          | 1.5 to 2                   |
+| 7    | Everything else: auth, summary, workout detail, Records, Body metrics, methodology, Pro and UPI, setup, tour, system UI, all sheets | 1 to 1.5                   |
+| 8    | Feel: motion, haptics, loading, charts                                                                                              | 1                          |
+| 9    | Final QA, test sweep, merge readiness                                                                                               | 1                          |
+|      | **Total**                                                                                                                           | **about 10 to 12**         |
 
 ---
 
 ## 1. Decisions log (owner approved, 10 October 2026)
 
-| # | Topic | Decision |
-|---|---|---|
-| D1 | Low-contrast text | Any text that carries information uses `--text-2` or brighter. `--text-3` is only for decorative or disabled text, placeholders, and text at Title size or larger. The "Last" column, axis labels, dates, "Not yet", captions and footnotes use `--text-2`. Every screen passes WCAG 2.1 AA. |
-| D2 | Focus | No shadows for elevation. Keyboard focus is a 2px `--focus` outline, 2px offset, on `:focus-visible` only. |
-| D3 | Theme | **Dark only.** Remove the light theme, its tokens, the theme picker in Settings, and light-theme test runs. Any stored theme preference is ignored and treated as dark. This supersedes "also support a polished light theme" in the Master Product Context. |
-| D4 | Sets per muscle | Show weekly fractional sets per muscle (direct 1, indirect 0.5) and the trend versus previous weeks. Bars share one fixed scale so muscles compare honestly. No target range, no "optimal" fill. Methodology explains diminishing returns and that no single number is right (Pelland 2026). |
-| D5 | Balance cards | Imbalance warning dropped. Show the two values and their ratio only. |
-| D6 | Science entry | Keep a 24px InfoButton per section. The methodology row is labelled "How every number is calculated" with Meta line "Formulas and the research behind them", placed at the top of Progress under the jump bar, not at the bottom. |
-| D7 | Insights | Remove only the insight that duplicates Adherence. All other insights stay. |
-| D8 | Thresholds in copy | Every number in empty states and captions ("3 sessions", "5 weeks", "4 sessions per lift", "7 days") is read from the same exported constants the analytics use. A unit test asserts copy and constants match. |
-| D9 | Week start | Fix Home starting on Sunday. Keep the week-start setting, default Monday. Every week strip, ring card and weekly chart follows the setting. |
-| D10 | Day names | Short days (Mon Tue Wed Thu Fri Sat Sun) in strips, chips and selectors. Full name (Thursday) only as the day label chip in the routine editor. |
-| D11 | Count-up numbers | Hero numbers count up with tabular digits during the animation, so width never jitters. At rest they keep the rule (proportional for hero stats). |
-| D12 | Rest end haptic | Medium (20 ms). Success is reserved for workout finished and new record. |
-| D13 | Coverage | Every screen, sheet, state and the desktop layout follows these rules. Tests are updated inside each part. Inter is subset to Latin. |
+| #   | Topic              | Decision                                                                                                                                                                                                                                                                                     |
+| --- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Low-contrast text  | Any text that carries information uses `--text-2` or brighter. `--text-3` is only for decorative or disabled text, placeholders, and text at Title size or larger. The "Last" column, axis labels, dates, "Not yet", captions and footnotes use `--text-2`. Every screen passes WCAG 2.1 AA. |
+| D2  | Focus              | No shadows for elevation. Keyboard focus is a 2px `--focus` outline, 2px offset, on `:focus-visible` only.                                                                                                                                                                                   |
+| D3  | Theme              | **Dark only.** Remove the light theme, its tokens, the theme picker in Settings, and light-theme test runs. Any stored theme preference is ignored and treated as dark. This supersedes "also support a polished light theme" in the Master Product Context.                                 |
+| D4  | Sets per muscle    | Show weekly fractional sets per muscle (direct 1, indirect 0.5) and the trend versus previous weeks. Bars share one fixed scale so muscles compare honestly. No target range, no "optimal" fill. Methodology explains diminishing returns and that no single number is right (Pelland 2026). |
+| D5  | Balance cards      | Imbalance warning dropped. Show the two values and their ratio only.                                                                                                                                                                                                                         |
+| D6  | Science entry      | Keep a 24px InfoButton per section. The methodology row is labelled "How every number is calculated" with Meta line "Formulas and the research behind them", placed at the top of Progress under the jump bar, not at the bottom.                                                            |
+| D7  | Insights           | Remove only the insight that duplicates Adherence. All other insights stay.                                                                                                                                                                                                                  |
+| D8  | Thresholds in copy | Every number in empty states and captions ("3 sessions", "5 weeks", "4 sessions per lift", "7 days") is read from the same exported constants the analytics use. A unit test asserts copy and constants match.                                                                               |
+| D9  | Week start         | Fix Home starting on Sunday. Keep the week-start setting, default Monday. Every week strip, ring card and weekly chart follows the setting.                                                                                                                                                  |
+| D10 | Day names          | Short days (Mon Tue Wed Thu Fri Sat Sun) in strips, chips and selectors. Full name (Thursday) only as the day label chip in the routine editor.                                                                                                                                              |
+| D11 | Count-up numbers   | Hero numbers count up with tabular digits during the animation, so width never jitters. At rest they keep the rule (proportional for hero stats).                                                                                                                                            |
+| D12 | Rest end haptic    | Medium (20 ms). Success is reserved for workout finished and new record.                                                                                                                                                                                                                     |
+| D13 | Coverage           | Every screen, sheet, state and the desktop layout follows these rules. Tests are updated inside each part. Inter is subset to Latin.                                                                                                                                                         |
 
 ---
 
@@ -109,35 +109,36 @@ Copy sections 3.1 to 3.6 into it, and commit this brief as `docs/UI_REDESIGN_BRI
 
 #### 3.1 PWA rules
 
-| Topic | Rule |
-|---|---|
-| Fonts | Self-host Inter 4 woff2, **Latin subset only** (U+0000 to U+00FF, U+0131, U+0152 to U+0153, U+02BB to U+02BC, U+02C6, U+02DA, U+02DC, U+2000 to U+206F, U+20B9, U+2074, U+20AC, U+2122, U+2190 to U+2199, U+2212, U+2215, U+00D7, U+00B0). Weights 400, 500, 600, 700, plus Inter Display 700 for Display and Stat. Files in `/public/fonts`. `font-display: swap`. Preload only 400 and 600. Precache all five in the service worker. Target under 25 KB per file. |
-| Font stack | `Inter, "Inter Fallback", system-ui, sans-serif`. Define `Inter Fallback` from `local("Arial")` with `size-adjust: 107%; ascent-override: 90%; descent-override: 22.5%; line-gap-override: 0%` (verify visually, adjust so text does not shift on swap). |
-| Tokens | CSS custom properties on `:root` in one token file. Dark only. No hard-coded colours, sizes, spacing or radii outside it. |
-| Type units | rem. `-webkit-text-size-adjust: 100%`. |
-| Controls | `touch-action: manipulation`, `-webkit-tap-highlight-color: transparent`, `user-select: none` on UI chrome (never on inputs or readable content), `overscroll-behavior: none` on the app shell. `box-shadow: none` for elevation. |
-| Focus | `:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }`. Never remove focus without this replacement. |
-| Safe areas | `viewport-fit=cover`, `env(safe-area-inset-*)` on header, tab bar, floating bars and pinned buttons. |
-| Manifest | `display: standalone`, `orientation: portrait`, `theme_color` and `background_color` `#000000`. iOS: `apple-mobile-web-app-capable`, status bar `black-translucent`. `<meta name="theme-color" content="#000000">`. |
-| Haptics | `navigator.vibrate` behind a feature check. Never throw. Always paired with a visual change. |
-| Keyboard toolbar | In-page, anchored above the keyboard with `visualViewport`. Inputs use `inputMode="decimal"` or `"numeric"`. |
-| Screen awake | Wake Lock API during an active workout, re-requested on `visibilitychange`. Fail silently where unsupported. |
-| Switch | A `<button role="switch" aria-checked>`. |
-| Service worker | Bump the cache version at the end of every part. |
+| Topic            | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fonts            | Self-host Inter 4 woff2, **Latin subset only** (U+0000 to U+00FF, U+0131, U+0152 to U+0153, U+02BB to U+02BC, U+02C6, U+02DA, U+02DC, U+2000 to U+206F, U+20B9, U+2074, U+20AC, U+2122, U+2190 to U+2199, U+2212, U+2215, U+00D7, U+00B0). Weights 400, 500, 600, 700, plus Inter Display 700 for Display and Stat. Files in `/public/fonts`. `font-display: swap`. Preload only 400 and 600. Precache all five in the service worker. Target under 25 KB per file. |
+| Font stack       | `Inter, "Inter Fallback", system-ui, sans-serif`. Define `Inter Fallback` from `local("Arial")` with `size-adjust: 107%; ascent-override: 90%; descent-override: 22.5%; line-gap-override: 0%` (verify visually, adjust so text does not shift on swap).                                                                                                                                                                                                            |
+| Tokens           | CSS custom properties on `:root` in one token file. Dark only. No hard-coded colours, sizes, spacing or radii outside it.                                                                                                                                                                                                                                                                                                                                           |
+| Type units       | rem. `-webkit-text-size-adjust: 100%`.                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Controls         | `touch-action: manipulation`, `-webkit-tap-highlight-color: transparent`, `user-select: none` on UI chrome (never on inputs or readable content), `overscroll-behavior: none` on the app shell. `box-shadow: none` for elevation.                                                                                                                                                                                                                                   |
+| Focus            | `:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }`. Never remove focus without this replacement.                                                                                                                                                                                                                                                                                                                                            |
+| Safe areas       | `viewport-fit=cover`, `env(safe-area-inset-*)` on header, tab bar, floating bars and pinned buttons.                                                                                                                                                                                                                                                                                                                                                                |
+| Manifest         | `display: standalone`, `orientation: portrait`, `theme_color` and `background_color` `#000000`. iOS: `apple-mobile-web-app-capable`, status bar `black-translucent`. `<meta name="theme-color" content="#000000">`.                                                                                                                                                                                                                                                 |
+| Haptics          | `navigator.vibrate` behind a feature check. Never throw. Always paired with a visual change.                                                                                                                                                                                                                                                                                                                                                                        |
+| Keyboard toolbar | In-page, anchored above the keyboard with `visualViewport`. Inputs use `inputMode="decimal"` or `"numeric"`.                                                                                                                                                                                                                                                                                                                                                        |
+| Screen awake     | Wake Lock API during an active workout, re-requested on `visibilitychange`. Fail silently where unsupported.                                                                                                                                                                                                                                                                                                                                                        |
+| Switch           | A `<button role="switch" aria-checked>`.                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Service worker   | Bump the cache version at the end of every part.                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 #### 3.2 Type scale
 
-| Style | Size / line (px) | rem | Weight | Tracking | Used for |
-|---|---|---|---|---|---|
-| Display | 34 / 40 | 2.125 / 2.5 | 700 (Inter Display) | −0.024em | Screen titles |
-| Stat | 32 / 36 | 2 / 2.25 | 700 (Inter Display) | −0.022em | Big numbers |
-| Title | 22 / 28 | 1.375 / 1.75 | 600 | −0.018em | Section titles, exercise names in workout |
-| Headline | 17 / 22 | 1.0625 / 1.375 | 600 | −0.012em | Row titles, buttons |
-| Body | 15 / 22 | 0.9375 / 1.375 | 400 | −0.007em | Descriptions |
-| Meta | 13 / 18 | 0.8125 / 1.125 | 400 | 0 | Secondary info |
-| Caption | 11 / 14 | 0.6875 / 0.875 | 500 | +0.009em | Tab labels, tiny chips |
+| Style    | Size / line (px) | rem            | Weight              | Tracking | Used for                                  |
+| -------- | ---------------- | -------------- | ------------------- | -------- | ----------------------------------------- |
+| Display  | 34 / 40          | 2.125 / 2.5    | 700 (Inter Display) | −0.024em | Screen titles                             |
+| Stat     | 32 / 36          | 2 / 2.25       | 700 (Inter Display) | −0.022em | Big numbers                               |
+| Title    | 22 / 28          | 1.375 / 1.75   | 600                 | −0.018em | Section titles, exercise names in workout |
+| Headline | 17 / 22          | 1.0625 / 1.375 | 600                 | −0.012em | Row titles, buttons                       |
+| Body     | 15 / 22          | 0.9375 / 1.375 | 400                 | −0.007em | Descriptions                              |
+| Meta     | 13 / 18          | 0.8125 / 1.125 | 400                 | 0        | Secondary info                            |
+| Caption  | 11 / 14          | 0.6875 / 0.875 | 500                 | +0.009em | Tab labels, tiny chips                    |
 
 Rules:
+
 - Only these seven styles exist. Weight variants allowed only where this brief names them (for example
   "Meta 600", "Caption 600", "17px 500" row labels, which is Headline size at weight 500).
 - Subtitles under screen titles: Body, `--text-2`, one line.
@@ -148,27 +149,27 @@ Rules:
 
 #### 3.3 Colour tokens (dark only)
 
-| Token | Value | Use |
-|---|---|---|
-| `--bg` | `#000000` | App background, headers |
-| `--bar` | `#0A0A0A` | Tab bar, desktop sidebar |
-| `--surface` | `#1C1C1E` | All cards, sheets |
-| `--surface-2` | `#2C2C2E` | Chips, inputs, nested blocks, tiles, skeletons |
-| `--border` | `rgba(255,255,255,0.08)` | 1px on cards |
-| `--border-strong` | `rgba(255,255,255,0.16)` | Active exercise card, chart earlier-period bars |
-| `--divider` | `rgba(255,255,255,0.08)` | 0.5px dividers |
-| `--grid` | `rgba(255,255,255,0.06)` | Chart gridlines, ring tracks |
-| `--track` | `rgba(255,255,255,0.10)` | Progress and bar tracks |
-| `--text-1` | `#FFFFFF` | Primary text |
-| `--text-2` | `rgba(235,235,245,0.60)` | Secondary text, all informative small text (about 5.8:1 on surface) |
-| `--text-3` | `rgba(235,235,245,0.38)` | Decorative, disabled, placeholders, large text only (about 3.2:1) |
-| `--lime` | sampled from the current Start button; fallback `#C8F43A` | The one accent |
-| `--lime-dim` | lime at 14% opacity | Soft accent chips and fills |
-| `--on-lime` | `#000000` | Text and icons on lime |
-| `--focus` | `#FFFFFF` | Focus outline |
-| `--overlay` | `rgba(0,0,0,0.60)` | Sheet and dialog backdrop |
-| `--warning` | `#FFB340` | Real warnings only |
-| `--danger` | `#FF453A` | Destructive only |
+| Token             | Value                                                     | Use                                                                 |
+| ----------------- | --------------------------------------------------------- | ------------------------------------------------------------------- |
+| `--bg`            | `#000000`                                                 | App background, headers                                             |
+| `--bar`           | `#0A0A0A`                                                 | Tab bar, desktop sidebar                                            |
+| `--surface`       | `#1C1C1E`                                                 | All cards, sheets                                                   |
+| `--surface-2`     | `#2C2C2E`                                                 | Chips, inputs, nested blocks, tiles, skeletons                      |
+| `--border`        | `rgba(255,255,255,0.08)`                                  | 1px on cards                                                        |
+| `--border-strong` | `rgba(255,255,255,0.16)`                                  | Active exercise card, chart earlier-period bars                     |
+| `--divider`       | `rgba(255,255,255,0.08)`                                  | 0.5px dividers                                                      |
+| `--grid`          | `rgba(255,255,255,0.06)`                                  | Chart gridlines, ring tracks                                        |
+| `--track`         | `rgba(255,255,255,0.10)`                                  | Progress and bar tracks                                             |
+| `--text-1`        | `#FFFFFF`                                                 | Primary text                                                        |
+| `--text-2`        | `rgba(235,235,245,0.60)`                                  | Secondary text, all informative small text (about 5.8:1 on surface) |
+| `--text-3`        | `rgba(235,235,245,0.38)`                                  | Decorative, disabled, placeholders, large text only (about 3.2:1)   |
+| `--lime`          | sampled from the current Start button; fallback `#C8F43A` | The one accent                                                      |
+| `--lime-dim`      | lime at 14% opacity                                       | Soft accent chips and fills                                         |
+| `--on-lime`       | `#000000`                                                 | Text and icons on lime                                              |
+| `--focus`         | `#FFFFFF`                                                 | Focus outline                                                       |
+| `--overlay`       | `rgba(0,0,0,0.60)`                                        | Sheet and dialog backdrop                                           |
+| `--warning`       | `#FFB340`                                                 | Real warnings only                                                  |
+| `--danger`        | `#FF453A`                                                 | Destructive only                                                    |
 
 - Lighter or dimmer lime is the same hue with opacity, never a different hue.
 - Remove everywhere: other limes, olive, yellow-green, blue, periwinkle, purple, orange, bronze,
@@ -180,33 +181,33 @@ Rules:
 
 #### 3.4 Spacing and shape
 
-| Property | Value |
-|---|---|
-| Spacing scale (4pt) | 4, 8, 12, 16, 20, 24, 32 |
-| Horizontal margin | 16 below 600px wide, 24 from 600 to 1023, 32 from 1024 |
+| Property                    | Value                                                                        |
+| --------------------------- | ---------------------------------------------------------------------------- |
+| Spacing scale (4pt)         | 4, 8, 12, 16, 20, 24, 32                                                     |
+| Horizontal margin           | 16 below 600px wide, 24 from 600 to 1023, 32 from 1024                       |
 | Content max width (desktop) | 720 for lists, forms and settings; 1120 for Home, Progress and History grids |
-| Card | padding 20, radius 24, nested radius 16 |
-| Gaps | card 16, section 32, header to first card 24 |
-| Rows | min height 44, 56 for two-line rows |
-| Chips and pills | height 36, radius 999 |
-| Inputs | height 52 (set inputs, text fields), 44 (search), radius 12 |
-| Min tap target | 44 × 44 (set check 48 × 48) |
-| Shadows | none; cards are surface plus 1px border |
-| Press feedback | opacity 0.7 and scale 0.98, 150 ms |
+| Card                        | padding 20, radius 24, nested radius 16                                      |
+| Gaps                        | card 16, section 32, header to first card 24                                 |
+| Rows                        | min height 44, 56 for two-line rows                                          |
+| Chips and pills             | height 36, radius 999                                                        |
+| Inputs                      | height 52 (set inputs, text fields), 44 (search), radius 12                  |
+| Min tap target              | 44 × 44 (set check 48 × 48)                                                  |
+| Shadows                     | none; cards are surface plus 1px border                                      |
+| Press feedback              | opacity 0.7 and scale 0.98, 150 ms                                           |
 
 #### 3.5 One-off rules
 
-| Topic | Rule |
-|---|---|
-| Selection | Selected chip, segment, day or option card = white fill, black text. Unselected = `--surface-2` fill, `--text-1`. Applies to range, filter and muscle chips, Front/Side/Back, kg/lb, week start, day selectors and setup option cards. Exception: the current day in week strips is lime. |
-| Switch | Custom 51 × 31. On = lime track, white thumb. Off = `--surface-2` track, white thumb. No ring. |
-| Icon tile | 36 × 36, radius 10, `--surface-2`, icon 20px in `--text-2`. Only the Pro row uses `--lime-dim` with a lime icon. |
-| Empty state | Min height 88, `--surface-2`, radius 16, no dashed border, centred Meta `--text-2`, max two lines. |
-| Dashed outlines | Only for a missed day in Last 7 days and an empty or rest day in week strips. |
-| Copy | Calm and specific. No exclamation marks, no marketing phrases, no emoji, no em dashes. Prefer numbers to adjectives. Sentence case. |
-| Contrast | Informative text at least 4.5:1. `--text-3` only where D1 allows. |
-| Performance | Memoise list rows, no inline functions in list renderers, SVG icons only. |
-| Estimated values | Anything estimated carries the word "Estimated" or "e1RM", never shown as an actual max. |
+| Topic            | Rule                                                                                                                                                                                                                                                                                      |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Selection        | Selected chip, segment, day or option card = white fill, black text. Unselected = `--surface-2` fill, `--text-1`. Applies to range, filter and muscle chips, Front/Side/Back, kg/lb, week start, day selectors and setup option cards. Exception: the current day in week strips is lime. |
+| Switch           | Custom 51 × 31. On = lime track, white thumb. Off = `--surface-2` track, white thumb. No ring.                                                                                                                                                                                            |
+| Icon tile        | 36 × 36, radius 10, `--surface-2`, icon 20px in `--text-2`. Only the Pro row uses `--lime-dim` with a lime icon.                                                                                                                                                                          |
+| Empty state      | Min height 88, `--surface-2`, radius 16, no dashed border, centred Meta `--text-2`, max two lines.                                                                                                                                                                                        |
+| Dashed outlines  | Only for a missed day in Last 7 days and an empty or rest day in week strips.                                                                                                                                                                                                             |
+| Copy             | Calm and specific. No exclamation marks, no marketing phrases, no emoji, no em dashes. Prefer numbers to adjectives. Sentence case.                                                                                                                                                       |
+| Contrast         | Informative text at least 4.5:1. `--text-3` only where D1 allows.                                                                                                                                                                                                                         |
+| Performance      | Memoise list rows, no inline functions in list renderers, SVG icons only.                                                                                                                                                                                                                 |
+| Estimated values | Anything estimated carries the word "Estimated" or "e1RM", never shown as an actual max.                                                                                                                                                                                                  |
 
 #### 3.6 Separators and formats
 
@@ -223,15 +224,15 @@ Add subset font files, `@font-face`, the fallback face and the token file. Delet
 One folder, tokens only. Each component has every state (default, pressed, focus-visible, disabled,
 loading where relevant).
 
-| Group | Components |
-|---|---|
-| Layout | Screen, LargeTitleHeader (collapsing), PushedHeader, Card, SectionHeader (Title plus optional InfoButton and TextLink) |
-| Selection | Chip, ChipGroup, SegmentedControl, Switch, OptionCard (large selectable card for setup) |
-| Data | StatTile, ListRow (one and two line, optional right value, chevron), IconTile, Avatar, ProgressBar, Badge (lime-dim or neutral), RingChart shell |
-| Actions | PrimaryButton (52 default, 44 compact), SecondaryButton (surface-2), DestructiveButton (danger text on surface-2), TextLink (neutral, optional chevron or external icon), IconButton (40 circle), InfoButton (24) |
-| Inputs | TextField (label Meta `--text-2` above, error Meta `--danger` below with icon), PasswordField (show or hide IconButton), SearchField, NumberField (empty-allowed decimal, keypad), Stepper (− value +, long-press repeat and accelerate after 1 s) |
-| Feedback | EmptyState, ErrorState (IconTile, Headline, Meta, "Try again" SecondaryButton), Skeleton (exact dimensions), Toast, InlineNotice (surface-2 row with icon, for offline and info notes), SyncStatus (see Part 7) |
-| Overlays | BottomSheet, ConfirmSheet, Dialog (desktop presentation of a sheet) |
+| Group     | Components                                                                                                                                                                                                                                         |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Layout    | Screen, LargeTitleHeader (collapsing), PushedHeader, Card, SectionHeader (Title plus optional InfoButton and TextLink)                                                                                                                             |
+| Selection | Chip, ChipGroup, SegmentedControl, Switch, OptionCard (large selectable card for setup)                                                                                                                                                            |
+| Data      | StatTile, ListRow (one and two line, optional right value, chevron), IconTile, Avatar, ProgressBar, Badge (lime-dim or neutral), RingChart shell                                                                                                   |
+| Actions   | PrimaryButton (52 default, 44 compact), SecondaryButton (surface-2), DestructiveButton (danger text on surface-2), TextLink (neutral, optional chevron or external icon), IconButton (40 circle), InfoButton (24)                                  |
+| Inputs    | TextField (label Meta `--text-2` above, error Meta `--danger` below with icon), PasswordField (show or hide IconButton), SearchField, NumberField (empty-allowed decimal, keypad), Stepper (− value +, long-press repeat and accelerate after 1 s) |
+| Feedback  | EmptyState, ErrorState (IconTile, Headline, Meta, "Try again" SecondaryButton), Skeleton (exact dimensions), Toast, InlineNotice (surface-2 row with icon, for offline and info notes), SyncStatus (see Part 7)                                    |
+| Overlays  | BottomSheet, ConfirmSheet, Dialog (desktop presentation of a sheet)                                                                                                                                                                                |
 
 **BottomSheet spec.** `--surface`, top radius 24, drag handle 36 × 5 at white 20% centred 8px from
 the top, backdrop `--overlay`. Auto height, max 85% of the viewport, safe-area padding. Optional
@@ -316,6 +317,7 @@ the route before committing.
 ## 5. Part 3: Home, Routines, Workout
 
 ### Home
+
 - Date above the greeting in Meta `--text-2`, greeting in Display.
 - **This week ring card.** Keep the existing three metrics. Three rings, 12px thick, 6px gap, round
   caps, tracks `--grid`. Colours lime 100%, lime 60%, lime 30%. Legend rows show label and value, so
@@ -335,6 +337,7 @@ the route before committing.
 - **Desktop.** Two-column card grid within 1120 max width; Start Workout card stays first.
 
 ### Routines
+
 - **Week strip.** 7 equal chips (flex 1, gap 6, radius 12). Short day on top (Caption), session name
   below (Meta 600, one line, shrink to fit down to 85% font size). Never truncate ("Up…" or "Lo…" must
   not appear). Rest day: dashed outline, "Rest" in `--text-2`. Today's chip lime.
@@ -342,6 +345,7 @@ the route before committing.
 - **New routine.** `--surface-2`, 52 high, Headline label with plus icon.
 
 ### Routine editor
+
 - **Day cards.** Full weekday name in a Caption lime-dim chip ("Thursday") above the session name
   (Title). Replace "Day 1/2/3". Order cards by weekday following the week-start setting.
 - **Day selector.** Short day names. Days used by other sessions are dimmed (35% opacity), no
@@ -354,6 +358,7 @@ the route before committing.
 - Footnote at the bottom, Meta `--text-2`: "Editing a routine never changes past workouts."
 
 ### Workout tab
+
 - **Completed today (B1).** "Completed" Badge with "View" (neutral) and "Repeat" (SecondaryButton).
   Do not show "Planned today" or "Start Pull".
 - **Session list.** Only the next planned session is expanded with the lime "Start" button. Others
@@ -369,6 +374,7 @@ the route before committing.
 ## 6. Part 4: Progress
 
 ### Navigation and section headers
+
 - Sticky jump bar under the title: Strength, Volume, Balance, Consistency, Body. Tap scrolls to the
   section; the bar highlights the section in view. Selection style.
 - **Methodology entry (D6).** Directly under the jump bar: a 56px ListRow with neutral IconTile,
@@ -379,6 +385,7 @@ the route before committing.
 - Section title: Title. Chart card title: Headline. Descriptions: Meta `--text-2`, max two lines.
 
 ### Controls and summary cards
+
 - Range chips (7 days, 30 days, 90 days, All time) and the Exercise chip: height 36, selection style.
   Date range line below in Meta `--text-2` via the range formatter.
 - **Stat tiles.** 2 × 2, gap 12, `--surface` fill. Label Meta `--text-2`, value Stat, caption Meta
@@ -389,6 +396,7 @@ the route before committing.
 - Drop the "T-bar row, best set each session" subtitle (it repeats the chip).
 
 ### Empty states and copy
+
 - Empty chart cards (Estimated 1RM, Top set load, Reps at top load): EmptyState, one line, 88 high.
 - **Relative strength.** "0.98" in Stat, "× body weight" Meta `--text-2`, explanation Meta `--text-2`.
 - Stalled lifts empty state: "Needs 4 sessions per lift." (from constants)
@@ -397,6 +405,7 @@ the route before committing.
 - Records in this period: EmptyState.
 
 ### Cards and charts
+
 - Volume and Workouts per week: same x-axis rule, every week label or every second one, never irregular.
 - **Balance cards (D5)** (Push and pull, Quads and hamstrings, Upper and lower). Two-segment bar, lime
   vs white 30%. Values on each side (Headline, tabular) and the ratio in Meta `--text-2`
@@ -424,6 +433,7 @@ imbalance thresholds. Keep the Evidence Corner wording and DOI links.
 ## 7. Part 5: History, More, Journey, Exercises, Settings
 
 ### History
+
 - Remove the stray vertical connector line between cards.
 - Range and filter chips (Workout, Exercise, Muscle): height 36, filled. Replace the sliders icon on
   each filter chip with chevron-down. An active filter shows its value ("Exercise: Bench press").
@@ -434,6 +444,7 @@ imbalance thresholds. Keep the Evidence Corner wording and DOI links.
   fits the existing routing without changes; otherwise keep single column.
 
 ### More
+
 - Display "More", no avatar.
 - **Profile card.** Avatar 56, name Headline, "Body recomposition · Intermediate" Meta `--text-2`,
   chevron. "Founding member" Badge neutral (`--surface-2`, `--text-2`), crown icon neutral.
@@ -441,6 +452,7 @@ imbalance thresholds. Keep the Evidence Corner wording and DOI links.
   Meta 600 uppercase, 0.05em tracking, `--text-2`.
 
 ### Journey
+
 - PushedHeader, no subtitle.
 - **Goals.** "Add goal" neutral chip. Goal card: title Headline, deadline Meta `--text-2` right-aligned,
   lime ProgressBar, "Now 63 kg, from 63" Meta `--text-2`, percent on the right (tabular). The info
@@ -453,6 +465,7 @@ imbalance thresholds. Keep the Evidence Corner wording and DOI links.
 - **Recaps.** EmptyState.
 
 ### Exercises
+
 - PushedHeader. Subtitle "104 exercises" (real count).
 - Margins per 3.4. Search: SearchField, `--surface-2`, no border, 44 high. Muscle chips: selection style.
 - "More filters": neutral TextLink with sliders icon, opens a BottomSheet.
@@ -466,6 +479,7 @@ imbalance thresholds. Keep the Evidence Corner wording and DOI links.
   muscles and equipment, SegmentedControl for tracking type, DestructiveButton for delete with ConfirmSheet.
 
 ### Settings
+
 - PushedHeader. Group labels (Units, Rest, Training reminders, Your data, Account): Meta 600 uppercase,
   0.05em, `--text-2`. The Appearance group and theme setting are removed (D3).
 - Row label Headline size at 500, description Meta `--text-2`.
@@ -488,6 +502,7 @@ PWA notes: keyboard toolbar in-page via `visualViewport`; haptics via `navigator
 feature check; screen awake via Wake Lock.
 
 ### A. Session header (sticky)
+
 - Left: session name (Headline, white) and below it Meta `--text-2` "0:12 · 0 of 18 sets" (tabular).
 - Right: rest timer and pause as 40px circle IconButtons (`--surface-2`, neutral icon). Finish = lime
   pill, 36 high, Headline label, 16px horizontal padding.
@@ -498,6 +513,7 @@ feature check; screen awake via Wake Lock.
 - Finish with unfinished sets: ConfirmSheet per B3.
 
 ### B. Exercise card
+
 - Name: Title. "…" menu: 40px neutral IconButton opening a BottomSheet.
 - Line 2 Meta `--text-2`: "Target 3 × 6 to 10 · RIR 2". Line 3 Meta `--text-2`: muscle split, no
   underline, max two muscles.
@@ -508,11 +524,12 @@ feature check; screen awake via Wake Lock.
 - All sets done: collapse per B2.
 
 ### C. Set rows
+
 Same grid in the header row and every set row:
 
-| Set | Last | kg | Reps | RIR | Check |
-|---|---|---|---|---|---|
-| 28 | 72 | flex | flex | flex | 48 |
+| Set | Last | kg   | Reps | RIR  | Check |
+| --- | ---- | ---- | ---- | ---- | ----- |
+| 28  | 72   | flex | flex | flex | 48    |
 
 - Column headers: Caption `--text-2`, centred over inputs. RIR column shows RPE if the user's effort
   setting is RPE, as today.
@@ -532,6 +549,7 @@ Same grid in the header row and every set row:
 - Ticking a set starts the rest countdown when the existing setting allows. Medium haptic on set logged.
 
 ### D. Rest countdown
+
 - Floating bar above the tab bar (or above the bottom safe area when no tab bar is shown in the active
   workout): `--surface-2`, radius 999, 56 high, 16 margin. Time remaining in Stat (tabular), "−15" and
   "+15" 40px buttons, "Skip" neutral TextLink. A 3px lime line along the bottom edge drains.
@@ -541,6 +559,7 @@ Same grid in the header row and every set row:
 - The header timer icon opens the same controls in a BottomSheet.
 
 ### E. "How do you feel today" card
+
 - Three rows (Sleep, Energy, Soreness). Label Headline, endpoint labels right in Meta `--text-2`
   ("1 Poor, 5 Great"), below it a 5-segment control, 40 high, one rounded container, selection style.
 - Save disabled until one answer is chosen (`--surface-2` fill, `--text-3` label, disabled
@@ -550,6 +569,7 @@ Same grid in the header row and every set row:
 - Subjective inputs stay labelled as self-reported wherever they appear.
 
 ### F. Exercise settings sheet (Target RIR, Rest, Bench angle)
+
 **Layout.** BottomSheet. Header: exercise name (Title), Meta `--text-2` subtitle
 "3 × 6 to 8 · RIR 0.5 · 3:00 rest". Remove "Changes save as you go." and show a small "Saved" check
 (Meta `--text-2`) fading in for 1 s after each change. Section labels Meta 600 uppercase `--text-2`,
@@ -560,6 +580,7 @@ never clipped.
 (selection style). Light haptic per change.
 
 **Rest after each set (replaces both wheels).**
+
 - Big time centred (Stat, tabular), "2:00".
 - "−15s" and "+15s" 48px circle buttons either side. Long press repeats and accelerates after 1 s.
   Range 0:15 to 10:00.
@@ -571,6 +592,7 @@ never clipped.
   this exercise."
 
 **Bench angle (replaces the wheel).**
+
 - Header row: label left, "Clear" TextLink right.
 - Big "5°" (Stat) with Meta label under it: "Flat" at 0, "Incline" above 0 (and "Decline" below 0
   only if the existing range allows negatives).
@@ -586,6 +608,7 @@ never clipped.
 use BottomSheet and the shared components with no other visual rules.
 
 ### G. Quality
+
 - Screen stays awake during an active workout.
 - Inputs are never hidden by the keyboard, and the toolbar stays visible.
 - Tap targets 44 minimum, set check 48.
@@ -600,6 +623,7 @@ Apply the same rules to every remaining screen and state. Read each screen's cod
 behaviour and copy meaning.
 
 ### Account and auth
+
 - Screens: sign in, create account, forgot password, reset password, email confirmation sent,
   confirm-your-email error, signed-in account page.
 - Layout: centred column, max width 400, margins per 3.4. App name "Overload" in Title at the top,
@@ -616,6 +640,7 @@ behaviour and copy meaning.
 - Guest-data import offer on sign-in: ConfirmSheet with the existing wording.
 
 ### Workout summary
+
 - PushedHeader-free full screen with a lime "Done" PrimaryButton pinned at the bottom.
 - Top: Meta `--text-2` date and duration, workout name in Display.
 - 2 × 2 StatTiles: duration, sets, volume load, exercises (only metrics that are meaningful, as today).
@@ -627,6 +652,7 @@ behaviour and copy meaning.
 - **Sync line** at the bottom: SyncStatus component with link to details.
 
 ### Workout detail (from History)
+
 - PushedHeader with parent "History". Title = workout name (Title), Meta date and duration.
 - StatTiles row (sets, volume, duration).
 - One card per exercise: name Headline, read-only set grid using the Part 6 columns minus the check
@@ -636,12 +662,14 @@ behaviour and copy meaning.
 - Edit and delete actions as they exist today, delete via DestructiveButton and ConfirmSheet.
 
 ### Records
+
 - PushedHeader. Filter chips (selection style) for muscle or exercise if they exist.
 - ListRows: exercise name (Headline), date (Meta `--text-2`), value right (Headline, tabular) with its
   label beneath ("Heaviest load" or "Estimated 1RM"). Actual and estimated values are never mixed in
   one column without labels. "New" lime-dim Badge for records in the last 7 days.
 
 ### Body metrics
+
 - PushedHeader. Current weight card: Stat number, "kg" Meta, change versus previous in Meta `--text-2`,
   7-day average line when enough data exists.
 - Chart per Part 8 rules. "Add weight" PrimaryButton opens a BottomSheet with NumberField, date field
@@ -651,6 +679,7 @@ behaviour and copy meaning.
 - No health judgements and no "ideal" language, as today.
 
 ### Methodology ("How every number is calculated")
+
 - PushedHeader titled "How every number is calculated".
 - Top: a jump list of metrics as ListRows inside one card.
 - One Card per metric: name (Title), "What it shows" (Body), formula in a nested `--surface-2` block
@@ -660,6 +689,7 @@ behaviour and copy meaning.
 - Section InfoButtons elsewhere deep-link to the matching card here.
 
 ### Pro page
+
 - PushedHeader. States: trial, expired, Pro (founding member), payments not open, payment pending.
 - Status card: Badge ("Trial · 5 days left" lime-dim; "Pro" lime-dim; "Trial ended" neutral), Title
   headline, Meta `--text-2` with the exact end date via the formatter.
@@ -672,6 +702,7 @@ behaviour and copy meaning.
 - Payments not open: InlineNotice with the existing message.
 
 ### Setup, tour and goals (October update)
+
 - **Setup.** Progress indicator at top: segmented 4px bars, lime for done and current, `--track` for
   upcoming. Question in Display, one-line Body `--text-2`. Options as OptionCards (selection rule:
   white fill, black text when selected), 56 high minimum. Pinned "Continue" PrimaryButton, disabled
@@ -683,6 +714,7 @@ behaviour and copy meaning.
   date and ChipGroup for goal type.
 
 ### System UI and states
+
 - **SyncStatus.** One component used on the summary, account page and anywhere else it appears. Icon
   plus Meta `--text-2` text, exact existing wording: "Saved on this device", "Syncing",
   "Synced to your account", "Offline. 1 change saved on this device", "Could not reach your account".
@@ -700,10 +732,12 @@ behaviour and copy meaning.
 - **Loading.** Spinners replaced in Part 8.
 
 ### Sheet audit
+
 List every sheet, popover, menu and dialog in the app and confirm each uses BottomSheet, ConfirmSheet
 or Dialog. Report the list in the part summary.
 
 ### Desktop audit
+
 Check every screen at 1024 and 1440: sidebar, margins and max widths per 3.4, sheets as Dialogs, no
 stretched single-column mobile layouts where a two-column grid is specified (Home, Progress). Active
 workout stays a single centred column, max width 640.
@@ -715,17 +749,18 @@ workout stays a single centred column, max width 640.
 Do not swap chart libraries unless the spec cannot be met; report first if you must.
 
 ### Motion
+
 Easing `cubic-bezier(0.2, 0, 0, 1)`. No bounce.
 
-| Interaction | Duration |
-|---|---|
-| Press | 150 ms |
-| Transitions, sheets, collapse | 250 ms |
-| Ring and chart fills | 600 ms |
-| Number count-up (once, tabular during count, D11) | 400 ms |
-| Tab switch | 150 ms cross-fade, no slide |
-| Checkmark completion | 200 ms, scale 0.8 to 1 |
-| Records celebration | 400 ms fade and scale 0.96 to 1 |
+| Interaction                                       | Duration                        |
+| ------------------------------------------------- | ------------------------------- |
+| Press                                             | 150 ms                          |
+| Transitions, sheets, collapse                     | 250 ms                          |
+| Ring and chart fills                              | 600 ms                          |
+| Number count-up (once, tabular during count, D11) | 400 ms                          |
+| Tab switch                                        | 150 ms cross-fade, no slide     |
+| Checkmark completion                              | 200 ms, scale 0.8 to 1          |
+| Records celebration                               | 400 ms fade and scale 0.96 to 1 |
 
 - Rings and charts animate from zero once per session. Numbers count up once per session.
 - Lists: items fade in with a 30 ms stagger, first 6 only.
@@ -733,22 +768,24 @@ Easing `cubic-bezier(0.2, 0, 0, 1)`. No bounce.
 
 ### Haptics
 
-| Level | Pattern | Triggers |
-|---|---|---|
-| Light | 10 ms | Tab change, chip select, switch toggle, stepper step |
-| Medium | 20 ms | Set logged, rest countdown end (D12) |
-| Success | 15, 40, 15 | Workout finished, new record |
+| Level   | Pattern    | Triggers                                             |
+| ------- | ---------- | ---------------------------------------------------- |
+| Light   | 10 ms      | Tab change, chip select, switch toggle, stepper step |
+| Medium  | 20 ms      | Set logged, rest countdown end (D12)                 |
+| Success | 15, 40, 15 | Workout finished, new record                         |
 
 - Feature-detected, never throws, never on scroll. Without vibrate (iOS), the visual feedback stands alone.
 - Respect any existing vibration setting.
 
 ### Loading
+
 - No spinners on screens. Skeletons in `--surface-2` with a 1.2 s shimmer (white 4% band) and the exact
   final dimensions, zero layout shift. Buttons that submit may show a 16px inline spinner in their own
   label colour.
 - Pull to refresh: only if it exists; custom indicator in `--text-2`.
 
 ### Charts
+
 - Line: 2px lime, round joins, area fill lime 18% to 0% vertical gradient.
 - Max 4 gridlines at `--grid`, no axis lines or borders.
 - Axis labels Meta `--text-2`, tabular.

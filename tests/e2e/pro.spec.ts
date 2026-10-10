@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-/** Trial, Pro gating and manual UPI, against the local fake Supabase. */
+/** Trial, Pro gating and the Pro page, against the local fake Supabase. */
 
 const PASSWORD = 'correct-horse-9';
 const uniqueEmail = (tag: string) =>
@@ -59,7 +59,7 @@ test('while the server still has early access on, an account simply has Pro', as
   await expect(page.getByRole('heading', { name: 'Pro is active' })).toBeVisible();
   // No trial clock and nothing to pay.
   await expect(page.getByRole('progressbar', { name: 'Trial used' })).toHaveCount(0);
-  await expect(page.getByRole('region', { name: 'Get Pro' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Pro plans' })).toHaveCount(0);
   await expect(page.getByText(/founding|early access/i)).toHaveCount(0);
 
   await page.goto('/progress?range=all');
@@ -139,27 +139,15 @@ test.describe('after early access ends', () => {
     await expect(page.getByRole('heading', { name: /^Free trial:/ })).toBeVisible();
   });
 
-  test('manual UPI: instructions, reference submission and pending state', async ({ page }) => {
+  test('plans are announced without prices or a payment form', async ({ page }) => {
     await signUp(page);
-    const pay = page.getByRole('region', { name: 'Get Pro' });
-    await expect(pay).toContainText('/ 30 days');
-    await expect(pay).toContainText('₹1');
-    await expect(pay).toContainText('e2e-test@fakebank');
-    await expect(pay).toContainText('Never share your UPI PIN');
-    // Only the transaction reference is ever asked for.
-    await expect(pay.getByRole('textbox')).toHaveCount(1);
-
-    await pay.getByRole('textbox', { name: 'UPI transaction reference' }).fill('bad ref!');
-    await pay.getByRole('button', { name: 'Send reference' }).click();
-    await expect(pay.getByText(/6 to 40 letters or numbers/)).toBeVisible();
-
-    await pay.getByRole('textbox', { name: 'UPI transaction reference' }).fill('412345678901');
-    await pay.getByRole('button', { name: 'Send reference' }).click();
-    await expect(page.getByRole('status').filter({ hasText: 'Payment reference' })).toContainText(
-      '412345678901',
-    );
-    // Submitting a reference grants nothing by itself: still the trial.
-    await expect(page.getByRole('heading', { name: /^Free trial:/ })).toBeVisible();
+    const plans = page.getByRole('region', { name: 'Pro plans' });
+    await expect(plans).toContainText('Monthly');
+    await expect(plans).toContainText('3 months');
+    await expect(plans).toContainText('Yearly');
+    // No payment is taken on this page until automatic billing is set up.
+    await expect(page.getByRole('textbox')).toHaveCount(0);
+    await expect(page.getByText(/UPI|₹/)).toHaveCount(0);
   });
 
   test('development access states preview expired and Pro screens', async ({ page }) => {
@@ -187,6 +175,6 @@ test.describe('after early access ends', () => {
     await choose('pro');
     await page.goto('/pro');
     await expect(page.getByRole('heading', { name: 'Pro is active' })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Add more Pro time' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Pro plans' })).toHaveCount(0);
   });
 });

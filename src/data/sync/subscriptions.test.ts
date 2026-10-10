@@ -129,23 +129,15 @@ describe('subscriptions', () => {
   it('the queries in the administrator guide work as written', async () => {
     const guide = readFileSync(join(process.cwd(), 'docs', 'admin-pro-payments.md'), 'utf8');
     const blocks = [...guide.matchAll(/```sql\n([\s\S]*?)```/g)].map((m) => m[1]!);
-    const [endEarlyAccess, founders, pending, grant, reject, revoke] = blocks;
-    expect(blocks).toHaveLength(6);
-    // Early access: list founding members, end it, then reopen it for the rest of the tests.
+    const [endEarlyAccess, founders, grant, revoke] = blocks;
+    expect(blocks).toHaveLength(4);
+    // Early access: list early accounts, end it, then reopen it for the rest of the tests.
     const listed = await server.pg.query<{ email: string }>(founders!);
     expect(listed.rows.map((r) => r.email)).toContain('a@example.com');
     await server.pg.exec(endEarlyAccess!);
     expect(await mine(userA)).toMatchObject({ early_access: false, founding_member: true });
     await server.pg.exec('update public.app_settings set early_access_ended_at = null');
     const userC = await server.createUser('person@example.com');
-    await server.asUser(userC, (tx) =>
-      tx.query(`select public.submit_payment_reference('UTR555666777')`),
-    );
-
-    const waiting = await server.pg.query<{ email: string; payment_reference: string }>(pending!);
-    expect(waiting.rows.find((r) => r.email === 'person@example.com')?.payment_reference).toBe(
-      'UTR555666777',
-    );
 
     await server.pg.exec(grant!);
     let sub = await mine(userC);
@@ -160,12 +152,10 @@ describe('subscriptions', () => {
       'select admin_note from public.subscriptions where user_id = $1',
       [userC],
     );
-    expect(note.rows[0]!.admin_note).toMatch(/verified UPI UTR555666777/);
+    expect(note.rows[0]!.admin_note).toMatch(/granted by hand/);
 
     await server.pg.exec(revoke!);
     expect((await mine(userC)).status).toBe('revoked');
-    await server.pg.exec(reject!);
-    expect((await mine(userC)).status).toBe('trialing');
   });
 
   it('gives everyone early access until it ends, and keeps founding members marked', async () => {

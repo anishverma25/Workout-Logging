@@ -64,24 +64,24 @@ Every rule below is a pure function in `src/domain/analytics` with unit tests. T
 (`/science`, `src/features/science`) explains each one with the formula typeset in KaTeX, the
 research behind it and DOI links; citations live in `src/domain/analytics/citations.ts`.
 
-| Metric               | Rule                                                                                                                                                                                     |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Volume load          | Sum of load x reps over completed, non-warm-up sets of load-tracked exercises. Per-hand dumbbell moves count both hands. Bodyweight excluded.                                            |
+| Metric               | Rule                                                                                                                                                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Volume load          | Sum of load x reps over completed, non-warm-up sets of load-tracked exercises. Per-hand dumbbell moves count both hands. Bodyweight excluded.                                                                             |
 | Estimated 1RM        | Epley `load x (1 + (reps + RIR) / 30)`, RIR counted when reps + RIR stays at 10 or fewer; sets above 10 reps are not estimated; 1 rep is its load. Charts prefer the best set of 1 to 6 reps (Reynolds 2006, Nuzzo 2024). |
-| Personal records     | Heaviest load, best e1RM, most reps (bodyweight), longest time or distance. The first session is a baseline, not a record.                                                               |
-| Adherence            | Completed planned sessions / planned sessions, over days that have passed since the routine was created. Hidden when nothing was planned.                                                |
-| Body weight trend    | Mean of the weigh-ins in the last 7 days (Orsama 2014). Weekly rate is a least-squares slope over 28 days (6 or more entries over 14 or more days); a pace verdict only for fat loss, 0.5 to 1% a week (Helms 2014). |
-| BMR and calories     | Mifflin-St Jeor (Katch-McArdle when body fat is known) x activity factor from training days and daily activity, then a goal adjustment.                                                  |
-| Protein              | Exact to 0.1 g. 1.6 to 2.2 g/kg (2.0 to 2.4 while losing fat, 1.2 to 1.6 for general fitness). Fat at least 0.8 g/kg.                                                                                    |
-| BMI, body fat, FFMI  | BMI with WHO and Asian cut-offs. Body fat by the US Navy tape formula. FFMI and height-normalised FFMI (Kouri).                                                                          |
-| Strength levels      | e1RM / body weight against published standards for squat, bench, deadlift, overhead press and row, by sex. DOTS for the big three.                                                       |
-| Plateaus             | No e1RM gain for 3 or more weeks over 4 or more sessions.                                                                                                                                |
-| Balance              | Push vs pull sets, quads vs hamstrings, upper vs lower over 4 weeks; balanced between 0.67 and 1.5 (2 for the leg and body ratios).                                                      |
-| Load spike           | Working sets in the last 7 days over the 28-day weekly average; flagged above 1.5.                                                                                                       |
-| Goal projection      | Current value plus the 8-week rate of change. Needs 4 sessions over 3 weeks.                                                                                                             |
-| Muscle sets          | Direct sets 1, indirect 0.5 (Pelland 2026), only sets at RIR 4 or closer (or with no effort logged).                                                                                    |
-| Insights             | Strength, volume and below-best thresholds 5% (Grgic 2020: 1RM test noise about 4.2%). Size-adjusted strength e1RM / BW^0.67 (Jaric 2002) can trigger its own insight.             |
-| "Below best" insight | Compound lifts only, at least 5% under the best e1RM, and never when the load just went up.                                                                                              |
+| Personal records     | Heaviest load, best e1RM, most reps (bodyweight), longest time or distance. The first session is a baseline, not a record.                                                                                                |
+| Adherence            | Completed planned sessions / planned sessions, over days that have passed since the routine was created. Hidden when nothing was planned.                                                                                 |
+| Body weight trend    | Mean of the weigh-ins in the last 7 days (Orsama 2014). Weekly rate is a least-squares slope over 28 days (6 or more entries over 14 or more days); a pace verdict only for fat loss, 0.5 to 1% a week (Helms 2014).      |
+| BMR and calories     | Mifflin-St Jeor (Katch-McArdle when body fat is known) x activity factor from training days and daily activity, then a goal adjustment.                                                                                   |
+| Protein              | Exact to 0.1 g. 1.6 to 2.2 g/kg (2.0 to 2.4 while losing fat, 1.2 to 1.6 for general fitness). Fat at least 0.8 g/kg.                                                                                                     |
+| BMI, body fat, FFMI  | BMI with WHO and Asian cut-offs. Body fat by the US Navy tape formula. FFMI and height-normalised FFMI (Kouri).                                                                                                           |
+| Strength levels      | e1RM / body weight against published standards for squat, bench, deadlift, overhead press and row, by sex. DOTS for the big three.                                                                                        |
+| Plateaus             | No e1RM gain for 3 or more weeks over 4 or more sessions.                                                                                                                                                                 |
+| Balance              | Push vs pull sets, quads vs hamstrings, upper vs lower over 4 weeks; balanced between 0.67 and 1.5 (2 for the leg and body ratios).                                                                                       |
+| Load spike           | Working sets in the last 7 days over the 28-day weekly average; flagged above 1.5.                                                                                                                                        |
+| Goal projection      | Current value plus the 8-week rate of change. Needs 4 sessions over 3 weeks.                                                                                                                                              |
+| Muscle sets          | Direct sets 1, indirect 0.5 (Pelland 2026), only sets at RIR 4 or closer (or with no effort logged).                                                                                                                      |
+| Insights             | Strength, volume and below-best thresholds 5% (Grgic 2020: 1RM test noise about 4.2%). Size-adjusted strength e1RM / BW^0.67 (Jaric 2002) can trigger its own insight.                                                    |
+| "Below best" insight | Compound lifts only, at least 5% under the best e1RM, and never when the load just went up.                                                                                                                               |
 
 ## Accounts and sync
 
@@ -135,10 +135,10 @@ table, against real Postgres (PGlite) running the migrations.
   and recaps. Logging, routines (including personalised ones), history, records, body weight,
   measurements, calories and protein, 7 and 30 day progress, insights, gym tools and sync stay
   free forever. History is never locked.
-- Payment is manual UPI. The UPI ID, payee name, price and period come from `VITE_UPI_ID`,
-  `VITE_UPI_PAYEE_NAME`, `VITE_PRO_PRICE_INR` and `VITE_PRO_PERIOD_DAYS`; without them the app
-  says payments are not open yet. The app only ever asks for the transaction reference.
-- Pro is granted by an administrator in the Supabase SQL editor: see
+- Payments: the app takes none yet. The Pro page announces monthly, 3-month and yearly plans,
+  which will open with automatic billing (Razorpay, planned after the UI redesign). The old
+  manual UPI flow was removed from the app; its server RPC stays in the migrations, unused.
+- Until then, Pro can be granted by an administrator in the Supabase SQL editor: see
   `docs/admin-pro-payments.md`.
 - Development builds have a Settings > Developer menu to preview trial and Pro states. It is
   removed from production builds, and `scripts/verify-build.mjs` fails the build if it is not.
@@ -155,8 +155,7 @@ table, against real Postgres (PGlite) running the migrations.
    the app handles both.
 4. Authentication > URL configuration: set the Site URL to your app's address and add
    `<site>/account` and `<site>/reset-password` to the redirect URLs.
-5. Optional, for Pro payments: set the four `VITE_UPI_*` / `VITE_PRO_*` variables above.
-6. Project settings > API: copy the project URL and the **anon / publishable** key into
+5. Project settings > API: copy the project URL and the **anon / publishable** key into
    `.env.local` (never the service role or secret key):
 
    ```bash

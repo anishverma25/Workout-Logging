@@ -1,43 +1,30 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import {
   CalendarCheck,
   Check,
   ChevronDown,
-  Copy,
   Crown,
   FlaskConical,
   Lock,
   Minus,
-  ShieldCheck,
-  Smartphone,
   Sparkles,
   Target,
   TrendingUp,
   Zap,
 } from 'lucide-react';
 import { useAccount } from '@/app/account';
-import {
-  PaymentReferenceError,
-  submitPaymentReference,
-  useEntitlement,
-  type EntitlementView,
-} from '@/app/entitlement';
-import { accountRef, formatInr, paymentConfig, upiLink, type PaymentConfig } from '@/app/payment';
+import { useEntitlement, type EntitlementView } from '@/app/entitlement';
 import { ButtonLink } from '@/components/ui/Button';
 import {
   Badge,
   Card,
-  IconButton,
   IconTile,
   InlineNotice,
   ProgressBar,
   PushedHeader,
-  SecondaryButton,
-  TextField,
   TextLink,
 } from '@/components/kit';
 import { buttonClasses } from '@/components/ui/buttonStyles';
-import { useToast } from '@/components/ui/Toast';
 import { usePreferences, useTrainingData } from '@/data/hooks';
 import { buildProgress } from '@/domain/analytics/progress';
 import {
@@ -60,19 +47,10 @@ const endedOn = (d: Date) => {
   return t === 'today' || t === 'yesterday' ? t : `on ${t}`;
 };
 
-/** "₹3.30", for the price per day. */
-const perDay = (config: PaymentConfig) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(config.priceInr / config.periodDays);
-
 /**
  * The Pro page. It sells with the person's own numbers and plain facts: what Pro adds, what
- * stays free for good, the price per day from the configured price, and a trial with no
- * payment details. No invented reviews, counters or deadlines.
+ * stays free for good, and a trial with no payment details. No invented reviews, counters,
+ * deadlines or prices: plans and prices arrive with automatic billing.
  */
 export function ProPage() {
   const account = useAccount();
@@ -82,7 +60,8 @@ export function ProPage() {
   // A trial is still a sale: the hero keeps its offer until Pro is paid for.
   const hasPro =
     signedIn && entitlement.pro && !entitlement.loading && entitlement.plan !== 'trial';
-  const canPay = signedIn && !entitlement.loading && entitlement.plan !== 'founding';
+  const showPlans =
+    signedIn && !entitlement.loading && (!entitlement.pro || entitlement.plan === 'trial');
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-8">
@@ -109,13 +88,13 @@ export function ProPage() {
       <Compare />
       <Evidence />
 
-      {canPay ? (
-        <PaymentCard entitlement={entitlement} userId={account.user!.id} config={paymentConfig} />
+      {showPlans ? (
+        <PlansSoon trial={entitlement.plan === 'trial'} />
       ) : !signedIn && !unavailable ? (
-        <GuestOffer config={paymentConfig} />
+        <GuestOffer />
       ) : null}
 
-      <Faq config={paymentConfig} />
+      <Faq />
     </div>
   );
 }
@@ -158,7 +137,7 @@ function Hero({
             Try Pro free for {TRIAL_DAYS} days
           </ButtonLink>
           <p className="type-meta text-text-2">
-            Free account. No payment details. Nothing renews by itself.{' '}
+            Free account. No payment details. The trial ends on its own.{' '}
             <TextLink to="/sign-in?next=/pro" small className="align-baseline">
               Sign in
             </TextLink>
@@ -167,15 +146,8 @@ function Hero({
       ) : e.loading ? null : (
         <div className="flex flex-col gap-2">
           <a href="#get-pro" className={buttonClasses({ size: 'lg', block: true }, 'tab:w-fit')}>
-            {e.plan === 'trial' ? 'Keep Pro after your trial' : 'Get Pro'}
+            {e.plan === 'trial' ? 'Keep Pro after your trial' : 'See Pro plans'}
           </a>
-          {paymentConfig ? (
-            <p className="type-meta text-text-2">
-              {formatInr(paymentConfig.priceInr)} for {paymentConfig.periodDays} days. That is{' '}
-              <span className="tabular font-semibold text-text-1">{perDay(paymentConfig)}</span> a
-              day.
-            </p>
-          ) : null}
         </div>
       )}
     </section>
@@ -252,7 +224,7 @@ function PlanCard({ entitlement: e }: { entitlement: EntitlementView }) {
   } else if (e.plan === 'pro' && e.proEndsAt) {
     badge = <Badge tone="lime">Pro</Badge>;
     title = 'Pro is active';
-    detail = `${formatRemaining(e.remainingMs ?? 0)} left. Active until ${formatCalendarDate(e.proEndsAt)}, ${time(e.proEndsAt)}. It does not renew by itself.`;
+    detail = `${formatRemaining(e.remainingMs ?? 0)} left. Active until ${formatCalendarDate(e.proEndsAt)}, ${time(e.proEndsAt)}.`;
   } else if (e.plan === 'trial' && e.trialEndsAt) {
     badge = <Badge tone="lime">Trial</Badge>;
     title = `Free trial: ${formatRemaining(e.remainingMs ?? 0)} left`;
@@ -281,12 +253,6 @@ function PlanCard({ entitlement: e }: { entitlement: EntitlementView }) {
       <p className="type-meta mt-1 text-text-2">{detail}</p>
       {progress !== null ? (
         <ProgressBar value={progress} label="Trial used" className="mt-4" />
-      ) : null}
-      {e.paymentPending && e.paymentReference ? (
-        <InlineNotice icon={<Check />} className="mt-4">
-          Payment reference <span className="tabular font-semibold">{e.paymentReference}</span>{' '}
-          received. Pro starts as soon as the payment is checked.
-        </InlineNotice>
       ) : null}
       {e.offline ? (
         <p className="type-meta mt-3 text-text-2">
@@ -533,47 +499,20 @@ function Evidence() {
 // ---------------------------------------------------------------------------------------------
 // Getting Pro
 
-const PROMISES = [
-  'One payment. Nothing renews by itself.',
-  'No card needed. Pay with any UPI app.',
-  'Everything you log stays yours, with or without Pro.',
-];
+/** Plans named here open with automatic billing. No prices until they are real. */
+const PLANS = ['Monthly', '3 months', 'Yearly'];
 
-function PriceBlock({ config }: { config: PaymentConfig }) {
-  return (
-    <>
-      <p className="flex items-baseline gap-1.5">
-        <span className="type-display tabular text-text-1">{formatInr(config.priceInr)}</span>
-        <span className="type-meta text-text-2">/ {config.periodDays} days</span>
-      </p>
-      <p className="type-meta mt-1 text-text-2">
-        That is <span className="tabular font-semibold text-text-1">{perDay(config)}</span> a day
-        for every Pro feature.
-      </p>
-      <ul className="mt-4 flex flex-col gap-2">
-        {PROMISES.map((p) => (
-          <li key={p} className="type-meta flex gap-2.5 text-text-1">
-            <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
-            {p}
-          </li>
-        ))}
-      </ul>
-    </>
-  );
-}
-
-function GuestOffer({ config }: { config: PaymentConfig | null }) {
+function GuestOffer() {
   return (
     <Card emphasis aria-labelledby="offer-title" id="get-pro">
       <Badge tone="lime">{TRIAL_DAYS} days free</Badge>
       <h2 id="offer-title" className="type-title mt-3 text-text-1">
         Try every Pro feature free
       </h2>
-      <p className="type-meta mt-1 mb-4 text-text-2">
+      <p className="type-meta mt-1 text-text-2">
         Create a free account and Pro is on for your first {TRIAL_DAYS} days. No payment details,
-        nothing to cancel.
+        and the trial simply ends on its own.
       </p>
-      {config ? <PriceBlock config={config} /> : null}
       <ButtonLink to="/sign-up?next=/pro" size="lg" block className="mt-5">
         Start {TRIAL_DAYS} days free
       </ButtonLink>
@@ -581,166 +520,32 @@ function GuestOffer({ config }: { config: PaymentConfig | null }) {
   );
 }
 
-function CopyRow({ label, value }: { label: string; value: string }) {
-  const toast = useToast();
+/** Where buying Pro will live. Plans open soon; nothing here takes a payment yet. */
+function PlansSoon({ trial }: { trial: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-field bg-surface-2 px-4 py-3">
-      <div className="min-w-0">
-        <p className="type-caption text-text-2">{label}</p>
-        <p className="type-headline tabular truncate text-text-1">{value}</p>
-      </div>
-      <IconButton
-        label={`Copy ${label}`}
-        icon={<Copy />}
-        className="bg-surface"
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(value);
-            toast(`${label} copied`);
-          } catch {
-            toast('Could not copy. Select it and copy by hand.');
-          }
-        }}
-      />
-    </div>
-  );
-}
-
-function Step({ n, title, children }: { n: number; title: string; children?: ReactNode }) {
-  return (
-    <li className="flex gap-3">
-      <span
-        aria-hidden
-        className="type-meta tabular flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-2 font-semibold text-text-1"
-      >
-        {n}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="type-headline text-text-1">
-          <span className="sr-only">{n}. </span>
-          {title}
-        </p>
-        {children}
-      </div>
-    </li>
-  );
-}
-
-function PaymentCard({
-  entitlement: e,
-  userId,
-  config,
-}: {
-  entitlement: EntitlementView;
-  userId: string;
-  config: PaymentConfig | null;
-}) {
-  const toast = useToast();
-  const [reference, setReference] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const ref = accountRef(userId);
-
-  if (!config) {
-    return (
-      <section id="get-pro" aria-labelledby="pay-title">
-        <h2 id="pay-title" className="type-title mb-3 text-text-1">
-          Getting Pro
-        </h2>
-        <InlineNotice icon={<Crown />}>
-          Payments are not open yet. When they are, this page will show the price and how to pay
-          with UPI.
-        </InlineNotice>
-      </section>
-    );
-  }
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      await submitPaymentReference(reference);
-      setReference('');
-      toast('Reference sent. Pro starts once the payment is checked.');
-    } catch (err) {
-      setError(
-        err instanceof PaymentReferenceError ? err.message : 'Could not send it. Try again.',
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const renewing = e.plan === 'pro';
-  return (
-    <Card emphasis aria-labelledby="pay-title" id="get-pro" as="section">
-      <h2 id="pay-title" className="type-title text-text-1">
-        {renewing ? 'Add more Pro time' : 'Get Pro'}
+    <Card emphasis aria-labelledby="plans-title" id="get-pro" as="section">
+      <h2 id="plans-title" className="type-title text-text-1">
+        Pro plans
       </h2>
-      <p className="type-meta mt-1 mb-4 text-text-2">
-        {renewing
-          ? 'Pay again and the new days are added to the end of your current Pro.'
-          : 'Pay once with UPI and every Pro feature is on.'}
+      <p className="type-meta mt-1 text-text-2">
+        Pro opens soon as a monthly, 3-month or yearly plan. This page will show the prices and let
+        you subscribe in a few taps.
       </p>
-      <PriceBlock config={config} />
-
-      <ol className="mt-6 flex flex-col gap-5 border-t-[0.5px] border-divider pt-5">
-        <Step n={1} title={`Pay ${formatInr(config.priceInr)} with any UPI app`}>
-          <div className="mt-2 flex flex-col gap-2">
-            <CopyRow label="UPI ID" value={config.upiId} />
-            <p className="type-meta text-text-2">
-              Payee: {config.payeeName}. Add{' '}
-              <span className="tabular font-semibold text-text-1">{ref}</span> to the payment note
-              so it can be matched to your account.
-            </p>
-            <a
-              href={upiLink(config, ref)}
-              className="pressable chrome type-headline inline-flex h-13 items-center justify-center gap-2 rounded-nested bg-lime px-5 text-on-lime tab:hidden"
-            >
-              <Smartphone className="size-5" aria-hidden />
-              Open a UPI app
-            </a>
-          </div>
-        </Step>
-        <Step n={2} title="Send the transaction reference">
-          <p className="type-meta mt-1 text-text-2">
-            Your UPI app shows it after paying, often called UTR or UPI reference number.
-          </p>
-          <form className="mt-3 flex flex-col gap-3" onSubmit={submit}>
-            <TextField
-              label="UPI transaction reference"
-              hideLabel
-              placeholder="UPI transaction reference"
-              autoComplete="off"
-              inputMode="text"
-              maxLength={40}
-              required
-              value={reference}
-              error={error}
-              onChange={(ev) => setReference(ev.target.value)}
-            />
-            <SecondaryButton
-              type="submit"
-              loading={busy}
-              disabled={reference.trim().length < 6}
-              block
-            >
-              Send reference
-            </SecondaryButton>
-          </form>
-        </Step>
-        <Step n={3} title="Pro starts once the payment is checked">
-          <p className="type-meta mt-1 text-text-2">
-            Payments are checked by hand. This page updates by itself when Pro is on.
-          </p>
-        </Step>
-      </ol>
-
-      <InlineNotice icon={<ShieldCheck />} className="mt-5">
-        Never share your UPI PIN, OTP or bank password with anyone. Overload will never ask for
-        them. This page only takes the transaction reference.
-      </InlineNotice>
+      <ul className="mt-4 grid grid-cols-3 gap-2">
+        {PLANS.map((plan) => (
+          <li
+            key={plan}
+            className="type-meta flex h-12 items-center justify-center rounded-field bg-surface-2 font-semibold text-text-1"
+          >
+            {plan}
+          </li>
+        ))}
+      </ul>
+      <p className="type-meta mt-4 text-text-2">
+        {trial
+          ? 'Until then, your trial keeps every Pro feature on, and everything you log stays yours.'
+          : 'Until then, every free feature keeps working and everything you log stays yours.'}
+      </p>
     </Card>
   );
 }
@@ -748,19 +553,19 @@ function PaymentCard({
 // ---------------------------------------------------------------------------------------------
 // Questions
 
-function Faq({ config }: { config: PaymentConfig | null }) {
+function Faq() {
   const items: [string, string][] = [
     [
       'What happens when the trial or Pro ends?',
       'Nothing you logged is lost or locked. Logging, routines, your full history, records, body metrics and the last 30 days of progress keep working. Only the Pro analysis pauses, and it comes back the moment Pro is on again.',
     ],
     [
-      'Does it renew or charge me automatically?',
-      `No. You pay once${config ? ` for ${config.periodDays} days` : ''} and it simply ends. There is no card on file and nothing to cancel.`,
+      'Do I need to enter payment details for the trial?',
+      `No. Create a free account and every Pro feature is on for ${TRIAL_DAYS} days. When the trial ends, nothing is charged.`,
     ],
     [
-      'How do I pay?',
-      'With any UPI app. Pay to the UPI ID shown on this page, then send the transaction reference here. You never share a PIN, OTP or bank details.',
+      'Which plans will there be?',
+      'Monthly, 3 months and yearly. The prices appear on this page when the plans open.',
     ],
     [
       'Can I use Pro on more than one device?',

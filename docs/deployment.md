@@ -21,10 +21,6 @@ Variables (all public by design, they are shipped to the browser):
 | ------------------------ | ----------------- | ------------------------------------------------------ |
 | `VITE_SUPABASE_URL`      | accounts and sync | Project URL                                            |
 | `VITE_SUPABASE_ANON_KEY` | accounts and sync | The anon / publishable key. Never the secret key.      |
-| `VITE_UPI_ID`            | Pro payments      | Payments stay closed until all four are set            |
-| `VITE_UPI_PAYEE_NAME`    | Pro payments      |                                                        |
-| `VITE_PRO_PRICE_INR`     | Pro payments      |                                                        |
-| `VITE_PRO_PERIOD_DAYS`   | Pro payments      |                                                        |
 | `VITE_DEMO_AUTOLOAD`     | optional          | `true` loads the demo athlete for guests. Default off. |
 
 Secrets that must never appear in the repository or in Cloudflare variables starting with

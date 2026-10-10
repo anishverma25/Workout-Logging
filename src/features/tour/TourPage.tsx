@@ -708,7 +708,7 @@ function YourTurn() {
         {[
           'Logging, history and records free for good',
           `Every Pro feature free for ${TRIAL_DAYS} days with an account`,
-          'No payment details, nothing renews by itself',
+          'No payment details, the trial ends on its own',
         ].map((t) => (
           <li key={t} className="type-meta flex gap-2.5 text-text-1">
             <Check className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
