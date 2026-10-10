@@ -46,7 +46,14 @@ export function MorePage() {
 /** The person at the top, as in iOS Settings. Opens the profile. */
 function ProfileCard() {
   const profile = useProfile().data;
-  const founding = useEntitlement().foundingMember;
+  const entitlement = useEntitlement();
+  const planBadge = entitlement.loading
+    ? null
+    : entitlement.plan === 'trial'
+      ? 'Pro trial'
+      : entitlement.pro
+        ? 'Pro'
+        : null;
   const initials = profile?.displayName
     .split(/\s+/)
     .filter(Boolean)
@@ -73,10 +80,10 @@ function ProfileCard() {
             ? `${GOAL_LABEL[profile.goal]} · ${EXPERIENCE_LABEL[profile.experience]}`
             : 'Goal, experience and body details'}
         </span>
-        {founding ? (
-          <span className="type-caption mt-1.5 inline-flex h-6 items-center gap-1 rounded-full bg-surface-2 px-2.5 font-semibold text-text-2">
-            <Crown className="size-3.5" aria-hidden />
-            Founding member
+        {planBadge ? (
+          <span className="type-caption mt-1.5 inline-flex h-6 items-center gap-1 rounded-full bg-lime-dim px-2.5 font-semibold text-text-1">
+            <Crown className="size-3.5 text-lime" aria-hidden />
+            {planBadge}
           </span>
         ) : null}
       </span>

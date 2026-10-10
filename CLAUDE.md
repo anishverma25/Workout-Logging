@@ -92,9 +92,9 @@ Read README.md for setup, architecture and calculation rules.
   in memory only, shown once on a new install and after sign-up).
 - Schedules plan nothing before the routine's `createdAt`, so a new routine has no missed days.
 - Early access (migration 0005): `app_settings.early_access_ended_at` null means every account
-  has Pro (plan `founding`) and is a founding member. Ending it is one SQL update
-  (`docs/admin-pro-payments.md`); guest-facing early access copy in `ProPage`, `ProLock` and
-  sign-up must change in the same release.
+  has Pro (plan `founding`, shown simply as "Pro is active"). Ending it is one SQL update
+  (`docs/admin-pro-payments.md`). No founding member or early access copy remains in the app; the
+  Pro page sells with a 7-day trial, a Free and Pro table and the person's own counts.
 - Feedback (migration 0006): `submit_feedback` / `get_my_feedback` RPCs only, 10 a day, ids
   made on the phone so offline feedback is sent once (`src/app/feedback.ts`). Page `/feedback`,
   one-time prompt on the 3rd workout summary, links from Pro and the error screen. Reading and

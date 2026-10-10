@@ -4,6 +4,9 @@ import {
   ArrowRight,
   Check,
   ChartNoAxesColumnIncreasing,
+  Crown,
+  Scale,
+  Zap,
   FlaskConical,
   Medal,
   Ruler,
@@ -14,6 +17,10 @@ import {
 import { APP_NAME } from '@/app/navigation';
 import { LineChart } from '@/components/charts/LineChart';
 import { Button } from '@/components/ui/Button';
+import { Badge, IconTile, TextLink } from '@/components/kit';
+import { MUSCLE_LABELS } from '@/domain/models/labels';
+import { TRIAL_HOURS } from '@/domain/entitlement/entitlement';
+import type { Plateau } from '@/domain/analytics/standards';
 import { Rings, RingLegend, type RingSpec } from '@/components/ui/Rings';
 import { db } from '@/data/db';
 import { generateDemoDataset } from '@/data/demo/generate';
@@ -103,18 +110,9 @@ export function TourPage() {
   return (
     <div className="flex h-dvh flex-col bg-bg pt-safe">
       <header className="mx-auto flex h-14 w-full max-w-xl shrink-0 items-center justify-between px-safe">
-        <span className="font-display text-[1.05rem] font-semibold">{APP_NAME}</span>
-        <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-warn-soft px-2.5 text-xs font-semibold text-warn">
-          <FlaskConical className="size-3.5" aria-hidden />
-          Sample data
-        </span>
-        <button
-          type="button"
-          onClick={() => void finish('/')}
-          className="tap-target rounded-full px-2 py-2 font-medium text-faint hover:text-text"
-        >
-          Skip
-        </button>
+        <span className="type-headline text-text-1">{APP_NAME}</span>
+        <Badge icon={<FlaskConical />}>Sample data</Badge>
+        <TextLink onClick={() => void finish('/')}>Skip</TextLink>
       </header>
 
       <div
@@ -152,7 +150,7 @@ export function TourPage() {
               onClick={() => go(i)}
               className={cn(
                 'tap-target h-2 rounded-full transition-[width,background-color] duration-300',
-                i === index ? 'w-6 bg-accent' : 'w-2 bg-[var(--line-strong)]',
+                i === index ? 'w-6 bg-lime' : 'w-2 bg-track',
               )}
             />
           ))}
@@ -165,6 +163,9 @@ export function TourPage() {
             <Button size="lg" block variant="secondary" onClick={() => void finish('/')}>
               Look around first
             </Button>
+            <TextLink onClick={() => void finish('/pro')} chevron className="self-center">
+              See everything in Pro
+            </TextLink>
           </div>
         ) : (
           <Button
@@ -236,14 +237,11 @@ function Title({
 }) {
   return (
     <div className="mb-6">
-      <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-accent-text">
-        {icon}
+      <Badge tone="lime" icon={icon}>
         {kicker}
-      </p>
-      <h1 className="font-display text-[2rem] font-bold leading-[1.08] tracking-[-0.02em]">
-        {title}
-      </h1>
-      <p className="mt-2.5 text-muted">{body}</p>
+      </Badge>
+      <h1 className="type-display mt-3 text-text-1 [text-wrap:balance]">{title}</h1>
+      <p className="type-body mt-2 text-text-2">{body}</p>
     </div>
   );
 }
@@ -260,14 +258,14 @@ function Welcome({ sample, active }: SlideProps) {
       <div className="mb-8 flex justify-center">
         {active ? <Rings rings={rings} size={220} /> : <div className="size-[220px]" />}
       </div>
-      <h1 className="text-center font-display text-[2.4rem] font-bold leading-[1.05] tracking-[-0.025em]">
-        Log fast.
+      <h1 className="type-display text-center text-[2.5rem] leading-[1.05] text-text-1">
+        Every rep counted.
         <br />
-        Watch it add up.
+        Every gain proven.
       </h1>
-      <p className="mx-auto mt-4 max-w-[34ch] text-center text-muted">
-        A quick look at what {APP_NAME} does, with the numbers of a sample lifter. Your own training
-        starts empty and stays yours.
+      <p className="type-body mx-auto mt-4 max-w-[36ch] text-center text-text-2">
+        The fastest way to log a workout, and the clearest way to see it working. Here is {APP_NAME}{' '}
+        with a sample lifter&apos;s numbers. Your own training starts empty and stays yours.
       </p>
       <RingLegend rings={rings} className="mx-auto mt-6 flex-row gap-6" />
     </div>
@@ -302,9 +300,9 @@ function Logger({ unit }: SlideProps) {
       <div className="rounded-[var(--radius-card)] bg-surface py-4">
         <div className="px-4">
           <p className="font-display text-[1.35rem] font-bold">Barbell bench press</p>
-          <p className="text-sm text-muted">Target 3 × 6 to 10 · RIR 2</p>
+          <p className="text-sm text-text-2">Target 3 × 6 to 10 · RIR 2</p>
         </div>
-        <div className="mt-3 grid grid-cols-[1.6rem_minmax(0,1fr)_4rem_3rem_2.75rem] gap-1.5 px-3 pb-1 text-xs font-medium text-faint">
+        <div className="mt-3 grid grid-cols-[1.6rem_minmax(0,1fr)_4rem_3rem_2.75rem] gap-1.5 px-3 pb-1 text-xs font-medium text-text-2">
           <span className="text-center">Set</span>
           <span>Last</span>
           <span className="text-center">{unit}</span>
@@ -321,13 +319,13 @@ function Logger({ unit }: SlideProps) {
                 ticked && 'set-done bg-accent-soft',
               )}
             >
-              <span className="text-center font-display font-bold text-muted">{i + 1}</span>
-              <span className="tabular text-sm text-faint">{s.last}</span>
+              <span className="text-center font-display font-bold text-text-2">{i + 1}</span>
+              <span className="tabular text-sm text-text-2">{s.last}</span>
               <span className="tabular rounded-lg bg-surface-2 py-2.5 text-center font-display font-semibold">
-                {ticked ? s.w : <span className="text-faint">{s.w}</span>}
+                {ticked ? s.w : <span className="text-text-2">{s.w}</span>}
               </span>
               <span className="tabular rounded-lg bg-surface-2 py-2.5 text-center font-display font-semibold">
-                {ticked ? s.r : <span className="text-faint">{s.r}</span>}
+                {ticked ? s.r : <span className="text-text-2">{s.r}</span>}
               </span>
               <button
                 type="button"
@@ -344,7 +342,7 @@ function Logger({ unit }: SlideProps) {
                   'flex size-11 items-center justify-center rounded-xl border-2 transition-colors active:scale-90',
                   ticked
                     ? 'set-check border-accent bg-accent text-accent-ink'
-                    : 'border-line-strong bg-surface-2 text-faint',
+                    : 'border-line-strong bg-surface-2 text-text-2',
                 )}
               >
                 <Check className="size-5" strokeWidth={3} aria-hidden />
@@ -364,9 +362,9 @@ function Logger({ unit }: SlideProps) {
         <span className="tabular font-display text-[1.4rem] font-semibold">
           {formatClock(Math.ceil(left / 1000))}
         </span>
-        <span className="text-sm text-faint">rest, then the next set</span>
+        <span className="text-sm text-text-2">rest, then the next set</span>
       </div>
-      <p className="mt-auto pt-4 text-sm text-faint">
+      <p className="mt-auto pt-4 text-sm text-text-2">
         It works offline, survives closing the app, and suggests when to add weight.
       </p>
     </>
@@ -398,7 +396,7 @@ function Records({ sample, unit }: SlideProps) {
             <li key={p.id} className="flex items-baseline justify-between gap-3 py-2.5">
               <span className="min-w-0">
                 <span className="block truncate font-semibold">{p.exerciseName}</span>
-                <span className="block text-sm text-faint">{PR_LABELS[p.type]}</span>
+                <span className="block text-sm text-text-2">{PR_LABELS[p.type]}</span>
               </span>
               <span className="tabular shrink-0 font-display text-lg font-semibold">
                 {formatRecordValue(p.type, p.value, unit)}
@@ -475,7 +473,7 @@ function Progress({ sample, unit }: SlideProps) {
             <li key={l.key} className={cn('py-3', i > 0 && 'border-t border-line')}>
               <div className="flex justify-between text-sm">
                 <span className="font-semibold">{l.name}</span>
-                <span className="text-faint">{l.level ?? 'Starting'}</span>
+                <span className="text-text-2">{l.level ?? 'Starting'}</span>
               </div>
               <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--ring-track)]">
                 <div
@@ -522,10 +520,10 @@ function Body({ sample, unit }: SlideProps) {
       <div className="grid grid-cols-2 gap-2.5">
         {tiles.map(([label, value, u]) => (
           <div key={label} className="rounded-[1.1rem] bg-surface p-4">
-            <p className="text-[0.8125rem] font-medium text-faint">{label}</p>
+            <p className="text-[0.8125rem] font-medium text-text-2">{label}</p>
             <p className="tabular mt-1 font-display text-[1.6rem] font-semibold tracking-tight">
               {value}
-              {u ? <span className="ml-1 text-base text-faint">{u}</span> : null}
+              {u ? <span className="ml-1 text-base text-text-2">{u}</span> : null}
             </p>
           </div>
         ))}
@@ -590,7 +588,7 @@ function Journey({ sample, unit }: SlideProps) {
                 style={{ width: `${(g.fraction ?? 0) * 100}%` }}
               />
             </div>
-            <p className="mt-1.5 text-sm text-faint">
+            <p className="mt-1.5 text-sm text-text-2">
               {g.projected ? `On course for ${formatShortDate(g.projected)}` : 'Tracking'}
             </p>
           </div>
@@ -600,21 +598,126 @@ function Journey({ sample, unit }: SlideProps) {
   );
 }
 
+const TRIAL_DAYS = Math.round(TRIAL_HOURS / 24);
+
+const PLATEAU_FIX: Record<Plateau['suggestion'], string> = {
+  rep_range: 'Try a new rep range for the next 4 weeks',
+  deload: 'Take a lighter week, then build back up',
+  variation: 'Swap in a close variation for a few weeks',
+};
+
+/** What Pro adds, shown with the sample lifter's own Pro results. */
+function ProSlide({ sample }: SlideProps) {
+  const p = sample.progress;
+  const plateau = p.plateaus[0];
+  const plateauName = plateau
+    ? (SYSTEM_EXERCISES.find((e) => e.id === plateau.exerciseId)?.name ?? null)
+    : null;
+  const weeks = Math.max(1, p.muscles.weeks);
+  const muscles = [...p.muscles.workload]
+    .sort((a, b) => b.weighted - a.weighted)
+    .slice(0, 4)
+    .map((m) => ({ label: MUSCLE_LABELS[m.muscle], perWeek: m.weighted / weeks }));
+  const top = muscles[0]?.perWeek ?? 1;
+  const pushPull = p.balance.find((b) => b.key === 'push_pull' && b.ratio !== null);
+  return (
+    <>
+      <Title
+        icon={<Crown className="size-4" aria-hidden />}
+        kicker="Overload Pro"
+        title="It tells you what to do next"
+        body="Pro reads every set and turns it into decisions: when to add weight, what has stalled, which muscles need more. Here is what it found for the sample lifter."
+      />
+      <div className="flex flex-col gap-2.5">
+        {plateau && plateauName ? (
+          <div className="pro-rise flex items-center gap-3 rounded-panel border border-border bg-surface p-4">
+            <IconTile pro icon={<Zap />} />
+            <span className="min-w-0">
+              <span className="type-headline block text-text-1">
+                {plateauName} has stalled for {plateau.weeks} weeks
+              </span>
+              <span className="type-meta block text-text-2">{PLATEAU_FIX[plateau.suggestion]}</span>
+            </span>
+          </div>
+        ) : null}
+        {muscles.length > 0 ? (
+          <div
+            className="pro-rise rounded-panel border border-border bg-surface p-4"
+            style={{ animationDelay: '90ms' }}
+          >
+            <p className="type-headline text-text-1">Sets per muscle, each week</p>
+            <ul className="mt-3 flex flex-col gap-2.5">
+              {muscles.map((m) => (
+                <li
+                  key={m.label}
+                  className="grid grid-cols-[5.5rem_minmax(0,1fr)_2rem] items-center gap-3"
+                >
+                  <span className="type-meta text-text-2">{m.label}</span>
+                  <span className="h-1.5 overflow-hidden rounded-full bg-track">
+                    <span
+                      className="block h-full rounded-full bg-lime"
+                      style={{ width: `${(m.perWeek / top) * 100}%` }}
+                    />
+                  </span>
+                  <span className="type-meta tabular text-right text-text-1">
+                    {Math.round(m.perWeek)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {pushPull ? (
+          <div
+            className="pro-rise flex items-center gap-3 rounded-panel border border-border bg-surface p-4"
+            style={{ animationDelay: '180ms' }}
+          >
+            <IconTile pro icon={<Scale />} />
+            <span className="min-w-0 flex-1">
+              <span className="type-headline block text-text-1">Push to pull</span>
+              <span className="type-meta block text-text-2">
+                {pushPull.a.sets} push sets, {pushPull.b.sets} pull sets
+              </span>
+            </span>
+            <span className="type-title tabular text-text-1">
+              {(pushPull.ratio ?? 0).toLocaleString('en-GB', { maximumFractionDigits: 2 })}
+            </span>
+          </div>
+        ) : null}
+      </div>
+      <p className="type-meta mt-auto pt-4 text-text-2">
+        Also in Pro: progression suggestions, strength levels, weekly check-ins, goal dates and
+        all-time trends. Free for your first {TRIAL_DAYS} days with an account.
+      </p>
+    </>
+  );
+}
+
 function YourTurn() {
   return (
     <div className="flex flex-1 flex-col justify-center text-center">
-      <span className="mx-auto flex size-20 items-center justify-center rounded-[1.5rem] bg-accent text-accent-ink">
+      <span className="mx-auto flex size-20 items-center justify-center rounded-panel bg-lime text-on-lime">
         <Sparkles className="size-10" aria-hidden />
       </span>
-      <h1 className="mt-6 font-display text-[2.2rem] font-bold leading-[1.08] tracking-[-0.02em]">
-        Now make it yours
-      </h1>
-      <p className="mx-auto mt-3 max-w-[34ch] text-muted">
+      <h1 className="type-display mt-6 text-text-1">Now make it yours</h1>
+      <p className="type-body mx-auto mt-3 max-w-[36ch] text-text-2">
         A few quick questions, then a routine, rep ranges and daily calories fitted to you. The
         sample lifter goes away; your training starts here.
       </p>
+      <ul className="mx-auto mt-6 flex flex-col gap-2 text-left">
+        {[
+          'Logging, history and records free for good',
+          `Every Pro feature free for ${TRIAL_DAYS} days with an account`,
+          'No payment details, nothing renews by itself',
+        ].map((t) => (
+          <li key={t} className="type-meta flex gap-2.5 text-text-1">
+            <Check className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
+            {t}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-const SLIDES = [Welcome, Logger, Records, Progress, Body, Journey, YourTurn];
+const SLIDES = [Welcome, Logger, Records, Progress, Body, Journey, ProSlide, YourTurn];

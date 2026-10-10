@@ -71,7 +71,7 @@ ${all}
  * Bumped by hand at the end of every UI redesign part (UI rules 3.1), so installed apps always
  * fetch a fresh shell even when only public files changed. Part of the cache name and hash.
  */
-export const CACHE_EPOCH = 'ui-5';
+export const CACHE_EPOCH = 'ui-6';
 
 const TEMPLATE = fileURLToPath(new URL('./sw-template.js', import.meta.url));
 

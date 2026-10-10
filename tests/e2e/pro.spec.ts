@@ -37,35 +37,35 @@ test('guests keep every free feature and see what Pro adds', async ({ page }) =>
   await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
 
   await page.goto('/pro');
-  await expect(page.getByText('Join while early access is open')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Become a founding member' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Stop guessing. Start progressing.',
+  );
+  await expect(page.getByRole('link', { name: 'Try Pro free for 7 days' })).toBeVisible();
+  // The comparison says plainly what stays free.
+  const table = page.getByRole('table', { name: 'What the free plan and Pro include' });
+  const history = table.getByRole('row', { name: /Full workout history/ });
+  await expect(history.getByRole('img', { name: 'Included' })).toHaveCount(2);
+  await expect(page.getByText('Your workout history always stays free.')).toBeVisible();
+  // No founding member or early access wording is left.
+  await expect(page.getByText(/founding|early access/i)).toHaveCount(0);
 });
 
-test('during early access a new account is a founding member with every Pro feature', async ({
-  page,
-}) => {
+test('while the server still has early access on, an account simply has Pro', async ({ page }) => {
   await signUp(page, '/');
-  // A one-time welcome on Home.
-  const welcome = page.getByRole('dialog', { name: 'Welcome, founding member' });
-  await expect(welcome).toContainText('exclusive early access');
-  await welcome.getByRole('button', { name: 'Start training' }).click();
-  await expect(welcome).toHaveCount(0);
-  await page.reload();
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await expect(welcome).toHaveCount(0);
+  // No founding member welcome any more.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 
   await page.goto('/pro');
-  await expect(page.getByRole('heading', { name: 'You are a founding member' })).toBeVisible();
-  await expect(page.getByText('Exclusive early access').first()).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Unlocked for you' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Pro is active' })).toBeVisible();
   // No trial clock and nothing to pay.
   await expect(page.getByRole('progressbar', { name: 'Trial used' })).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Get Pro' })).toHaveCount(0);
+  await expect(page.getByText(/founding|early access/i)).toHaveCount(0);
 
   await page.goto('/progress?range=all');
   await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
   await page.goto('/more');
-  await expect(page.getByText('Founding member', { exact: true })).toBeVisible();
+  await expect(page.locator('a[href="/profile"]').getByText('Pro', { exact: true })).toBeVisible();
 });
 
 test.describe('after early access ends', () => {
@@ -142,7 +142,8 @@ test.describe('after early access ends', () => {
   test('manual UPI: instructions, reference submission and pending state', async ({ page }) => {
     await signUp(page);
     const pay = page.getByRole('region', { name: 'Get Pro' });
-    await expect(pay).toContainText('₹1 for 30 days of Pro');
+    await expect(pay).toContainText('/ 30 days');
+    await expect(pay).toContainText('₹1');
     await expect(pay).toContainText('e2e-test@fakebank');
     await expect(pay).toContainText('Never share your UPI PIN');
     // Only the transaction reference is ever asked for.

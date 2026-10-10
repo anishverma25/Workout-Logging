@@ -5,33 +5,35 @@ unlock code or shared password in the app. All of this happens in the Supabase d
 (SQL editor), which runs with the database owner's rights. Never paste these queries into the
 app or share the service role key.
 
-## Early access (on now)
+## Launching paid Pro (ending early access)
 
-While early access is open, every signed-in account has every Pro feature, with no trial clock
-and nothing to pay. The Pro page shows a founding member card instead of the trial and payment
-boxes, and each account sees a one-time welcome. It is a single server setting, so nothing on a
-phone can turn it on.
+The app no longer shows any founding member or early access wording. While the server setting
+below is still open, every signed-in account simply sees "Pro is active" with no clock. That is
+a single server setting, so nothing on a phone can turn it on.
 
-Every account created before early access ends is a founding member, and keeps that status
-(shown on the More page) after it ends.
+Launch checklist, in this order:
 
-End early access when payments open (SQL editor):
+1. Add the four payment settings below to the Cloudflare Pages build and redeploy. Until they
+   are set, the Pro page says payments are not open yet and shows no price.
+2. End early access in the SQL editor:
 
-```sql
-update public.app_settings set early_access_ended_at = now();
-```
+   ```sql
+   update public.app_settings set early_access_ended_at = now();
+   ```
 
-After that, the normal rules apply to everyone: the 168-hour trial from when the account was
-created (so existing accounts go straight to the free plan), then Pro by payment. To give
-founding members time first, grant them Pro for a period with the grant query below, or set the
-end date in the future: `set early_access_ended_at = now() + interval '7 days'`.
+3. Open the Pro page signed in with a fresh account and check: the trial clock, the price, the
+   price per day, the UPI ID and the copy button.
 
-Before ending it, the app's wording for people without an account ("Join while early access is
-open", the sign-up note) should be changed in the code, and the payment settings below added.
+After step 2 the normal rules apply to everyone: the 168-hour trial from when the account was
+created (so accounts older than 7 days go straight to the free plan), then Pro by payment.
+To give existing accounts time first, either end it later
+(`set early_access_ended_at = now() + interval '7 days'`) or grant them Pro for a period with
+the grant query below.
 
 To reopen early access: `update public.app_settings set early_access_ended_at = null;`
 
-Founding members, for a thank-you or a discount later:
+Accounts created during early access (the server still marks them), for a thank-you or a
+discount later:
 
 ```sql
 select u.email, s.created_at

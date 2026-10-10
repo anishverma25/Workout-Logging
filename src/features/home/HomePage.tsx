@@ -23,7 +23,6 @@ import { WeekCard } from './WeekCard';
 import { RingsCard } from './RingsCard';
 import { CheckinCard } from './CheckinCard';
 import { activeRoutine } from '@/domain/analytics/schedule';
-import { FoundingWelcome } from '@/features/pro/FoundingWelcome';
 
 export function HomePage() {
   // Demo data lives only in the device-only space, never in an account.
@@ -50,7 +49,6 @@ export function HomePage() {
   return (
     <>
       <PageHeader title={title} eyebrow={formatCalendarDate(now)} compactTitle="Home" />
-      <FoundingWelcome />
       {training.status === 'success' && !ownProfile ? <SetupPrompt /> : null}
 
       {training.status === 'loading' ? <HomeSkeleton /> : null}

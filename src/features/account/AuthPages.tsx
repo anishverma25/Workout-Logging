@@ -15,7 +15,10 @@ import { Button, ButtonLink } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/Fields';
 import { useToast } from '@/components/ui/Toast';
+import { TRIAL_HOURS } from '@/domain/entitlement/entitlement';
 import { safeNext } from './next';
+
+const TRIAL_DAYS = Math.round(TRIAL_HOURS / 24);
 
 function AuthCard({
   title,
@@ -215,8 +218,10 @@ export function SignUpPage() {
           <span className="mt-3 flex items-start gap-2.5 rounded-[1rem] bg-accent-soft px-3.5 py-3 text-sm text-text">
             <Crown className="mt-0.5 size-4 shrink-0 text-accent-text" aria-hidden />
             <span>
-              <strong className="font-semibold">Exclusive early access is open.</strong> Join now as
-              a founding member and every Pro feature is unlocked for you, free.
+              <strong className="font-semibold">
+                Pro is free for your first {TRIAL_DAYS} days.
+              </strong>{' '}
+              Every analysis feature, no payment details, nothing renews by itself.
             </span>
           </span>
         </>

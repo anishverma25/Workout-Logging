@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router';
 import { Check, Clock, MessageSquareHeart, Star } from 'lucide-react';
 import { useAccount } from '@/app/account';
-import { useEntitlement } from '@/app/entitlement';
 import {
   FeedbackError,
   refreshFeedback,
@@ -79,7 +78,6 @@ function FeedbackForm() {
   const fromParam = params.get('from') as FeedbackSource | null;
   const source: FeedbackSource = fromParam && SOURCES.includes(fromParam) ? fromParam : 'more';
   const screen = params.get('screen');
-  const founding = useEntitlement().plan === 'founding';
   const [rating, setRating] = useState<number | null>(null);
   const [tags, setTags] = useState<FeedbackTag[]>(() =>
     params.get('tag') === 'bug' ? ['bug'] : [],
@@ -99,7 +97,7 @@ function FeedbackForm() {
           <Check className="size-6" strokeWidth={3} aria-hidden />
         </span>
         <h2 className="font-display text-[1.5rem] font-bold leading-tight">
-          {founding ? 'Thank you, founding member' : 'Thank you'}
+          Thank you
         </h2>
         <p className="text-muted">
           {done === 'sent'

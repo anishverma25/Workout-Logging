@@ -187,14 +187,14 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     await shot(page, '25-progress');
   });
 
-  await test.step('26-29. Pro page: early access, expired and Pro states', async () => {
+  await test.step('26-29. Pro page: server early access, expired and Pro states', async () => {
     await page.goto('/pro');
-    await expect(page.getByRole('heading', { name: 'You are a founding member' })).toBeVisible();
-    await shot(page, '27-founding');
+    await expect(page.getByRole('heading', { name: 'Pro is active' })).toBeVisible();
+    await shot(page, '27-pro');
     for (const [state, heading] of [
       ['trial_expired', 'Your free trial has ended'],
       ['pro', 'Pro is active'],
-      ['real', 'You are a founding member'],
+      ['real', 'Pro is active'],
     ] as const) {
       await page.goto('/settings');
       await page.getByRole('combobox', { name: 'Access state' }).selectOption(state);

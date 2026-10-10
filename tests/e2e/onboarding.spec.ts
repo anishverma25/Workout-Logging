@@ -30,7 +30,8 @@ test('a new account sees the tour, then setup builds a personalised plan', async
   await page.getByRole('button', { name: 'Take the tour' }).click();
   await page.getByRole('button', { name: 'Mark sample set 1 done' }).click();
   await expect(page.getByRole('button', { name: 'Set 1 done' })).toBeVisible();
-  for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Next' }).click();
+  // Five feature slides and the Pro slide.
+  for (let i = 0; i < 6; i++) await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Set up my plan' }).click();
 
   // Setup.

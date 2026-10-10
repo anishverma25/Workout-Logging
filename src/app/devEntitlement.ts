@@ -11,7 +11,7 @@ export type DevEntitlementState =
 
 export const DEV_STATES: { value: DevEntitlementState; label: string }[] = [
   { value: 'real', label: 'Real' },
-  { value: 'founding', label: 'Early access' },
+  { value: 'founding', label: 'Server early access (shown as Pro)' },
   { value: 'trial', label: 'Active trial' },
   { value: 'trial_expired', label: 'Expired trial' },
   { value: 'pro', label: 'Active Pro' },

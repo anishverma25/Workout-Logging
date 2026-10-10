@@ -74,9 +74,6 @@ export const useDemoStatus = () => useLiveData<DemoStatus>(() => getDemoStatus(d
 export const useTourPending = () =>
   useLiveData(async () => (await getMeta<boolean>(db, META_KEYS.tourPending)) === true);
 
-/** Whether the founding member welcome was already shown for this account. */
-export const useFoundingWelcomed = () =>
-  useLiveData(async () => (await getMeta<boolean>(db, META_KEYS.foundingWelcomed)) === true);
 
 export function usePreferences(): Preferences {
   const state = useLiveData<Preferences>(() => getPreferences(db));

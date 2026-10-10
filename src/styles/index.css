@@ -418,3 +418,23 @@
     font-size: 1.12em;
   }
 }
+
+/* Pro page: example insights rise in one after another. */
+@keyframes pro-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pro-rise {
+  animation: pro-rise 420ms var(--ease-standard) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pro-rise {
+    animation: none;
+  }
+}

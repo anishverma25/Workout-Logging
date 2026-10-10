@@ -2,7 +2,9 @@ import { Crown } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import { useEntitlement } from '@/app/entitlement';
 import { ButtonLink } from '@/components/ui/Button';
-import { PRO_FEATURES, type ProFeature } from '@/domain/entitlement/entitlement';
+import { PRO_FEATURES, TRIAL_HOURS, type ProFeature } from '@/domain/entitlement/entitlement';
+
+const TRIAL_DAYS = Math.round(TRIAL_HOURS / 24);
 import { cn } from '@/lib/cn';
 
 /**
@@ -26,7 +28,7 @@ export function ProLock({
   const cta = guest
     ? account.status === 'unavailable'
       ? null
-      : { to: '/sign-up?next=/pro', label: 'Create a free account' }
+      : { to: '/pro', label: 'Try Pro free' }
     : { to: '/pro', label: entitlement.trialEnded ? 'See Pro' : 'See your plan' };
 
   return (
@@ -50,7 +52,7 @@ export function ProLock({
         </p>
         <p className="mt-1 text-sm text-muted">
           {description}
-          {guest ? ' Unlocked free for everyone who joins during early access.' : ''}
+          {guest ? ` Free for ${TRIAL_DAYS} days with a new account.` : ''}
         </p>
       </div>
       {cta ? (
