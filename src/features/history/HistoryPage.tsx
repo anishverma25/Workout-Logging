@@ -1,7 +1,7 @@
 import { WorkoutRow } from '@/features/shared/WorkoutRow';
 import { workoutStats } from '@/features/shared/workoutStats';
 import { useMemo, useState } from 'react';
-import { History as HistoryIcon, SlidersHorizontal, X } from 'lucide-react';
+import { ChevronDown, History as HistoryIcon, X } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ActionList, Chips } from '@/components/ui/Fields';
@@ -20,8 +20,8 @@ import {
 } from '@/domain/analytics/history';
 import { MUSCLE_LABELS } from '@/domain/models/labels';
 import { MUSCLE_GROUPS } from '@/domain/models/schemas';
-import { addDays, formatDayMonth, startOfWeek } from '@/lib/dates';
-import { formatCompact, pluralize } from '@/lib/format';
+import { addDays, startOfWeek } from '@/lib/dates';
+import { formatDateRange, formatNumber, pluralize } from '@/lib/format';
 import { toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { useNow } from '@/lib/useNow';
 import { useStartWorkout } from '../workout/StartWorkout';
@@ -68,7 +68,7 @@ export function HistoryPage() {
     filters.workoutName !== null || filters.exerciseId !== null || filters.muscle !== null;
 
   return (
-    <>
+    <div className="max-w-[45rem]">
       <PageHeader
         title="History"
         subtitle={entries.length > 0 ? `${pluralize(entries.length, 'workout')} logged` : undefined}
@@ -130,7 +130,7 @@ export function HistoryPage() {
               </Button>
             </div>
           ) : (
-            <p className="mt-4 text-sm text-faint" aria-live="polite">
+            <p className="type-meta mt-4 text-text-2" aria-live="polite">
               {active || filters.range !== 'all'
                 ? `${pluralize(filtered.length, 'workout')} shown`
                 : null}
@@ -143,14 +143,15 @@ export function HistoryPage() {
                 key={week.weekStart.toISOString()}
                 aria-label={weekLabel(week.weekStart, now, prefs.weekStartsOn)}
               >
-                <header className="mb-3 flex items-baseline justify-between gap-3">
-                  <h2 className="font-display text-xl font-semibold">
+                <header className="mb-3">
+                  <h2 className="type-title text-text-1">
                     {weekLabel(week.weekStart, now, prefs.weekStartsOn)}
                   </h2>
-                  <p className="tabular text-sm text-faint">
-                    {pluralize(week.entries.length, 'workout')} · {week.workingSets} sets
+                  <p className="type-meta tabular mt-0.5 text-text-2">
+                    {pluralize(week.entries.length, 'workout')} ·{' '}
+                    {pluralize(week.workingSets, 'set')}
                     {week.volumeKg > 0
-                      ? ` · ${formatCompact(toDisplayWeight(week.volumeKg, prefs.weightUnit))} ${prefs.weightUnit}`
+                      ? ` · ${formatNumber(toDisplayWeight(week.volumeKg, prefs.weightUnit), 0)} ${prefs.weightUnit}`
                       : ''}
                   </p>
                 </header>
@@ -230,7 +231,7 @@ export function HistoryPage() {
           ))}
         </div>
       </Sheet>
-    </>
+    </div>
   );
 }
 
@@ -238,7 +239,7 @@ function weekLabel(weekStart: Date, now: Date, weekStartsOn: 0 | 1): string {
   const current = startOfWeek(now, weekStartsOn);
   if (weekStart.getTime() === current.getTime()) return 'This week';
   if (weekStart.getTime() === addDays(current, -7).getTime()) return 'Last week';
-  return `${formatDayMonth(weekStart)} to ${formatDayMonth(addDays(weekStart, 6))}`;
+  return formatDateRange(weekStart, addDays(weekStart, 6), now);
 }
 
 function FilterButton({
@@ -254,9 +255,9 @@ function FilterButton({
 }) {
   if (value) {
     return (
-      <span className="inline-flex h-9 shrink-0 items-center rounded-full bg-text pl-3.5 text-sm font-semibold text-bg">
-        <button type="button" onClick={onOpen} className="max-w-48 truncate">
-          {value}
+      <span className="chrome type-meta inline-flex h-9 shrink-0 items-center rounded-full bg-text-1 pl-4 font-semibold text-bg">
+        <button type="button" onClick={onOpen} className="max-w-56 truncate">
+          {label}: {value}
         </button>
         <button
           type="button"
@@ -273,10 +274,10 @@ function FilterButton({
     <button
       type="button"
       onClick={onOpen}
-      className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 text-sm font-semibold text-muted hover:text-text"
+      className="pressable chrome type-meta inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-surface-2 pr-3 pl-4 font-semibold text-text-1"
     >
-      <SlidersHorizontal className="size-3.5" aria-hidden />
       {label}
+      <ChevronDown className="size-4 text-text-2" aria-hidden />
     </button>
   );
 }

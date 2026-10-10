@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
@@ -50,9 +51,10 @@ export function ChartTable({
 }) {
   return (
     <details className="group mt-2">
-      <summary className="inline-flex cursor-pointer list-none items-center rounded-md text-xs font-medium text-faint hover:text-text [&::-webkit-details-marker]:hidden">
+      <summary className="pressable tap-target type-meta inline-flex cursor-pointer list-none items-center gap-1 rounded-tile font-medium text-text-1 [&::-webkit-details-marker]:hidden">
         <span className="group-open:hidden">Show as table</span>
         <span className="hidden group-open:inline">Hide table</span>
+        <ChevronRight className="size-4 text-text-2 group-open:rotate-90" aria-hidden />
       </summary>
       <div className="mt-2 max-h-72 overflow-auto rounded-xl border border-line">
         <table className="w-full text-left text-sm">
@@ -101,7 +103,7 @@ export function Tooltip({
   return (
     <div
       role="presentation"
-      className="pointer-events-none absolute z-10 w-40 rounded-xl border border-line-strong bg-surface-3 px-3 py-2 shadow-[0_10px_30px_-12px_rgb(0_0_0/0.55)]"
+      className="pointer-events-none absolute z-10 w-40 rounded-field bg-surface-2 px-3 py-2"
       style={{ left, top: Math.max(0, y) }}
     >
       <p className="text-xs text-faint">{title}</p>

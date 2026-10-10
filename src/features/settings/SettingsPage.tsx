@@ -27,7 +27,7 @@ import { updatePreferences } from '@/data/repositories/meta';
 import { getStorageState, requestPersistentStorage, type StorageState } from '@/data/storage';
 import { formatShortDate, toDateKey } from '@/lib/dates';
 import { formatClock, spokenDuration } from '@/lib/format';
-import { Sheet } from '@/components/ui/Sheet';
+import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { DurationPicker } from '@/components/ui/DurationPicker';
 
 export function SettingsPage() {
@@ -113,7 +113,7 @@ function RestSection() {
           type="button"
           onClick={() => setEditing('default')}
           aria-label={`Default rest, ${spokenDuration(prefs.defaultRestSeconds)}. Change`}
-          className="tabular h-10 rounded-full bg-surface-2 px-4 font-display text-[1.05rem] font-semibold"
+          className="pressable type-headline tabular h-10 rounded-full bg-surface-2 px-4 text-text-1"
         >
           {formatClock(prefs.defaultRestSeconds)}
         </button>
@@ -132,7 +132,7 @@ function RestSection() {
               type="button"
               onClick={() => setEditing('change')}
               aria-label={`Rest between exercises, ${spokenDuration(change)}. Change`}
-              className="tabular h-10 rounded-full bg-surface-2 px-4 font-display text-[1.05rem] font-semibold"
+              className="pressable type-headline tabular h-10 rounded-full bg-surface-2 px-4 text-text-1"
             >
               {formatClock(change)}
             </button>
@@ -242,7 +242,7 @@ function RemindersSection() {
   return (
     <Panel
       title="Training reminders"
-      footer="Your phone's calendar reminds you, even when the app is closed. Open the file and add it to your calendar."
+      footer="Downloads a calendar file with your training days and a reminder before each. Open it to add them to your phone's calendar, which reminds you even when the app is closed."
     >
       {planned.length === 0 ? (
         <p className="py-3.5 text-sm text-muted">
@@ -399,7 +399,7 @@ function DemoSection() {
   if (account.status === 'signedIn') {
     return (
       <Panel title="Demo data" id="demo-data">
-        <p className="py-3.5 text-sm text-muted">
+        <p className="type-meta py-3.5 text-text-2">
           Your account only ever holds your own training, so demo data is not available while you
           are signed in. Sign out to explore the demo on this device.
         </p>
@@ -413,6 +413,7 @@ function GuestDemoSection() {
   const demo = useDemoStatus();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const run = (fn: () => Promise<unknown>, message: string) => async () => {
     setBusy(true);
     try {
@@ -430,7 +431,7 @@ function GuestDemoSection() {
       id="demo-data"
       footer={`A fictional athlete, Arjun, with ${DEMO_HISTORY_DAYS / 7} weeks of Push Pull Legs training. The last ${DEMO_FEATURED_DAYS} days are the featured week. Demo records are kept separate and clearing them never touches your own workouts.`}
     >
-      <div className="py-3.5 text-sm" role="status">
+      <div className="type-meta py-3.5 text-text-2" role="status">
         {demo.status === 'loading'
           ? 'Checking...'
           : loaded
@@ -460,13 +461,26 @@ function GuestDemoSection() {
               variant="danger"
               disabled={busy}
               icon={<Trash2 className="size-4" aria-hidden />}
-              onClick={run(() => clearDemoData(db), 'Demo data cleared')}
+              onClick={() => setConfirmClear(true)}
             >
               Clear demo data
             </Button>
           </>
         )}
       </div>
+      <ConfirmSheet
+        open={confirmClear}
+        title="Clear demo data?"
+        body="Arjun's fictional workouts, routine and weigh-ins are removed from this device. Your own workouts are not touched. You can load the demo again later."
+        confirmLabel="Clear demo data"
+        danger
+        busy={busy}
+        onClose={() => setConfirmClear(false)}
+        onConfirm={async () => {
+          await run(() => clearDemoData(db), 'Demo data cleared')();
+          setConfirmClear(false);
+        }}
+      />
     </Panel>
   );
 }

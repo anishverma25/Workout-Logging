@@ -1,16 +1,19 @@
 import { Link } from 'react-router';
-import { FlaskConical } from 'lucide-react';
+import { Info } from 'lucide-react';
 
-/** A small link beside a number's heading to the section of the science page that explains it. */
+/**
+ * The 24px info button beside a section title (D6): opens the part of "How every number is
+ * calculated" that explains the section. Neutral, never lime.
+ */
 export function EvidenceLink({ topic, about }: { topic: string; about: string }) {
   return (
     <Link
       to={`/science#${topic}`}
-      aria-label={`The science behind ${about}`}
-      className="tap-target inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-surface px-2.5 text-xs font-semibold text-accent-text"
+      aria-label={`About ${about}`}
+      title={`How ${about} is calculated`}
+      className="pressable tap-target inline-flex size-6 shrink-0 items-center justify-center rounded-full text-text-2 hover:text-text-1"
     >
-      <FlaskConical className="size-3.5" aria-hidden />
-      Evidence
+      <Info className="size-5" strokeWidth={1.75} aria-hidden />
     </Link>
   );
 }

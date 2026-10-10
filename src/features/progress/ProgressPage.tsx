@@ -1,9 +1,11 @@
 import { COPY } from '@/domain/analytics/thresholdCopy';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import {
   ChartNoAxesColumnIncreasing,
   ChevronDown,
+  ArrowDownRight,
+  ArrowUpRight,
   ChevronRight,
   Dumbbell,
   FlaskConical,
@@ -12,7 +14,8 @@ import {
 import { EvidenceLink } from '@/features/science/EvidenceLink';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { BarChart } from '@/components/charts/BarChart';
-import { ChartEmpty } from '@/components/charts/ChartParts';
+import { ChartEmpty, ChartTable } from '@/components/charts/ChartParts';
+import { TextLink } from '@/components/kit';
 import { LineChart } from '@/components/charts/LineChart';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -26,7 +29,17 @@ import { formatRecordValue, PR_LABELS } from '@/domain/analytics/prs';
 import { MUSCLE_LABELS } from '@/domain/models/labels';
 import { cn } from '@/lib/cn';
 import { formatDayMonth, formatShortDate } from '@/lib/dates';
-import { formatCompact, formatSignedPercent, pluralize } from '@/lib/format';
+import { FREQUENCY_MIN_DAYS } from '@/domain/analytics/progress';
+import { MUSCLE_SCALE_MIN } from '@/domain/analytics/muscles';
+import {
+  formatCompact,
+  formatDate,
+  formatDateRange,
+  formatDurationSummary,
+  formatNumber,
+  formatSignedPercent,
+  pluralize,
+} from '@/lib/format';
 import { formatWeight, formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { useNow } from '@/lib/useNow';
 import { useStartWorkout } from '../workout/StartWorkout';
@@ -89,20 +102,19 @@ export function ProgressPage() {
   return (
     <>
       <PageHeader title="Progress" subtitle="Calculated from your logged sets" />
+      {model && model.hasAnyData && !rangeLocked ? <JumpBar /> : null}
       <Link
         to="/science"
-        className="mb-2 flex items-center gap-3 rounded-[var(--radius-card)] bg-surface p-4 text-sm shadow-card"
+        className="pressable chrome mt-3 mb-4 flex min-h-14 items-center gap-3 rounded-panel border border-border bg-surface px-4 py-2.5"
       >
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--tile-sky)] text-white">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-tile bg-surface-2 text-text-2">
           <FlaskConical className="size-5" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block font-semibold">The science behind these numbers</span>
-          <span className="text-muted">
-            Formulas and research sources for everything on this page.
-          </span>
+          <span className="type-headline block text-text-1">How every number is calculated</span>
+          <span className="type-meta block text-text-2">Formulas and the research behind them</span>
         </span>
-        <ChevronRight className="size-5 shrink-0 text-faint" aria-hidden />
+        <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
       </Link>
       {training.status === 'loading' ? <Skeleton className="h-96" /> : null}
       {training.status === 'error' ? <ErrorState error={training.error} /> : null}
@@ -120,12 +132,9 @@ export function ProgressPage() {
               >
                 Start a workout
               </Button>
-              <Link
-                to="/science"
-                className="inline-flex h-11 items-center px-3 text-sm font-semibold text-accent-text"
-              >
+              <TextLink to="/science" chevron>
                 How it is calculated
-              </Link>
+              </TextLink>
             </>
           }
         />
@@ -134,7 +143,7 @@ export function ProgressPage() {
       {model && model.hasAnyData ? (
         <>
           {/* One filter row, scoping everything below it. */}
-          <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-2 border-b border-transparent bg-bg/90 px-4 py-2 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between lg:-mx-10 lg:px-10">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <Chips
               label="Date range"
               options={
@@ -153,11 +162,11 @@ export function ProgressPage() {
               <button
                 type="button"
                 onClick={() => setPickingExercise(true)}
-                className="inline-flex h-9 w-fit items-center gap-1.5 rounded-full bg-surface-2 px-3.5 text-sm font-semibold"
+                className="pressable chrome type-meta inline-flex h-9 w-fit items-center gap-1.5 rounded-full bg-surface-2 px-4 font-semibold text-text-1"
               >
-                <span className="text-faint">Exercise</span>
+                <span className="text-text-2">Exercise:</span>
                 <span className="max-w-44 truncate">{model.selected?.name}</span>
-                <ChevronDown className="size-4 text-faint" aria-hidden />
+                <ChevronDown className="size-4 text-text-2" aria-hidden />
               </button>
             ) : null}
           </div>
@@ -170,9 +179,8 @@ export function ProgressPage() {
             />
           ) : (
             <>
-              <p className="mt-2 text-sm text-faint">
-                {formatDayMonth(model.window.start)} to{' '}
-                {formatDayMonth(new Date(model.window.end.getTime() - 1))}
+              <p className="type-meta mt-2 text-text-2">
+                {formatDateRange(model.window.start, new Date(model.window.end.getTime() - 1), now)}
                 {model.sessionsInWindow === 0 ? '. No workouts logged in this period.' : ''}
               </p>
 
@@ -294,15 +302,15 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section aria-labelledby={`sec-${id}`} className="mt-9">
-      <div className="flex items-center justify-between gap-3">
-        <h2 id={`sec-${id}`} className="font-display text-[1.3rem] font-bold leading-tight">
+    <section id={id} aria-labelledby={`sec-${id}`} className="mt-8 scroll-mt-28">
+      <div className="flex items-center gap-2">
+        <h2 id={`sec-${id}`} className="type-title text-text-1">
           {title}
         </h2>
         {science ? <EvidenceLink topic={science} about={title.toLowerCase()} /> : null}
       </div>
       {detail ? (
-        <p className="mb-3 mt-0.5 text-sm text-faint">{detail}</p>
+        <p className="type-meta mt-0.5 mb-3 line-clamp-2 text-text-2">{detail}</p>
       ) : (
         <div className="mb-3" />
       )}
@@ -318,21 +326,26 @@ function Tile({
   tone,
 }: {
   label: string;
-  value: string;
+  /** Null (or zero where zero means nothing yet) shows "None yet". */
+  value: string | null;
   detail?: string;
   tone?: 'up' | 'down';
 }) {
   return (
-    <div className="rounded-2xl bg-surface-2 p-4">
-      <dt className="text-sm text-faint">{label}</dt>
-      <dd className="mt-1 font-display text-[1.35rem] font-bold leading-none">{value}</dd>
+    <div className="rounded-panel border border-border bg-surface p-4">
+      <dt className="type-meta text-text-2">{label}</dt>
+      {value === null ? (
+        <dd className="type-headline mt-1.5 text-text-2">None yet</dd>
+      ) : (
+        <dd className="type-stat mt-1 text-text-1">{value}</dd>
+      )}
       {detail ? (
-        <dd
-          className={cn(
-            'tabular mt-1.5 text-xs',
-            tone === 'up' ? 'text-accent-text' : tone === 'down' ? 'text-warn' : 'text-faint',
-          )}
-        >
+        <dd className="type-meta tabular mt-1 flex items-center gap-1 text-text-2">
+          {tone === 'up' ? (
+            <ArrowUpRight className="size-4 shrink-0" aria-hidden />
+          ) : tone === 'down' ? (
+            <ArrowDownRight className="size-4 shrink-0" aria-hidden />
+          ) : null}
           {detail}
         </dd>
       ) : null}
@@ -348,20 +361,24 @@ function Summary({ model, unit }: { model: ProgressModel; unit: WeightUnit }) {
       : null;
   const working = volume.periods.reduce((n, p) => n + p.workingSets, 0);
   return (
-    <dl className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
+    <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Tile
         label="Workouts"
         value={String(consistency.total)}
         detail={
           consistency.perWeek !== null
-            ? `${consistency.perWeek.toFixed(1)} per week`
-            : 'Too short for a weekly rate'
+            ? `${formatNumber(consistency.perWeek)} per week`
+            : `Needs ${FREQUENCY_MIN_DAYS} days`
         }
       />
-      <Tile label="Working sets" value={String(working)} detail="Warm-ups excluded" />
+      <Tile
+        label="Working sets"
+        value={working > 0 ? String(working) : null}
+        detail="Warm-ups excluded"
+      />
       <Tile
         label={`Volume load (${unit})`}
-        value={volume.totalKg > 0 ? formatCompact(toDisplayWeight(volume.totalKg, unit)) : '0'}
+        value={volume.totalKg > 0 ? formatCompact(toDisplayWeight(volume.totalKg, unit)) : null}
         detail={
           volChange !== null
             ? `${formatSignedPercent(volChange)} vs previous ${model.window.days} days`
@@ -375,8 +392,12 @@ function Summary({ model, unit }: { model: ProgressModel; unit: WeightUnit }) {
       />
       <Tile
         label="Records"
-        value={String(model.records.length)}
-        detail={`${pluralize(new Set(model.records.map((r) => r.exerciseId)).size, 'exercise')}`}
+        value={model.records.length > 0 ? String(model.records.length) : null}
+        detail={
+          model.records.length > 0
+            ? pluralize(new Set(model.records.map((r) => r.exerciseId)).size, 'exercise')
+            : undefined
+        }
       />
     </dl>
   );
@@ -388,12 +409,7 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
   const xFmt = (x: number) => formatDayMonth(new Date(x));
   const xLong = (x: number) => formatShortDate(new Date(x));
   return (
-    <Section
-      id="strength"
-      title="Strength"
-      science="e1rm"
-      detail={s ? `${s.name}, best set each session.` : undefined}
-    >
+    <Section id="strength" title="Strength" science="e1rm" detail={undefined}>
       {!s ? (
         <ChartEmpty height={160}>
           No weighted exercises in this period. Strength charts need sets logged with a load.
@@ -402,18 +418,9 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
           <Card className="min-w-0 p-4 sm:p-5">
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="font-semibold">Estimated 1RM ({unit})</h3>
+              <h3 className="type-headline text-text-1">Estimated 1RM ({unit})</h3>
               {s.e1rmChange ? (
-                <span
-                  className={cn(
-                    'tabular text-sm font-semibold',
-                    s.e1rmChange.fraction > 0
-                      ? 'text-accent-text'
-                      : s.e1rmChange.fraction < 0
-                        ? 'text-warn'
-                        : 'text-muted',
-                  )}
-                >
+                <span className="type-meta tabular font-semibold text-text-2">
                   {Math.abs(s.e1rmChange.fraction) < 0.0005
                     ? 'No change in this period'
                     : `${formatSignedPercent(s.e1rmChange.fraction, 1)} in this period`}
@@ -460,7 +467,7 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
                     : 'Not enough sets of 12 reps or fewer in this period for a trend.'}
               </ChartEmpty>
             )}
-            <p className="mt-2 text-xs text-faint">
+            <p className="type-meta mt-2 text-text-2">
               Brzycki up to 5 reps, Epley above, reps in reserve counted, sets of 12 reps or fewer.
               An estimate, not a lift you performed.
             </p>
@@ -468,7 +475,7 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
 
           <div className="grid min-w-0 gap-4">
             <Card className="min-w-0 p-4 sm:p-5">
-              <h3 className="mb-2 font-semibold">Top set load ({unit})</h3>
+              <h3 className="type-headline mb-2 text-text-1">Top set load ({unit})</h3>
               {s.points.length >= 2 ? (
                 <LineChart
                   label={`Heaviest working load for ${s.name} per session, in ${unit}`}
@@ -496,7 +503,7 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
               )}
             </Card>
             <Card className="min-w-0 p-4 sm:p-5">
-              <h3 className="mb-2 font-semibold">Reps at the top load</h3>
+              <h3 className="type-headline mb-2 text-text-1">Reps at the top load</h3>
               {s.points.length >= 2 ? (
                 <BarChart
                   label={`Reps done at the heaviest load each session for ${s.name}`}
@@ -517,14 +524,14 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
           </div>
 
           <Card className="p-4 sm:p-5 lg:col-span-2">
-            <h3 className="font-semibold">Relative strength</h3>
+            <h3 className="type-headline text-text-1">Relative strength</h3>
             {s.relativeStrength ? (
               <p className="mt-1">
-                <span className="tabular font-display text-[1.35rem] font-bold">
-                  {s.relativeStrength.ratio.toFixed(2)}×
+                <span className="type-stat tabular text-text-1">
+                  {s.relativeStrength.ratio.toFixed(2)}
                 </span>{' '}
-                <span className="text-muted">body weight</span>
-                <span className="mt-1 block text-sm text-faint">
+                <span className="type-meta text-text-2">× body weight</span>
+                <span className="type-meta mt-1 block text-text-2">
                   Estimated 1RM {formatWeight(s.relativeStrength.e1rm, unit)} ÷ body weight{' '}
                   {formatWeight(s.relativeStrength.bodyKg, unit)} on{' '}
                   {formatShortDate(s.relativeStrength.date)}. Useful for tracking yourself over
@@ -532,14 +539,11 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
                 </span>
               </p>
             ) : (
-              <p className="mt-1 text-sm text-muted">
-                Needs a weigh-in on or before your latest {s.name} session.{' '}
-                <Link
-                  to="/body"
-                  className="font-medium text-accent-text underline-offset-4 hover:underline"
-                >
+              <p className="type-meta mt-1 flex flex-wrap items-center gap-x-2 text-text-2">
+                Needs a weigh-in on or before your latest {s.name} session.
+                <TextLink to="/body" small chevron>
                   Add one
-                </Link>
+                </TextLink>
               </p>
             )}
           </Card>
@@ -561,7 +565,7 @@ function VolumeSection({ model, unit }: { model: ProgressModel; unit: WeightUnit
     >
       <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
         <Card className="p-4 sm:p-5">
-          <h3 className="mb-2 font-semibold">
+          <h3 className="type-headline mb-2 text-text-1">
             Volume load per {per} ({unit})
           </h3>
           {model.volume.totalKg > 0 ? (
@@ -577,15 +581,15 @@ function VolumeSection({ model, unit }: { model: ProgressModel; unit: WeightUnit
                 highlight: p.period.current,
                 note: `${p.workingSets} working sets`,
               }))}
-              baseColor="var(--chart-1)"
-              color="var(--chart-2)"
+              baseColor="var(--border-strong)"
+              color="var(--lime)"
             />
           ) : (
             <ChartEmpty height={200}>No weighted working sets in this period.</ChartEmpty>
           )}
         </Card>
         <Card className="p-4 sm:p-5">
-          <h3 className="mb-3 font-semibold">By exercise ({unit})</h3>
+          <h3 className="type-headline mb-3 text-text-1">By exercise ({unit})</h3>
           {top.length > 0 ? (
             <BarChart
               orientation="horizontal"
@@ -601,7 +605,7 @@ function VolumeSection({ model, unit }: { model: ProgressModel; unit: WeightUnit
               }))}
             />
           ) : (
-            <p className="text-sm text-muted">No weighted working sets in this period.</p>
+            <EmptyBox>No weighted working sets in this period.</EmptyBox>
           )}
         </Card>
       </div>
@@ -610,54 +614,118 @@ function VolumeSection({ model, unit }: { model: ProgressModel; unit: WeightUnit
 }
 
 function MusclesSection({ model }: { model: ProgressModel }) {
-  const { workload, weeks, recency } = model.muscles;
+  const { workload, previous, weeks, recency } = model.muscles;
   const perWeek = weeks >= 2;
-  const rows = [...workload].sort((a, b) => b.weighted - a.weighted);
-  const value = (w: (typeof workload)[number]) => (perWeek ? w.weighted / weeks : w.weighted);
+  const value = (w: { weighted: number }) => (perWeek ? w.weighted / weeks : w.weighted);
+  const previousBy = new Map((previous ?? []).map((w) => [w.muscle, value(w)]));
+  const trained = [...workload]
+    .filter((w) => w.weighted > 0)
+    .sort((x, y) => y.weighted - x.weighted);
+  const untrained = workload.filter((w) => w.weighted === 0);
+  // One fixed scale for every muscle so bars compare honestly (D4).
+  const scaleMax = Math.max(MUSCLE_SCALE_MIN, ...trained.map(value));
+  const versus = model.range === '7d' ? 'last week' : `previous ${model.window.days} days`;
   return (
     <Section
       id="muscles"
       title="Sets per muscle group"
       science="muscles"
-      detail={`Working sets: 1 for the primary muscle, 0.5 for each secondary muscle${perWeek ? ', averaged per week' : ''}.`}
+      detail={`Hard working sets${perWeek ? ' per week' : ''}. Direct sets count 1, supporting sets count 0.5.`}
     >
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] [&>*]:min-w-0">
         <Card className="p-4 sm:p-5">
-          {rows.some((w) => w.weighted > 0) ? (
-            <BarChart
-              orientation="horizontal"
-              categoryName="Muscle group"
-              label={
-                perWeek
-                  ? 'Weighted working sets per week by muscle group'
-                  : 'Weighted working sets by muscle group'
-              }
-              valueName={perWeek ? 'Sets per week' : 'Sets'}
-              formatValue={(v) => (Math.round(v * 10) / 10).toLocaleString('en-GB')}
-              bars={rows.map((w) => ({
-                key: w.muscle,
-                label: MUSCLE_LABELS[w.muscle],
-                value: value(w),
-                note: `${w.direct} direct, ${w.indirect} as secondary`,
-              }))}
-            />
+          {trained.length > 0 ? (
+            <>
+              <ul className="flex flex-col gap-3" aria-label="Sets per muscle group">
+                {trained.map((w) => {
+                  const v = value(w);
+                  const before = previousBy.get(w.muscle);
+                  const change = before === undefined ? null : v - before;
+                  return (
+                    <li key={w.muscle}>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="type-body font-medium text-text-1">
+                          {MUSCLE_LABELS[w.muscle]}
+                        </span>
+                        <span className="tabular flex items-baseline gap-2">
+                          {change !== null && Math.abs(change) >= 0.05 ? (
+                            <span className="type-meta text-text-2">
+                              {change > 0 ? '+' : '−'}
+                              {formatNumber(Math.abs(change))} vs {versus}
+                            </span>
+                          ) : null}
+                          <span className="type-headline text-text-1">{formatNumber(v)}</span>
+                        </span>
+                      </div>
+                      <div
+                        className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-track"
+                        aria-hidden
+                      >
+                        <div
+                          className="h-full rounded-full bg-lime"
+                          style={{ width: `${Math.min(100, (v / scaleMax) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="sr-only">
+                        {w.direct} direct, {w.indirect} as a supporting muscle
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {untrained.length > 0 ? (
+                <div className="mt-4">
+                  <p className="type-meta mb-2 text-text-2">Not trained yet</p>
+                  <ul className="flex flex-wrap gap-1.5">
+                    {untrained.map((w) => (
+                      <li
+                        key={w.muscle}
+                        className="type-meta inline-flex h-7 items-center rounded-full bg-surface-2 px-3 text-text-2"
+                      >
+                        {MUSCLE_LABELS[w.muscle]}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              <p className="type-meta mt-4 text-text-2">
+                Bars share one scale, full at {formatNumber(scaleMax)} sets
+                {perWeek ? ' a week' : ''}. More hard sets tend to bring more growth, with smaller
+                returns as the total climbs; no single number is right.
+              </p>
+              <ChartTable
+                caption="Sets per muscle group"
+                columns={[
+                  'Muscle group',
+                  perWeek ? 'Sets per week' : 'Sets',
+                  'Direct',
+                  'Supporting',
+                ]}
+                rows={trained.map((w) => [
+                  MUSCLE_LABELS[w.muscle],
+                  formatNumber(value(w)),
+                  String(w.direct),
+                  String(w.indirect),
+                ])}
+              />
+            </>
           ) : (
-            <p className="text-sm text-muted">No working sets in this period.</p>
+            <EmptyBox>No working sets in this period.</EmptyBox>
           )}
         </Card>
         <Card className="p-4 sm:p-5">
-          <h3 className="font-semibold">Last trained directly</h3>
-          <p className="mb-2 text-xs text-faint">
+          <h3 className="type-headline text-text-1">Last trained directly</h3>
+          <p className="type-meta mb-2 text-text-2">
             Days since a working set where it was the primary muscle. A record of time passed, not a
             recovery score.
           </p>
-          <ul className="divide-y divide-line text-sm">
+          <ul className="divide-y-[0.5px] divide-divider">
             {[...recency]
               .sort((a, b) => (a.daysSince ?? 9999) - (b.daysSince ?? 9999))
               .map((r) => (
-                <li key={r.muscle} className="flex justify-between py-1.5">
-                  <span>{MUSCLE_LABELS[r.muscle]}</span>
-                  <span className="tabular text-muted">
+                <li key={r.muscle} className="flex min-h-11 items-center justify-between gap-3">
+                  <span className="type-body text-text-1">{MUSCLE_LABELS[r.muscle]}</span>
+                  <span className="type-meta tabular text-text-2">
                     {r.daysSince === null
                       ? 'Not yet'
                       : r.daysSince === 0
@@ -683,7 +751,7 @@ function ConsistencySection({ model }: { model: ProgressModel }) {
     <Section id="consistency" title="Consistency" science="frequency">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] [&>*]:min-w-0">
         <Card className="p-4 sm:p-5">
-          <h3 className="mb-2 font-semibold">Workouts per {per}</h3>
+          <h3 className="type-headline mb-2 text-text-1">Workouts per {per}</h3>
           <BarChart
             label={`Workouts per ${per}`}
             valueName="Workouts"
@@ -695,44 +763,42 @@ function ConsistencySection({ model }: { model: ProgressModel }) {
               value: p.workouts,
               highlight: p.period.current,
             }))}
-            baseColor="var(--chart-1)"
-            color="var(--chart-2)"
+            baseColor="var(--border-strong)"
+            color="var(--lime)"
           />
         </Card>
         <Card className="flex flex-col gap-4 p-4 sm:p-5">
           <div>
-            <h3 className="font-semibold">Adherence</h3>
+            <h3 className="type-headline text-text-1">Adherence</h3>
             {a.rate !== null ? (
               <>
-                <p className="mt-1 font-display text-[1.35rem] font-bold leading-none">
-                  {Math.round(a.rate * 100)}%
-                </p>
-                <p className="mt-1 text-sm text-muted">
-                  {a.completed} of {pluralize(a.planned, 'planned session')} completed. Planned days
+                <p className="type-stat mt-1 text-text-1">{Math.round(a.rate * 100)}%</p>
+                <p className="type-meta mt-1 text-text-2">
+                  {a.completed} of {a.planned} planned, last {model.window.days} days. Planned days
                   come from your active routine.
                 </p>
               </>
             ) : (
-              <p className="mt-1 text-sm text-muted">
-                Shown when your active routine has planned weekdays in this period.{' '}
-                <Link to="/routines" className="font-medium text-accent-text">
+              <p className="type-meta mt-1 flex flex-wrap items-center gap-x-2 text-text-2">
+                Shown when your active routine has planned weekdays in this period.
+                <TextLink to="/routines" small chevron>
                   Set weekdays
-                </Link>
+                </TextLink>
               </p>
             )}
           </div>
           <div>
-            <h3 className="font-semibold">Frequency</h3>
-            <p className="mt-1 text-sm text-muted">
+            <h3 className="type-headline text-text-1">Frequency</h3>
+            <p className="type-meta mt-1 text-text-2">
               {consistency.perWeek !== null
-                ? `${consistency.perWeek.toFixed(1)} workouts per week`
-                : COPY.frequencyEmpty}
-              {consistency.perMonth !== null
-                ? `, ${consistency.perMonth.toFixed(1)} per month`
-                : ''}
-              .{' '}
+                ? `${formatNumber(consistency.perWeek)} workouts per week${
+                    consistency.perMonth !== null
+                      ? `, ${formatNumber(consistency.perMonth)} per month`
+                      : ''
+                  }.`
+                : COPY.frequencyEmpty}{' '}
               {consistency.minutes > 0
-                ? `${Math.round(consistency.minutes / 60)} hours of training in total.`
+                ? `${formatDurationSummary(consistency.minutes)} trained so far.`
                 : ''}
             </p>
           </div>
@@ -756,7 +822,7 @@ function BodySection({ model, unit }: { model: ProgressModel; unit: WeightUnit }
                 {
                   id: 'raw',
                   label: 'Weigh-in',
-                  color: 'var(--chart-2)',
+                  color: 'var(--chart-1)',
                   style: 'dots',
                   points: points.map((p) => ({
                     x: p.date.getTime(),
@@ -766,7 +832,7 @@ function BodySection({ model, unit }: { model: ProgressModel; unit: WeightUnit }
                 {
                   id: 'avg',
                   label: `${ROLLING_WINDOW_DAYS}-day average`,
-                  color: 'var(--chart-1)',
+                  color: 'var(--chart-2)',
                   style: 'line',
                   points: points
                     .filter((p) => p.averageKg !== null)
@@ -777,19 +843,18 @@ function BodySection({ model, unit }: { model: ProgressModel; unit: WeightUnit }
               formatX={(x) => formatDayMonth(new Date(x))}
               formatXLong={(x) => formatShortDate(new Date(x))}
             />
-            <p className="mt-2 text-sm text-muted">
+            <p className="type-meta mt-2 text-text-2">
               {trend
                 ? `The ${ROLLING_WINDOW_DAYS}-day average moved ${trend.averageChangeKg >= 0 ? '+' : '−'}${formatWeight(Math.abs(trend.averageChangeKg), unit)} over ${pluralize(trend.days, 'day')}.`
                 : 'Not enough weigh-ins for a trend in this period.'}
             </p>
           </>
         ) : (
-          <ChartEmpty height={140}>
-            {points.length === 0 ? 'No weigh-ins in this period.' : 'One weigh-in in this period.'}{' '}
-            <Link to="/body" className="font-medium text-accent-text">
-              Body metrics
-            </Link>
-          </ChartEmpty>
+          <EmptyBox>
+            {points.length === 0
+              ? 'No weigh-ins in this period.'
+              : `One weigh-in in this period: ${formatWeight(points[0]!.kg, unit)}.`}
+          </EmptyBox>
         )}
       </Card>
     </Section>
@@ -797,44 +862,111 @@ function BodySection({ model, unit }: { model: ProgressModel; unit: WeightUnit }
 }
 
 function RecordsSection({ model, unit }: { model: ProgressModel; unit: WeightUnit }) {
+  const now = new Date();
   return (
     <Section id="records" title="Records in this period" science="records">
       {model.records.length === 0 ? (
-        <p className="flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center type-meta text-text-2">
-          No records in this period. They come from beating an earlier best, so they arrive in
-          bursts.
-        </p>
+        <EmptyBox>No records in this period.</EmptyBox>
       ) : (
         <Card className="overflow-hidden">
-          <ul className="divide-y divide-line">
+          <ul className="divide-y-[0.5px] divide-divider">
             {model.records.slice(0, 12).map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <span className="min-w-0">
-                  <span className="block truncate font-semibold">{r.exerciseName}</span>
-                  <span className="flex items-center gap-1.5 text-sm text-faint">
-                    <Trophy className="size-3.5 text-accent-text" aria-hidden />
-                    {PR_LABELS[r.type]} · {formatShortDate(r.date)}
+                  <span className="type-headline block truncate text-text-1">{r.exerciseName}</span>
+                  <span className="type-meta flex items-center gap-1.5 text-text-2">
+                    <Trophy className="size-3.5" aria-hidden />
+                    {PR_LABELS[r.type]} · {formatDate(r.date, now)}
                   </span>
                 </span>
                 <span className="tabular shrink-0 text-right">
-                  <span className="block font-display text-lg font-semibold">
+                  <span className="type-headline block text-text-1">
                     {formatRecordValue(r.type, r.value, unit)}
                   </span>
-                  <span className="text-xs text-faint">
+                  <span className="type-meta text-text-2">
                     was {formatRecordValue(r.type, r.previousBest, unit)}
                   </span>
                 </span>
               </li>
             ))}
           </ul>
-          <Link
-            to="/records"
-            className="block border-t border-line px-4 py-3 text-sm font-medium text-accent-text hover:bg-surface-2"
-          >
-            All records
-          </Link>
+          <div className="border-t-[0.5px] border-divider px-4 py-2">
+            <TextLink to="/records" chevron>
+              All records
+            </TextLink>
+          </div>
         </Card>
       )}
     </Section>
+  );
+}
+
+/** Empty chart or list: 88 high, surface-2, one centred line in Meta --text-2. */
+function EmptyBox({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="type-meta flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center text-text-2">
+      {children}
+    </p>
+  );
+}
+
+const JUMPS = [
+  { id: 'strength', label: 'Strength' },
+  { id: 'volume', label: 'Volume' },
+  { id: 'balance', label: 'Balance' },
+  { id: 'consistency', label: 'Consistency' },
+  { id: 'body', label: 'Body' },
+] as const;
+
+/** Sticky section bar (Part 4): tap to jump, the section in view is selected. */
+function JumpBar() {
+  const [current, setCurrent] = useState<string>(JUMPS[0].id);
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (visible) setCurrent(visible.target.id);
+      },
+      { rootMargin: '-120px 0px -55% 0px' },
+    );
+    const els = JUMPS.map((j) => document.getElementById(j.id)).filter(
+      (el): el is HTMLElement => el !== null,
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+  return (
+    <nav
+      aria-label="Progress sections"
+      className="sticky top-[calc(2.75rem+env(safe-area-inset-top))] z-20 -mx-4 bg-bg px-4 py-2 tab:-mx-6 tab:px-6 lg:top-0 lg:-mx-8 lg:px-8"
+    >
+      <ul className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
+        {JUMPS.map((j) => (
+          <li key={j.id}>
+            <a
+              href={`#${j.id}`}
+              aria-current={current === j.id ? 'true' : undefined}
+              onClick={(e) => {
+                e.preventDefault();
+                setCurrent(j.id);
+                const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                document
+                  .getElementById(j.id)
+                  ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+              }}
+              className={cn(
+                'pressable chrome type-meta inline-flex h-9 items-center rounded-full px-4 font-semibold whitespace-nowrap',
+                current === j.id ? 'bg-text-1 text-bg' : 'bg-surface-2 text-text-1',
+              )}
+            >
+              {j.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }

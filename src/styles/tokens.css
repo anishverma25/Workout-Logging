@@ -133,9 +133,10 @@
   --tile-rose: var(--surface-2);
   --tile-graphite: var(--surface-2);
   --tile-plum: var(--surface-2);
-  --chart-1: #8bbd12;
-  --chart-2: #6d89ee;
-  --chart-grid: rgb(255 255 255 / 0.08);
+  /* Charts (Part 4): current data lime, comparison series white 60%, no blue anywhere. */
+  --chart-1: var(--lime);
+  --chart-2: rgb(255 255 255 / 0.6);
+  --chart-grid: var(--grid);
 
   /* Plate colours in the plate calculator follow the real competition plates, so a plate can
      be recognised at a glance. The one place colour carries meaning outside the accent. */

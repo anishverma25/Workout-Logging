@@ -75,10 +75,7 @@ export function PhotosSection() {
   return (
     <section aria-labelledby="photos-title" className="mt-9">
       <div className="mb-2.5 flex items-end justify-between gap-3">
-        <h2
-          id="photos-title"
-          className="font-display text-[1.3rem] font-semibold leading-tight tracking-tight"
-        >
+        <h2 id="photos-title" className="type-title text-text-1">
           Progress photos
         </h2>
         <SegmentedControl label="Pose" value={pose} onChange={setPose} options={POSES} />

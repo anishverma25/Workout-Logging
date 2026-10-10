@@ -12,7 +12,7 @@ export function MuscleMark({ exercise, className }: { exercise: Exercise; classN
     <span
       aria-hidden
       className={cn(
-        'flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 font-display text-[0.95rem] font-semibold uppercase tracking-wide text-muted',
+        'type-caption flex size-10 shrink-0 items-center justify-center rounded-tile bg-surface-2 font-semibold uppercase tracking-wide text-text-2',
         className,
       )}
     >
@@ -38,22 +38,21 @@ export function ExerciseRow({ exercise, onSelect, selected, selectable, trailing
       onClick={onSelect}
       aria-pressed={selectable ? !!selected : undefined}
       className={cn(
-        'flex min-h-16 w-full items-center gap-3 rounded-2xl px-2 py-2 text-left transition-colors hover:bg-surface-2',
-        selected && 'bg-accent-soft hover:bg-accent-soft',
+        'pressable chrome flex min-h-16 w-full items-center gap-3 rounded-nested px-2 py-2 text-left hover:bg-surface-2',
+        selected && 'bg-surface-2',
       )}
     >
-      <MuscleMark
-        exercise={exercise}
-        className={selected ? 'bg-accent text-accent-ink' : undefined}
-      />
+      <MuscleMark exercise={exercise} className={selected ? 'bg-text-1 text-bg' : undefined} />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="truncate font-semibold">{exercise.name}</span>
-          {exercise.isCustom ? <Badge tone="accent">Yours</Badge> : null}
+          <span className="type-headline truncate text-text-1">{exercise.name}</span>
+          {exercise.isCustom ? <Badge>Yours</Badge> : null}
         </span>
-        <span className="mt-0.5 block truncate text-sm text-faint">{exerciseMeta(exercise)}</span>
+        <span className="type-meta mt-0.5 block truncate text-text-2">
+          {exerciseMeta(exercise)}
+        </span>
         {shares ? (
-          <span className="mt-0.5 block truncate text-xs font-medium text-muted tabular">
+          <span className="type-meta tabular block truncate text-text-2">
             {sharesSummary(shares)}
           </span>
         ) : null}
@@ -63,7 +62,7 @@ export function ExerciseRow({ exercise, onSelect, selected, selectable, trailing
           aria-hidden
           className={cn(
             'flex size-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
-            selected ? 'border-accent bg-accent text-accent-ink' : 'border-line-strong',
+            selected ? 'border-lime bg-lime text-on-lime' : 'border-border-strong',
           )}
         >
           {selected ? <Check className="size-4" strokeWidth={3} /> : null}

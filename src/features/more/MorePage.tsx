@@ -23,7 +23,14 @@ export function MorePage() {
         {GROUPS.map((g) => (
           <ListGroup key={g.key} title={g.title}>
             {SECONDARY_NAV.filter((i) => i.group === g.key && i.to !== '/profile').map((i) => (
-              <ListRow key={i.to} to={i.to} icon={i.icon} tone={i.tone} title={i.label} />
+              <ListRow
+                key={i.to}
+                to={i.to}
+                icon={i.icon}
+                tone={i.tone}
+                title={i.label}
+                pro={i.to === '/pro'}
+              />
             ))}
             {g.key === 'app' ? (
               <ListRow to="/welcome" icon={Sparkles} tone="lime" title="Take the tour" />
@@ -49,31 +56,31 @@ function ProfileCard() {
   return (
     <Link
       to="/profile"
-      className="flex items-center gap-4 rounded-[var(--radius-card)] bg-surface p-4 transition-colors active:bg-surface-2"
+      className="pressable chrome flex items-center gap-4 rounded-panel border border-border bg-surface p-4"
     >
       <span
         aria-hidden
-        className="flex size-14 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 font-display text-xl font-semibold text-white"
+        className="flex size-14 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 text-[1.0625rem] font-semibold text-text-1"
       >
         {initials || '?'}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-display text-[1.25rem] font-semibold tracking-tight">
+        <span className="type-headline block truncate text-text-1">
           {profile?.displayName ?? 'Set up your profile'}
         </span>
-        <span className="block truncate text-sm text-faint">
+        <span className="type-meta block truncate text-text-2">
           {profile
-            ? `${GOAL_LABEL[profile.goal]}, ${EXPERIENCE_LABEL[profile.experience].toLowerCase()}`
+            ? `${GOAL_LABEL[profile.goal]} · ${EXPERIENCE_LABEL[profile.experience]}`
             : 'Goal, experience and body details'}
         </span>
         {founding ? (
-          <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent-text">
+          <span className="type-caption mt-1.5 inline-flex h-6 items-center gap-1 rounded-full bg-surface-2 px-2.5 font-semibold text-text-2">
             <Crown className="size-3.5" aria-hidden />
             Founding member
           </span>
         ) : null}
       </span>
-      <ChevronRight className="size-4 shrink-0 text-faint/70" aria-hidden />
+      <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
     </Link>
   );
 }

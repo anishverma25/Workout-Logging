@@ -14,6 +14,7 @@ import {
 import type { Exercise } from '@/domain/models/schemas';
 import { formatRelativeDay } from '@/lib/dates';
 import { pluralize } from '@/lib/format';
+import { TextLink } from '@/components/kit';
 import { CustomExerciseSheet } from './CustomExerciseSheet';
 import { ExerciseDetailSheet } from './ExerciseDetailSheet';
 import { ExerciseFilterChips, SearchField } from './ExerciseFilters';
@@ -52,7 +53,7 @@ export function ExercisesPage() {
           onSelect={() => setOpenId(e.id)}
           trailing={
             used ? (
-              <span className="hidden shrink-0 text-sm text-faint sm:inline">
+              <span className="type-meta hidden shrink-0 text-text-2 sm:inline">
                 {formatRelativeDay(used)}
               </span>
             ) : undefined
@@ -114,31 +115,31 @@ export function ExercisesPage() {
 
       {data && !filtering && recents.length > 0 ? (
         <section aria-labelledby="recent-exercises" className="mt-7">
-          <h2 id="recent-exercises" className="mb-1 px-2 font-display text-xl font-semibold">
+          <h2 id="recent-exercises" className="type-title mb-1 px-2 text-text-1">
             Recently used
           </h2>
-          <ul className="grid sm:grid-cols-2 sm:gap-x-4">{recents.map(row)}</ul>
+          <ul className="grid grid-cols-[minmax(0,1fr)] sm:grid-cols-2 sm:gap-x-4 [&>li]:min-w-0">
+            {recents.map(row)}
+          </ul>
         </section>
       ) : null}
 
       {data && !(filters.source === 'custom' && customCount === 0) ? (
         <section aria-labelledby="all-exercises" className="mt-7">
           <div className="mb-1 flex items-baseline justify-between px-2">
-            <h2 id="all-exercises" className="font-display text-xl font-semibold">
+            <h2 id="all-exercises" className="type-title text-text-1">
               {filtering ? pluralize(results.length, 'match', 'matches') : 'All exercises'}
             </h2>
             {filtering ? (
-              <button
-                type="button"
-                onClick={() => setFilters(EMPTY_FILTERS)}
-                className="text-sm font-medium text-accent-text underline-offset-4 hover:underline"
-              >
+              <TextLink small onClick={() => setFilters(EMPTY_FILTERS)}>
                 Clear filters
-              </button>
+              </TextLink>
             ) : null}
           </div>
           {results.length > 0 ? (
-            <ul className="grid sm:grid-cols-2 sm:gap-x-4">{results.map(row)}</ul>
+            <ul className="grid grid-cols-[minmax(0,1fr)] sm:grid-cols-2 sm:gap-x-4 [&>li]:min-w-0">
+              {results.map(row)}
+            </ul>
           ) : (
             <div className="px-2 py-8">
               <p className="text-muted">Nothing matches those filters.</p>
@@ -171,6 +172,17 @@ export function ExercisesPage() {
         initialName={filters.query.trim()}
         onSaved={(e) => setOpenId(e.id)}
       />
+      {/* The primary action on phones: lime, above the tab bar and the safe area. */}
+      <Button
+        size="lg"
+        icon={<Plus className="size-5" aria-hidden />}
+        onClick={() => setCreating(true)}
+        className="fixed right-4 bottom-[calc(3.0625rem+1rem+env(safe-area-inset-bottom))] z-30 rounded-full sm:hidden"
+        aria-label="New exercise"
+      >
+        New
+      </Button>
+      <div className="h-22 sm:hidden" aria-hidden />
     </>
   );
 }

@@ -320,7 +320,8 @@ export const SCIENCE: TopicGroup[] = [
           </>,
           <>
             More volume kept producing more growth across the range studied, with strength
-            flattening sooner than size. So the app shows your count and trend, not one ideal
+            flattening sooner than size. So the app shows your count and its change against the
+            previous period, on one shared scale for every muscle, with no target range and no ideal
             number.
           </>,
           <>
@@ -477,7 +478,9 @@ export const SCIENCE: TopicGroup[] = [
           </>,
           <>
             Session load is Foster&apos;s session RPE method, shown when you rate a finished
-            workout. Push to pull outside 0.67 to 1.5 is flagged once a pair has 20 sets.
+            workout. The Balance cards show each pair&apos;s sets and their ratio, with no verdict:
+            no study sets a right ratio for everyone. Only the weekly check-in suggests extra work,
+            when push to pull is outside 0.67 to 1.5 once a pair has 20 sets.
           </>,
         ],
         limits: 'A prompt to look at your training, not an injury prediction.',

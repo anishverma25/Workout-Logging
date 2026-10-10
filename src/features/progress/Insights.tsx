@@ -1,5 +1,5 @@
 import { Check, X } from 'lucide-react';
-import { Link } from 'react-router';
+import { TextLink } from '@/components/kit';
 import { IconButton } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
@@ -16,8 +16,7 @@ export function InsightList({ insights }: { insights: Insight[] }) {
   if (insights.length === 0) {
     return (
       <p className="flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center type-meta text-text-2">
-        Nothing stands out in this period. Insights appear only when the data clearly shows
-        something, so a quiet list is normal.
+        Nothing stands out in this period.
       </p>
     );
   }
@@ -27,20 +26,20 @@ export function InsightList({ insights }: { insights: Insight[] }) {
         const tone = INSIGHT_TONE[insight.tone];
         const Icon = tone.icon;
         return (
-          <li key={insight.id} className="rounded-[var(--radius-card)] bg-surface p-4">
+          <li key={insight.id} className="rounded-panel border border-border bg-surface p-4">
             <div className="flex gap-3">
               <span
                 className={cn(
-                  'flex size-9 shrink-0 items-center justify-center rounded-full',
+                  'flex size-9 shrink-0 items-center justify-center rounded-tile',
                   tone.ring,
                 )}
               >
-                <Icon className="size-[1.1rem]" aria-hidden />
+                <Icon className="size-5" aria-hidden />
                 <span className="sr-only">{tone.label}:</span>
               </span>
               <div className="min-w-0">
-                <p className="font-semibold leading-snug">{insight.title}</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-faint">{insight.basis}</p>
+                <p className="type-body font-medium text-text-1">{insight.title}</p>
+                <p className="type-meta mt-1 text-text-2">{insight.basis}</p>
               </div>
             </div>
           </li>
@@ -69,23 +68,20 @@ export function Suggestions({
   return (
     <ul className="grid gap-3 md:grid-cols-2">
       {shown.map((s) => (
-        <li
-          key={s.id}
-          className="rounded-[var(--radius-card)] border border-accent-text/30 bg-surface p-4"
-        >
+        <li key={s.id} className="rounded-panel border border-border bg-surface p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-text">
-                <Check className="size-[1.1rem]" aria-hidden />
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-tile bg-surface-2 text-text-2">
+                <Check className="size-5" aria-hidden />
               </span>
               <div className="min-w-0">
-                <p className="font-semibold leading-snug">
+                <p className="type-body font-medium text-text-1">
                   {s.exerciseName}: consider increasing the load slightly next session.
                 </p>
-                <p className="tabular mt-1.5 text-sm leading-relaxed text-faint">
+                <p className="type-meta tabular mt-1 text-text-2">
                   {formatRelativeDayInline(s.date).replace(/^./, (c) => c.toUpperCase())} you did{' '}
                   {s.sets
-                    .map((set) => `${formatWeightValue(set.weightKg, unit)}×${set.reps}`)
+                    .map((set) => `${formatWeightValue(set.weightKg, unit)} × ${set.reps}`)
                     .join(', ')}{' '}
                   against a target of {s.target.sets} ×{' '}
                   {formatRepRange(s.target.repMin, s.target.repMax)}
@@ -95,12 +91,9 @@ export function Suggestions({
                     : 'Every set reached the top of the range at the planned effort.'}{' '}
                   Your routine is not changed.
                 </p>
-                <Link
-                  to={`/history/${s.workoutId}`}
-                  className="mt-2 inline-block text-sm font-medium text-accent-text underline-offset-4 hover:underline"
-                >
+                <TextLink to={`/history/${s.workoutId}`} small chevron className="mt-1">
                   See that workout
-                </Link>
+                </TextLink>
               </div>
             </div>
             <IconButton

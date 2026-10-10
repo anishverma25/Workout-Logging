@@ -132,7 +132,13 @@ export interface ProgressModel {
     adherence: Adherence;
     minutes: number;
   };
-  muscles: { workload: MuscleWorkload[]; weeks: number; recency: MuscleRecency[] };
+  muscles: {
+    workload: MuscleWorkload[];
+    /** The previous comparable period, when history covers all of it. */
+    previous: MuscleWorkload[] | null;
+    weeks: number;
+    recency: MuscleRecency[];
+  };
   body: { points: BodyWeightPoint[]; trend: BodyWeightTrend | null };
   records: PersonalRecord[];
   insights: Insight[];
@@ -557,7 +563,12 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
           : n;
       }, 0),
     },
-    muscles: { workload, weeks, recency: muscleRecency(sessions, now) },
+    muscles: {
+      workload,
+      previous: previousCovered ? muscleWorkload(inPrevious) : null,
+      weeks,
+      recency: muscleRecency(sessions, now),
+    },
     body: (() => {
       const points = bodyWeightSeries(data.bodyWeights).filter(
         (p) => p.date >= window.start && p.date < window.end,

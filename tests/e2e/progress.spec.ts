@@ -30,11 +30,11 @@ test('progress: ranges and exercise filter scope the whole page', async ({ page 
     .getByRole('dialog')
     .getByRole('button', { name: /^Overhead press/ })
     .click();
-  await expect(page.getByText('Overhead press, best set each session.')).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Exercise: Overhead press/ })).toBeVisible();
   await expect(page.getByRole('img', { name: /Estimated 1RM for Overhead press/ })).toBeVisible();
   // The choice survives a reload because it lives in the URL.
   await page.reload();
-  await expect(page.getByText('Overhead press, best set each session.')).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Exercise: Overhead press/ })).toBeVisible();
 });
 
 test('progress: every chart has a table view and insights state their basis', async ({ page }) => {
@@ -43,17 +43,19 @@ test('progress: every chart has a table view and insights state their basis', as
   const tables = page.getByText('Show as table');
   await expect(tables.first()).toBeVisible();
   expect(await tables.count()).toBeGreaterThanOrEqual(6);
-  await tables.first().click();
+  // The whole summary row is the control (its touch area covers the label text).
+  await page.locator('summary', { hasText: 'Show as table' }).first().click();
   await expect(page.getByRole('table').first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Insights' })).toBeVisible();
-  await expect(page.getByText(/planned sessions/).first()).toBeVisible();
+  // Adherence is a stat, worded like Home's (D7): "4 of 5 planned, last 30 days".
+  await expect(page.getByText(/\d+ of \d+ planned, last 30 days/)).toBeVisible();
 });
 
 test('the science page explains each number with typeset formulas and sources', async ({
   page,
 }) => {
   await page.goto('/progress');
-  await page.getByRole('link', { name: /The science behind these numbers/ }).click();
+  await page.getByRole('link', { name: /How every number is calculated/ }).click();
   await expect(page).toHaveURL(/\/science$/);
   for (const name of [
     'Estimated 1RM',
@@ -77,7 +79,7 @@ test('the science page explains each number with typeset formulas and sources', 
 
   // Each Progress section links straight to its explanation.
   await page.goto('/progress');
-  await page.getByRole('link', { name: 'The science behind strength', exact: true }).click();
+  await page.getByRole('link', { name: 'About strength', exact: true }).click();
   await expect(page).toHaveURL(/\/science#e1rm$/);
   await expect(page.locator('#e1rm')).toBeInViewport();
 
@@ -89,6 +91,7 @@ test('the science page explains each number with typeset formulas and sources', 
 test('progress shows an honest empty state without data', async ({ page }) => {
   await page.goto('/settings');
   await page.getByRole('button', { name: 'Clear demo data' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Clear demo data' }).click();
   await expect(page.getByText('Demo data cleared')).toBeVisible();
   await page.goto('/progress');
   await expect(

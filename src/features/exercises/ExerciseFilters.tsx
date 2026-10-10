@@ -33,11 +33,11 @@ export function SearchField({
   return (
     <div
       className={cn(
-        'flex h-12 items-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface-2 px-3.5 transition-colors focus-within:border-accent-text',
+        'flex h-11 items-center gap-2 rounded-field bg-surface-2 px-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
         className,
       )}
     >
-      <Search className="size-4.5 shrink-0 text-faint" aria-hidden />
+      <Search className="size-5 shrink-0 text-text-2" aria-hidden />
       <input
         type="search"
         aria-label={label}
@@ -49,7 +49,7 @@ export function SearchField({
         spellCheck={false}
         enterKeyHint="search"
         onChange={(e) => onChange(e.target.value)}
-        className="h-full min-w-0 flex-1 bg-transparent text-[1rem] outline-none placeholder:text-faint [&::-webkit-search-cancel-button]:hidden"
+        className="h-full min-w-0 flex-1 bg-transparent text-[1.0625rem] text-text-1 outline-none placeholder:text-text-3 [&::-webkit-search-cancel-button]:hidden"
       />
       {value ? (
         <button
@@ -96,12 +96,12 @@ export function ExerciseFilterChips({ filters, onChange, full }: Props) {
           type="button"
           aria-expanded={expanded}
           onClick={() => setExpanded((e) => !e)}
-          className="inline-flex h-9 w-fit items-center gap-1.5 rounded-full px-1 text-sm font-semibold text-muted hover:text-text"
+          className="pressable tap-target type-meta inline-flex h-9 w-fit items-center gap-1.5 rounded-full px-1 font-medium text-text-1"
         >
           <SlidersHorizontal className="size-4" aria-hidden />
           {expanded ? 'Fewer filters' : 'More filters'}
           {extra > 0 ? (
-            <span className="tabular rounded-full bg-accent-soft px-2 text-xs leading-5 text-accent-text">
+            <span className="type-caption tabular rounded-full bg-surface-2 px-2 leading-5 text-text-1">
               {extra}
             </span>
           ) : null}

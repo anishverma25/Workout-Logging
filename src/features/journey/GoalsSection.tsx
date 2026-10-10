@@ -11,7 +11,6 @@ import { db } from '@/data/db';
 import { addGoal, deleteGoal, GoalError, updateGoal } from '@/data/repositories/goals';
 import type { GoalProgress } from '@/domain/analytics/goals';
 import type { Exercise, GoalKind, TrainingGoal } from '@/domain/models/schemas';
-import { cn } from '@/lib/cn';
 import { formatShortDate, toDateKey } from '@/lib/dates';
 import {
   formatWeightValue,
@@ -49,10 +48,7 @@ export function GoalsSection({
   return (
     <section aria-labelledby="goals-title">
       <div className="mb-2.5 flex items-end justify-between gap-3">
-        <h2
-          id="goals-title"
-          className="font-display text-[1.3rem] font-semibold leading-tight tracking-tight"
-        >
+        <h2 id="goals-title" className="type-title text-text-1">
           Goals
         </h2>
         {progress.length > 0 ? (
@@ -68,15 +64,19 @@ export function GoalsSection({
       </div>
 
       {progress.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 rounded-[var(--radius-card)] bg-surface p-5">
-          <span className="flex size-11 items-center justify-center rounded-[0.8rem] bg-[var(--tile-ember)] text-white">
+        <div className="flex flex-col items-start gap-3 rounded-panel border border-border bg-surface p-5">
+          <span className="flex size-9 items-center justify-center rounded-tile bg-surface-2 text-text-2">
             <Target className="size-5" aria-hidden />
           </span>
-          <p className="max-w-[48ch] text-sm text-muted">
+          <p className="type-meta max-w-[48ch] text-text-2">
             Set a target for a lift or your body weight, with a date if you like. The app tracks it
             from your logged sets and works out when you will get there at your current rate.
           </p>
-          <Button icon={<Plus className="size-4" aria-hidden />} onClick={() => setEditing('new')}>
+          <Button
+            variant="secondary"
+            icon={<Plus className="size-4" aria-hidden />}
+            onClick={() => setEditing('new')}
+          >
             Add a goal
           </Button>
         </div>
@@ -87,27 +87,29 @@ export function GoalsSection({
               <button
                 type="button"
                 onClick={() => setEditing(p.goal)}
-                className="block w-full rounded-[var(--radius-card)] bg-surface p-4 text-left transition-colors active:bg-surface-2"
+                className="pressable block w-full rounded-panel border border-border bg-surface p-4 text-left"
               >
                 <span className="flex items-start justify-between gap-3">
-                  <span className="font-semibold">{goalTitle(p.goal, names, unit)}</span>
+                  <span className="type-headline text-text-1">
+                    {goalTitle(p.goal, names, unit)}
+                  </span>
                   {p.reached ? (
-                    <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-accent-text">
+                    <span className="type-meta inline-flex shrink-0 items-center gap-1 font-semibold text-text-1">
                       <Trophy className="size-4" aria-hidden /> Reached
                     </span>
                   ) : p.goal.targetDate ? (
-                    <span className="shrink-0 text-sm text-faint">
+                    <span className="type-meta shrink-0 text-text-2">
                       by {formatShortDate(new Date(`${p.goal.targetDate}T12:00:00`))}
                     </span>
                   ) : null}
                 </span>
-                <span className="mt-2.5 block h-2 overflow-hidden rounded-full bg-[var(--ring-track)]">
+                <span className="mt-2.5 block h-1.5 overflow-hidden rounded-full bg-track">
                   <span
                     className="block h-full rounded-full bg-lime transition-[width] duration-700"
                     style={{ width: `${(p.fraction ?? 0) * 100}%` }}
                   />
                 </span>
-                <span className="tabular mt-1.5 flex justify-between gap-3 text-sm text-faint">
+                <span className="type-meta tabular mt-1.5 flex justify-between gap-3 text-text-2">
                   <span>
                     {p.current !== null
                       ? `Now ${formatWeightValue(p.current, unit)} ${unit}`
@@ -117,12 +119,7 @@ export function GoalsSection({
                   {p.fraction !== null ? <span>{Math.round(p.fraction * 100)}%</span> : null}
                 </span>
                 {!p.reached ? (
-                  <span
-                    className={cn(
-                      'mt-1 block text-sm',
-                      p.pace === 'behind' ? 'text-warn' : 'text-muted',
-                    )}
-                  >
+                  <span className="type-meta mt-1 block text-text-2">
                     {!projections
                       ? 'Projected date: part of Pro.'
                       : p.projected

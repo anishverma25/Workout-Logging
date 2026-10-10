@@ -1,3 +1,4 @@
+import { formatDate } from '@/lib/format';
 import { useMemo, useState } from 'react';
 import { Award, Flame, Medal, Share2, Weight, CalendarHeart, Dumbbell } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
@@ -13,7 +14,7 @@ import { monthRecap, yearRecap, type Recap } from '@/domain/analytics/recap';
 import { buildSessions } from '@/domain/analytics/sessions';
 import { weightTrend } from '@/domain/analytics/body';
 import { addDays } from '@/lib/dates';
-import { formatShortDate } from '@/lib/dates';
+
 import { useNow } from '@/lib/useNow';
 import { formatCompact } from '@/lib/format';
 import { toDisplayWeight, type WeightUnit } from '@/lib/units';
@@ -95,14 +96,11 @@ function MilestonesSection({ list }: { list: Milestone[] }) {
   const recent = [...list].reverse();
   return (
     <section aria-labelledby="milestones-title" className="mt-9">
-      <h2
-        id="milestones-title"
-        className="mb-2.5 font-display text-[1.3rem] font-semibold leading-tight tracking-tight"
-      >
+      <h2 id="milestones-title" className="type-title mb-2.5 text-text-1">
         Milestones
       </h2>
       {recent.length === 0 ? (
-        <p className="rounded-[var(--radius-card)] bg-surface p-5 text-sm text-muted">
+        <p className="type-meta flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center text-text-2">
           Your first logged session sets the baseline. Milestones follow: plate lifts, body-weight
           lifts, streaks and totals, all from your own log.
         </p>
@@ -113,16 +111,17 @@ function MilestonesSection({ list }: { list: Milestone[] }) {
             return (
               <li
                 key={m.id}
-                className="flex items-center gap-3.5 rounded-[var(--radius-card)] bg-surface p-4"
+                className="flex items-center gap-3.5 rounded-panel border border-border bg-surface p-4"
               >
                 <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime">
                   <Icon className="size-5" aria-hidden />
                 </span>
-                <span className="min-w-0">
-                  <span className="block font-semibold">{m.title}</span>
-                  <span className="block text-sm text-faint">
-                    {m.detail} {formatShortDate(m.achievedAt)}.
-                  </span>
+                <span className="min-w-0 flex-1">
+                  <span className="type-headline block text-text-1">{m.title}</span>
+                  <span className="type-meta block text-text-2">{m.detail}</span>
+                </span>
+                <span className="type-meta shrink-0 self-start text-text-2">
+                  {formatDate(m.achievedAt)}
                 </span>
               </li>
             );
@@ -146,16 +145,13 @@ function RecapsSection({
   const recaps = [year, month].filter(Boolean) as Recap[];
   return (
     <section aria-labelledby="recaps-title" className="mt-9">
-      <h2
-        id="recaps-title"
-        className="mb-2.5 font-display text-[1.3rem] font-semibold leading-tight tracking-tight"
-      >
+      <h2 id="recaps-title" className="type-title mb-2.5 text-text-1">
         Recaps
       </h2>
       {!included ? (
         <ProLock feature="recaps" />
       ) : recaps.length === 0 ? (
-        <p className="rounded-[var(--radius-card)] bg-surface p-5 text-sm text-muted">
+        <p className="type-meta flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center text-text-2">
           After your first full month of training, its recap appears here, ready to share.
         </p>
       ) : (
@@ -174,8 +170,8 @@ function RecapCard({ recap, unit }: { recap: Recap; unit: WeightUnit }) {
   const [busy, setBusy] = useState(false);
   const title = recapTitle(recap);
   return (
-    <article className="rounded-[var(--radius-card)] bg-surface p-5">
-      <h3 className="font-display text-[1.25rem] font-semibold tracking-tight">{title}</h3>
+    <article className="rounded-panel border border-border bg-surface p-5">
+      <h3 className="type-headline text-text-1">{title}</h3>
       <dl className="mt-3 grid grid-cols-3 gap-y-3">
         {[
           ['Workouts', String(recap.workouts)],
@@ -186,8 +182,8 @@ function RecapCard({ recap, unit }: { recap: Recap; unit: WeightUnit }) {
           ['Days', String(recap.days)],
         ].map(([label, value]) => (
           <div key={label}>
-            <dt className="text-xs text-faint">{label}</dt>
-            <dd className="tabular font-display text-[1.2rem] font-semibold">{value}</dd>
+            <dt className="type-meta text-text-2">{label}</dt>
+            <dd className="type-headline tabular text-text-1">{value}</dd>
           </div>
         ))}
       </dl>

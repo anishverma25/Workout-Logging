@@ -14,6 +14,8 @@ export const SECONDARY_SET_WEIGHT = 0.5;
  * effort logged is counted, since most people do not log it and working sets are usually hard.
  */
 export const HARD_SET_MAX_RIR = 4;
+/** Sets per muscle bars share one scale: at least this many sets, or the highest muscle (D4). */
+export const MUSCLE_SCALE_MIN = 20;
 
 export function isHardSet(set: { rir: number | null; rpe: number | null }): boolean {
   const rir = set.rir ?? (set.rpe !== null ? 10 - set.rpe : null);
