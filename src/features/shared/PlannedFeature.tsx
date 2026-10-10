@@ -18,7 +18,7 @@ export function PlannedFeature({ title, subtitle, icon, points, children }: Plan
   return (
     <>
       <PageHeader title={title} subtitle={subtitle} />
-      <section className="rounded-[var(--radius-card)] border border-dashed border-line-strong p-6">
+      <section className="rounded-panel border border-border bg-surface p-5">
         <div className="flex size-11 items-center justify-center rounded-2xl bg-surface-2 text-muted">
           {icon}
         </div>

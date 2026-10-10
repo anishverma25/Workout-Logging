@@ -770,17 +770,17 @@ function PlanSummary({
         <div className="mt-6 grid grid-cols-2 gap-2.5">
           <Stat
             label="Daily calories"
-            value={energy.targetKcal.toLocaleString()}
+            value={energy.targetKcal.toLocaleString('en-GB')}
             unit="kcal"
             detail={
               energy.adjustment === 0
                 ? 'Your maintenance'
-                : `Maintenance ${energy.tdee.toLocaleString()}, ${energy.adjustment > 0 ? '+' : '−'}${Math.round(Math.abs(energy.adjustment) * 100)}% for your goal`
+                : `Maintenance ${energy.tdee.toLocaleString('en-GB')}, ${energy.adjustment > 0 ? '+' : '−'}${Math.round(Math.abs(energy.adjustment) * 100)}% for your goal`
             }
           />
           <Stat
             label="Protein"
-            value={`${energy.proteinG[0].toFixed(1)}–${energy.proteinG[1].toFixed(1)}`}
+            value={`${energy.proteinG[0].toFixed(1)} to ${energy.proteinG[1].toFixed(1)}`}
             unit="g"
             detail="A day, spread over meals"
           />

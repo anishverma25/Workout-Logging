@@ -1,5 +1,13 @@
+/*
+ * The app's formatters (UI Part 2, item 8). Every number, date and duration on screen goes
+ * through these, so they read the same everywhere: en-GB grouping (10,413), at most one
+ * decimal and no trailing ".0", "to" for ranges, "×" for sets by reps.
+ */
+export * from './dates';
+export * from './numbers';
+
 export function formatInteger(value: number): string {
-  return Math.round(value).toLocaleString();
+  return Math.round(value).toLocaleString('en-GB');
 }
 
 /** Signed percentage, e.g. +6% / -3%. Values are fractions (0.06). */
@@ -9,7 +17,7 @@ export function formatSignedPercent(fraction: number, decimals = 0): string {
   const rounded = Math.round(pct * factor) / factor;
   if (rounded === 0) return '0%';
   const sign = rounded > 0 ? '+' : '−';
-  return `${sign}${Math.abs(rounded).toLocaleString(undefined, { maximumFractionDigits: decimals })}%`;
+  return `${sign}${Math.abs(rounded).toLocaleString('en-GB', { maximumFractionDigits: decimals })}%`;
 }
 
 export function formatDurationMinutes(minutes: number): string {
@@ -22,22 +30,21 @@ export function formatDurationMinutes(minutes: number): string {
 /** Thousands separators up to 100,000, then compact: 12,480 stays "12,480"; 248,000 -> "248k". */
 export function formatCompact(value: number): string {
   if (Math.abs(value) < 100_000) return formatInteger(value);
-  return `${(value / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`;
+  return `${(value / 1000).toLocaleString('en-GB', { maximumFractionDigits: 1 })}k`;
 }
 
 export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
-/** "8–12", or "8" when the range is a single number. */
+/** "8 to 12", or "8" when the range is a single number (UI rules 3.6). */
 export function formatRepRange(min: number, max: number): string {
-  return min === max ? String(min) : `${min}–${max}`;
+  return min === max ? String(min) : `${min} to ${max}`;
 }
 
-/** Rest or timer length: 45 s, 1:30, 3:00. */
+/** Rest or timer length, always minutes and seconds: 0:45, 1:30, 3:00. */
 export function formatSeconds(totalSeconds: number): string {
   const s = Math.max(0, Math.round(totalSeconds));
-  if (s < 60) return `${s} s`;
   const m = Math.floor(s / 60);
   return `${m}:${String(s % 60).padStart(2, '0')}`;
 }

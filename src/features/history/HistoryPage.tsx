@@ -1,6 +1,7 @@
+import { WorkoutRow } from '@/features/shared/WorkoutRow';
+import { workoutStats } from '@/features/shared/workoutStats';
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
-import { ChevronRight, History as HistoryIcon, SlidersHorizontal, Trophy, X } from 'lucide-react';
+import { History as HistoryIcon, SlidersHorizontal, X } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ActionList, Chips } from '@/components/ui/Fields';
@@ -17,13 +18,11 @@ import {
   type HistoryFilters,
   type HistoryRange,
 } from '@/domain/analytics/history';
-import { formatRecordValue, PR_LABELS } from '@/domain/analytics/prs';
 import { MUSCLE_LABELS } from '@/domain/models/labels';
 import { MUSCLE_GROUPS } from '@/domain/models/schemas';
-import { cn } from '@/lib/cn';
-import { addDays, formatDayMonth, formatWeekdayShort, startOfWeek } from '@/lib/dates';
-import { formatCompact, formatDurationMinutes, pluralize } from '@/lib/format';
-import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
+import { addDays, formatDayMonth, startOfWeek } from '@/lib/dates';
+import { formatCompact, pluralize } from '@/lib/format';
+import { toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { useNow } from '@/lib/useNow';
 import { useStartWorkout } from '../workout/StartWorkout';
 
@@ -72,11 +71,7 @@ export function HistoryPage() {
     <>
       <PageHeader
         title="History"
-        subtitle={
-          entries.length > 0
-            ? `${pluralize(entries.length, 'workout')} logged. Every set exactly as you did it.`
-            : undefined
-        }
+        subtitle={entries.length > 0 ? `${pluralize(entries.length, 'workout')} logged` : undefined}
       />
       {training.status === 'loading' ? <Skeleton className="h-96" /> : null}
       {training.status === 'error' ? <ErrorState error={training.error} /> : null}
@@ -122,9 +117,9 @@ export function HistoryPage() {
           </div>
 
           {filtered.length === 0 ? (
-            <div className="mt-8 rounded-[var(--radius-card)] border border-dashed border-line-strong p-6">
-              <p className="font-semibold">No workouts match these filters</p>
-              <p className="mt-1 text-sm text-muted">Try a longer date range or remove a filter.</p>
+            <div className="mt-8 flex flex-col items-center gap-1 rounded-nested bg-surface-2 px-5 py-5 text-center">
+              <p className="type-headline text-text-1">No workouts match these filters</p>
+              <p className="type-meta text-text-2">Try a longer date range or remove a filter.</p>
               <Button
                 variant="secondary"
                 size="sm"
@@ -159,7 +154,7 @@ export function HistoryPage() {
                       : ''}
                   </p>
                 </header>
-                <ol className="relative flex flex-col gap-2.5 before:absolute before:bottom-3 before:left-[1.45rem] before:top-3 before:w-px before:bg-line lg:before:hidden">
+                <ol className="divide-y-[0.5px] divide-divider rounded-panel border border-border bg-surface px-4">
                   {week.entries.map((e) => (
                     <li key={e.session.workout.id}>
                       <EntryRow entry={e} unit={prefs.weightUnit} />
@@ -288,92 +283,14 @@ function FilterButton({
 
 function EntryRow({ entry, unit }: { entry: HistoryEntry; unit: WeightUnit }) {
   const { session } = entry;
-  const h = entry.highlight;
   return (
-    <Link
+    <WorkoutRow
       to={`/history/${session.workout.id}`}
-      className="group relative flex items-stretch gap-3 rounded-[var(--radius-card)] bg-surface p-3.5 pr-3 transition-colors hover:border-line-strong lg:grid lg:grid-cols-[4.5rem_minmax(0,1.4fr)_minmax(0,1fr)_6rem_6rem_1.5rem] lg:items-center lg:gap-5 lg:px-5"
-    >
-      <div className="relative z-[1] flex w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-surface-2 py-1.5 text-center lg:w-auto">
-        <span className="text-[0.7rem] font-medium text-faint">
-          {formatWeekdayShort(session.date)}
-        </span>
-        <span className="tabular font-display text-xl font-bold leading-tight">
-          {session.date.getDate()}
-        </span>
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-2">
-          <span className="truncate font-display text-[1.25rem] font-bold leading-tight">
-            {session.workout.name}
-          </span>
-          {entry.prExercises > 0 ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent-text">
-              <Trophy className="size-3" aria-hidden />
-              {entry.prExercises}
-              <span className="sr-only">{entry.prExercises === 1 ? 'record' : 'records'}</span>
-            </span>
-          ) : null}
-        </p>
-        <p className="tabular mt-0.5 text-sm text-muted lg:hidden">
-          {entry.minutes !== null ? `${formatDurationMinutes(entry.minutes)} · ` : ''}
-          {entry.workingSets} sets
-          {entry.volumeKg > 0
-            ? ` · ${formatCompact(toDisplayWeight(entry.volumeKg, unit))} ${unit}`
-            : ''}
-        </p>
-        <p className="mt-0.5 truncate text-sm text-faint">{entry.exerciseNames.join(', ')}</p>
-        {h.kind === 'pr' ? (
-          <p className="mt-1 truncate text-sm font-medium text-accent-text lg:hidden">
-            <Highlight entry={entry} unit={unit} />
-          </p>
-        ) : null}
-      </div>
-
-      <p
-        className={cn(
-          'hidden min-w-0 text-sm lg:block',
-          h.kind === 'pr' ? 'text-accent-text' : 'text-muted',
-        )}
-      >
-        <Highlight entry={entry} unit={unit} />
-      </p>
-      <p className="tabular hidden text-right text-sm lg:block">
-        <span className="block font-semibold">{entry.workingSets} sets</span>
-        <span className="text-faint">
-          {entry.volumeKg > 0
-            ? `${formatCompact(toDisplayWeight(entry.volumeKg, unit))} ${unit}`
-            : ''}
-        </span>
-      </p>
-      <p className="tabular hidden text-right text-sm text-muted lg:block">
-        {entry.minutes !== null ? formatDurationMinutes(entry.minutes) : ''}
-      </p>
-      <ChevronRight
-        className="hidden size-5 self-center text-faint transition-transform group-hover:translate-x-0.5 sm:block"
-        aria-hidden
-      />
-    </Link>
+      date={session.date}
+      name={session.workout.name}
+      stats={workoutStats(entry.minutes, entry.workingSets, entry.volumeKg, unit)}
+      exercises={entry.exerciseNames}
+      records={entry.prExercises}
+    />
   );
-}
-
-function Highlight({ entry, unit }: { entry: HistoryEntry; unit: WeightUnit }) {
-  const h = entry.highlight;
-  if (h.kind === 'pr') {
-    return (
-      <>
-        {PR_LABELS[h.record.type]} on {h.record.exerciseName}:{' '}
-        {formatRecordValue(h.record.type, h.record.value, unit)}
-      </>
-    );
-  }
-  if (h.kind === 'top_set') {
-    return (
-      <>
-        Top set {h.exerciseName} {formatWeightValue(h.weightKg, unit)} × {h.reps}
-      </>
-    );
-  }
-  return null;
 }

@@ -3,39 +3,35 @@ import { Link } from 'react-router';
 import { ChevronRight, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
-/** Colour of the small icon tile at the start of a row. Fills only; the icon is white. */
+/**
+ * Kept for the call sites; since the redesign every tile is the same neutral IconTile
+ * (36 x 36, radius 10, surface-2, icon in --text-2). Only the Pro row is lime-dim.
+ */
 export type TileTone = 'lime' | 'ember' | 'iris' | 'sky' | 'amber' | 'rose' | 'plum' | 'graphite';
-
-const TILE: Record<TileTone, string> = {
-  lime: 'bg-[var(--tile-lime)]',
-  ember: 'bg-[var(--tile-ember)]',
-  iris: 'bg-[var(--tile-iris)]',
-  sky: 'bg-[var(--tile-sky)]',
-  amber: 'bg-[var(--tile-amber)]',
-  rose: 'bg-[var(--tile-rose)]',
-  plum: 'bg-[var(--tile-plum)]',
-  graphite: 'bg-[var(--tile-graphite)]',
-};
 
 export function IconTile({
   icon: Icon,
   tone,
   size = 'md',
+  pro,
 }: {
   icon: LucideIcon;
   tone: TileTone;
   size?: 'md' | 'lg';
+  /** The Pro row's tile: lime-dim with a lime icon. */
+  pro?: boolean;
 }) {
   return (
     <span
       aria-hidden
+      data-tone={tone}
       className={cn(
-        'flex shrink-0 items-center justify-center text-white',
-        size === 'md' ? 'size-[1.875rem] rounded-[0.5rem]' : 'size-11 rounded-[0.8rem]',
-        TILE[tone],
+        'flex shrink-0 items-center justify-center rounded-tile',
+        size === 'md' ? 'size-9' : 'size-11',
+        pro ? 'bg-lime-dim text-lime' : 'bg-surface-2 text-text-2',
       )}
     >
-      <Icon className={size === 'md' ? 'size-[1.1rem]' : 'size-6'} strokeWidth={2.1} />
+      <Icon className={size === 'md' ? 'size-5' : 'size-6'} strokeWidth={1.75} />
     </span>
   );
 }
@@ -61,13 +57,11 @@ export function ListGroup({
 }) {
   return (
     <section className={className} aria-label={title ? undefined : label}>
-      {title ? (
-        <h2 className="mb-1.5 px-4 text-[0.8125rem] font-medium text-faint">{title}</h2>
-      ) : null}
-      <ul className="list-group overflow-hidden rounded-[var(--radius-card)] bg-surface">
+      {title ? <h2 className="type-label mb-2 px-1 text-text-2">{title}</h2> : null}
+      <ul className="list-group overflow-hidden rounded-panel border border-border bg-surface">
         {children}
       </ul>
-      {footer ? <p className="mt-1.5 px-4 text-[0.8125rem] text-faint">{footer}</p> : null}
+      {footer ? <p className="type-meta mt-2 px-1 text-text-2">{footer}</p> : null}
     </section>
   );
 }
@@ -85,6 +79,8 @@ interface ListRowProps {
   /** Control on the right (a switch, a segmented control). */
   accessory?: ReactNode;
   danger?: boolean;
+  /** Lime-dim tile for the Pro row. */
+  pro?: boolean;
 }
 
 export function ListRow({
@@ -97,41 +93,48 @@ export function ListRow({
   onClick,
   accessory,
   danger,
+  pro,
 }: ListRowProps) {
   const body = (
     <>
-      {icon ? <IconTile icon={icon} tone={tone} /> : null}
-      <span className="list-row-text flex min-w-0 flex-1 items-center gap-3 self-stretch py-3">
+      {icon ? <IconTile icon={icon} tone={tone} pro={pro} /> : null}
+      <span className="list-row-text flex min-w-0 flex-1 items-center gap-3 self-stretch py-2.5">
         <span className="min-w-0 flex-1">
-          <span className={cn('block font-medium leading-snug', danger && 'text-danger')}>
+          <span
+            className={cn(
+              'type-headline block font-medium',
+              danger ? 'text-danger' : 'text-text-1',
+            )}
+          >
             {title}
           </span>
-          {detail ? (
-            <span className="mt-0.5 block text-sm leading-snug text-faint">{detail}</span>
-          ) : null}
+          {detail ? <span className="type-meta mt-0.5 block text-text-2">{detail}</span> : null}
         </span>
         {value !== undefined ? (
-          <span className="tabular shrink-0 text-[0.95rem] text-faint">{value}</span>
+          <span className="type-meta tabular shrink-0 text-right text-text-2">{value}</span>
         ) : null}
         {accessory}
         {to || onClick ? (
-          <ChevronRight className="-mr-1 size-4 shrink-0 text-faint/70" aria-hidden />
+          <ChevronRight className="-mr-1 size-5 shrink-0 text-text-3" aria-hidden />
         ) : null}
       </span>
     </>
   );
-  const rowClass = 'flex min-h-12 w-full items-center gap-3.5 pl-4 pr-4 text-left';
+  const rowClass = cn(
+    'flex w-full items-center gap-3 px-4 text-left',
+    detail ? 'min-h-14' : 'min-h-11',
+  );
   return (
     <li>
       {to ? (
-        <Link to={to} className={cn(rowClass, 'transition-colors active:bg-surface-2')}>
+        <Link to={to} className={cn(rowClass, 'chrome transition-colors active:bg-surface-2')}>
           {body}
         </Link>
       ) : onClick ? (
         <button
           type="button"
           onClick={onClick}
-          className={cn(rowClass, 'transition-colors active:bg-surface-2')}
+          className={cn(rowClass, 'chrome transition-colors active:bg-surface-2')}
         >
           {body}
         </button>
@@ -142,7 +145,7 @@ export function ListRow({
   );
 }
 
-/** An on/off switch with the iOS look. */
+/** 51 x 31 switch: lime track when on, surface-2 when off, white thumb, no ring. */
 export function Switch({
   checked,
   onChange,
@@ -160,14 +163,14 @@ export function Switch({
       aria-label={label}
       onClick={() => onChange(!checked)}
       className={cn(
-        'tap-target relative h-[1.9375rem] w-[3.1875rem] shrink-0 rounded-full transition-colors duration-200',
-        checked ? 'bg-[var(--switch-on)]' : 'bg-[var(--seg-track)]',
+        'chrome tap-target relative h-[1.9375rem] w-[3.1875rem] shrink-0 rounded-full transition-colors duration-[var(--dur-move)]',
+        checked ? 'bg-lime' : 'bg-surface-2',
       )}
     >
       <span
         aria-hidden
         className={cn(
-          'absolute left-0.5 top-0.5 size-[1.6875rem] rounded-full bg-white shadow-[0_3px_8px_rgb(0_0_0/0.15),0_1px_1px_rgb(0_0_0/0.16)] transition-transform duration-200 ease-[var(--ease-spring)]',
+          'absolute left-0.5 top-0.5 size-[1.6875rem] rounded-full bg-text-1 transition-transform duration-[var(--dur-move)] ease-[var(--ease-standard)]',
           checked && 'translate-x-5',
         )}
       />
@@ -198,11 +201,11 @@ export function Panel({
       className={className}
       aria-label={typeof title === 'string' ? title : undefined}
     >
-      {title ? (
-        <h2 className="mb-1.5 px-4 text-[0.8125rem] font-medium text-faint">{title}</h2>
-      ) : null}
-      <div className="panel-body rounded-[var(--radius-card)] bg-surface px-4">{children}</div>
-      {footer ? <p className="mt-1.5 px-4 text-[0.8125rem] text-faint">{footer}</p> : null}
+      {title ? <h2 className="type-label mb-2 px-1 text-text-2">{title}</h2> : null}
+      <div className="panel-body rounded-panel border border-border bg-surface px-4">
+        {children}
+      </div>
+      {footer ? <p className="type-meta mt-2 px-1 text-text-2">{footer}</p> : null}
     </section>
   );
 }
@@ -230,8 +233,8 @@ export function PanelRow({
       )}
     >
       <div className="min-w-0">
-        <p className="font-medium leading-snug">{title}</p>
-        {detail ? <p className="mt-0.5 text-sm leading-snug text-faint">{detail}</p> : null}
+        <p className="type-headline font-medium text-text-1">{title}</p>
+        {detail ? <p className="type-meta mt-0.5 text-text-2">{detail}</p> : null}
       </div>
       {children ? <div className="shrink-0">{children}</div> : null}
     </div>

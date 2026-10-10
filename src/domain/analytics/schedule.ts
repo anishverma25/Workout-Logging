@@ -4,6 +4,7 @@ import {
   isSameDay,
   startOfDay,
   startOfWeek,
+  toDateKey,
   type WeekStartsOn,
 } from '@/lib/dates';
 import type { Routine, RoutineDay } from '../models/schemas';
@@ -112,9 +113,13 @@ export function adherence(
     )
       planned++;
   }
-  const done = sessions.filter(
-    (s) => s.date >= start && s.date < end && s.workout.routineId === routineId,
-  ).length;
+  // One per calendar day: repeating a session the same day (B1) is an extra workout in History,
+  // never a second completed planned session.
+  const done = new Set(
+    sessions
+      .filter((s) => s.date >= start && s.date < end && s.workout.routineId === routineId)
+      .map((s) => toDateKey(s.date)),
+  ).size;
   const completed = Math.min(done, planned);
   return { planned, completed, rate: planned > 0 ? completed / planned : null };
 }

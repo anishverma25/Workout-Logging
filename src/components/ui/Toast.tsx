@@ -49,15 +49,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 px-4 lg:bottom-6"
+        className="pointer-events-none fixed inset-x-4 bottom-[calc(3.0625rem+1rem+env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 lg:bottom-6"
       >
         {items.map((t) => (
           <div
             key={t.id}
-            className="flex items-center gap-2 rounded-full border border-line-strong bg-surface-3 px-4 py-2.5 text-sm font-medium text-text shadow-[var(--shadow-card)]"
+            className="type-body flex min-h-12 max-w-[min(30rem,calc(100vw-2rem))] items-center gap-3 rounded-nested bg-surface-2 py-2 pr-2 pl-4 text-text-1"
           >
-            <Check className="size-4 text-accent-text" aria-hidden />
-            {t.message}
+            <Check className="size-5 shrink-0 text-text-2" aria-hidden />
+            <span className="py-1">{t.message}</span>
             {t.action ? (
               <button
                 type="button"
@@ -65,7 +65,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   t.action!.onSelect();
                   dismiss(t.id);
                 }}
-                className="pointer-events-auto -my-1.5 -mr-2 ml-1 rounded-full px-3 py-1.5 font-semibold text-accent-text hover:bg-surface-2"
+                className="pressable type-headline pointer-events-auto h-9 shrink-0 rounded-field px-3 text-text-1 hover:bg-surface"
               >
                 {t.action.label}
               </button>

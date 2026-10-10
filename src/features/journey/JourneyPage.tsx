@@ -71,10 +71,7 @@ export function JourneyPage() {
 
   return (
     <>
-      <PageHeader
-        title="Journey"
-        subtitle="Goals, milestones, photos and recaps: how far you have come."
-      />
+      <PageHeader back={{ to: '/more', label: 'More' }} title="Journey" />
       {training.status === 'loading' ? <Skeleton className="h-96" /> : null}
       {training.status === 'error' ? <ErrorState error={training.error} /> : null}
       {data && model ? (
@@ -118,7 +115,7 @@ function MilestonesSection({ list }: { list: Milestone[] }) {
                 key={m.id}
                 className="flex items-center gap-3.5 rounded-[var(--radius-card)] bg-surface p-4"
               >
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--ring-2)] to-[var(--ring-2-to)] text-white">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime">
                   <Icon className="size-5" aria-hidden />
                 </span>
                 <span className="min-w-0">
@@ -182,10 +179,10 @@ function RecapCard({ recap, unit }: { recap: Recap; unit: WeightUnit }) {
       <dl className="mt-3 grid grid-cols-3 gap-y-3">
         {[
           ['Workouts', String(recap.workouts)],
-          ['Sets', recap.workingSets.toLocaleString()],
+          ['Sets', recap.workingSets.toLocaleString('en-GB')],
           ['Records', String(recap.records)],
           [`Volume`, `${formatCompact(toDisplayWeight(recap.volumeKg, unit))} ${unit}`],
-          ['Hours', (recap.minutes / 60).toLocaleString(undefined, { maximumFractionDigits: 1 })],
+          ['Hours', (recap.minutes / 60).toLocaleString('en-GB', { maximumFractionDigits: 1 })],
           ['Days', String(recap.days)],
         ].map(([label, value]) => (
           <div key={label}>

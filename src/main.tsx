@@ -5,7 +5,6 @@ import './styles/index.css';
 import { bootstrap } from './app/bootstrap';
 import { registerServiceWorker } from './app/pwa';
 import { router } from './app/router';
-import { ThemeProvider } from './app/theme';
 import { DatabaseScope } from './app/DatabaseScope';
 import { ToastProvider } from './components/ui/Toast';
 
@@ -14,13 +13,11 @@ const root = createRoot(document.getElementById('root')!);
 function render() {
   root.render(
     <StrictMode>
-      <ThemeProvider>
-        <ToastProvider>
-          <DatabaseScope>
-            <RouterProvider router={router} />
-          </DatabaseScope>
-        </ToastProvider>
-      </ThemeProvider>
+      <ToastProvider>
+        <DatabaseScope>
+          <RouterProvider router={router} />
+        </DatabaseScope>
+      </ToastProvider>
     </StrictMode>,
   );
 }

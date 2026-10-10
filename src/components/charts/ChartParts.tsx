@@ -135,7 +135,7 @@ export function Tooltip({
 export function ChartEmpty({ children, height }: { children: ReactNode; height: number }) {
   return (
     <div
-      className="flex items-center justify-center rounded-2xl border border-dashed border-line-strong px-6 text-center text-sm text-muted"
+      className="type-meta flex items-center justify-center rounded-nested bg-surface-2 px-6 text-center text-text-2"
       style={{ height }}
     >
       <p className="max-w-[36ch]">{children}</p>

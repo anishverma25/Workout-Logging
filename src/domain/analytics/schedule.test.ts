@@ -48,6 +48,22 @@ describe('adherence', () => {
     });
   });
 
+  it('counts a planned day once when the session is repeated the same day (B1)', () => {
+    // Monday 7 Sep logged twice (a repeat), Tuesday 8 Sep once; Thursday 10 and Friday 11 missed.
+    const repeated = buildSessions(
+      buildData([
+        { at: at(7, 9), routineId: ROUTINE, exercises: [] },
+        { at: at(7, 19), routineId: ROUTINE, exercises: [] },
+        { at: at(8), routineId: ROUTINE, exercises: [] },
+      ]),
+    );
+    expect(adherence(repeated, DAYS, ROUTINE, start, end, new Date(2026, 8, 13, 12))).toEqual({
+      planned: 4,
+      completed: 2,
+      rate: 0.5,
+    });
+  });
+
   it('has no rate without a plan', () => {
     expect(
       adherence(sessionsOn(7), [], ROUTINE, start, end, new Date(2026, 8, 13)).rate,

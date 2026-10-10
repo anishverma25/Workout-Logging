@@ -29,6 +29,7 @@ export function SciencePage() {
   return (
     <div className="mx-auto max-w-3xl pb-10">
       <PageHeader
+        back={{ to: '/more', label: 'More' }}
         title="The science"
         subtitle="Every number in Overload, the formula behind it and the research it rests on. Read a section, follow a source, and judge it for yourself."
       />

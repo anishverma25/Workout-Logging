@@ -65,12 +65,9 @@ export function ExercisesPage() {
   return (
     <>
       <PageHeader
+        back={{ to: '/more', label: 'More' }}
         title="Exercises"
-        subtitle={
-          data
-            ? `${data.exercises.length - customCount} in the library${customCount ? `, ${customCount} of your own` : ''}`
-            : 'The movement library'
-        }
+        subtitle={data ? pluralize(data.exercises.length, 'exercise') : undefined}
         actions={
           <Button
             size="sm"

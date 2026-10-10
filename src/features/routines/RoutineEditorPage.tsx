@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
   ArrowDown,
   ArrowDownUp,
-  ArrowLeft,
   ArrowUp,
   CalendarRange,
   Check,
+  ChevronLeft,
   Copy,
   Ellipsis,
   Pencil,
@@ -47,18 +47,48 @@ import { daysForRoutine } from '@/domain/analytics/schedule';
 import type { Exercise, Routine, RoutineDay, RoutineExercise } from '@/domain/models/schemas';
 import { cn } from '@/lib/cn';
 import { formatAngle } from '@/domain/workout/angle';
-import { orderedWeekdays, weekdayLongName, weekdayShortName } from '@/lib/dates';
-import { formatRepRange, formatSeconds, pluralize } from '@/lib/format';
+import { orderedWeekdays, weekdayLongName, type WeekStartsOn } from '@/lib/dates';
+import { formatRepRange, formatSeconds, longDayName, pluralize, shortDayName } from '@/lib/format';
 import { ExercisePicker } from '../exercises/ExercisePicker';
 import { readableError } from '@/lib/errors';
 import { useStartWorkout } from '../workout/StartWorkout';
 import { SlotSheet } from './SlotSheet';
+
+/** Older personalised routines stored this line as their description; it is no longer shown. */
+const LEGACY_PERSONALISED_NOTE = 'Fitted to your goal, experience and equipment.';
+
+/** A target on an exercise row: surface-2, radius 8, Meta --text-2, tabular. */
+function TargetChip({ children }: { children: ReactNode }) {
+  return (
+    <span className="type-meta tabular inline-flex h-6 items-center rounded-lg bg-surface-2 px-3 text-text-2">
+      {children}
+    </span>
+  );
+}
+
+/** Day cards in weekday order from the week start; days with no weekday set go last. */
+function byWeekday<T extends { weekdays: number[] }>(days: T[], weekStartsOn: WeekStartsOn): T[] {
+  const rank = (w: number) => (w - weekStartsOn + 7) % 7;
+  const first = (d: T) => (d.weekdays.length ? Math.min(...d.weekdays.map(rank)) : 7);
+  return [...days].sort((a, b) => first(a) - first(b));
+}
+
+/** "Thursday", or "Monday, Thursday" for a day trained twice a week (D10). */
+function dayLabel(weekdays: number[], weekStartsOn: WeekStartsOn): string {
+  if (weekdays.length === 0) return 'No day set';
+  const rank = (w: number) => (w - weekStartsOn + 7) % 7;
+  return [...weekdays]
+    .sort((a, b) => rank(a) - rank(b))
+    .map(longDayName)
+    .join(', ');
+}
 
 export function RoutineEditorPage() {
   const { routineId } = useParams();
   const training = useTrainingData();
   const navigate = useNavigate();
   const toast = useToast();
+  const prefs = usePreferences();
   const [renaming, setRenaming] = useState(false);
   const [menu, setMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -88,34 +118,34 @@ export function RoutineEditorPage() {
 
   return (
     <>
-      <div className="pt-4 lg:pt-8">
+      <div className="pt-1 lg:pt-6">
         <Link
           to="/routines"
-          className="-ml-2 inline-flex h-10 items-center gap-1.5 rounded-full px-2 text-sm font-medium text-muted hover:text-text"
+          aria-label="Back to Routines"
+          className="pressable tap-target type-body -ml-2 inline-flex h-11 items-center gap-0.5 rounded-field pr-2 font-medium text-text-1"
         >
-          <ArrowLeft className="size-4" aria-hidden /> Routines
+          <ChevronLeft className="size-6" strokeWidth={1.75} aria-hidden /> Routines
         </Link>
       </div>
-      <header className="flex items-start justify-between gap-3 pb-6 pt-2">
+      <header className="flex items-start justify-between gap-3 pt-2 pb-6">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             {routine.isActive ? <Badge tone="accent">Active</Badge> : null}
-            {routine.origin === 'demo' ? <Badge tone="warn">Demo</Badge> : null}
+            {routine.origin === 'demo' ? <Badge>Demo</Badge> : null}
           </div>
-          <h1 className="mt-2 font-display text-[1.4rem] font-bold leading-none sm:text-[1.75rem]">
+          <h1 className="type-display mt-2 break-words text-text-1">
             <button
               type="button"
               onClick={() => setRenaming(true)}
               className="group inline-flex items-center gap-2 text-left"
             >
               {routine.name}
-              <Pencil
-                className="size-4 text-faint opacity-60 transition-opacity group-hover:opacity-100"
-                aria-label="Rename"
-              />
+              <Pencil className="size-5 shrink-0 text-text-2" aria-label="Rename" />
             </button>
           </h1>
-          {routine.description ? <p className="mt-2 text-muted">{routine.description}</p> : null}
+          {routine.description && routine.description !== LEGACY_PERSONALISED_NOTE ? (
+            <p className="type-body mt-1 text-text-2">{routine.description}</p>
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {!routine.isActive ? (
@@ -141,7 +171,7 @@ export function RoutineEditorPage() {
       </header>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {days.map((day, index) => (
+        {byWeekday(days, prefs.weekStartsOn).map((day, index) => (
           <DayCard
             key={day.id}
             day={day}
@@ -161,7 +191,7 @@ export function RoutineEditorPage() {
           variant="secondary"
           block
           size="lg"
-          className="mt-4 border-dashed"
+          className="mt-4"
           icon={<Plus className="size-5" aria-hidden />}
           onClick={async () => {
             await addDay(db, routine.id);
@@ -170,6 +200,8 @@ export function RoutineEditorPage() {
           Add a training day
         </Button>
       ) : null}
+
+      <p className="type-meta mt-6 text-text-2">Editing a routine never changes past workouts.</p>
 
       {renaming ? (
         <RenameRoutineSheet routine={routine} onClose={() => setRenaming(false)} />
@@ -341,17 +373,19 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
   return (
     <section
       aria-labelledby={`day-${day.id}`}
-      className="flex flex-col rounded-[var(--radius-card)] bg-surface"
+      className="flex flex-col rounded-panel border border-border bg-surface"
     >
       <div className="flex items-start justify-between gap-2 p-5 pb-3">
         <div className="min-w-0">
-          <p className="text-sm text-faint">Day {index + 1}</p>
-          <h2 id={`day-${day.id}`} className="font-display text-[1.4rem] font-bold leading-tight">
+          <p className="type-caption inline-flex h-6 items-center rounded-full bg-lime-dim px-2.5 font-semibold text-text-1">
+            {dayLabel(day.weekdays, prefs.weekStartsOn)}
+          </p>
+          <h2 id={`day-${day.id}`} className="type-title mt-2 text-text-1">
             <button type="button" onClick={() => setRenaming(true)} className="text-left">
               {day.name}
             </button>
           </h2>
-          <p className="mt-0.5 text-sm text-muted">
+          <p className="type-meta mt-0.5 text-text-2">
             {slots.length === 0
               ? 'No exercises yet'
               : `${pluralize(slots.length, 'exercise')} · ${pluralize(totalSets, 'set')}`}
@@ -368,7 +402,7 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
                   <ArrowDownUp className="size-5" aria-hidden />
                 )
               }
-              tone={reordering ? 'accent' : 'default'}
+              tone="default"
               onClick={() => setReordering((r) => !r)}
             />
           ) : null}
@@ -397,28 +431,25 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
                 aria-label={`${weekdayLongName(w)}${other ? `, currently ${other}` : ''}`}
                 onClick={() => toggleWeekday(w)}
                 className={cn(
-                  'h-9 rounded-lg text-xs font-semibold transition-colors',
-                  on
-                    ? 'bg-accent text-accent-ink'
-                    : other
-                      ? 'bg-surface-2 text-faint line-through decoration-faint/60'
-                      : 'bg-surface-2 text-muted hover:text-text',
+                  'pressable chrome type-meta h-9 rounded-field font-semibold',
+                  on ? 'bg-text-1 text-bg' : 'bg-surface-2 text-text-1',
+                  other && 'opacity-35',
                 )}
               >
-                {weekdayShortName(w)}
+                {shortDayName(w)}
               </button>
             );
           })}
         </div>
         {day.weekdays.length === 0 ? (
-          <p className="mt-1.5 text-xs text-faint">
+          <p className="type-meta mt-1.5 text-text-2">
             Pick the weekdays you plan to train this day. It lets Home suggest it and makes
             adherence measurable.
           </p>
         ) : null}
       </div>
 
-      <ol className="mt-3 flex-1 divide-y divide-line px-2">
+      <ol className="mt-3 flex-1 divide-y-[0.5px] divide-divider px-2">
         {slots.map((s, i) => {
           const exercise = exerciseById.get(s.exerciseId);
           return (
@@ -441,28 +472,32 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
                     disabled={reordering}
                     onClick={() => setOpenSlot(s.id)}
                     aria-haspopup="dialog"
-                    className="flex min-h-15 w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-surface-2 disabled:hover:bg-transparent"
+                    className="flex min-h-15 w-full min-w-0 items-center gap-3 rounded-field px-3 py-2.5 text-left transition-colors hover:bg-surface-2 disabled:hover:bg-transparent"
                   >
-                    <span className="tabular w-5 shrink-0 text-sm font-semibold text-faint">
+                    <span className="type-meta tabular w-5 shrink-0 font-semibold text-text-2">
                       {i + 1}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold">
+                      <span className="type-headline block truncate text-text-1">
                         {exercise?.name ?? 'Deleted exercise'}
                       </span>
-                      <span className="tabular block truncate text-sm text-muted">
-                        {s.targetSets} × {formatRepRange(s.repMin, s.repMax)}
-                        {s.targetRir !== null ? ` · RIR ${s.targetRir}` : ''}
-                        {` · ${formatSeconds(s.restSeconds)} rest`}
-                        {s.angleDeg != null ? ` · ${formatAngle(s.angleDeg)}` : ''}
+                      <span className="mt-1.5 flex flex-wrap gap-1.5">
+                        <TargetChip>
+                          {s.targetSets} × {formatRepRange(s.repMin, s.repMax)}
+                        </TargetChip>
+                        {s.targetRir !== null ? <TargetChip>RIR {s.targetRir}</TargetChip> : null}
+                        <TargetChip>{formatSeconds(s.restSeconds)} rest</TargetChip>
+                        {s.angleDeg != null ? (
+                          <TargetChip>{formatAngle(s.angleDeg)}</TargetChip>
+                        ) : null}
                       </span>
                       {s.notes ? (
-                        <span className="block truncate text-sm text-faint">{s.notes}</span>
+                        <span className="type-meta mt-1 block truncate text-text-2">{s.notes}</span>
                       ) : null}
                       {s.supersetGroup != null &&
                       (slots[i + 1]?.supersetGroup === s.supersetGroup ||
                         slots[i - 1]?.supersetGroup === s.supersetGroup) ? (
-                        <span className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted">
+                        <span className="type-meta mt-1 flex items-center gap-1.5 font-semibold text-text-2">
                           <span aria-hidden className="size-2 rounded-full bg-[var(--ring-2)]" />
                           {slots[i + 1]?.supersetGroup === s.supersetGroup
                             ? 'Superset with the next exercise'
@@ -498,12 +533,14 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
         <Button
           variant="secondary"
           className="flex-1"
+          aria-label="Add exercises"
           icon={<Plus className="size-4" aria-hidden />}
           onClick={() => setPicking(true)}
         >
-          Add exercises
+          Add
         </Button>
         <Button
+          variant="secondary"
           className="flex-1"
           disabled={slots.length === 0}
           icon={<Play className="size-4 fill-current" aria-hidden />}

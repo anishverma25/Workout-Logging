@@ -55,11 +55,6 @@ export function SummaryPage() {
   return (
     <div className="mx-auto max-w-2xl pb-8">
       <header className="relative overflow-hidden pb-6 pt-10 text-center lg:pt-14">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-0 size-80 -translate-x-1/2 rounded-full"
-          style={{ background: 'radial-gradient(closest-side, var(--glow), transparent)' }}
-        />
         <span className="summary-pop relative mx-auto flex size-16 items-center justify-center rounded-full bg-accent text-accent-ink">
           <Check className="size-8" strokeWidth={3} aria-hidden />
         </span>
@@ -98,10 +93,10 @@ export function SummaryPage() {
       {reached.length > 0 ? (
         <section
           aria-label="Milestones reached"
-          className="rise-in record-sweep relative mt-6 overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-[var(--tile-iris)] to-[var(--tile-plum)] p-5 text-white"
+          className="rise-in relative mt-6 overflow-hidden rounded-panel border border-border bg-surface p-5 text-text-1"
           style={{ animationDelay: '0.18s' }}
         >
-          <p className="flex items-center gap-2 text-sm font-semibold text-white/85">
+          <p className="type-meta flex items-center gap-2 font-semibold text-text-2">
             <Medal className="trophy-lift size-4" aria-hidden />
             {reached.length === 1 ? 'Milestone' : `${reached.length} milestones`}
           </p>
@@ -110,7 +105,7 @@ export function SummaryPage() {
               <p className="font-display text-[1.6rem] font-bold leading-tight tracking-tight">
                 {m.title}
               </p>
-              <p className="text-sm text-white/85">{m.detail}</p>
+              <p className="type-meta text-text-2">{m.detail}</p>
             </div>
           ))}
         </section>
@@ -118,11 +113,11 @@ export function SummaryPage() {
 
       {summary.prs.length > 0 ? (
         <Card
-          className="rise-in record-sweep relative mt-6 overflow-hidden border-accent-text/30 p-5"
+          className="rise-in relative mt-6 overflow-hidden border-transparent bg-lime-dim p-5"
           style={{ animationDelay: '0.24s' }}
         >
           <h2 className="flex items-center gap-2 font-display text-xl font-semibold">
-            <Trophy className="trophy-lift size-5 text-accent-text" aria-hidden />
+            <Trophy className="trophy-lift size-5 text-lime" aria-hidden />
             {pluralize(summary.prs.length, 'new record')}
           </h2>
           <ul className="mt-3 divide-y divide-line">

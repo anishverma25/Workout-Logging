@@ -1,3 +1,4 @@
+import { COPY } from '@/domain/analytics/thresholdCopy';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useFeature } from '@/app/entitlement';
@@ -230,11 +231,7 @@ export function PlateausSection({
   const names = new Map(exercises.map((e) => [e.id, e.name]));
   const plateaus = model.plateaus;
   return (
-    <Block
-      id="plateaus"
-      title="Stalled lifts"
-      detail="No new best estimated 1RM for 3 weeks or more, across at least 4 sessions."
-    >
+    <Block id="plateaus" title="Stalled lifts" detail={COPY.stalledLiftsDetail}>
       {!included ? (
         <ProLock
           feature="plateaus"

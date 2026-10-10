@@ -43,7 +43,7 @@ export function MeasurementsSection({
     picked && available.includes(picked) ? picked : (available[0] ?? null);
   const show = (f: Series, v: number) =>
     f === 'bodyFatPct'
-      ? `${v.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`
+      ? `${v.toLocaleString('en-GB', { maximumFractionDigits: 1 })}%`
       : formatLength(v, unit);
 
   return (
@@ -102,7 +102,9 @@ export function MeasurementsSection({
                     {withValue.length > 1
                       ? `${shownChange > 0 ? '+' : shownChange < 0 ? '−' : ''}${Math.abs(
                           Math.round(shownChange * 10) / 10,
-                        ).toLocaleString()}${f === 'bodyFatPct' ? ' points' : ` ${unit}`} since ${formatDayMonth(new Date(first.measuredAt))}`
+                        ).toLocaleString(
+                          'en-GB',
+                        )}${f === 'bodyFatPct' ? ' points' : ` ${unit}`} since ${formatDayMonth(new Date(first.measuredAt))}`
                       : `On ${formatDayMonth(new Date(last.measuredAt))}`}
                   </p>
                 </li>
@@ -141,7 +143,7 @@ export function MeasurementsSection({
                           })),
                       },
                     ]}
-                    formatY={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                    formatY={(v) => v.toLocaleString('en-GB', { maximumFractionDigits: 1 })}
                     formatX={(x) => formatDayMonth(new Date(x))}
                     formatXLong={(x) => formatShortDate(new Date(x))}
                   />

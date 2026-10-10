@@ -130,17 +130,8 @@ export function generateInsights(input: InsightInput): Insight[] {
     }
   }
 
-  // Adherence for the recent period.
-  const { planned, completed } = input.recentAdherence;
-  if (planned >= 2) {
-    insights.push({
-      id: 'adherence',
-      tone: completed === planned ? 'positive' : 'neutral',
-      title: `You completed ${completed} of ${planned} planned sessions in the last ${input.periodDays} days.`,
-      basis: `Planned sessions come from your routine's training days. Today only counts once you log it.`,
-      priority: completed === planned ? 5 : 3,
-    });
-  }
+  // Adherence is not an insight (decision D7): Home and Progress show it as a stat already,
+  // with the same wording, so repeating it here would duplicate it.
 
   return insights.sort((a, b) => b.priority - a.priority);
 }

@@ -31,13 +31,10 @@ export function CheckinCard({
   return (
     <section
       aria-labelledby="checkin-title"
-      className={cn('rounded-[var(--radius-card)] bg-surface p-5', className)}
+      className={cn('rounded-panel border border-border bg-surface p-5', className)}
     >
-      <p className="text-[0.8125rem] font-medium text-faint">{range}</p>
-      <h2
-        id="checkin-title"
-        className="font-display text-[1.3rem] font-semibold leading-tight tracking-tight"
-      >
+      <p className="type-meta text-text-2">{range}</p>
+      <h2 id="checkin-title" className="type-title text-text-1">
         Last week
       </h2>
       <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
@@ -60,7 +57,7 @@ export function CheckinCard({
         />
       </dl>
       {checkin.improved.length > 0 ? (
-        <p className="mt-3 text-sm text-muted">
+        <p className="type-meta mt-3 text-text-2">
           Up:{' '}
           {checkin.improved
             .slice(0, 3)
@@ -70,12 +67,12 @@ export function CheckinCard({
         </p>
       ) : null}
       {checkin.stalled.length > 0 ? (
-        <p className="mt-1 text-sm text-muted">
+        <p className="type-meta mt-1 text-text-2">
           Stalled:{' '}
           {checkin.stalled.map((s) => `${s.name} (${pluralize(s.weeks, 'week')})`).join(', ')}.
         </p>
       ) : null}
-      <p className="mt-3 rounded-[0.9rem] bg-accent-soft px-3.5 py-2.5 text-sm">
+      <p className="type-meta mt-3 rounded-nested bg-surface-2 px-4 py-3 text-text-1">
         <span className="font-semibold">This week: </span>
         {checkin.focus.text}
       </p>
@@ -85,12 +82,12 @@ export function CheckinCard({
 
 function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-[0.9rem] bg-surface-2 px-2 py-2.5">
-      <dt className="flex items-center justify-center gap-1 text-xs text-faint">
+    <div className="rounded-nested bg-surface-2 px-2 py-2.5">
+      <dt className="type-caption flex items-center justify-center gap-1 text-text-2">
         {icon}
         {label}
       </dt>
-      <dd className="tabular mt-0.5 font-display text-[1.35rem] font-semibold">{value}</dd>
+      <dd className="type-headline tabular mt-0.5 text-text-1">{value}</dd>
     </div>
   );
 }

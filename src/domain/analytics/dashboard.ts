@@ -77,6 +77,8 @@ export interface DashboardModel {
   streak: { weeks: number; currentWeekMet: boolean };
   checkin: WeeklyCheckin | null;
   today: TodayPlan;
+  /** The current calendar week, following the week-start setting (D9). */
+  weekDays: DayStatus[];
   recentWindow: {
     days: DayStatus[];
     sessions: number;
@@ -245,6 +247,7 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
       weekStartsOn: prefs.weekStartsOn,
     }),
     today: todayPlan,
+    weekDays: dayStatuses(sessions, days, weekStart, 7, now, since),
     recentWindow: {
       days: dayStatuses(sessions, days, recentStart, RECENT_DAYS, now, since),
       sessions: recentSessions.length,

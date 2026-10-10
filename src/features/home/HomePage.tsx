@@ -9,7 +9,8 @@ import { Navigate } from 'react-router';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
-import { formatLongDay, greetingFor } from '@/lib/dates';
+import { greetingFor } from '@/lib/dates';
+import { formatCalendarDate } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { BodyWeightCard } from './BodyWeightCard';
@@ -48,7 +49,7 @@ export function HomePage() {
 
   return (
     <>
-      <PageHeader title={title} eyebrow={formatLongDay(now)} compactTitle="Home" />
+      <PageHeader title={title} eyebrow={formatCalendarDate(now)} compactTitle="Home" />
       <FoundingWelcome />
       {training.status === 'success' && !ownProfile ? <SetupPrompt /> : null}
 
@@ -115,21 +116,23 @@ export function HomePage() {
       ) : null}
 
       {model && (model.hasTrainingData || model.today.kind !== 'no_routine') ? (
-        <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:items-start lg:gap-6">
+        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:items-start lg:gap-4">
           {/* Columns flatten on mobile so cards can be ordered by priority. */}
-          <div className="contents lg:flex lg:flex-col lg:gap-6">
+          <div className="contents lg:flex lg:flex-col lg:gap-4">
+            <TodayCard plan={model.today} unit={prefs.weightUnit} className="order-1" />
             <RingsCard
               week={model.week}
               streak={model.streak}
               routineName={routineName}
-              className="order-1"
+              weekStartsOn={prefs.weekStartsOn}
+              className="order-2"
             />
-            <TodayCard plan={model.today} unit={prefs.weightUnit} className="order-1" />
             <StrengthCard trends={model.strength} unit={prefs.weightUnit} className="order-4" />
             <RecentActivity items={model.recent} unit={prefs.weightUnit} className="order-6" />
           </div>
-          <div className="contents lg:flex lg:flex-col lg:gap-6">
+          <div className="contents lg:flex lg:flex-col lg:gap-4">
             <WeekCard
+              days={model.weekDays}
               window={model.recentWindow}
               consistency={model.consistency}
               unit={prefs.weightUnit}
@@ -137,7 +140,7 @@ export function HomePage() {
             />
             <CheckinCard checkin={model.checkin} unit={prefs.weightUnit} className="order-3" />
             <InsightCard insights={model.insights} className="order-3" />
-            <div className="order-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-1 lg:gap-6">
+            <div className="order-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
               <RecordCard
                 record={model.featuredPr}
                 recentCount={model.recentPrCount}
@@ -157,29 +160,21 @@ function SetupPrompt() {
   return (
     <section
       aria-labelledby="setup-prompt-title"
-      className="relative mb-5 overflow-hidden rounded-[var(--radius-card)] bg-surface p-5"
+      className="mb-4 rounded-panel border border-border bg-surface p-5"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full"
-        style={{ background: 'radial-gradient(closest-side, var(--glow), transparent)' }}
-      />
-      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-[0.9rem] bg-accent text-accent-ink">
-          <Sparkles className="size-6" aria-hidden />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-tile bg-surface-2 text-text-2">
+          <Sparkles className="size-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <h2
-            id="setup-prompt-title"
-            className="font-display text-[1.3rem] font-semibold leading-tight tracking-tight"
-          >
+          <h2 id="setup-prompt-title" className="type-headline text-text-1">
             Make it yours
           </h2>
-          <p className="mt-1 text-sm text-muted">
+          <p className="type-meta mt-0.5 text-text-2">
             Seven quick questions for a routine, rep ranges and daily calories fitted to you.
           </p>
         </div>
-        <ButtonLink to="/setup?next=/" className="shrink-0">
+        <ButtonLink to="/setup?next=/" variant="secondary" className="shrink-0">
           Set up my plan
         </ButtonLink>
       </div>
@@ -190,7 +185,7 @@ function SetupPrompt() {
 function HomeSkeleton() {
   return (
     <div
-      className="flex flex-col gap-5 lg:grid lg:grid-cols-[1.45fr_1fr] lg:gap-6"
+      className="flex flex-col gap-4 lg:grid lg:grid-cols-[1.45fr_1fr] lg:gap-4"
       aria-busy="true"
       aria-label="Loading your dashboard"
     >

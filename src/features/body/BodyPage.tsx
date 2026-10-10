@@ -44,7 +44,7 @@ function signed(kg: number, unit: WeightUnit): string {
   const v = toDisplayWeight(kg, unit);
   const rounded = Math.round(v * 10) / 10;
   if (rounded === 0) return `0 ${unit}`;
-  return `${rounded > 0 ? '+' : '−'}${Math.abs(rounded).toLocaleString(undefined, { maximumFractionDigits: 1 })} ${unit}`;
+  return `${rounded > 0 ? '+' : '−'}${Math.abs(rounded).toLocaleString('en-GB', { maximumFractionDigits: 1 })} ${unit}`;
 }
 
 export function BodyPage() {
@@ -91,6 +91,7 @@ export function BodyPage() {
   return (
     <>
       <PageHeader
+        back={{ to: '/more', label: 'More' }}
         title="Body metrics"
         subtitle="Weight, measurements and the numbers worked out from them."
         actions={
@@ -235,7 +236,7 @@ export function BodyPage() {
                         })),
                     },
                   ]}
-                  formatY={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                  formatY={(v) => v.toLocaleString('en-GB', { maximumFractionDigits: 1 })}
                   formatX={(x) => formatDayMonth(new Date(x))}
                   formatXLong={(x) => formatShortDate(new Date(x))}
                 />

@@ -92,46 +92,57 @@
   --dur-move: 250ms;
 
   /*
-   * Legacy tokens. Screens not yet moved to the kit still read these (Parts 2 to 7 replace
-   * them). New code never uses them.
+   * Legacy tokens. Screens not yet moved to the kit still read these names; since UI Part 2
+   * they all resolve to the monochrome-plus-lime palette above, so no screen shows the old
+   * colours. Parts 3 to 7 replace the names themselves. New code never uses them.
    */
   --surface-3: #3a3a3c;
-  --line: rgb(84 84 88 / 0.42);
-  --line-strong: rgb(120 120 128 / 0.5);
-  --text: #f5f5f7;
-  --text-muted: #c7c7cc;
-  --text-faint: #a1a1a6;
+  --line: var(--divider);
+  --line-strong: var(--border-strong);
+  --text: var(--text-1);
+  --text-muted: var(--text-2);
+  --text-faint: var(--text-2);
   --accent: var(--lime);
   --accent-ink: var(--on-lime);
-  --accent-text: var(--lime);
+  /* Links, borders and icons that used lime become neutral (lime rule, UI rules 3.3). */
+  --accent-text: var(--text-1);
   --accent-soft: rgb(198 244 50 / 0.13);
-  --data-2: #93abff;
+  --data-2: var(--text-2);
   --warn: var(--warning);
   --warn-soft: rgb(255 179 64 / 0.13);
   --danger-soft: rgb(255 69 58 / 0.14);
-  --shadow-card: 0 0 0 0 transparent;
-  --shadow-float: 0 16px 40px -12px rgb(0 0 0 / 0.9);
-  --glow: rgb(198 244 50 / 0.12);
-  --nav-bg: rgb(22 22 24 / 0.78);
-  --ring-1: #b4f000;
-  --ring-2: #ff5a2e;
-  --ring-3: #7d7bff;
-  --ring-1-to: #e2ff6b;
-  --ring-2-to: #ff9a5a;
-  --ring-3-to: #b3a6ff;
-  --ring-track: rgb(255 255 255 / 0.1);
-  --seg-track: rgb(118 118 128 / 0.24);
-  --seg-thumb: #636366;
-  --switch-on: #9ed400;
-  --tile-lime: #5a9600;
-  --tile-ember: #e5531c;
-  --tile-iris: #5e5ce6;
-  --tile-sky: #0a7cff;
-  --tile-amber: #c26d00;
-  --tile-rose: #e0345a;
-  --tile-graphite: #7c7c82;
-  --tile-plum: #b0379f;
+  --shadow-card: none;
+  --shadow-float: none;
+  --glow: transparent;
+  --nav-bg: rgb(0 0 0 / 0.8);
+  --ring-1: var(--lime);
+  --ring-2: rgb(198 244 50 / 0.6);
+  --ring-3: rgb(198 244 50 / 0.3);
+  --ring-1-to: var(--ring-1);
+  --ring-2-to: var(--ring-2);
+  --ring-3-to: var(--ring-3);
+  --ring-track: var(--grid);
+  --seg-track: var(--surface-2);
+  --seg-thumb: var(--text-1);
+  --switch-on: var(--lime);
+  --tile-lime: var(--surface-2);
+  --tile-ember: var(--surface-2);
+  --tile-iris: var(--surface-2);
+  --tile-sky: var(--surface-2);
+  --tile-amber: var(--surface-2);
+  --tile-rose: var(--surface-2);
+  --tile-graphite: var(--surface-2);
+  --tile-plum: var(--surface-2);
   --chart-1: #8bbd12;
   --chart-2: #6d89ee;
   --chart-grid: rgb(255 255 255 / 0.08);
+
+  /* Plate colours in the plate calculator follow the real competition plates, so a plate can
+     be recognised at a glance. The one place colour carries meaning outside the accent. */
+  --plate-25: #d6453b;
+  --plate-20: #2f6fd6;
+  --plate-15: #d9a21b;
+  --plate-10: #3e9b4f;
+  --plate-5: #e8e8ea;
+  --plate-small: #8e8e93;
 }

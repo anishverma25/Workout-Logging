@@ -1,3 +1,4 @@
+import { COPY } from '@/domain/analytics/thresholdCopy';
 import { useState } from 'react';
 import { Plus, Target, Trash2, Trophy } from 'lucide-react';
 import { useFeature } from '@/app/entitlement';
@@ -102,7 +103,7 @@ export function GoalsSection({
                 </span>
                 <span className="mt-2.5 block h-2 overflow-hidden rounded-full bg-[var(--ring-track)]">
                   <span
-                    className="block h-full rounded-full bg-gradient-to-r from-[var(--ring-2)] to-[var(--ring-2-to)] transition-[width] duration-700"
+                    className="block h-full rounded-full bg-lime transition-[width] duration-700"
                     style={{ width: `${(p.fraction ?? 0) * 100}%` }}
                   />
                 </span>
@@ -135,7 +136,7 @@ export function GoalsSection({
                                   : ''
                           }`
                         : p.ratePerWeek === null
-                          ? 'A projection needs 4 sessions over 3 weeks of recent data.'
+                          ? COPY.goalProjectionEmpty
                           : 'Not moving toward it at the moment.'}
                   </span>
                 ) : null}

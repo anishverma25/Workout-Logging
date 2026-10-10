@@ -302,7 +302,7 @@ function Logger({ unit }: SlideProps) {
       <div className="rounded-[var(--radius-card)] bg-surface py-4">
         <div className="px-4">
           <p className="font-display text-[1.35rem] font-bold">Barbell bench press</p>
-          <p className="text-sm text-muted">Target 3 × 6–10 · RIR 2</p>
+          <p className="text-sm text-muted">Target 3 × 6 to 10 · RIR 2</p>
         </div>
         <div className="mt-3 grid grid-cols-[1.6rem_minmax(0,1fr)_4rem_3rem_2.75rem] gap-1.5 px-3 pb-1 text-xs font-medium text-faint">
           <span className="text-center">Set</span>
@@ -407,7 +407,7 @@ function Records({ sample, unit }: SlideProps) {
           ))}
         </ul>
       </div>
-      <div className="mt-3 rounded-[var(--radius-card)] bg-gradient-to-br from-[var(--tile-iris)] to-[var(--tile-plum)] p-5 text-white">
+      <div className="mt-3 rounded-[var(--radius-card)] border border-border bg-surface p-5 text-white">
         <p className="flex items-center gap-2 text-sm font-semibold text-white/85">
           <Medal className="size-4" aria-hidden /> Milestones
         </p>
@@ -463,7 +463,7 @@ function Progress({ sample, unit }: SlideProps) {
                   })),
               },
             ]}
-            formatY={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            formatY={(v) => v.toLocaleString('en-GB', { maximumFractionDigits: 0 })}
             formatX={(x) => formatDayMonth(new Date(x))}
             formatXLong={(x) => formatShortDate(new Date(x))}
           />
@@ -496,14 +496,20 @@ function Progress({ sample, unit }: SlideProps) {
 function Body({ sample, unit }: SlideProps) {
   const b = sample.body;
   const tiles: [string, string, string][] = [
-    ['Daily calories', b.energy ? `${b.energy.targetKcal.toLocaleString()}` : '–', 'kcal'],
+    [
+      'Daily calories',
+      b.energy ? `${b.energy.targetKcal.toLocaleString('en-GB')}` : 'None',
+      'kcal',
+    ],
     [
       'Protein',
-      b.energy ? `${b.energy.proteinG[0].toFixed(1)}–${b.energy.proteinG[1].toFixed(1)}` : '–',
+      b.energy
+        ? `${b.energy.proteinG[0].toFixed(1)} to ${b.energy.proteinG[1].toFixed(1)}`
+        : 'None',
       'g',
     ],
-    ['BMI', b.bmi ? b.bmi.value.toFixed(1) : '–', ''],
-    ['Body fat', b.bodyFat ? b.bodyFat.pct.toFixed(1) : '–', '%'],
+    ['BMI', b.bmi ? b.bmi.value.toFixed(1) : 'None', ''],
+    ['Body fat', b.bodyFat ? b.bodyFat.pct.toFixed(1) : 'None', '%'],
   ];
   return (
     <>
@@ -552,7 +558,7 @@ function Body({ sample, unit }: SlideProps) {
                 })),
               },
             ]}
-            formatY={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+            formatY={(v) => v.toLocaleString('en-GB', { maximumFractionDigits: 1 })}
             formatX={(x) => formatDayMonth(new Date(x))}
           />
         </div>
@@ -580,7 +586,7 @@ function Journey({ sample, unit }: SlideProps) {
             </p>
             <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-[var(--ring-track)]">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[var(--ring-2)] to-[var(--ring-2-to)]"
+                className="h-full rounded-full bg-lime"
                 style={{ width: `${(g.fraction ?? 0) * 100}%` }}
               />
             </div>

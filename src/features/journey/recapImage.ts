@@ -55,9 +55,9 @@ export async function renderRecapImage(recap: Recap, unit: WeightUnit): Promise<
   const stats: [string, string][] = [
     ['Workouts', String(recap.workouts)],
     ['Training days', String(recap.days)],
-    ['Working sets', recap.workingSets.toLocaleString()],
-    [`Volume (${unit})`, Math.round(toDisplayWeight(recap.volumeKg, unit)).toLocaleString()],
-    ['Hours', (recap.minutes / 60).toLocaleString(undefined, { maximumFractionDigits: 1 })],
+    ['Working sets', recap.workingSets.toLocaleString('en-GB')],
+    [`Volume (${unit})`, Math.round(toDisplayWeight(recap.volumeKg, unit)).toLocaleString('en-GB')],
+    ['Hours', (recap.minutes / 60).toLocaleString('en-GB', { maximumFractionDigits: 1 })],
     ['Records', String(recap.records)],
   ];
   stats.forEach(([label, value], i) => {

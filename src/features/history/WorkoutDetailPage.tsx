@@ -310,7 +310,7 @@ function ExerciseBlock({
           Target {we.target.sets} ×{' '}
           {we.target.repMin === we.target.repMax
             ? we.target.repMin
-            : `${we.target.repMin}–${we.target.repMax}`}
+            : `${we.target.repMin} to ${we.target.repMax}`}
           {we.target.rir !== null ? ` · RIR ${we.target.rir}` : ''}
         </p>
       ) : null}

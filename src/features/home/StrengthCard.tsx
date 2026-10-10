@@ -1,6 +1,7 @@
-import { TrendingUp } from 'lucide-react';
+import { COPY } from '@/domain/analytics/thresholdCopy';
+import { ArrowDownRight, ArrowRight, ArrowUpRight } from 'lucide-react';
+import { EmptyState } from '@/components/kit';
 import type { StrengthTrend } from '@/domain/analytics/strength';
-import { MIN_TREND_SESSIONS } from '@/domain/analytics/strength';
 import { Card, SectionHeader } from '@/components/ui/Card';
 import { Sparkline } from '@/components/ui/Sparkline';
 import { cn } from '@/lib/cn';
@@ -20,17 +21,13 @@ export function StrengthCard({ trends, unit, className }: StrengthCardProps) {
       <SectionHeader
         id="strength-title"
         title="Strength"
-        detail="Estimated 1RM from your best set each session, last 5 weeks"
+        detail={COPY.strengthTrendsDetail}
         action={trends.length > 0 ? { label: 'Progress', to: '/progress' } : undefined}
       />
       {trends.length === 0 ? (
-        <div className="flex items-start gap-3 rounded-xl bg-surface-2 p-4 text-sm text-muted">
-          <TrendingUp className="mt-0.5 size-4 shrink-0 text-faint" aria-hidden />
-          Trends appear once a weighted lift has {MIN_TREND_SESSIONS} sessions in the last 5 weeks.
-          Until then, a line would be noise rather than progress.
-        </div>
+        <EmptyState>{COPY.strengthTrendsEmpty}</EmptyState>
       ) : (
-        <ul className="divide-y divide-line">
+        <ul className="divide-y-[0.5px] divide-divider">
           {trends.map((t) => {
             const up = t.change > 0.005;
             const down = t.change < -0.005;
@@ -40,12 +37,12 @@ export function StrengthCard({ trends, unit, className }: StrengthCardProps) {
                 className="flex items-center gap-4 py-3.5 first:pt-1 last:pb-0"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{t.exerciseName}</p>
-                  <p className="mt-0.5 flex items-baseline gap-2">
-                    <span className="tabular font-display text-[1.45rem] font-semibold leading-none">
+                  <p className="type-body truncate font-medium text-text-1">{t.exerciseName}</p>
+                  <p className="mt-0.5 flex items-baseline gap-1.5">
+                    <span className="type-title tabular text-text-1">
                       {formatWeightValue(t.latest, unit)}
                     </span>
-                    <span className="text-sm text-faint">{unit} e1RM</span>
+                    <span className="type-meta text-text-2">{unit} e1RM</span>
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
@@ -53,12 +50,14 @@ export function StrengthCard({ trends, unit, className }: StrengthCardProps) {
                     values={t.points.map((p) => toDisplayWeight(p.e1rm, unit))}
                     label={`${t.exerciseName} estimated 1RM over ${t.points.length} sessions since ${formatDayMonth(t.points[0]!.date)}`}
                   />
-                  <span
-                    className={cn(
-                      'tabular text-sm font-semibold',
-                      up ? 'text-accent-text' : down ? 'text-warn' : 'text-muted',
+                  <span className="type-meta tabular inline-flex items-center gap-0.5 font-semibold text-text-1">
+                    {up ? (
+                      <ArrowUpRight className="size-4 text-text-2" aria-hidden />
+                    ) : down ? (
+                      <ArrowDownRight className="size-4 text-text-2" aria-hidden />
+                    ) : (
+                      <ArrowRight className="size-4 text-text-2" aria-hidden />
                     )}
-                  >
                     {formatSignedPercent(t.change, 1)}
                     <span className="sr-only"> since {formatDayMonth(t.points[0]!.date)}</span>
                   </span>

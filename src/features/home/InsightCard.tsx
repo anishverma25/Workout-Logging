@@ -10,15 +10,15 @@ export function InsightCard({ insights, className }: { insights: Insight[]; clas
   return (
     <section
       aria-label="Training insight"
-      className={cn('rounded-[var(--radius-card)] bg-surface p-5', className)}
+      className={cn('rounded-panel border border-border bg-surface p-5', className)}
     >
-      <div className="flex gap-3.5">
-        <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-full', ring)}>
-          <Icon className="size-[1.15rem]" aria-hidden />
+      <div className="flex gap-3">
+        <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-tile', ring)}>
+          <Icon className="size-5" aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="text-[1.05rem] font-semibold leading-snug">{insight.title}</p>
-          <p className="mt-1.5 text-sm leading-relaxed text-faint">{insight.basis}</p>
+          <p className="type-headline text-text-1">{insight.title}</p>
+          <p className="type-meta mt-1 text-text-2">{insight.basis}</p>
         </div>
       </div>
     </section>

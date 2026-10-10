@@ -43,7 +43,7 @@ export function feedbackProblem(draft: FeedbackDraft): string | null {
   )
     return 'Pick between 1 and 5 stars.';
   if (draft.message.trim().length > MESSAGE_MAX)
-    return `Keep it under ${MESSAGE_MAX.toLocaleString()} characters.`;
+    return `Keep it under ${MESSAGE_MAX.toLocaleString('en-GB')} characters.`;
   return null;
 }
 

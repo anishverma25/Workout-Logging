@@ -119,6 +119,28 @@ test('pause, finish, summary, then history', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Empty workout' })).toBeVisible();
 });
 
+test('a session done today shows Completed, with View and Repeat (B1)', async ({ page }) => {
+  await page.goto('/workout');
+  await expect(page.getByRole('heading', { name: 'Empty workout' })).toBeVisible();
+  const todayCard = page.locator('article', { has: page.getByText('Today', { exact: true }) });
+  test.skip((await todayCard.count()) === 0, 'Today is a rest day in the demo routine.');
+  const dayName = (await todayCard.getByRole('heading', { level: 3 }).textContent())!.trim();
+  await todayCard.getByRole('button', { name: `Start ${dayName}` }).click();
+  await expect(page.getByRole('button', { name: 'Finish' })).toBeVisible();
+  await firstCard(page).getByRole('button', { name: 'Mark set 1 done' }).click();
+  await page.getByRole('button', { name: 'Finish' }).click();
+  await page.getByRole('button', { name: 'Finish and save' }).click();
+  await expect(page.getByRole('heading', { name: `${dayName} done` })).toBeVisible();
+
+  await page.goto('/workout');
+  const done = page.locator('article', { has: page.getByText('Completed', { exact: true }) });
+  await expect(done.getByRole('heading', { name: dayName })).toBeVisible();
+  await expect(done.getByRole('link', { name: 'View' })).toHaveAttribute('href', /^\/history\//);
+  await expect(page.getByRole('button', { name: `Start ${dayName}` })).toHaveCount(0);
+  await done.getByRole('button', { name: `Repeat ${dayName}` }).click();
+  await expect(page.getByRole('button', { name: 'Finish' })).toBeVisible();
+});
+
 test('empty workout: add an exercise, log it, finish', async ({ page }) => {
   await page.goto('/workout');
   await page.getByRole('button', { name: 'Start empty workout' }).click();
@@ -163,11 +185,11 @@ test('editing a routine target shows up in the next workout', async ({ page }) =
   await page.getByRole('button', { name: 'Increase highest reps' }).click();
   await page.getByRole('button', { name: 'Increase sets' }).click();
   await page.getByRole('button', { name: 'Close' }).click();
-  await expect(page.getByText('4 × 5–9').first()).toBeVisible();
+  await expect(page.getByText('4 × 5 to 9').first()).toBeVisible();
 
   const push = page.locator('section', { has: page.getByRole('heading', { name: 'Push' }) });
   await push.getByRole('button', { name: 'Start', exact: true }).click();
-  await expect(firstCard(page).getByText(/Target 4 × 5–9/)).toBeVisible();
+  await expect(firstCard(page).getByText(/Target 4 × 5 to 9/)).toBeVisible();
 });
 
 test('lb input is shown back exactly as typed', async ({ page }) => {

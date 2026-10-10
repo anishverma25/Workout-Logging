@@ -33,18 +33,25 @@ test('primary navigation reaches every main area', async ({ page }) => {
 test('secondary areas are reachable', async ({ page }) => {
   if (isMobile(page)) {
     await page.getByRole('link', { name: 'More' }).click();
+    // Wait for More to finish loading (its code is fetched on demand) before tapping a row.
+    await expect(page.getByRole('heading', { level: 1, name: 'More' })).toBeVisible();
     await page.getByRole('link', { name: 'Settings' }).click();
+    await expect(page).toHaveURL(/\/settings$/);
   } else {
     await mainNav(page).getByRole('link', { name: 'Settings' }).click();
   }
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Settings');
 });
 
-test('the app stays dark and units can be changed', async ({ page }) => {
+test('the app is dark only and units can be changed', async ({ page }) => {
+  // Dark only (D3, B4): a light preference stored before the redesign is ignored, and there
+  // is no theme setting any more.
+  await page.goto('/');
+  await page.evaluate(() => localStorage.setItem('overload.theme', 'light'));
   await page.goto('/settings');
-  // Dark only (D3): a light choice, picked or stored, never changes the theme.
-  await page.getByRole('radio', { name: 'Light' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.getByRole('radiogroup', { name: 'Theme' })).toHaveCount(0);
+  await expect(page.getByRole('radio', { name: 'Light' })).toHaveCount(0);
   await page.getByRole('radio', { name: 'lb' }).click();
   await expect(page.getByText('Showing weights in lb')).toBeVisible();
   await page.goto('/');

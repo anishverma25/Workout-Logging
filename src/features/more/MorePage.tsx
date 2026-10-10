@@ -53,7 +53,7 @@ function ProfileCard() {
     >
       <span
         aria-hidden
-        className="flex size-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--tile-iris)] to-[var(--tile-plum)] font-display text-xl font-semibold text-white"
+        className="flex size-14 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 font-display text-xl font-semibold text-white"
       >
         {initials || '?'}
       </span>

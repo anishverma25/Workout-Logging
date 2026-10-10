@@ -16,18 +16,16 @@ export function EmptyState({ icon, title, body, actions, className }: EmptyState
   return (
     <div
       className={cn(
-        'flex flex-col items-start gap-4 rounded-[var(--radius-card)] bg-surface p-6',
+        'flex flex-col items-start gap-4 rounded-panel border border-border bg-surface p-5',
         className,
       )}
     >
-      <div className="flex size-12 items-center justify-center rounded-[0.9rem] bg-accent-soft text-accent-text">
+      <div className="flex size-9 items-center justify-center rounded-tile bg-surface-2 text-text-2 [&_svg]:size-5">
         {icon}
       </div>
       <div className="max-w-[46ch]">
-        <h2 className="font-display text-[1.45rem] font-bold leading-tight tracking-tight">
-          {title}
-        </h2>
-        <div className="mt-2 text-[0.95rem] leading-relaxed text-muted">{body}</div>
+        <h2 className="type-title text-text-1">{title}</h2>
+        <div className="type-body mt-1 text-text-2 [text-wrap:balance]">{body}</div>
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </div>
@@ -46,17 +44,19 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className="flex flex-col items-start gap-3 rounded-[var(--radius-card)] bg-danger-soft p-5"
+      className="flex flex-col items-start gap-3 rounded-panel border border-border bg-surface p-5"
     >
-      <div className="flex items-center gap-2 font-semibold text-danger">
-        <AlertTriangle className="size-5" aria-hidden />
+      <div className="type-headline flex items-center gap-3 text-text-1">
+        <span className="flex size-9 items-center justify-center rounded-tile bg-surface-2 text-text-2">
+          <AlertTriangle className="size-5" aria-hidden />
+        </span>
         {title}
       </div>
-      <p className="text-sm text-muted">
+      <p className="type-meta text-text-2">
         Nothing was deleted. This usually means the browser blocked local storage (for example in a
         private window).
         {error ? (
-          <span className="mt-1 block font-mono text-xs text-faint">{error.message}</span>
+          <span className="mt-1 block font-mono text-xs text-text-2">{error.message}</span>
         ) : null}
       </p>
       {onRetry ? (
@@ -69,10 +69,5 @@ export function ErrorState({
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return (
-    <div
-      aria-hidden
-      className={cn('animate-pulse rounded-[var(--radius-card)] bg-surface', className)}
-    />
-  );
+  return <div aria-hidden className={cn('skeleton rounded-panel bg-surface-2', className)} />;
 }

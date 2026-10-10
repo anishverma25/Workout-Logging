@@ -88,8 +88,8 @@ export function setLabels(sets: WorkoutSet[]): Map<string, string> {
 }
 
 const formatMinutes = (sec: number) =>
-  (Math.round((sec / 60) * 10) / 10).toLocaleString(undefined, { maximumFractionDigits: 1 });
-const formatKm = (m: number) => (m / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  (Math.round((sec / 60) * 10) / 10).toLocaleString('en-GB', { maximumFractionDigits: 1 });
+const formatKm = (m: number) => (m / 1000).toLocaleString('en-GB', { maximumFractionDigits: 2 });
 
 /** Minutes per kilometre, "5:24", from a cardio set. Null without both values. */
 export function formatPace(durationSec: number | null, distanceM: number | null): string | null {

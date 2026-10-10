@@ -9,7 +9,6 @@ import {
 import { CalendarPlus, Download, FlaskConical, RotateCcw, Trash2 } from 'lucide-react';
 import { isIosSafari, promptInstall, usePwa } from '@/app/pwa';
 import { PageHeader } from '@/app/layout/PageHeader';
-import { useTheme, type ThemePreference } from '@/app/theme';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { useAccount } from '@/app/account';
 import { SyncSummary } from '@/features/account/SyncStatus';
@@ -34,9 +33,9 @@ import { DurationPicker } from '@/components/ui/DurationPicker';
 export function SettingsPage() {
   return (
     <>
-      <PageHeader title="Settings" />
+      <PageHeader back={{ to: '/more', label: 'More' }} title="Settings" />
       <div className="flex max-w-2xl flex-col gap-7">
-        <AppearanceSection />
+        <UnitsSection />
         <RestSection />
         <WorkoutSection />
         <RemindersSection />
@@ -50,24 +49,12 @@ export function SettingsPage() {
   );
 }
 
-function AppearanceSection() {
-  const { preference, setPreference } = useTheme();
+/** The app is dark only (decision D3), so there is no theme setting. */
+function UnitsSection() {
   const prefs = usePreferences();
   const toast = useToast();
   return (
-    <Panel title="Appearance and units">
-      <PanelRow title="Theme" detail="System follows your phone or computer setting." stack>
-        <SegmentedControl<ThemePreference>
-          label="Theme"
-          value={preference}
-          onChange={setPreference}
-          options={[
-            { value: 'system', label: 'System' },
-            { value: 'dark', label: 'Dark' },
-            { value: 'light', label: 'Light' },
-          ]}
-        />
-      </PanelRow>
+    <Panel title="Units">
       <PanelRow
         title="Weight"
         detail="Changes how weights are shown. Your logged numbers are never altered."
@@ -83,6 +70,17 @@ function AppearanceSection() {
           options={[
             { value: 'kg', label: 'kg' },
             { value: 'lb', label: 'lb' },
+          ]}
+        />
+      </PanelRow>
+      <PanelRow title="Week starts" detail="Week strips, weekly rings and charts follow it." stack>
+        <SegmentedControl<'1' | '0'>
+          label="Week starts"
+          value={prefs.weekStartsOn === 0 ? '0' : '1'}
+          onChange={(v) => void updatePreferences(db, { weekStartsOn: v === '0' ? 0 : 1 })}
+          options={[
+            { value: '1', label: 'Mon' },
+            { value: '0', label: 'Sun' },
           ]}
         />
       </PanelRow>

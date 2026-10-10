@@ -98,7 +98,7 @@ export function milestones(
         add({
           id: `sets-${t}`,
           kind: 'count',
-          title: `${t.toLocaleString()} working sets`,
+          title: `${t.toLocaleString('en-GB')} working sets`,
           detail: 'Every one of them logged.',
           achievedAt: s.date,
           workoutId: s.workout.id,
@@ -110,7 +110,7 @@ export function milestones(
         add({
           id: `tonnes-${t}`,
           kind: 'volume',
-          title: `${t.toLocaleString()} tonnes lifted`,
+          title: `${t.toLocaleString('en-GB')} tonnes lifted`,
           detail: 'Load × reps over every working set you have logged.',
           achievedAt: s.date,
           workoutId: s.workout.id,

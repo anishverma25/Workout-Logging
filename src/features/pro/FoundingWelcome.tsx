@@ -29,7 +29,7 @@ export function FoundingWelcome() {
   return (
     <Sheet open={open} onClose={() => void close()} title="Welcome, founding member">
       <div className="flex flex-col items-start gap-4">
-        <span className="flex size-14 items-center justify-center rounded-[1.1rem] bg-gradient-to-br from-[var(--tile-iris)] to-[var(--tile-plum)] text-white">
+        <span className="flex size-14 items-center justify-center rounded-[1.1rem] border border-border bg-surface-2 text-white">
           <Crown className="size-7" aria-hidden />
         </span>
         <p className="text-[1.02rem] leading-relaxed text-muted">

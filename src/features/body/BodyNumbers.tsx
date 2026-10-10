@@ -33,7 +33,7 @@ const RATE_LABEL: Record<RateVerdict, string> = {
 type Topic = 'energy' | 'protein' | 'bmi' | 'fat' | 'ffmi' | 'rate';
 
 const fmt = (v: number, digits = 1) =>
-  v.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+  v.toLocaleString('en-GB', { maximumFractionDigits: digits, minimumFractionDigits: 0 });
 
 interface Props {
   snapshot: BodySnapshot;
@@ -72,10 +72,7 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
         >
           Your numbers
         </h2>
-        <Link
-          to="/science#maintenance"
-          className="tap-target text-sm font-medium text-accent-text"
-        >
+        <Link to="/science#maintenance" className="tap-target text-sm font-medium text-accent-text">
           How they are worked out
         </Link>
       </div>
@@ -92,11 +89,11 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
         <Tile
           label="Daily calories"
           onOpen={s.energy ? () => setTopic('energy') : undefined}
-          value={s.energy ? s.energy.targetKcal.toLocaleString() : null}
+          value={s.energy ? s.energy.targetKcal.toLocaleString('en-GB') : null}
           unit="kcal"
           detail={
             s.energy
-              ? `Maintenance about ${s.energy.tdee.toLocaleString()}`
+              ? `Maintenance about ${s.energy.tdee.toLocaleString('en-GB')}`
               : missingFor.energy.length
                 ? needs(missingFor.energy)
                 : 'Needs your profile'
@@ -108,7 +105,7 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
           onOpen={s.energy ? () => setTopic('protein') : undefined}
           value={
             s.energy
-              ? `${s.energy.proteinG[0].toFixed(1)}–${s.energy.proteinG[1].toFixed(1)}`
+              ? `${s.energy.proteinG[0].toFixed(1)} to ${s.energy.proteinG[1].toFixed(1)}`
               : null
           }
           unit="g"
@@ -223,9 +220,7 @@ function Tile({
           {unit ? <span className="ml-1 text-base font-medium text-faint">{unit}</span> : null}
         </span>
       ) : (
-        <span className="mt-1.5 block font-display text-[1.6rem] font-semibold leading-tight text-faint/60">
-          –
-        </span>
+        <span className="type-headline mt-1.5 block text-text-2">None yet</span>
       )}
       <span className="mt-0.5 block text-xs leading-snug text-faint">{detail}</span>
     </>
@@ -287,40 +282,41 @@ function Explanation({
             {e.method === 'mifflin' ? (
               <>
                 Mifflin-St Jeor: 10 × {w} kg + 6.25 × {fmt(heightCm ?? 0)} cm − 5 × {s.age} years{' '}
-                {sex === 'female' ? '− 161' : '+ 5'} = {e.bmr.toLocaleString()} kcal
+                {sex === 'female' ? '− 161' : '+ 5'} = {e.bmr.toLocaleString('en-GB')} kcal
               </>
             ) : (
               <>
                 Katch-McArdle, from lean mass: 370 + 21.6 × {fmt(s.leanKg ?? 0)} kg ={' '}
-                {e.bmr.toLocaleString()} kcal
+                {e.bmr.toLocaleString('en-GB')} kcal
               </>
             )}
           </Formula>
           <p className="mt-3 font-semibold text-text">2. Your day, without the gym</p>
           <Formula>
-            {e.bmr.toLocaleString()} × {e.pal} ({ACTIVITY_LABEL[e.dailyActivity].toLowerCase()}) ≈{' '}
-            {e.dailyKcal.toLocaleString()} kcal
+            {e.bmr.toLocaleString('en-GB')} × {e.pal} (
+            {ACTIVITY_LABEL[e.dailyActivity].toLowerCase()}) ≈ {e.dailyKcal.toLocaleString('en-GB')}{' '}
+            kcal
           </Formula>
           <p className="mt-3 font-semibold text-text">3. Training</p>
           <Formula>
             {fmt(e.trainingDays, 1)} × {fmt(e.sessionMinutes / 60, 2)} h × ({TRAINING_MET} − 1) MET
-            × {w} kg ÷ 7 days ≈ {e.trainingKcal.toLocaleString()} kcal a day
+            × {w} kg ÷ 7 days ≈ {e.trainingKcal.toLocaleString('en-GB')} kcal a day
           </Formula>
           <p className="text-sm text-faint">
             {days}, {e.sessionMinutes} minutes each.
           </p>
           <p className="mt-3">Maintenance, the calories that keep your weight steady:</p>
           <Formula>
-            {e.dailyKcal.toLocaleString()} + {e.trainingKcal.toLocaleString()} ={' '}
-            <strong className="text-text">{e.tdee.toLocaleString()} kcal</strong>
+            {e.dailyKcal.toLocaleString('en-GB')} + {e.trainingKcal.toLocaleString('en-GB')} ={' '}
+            <strong className="text-text">{e.tdee.toLocaleString('en-GB')} kcal</strong>
           </Formula>
           <p>
             For {goal ? GOAL_LABEL[goal].toLowerCase() : 'your goal'} the target is{' '}
             {e.adjustment === 0
               ? 'maintenance'
               : `${e.adjustment > 0 ? '+' : '−'}${Math.round(Math.abs(e.adjustment) * 100)}%`}
-            : <strong className="text-text">{e.targetKcal.toLocaleString()} kcal</strong> a day.
-            With protein in the middle of its range and at least {e.fatMinG} g of fat, about{' '}
+            : <strong className="text-text">{e.targetKcal.toLocaleString('en-GB')} kcal</strong> a
+            day. With protein in the middle of its range and at least {e.fatMinG} g of fat, about{' '}
             {e.carbsG} g of carbohydrate fills the rest.
           </p>
           <p className="mt-3 text-sm text-faint">

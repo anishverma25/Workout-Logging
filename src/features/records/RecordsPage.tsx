@@ -53,6 +53,7 @@ export function RecordsPage() {
   return (
     <>
       <PageHeader
+        back={{ to: '/more', label: 'More' }}
         title="Personal records"
         subtitle="Found in your logged sets, never entered by hand. Estimates are always labelled."
       />
@@ -74,7 +75,7 @@ export function RecordsPage() {
               Last {RECENT_DAYS} days
             </h2>
             {recent.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-line-strong p-5 text-sm text-muted">
+              <p className="flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center type-meta text-text-2">
                 No new records in the last {RECENT_DAYS} days. Records come from beating an earlier
                 best, so they arrive in bursts, not every week.
               </p>

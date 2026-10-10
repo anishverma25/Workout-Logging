@@ -155,7 +155,7 @@ function PickerContent({
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-dashed border-line-strong px-3 py-3.5 text-left font-semibold text-accent-text hover:bg-surface-2"
+          className="pressable chrome type-headline mt-3 flex h-13 w-full items-center gap-3 rounded-nested bg-surface-2 px-4 text-left text-text-1"
         >
           <Plus className="size-5" aria-hidden />
           {filters.query.trim() ? `Create “${filters.query.trim()}”` : 'Create your own exercise'}

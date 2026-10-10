@@ -41,6 +41,9 @@ import { buildSessions, isWorkingSet, type Session, type TrainingData } from './
 import { strengthTrends } from './strength';
 import { sessionVolumeLoad, setVolumeLoad, totalVolumeLoad } from './volume';
 
+/** A weekly training rate needs at least this many days of history. */
+export const FREQUENCY_MIN_DAYS = 7;
+
 export type ProgressRange = '7d' | '30d' | '90d' | 'all';
 export type Bucket = 'day' | 'week' | 'month';
 
@@ -536,7 +539,7 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
     consistency: {
       periods: periods.map((period) => ({ period, workouts: inPeriod(period).length })),
       total: inWindow.length,
-      perWeek: coveredDays >= 7 ? inWindow.length / (coveredDays / 7) : null,
+      perWeek: coveredDays >= FREQUENCY_MIN_DAYS ? inWindow.length / (coveredDays / 7) : null,
       perMonth: coveredDays >= 28 ? inWindow.length / (coveredDays / 30.4375) : null,
       adherence: adherence(
         sessions,

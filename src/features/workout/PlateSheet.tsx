@@ -7,15 +7,15 @@ import type { WeightUnit } from '@/lib/units';
 
 /** Plate colours, as on competition plates, to make the picture readable at a glance. */
 const PLATE_STYLE: Record<number, { h: number; tone: string }> = {
-  25: { h: 100, tone: 'bg-[var(--tile-rose)]' },
-  45: { h: 100, tone: 'bg-[var(--tile-rose)]' },
-  20: { h: 100, tone: 'bg-[var(--tile-sky)]' },
-  35: { h: 92, tone: 'bg-[var(--tile-amber)]' },
-  15: { h: 88, tone: 'bg-[var(--tile-amber)]' },
-  10: { h: 74, tone: 'bg-[var(--tile-lime)]' },
-  5: { h: 58, tone: 'bg-[var(--tile-graphite)]' },
-  2.5: { h: 46, tone: 'bg-[var(--tile-iris)]' },
-  1.25: { h: 38, tone: 'bg-[var(--tile-plum)]' },
+  25: { h: 100, tone: 'bg-[var(--plate-25)]' },
+  45: { h: 100, tone: 'bg-[var(--plate-25)]' },
+  20: { h: 100, tone: 'bg-[var(--plate-20)]' },
+  35: { h: 92, tone: 'bg-[var(--plate-15)]' },
+  15: { h: 88, tone: 'bg-[var(--plate-15)]' },
+  10: { h: 74, tone: 'bg-[var(--plate-10)]' },
+  5: { h: 58, tone: 'bg-[var(--plate-5)]' },
+  2.5: { h: 46, tone: 'bg-[var(--plate-small)]' },
+  1.25: { h: 38, tone: 'bg-[var(--plate-small)]' },
 };
 
 export function PlateSheet({
@@ -70,7 +70,7 @@ function Calculator({ unit, initial }: { unit: WeightUnit; initial: number | nul
             {load.perSide.map((p, i) => (
               <span
                 key={i}
-                className={`w-3.5 rounded-[3px] ${PLATE_STYLE[p]?.tone ?? 'bg-[var(--tile-graphite)]'}`}
+                className={`w-3.5 rounded-[3px] ${PLATE_STYLE[p]?.tone ?? 'bg-[var(--plate-small)]'}`}
                 style={{ height: `${PLATE_STYLE[p]?.h ?? 50}%` }}
               />
             ))}

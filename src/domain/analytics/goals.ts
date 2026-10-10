@@ -22,11 +22,15 @@ export interface GoalProgress {
 
 /** Lifts count from the last 8 weeks: a goal is about what you can do now. */
 export const GOAL_WINDOW_WEEKS = 8;
+/** A projection needs this many data points... */
+export const PROJECTION_MIN_POINTS = 4;
+/** ...spread over at least this many weeks. */
+export const PROJECTION_MIN_WEEKS = 3;
 
 function slope(points: { date: Date; value: number }[]): number | null {
-  if (points.length < 4) return null;
+  if (points.length < PROJECTION_MIN_POINTS) return null;
   const span = (points[points.length - 1]!.date.getTime() - points[0]!.date.getTime()) / 86_400_000;
-  if (span < 21) return null;
+  if (span < PROJECTION_MIN_WEEKS * 7) return null;
   const xs = points.map((p) => p.date.getTime() / (7 * 86_400_000));
   const ys = points.map((p) => p.value);
   const mx = xs.reduce((a, b) => a + b, 0) / xs.length;

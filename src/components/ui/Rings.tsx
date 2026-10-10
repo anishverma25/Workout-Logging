@@ -1,31 +1,31 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/cn';
 
 export interface RingSpec {
-  /** 1, 2 or 3: picks the ring's colour family (training, effort, time). */
+  /** 1, 2 or 3: outer to inner, drawn lime at 100%, 60% and 30%. */
   hue: 1 | 2 | 3;
   value: number;
   target: number;
   label: string;
 }
 
+const STROKE = 12;
+const GAP = 6;
+
 /**
- * Concentric progress rings. The outermost ring is the first one. Each ring fills to
- * value / target (capped at one full turn); the numbers are always shown as text next to the
- * rings, so colour is never the only carrier of the information.
+ * Concentric progress rings (UI Part 3): 12px thick, 6px apart, round caps, --grid tracks,
+ * lime at 100%, 60% and 30%. Each ring fills to value / target, capped at one turn. The numbers
+ * always appear as text in the legend, so colour is never the only cue.
  */
 export function Rings({
   rings,
-  size = 168,
+  size = 132,
   className,
 }: {
   rings: RingSpec[];
   size?: number;
   className?: string;
 }) {
-  const id = useId().replace(/:/g, '');
-  const stroke = Math.round(size * 0.115);
-  const gap = Math.max(2, Math.round(size * 0.018));
   const [drawn, setDrawn] = useState(false);
   useEffect(() => {
     const frame = requestAnimationFrame(() => setDrawn(true));
@@ -40,16 +40,9 @@ export function Rings({
       className={cn('shrink-0 -rotate-90', className)}
       aria-hidden
     >
-      <defs>
-        {rings.map((r) => (
-          <linearGradient key={r.hue} id={`${id}-g${r.hue}`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" style={{ stopColor: `var(--ring-${r.hue})` }} />
-            <stop offset="100%" style={{ stopColor: `var(--ring-${r.hue}-to)` }} />
-          </linearGradient>
-        ))}
-      </defs>
       {rings.map((r, i) => {
-        const radius = size / 2 - stroke / 2 - i * (stroke + gap);
+        const radius = size / 2 - STROKE / 2 - i * (STROKE + GAP);
+        if (radius <= 0) return null;
         const circumference = 2 * Math.PI * radius;
         const fraction = r.target > 0 ? Math.min(1, Math.max(0, r.value / r.target)) : 0;
         // A tiny visible dot for a started-but-small ring, nothing for zero.
@@ -61,8 +54,8 @@ export function Rings({
               cy={size / 2}
               r={radius}
               fill="none"
-              strokeWidth={stroke}
-              style={{ stroke: 'var(--ring-track)' }}
+              strokeWidth={STROKE}
+              stroke="var(--grid)"
             />
             <circle
               className="ring-arc"
@@ -70,9 +63,9 @@ export function Rings({
               cy={size / 2}
               r={radius}
               fill="none"
-              strokeWidth={stroke}
+              strokeWidth={STROKE}
               strokeLinecap="round"
-              stroke={`url(#${id}-g${r.hue})`}
+              stroke={`var(--ring-${r.hue})`}
               strokeDasharray={circumference}
               strokeDashoffset={drawn ? circumference * (1 - shown) : circumference}
               style={{ transitionDelay: `${i * 90}ms`, opacity: shown === 0 ? 0 : 1 }}
@@ -84,10 +77,10 @@ export function Rings({
   );
 }
 
-/** The legend that goes with the rings: label, value and target, in the ring's colour. */
+/** The legend that goes with the rings: label with its ring's colour dot, value and target. */
 export function RingLegend({
   rings,
-  format = (n) => n.toLocaleString(),
+  format = (n) => n.toLocaleString('en-GB'),
   className,
 }: {
   rings: (RingSpec & { unit?: string })[];
@@ -98,7 +91,7 @@ export function RingLegend({
     <dl className={cn('flex flex-col gap-3', className)}>
       {rings.map((r) => (
         <div key={r.hue} className="min-w-0">
-          <dt className="flex items-center gap-1.5 text-[0.8125rem] font-medium text-muted">
+          <dt className="type-meta flex items-center gap-1.5 text-text-2">
             <span
               aria-hidden
               className="size-2 rounded-full"
@@ -106,9 +99,9 @@ export function RingLegend({
             />
             {r.label}
           </dt>
-          <dd className="tabular font-display text-[1.6rem] font-semibold leading-tight tracking-tight">
-            {format(r.value)}
-            <span className="text-[1.05rem] font-medium text-faint">
+          <dd className="tabular flex items-baseline">
+            <span className="type-stat text-text-1">{format(r.value)}</span>
+            <span className="type-meta text-text-2">
               /{format(r.target)}
               {r.unit ? <span className="ml-0.5">{r.unit}</span> : null}
             </span>

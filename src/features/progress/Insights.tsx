@@ -15,7 +15,7 @@ import { INSIGHT_TONE } from '../shared/insightTone';
 export function InsightList({ insights }: { insights: Insight[] }) {
   if (insights.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-line-strong p-5 text-sm text-muted">
+      <p className="flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center type-meta text-text-2">
         Nothing stands out in this period. Insights appear only when the data clearly shows
         something, so a quiet list is normal.
       </p>

@@ -124,9 +124,9 @@ async function writeRoutine(
   db: WorkoutDatabase,
   template: RoutineTemplate,
   name: string | undefined,
-  personalized: boolean,
+  // Personalised routines used to carry a stock description; nothing differs now.
+  _personalized: boolean,
 ): Promise<Routine> {
-  const personalize = personalized;
   return db.transaction('rw', ROUTINE_TABLES(db), async () => {
     const hasActive =
       (await db.routines.filter((r) => r.deletedAt === null && r.isActive).count()) > 0;
@@ -134,7 +134,7 @@ async function writeRoutine(
     const routine: Routine = {
       ...newRecordMeta('user', at),
       name: (name ?? template.name).trim() || template.name,
-      description: personalize ? 'Fitted to your goal, experience and equipment.' : null,
+      description: null,
       isActive: !hasActive,
     };
     const days: RoutineDay[] = [];

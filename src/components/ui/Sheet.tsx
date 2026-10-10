@@ -77,27 +77,24 @@ export function Sheet({
         if (e.target === e.currentTarget) onCloseRef.current();
       }}
       className={cn(
-        'sheet m-0 mt-auto hidden max-h-[min(92dvh,52rem)] w-full max-w-none flex-col open:flex overflow-hidden rounded-t-[1.75rem] bg-surface p-0 text-text shadow-[var(--shadow-float)] backdrop:bg-black/50 backdrop:backdrop-blur-[2px] sm:m-auto sm:rounded-[1.5rem]',
-        size === 'md' ? 'sm:max-w-lg' : 'sm:max-w-2xl',
+        'kit-sheet m-0 mt-auto hidden max-h-[85dvh] w-full max-w-none flex-col overflow-hidden rounded-t-panel bg-surface p-0 text-text-1 open:flex backdrop:bg-overlay lg:m-auto lg:rounded-panel',
+        size === 'md' ? 'lg:max-w-[30rem]' : 'lg:max-w-2xl',
         className,
       )}
     >
       {open ? (
         <>
           <div
-            className="mx-auto mt-2 h-[5px] w-9 shrink-0 rounded-full bg-line-strong sm:hidden"
+            className="mx-auto mt-2 h-[5px] w-9 shrink-0 rounded-full bg-text-1/20 lg:hidden"
             aria-hidden
           />
-          <header className="flex shrink-0 items-start justify-between gap-3 px-5 pb-3 pt-3 sm:pt-5">
+          <header className="flex shrink-0 items-start justify-between gap-3 px-5 pt-3 pb-3 lg:pt-5">
             <div className="min-w-0">
-              <h2
-                id={titleId}
-                className="font-display text-[1.375rem] font-bold leading-tight tracking-tight"
-              >
+              <h2 id={titleId} className="type-title text-text-1">
                 {title}
               </h2>
               {description ? (
-                <p id={descriptionId} className="mt-1 text-sm text-muted">
+                <p id={descriptionId} className="type-meta mt-0.5 text-text-2">
                   {description}
                 </p>
               ) : null}
@@ -106,7 +103,7 @@ export function Sheet({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="tap-target mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--seg-track)] text-muted transition-colors hover:text-text"
+              className="pressable tap-target inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text-2 hover:text-text-1"
             >
               <X className="size-4" strokeWidth={2.5} aria-hidden />
             </button>
@@ -115,7 +112,7 @@ export function Sheet({
             {children}
           </div>
           {footer ? (
-            <footer className="shrink-0 border-t border-line bg-surface px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+            <footer className="shrink-0 border-t-[0.5px] border-divider bg-surface px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
               {footer}
             </footer>
           ) : (
@@ -157,29 +154,31 @@ export function ConfirmSheet({
       onClose={onClose}
       title={title}
       footer={
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-12 rounded-full px-5 font-semibold text-muted hover:bg-surface-2 hover:text-text"
-          >
-            {cancelLabel}
-          </button>
+        <div className="flex flex-col gap-2">
           <button
             type="button"
             disabled={busy}
             onClick={onConfirm}
+            aria-busy={busy || undefined}
             className={cn(
-              'h-12 rounded-full px-6 font-semibold transition-[filter] disabled:opacity-50',
-              danger ? 'bg-danger text-bg hover:brightness-110' : 'bg-accent text-accent-ink',
+              'pressable chrome type-headline h-13 w-full rounded-nested px-6',
+              danger ? 'bg-surface-2 text-danger' : 'bg-lime text-on-lime',
+              busy && 'opacity-60',
             )}
           >
             {confirmLabel}
           </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="pressable chrome type-headline h-13 w-full rounded-nested bg-surface-2 px-5 text-text-1"
+          >
+            {cancelLabel}
+          </button>
         </div>
       }
     >
-      <div className="text-[0.95rem] leading-relaxed text-muted">{body}</div>
+      <div className="type-body text-text-2">{body}</div>
     </Sheet>
   );
 }

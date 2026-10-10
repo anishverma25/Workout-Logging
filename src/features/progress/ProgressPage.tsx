@@ -1,3 +1,4 @@
+import { COPY } from '@/domain/analytics/thresholdCopy';
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import {
@@ -87,10 +88,7 @@ export function ProgressPage() {
 
   return (
     <>
-      <PageHeader
-        title="Progress"
-        subtitle="Strength, volume and consistency, calculated from your logged sets."
-      />
+      <PageHeader title="Progress" subtitle="Calculated from your logged sets" />
       <Link
         to="/science"
         className="mb-2 flex items-center gap-3 rounded-[var(--radius-card)] bg-surface p-4 text-sm shadow-card"
@@ -635,7 +633,7 @@ function MusclesSection({ model }: { model: ProgressModel }) {
                   : 'Weighted working sets by muscle group'
               }
               valueName={perWeek ? 'Sets per week' : 'Sets'}
-              formatValue={(v) => (Math.round(v * 10) / 10).toLocaleString()}
+              formatValue={(v) => (Math.round(v * 10) / 10).toLocaleString('en-GB')}
               bars={rows.map((w) => ({
                 key: w.muscle,
                 label: MUSCLE_LABELS[w.muscle],
@@ -728,7 +726,7 @@ function ConsistencySection({ model }: { model: ProgressModel }) {
             <p className="mt-1 text-sm text-muted">
               {consistency.perWeek !== null
                 ? `${consistency.perWeek.toFixed(1)} workouts per week`
-                : 'A weekly rate needs at least 7 days of history.'}
+                : COPY.frequencyEmpty}
               {consistency.perMonth !== null
                 ? `, ${consistency.perMonth.toFixed(1)} per month`
                 : ''}
@@ -775,7 +773,7 @@ function BodySection({ model, unit }: { model: ProgressModel; unit: WeightUnit }
                     .map((p) => ({ x: p.date.getTime(), y: toDisplayWeight(p.averageKg!, unit) })),
                 },
               ]}
-              formatY={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+              formatY={(v) => v.toLocaleString('en-GB', { maximumFractionDigits: 1 })}
               formatX={(x) => formatDayMonth(new Date(x))}
               formatXLong={(x) => formatShortDate(new Date(x))}
             />
@@ -802,7 +800,7 @@ function RecordsSection({ model, unit }: { model: ProgressModel; unit: WeightUni
   return (
     <Section id="records" title="Records in this period" science="records">
       {model.records.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-line-strong p-5 text-sm text-muted">
+        <p className="flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center type-meta text-text-2">
           No records in this period. They come from beating an earlier best, so they arrive in
           bursts.
         </p>

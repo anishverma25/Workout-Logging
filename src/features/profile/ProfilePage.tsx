@@ -69,7 +69,7 @@ export function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="Profile" />
+      <PageHeader back={{ to: '/more', label: 'More' }} title="Profile" />
       <Sheet open={editing} onClose={() => setEditing(false)} title="Edit profile" size="lg">
         {editing ? <ProfileForm initial={editable} onDone={() => setEditing(false)} /> : null}
       </Sheet>
@@ -95,7 +95,7 @@ export function ProfilePage() {
           <section className="flex flex-col items-center rounded-[var(--radius-card)] bg-surface px-5 pb-5 pt-6 text-center">
             <span
               aria-hidden
-              className="flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-[var(--tile-iris)] to-[var(--tile-plum)] font-display text-[1.75rem] font-semibold text-white"
+              className="flex size-20 items-center justify-center rounded-full border border-border bg-surface-2 font-display text-[1.75rem] font-semibold text-white"
             >
               {initials}
             </span>

@@ -162,7 +162,7 @@ export function formatRecordValue(type: PrType, value: number, unit: WeightUnit)
     case 'duration':
       return formatClock(value);
     case 'distance':
-      return `${Math.round(value).toLocaleString()} m`;
+      return `${Math.round(value).toLocaleString('en-GB')} m`;
     default:
       return formatWeight(value, unit);
   }

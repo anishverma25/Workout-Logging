@@ -34,6 +34,7 @@ export function FeedbackPage() {
   return (
     <>
       <PageHeader
+        back={{ to: '/more', label: 'More' }}
         title="Feedback"
         subtitle="Tell us how Overload feels to use. Every message is read by the person building it."
       />

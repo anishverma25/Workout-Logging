@@ -50,6 +50,15 @@ test('no accessibility violations', async ({ page }) => {
 
 test('no accessibility violations in an active workout and its sheets', async ({ page }) => {
   const scan = async (where: string) => {
+    // Scan settled screens, not a frame of a sheet opening or a completion flash.
+    await page.evaluate(() =>
+      Promise.all(
+        document
+          .getAnimations()
+          .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+          .map((a) => a.finished.catch(() => undefined)),
+      ),
+    );
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
@@ -63,15 +72,6 @@ test('no accessibility violations in an active workout and its sheets', async ({
   const card = page.locator('section[aria-labelledby^="ex-"]').first();
   await card.getByRole('button', { name: 'Mark set 1 done' }).click();
   await expect(page.getByRole('timer', { name: 'Rest timer' })).toBeVisible();
-  // Scan the settled screen, not a frame of the completion flash.
-  await page.evaluate(() =>
-    Promise.all(
-      document
-        .getAnimations()
-        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
-        .map((a) => a.finished.catch(() => undefined)),
-    ),
-  );
   const problems = await scan('workout');
   await page.getByRole('button', { name: 'Add exercise' }).click();
   problems.push(...(await scan('add-exercise sheet')));

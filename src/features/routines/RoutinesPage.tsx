@@ -24,8 +24,10 @@ import { ROUTINE_TEMPLATES } from '@/data/library/templates';
 import { daysForRoutine } from '@/domain/analytics/schedule';
 import type { Routine } from '@/domain/models/schemas';
 import type { TrainingData } from '@/domain/analytics/sessions';
-import { orderedWeekdays, weekdayShortName } from '@/lib/dates';
-import { pluralize } from '@/lib/format';
+import { orderedWeekdays } from '@/lib/dates';
+import { useNow } from '@/lib/useNow';
+import { FitText } from '@/features/shared/FitText';
+import { pluralize, shortDayName } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
 export function RoutinesPage() {
@@ -40,11 +42,11 @@ export function RoutinesPage() {
     <>
       <PageHeader
         title="Routines"
-        subtitle="Plans for future workouts. Editing one never changes past workouts."
         actions={
           routines.length > 0 ? (
             <Button
               size="sm"
+              variant="secondary"
               icon={<Plus className="size-4" aria-hidden />}
               onClick={() => setCreating(true)}
               className="max-sm:hidden"
@@ -86,9 +88,10 @@ export function RoutinesPage() {
       {routines.length > 0 ? (
         <Button
           variant="secondary"
+          size="lg"
           block
-          className="mt-5 sm:hidden"
-          icon={<Plus className="size-4" aria-hidden />}
+          className="mt-4 sm:hidden"
+          icon={<Plus className="size-5" aria-hidden />}
           onClick={() => setCreating(true)}
         >
           New routine
@@ -104,6 +107,7 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
   const prefs = usePreferences();
   const toast = useToast();
   const navigate = useNavigate();
+  const today = useNow().getDay();
   const [menu, setMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const days = daysForRoutine(routine, data.routineDays);
@@ -114,27 +118,22 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
   ).length;
 
   return (
-    <article
-      className={cn(
-        'relative rounded-[var(--radius-card)] border bg-surface p-5 transition-colors',
-        routine.isActive ? 'border-accent-text/40' : 'border-line',
-      )}
-    >
+    <article className={cn('relative rounded-panel border border-border bg-surface p-5')}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             {routine.isActive ? <Badge tone="accent">Active</Badge> : null}
-            {routine.origin === 'demo' ? <Badge tone="warn">Demo</Badge> : null}
+            {routine.origin === 'demo' ? <Badge>Demo</Badge> : null}
           </div>
-          <h2 className="mt-2 font-display text-[1.45rem] font-bold leading-none">
+          <h2 className="type-title mt-2 text-text-1">
             <Link
               to={`/routines/${routine.id}`}
-              className="after:absolute after:inset-0 after:rounded-[var(--radius-card)] focus-visible:outline-none"
+              className="after:absolute after:inset-0 after:rounded-panel focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-focus"
             >
               {routine.name}
             </Link>
           </h2>
-          <p className="mt-2 text-sm text-muted">
+          <p className="type-meta mt-1 text-text-2">
             {pluralize(days.length, 'day')} · {pluralize(exerciseCount, 'exercise')}
             {planned.size > 0 ? ` · ${planned.size} per week` : ''}
           </p>
@@ -148,29 +147,42 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
       </div>
 
       {/* Week strip: which day trains when. */}
-      <ol className="mt-4 grid grid-cols-7 gap-1.5" aria-label="Weekly plan">
+      <ol className="mt-4 flex gap-1.5" aria-label="Weekly plan">
         {orderedWeekdays(prefs.weekStartsOn).map((w) => {
           const name = planned.get(w);
+          const isToday = w === today && routine.isActive;
           return (
             <li
               key={w}
+              aria-current={isToday ? 'date' : undefined}
               className={cn(
-                'flex h-12 flex-col items-center justify-center rounded-xl text-center',
-                name ? 'bg-surface-2' : 'border border-dashed border-line',
+                'flex min-h-13 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-field px-0.5 py-1.5 text-center',
+                isToday
+                  ? 'bg-lime text-on-lime'
+                  : name
+                    ? 'bg-surface-2 text-text-1'
+                    : 'border border-dashed border-border-strong',
               )}
             >
-              <span className="text-[0.7rem] font-medium text-faint">{weekdayShortName(w)}</span>
-              <span className="w-full truncate px-1 text-xs font-semibold">
-                {name ?? <span className="sr-only">Rest</span>}
+              <span className={cn('type-caption', isToday ? 'text-on-lime' : 'text-text-2')}>
+                {shortDayName(w)}
               </span>
+              <FitText
+                className={cn(
+                  'type-meta font-semibold',
+                  !name && (isToday ? 'text-on-lime' : 'text-text-2'),
+                )}
+              >
+                {name ?? 'Rest'}
+              </FitText>
             </li>
           );
         })}
       </ol>
 
-      <div className="mt-4 flex items-center justify-between text-sm font-medium text-accent-text">
+      <div className="type-body mt-4 flex items-center justify-between font-medium text-text-1">
         <span>Edit routine</span>
-        <ChevronRight className="size-4" aria-hidden />
+        <ChevronRight className="size-4 text-text-2" aria-hidden />
       </div>
 
       <Sheet open={menu} onClose={() => setMenu(false)} title={routine.name}>
@@ -302,8 +314,8 @@ function TemplatePicker({ onClose }: { onClose: () => void }) {
                   }
                 }}
                 className={cn(
-                  'flex h-full w-full flex-col items-start gap-1 rounded-2xl bg-surface-2 p-4 text-left ring-2 transition-colors hover:bg-surface-3',
-                  recommended ? 'ring-accent-text' : 'ring-transparent',
+                  'pressable flex h-full w-full flex-col items-start gap-1 rounded-nested bg-surface-2 p-4 text-left ring-1',
+                  recommended ? 'ring-border-strong' : 'ring-transparent',
                 )}
               >
                 {recommended ? (
@@ -312,7 +324,7 @@ function TemplatePicker({ onClose }: { onClose: () => void }) {
                   </Badge>
                 ) : null}
                 <span className="flex w-full items-baseline justify-between gap-2">
-                  <span className="font-display text-xl font-semibold">{t.name}</span>
+                  <span className="type-headline text-text-1">{t.name}</span>
                   <span className="shrink-0 text-sm text-faint">
                     {t.daysPerWeek ? `${t.daysPerWeek} days a week` : 'Blank'}
                   </span>

@@ -42,7 +42,11 @@ function AccountContent() {
   const account = useAccount();
   return (
     <>
-      <PageHeader title="Account" subtitle={account.user?.email ?? undefined} />
+      <PageHeader
+        back={{ to: '/more', label: 'More' }}
+        title="Account"
+        subtitle={account.user?.email ?? undefined}
+      />
       <div className="flex max-w-2xl flex-col gap-5">
         <SyncCard />
         <GuestImportCard userId={account.user!.id} />

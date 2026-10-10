@@ -48,6 +48,7 @@ export function ProPage() {
   return (
     <>
       <PageHeader
+        back={{ to: '/more', label: 'More' }}
         title="Pro"
         subtitle="Deeper analysis of your training. Your workouts and history are always yours, with or without Pro."
       />
@@ -190,7 +191,7 @@ function FoundingCard({ offline }: { offline: boolean }) {
   return (
     <section
       aria-labelledby="plan-title"
-      className="relative overflow-hidden rounded-[var(--radius-card)] bg-gradient-to-br from-[var(--tile-iris)] to-[var(--tile-plum)] p-6 text-white"
+      className="relative overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface p-6 text-white"
     >
       <Crown
         className="pointer-events-none absolute -right-6 -top-6 size-36 rotate-12 text-white/10"

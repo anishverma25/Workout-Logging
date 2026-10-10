@@ -26,10 +26,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   const hintId = `${inputId}-hint`;
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label
-        htmlFor={inputId}
-        className={cn('text-sm font-medium text-muted', hideLabel && 'sr-only')}
-      >
+      <label htmlFor={inputId} className={cn('type-meta text-text-2', hideLabel && 'sr-only')}>
         {label}
       </label>
       <input
@@ -37,15 +34,15 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
         id={inputId}
         aria-invalid={error ? true : undefined}
         aria-describedby={hint || error ? hintId : undefined}
-        className={cn(fieldBase, 'h-12', error ? 'border-danger' : 'border-transparent')}
+        className={cn(fieldBase, 'h-13', error ? 'border-danger' : 'border-transparent')}
         {...props}
       />
       {error ? (
-        <p id={hintId} className="text-sm text-danger">
+        <p id={hintId} className="type-meta text-danger">
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="text-sm text-faint">
+        <p id={hintId} className="type-meta text-text-2">
           {hint}
         </p>
       ) : null}
@@ -64,10 +61,7 @@ export function TextArea({ label, hideLabel, hint, className, id, ...props }: Te
   const inputId = id ?? autoId;
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label
-        htmlFor={inputId}
-        className={cn('text-sm font-medium text-muted', hideLabel && 'sr-only')}
-      >
+      <label htmlFor={inputId} className={cn('type-meta text-text-2', hideLabel && 'sr-only')}>
         {label}
       </label>
       <textarea
@@ -76,7 +70,7 @@ export function TextArea({ label, hideLabel, hint, className, id, ...props }: Te
         className={cn(fieldBase, 'min-h-24 resize-y border-transparent py-3 leading-relaxed')}
         {...props}
       />
-      {hint ? <p className="text-sm text-faint">{hint}</p> : null}
+      {hint ? <p className="type-meta text-text-2">{hint}</p> : null}
     </div>
   );
 }
@@ -107,10 +101,8 @@ export function Chips<T extends string>({
 }: ChipsProps<T>) {
   const chip = (selected: boolean) =>
     cn(
-      'h-9 shrink-0 rounded-full border px-3.5 text-sm font-semibold transition-colors',
-      selected
-        ? 'border-transparent bg-text text-bg'
-        : 'border-transparent bg-surface-2 text-muted hover:text-text',
+      'pressable chrome type-meta h-9 shrink-0 rounded-full px-4 font-semibold whitespace-nowrap',
+      selected ? 'bg-text-1 text-bg' : 'bg-surface-2 text-text-1',
     );
   return (
     <div
@@ -176,10 +168,8 @@ export function MultiChips<T extends string>({
               onChange(selected ? value.filter((v) => v !== o.value) : [...value, o.value])
             }
             className={cn(
-              'h-9 rounded-full border px-3.5 text-sm font-semibold transition-colors',
-              selected
-                ? 'border-transparent bg-accent-soft text-accent-text'
-                : 'border-transparent bg-surface-2 text-muted hover:text-text',
+              'pressable chrome type-meta h-9 rounded-full px-4 font-semibold',
+              selected ? 'bg-text-1 text-bg' : 'bg-surface-2 text-text-1',
             )}
           >
             {o.label}
@@ -229,13 +219,13 @@ export function Stepper({
   };
   return (
     <div className="flex flex-col gap-1.5">
-      <span id={id} className="text-sm font-medium text-muted">
+      <span id={id} className="type-meta text-text-2">
         {label}
       </span>
       <div
         role="group"
         aria-labelledby={id}
-        className="flex h-12 items-center justify-between rounded-[var(--radius-control)] bg-surface-2"
+        className="flex h-13 items-center justify-between rounded-field bg-surface-2"
       >
         <button
           type="button"
@@ -246,10 +236,7 @@ export function Stepper({
         >
           <Minus className="size-4" aria-hidden />
         </button>
-        <output
-          aria-live="polite"
-          className="tabular min-w-12 text-center font-display text-xl font-semibold"
-        >
+        <output aria-live="polite" className="type-title tabular min-w-12 text-center">
           {value === null ? (
             <span className="text-base text-faint">{emptyLabel}</span>
           ) : (
@@ -290,18 +277,16 @@ export function ActionList({ items }: { items: ActionItem[] }) {
             disabled={item.disabled}
             onClick={item.onSelect}
             className={cn(
-              'flex min-h-13 w-full items-center gap-3.5 rounded-xl px-3 py-2.5 text-left font-medium transition-colors hover:bg-surface-2 disabled:opacity-40 disabled:hover:bg-transparent',
+              'chrome type-headline flex min-h-13 w-full items-center gap-3.5 rounded-field px-3 py-2.5 text-left font-medium transition-colors hover:bg-surface-2 disabled:opacity-40 disabled:hover:bg-transparent',
               item.danger ? 'text-danger' : 'text-text',
             )}
           >
-            <span className={cn('shrink-0', item.danger ? 'text-danger' : 'text-muted')}>
+            <span className={cn('shrink-0', item.danger ? 'text-danger' : 'text-text-2')}>
               {item.icon}
             </span>
             <span className="min-w-0">
               <span className="block">{item.label}</span>
-              {item.hint ? (
-                <span className="block text-sm font-normal text-faint">{item.hint}</span>
-              ) : null}
+              {item.hint ? <span className="type-meta block text-text-2">{item.hint}</span> : null}
             </span>
           </button>
         </li>
