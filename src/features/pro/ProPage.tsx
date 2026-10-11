@@ -15,6 +15,7 @@ import {
 import { useAccount } from '@/app/account';
 import { useEntitlement, type EntitlementView } from '@/app/entitlement';
 import { formatRupees, perMonth, usePlans, type BillingPlan } from '@/app/billing';
+import { LegalLinks } from '@/features/legal/LegalPage';
 import { PlansSection } from './Plans';
 import { ButtonLink } from '@/components/ui/Button';
 import {
@@ -97,6 +98,7 @@ export function ProPage() {
       {!unavailable ? <PlansSection entitlement={entitlement} /> : null}
 
       <Faq plans={plans} />
+      <LegalLinks className="justify-center" />
     </div>
   );
 }

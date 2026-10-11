@@ -23,6 +23,27 @@ export const router = createBrowserRouter([
     errorElement: <RouteError />,
     lazy: page(() => import('@/features/tour/TourPage'), 'TourPage'),
   },
+  // Public pages, readable without an account: the legal pages Razorpay and users look for.
+  {
+    path: 'terms',
+    errorElement: <RouteError />,
+    lazy: page(() => import('@/features/legal/LegalPage'), 'TermsPage'),
+  },
+  {
+    path: 'privacy',
+    errorElement: <RouteError />,
+    lazy: page(() => import('@/features/legal/LegalPage'), 'PrivacyPage'),
+  },
+  {
+    path: 'refunds',
+    errorElement: <RouteError />,
+    lazy: page(() => import('@/features/legal/LegalPage'), 'RefundsPage'),
+  },
+  {
+    path: 'contact',
+    errorElement: <RouteError />,
+    lazy: page(() => import('@/features/legal/LegalPage'), 'ContactPage'),
+  },
   {
     path: 'setup',
     errorElement: <RouteError />,

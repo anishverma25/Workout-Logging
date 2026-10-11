@@ -6,6 +6,7 @@ import { PageHeader } from '@/app/layout/PageHeader';
 import { ListGroup, ListRow } from '@/components/ui/List';
 import { SyncBadge } from '@/features/account/SyncStatus';
 import { useProfile } from '@/data/hooks';
+import { LegalLinks } from '@/features/legal/LegalPage';
 import { GOAL_LABEL, EXPERIENCE_LABEL } from '@/domain/models/labels';
 
 const GROUPS: { key: NonNullable<NavItem['group']>; title: string }[] = [
@@ -38,6 +39,7 @@ export function MorePage() {
           </ListGroup>
         ))}
         <SyncBadge className="-mt-2 px-4" />
+        <LegalLinks className="px-4" />
       </nav>
     </>
   );
