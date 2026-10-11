@@ -55,6 +55,9 @@ export function usePlans(): BillingPlan[] | null {
 /** Price per month, for comparing plans honestly. */
 export const perMonth = (p: BillingPlan) => p.priceInr / p.months;
 
+/** Price per day, spread over the average length of the plan's months. */
+export const perDay = (p: BillingPlan) => p.priceInr / ((p.months * 365) / 12);
+
 /** Percent saved per month against the monthly plan, rounded down. Null when there is none. */
 export function savingPercent(plan: BillingPlan, plans: BillingPlan[]): number | null {
   const monthly = plans.find((p) => p.id === 'monthly');

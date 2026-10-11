@@ -5,6 +5,7 @@ import {
   BillingError,
   cancelPlan,
   formatRupees,
+  perDay,
   perMonth,
   savingPercent,
   startCheckout,
@@ -40,6 +41,29 @@ function bestValue(plans: BillingPlan[]): BillingPlan['id'] | null {
   if (plans.length < 2) return null;
   const sorted = [...plans].sort((a, b) => perMonth(a) - perMonth(b));
   return perMonth(sorted[0]!) < perMonth(sorted[1]!) ? sorted[0]!.id : null;
+}
+
+/**
+ * Honest launch framing: the prices really are introductory, so say so. No countdown and no
+ * invented stock; the reason to act is the price itself, which will rise.
+ */
+function IntroOffer({ plans }: { plans: BillingPlan[] }) {
+  const monthly = plans.find((p) => p.id === 'monthly');
+  const daily = monthly ? perDay(monthly) : null;
+  return (
+    <div className="mb-4 rounded-nested bg-lime-dim px-4 py-3" data-testid="intro-offer">
+      <p className="type-headline text-text-1">Introductory prices. Not our regular prices.</p>
+      <p className="type-meta mt-1 text-text-1">
+        Overload is new, so Pro is priced low while we grow. These prices will go up later, so the
+        best time to join is now.
+      </p>
+      {monthly && daily !== null && daily < 1 ? (
+        <p className="type-meta tabular mt-1 text-text-1">
+          Monthly is just {formatRupees(monthly.priceInr)}, under ₹1 a day.
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 function PlanChoice({
@@ -198,7 +222,17 @@ function BuyPlan({
             : 'Every Pro feature, renewed automatically until you cancel.'}
       </p>
 
+      <IntroOffer plans={plans} />
+
       <PlanChoice plans={plans} value={choice} onChange={setChoice} />
+
+      {perDay(plan) < 1 ? (
+        <p className="type-meta tabular mt-3 text-center text-text-1">
+          {plan.label} works out to about{' '}
+          <span className="font-semibold">{formatRupees(Math.floor(perDay(plan) * 100) / 100)}</span>{' '}
+          a day. Less than ₹1 a day for every Pro feature.
+        </p>
+      ) : null}
 
       <ul className="mt-4 flex flex-col gap-2">
         {PROMISES.map((p) => (

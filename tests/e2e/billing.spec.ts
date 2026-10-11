@@ -65,6 +65,8 @@ test('guests see the plans with honest per-month prices and start with the free 
   const plans = page.getByRole('region', { name: 'Pro plans' });
   const yearly = plans.getByRole('radio', { name: /^Yearly/ });
   await expect(yearly).toContainText('₹249');
+  await expect(plans.getByTestId('intro-offer')).toContainText('Introductory prices');
+  await expect(plans.getByTestId('intro-offer')).toContainText('under ₹1 a day');
   await expect(yearly).toContainText('Best value');
   // 249 a year against 29 a month: 20.75 a month, 28% less.
   await expect(yearly).toContainText('₹20.75 a month · save 28%');
