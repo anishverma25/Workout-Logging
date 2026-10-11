@@ -36,6 +36,10 @@ for (const file of readdirSync(join(root, 'supabase/migrations')).sort()) {
     await pg.exec(readFileSync(join(root, 'supabase/migrations', file), 'utf8'));
 }
 await pg.exec('grant all on all tables in schema public to service_role;');
+// The launch state: early access has ended, so new accounts get the 7-day trial and then the
+// free plan. Early access itself is covered against real Postgres in subscriptions.test.ts.
+// Keeping one fixed state here also means no test flips a setting every other test shares.
+await pg.exec('update public.app_settings set early_access_ended_at = now()');
 
 // ---------------------------------------------------------------------------------------------
 // JWT (HS256)
@@ -492,6 +496,26 @@ const server = createServer(async (req, res) => {
         [reply],
       );
       return send(res, 200, {});
+    }
+    // Test control, standing in for time passing: an account's trial ended some days ago.
+    if (url.pathname === '/__test/expire-trial' && req.method === 'POST') {
+      const { email, daysAgo = 1 } = (await readJson(req)) as { email: string; daysAgo?: number };
+      // The trial is immutable in the real database (a trigger pins its dates), which is the
+      // point. Standing in for time passing means stepping around that trigger here.
+      const changed = await pg.transaction(async (tx) => {
+        await tx.exec('alter table public.subscriptions disable trigger subscriptions_touch');
+        const result = await tx.query(
+          `update public.subscriptions set
+             status = 'expired',
+             trial_started_at = now() - make_interval(days => ($2::int + 7)),
+             trial_expires_at = now() - make_interval(days => $2::int)
+           where user_id = (select id from auth.users where email = $1)`,
+          [email, Math.round(daysAgo)],
+        );
+        await tx.exec('alter table public.subscriptions enable trigger subscriptions_touch');
+        return result.affectedRows ?? 0;
+      });
+      return send(res, 200, { changed });
     }
     if (url.pathname === '/__test/early-access' && req.method === 'POST') {
       const { open } = (await readJson(req)) as { open: boolean };

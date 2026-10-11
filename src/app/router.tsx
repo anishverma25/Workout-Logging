@@ -1,6 +1,8 @@
 import { createBrowserRouter } from 'react-router';
 import { MethodologyRedirect } from './layout/MethodologyRedirect';
 import { AppShell } from './layout/AppShell';
+import { AuthScreen } from './layout/AuthScreen';
+import { RequireAccount } from './layout/RequireAccount';
 import { RouteError } from './layout/RouteError';
 import { HomePage } from '@/features/home/HomePage';
 import { SummaryPage } from '@/features/workout/SummaryPage';
@@ -44,75 +46,11 @@ export const router = createBrowserRouter([
     errorElement: <RouteError />,
     lazy: page(() => import('@/features/legal/LegalPage'), 'ContactPage'),
   },
+  // Getting into an account, reachable without one.
   {
-    path: 'setup',
-    errorElement: <RouteError />,
-    lazy: page(() => import('@/features/setup/SetupPage'), 'SetupPage'),
-  },
-  {
-    element: <AppShell />,
+    element: <AuthScreen />,
     errorElement: <RouteError />,
     children: [
-      { index: true, element: <HomePage /> },
-      { path: 'workout', element: <WorkoutPage /> },
-      { path: 'workouts/:workoutId/summary', element: <SummaryPage /> },
-      {
-        path: 'routines',
-        lazy: page(() => import('@/features/routines/RoutinesPage'), 'RoutinesPage'),
-      },
-      {
-        path: 'routines/:routineId',
-        lazy: page(() => import('@/features/routines/RoutineEditorPage'), 'RoutineEditorPage'),
-      },
-      {
-        path: 'progress',
-        lazy: page(() => import('@/features/progress/ProgressPage'), 'ProgressPage'),
-      },
-      {
-        path: 'science',
-        lazy: page(() => import('@/features/science/SciencePage'), 'SciencePage'),
-      },
-      // The old address of the methodology page, kept for bookmarks and installed shortcuts.
-      { path: 'progress/methodology', Component: MethodologyRedirect },
-      {
-        path: 'history',
-        lazy: page(() => import('@/features/history/HistoryPage'), 'HistoryPage'),
-      },
-      {
-        path: 'history/:workoutId',
-        lazy: page(() => import('@/features/history/WorkoutDetailPage'), 'WorkoutDetailPage'),
-      },
-      {
-        path: 'records',
-        lazy: page(() => import('@/features/records/RecordsPage'), 'RecordsPage'),
-      },
-      {
-        path: 'exercises',
-        lazy: page(() => import('@/features/exercises/ExercisesPage'), 'ExercisesPage'),
-      },
-      { path: 'body', lazy: page(() => import('@/features/body/BodyPage'), 'BodyPage') },
-      {
-        path: 'journey',
-        lazy: page(() => import('@/features/journey/JourneyPage'), 'JourneyPage'),
-      },
-      {
-        path: 'profile',
-        lazy: page(() => import('@/features/profile/ProfilePage'), 'ProfilePage'),
-      },
-      {
-        path: 'settings',
-        lazy: page(() => import('@/features/settings/SettingsPage'), 'SettingsPage'),
-      },
-      { path: 'pro', lazy: page(() => import('@/features/pro/ProPage'), 'ProPage') },
-      { path: 'more', lazy: page(() => import('@/features/more/MorePage'), 'MorePage') },
-      {
-        path: 'feedback',
-        lazy: page(() => import('@/features/feedback/FeedbackPage'), 'FeedbackPage'),
-      },
-      {
-        path: 'account',
-        lazy: page(() => import('@/features/account/AccountPage'), 'AccountPage'),
-      },
       { path: 'sign-in', lazy: page(() => import('@/features/account/AuthPages'), 'SignInPage') },
       { path: 'sign-up', lazy: page(() => import('@/features/account/AuthPages'), 'SignUpPage') },
       {
@@ -123,7 +61,83 @@ export const router = createBrowserRouter([
         path: 'reset-password',
         lazy: page(() => import('@/features/account/AuthPages'), 'NewPasswordPage'),
       },
-      { path: '*', lazy: page(() => import('@/features/pages'), 'NotFoundPage') },
+    ],
+  },
+  // The app itself: an account is required, so every screen has a backup and a sync target.
+  {
+    element: <RequireAccount />,
+    errorElement: <RouteError />,
+    children: [
+      {
+        path: 'setup',
+        lazy: page(() => import('@/features/setup/SetupPage'), 'SetupPage'),
+      },
+      {
+        element: <AppShell />,
+        children: [
+          { index: true, element: <HomePage /> },
+          { path: 'workout', element: <WorkoutPage /> },
+          { path: 'workouts/:workoutId/summary', element: <SummaryPage /> },
+          {
+            path: 'routines',
+            lazy: page(() => import('@/features/routines/RoutinesPage'), 'RoutinesPage'),
+          },
+          {
+            path: 'routines/:routineId',
+            lazy: page(() => import('@/features/routines/RoutineEditorPage'), 'RoutineEditorPage'),
+          },
+          {
+            path: 'progress',
+            lazy: page(() => import('@/features/progress/ProgressPage'), 'ProgressPage'),
+          },
+          {
+            path: 'science',
+            lazy: page(() => import('@/features/science/SciencePage'), 'SciencePage'),
+          },
+          // The old address of the methodology page, kept for bookmarks and installed shortcuts.
+          { path: 'progress/methodology', Component: MethodologyRedirect },
+          {
+            path: 'history',
+            lazy: page(() => import('@/features/history/HistoryPage'), 'HistoryPage'),
+          },
+          {
+            path: 'history/:workoutId',
+            lazy: page(() => import('@/features/history/WorkoutDetailPage'), 'WorkoutDetailPage'),
+          },
+          {
+            path: 'records',
+            lazy: page(() => import('@/features/records/RecordsPage'), 'RecordsPage'),
+          },
+          {
+            path: 'exercises',
+            lazy: page(() => import('@/features/exercises/ExercisesPage'), 'ExercisesPage'),
+          },
+          { path: 'body', lazy: page(() => import('@/features/body/BodyPage'), 'BodyPage') },
+          {
+            path: 'journey',
+            lazy: page(() => import('@/features/journey/JourneyPage'), 'JourneyPage'),
+          },
+          {
+            path: 'profile',
+            lazy: page(() => import('@/features/profile/ProfilePage'), 'ProfilePage'),
+          },
+          {
+            path: 'settings',
+            lazy: page(() => import('@/features/settings/SettingsPage'), 'SettingsPage'),
+          },
+          { path: 'pro', lazy: page(() => import('@/features/pro/ProPage'), 'ProPage') },
+          { path: 'more', lazy: page(() => import('@/features/more/MorePage'), 'MorePage') },
+          {
+            path: 'feedback',
+            lazy: page(() => import('@/features/feedback/FeedbackPage'), 'FeedbackPage'),
+          },
+          {
+            path: 'account',
+            lazy: page(() => import('@/features/account/AccountPage'), 'AccountPage'),
+          },
+          { path: '*', lazy: page(() => import('@/features/pages'), 'NotFoundPage') },
+        ],
+      },
     ],
   },
 ]);

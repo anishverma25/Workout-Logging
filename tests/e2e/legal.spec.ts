@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { signUpFresh } from './session';
 
 const PAGES = [
   { path: '/terms', title: 'Terms and conditions' },
@@ -47,7 +48,7 @@ test('sign up and the Pro page link to the policies', async ({ page }) => {
   await page.goto('/sign-up');
   await page.getByRole('link', { name: 'Terms', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Terms and conditions' })).toBeVisible();
-  await page.goto('/pro');
+  await signUpFresh(page, { at: '/pro', tag: 'legal' });
   await page
     .getByRole('navigation', { name: 'Legal' })
     .getByRole('link', { name: 'Cancellation and refunds' })

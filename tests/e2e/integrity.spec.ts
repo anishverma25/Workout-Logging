@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { startWithDemo } from './session';
 
 /**
  * Cross-checks numbers on screen against the raw records in IndexedDB, recomputed here with
@@ -29,24 +30,27 @@ interface Raw {
 }
 
 async function readRaw(page: Page): Promise<Raw> {
-  return page.evaluate(
-    () =>
-      new Promise<Raw>((resolve, reject) => {
-        const open = indexedDB.open('overload');
-        open.onerror = () => reject(open.error);
-        open.onsuccess = () => {
-          const db = open.result;
-          const names = ['workouts', 'sets', 'exercises', 'bodyWeights'] as const;
-          const tx = db.transaction([...names], 'readonly');
-          const out = {} as Record<string, unknown[]>;
-          for (const n of names) {
-            const req = tx.objectStore(n).getAll();
-            req.onsuccess = () => (out[n] = req.result);
-          }
-          tx.oncomplete = () => resolve(out as unknown as Raw);
-        };
-      }),
-  );
+  return page.evaluate(async () => {
+    // The signed-in account's own database, not the device one.
+    const dbs = await indexedDB.databases();
+    const name =
+      dbs.map((d) => d.name ?? '').find((n) => n.startsWith('overload-user-')) ?? 'overload';
+    return new Promise<Raw>((resolve, reject) => {
+      const open = indexedDB.open(name);
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const db = open.result;
+        const names = ['workouts', 'sets', 'exercises', 'bodyWeights'] as const;
+        const tx = db.transaction([...names], 'readonly');
+        const out = {} as Record<string, unknown[]>;
+        for (const n of names) {
+          const req = tx.objectStore(n).getAll();
+          req.onsuccess = () => (out[n] = req.result);
+        }
+        tx.oncomplete = () => resolve(out as unknown as Raw);
+      };
+    });
+  });
 }
 
 const localDay = (iso: string) =>
@@ -76,8 +80,7 @@ test.beforeEach(async ({ page }) => {
   page.on('pageerror', (e) => {
     throw e;
   });
-  await page.goto('/');
-  await expect(page.locator('#today-title')).toBeVisible();
+  await startWithDemo(page);
 });
 
 test('Home: last 7 days match the records', async ({ page }) => {

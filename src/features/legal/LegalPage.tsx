@@ -4,15 +4,14 @@ import { Mail, MapPin, Phone } from 'lucide-react';
 import { BrandMark } from '@/app/layout/BrandMark';
 import { APP_NAME } from '@/app/navigation';
 import { cn } from '@/lib/cn';
+import { CONTACT, LEGAL_DOCUMENTS, PRIVACY, REFUNDS, TERMS, type LegalDocument } from './documents';
 import {
-  CONTACT,
-  LEGAL_DOCUMENTS,
-  PRIVACY,
-  REFUNDS,
-  TERMS,
-  type LegalDocument,
-} from './documents';
-import { LAST_UPDATED, OWNER_NAME, SUPPORT_EMAIL, SUPPORT_PHONE, SUPPORT_PHONE_TEL } from './contact';
+  LAST_UPDATED,
+  OWNER_NAME,
+  SUPPORT_EMAIL,
+  SUPPORT_PHONE,
+  SUPPORT_PHONE_TEL,
+} from './contact';
 
 /** Small row of links to the four legal pages. Used in the page footer, More, Pro and sign up. */
 export function LegalLinks({ className }: { className?: string }) {
@@ -55,7 +54,7 @@ function LegalLayout({ doc, children }: { doc: LegalDocument; children: React.Re
       </main>
       <footer className="mx-auto max-w-2xl border-t border-border px-4 pt-5 pb-10">
         <LegalLinks />
-        <p className="type-caption mt-3 text-text-3">
+        <p className="type-caption mt-3 text-text-2">
           {APP_NAME} is run by {OWNER_NAME}, India.
         </p>
       </footer>
@@ -120,7 +119,10 @@ export function ContactPage() {
           <Mail className="mt-0.5 size-5 shrink-0 text-text-2" aria-hidden />
           <span>
             <span className="type-meta block text-text-2">Email</span>
-            <a href={`mailto:${SUPPORT_EMAIL}`} className="type-headline block text-text-1 underline">
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="type-headline block text-text-1 underline"
+            >
               {SUPPORT_EMAIL}
             </a>
           </span>

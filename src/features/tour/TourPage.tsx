@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   ArrowRight,
   Check,
@@ -22,11 +22,12 @@ import { MUSCLE_LABELS } from '@/domain/models/labels';
 import { TRIAL_HOURS } from '@/domain/entitlement/entitlement';
 import type { Plateau } from '@/domain/analytics/standards';
 import { Rings, RingLegend, type RingSpec } from '@/components/ui/Rings';
-import { db } from '@/data/db';
+import { useAccount } from '@/app/account';
+import { markTourSeen } from '@/app/seenTour';
+import { safeNext } from '@/features/account/next';
 import { generateDemoDataset } from '@/data/demo/generate';
 import { SYSTEM_EXERCISES } from '@/data/library/exercises';
 import { usePreferences } from '@/data/hooks';
-import { setMeta, META_KEYS } from '@/data/repositories/meta';
 import { bodySnapshot } from '@/domain/analytics/body';
 import { buildDashboard } from '@/domain/analytics/dashboard';
 import { goalProgress } from '@/domain/analytics/goals';
@@ -49,6 +50,11 @@ import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units
  */
 export function TourPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  // Where they were headed before the gate sent them here, kept through sign in.
+  const next = safeNext(params.get('next'), '/');
+  // Someone signed in is replaying the tour from More, so it leads back to the app.
+  const signedIn = useAccount().status === 'signedIn';
   const prefs = usePreferences();
   const unit = prefs.weightUnit;
   const sample = useMemo(() => buildSample(unit), [unit]);
@@ -100,9 +106,13 @@ export function TourPage() {
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  async function finish(to: string) {
-    await setMeta(db, META_KEYS.tourPending, false);
-    navigate(to, { replace: true });
+  /** Leaves the tour, and does not show it again on this device. */
+  function finish(path: '/sign-up' | '/sign-in' | 'app') {
+    markTourSeen();
+    if (path === 'app') navigate(next, { replace: true });
+    // Nowhere in particular to go: the account screens then lead into setup themselves.
+    else if (next === '/') navigate(path, { replace: true });
+    else navigate(`${path}?next=${encodeURIComponent(next)}`, { replace: true });
   }
 
   const last = index === slides - 1;
@@ -112,7 +122,9 @@ export function TourPage() {
       <header className="mx-auto flex h-14 w-full max-w-xl shrink-0 items-center justify-between px-safe">
         <span className="type-headline text-text-1">{APP_NAME}</span>
         <Badge icon={<FlaskConical />}>Sample data</Badge>
-        <TextLink onClick={() => void finish('/')}>Skip</TextLink>
+        <TextLink onClick={() => finish(signedIn ? 'app' : '/sign-in')}>
+          {signedIn ? 'Skip' : 'Sign in'}
+        </TextLink>
       </header>
 
       <div
@@ -156,17 +168,23 @@ export function TourPage() {
           ))}
         </div>
         {last ? (
-          <div className="flex flex-col gap-2">
-            <Button size="lg" block onClick={() => void finish('/setup?next=/')}>
-              Set up my plan
+          signedIn ? (
+            <Button size="lg" block onClick={() => finish('app')}>
+              Back to my training
             </Button>
-            <Button size="lg" block variant="secondary" onClick={() => void finish('/')}>
-              Look around first
-            </Button>
-            <TextLink onClick={() => void finish('/pro')} chevron className="self-center">
-              See everything in Pro
-            </TextLink>
-          </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Button size="lg" block onClick={() => finish('/sign-up')}>
+                Create my account
+              </Button>
+              <Button size="lg" block variant="secondary" onClick={() => finish('/sign-in')}>
+                I already have an account
+              </Button>
+              <p className="type-caption mt-1 text-center text-text-2">
+                Free to start, and {TRIAL_DAYS} days of Pro included. No payment details.
+              </p>
+            </div>
+          )
         ) : (
           <Button
             size="lg"

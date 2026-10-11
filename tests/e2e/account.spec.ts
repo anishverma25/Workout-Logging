@@ -57,19 +57,22 @@ async function addWeighIn(page: Page, kg: string, { navigate = true } = {}) {
 
 const syncStatus = (page: Page) => page.getByRole('status', { name: 'Sync status' });
 
-test('account pages are protected and the guest is told data is device-only', async ({ page }) => {
+test('every screen needs an account, and the first visit opens the tour', async ({ page }) => {
+  // First visit on this device: the tour, with where they were going kept.
   await page.goto('/account');
+  await expect(page).toHaveURL(/\/welcome\?next=%2Faccount$/);
+  await expect(page.getByRole('button', { name: 'Take the tour' })).toBeVisible();
+
+  // Leaving the tour by its Sign in link keeps where they were going.
+  await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/sign-in\?next=%2Faccount$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
+
+  // The tour is done with: every screen now goes straight to sign in.
   await page.goto('/settings');
-  await expect(
-    page.getByText('Saved on this device').filter({ visible: true }).first(),
-  ).toBeVisible();
-  await expect(
-    page
-      .getByText(/Not backed up/)
-      .filter({ visible: true })
-      .first(),
-  ).toBeVisible();
+  await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings$/);
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/sign-in$/);
 });
 
 test('sign up starts a clean account that syncs, survives reloads and comes back after sign-in', async ({
@@ -79,12 +82,11 @@ test('sign up starts a clean account that syncs, survives reloads and comes back
   await signUp(page, email);
   await expect(syncStatus(page)).toContainText('Synced to your account');
 
-  // The account starts clean: no demo athlete, no demo pill.
+  // The account starts clean: no demo athlete, no demo pill, nothing someone else logged.
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).not.toContainText('Arjun');
   await expect(page.getByRole('link', { name: 'Demo data' })).toHaveCount(0);
-  await page.goto('/settings');
-  await expect(page.getByText(/demo data is not available while you are signed in/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your training starts here' })).toBeVisible();
 
   await addWeighIn(page, '81.4');
   await page.goto('/account');
@@ -95,14 +97,15 @@ test('sign up starts a clean account that syncs, survives reloads and comes back
   await expect(page.getByRole('heading', { level: 1, name: 'Account', exact: true })).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
 
-  // Signing out removes the account's local copy (everything was synced) and shows the guest.
+  // Signing out removes the account's local copy (everything was synced) and locks the app.
   await signOut(page);
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Arjun');
+  await expect(page).toHaveURL(/\/sign-in$/);
 
   // Signing back in brings the data back from the server.
   await signIn(page, email);
-  await expect(page).toHaveURL(/:\d+\/account$/);
+  // Signing in with nowhere in particular to go lands on Home.
+  await expect(page).toHaveURL(/:\d+\/$/);
   await page.goto('/body');
   await expect(page.getByRole('button', { name: /81\.4 kg/ }).first()).toBeVisible({
     timeout: 15_000,
@@ -149,27 +152,11 @@ test('password reset requests never reveal whether an account exists', async ({ 
   await expect(page.getByText(/If there is an account for that email/)).toBeVisible();
 });
 
-test('device data moves into an account only when the person chooses', async ({ page }) => {
-  // Logged without an account: saved on this device only.
-  await addWeighIn(page, '77.7');
-  await signUp(page, uniqueEmail('import'));
-
-  const card = page.getByRole('region', { name: 'Data on this device' });
-  await expect(card).toContainText('1 body weight entry');
-  await expect(card).toContainText('Demo data is never added');
-
-  // Nothing was copied before choosing.
-  await page.goto('/body');
-  await expect(page.getByRole('button', { name: /77\.7 kg/ })).toHaveCount(0);
-
-  await page.goto('/account');
-  await card.getByRole('button', { name: 'Add to my account' }).click();
-  await expect(page.getByText('Added to your account')).toBeVisible();
-  await expect(card).toHaveCount(0);
-  await expect(syncStatus(page)).toContainText('Synced to your account', { timeout: 15_000 });
-  await page.goto('/body');
-  await expect(page.getByRole('button', { name: /77\.7 kg/ }).first()).toBeVisible();
-});
+/**
+ * Bringing data logged on a device before accounts were required into an account is covered by
+ * unit tests (`src/data/sync/migrate.test.ts`): the app itself can no longer create that data,
+ * so there is no way to set it up through the interface.
+ */
 
 test('offline changes are saved on the device and only called synced after the server confirms', async ({
   page,

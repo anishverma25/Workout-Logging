@@ -16,6 +16,7 @@ import { useAccount } from '@/app/account';
 import { useEntitlement, type EntitlementView } from '@/app/entitlement';
 import { formatRupees, perMonth, usePlans, type BillingPlan } from '@/app/billing';
 import { LegalLinks } from '@/features/legal/LegalPage';
+import { ProMemberSection, ProNextSteps } from './ProMember';
 import { PlansSection } from './Plans';
 import { ButtonLink } from '@/components/ui/Button';
 import {
@@ -65,6 +66,21 @@ export function ProPage() {
   // A trial is still a sale: the hero keeps its offer until Pro is paid for.
   const hasPro =
     signedIn && entitlement.pro && !entitlement.loading && entitlement.plan !== 'trial';
+  // A member is not sold to again: they get their membership, not the pitch.
+  if (hasPro) {
+    return (
+      <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-8">
+        <PushedHeader backLabel="More" backTo="/more" />
+        <ProMemberSection entitlement={entitlement} />
+        <ProNextSteps />
+        <YourNumbers hasPro />
+        <PlansSection entitlement={entitlement} />
+        <Evidence />
+        <LegalLinks className="justify-center" />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-8">
       <div>
@@ -528,11 +544,11 @@ function Faq({ plans }: { plans: BillingPlan[] | null }) {
     ],
     [
       'Does it renew? Can I cancel?',
-      'Plans renew automatically so Pro never stops mid-training. Cancel any time on this page: you are not charged again, and Pro stays on until the end of the period you paid for.',
+      'Choose either. Auto-renew keeps Pro going so it never stops mid-training; cancel any time on this page and you are not charged again, with Pro on until the end of what you paid for. Pay once is a single payment with no mandate: Pro runs for that period and stops by itself.',
     ],
     [
       'How do I pay, and is it safe?',
-      'Through Razorpay, a regulated Indian payment gateway: UPI autopay, cards and more. Overload never sees your card number or UPI PIN.',
+      'Through Razorpay, a regulated Indian payment gateway: UPI, UPI autopay, cards and net banking. Overload never sees your card number or UPI PIN.',
     ],
     [
       'Can I use Pro on more than one device?',

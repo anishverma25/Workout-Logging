@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
+import { expireTrial, loadDemo, signUpFresh } from './session';
 
-/** Trial, Pro gating and the Pro page, against the local fake Supabase. */
-
-const PASSWORD = 'correct-horse-9';
-const uniqueEmail = (tag: string) =>
-  `${tag}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
+/**
+ * Trial, Pro gating and the Pro page, against the local fake Supabase, which runs with early
+ * access ended (the launch state). Early access itself is tested in subscriptions.test.ts.
+ */
 
 test.beforeEach(async ({ page }) => {
   page.on('pageerror', (e) => {
@@ -13,70 +13,83 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function signUp(page: Page, next = '/pro') {
-  await page.goto(`/sign-up?next=${encodeURIComponent(next)}`);
-  await page.getByRole('textbox', { name: 'Email' }).fill(uniqueEmail('pro'));
-  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
-  await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page).toHaveURL(new RegExp(`${next}$`));
+  const email = await signUpFresh(page, { at: next, tag: 'pro' });
+  await expect(page).toHaveURL(new RegExp(`${next.replace('?', '\\?')}$`));
+  return email;
 }
 
 const lock = (page: Page, feature: string) => page.locator(`[data-pro-lock="${feature}"]`);
 
-test('guests keep every free feature and see what Pro adds', async ({ page }) => {
-  await page.goto('/progress');
-  await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toBeVisible();
-  await expect(lock(page, 'muscle_balance')).toBeVisible();
-  await page.getByRole('radio', { name: 'All time · Pro' }).click();
-  await expect(lock(page, 'long_range')).toContainText('Your history is all here');
-  await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toHaveCount(0);
-
-  // History and records are never locked.
-  await page.goto('/history');
-  await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
-  await page.goto('/records');
-  await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
-
-  await page.goto('/pro');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'Stop guessing. Start progressing.',
-  );
-  await expect(page.getByRole('link', { name: 'Try Pro free for 7 days' })).toBeVisible();
-  // The comparison says plainly what stays free.
-  const table = page.getByRole('table', { name: 'What the free plan and Pro include' });
-  const history = table.getByRole('row', { name: /Full workout history/ });
-  await expect(history.getByRole('img', { name: 'Included' })).toHaveCount(2);
-  await expect(page.getByText('Your workout history always stays free.')).toBeVisible();
-  // No founding member or early access wording is left.
-  await expect(page.getByText(/founding|early access/i)).toHaveCount(0);
-});
-
-test('while the server still has early access on, an account simply has Pro', async ({ page }) => {
-  await signUp(page, '/');
-  // No founding member welcome any more.
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-
-  await page.goto('/pro');
-  await expect(page.getByRole('heading', { name: 'Pro is active' })).toBeVisible();
-  // No trial clock and nothing to pay.
-  await expect(page.getByRole('progressbar', { name: 'Trial used' })).toHaveCount(0);
-  await expect(page.getByRole('region', { name: 'Pro plans' })).toHaveCount(0);
-  await expect(page.getByText(/founding|early access/i)).toHaveCount(0);
-
-  await page.goto('/progress?range=all');
-  await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
-  await page.goto('/more');
-  await expect(page.locator('a[href="/profile"]').getByText('Pro', { exact: true })).toBeVisible();
-});
-
 test.describe('after early access ends', () => {
-  // Stands in for the administrator's SQL. Tests run one at a time, so nothing else sees it.
-  const setEarlyAccess = (open: boolean) =>
-    fetch('http://localhost:54329/__test/early-access', {
-      method: 'POST',
-      body: JSON.stringify({ open }),
-    });
-  test.beforeAll(() => setEarlyAccess(false));
-  test.afterAll(() => setEarlyAccess(true));
+  // The fake server starts in this state, as production will be at launch.
+  test('a free member keeps every free feature and sees what Pro adds', async ({ page }) => {
+    const email = await signUp(page, '/settings');
+    await loadDemo(page);
+    // The trial is over on the server, so this is the real free experience.
+    await expireTrial(email, 2);
+    await page.goto('/progress');
+    await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toBeVisible();
+    await expect(lock(page, 'muscle_balance')).toBeVisible();
+    await page.getByRole('radio', { name: 'All time · Pro' }).click();
+    await expect(lock(page, 'long_range')).toContainText('Your history is all here');
+    await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toHaveCount(0);
+
+    // History and records are never locked.
+    await page.goto('/history');
+    await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
+    await page.goto('/records');
+    await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
+
+    await page.goto('/pro');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Stop guessing. Start progressing.',
+    );
+    await expect(page.getByRole('heading', { name: 'Your free trial has ended' })).toBeVisible();
+    // The comparison says plainly what stays free.
+    const table = page.getByRole('table', { name: 'What the free plan and Pro include' });
+    const history = table.getByRole('row', { name: /Full workout history/ });
+    await expect(history.getByRole('img', { name: 'Included' })).toHaveCount(2);
+    await expect(page.getByText('Your workout history always stays free.')).toBeVisible();
+    // No founding member or early access wording is left.
+    await expect(page.getByText(/founding|early access/i)).toHaveCount(0);
+  });
+
+  test('a free member is reminded about Pro with their own numbers, and can say not now', async ({
+    page,
+  }) => {
+    const email = await signUp(page, '/settings');
+    await loadDemo(page);
+    // Quiet for the first days after a trial ends.
+    await expireTrial(email, 1);
+    await page.goto('/');
+    await expect(page.getByTestId('pro-nudge')).toHaveCount(0);
+
+    // Later, one reminder, built from their own log.
+    await expireTrial(email, 20);
+    await page.goto('/');
+    const nudge = page.getByTestId('pro-nudge');
+    await expect(nudge).toBeVisible();
+    await expect(nudge).toContainText(/\d+ (days|workouts|personal records)|₹\d+ a month/);
+    // No invented urgency anywhere in it.
+    await expect(nudge).not.toContainText(/hurry|last chance|only today|expires in/i);
+
+    // It leads to the Pro page.
+    await expect(nudge.getByRole('link', { name: 'See what Pro shows' })).toHaveAttribute(
+      'href',
+      '/pro',
+    );
+    // "Not now" closes it at once.
+    await nudge.getByRole('button', { name: 'Not now' }).click();
+    await expect(page.getByTestId('pro-nudge')).toHaveCount(0);
+
+    // And it is not repeated on the next visit. The widening gaps between reminders, and the
+    // longer silence after "not now", are tested in domain/entitlement/nudge.test.ts: elapsed
+    // time since a reminder cannot be faked from here.
+    await page.goto('/history');
+    await page.goto('/');
+    await expect(page.locator('#today-title')).toBeVisible();
+    await expect(page.getByTestId('pro-nudge')).toHaveCount(0);
+  });
 
   test('a new account gets exactly 7 days of Pro from the server', async ({ page }) => {
     await signUp(page);
@@ -90,7 +103,9 @@ test.describe('after early access ends', () => {
   });
 
   test('tampering in the browser does not grant Pro', async ({ page }) => {
-    await page.goto('/');
+    const email = await signUp(page, '/settings');
+    await loadDemo(page);
+    await expireTrial(email, 1);
     await page.evaluate(() => {
       for (const store of [localStorage, sessionStorage]) {
         store.setItem('plan', 'pro');
@@ -158,6 +173,8 @@ test.describe('after early access ends', () => {
       await page.getByRole('combobox', { name: 'Access state' }).selectOption(state);
     };
     // Gating, on the demo athlete's data.
+    await signUp(page, '/settings');
+    await loadDemo(page);
     await choose('trial_expired');
     await page.goto('/progress?range=all');
     await expect(lock(page, 'long_range')).toBeVisible();
@@ -166,8 +183,6 @@ test.describe('after early access ends', () => {
     await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toBeVisible();
     await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
 
-    // Plan screens need an account. The override lives in this tab's session storage.
-    await signUp(page);
     await choose('trial_expired');
     await page.goto('/pro');
     await expect(page.getByRole('heading', { name: 'Your free trial has ended' })).toBeVisible();
@@ -176,7 +191,7 @@ test.describe('after early access ends', () => {
     await expect(page.getByRole('heading', { name: 'Your Pro has ended' })).toBeVisible();
     await choose('pro');
     await page.goto('/pro');
-    await expect(page.getByRole('heading', { name: 'Pro is active' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Your Pro membership' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Pro plans' })).toHaveCount(0);
   });
 });

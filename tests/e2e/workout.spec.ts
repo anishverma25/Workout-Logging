@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
+import { startWithDemo } from './session';
 
 test.beforeEach(async ({ page }) => {
   page.on('pageerror', (e) => {
     throw e;
   });
-  await page.goto('/');
-  await expect(page.locator('#today-title')).toBeVisible();
+  await startWithDemo(page);
 });
 
 /**

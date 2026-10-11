@@ -10,9 +10,11 @@ import { cloudEnabled, supabase, SupabaseRemote } from '@/data/sync/supabase';
 /**
  * Who is using the app, and which local database is open.
  *
- * - No account: the guest database. Data stays on this device. Demo data lives only here.
  * - Signed in: a database for that account, synced to the server. It starts empty unless the
- *   person chooses to bring their device data in.
+ *   person chooses to bring data already on this device in.
+ * - Signed out: the device database stays open, but the app itself is behind the account gate
+ *   (`RequireAccount`), so only the welcome tour and the sign-in screens are reachable. Data
+ *   logged on this device before accounts were required is still here, and can be imported.
  */
 
 export interface AccountUser {
@@ -27,8 +29,15 @@ export interface AccountState {
   recovery: boolean;
 }
 
-/** Demo data loads on first run in development, or when VITE_DEMO_AUTOLOAD=true. */
+/** The demo athlete can be loaded in development and in end-to-end builds, never in production. */
 export const DEMO_AUTOLOAD = import.meta.env.DEV || import.meta.env.VITE_DEMO_AUTOLOAD === 'true';
+
+/**
+ * `pnpm dev` opens a new account with the demo athlete already in it, so there is something to
+ * look at. End-to-end tests load it themselves when a test needs it, so they can also check
+ * that a new account really does start empty.
+ */
+const AUTOLOAD_ON_FIRST_OPEN = DEMO_AUTOLOAD && import.meta.env.MODE !== 'e2e';
 
 let state: AccountState = {
   status: cloudEnabled ? 'loading' : 'unavailable',
@@ -69,13 +78,16 @@ async function openGuestSpace() {
   syncController.stop();
   switchDatabase(GUEST_DB_NAME);
   await db.open();
-  await autoloadDemoIfFirstRun(db, DEMO_AUTOLOAD);
+  await ensureSystemExercises(db);
 }
 
 async function openAccountSpace(user: AccountUser) {
   switchDatabase(accountDbName(user.id), { syncEnabled: true });
   await db.open();
-  // The built-in library is local reference data; demo data is never loaded into an account.
+  // The built-in library is local reference data. Demo data is loaded only in development and
+  // in end-to-end tests; it stays on the device either way, because only `origin: 'user'`
+  // records are ever sent to the server.
+  await autoloadDemoIfFirstRun(db, AUTOLOAD_ON_FIRST_OPEN);
   await ensureSystemExercises(db);
   if (supabase) void syncController.start(db, new SupabaseRemote(supabase), user.id);
 }

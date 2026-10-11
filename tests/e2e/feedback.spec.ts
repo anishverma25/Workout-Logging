@@ -20,9 +20,12 @@ async function signUp(page: Page) {
   await expect(page.getByRole('heading', { level: 1, name: 'Feedback' })).toBeVisible();
 }
 
-test('guests are asked to create an account first', async ({ page }) => {
+test('without an account, feedback is behind the welcome tour like the rest of the app', async ({
+  page,
+}) => {
   await page.goto('/feedback');
-  await expect(page.getByRole('link', { name: 'Create a free account' })).toBeVisible();
+  await expect(page).toHaveURL(/\/welcome\?next=%2Ffeedback$/);
+  await expect(page.getByRole('button', { name: 'Take the tour' })).toBeVisible();
   await expect(page.getByRole('radiogroup', { name: 'Rating' })).toHaveCount(0);
 });
 
