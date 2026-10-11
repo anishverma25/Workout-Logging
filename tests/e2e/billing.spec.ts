@@ -35,12 +35,10 @@ const control = (path: string, body: unknown) =>
   fetch(`${FAKE}${path}`, { method: 'POST', body: JSON.stringify(body) });
 
 test.beforeAll(async () => {
-  await control('/__test/early-access', { open: false });
   await control('/__test/billing-plans', { connected: true });
 });
 test.afterAll(async () => {
   await control('/__test/billing-plans', { connected: false });
-  await control('/__test/early-access', { open: true });
 });
 
 test.beforeEach(async ({ page }) => {
@@ -62,10 +60,8 @@ async function signUp(page: Page) {
   await expect(page).toHaveURL(/\/pro$/);
 }
 
-test('guests see the plans with honest per-month prices and start with the free trial', async ({
-  page,
-}) => {
-  await page.goto('/pro');
+test('the plans show honest per-month prices and the introductory framing', async ({ page }) => {
+  await signUp(page);
   const plans = page.getByRole('region', { name: 'Pro plans' });
   const yearly = plans.getByRole('radio', { name: /^Yearly/ });
   await expect(yearly).toContainText('₹249');
@@ -75,7 +71,6 @@ test('guests see the plans with honest per-month prices and start with the free 
   // 249 a year against 29 a month: 20.75 a month, 28% less.
   await expect(yearly).toContainText('₹20.75 a month · save 28%');
   await expect(plans.getByRole('radio', { name: /^3 months/ })).toContainText('₹23 a month');
-  await expect(plans.getByRole('link', { name: 'Start 7 days free' })).toBeVisible();
 });
 
 test('subscribing turns Pro on at once, and cancelling keeps it to the end of the period', async ({
@@ -89,7 +84,7 @@ test('subscribing turns Pro on at once, and cancelling keeps it to the end of th
   await plans.getByRole('button', { name: 'Subscribe for ₹69 every 3 months' }).click();
 
   // Pro is on as soon as the server confirms the payment.
-  await expect(page.getByRole('heading', { name: 'Pro is active' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
   const mine = page.getByRole('region', { name: 'Your plan' });
   await expect(mine).toContainText('3 months, ₹69 every 3 months');
   await expect(mine).toContainText(/Renews on /);
@@ -99,7 +94,7 @@ test('subscribing turns Pro on at once, and cancelling keeps it to the end of th
   await expect(confirm).toContainText('You will not be charged again');
   await confirm.getByRole('button', { name: 'Cancel plan' }).click();
   await expect(mine).toContainText(/Ends on .*It will not renew\./);
-  await expect(page.getByRole('heading', { name: 'Pro is active' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
   await expect(mine.getByRole('button', { name: 'Cancel plan' })).toHaveCount(0);
 
   // Pro features are open.
@@ -115,7 +110,7 @@ test('paying once turns Pro on with no renewal, and more time can be added', asy
   await plans.getByRole('radio', { name: /^3 months/ }).click();
   await plans.getByRole('button', { name: 'Pay ₹69 once for 3 months' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Pro is active' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
   const mine = page.getByRole('region', { name: 'Your plan' });
   await expect(mine).toContainText('3 months, paid once');
   await expect(mine).toContainText(/Ends on .*It will not renew\./);

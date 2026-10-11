@@ -11,6 +11,7 @@ import {
   useAccount,
 } from '@/app/account';
 import { APP_NAME } from '@/app/navigation';
+import { markTourSeen } from '@/app/seenTour';
 import {
   IconTile,
   InlineNotice,
@@ -137,17 +138,21 @@ function FooterLine({ lead, children }: { lead?: string; children: ReactNode }) 
 }
 
 const ACCOUNT_PITCH =
-  'An account backs up your training and keeps it the same on all your devices. Without one, everything stays on this device.';
+  'Your account keeps every workout backed up and the same on every device you train with.';
+
+/** After signing in there is always somewhere to go: the app needs an account to open at all. */
+const HOME = '/';
 
 export function SignInPage() {
   const account = useAccount();
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const next = safeNext(params.get('next'));
+  const next = safeNext(params.get('next'), HOME);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { busy, error, onSubmit } = useSubmit(async () => {
     await signIn(email.trim(), password);
+    markTourSeen();
     navigate(next, { replace: true });
   });
 
@@ -157,7 +162,7 @@ export function SignInPage() {
   return (
     <AuthLayout
       title="Sign in"
-      intro={ACCOUNT_PITCH}
+      intro="Welcome back. Everything you logged is waiting."
       footer={
         <>
           <FooterLine lead="New here?">
@@ -201,16 +206,17 @@ export function SignUpPage() {
   const account = useAccount();
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const next = safeNext(params.get('next'));
+  const next = safeNext(params.get('next'), HOME);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [sentTo, setSentTo] = useState<string | null>(null);
   const { busy, error, onSubmit } = useSubmit(async () => {
     const result = await signUp(email.trim(), password);
+    markTourSeen();
     if (result === 'confirm') setSentTo(email.trim());
-    // A brand-new account starts with the preview tour, which ends in setup, unless the person was on their way somewhere.
-    else if (params.get('next')) navigate(next, { replace: true });
-    else navigate('/welcome', { replace: true });
+    // Someone who was on their way to a particular screen keeps going there. Otherwise a new
+    // account goes through setup, so the app is fitted to them before they log anything.
+    else navigate(params.get('next') ? next : '/setup?next=/', { replace: true });
   });
 
   if (account.status === 'unavailable') return <AccountsUnavailable />;
@@ -270,8 +276,7 @@ export function SignUpPage() {
           {busy ? 'Creating account...' : 'Create account'}
         </PrimaryButton>
         <p className="type-meta text-text-2">
-          Your account starts empty. If you have logged workouts on this device, you can choose to
-          add them after signing in.
+          Next: seven quick questions, and your plan is ready.
         </p>
         <p className="type-meta text-text-2">
           By creating an account you agree to the <TextLink to="/terms">Terms</TextLink> and the{' '}

@@ -54,8 +54,9 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
   const email = `journey-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`;
 
   await test.step('1-4. open, create an account, see a clean Home', async () => {
+    // No account yet: the app opens on the welcome tour.
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page).toHaveURL(/\/welcome$/);
     await page.goto('/sign-up?next=/');
     await page.getByRole('textbox', { name: 'Email' }).fill(email);
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
@@ -172,7 +173,7 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     await expect(workouts).toHaveText('2');
     await page.getByRole('radio', { name: '7 days' }).click();
     await expect(workouts).toHaveText('2');
-    // During early access every account has Pro, so long ranges are open.
+    // A new account is on its 7-day trial, so long ranges are open.
     await page.getByRole('radio', { name: 'All time', exact: true }).click();
     await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
     await page.getByRole('button', { name: /^Exercise/ }).click();
@@ -187,14 +188,14 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     await shot(page, '25-progress');
   });
 
-  await test.step('26-29. Pro page: server early access, expired and Pro states', async () => {
+  await test.step('26-29. Pro page: trial, expired and Pro states', async () => {
     await page.goto('/pro');
-    await expect(page.getByRole('heading', { name: 'Pro is active' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^Free trial:/ })).toBeVisible();
     await shot(page, '27-pro');
     for (const [state, heading] of [
       ['trial_expired', 'Your free trial has ended'],
-      ['pro', 'Pro is active'],
-      ['real', 'Pro is active'],
+      ['pro', 'Your Pro membership'],
+      ['real', 'Free trial'],
     ] as const) {
       await page.goto('/settings');
       await page.getByRole('combobox', { name: 'Access state' }).selectOption(state);
@@ -216,7 +217,7 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     await page.getByRole('textbox', { name: 'Email' }).fill(email);
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(/:\d+\/account$/);
+    await expect(page).toHaveURL(/:\d+\/$/);
     await page.goto('/history');
     await expect(page.locator('a[href^="/history/"]')).toHaveCount(2, { timeout: 15_000 });
     await page.goto('/body');

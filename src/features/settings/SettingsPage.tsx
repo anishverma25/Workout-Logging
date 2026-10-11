@@ -10,7 +10,7 @@ import { CalendarPlus, Download, FlaskConical, RotateCcw, Trash2 } from 'lucide-
 import { isIosSafari, promptInstall, usePwa } from '@/app/pwa';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { Button, ButtonLink } from '@/components/ui/Button';
-import { useAccount } from '@/app/account';
+import { DEMO_AUTOLOAD, useAccount } from '@/app/account';
 import { SyncSummary } from '@/features/account/SyncStatus';
 import { Panel, PanelRow, Switch } from '@/components/ui/List';
 import { setDeviceSetting, useDeviceSettings } from '@/app/deviceSettings';
@@ -394,22 +394,26 @@ function StorageSection() {
   );
 }
 
+/**
+ * Demo data is a development and testing tool: it is only ever loaded in development and in
+ * end-to-end tests, and it never leaves the device because only `origin: 'user'` records sync.
+ * A real account has nothing to load, so a fictional athlete can never mix into real training.
+ */
 function DemoSection() {
-  const account = useAccount();
-  if (account.status === 'signedIn') {
+  const demo = useDemoStatus();
+  if (!DEMO_AUTOLOAD && !demo.data?.loaded) {
     return (
       <Panel title="Demo data" id="demo-data">
         <p className="type-meta py-3.5 text-text-2">
-          Your account only ever holds your own training, so demo data is not available while you
-          are signed in. Sign out to explore the demo on this device.
+          Your account only ever holds your own training, so there is no demo data to show.
         </p>
       </Panel>
     );
   }
-  return <GuestDemoSection />;
+  return <DemoControls />;
 }
 
-function GuestDemoSection() {
+function DemoControls() {
   const demo = useDemoStatus();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -443,7 +447,10 @@ function GuestDemoSection() {
           <Button
             disabled={busy}
             icon={<FlaskConical className="size-4" aria-hidden />}
-            onClick={run(() => loadDemoData(db), 'Demo data loaded')}
+            onClick={run(
+              () => loadDemoData(db, new Date(), { intoAccount: DEMO_AUTOLOAD }),
+              'Demo data loaded',
+            )}
           >
             Load demo data
           </Button>
@@ -453,7 +460,10 @@ function GuestDemoSection() {
               variant="secondary"
               disabled={busy}
               icon={<RotateCcw className="size-4" aria-hidden />}
-              onClick={run(() => resetDemoData(db), 'Demo data reset to today')}
+              onClick={run(
+                () => resetDemoData(db, new Date(), { intoAccount: DEMO_AUTOLOAD }),
+                'Demo data reset to today',
+              )}
             >
               Reset to today
             </Button>

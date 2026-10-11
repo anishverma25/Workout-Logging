@@ -109,7 +109,9 @@ export const PRIVACY: LegalDocument = {
     },
     {
       heading: 'With an account',
-      paragraphs: ['When you create an account, we store the following on our servers so it can sync between your devices:'],
+      paragraphs: [
+        'When you create an account, we store the following on our servers so it can sync between your devices:',
+      ],
       items: [
         'Your email address and your password. The password is stored in scrambled form by our sign in provider, so we cannot read it.',
         'Your profile: name, sex, height, goal, experience, training days, session length, equipment and activity level.',
@@ -120,9 +122,7 @@ export const PRIVACY: LegalDocument = {
     },
     {
       heading: 'Progress photos',
-      paragraphs: [
-        'Progress photos stay on your phone. They are never uploaded to our servers.',
-      ],
+      paragraphs: ['Progress photos stay on your phone. They are never uploaded to our servers.'],
     },
     {
       heading: 'Payments',
@@ -224,7 +224,9 @@ export const REFUNDS: LegalDocument = {
     },
     {
       heading: 'Contact',
-      paragraphs: [`For billing questions, write to ${SUPPORT_EMAIL}. Please include the email you used to sign up.`],
+      paragraphs: [
+        `For billing questions, write to ${SUPPORT_EMAIL}. Please include the email you used to sign up.`,
+      ],
     },
   ],
 };

@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { loadDemo, PASSWORD, signUpFresh, uniqueEmail } from './session';
 
 /**
- * First run: the preview tour (sample data, in memory only), then setup, which builds a
- * personalised routine. Then the newer tracking screens: measurements and goals.
+ * First run, in the order a new person meets it: the welcome tour (sample data, in memory
+ * only), then an account, then setup, which builds a personalised routine. Then the newer
+ * tracking screens: measurements and goals.
  */
-
-const PASSWORD = 'correct-horse-9';
 
 test.beforeEach(({ page }) => {
   page.on('pageerror', (e) => {
@@ -13,28 +13,30 @@ test.beforeEach(({ page }) => {
   });
 });
 
-test('a new account sees the tour, then setup builds a personalised plan', async ({ page }) => {
+test('the tour comes first, then an account, then setup builds a personalised plan', async ({
+  page,
+}) => {
   test.setTimeout(90_000);
+  // Opening the app without an account lands on the tour, not on anyone's data.
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await page.goto('/sign-up');
-  await page
-    .getByRole('textbox', { name: 'Email' })
-    .fill(`tour-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`);
-  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
-  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page).toHaveURL(/\/welcome$/);
 
   // The tour: clearly labelled sample data, and the logger can be tried.
-  await expect(page).toHaveURL(/\/welcome$/);
   await expect(page.getByText('Sample data', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Take the tour' }).click();
   await page.getByRole('button', { name: 'Mark sample set 1 done' }).click();
   await expect(page.getByRole('button', { name: 'Set 1 done' })).toBeVisible();
   // Five feature slides and the Pro slide.
   for (let i = 0; i < 6; i++) await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByRole('button', { name: 'Set up my plan' }).click();
+  await page.getByRole('button', { name: 'Create my account' }).click();
 
-  // Setup.
+  // The account.
+  await expect(page).toHaveURL(/\/sign-up/);
+  await page.getByRole('textbox', { name: 'Email' }).fill(uniqueEmail('tour'));
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+  await page.getByRole('button', { name: 'Create account' }).click();
+
+  // Setup follows a new account on its own.
   await expect(page).toHaveURL(/\/setup/);
   await page.getByRole('textbox', { name: 'Your name' }).fill('Meera Shah');
   await page.getByRole('button', { name: 'Continue' }).click();
@@ -90,7 +92,7 @@ test('a new account sees the tour, then setup builds a personalised plan', async
 test('intermediate and advanced lifters build their own routine instead of a recommendation', async ({
   page,
 }) => {
-  await page.goto('/setup?next=/');
+  await signUpFresh(page, { at: '/setup?next=/', tag: 'adv' });
   await page.getByRole('textbox', { name: 'Your name' }).fill('Ravi');
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: /^Strength \+ Hypertrophy/ }).click();
@@ -109,7 +111,7 @@ test('intermediate and advanced lifters build their own routine instead of a rec
 });
 
 test('the tour can be replayed from More and skipped', async ({ page }) => {
-  await page.goto('/more');
+  await signUpFresh(page, { at: '/more', tag: 'replay' });
   await page.getByRole('link', { name: 'Take the tour' }).click();
   await expect(page).toHaveURL(/\/welcome$/);
   await page.getByRole('button', { name: 'Skip' }).click();
@@ -117,6 +119,8 @@ test('the tour can be replayed from More and skipped', async ({ page }) => {
 });
 
 test('measurements and goals are saved and shown', async ({ page }) => {
+  await signUpFresh(page, { at: '/settings', tag: 'body' });
+  await loadDemo(page);
   await page.goto('/body');
   await page
     .getByRole('button', { name: 'Add measurements' })

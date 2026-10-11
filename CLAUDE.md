@@ -31,7 +31,9 @@ Read README.md for setup, architecture and calculation rules.
   transaction. Repositories that use it must include `db.outbox` in their transaction tables.
 - The sync engine (`src/data/sync/engine.ts`) is the one exception: it writes records pulled
   from the server directly, because they must not be queued to go back.
-- Only `origin: 'user'` records leave the device. Demo data lives only in the guest database.
+- Only `origin: 'user'` records leave the device. Demo data exists only in development and e2e
+  builds (Settings can load it there, `loadDemoData(..., { intoAccount })`); production accounts
+  never get it.
 - Server schema changes: add a new file in `supabase/migrations` (never edit an applied one),
   keep RLS on every user table, and extend `src/data/sync/rls.test.ts`.
 - Never say data is backed up or synced unless the outbox is empty and the server confirmed
@@ -47,7 +49,9 @@ Read README.md for setup, architecture and calculation rules.
 
 - `pnpm check` (typecheck, lint, unit tests, build) and `pnpm test:e2e` (mobile and desktop).
 - RLS and sync tests run real Postgres (PGlite) with the migrations: `src/test/server.ts`.
-- E2E runs against `tests/fake-supabase/server.ts` (vite `--mode e2e`, port 5175). The `pwa`
+- E2E runs against `tests/fake-supabase/server.ts` (vite `--mode e2e`, port 5175), which starts
+  with early access ended (the launch state). Every test creates its own account through
+  `tests/e2e/session.ts` (`signUpFresh`, `startWithDemo`, `expireTrial`). The `pwa`
   project tests the production build via `vite preview` on port 4175.
 - The service worker must never cache cross-origin or API responses.
 - Full e2e takes about 10 minutes; in a sandbox with a 10 minute command limit, run it in the
@@ -119,5 +123,11 @@ Read README.md for setup, architecture and calculation rules.
   (`DurationPicker`); `exerciseChangeRestSeconds` rest between exercises; long press and drag
   reorder (`useDragReorder`) in routines and the workout (`ReorderSheet`). Weight on dumbbell
   moves is per dumbbell; volume counts both. Non-beginners build their own routine in setup.
+- Accounts are required (October 2026): `RequireAccount` gates every screen except `/welcome`,
+  the sign-in screens and the policies. A first visit opens the tour, which ends in create
+  account or sign in; a new account goes to setup. Pay once (migration 0009) sits next to
+  subscriptions. Paying members get a membership view (`features/pro/ProMember.tsx`); free
+  members get at most four spaced Pro reminders on Home, each from their own numbers
+  (`domain/entitlement/nudge.ts`).
 - Deployed on Cloudflare Pages from `phase-2-wip`. Each new Supabase migration must be applied
   in the SQL editor before the code that needs it is pushed.

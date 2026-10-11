@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { startWithDemo } from './session';
 
 test.beforeEach(async ({ page }) => {
   page.on('pageerror', (e) => {
     throw e;
   });
-  await page.goto('/');
-  await expect(page.locator('#today-title')).toBeVisible();
+  await startWithDemo(page);
 });
 
 test('routine from a template: rename, add a day and exercise, duplicate, delete', async ({

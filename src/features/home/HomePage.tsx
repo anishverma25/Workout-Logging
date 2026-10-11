@@ -1,18 +1,15 @@
 import { useMemo } from 'react';
-import { CalendarRange, Dumbbell, FlaskConical, Sparkles } from 'lucide-react';
-import { useAccount } from '@/app/account';
+import { CalendarRange, Dumbbell, Sparkles } from 'lucide-react';
 import { buildDashboard } from '@/domain/analytics/dashboard';
-import { db } from '@/data/db';
-import { loadDemoData } from '@/data/demo/service';
-import { usePreferences, useTourPending, useTrainingData } from '@/data/hooks';
-import { Navigate } from 'react-router';
-import { Button, ButtonLink } from '@/components/ui/Button';
+import { usePreferences, useTrainingData } from '@/data/hooks';
+import { ButtonLink } from '@/components/ui/Button';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
-import { useToast } from '@/components/ui/Toast';
 import { greetingFor } from '@/lib/dates';
 import { formatCalendarDate } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { PageHeader } from '@/app/layout/PageHeader';
+import { ProNudgeCard } from '@/features/pro/ProNudgeCard';
+import { isAlive } from '@/domain/analytics/sessions';
 import { BodyWeightCard } from './BodyWeightCard';
 import { InsightCard } from './InsightCard';
 import { RecentActivity } from './RecentActivity';
@@ -25,17 +22,22 @@ import { CheckinCard } from './CheckinCard';
 import { activeRoutine } from '@/domain/analytics/schedule';
 
 export function HomePage() {
-  // Demo data lives only in the device-only space, never in an account.
-  const signedIn = useAccount().status === 'signedIn';
   const training = useTrainingData();
   const prefs = usePreferences();
   const now = useNow();
-  const toast = useToast();
-  const tour = useTourPending();
 
   const model = useMemo(
     () => (training.data ? buildDashboard(training.data, prefs, now) : null),
     [training.data, prefs, now],
+  );
+
+  // Only their own finished workouts count towards anything the app says about their training.
+  const workoutDates = useMemo(
+    () =>
+      (training.data?.workouts ?? [])
+        .filter((w) => isAlive(w) && w.status === 'completed' && w.origin === 'user')
+        .map((w) => new Date(w.startedAt)),
+    [training.data],
   );
 
   const firstName = training.data?.profile?.displayName.split(' ')[0];
@@ -43,13 +45,11 @@ export function HomePage() {
   const ownProfile = training.data?.profile?.origin === 'user';
   const routineName = training.data ? (activeRoutine(training.data.routines)?.name ?? null) : null;
 
-  // A brand-new install opens with the preview tour, once.
-  if (tour.data) return <Navigate to="/welcome" replace />;
-
   return (
     <>
       <PageHeader title={title} eyebrow={formatCalendarDate(now)} compactTitle="Home" />
       {training.status === 'success' && !ownProfile ? <SetupPrompt /> : null}
+      {model ? <ProNudgeCard workoutDates={workoutDates} records={model.recentPrCount} /> : null}
 
       {training.status === 'loading' ? <HomeSkeleton /> : null}
       {training.status === 'error' ? (
@@ -61,54 +61,28 @@ export function HomePage() {
           icon={<Dumbbell className="size-5" aria-hidden />}
           title="Your training starts here"
           body={
-            signedIn ? (
-              <>
-                Pick a routine and Home shows what to train today. Every workout you log adds to
-                your weekly rhythm, records and strength trends, all calculated from your own sets.
-              </>
-            ) : (
-              <>
-                Log a workout and this page fills in with what to train today, your weekly rhythm,
-                records and strength trends, all calculated from your own sets. Want to look around
-                first? Load the demo athlete.
-              </>
-            )
+            <>
+              Pick a routine and Home shows what to train today. Every workout you log adds to your
+              weekly rhythm, records and strength trends, all calculated from your own sets.
+            </>
           }
           actions={
-            signedIn ? (
-              <>
-                <ButtonLink
-                  to="/routines"
-                  variant={ownProfile ? 'primary' : 'secondary'}
-                  icon={<CalendarRange className="size-4" aria-hidden />}
-                >
-                  Pick a routine
-                </ButtonLink>
-                <ButtonLink
-                  to="/workout"
-                  variant="secondary"
-                  icon={<Dumbbell className="size-4" aria-hidden />}
-                >
-                  Start a workout
-                </ButtonLink>
-              </>
-            ) : (
-              <>
-                <ButtonLink to="/workout" icon={<Dumbbell className="size-4" aria-hidden />}>
-                  Start a workout
-                </ButtonLink>
-                <Button
-                  variant="secondary"
-                  icon={<FlaskConical className="size-4" aria-hidden />}
-                  onClick={async () => {
-                    await loadDemoData(db);
-                    toast('Demo data loaded');
-                  }}
-                >
-                  Load demo data
-                </Button>
-              </>
-            )
+            <>
+              <ButtonLink
+                to="/routines"
+                variant={ownProfile ? 'primary' : 'secondary'}
+                icon={<CalendarRange className="size-4" aria-hidden />}
+              >
+                Pick a routine
+              </ButtonLink>
+              <ButtonLink
+                to="/workout"
+                variant="secondary"
+                icon={<Dumbbell className="size-4" aria-hidden />}
+              >
+                Start a workout
+              </ButtonLink>
+            </>
           }
         />
       ) : null}

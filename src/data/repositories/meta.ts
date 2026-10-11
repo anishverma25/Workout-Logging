@@ -9,8 +9,8 @@ export const META_KEYS = {
   demoAutoloadHandled: 'demo.autoloadHandled',
   restTimer: 'workout.restTimer',
   dismissedSuggestions: 'progress.dismissedSuggestions',
-  /** Set on a brand-new install: Home opens the preview tour once. */
-  tourPending: 'onboarding.tourPending',
+  /** Which Pro reminders a free member has already seen, and when (see domain/entitlement/nudge). */
+  proNudge: 'pro.nudge',
   /** Sync bookkeeping: `${syncCursor}${table}` and the last confirmed sync time. */
   syncCursor: 'sync.cursor.',
   lastSyncedAt: 'sync.lastSyncedAt',

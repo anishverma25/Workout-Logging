@@ -13,6 +13,7 @@ import {
   type BillingPlan,
 } from '@/app/billing';
 import type { EntitlementView } from '@/app/entitlement';
+import { markProJustStarted } from './justPaid';
 import { ButtonLink } from '@/components/ui/Button';
 import {
   Badge,
@@ -271,7 +272,13 @@ function BuyPlan({
         { email: account.user?.email, name: profile?.displayName },
         mode,
       );
-      if (result === 'paid') setDone(true);
+      if (result === 'paid') {
+        setDone(true);
+        // A paid-for page should not keep selling: reload so the whole app, every Pro gate
+        // included, comes back with the new plan, and the Pro page opens with the welcome.
+        markProJustStarted();
+        window.location.reload();
+      }
     } catch (err) {
       setError(err instanceof BillingError ? err.message : 'Something went wrong. Try again.');
     } finally {

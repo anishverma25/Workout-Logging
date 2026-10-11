@@ -58,12 +58,16 @@ test('sends security headers', async ({ request }) => {
 });
 
 test('opens and works offline after the first visit', async ({ page, context }) => {
-  // A brand-new install opens with the preview tour, once; skipping it lands on Home.
+  // A brand-new install opens with the welcome tour, which leads to an account.
   await page.goto('/');
   await expect(page).toHaveURL(/\/welcome$/);
   await expect(page.getByText('Sample data', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Skip' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await page.goto('/sign-up');
+  await page.getByRole('textbox', { name: 'Email' }).fill(`pwa-off-${Date.now()}@example.com`);
+  await page.getByLabel('Password', { exact: true }).fill('correct-horse-9');
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page).toHaveURL(/\/setup/);
+  await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await waitForServiceWorker(page);
 

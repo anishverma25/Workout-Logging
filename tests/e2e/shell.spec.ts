@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { startWithDemo } from './session';
 
 const isMobile = (page: Page) => (page.viewportSize()?.width ?? 1440) < 1024;
 
@@ -10,7 +11,7 @@ test.beforeEach(async ({ page }) => {
   page.on('pageerror', (e) => {
     throw e;
   });
-  await page.goto('/');
+  await startWithDemo(page);
 });
 
 test('home shows the demo athlete with real dashboard sections', async ({ page }) => {
@@ -66,7 +67,10 @@ test('demo data can be cleared, loaded and reset', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Your training starts here' })).toBeVisible();
 
+  await page.goto('/settings');
   await page.getByRole('button', { name: 'Load demo data' }).click();
+  await expect(page.locator('#demo-data').getByRole('status')).toContainText('workouts');
+  await page.goto('/');
   await expect(page.locator('#today-title')).toBeVisible();
 
   await page.goto('/settings');

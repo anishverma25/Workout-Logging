@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { ChevronRight, Crown, Sparkles } from 'lucide-react';
+import { useAccount } from '@/app/account';
 import { useEntitlement } from '@/app/entitlement';
 import { SECONDARY_NAV, type NavItem } from '@/app/navigation';
 import { PageHeader } from '@/app/layout/PageHeader';
@@ -16,6 +17,8 @@ const GROUPS: { key: NonNullable<NavItem['group']>; title: string }[] = [
 ];
 
 export function MorePage() {
+  // The email under Account, so signing out is easy to find.
+  const email = useAccount().user?.email ?? null;
   return (
     <>
       <PageHeader title="More" />
@@ -30,6 +33,7 @@ export function MorePage() {
                 icon={i.icon}
                 tone={i.tone}
                 title={i.label}
+                detail={i.to === '/account' ? email : undefined}
                 pro={i.to === '/pro'}
               />
             ))}

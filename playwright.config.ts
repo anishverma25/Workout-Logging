@@ -9,6 +9,8 @@ const executablePath = process.env.PW_CHROMIUM_PATH;
 export default defineConfig({
   testDir: 'tests/e2e',
   fullyParallel: true,
+  // Every test creates an account first, and many load the demo athlete into it.
+  timeout: 60_000,
   retries: process.env.CI ? 1 : 0,
   use: {
     baseURL: 'http://localhost:5175',

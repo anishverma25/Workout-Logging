@@ -24,13 +24,23 @@ export async function getDemoStatus(db: WorkoutDatabase): Promise<DemoStatus> {
   return { loaded: workouts + profiles > 0, loadedAt, workouts };
 }
 
+export interface DemoOptions {
+  /**
+   * Allowed to load into an account database. Only development and end-to-end builds pass
+   * this; a real account only ever holds the person's own training.
+   */
+  intoAccount?: boolean;
+}
+
 /** Loads the demo dataset relative to `now`. Does nothing if demo data is already present. */
 export async function loadDemoData(
   db: WorkoutDatabase,
   now: Date = new Date(),
+  { intoAccount = false }: DemoOptions = {},
 ): Promise<DemoStatus> {
-  // Accounts only ever hold the person's own training.
-  if (db.syncEnabled) throw new Error('Demo data is only available without an account.');
+  if (db.syncEnabled && !intoAccount) {
+    throw new Error('Demo data is only available without an account.');
+  }
   const status = await getDemoStatus(db);
   if (status.loaded) return status;
   const data = generateDemoDataset(now);
@@ -65,9 +75,10 @@ export async function clearDemoData(db: WorkoutDatabase): Promise<void> {
 export async function resetDemoData(
   db: WorkoutDatabase,
   now: Date = new Date(),
+  options: DemoOptions = {},
 ): Promise<DemoStatus> {
   await clearDemoData(db);
-  return loadDemoData(db, now);
+  return loadDemoData(db, now, options);
 }
 
 /**
@@ -76,16 +87,9 @@ export async function resetDemoData(
  */
 export async function autoloadDemoIfFirstRun(db: WorkoutDatabase, enabled: boolean): Promise<void> {
   await ensureSystemExercises(db);
-  if (!enabled) {
-    // A brand-new install without the demo: show the preview tour once.
-    if ((await getMeta<boolean>(db, META_KEYS.tourPending)) === undefined) {
-      const used = (await db.workouts.count()) + (await db.profiles.count());
-      await setMeta(db, META_KEYS.tourPending, used === 0);
-    }
-    return;
-  }
+  if (!enabled) return;
   if (await getMeta<boolean>(db, META_KEYS.demoAutoloadHandled)) return;
   const userWorkouts = await db.workouts.where('origin').equals('user').count();
-  if (userWorkouts === 0) await loadDemoData(db);
+  if (userWorkouts === 0) await loadDemoData(db, new Date(), { intoAccount: true });
   await setMeta(db, META_KEYS.demoAutoloadHandled, true);
 }
