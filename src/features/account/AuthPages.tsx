@@ -273,6 +273,10 @@ export function SignUpPage() {
           Your account starts empty. If you have logged workouts on this device, you can choose to
           add them after signing in.
         </p>
+        <p className="type-meta text-text-2">
+          By creating an account you agree to the <TextLink to="/terms">Terms</TextLink> and the{' '}
+          <TextLink to="/privacy">Privacy policy</TextLink>.
+        </p>
       </form>
     </AuthLayout>
   );
