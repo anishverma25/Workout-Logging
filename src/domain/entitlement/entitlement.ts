@@ -32,6 +32,8 @@ export const SubscriptionSnapshot = z.object({
   founding_member: z.boolean().optional().default(false),
   /** The Razorpay plan the account is on (monthly, quarterly, yearly), if any. */
   billing_plan: z.string().nullable().optional().default(null),
+  /** How Pro was bought: a renewing subscription, or a single payment ('once'). */
+  billing_kind: z.string().nullable().optional().default(null),
   /** Razorpay's state of that subscription: active, pending, halted, cancelled... */
   billing_status: z.string().nullable().optional().default(null),
   /** Renewal is off: Pro runs to the end of the paid period, then stops. */
@@ -61,6 +63,8 @@ export interface Entitlement {
   billingPlan: string | null;
   /** The subscription renews by itself at the end of the period. */
   renews: boolean;
+  /** Pro was paid for once, with no renewal. */
+  paidOnce: boolean;
   /** Razorpay could not take the last renewal (pending or halted). */
   paymentIssue: boolean;
 }
@@ -78,6 +82,7 @@ const GUEST: Entitlement = {
   foundingMember: false,
   billingPlan: null,
   renews: false,
+  paidOnce: false,
   paymentIssue: false,
 };
 
@@ -107,8 +112,10 @@ export function resolveEntitlement(sub: SubscriptionSnapshot | null, now: Date):
     remainingMs: endsAt ? Math.max(0, endsAt.getTime() - t) : null,
     foundingMember: sub.founding_member,
     billingPlan: sub.billing_plan,
+    paidOnce: !!sub.billing_plan && sub.billing_kind === 'once',
     renews:
       !!sub.billing_plan &&
+      sub.billing_kind !== 'once' &&
       (sub.billing_status === 'active' || sub.billing_status === 'authenticated') &&
       !sub.cancel_at_period_end,
     paymentIssue: sub.billing_status === 'pending' || sub.billing_status === 'halted',

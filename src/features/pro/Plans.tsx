@@ -36,6 +36,18 @@ const PERIOD: Record<BillingPlan['id'], string> = {
   yearly: 'a year',
 };
 
+const PERIOD_ONCE: Record<BillingPlan['id'], string> = {
+  monthly: 'for 1 month',
+  quarterly: 'for 3 months',
+  yearly: 'for 1 year',
+};
+
+type PayMode = 'subscribe' | 'once';
+
+/** The plans as they are priced in the chosen way: renewing, or one payment. */
+const priced = (plans: BillingPlan[], mode: PayMode): BillingPlan[] =>
+  mode === 'once' ? plans.map((p) => ({ ...p, priceInr: p.oncePriceInr })) : plans;
+
 /** The plan with the lowest price per month, when the plans differ. */
 function bestValue(plans: BillingPlan[]): BillingPlan['id'] | null {
   if (plans.length < 2) return null;
@@ -66,14 +78,48 @@ function IntroOffer({ plans }: { plans: BillingPlan[] }) {
   );
 }
 
+function ModeChoice({ value, onChange }: { value: PayMode; onChange: (m: PayMode) => void }) {
+  const options: { id: PayMode; title: string; note: string }[] = [
+    { id: 'subscribe', title: 'Auto-renew', note: 'Renews until you cancel' },
+    { id: 'once', title: 'Pay once', note: 'No renewal, no mandate' },
+  ];
+  return (
+    <div role="radiogroup" aria-label="How to pay" className="mb-3 grid grid-cols-2 gap-2">
+      {options.map((o) => {
+        const selected = o.id === value;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(o.id)}
+            className={cn(
+              'pressable chrome rounded-nested border px-3 py-2.5 text-left',
+              selected ? 'border-text-1 bg-text-1 text-bg' : 'border-transparent bg-surface-2',
+            )}
+          >
+            <span className="type-headline block">{o.title}</span>
+            <span className={cn('type-caption block', selected ? 'text-bg/75' : 'text-text-2')}>
+              {o.note}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function PlanChoice({
   plans,
   value,
   onChange,
+  periods,
 }: {
   plans: BillingPlan[];
   value: BillingPlan['id'];
   onChange: (id: BillingPlan['id']) => void;
+  periods: Record<BillingPlan['id'], string>;
 }) {
   const best = bestValue(plans);
   return (
@@ -122,7 +168,7 @@ function PlanChoice({
             <span className="text-right">
               <span className="type-title tabular block">{formatRupees(p.priceInr)}</span>
               <span className={cn('type-meta block', selected ? 'text-bg/75' : 'text-text-2')}>
-                {PERIOD[p.id]}
+                {periods[p.id]}
               </span>
             </span>
           </button>
@@ -132,11 +178,18 @@ function PlanChoice({
   );
 }
 
-const PROMISES = [
-  'Pay with UPI autopay, cards and more through Razorpay.',
-  'Cancel any time here. Pro stays on until the end of what you paid for.',
-  'Everything you log stays yours, with or without Pro.',
-];
+const PROMISES: Record<PayMode, string[]> = {
+  subscribe: [
+    'Pay with UPI autopay, cards and more through Razorpay.',
+    'Cancel any time here. Pro stays on until the end of what you paid for.',
+    'Everything you log stays yours, with or without Pro.',
+  ],
+  once: [
+    'One payment by UPI, card or net banking. No mandate and no automatic charge, ever.',
+    'Pro runs for the period you pay for, then stops by itself. Pay again to add more time.',
+    'Everything you log stays yours, with or without Pro.',
+  ],
+};
 
 /**
  * Choosing and buying a plan, or managing the one you have. Prices come from the server. A plan
@@ -147,7 +200,18 @@ export function PlansSection({ entitlement: e }: { entitlement: EntitlementView 
   const plans = usePlans();
   const signedIn = account.status === 'signedIn';
 
-  if (signedIn && e.billingPlan && e.plan === 'pro') return <ManagePlan entitlement={e} />;
+  if (signedIn && e.billingPlan && e.plan === 'pro') {
+    if (!e.paidOnce) return <ManagePlan entitlement={e} />;
+    // Paid once: show what they have, and let them add more time.
+    return (
+      <div className="flex flex-col gap-4">
+        <ManagePlan entitlement={e} />
+        {plans && plans.length > 0 ? (
+          <BuyPlan plans={plans} entitlement={e} signedIn onceOnly />
+        ) : null}
+      </div>
+    );
+  }
   if (signedIn && e.plan === 'founding') return null;
   if (plans === null) {
     return (
@@ -175,10 +239,13 @@ function BuyPlan({
   plans,
   entitlement: e,
   signedIn,
+  onceOnly = false,
 }: {
   plans: BillingPlan[];
   entitlement: EntitlementView;
   signedIn: boolean;
+  /** Adding time to Pro that was paid for once: no renewing option. */
+  onceOnly?: boolean;
 }) {
   const account = useAccount();
   const profile = useProfile().data;
@@ -187,17 +254,23 @@ function BuyPlan({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
-  const plan = plans.find((p) => p.id === choice) ?? plans[0]!;
-  const anyOpen = plans.some((p) => p.available);
+  const [mode, setMode] = useState<PayMode>(onceOnly ? 'once' : 'subscribe');
+  const shown = priced(plans, mode);
+  const plan = shown.find((p) => p.id === choice) ?? shown[0]!;
+  const periods = mode === 'once' ? PERIOD_ONCE : PERIOD;
+  // A single payment needs no Razorpay plan, so every listed plan can be bought that way.
+  const open = (p: BillingPlan) => (mode === 'once' ? true : p.available);
+  const anyOpen = shown.some(open);
 
   const buy = async () => {
     setBusy(true);
     setError(null);
     try {
-      const result = await startCheckout(plan.id, {
-        email: account.user?.email,
-        name: profile?.displayName,
-      });
+      const result = await startCheckout(
+        plan.id,
+        { email: account.user?.email, name: profile?.displayName },
+        mode,
+      );
       if (result === 'paid') setDone(true);
     } catch (err) {
       setError(err instanceof BillingError ? err.message : 'Something went wrong. Try again.');
@@ -210,32 +283,40 @@ function BuyPlan({
     <Card emphasis as="section" aria-labelledby="plans-title" id="get-pro">
       <div className="flex items-start justify-between gap-3">
         <h2 id="plans-title" className="type-title text-text-1">
-          Pro plans
+          {onceOnly ? 'Add more Pro time' : 'Pro plans'}
         </h2>
         {!signedIn ? <Badge tone="lime">{TRIAL_DAYS} days free first</Badge> : null}
       </div>
       <p className="type-meta mt-1 mb-4 text-text-2">
-        {!signedIn
-          ? `Create a free account and every Pro feature is on for ${TRIAL_DAYS} days, with no payment details. Then choose a plan if you want to keep it.`
-          : e.plan === 'trial' && e.trialEndsAt
-            ? `Your free trial runs until ${formatCalendarDate(e.trialEndsAt)}. Subscribing now starts your plan today.`
-            : 'Every Pro feature, renewed automatically until you cancel.'}
+        {onceOnly
+          ? 'Each payment adds time on top of what you have left. Nothing renews.'
+          : !signedIn
+            ? `Create a free account and every Pro feature is on for ${TRIAL_DAYS} days, with no payment details. Then choose a plan if you want to keep it.`
+            : e.plan === 'trial' && e.trialEndsAt
+              ? `Your free trial runs until ${formatCalendarDate(e.trialEndsAt)}. Subscribing now starts your plan today.`
+              : mode === 'once'
+                ? 'Every Pro feature for the period you choose. One payment, and it does not renew.'
+                : 'Every Pro feature, renewed automatically until you cancel.'}
       </p>
 
-      <IntroOffer plans={plans} />
+      {onceOnly ? null : <IntroOffer plans={plans} />}
 
-      <PlanChoice plans={plans} value={choice} onChange={setChoice} />
+      {onceOnly ? null : <ModeChoice value={mode} onChange={setMode} />}
+
+      <PlanChoice plans={shown} value={choice} onChange={setChoice} periods={periods} />
 
       {perDay(plan) < 1 ? (
         <p className="type-meta tabular mt-3 text-center text-text-1">
           {plan.label} works out to about{' '}
-          <span className="font-semibold">{formatRupees(Math.floor(perDay(plan) * 100) / 100)}</span>{' '}
+          <span className="font-semibold">
+            {formatRupees(Math.floor(perDay(plan) * 100) / 100)}
+          </span>{' '}
           a day. Less than ₹1 a day for every Pro feature.
         </p>
       ) : null}
 
       <ul className="mt-4 flex flex-col gap-2">
-        {PROMISES.map((p) => (
+        {PROMISES[mode].map((p) => (
           <li key={p} className="type-meta flex gap-2.5 text-text-2">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-text-1" aria-hidden />
             {p}
@@ -259,9 +340,11 @@ function BuyPlan({
           <ButtonLink to="/sign-up?next=/pro" size="lg" block>
             Start {TRIAL_DAYS} days free
           </ButtonLink>
-        ) : plan.available ? (
+        ) : open(plan) ? (
           <PrimaryButton block loading={busy} onClick={() => void buy()}>
-            Subscribe for {formatRupees(plan.priceInr)} {PERIOD[plan.id]}
+            {mode === 'once'
+              ? `Pay ${formatRupees(plan.priceInr)} once ${PERIOD_ONCE[plan.id]}`
+              : `Subscribe for ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]}`}
           </PrimaryButton>
         ) : (
           <PrimaryButton block disabled>
@@ -269,10 +352,12 @@ function BuyPlan({
           </PrimaryButton>
         )}
       </div>
-      {signedIn && plan.available ? (
+      {signedIn && open(plan) ? (
         <p className="type-caption mt-3 text-center text-text-2">
-          Renews {PERIOD[plan.id]} at {formatRupees(plan.priceInr)} until you cancel. Payments by
-          Razorpay; Overload never sees your card or UPI PIN.
+          {mode === 'once'
+            ? `Charged once, ${formatRupees(plan.priceInr)}. `
+            : `Renews ${PERIOD[plan.id]} at ${formatRupees(plan.priceInr)} until you cancel. `}
+          Payments by Razorpay; Overload never sees your card or UPI PIN.
         </p>
       ) : null}
     </Card>
@@ -293,7 +378,11 @@ function ManagePlan({ entitlement: e }: { entitlement: EntitlementView }) {
         Your plan
       </h2>
       <p className="type-body mt-1 text-text-1">
-        {plan ? `${plan.label}, ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]}` : 'Pro plan'}
+        {e.paidOnce
+          ? `${plan ? plan.label : 'Pro'}, paid once`
+          : plan
+            ? `${plan.label}, ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]}`
+            : 'Pro plan'}
       </p>
       <p className="type-meta mt-1 text-text-2">
         {e.renews && until

@@ -1,12 +1,13 @@
 // Overload Pro billing with Razorpay. Deployed as a Supabase Edge Function (Deno):
 //   supabase functions deploy billing --no-verify-jwt
-// Routes: POST /billing/subscribe, /billing/verify, /billing/cancel (signed-in user, checked
+// Routes: POST /billing/subscribe, /billing/order (pay once), /billing/verify, /billing/cancel (signed-in user, checked
 // here with the user's access token) and POST /billing/webhook (Razorpay, checked with the
 // webhook signature). Secrets: RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET.
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 import {
   handleCancel,
+  handleOrder,
   handleSubscribe,
   handleVerify,
   handleWebhook,
@@ -100,6 +101,7 @@ Deno.serve(async (req) => {
     const userId = data.user.id;
     const body = await req.json().catch(() => ({}));
     if (route === 'subscribe') return reply(await handleSubscribe(deps, userId, body), origin);
+    if (route === 'order') return reply(await handleOrder(deps, userId, body), origin);
     if (route === 'verify') return reply(await handleVerify(deps, userId, body), origin);
     if (route === 'cancel') return reply(await handleCancel(deps, userId), origin);
     return reply({ status: 404, body: { error: 'Not found' } }, origin);

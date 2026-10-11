@@ -15,14 +15,18 @@ window.Razorpay = function (options) {
     const paymentId = 'pay_e2e' + Math.random().toString(36).slice(2, 8);
     const res = await fetch('${FAKE}/__test/razorpay-sign', {
       method: 'POST',
-      body: JSON.stringify({ payment_id: paymentId, subscription_id: options.subscription_id }),
+      body: JSON.stringify({
+        payment_id: paymentId,
+        subscription_id: options.subscription_id,
+        order_id: options.order_id,
+      }),
     });
     const { signature } = await res.json();
-    options.handler({
-      razorpay_payment_id: paymentId,
-      razorpay_subscription_id: options.subscription_id,
-      razorpay_signature: signature,
-    });
+    options.handler(
+      options.order_id
+        ? { razorpay_payment_id: paymentId, razorpay_order_id: options.order_id, razorpay_signature: signature }
+        : { razorpay_payment_id: paymentId, razorpay_subscription_id: options.subscription_id, razorpay_signature: signature },
+    );
   };
   this.on = function () {};
 };`;
@@ -101,6 +105,28 @@ test('subscribing turns Pro on at once, and cancelling keeps it to the end of th
   // Pro features are open.
   await page.goto('/progress?range=all');
   await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
+});
+
+test('paying once turns Pro on with no renewal, and more time can be added', async ({ page }) => {
+  await signUp(page);
+  const plans = page.getByRole('region', { name: 'Pro plans' });
+  await plans.getByRole('radio', { name: /^Pay once/ }).click();
+  await expect(plans).toContainText('No mandate and no automatic charge');
+  await plans.getByRole('radio', { name: /^3 months/ }).click();
+  await plans.getByRole('button', { name: 'Pay ₹69 once for 3 months' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Pro is active' })).toBeVisible();
+  const mine = page.getByRole('region', { name: 'Your plan' });
+  await expect(mine).toContainText('3 months, paid once');
+  await expect(mine).toContainText(/Ends on .*It will not renew\./);
+  await expect(mine.getByRole('button', { name: 'Cancel plan' })).toHaveCount(0);
+
+  // More time can be added; it never offers a renewing plan here.
+  const more = page.getByRole('region', { name: 'Add more Pro time' });
+  await expect(more.getByRole('radio', { name: /^Auto-renew/ })).toHaveCount(0);
+  await more.getByRole('radio', { name: /^Monthly/ }).click();
+  await more.getByRole('button', { name: 'Pay ₹29 once for 1 month' }).click();
+  await expect(mine).toContainText('Ends on');
 });
 
 test('a webhook with a bad signature changes nothing', async () => {

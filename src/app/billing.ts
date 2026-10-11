@@ -13,6 +13,8 @@ export interface BillingPlan {
   label: string;
   months: number;
   priceInr: number;
+  /** Price of one payment with no renewal. */
+  oncePriceInr: number;
   /** Connected to a Razorpay plan, so it can be bought. */
   available: boolean;
 }
@@ -32,6 +34,7 @@ async function fetchPlans(): Promise<BillingPlan[]> {
       label: String(p.label),
       months: Number(p.months),
       priceInr: Number(p.price_inr),
+      oncePriceInr: Number(p.once_price_inr ?? p.price_inr),
       available: p.available === true,
     }));
   return cached;
@@ -81,7 +84,8 @@ export function formatRupees(amount: number): string {
 
 interface RazorpayResponse {
   razorpay_payment_id: string;
-  razorpay_subscription_id: string;
+  razorpay_subscription_id?: string;
+  razorpay_order_id?: string;
   razorpay_signature: string;
 }
 
@@ -116,7 +120,7 @@ function loadCheckout(): Promise<void> {
 }
 
 async function call<T>(
-  route: 'subscribe' | 'verify' | 'cancel',
+  route: 'subscribe' | 'order' | 'verify' | 'cancel',
   body: Record<string, unknown>,
 ): Promise<T> {
   if (!supabase) throw new BillingError('Accounts are not set up in this version of the app.');
@@ -146,19 +150,28 @@ const themeColor = () =>
 export async function startCheckout(
   plan: BillingPlan['id'],
   prefill: { email?: string | null; name?: string | null },
+  mode: 'subscribe' | 'once' = 'subscribe',
 ): Promise<'paid' | 'closed'> {
-  const [{ subscription_id, key_id }] = await Promise.all([
-    call<{ subscription_id: string; key_id: string }>('subscribe', { plan }),
+  const [started] = await Promise.all([
+    mode === 'once'
+      ? call<{ order_id: string; amount: number; key_id: string }>('order', { plan })
+      : call<{ subscription_id: string; key_id: string }>('subscribe', { plan }),
     loadCheckout(),
   ]);
+  const { key_id } = started;
+  // A subscription opens Checkout with its id; a single payment with its order and amount.
+  const target =
+    'order_id' in started
+      ? { order_id: started.order_id, amount: started.amount, currency: 'INR' }
+      : { subscription_id: started.subscription_id };
   const Razorpay = window.Razorpay;
   if (!Razorpay) throw new BillingError('Could not load the payment window. Try again.');
   return new Promise((resolve, reject) => {
     const checkout = new Razorpay({
       key: key_id,
-      subscription_id,
+      ...target,
       name: 'Overload Pro',
-      description: 'Pro plan',
+      description: mode === 'once' ? 'Pro, paid once' : 'Pro plan',
       prefill: { email: prefill.email ?? undefined, name: prefill.name ?? undefined },
       theme: { color: themeColor() },
       handler: (response: RazorpayResponse) => {
