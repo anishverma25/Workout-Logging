@@ -17,6 +17,7 @@ import { join } from 'node:path';
 import { PGlite, type Transaction } from '@electric-sql/pglite';
 import {
   handleCancel,
+  handleOrder,
   handleSubscribe,
   handleVerify,
   handleWebhook,
@@ -359,6 +360,7 @@ interface FakeRazorpaySub {
   notes: Record<string, string>;
   plan_id: string;
 }
+const fakeOrders = new Map<string, { id: string; amount: number }>();
 const fakeSubs = new Map<string, FakeRazorpaySub>();
 const PLAN_MONTHS: Record<string, number> = { plan_e2eM: 1, plan_e2eQ: 3, plan_e2eY: 12 };
 
@@ -376,6 +378,12 @@ const billingDeps: BillingDeps = {
       };
       fakeSubs.set(sub.id, sub);
       return sub;
+    }
+    if (method === 'POST' && path === '/orders') {
+      const b = body as { amount: number };
+      const order = { id: `order_${randomBytes(6).toString('hex')}`, amount: b.amount };
+      fakeOrders.set(order.id, order);
+      return order;
     }
     const cancel = /^\/subscriptions\/(\w+)\/cancel$/.exec(path);
     if (cancel) return fakeSubs.get(cancel[1]!) ?? null;
@@ -434,7 +442,9 @@ async function handleBilling(req: IncomingMessage, res: ServerResponse, route: s
         ? await handleVerify(billingDeps, userId, body)
         : route === 'cancel'
           ? await handleCancel(billingDeps, userId)
-          : { status: 404, body: { error: 'Not found' } };
+          : route === 'order'
+            ? await handleOrder(billingDeps, userId, body)
+            : { status: 404, body: { error: 'Not found' } };
   return send(res, r.status, r.body);
 }
 
@@ -504,10 +514,13 @@ const server = createServer(async (req, res) => {
     }
     // Test control, standing in for Razorpay Checkout's signature on a finished payment.
     if (url.pathname === '/__test/razorpay-sign' && req.method === 'POST') {
-      const { payment_id, subscription_id } = (await readJson(req)) as Record<string, string>;
-      return send(res, 200, {
-        signature: await hmacSha256Hex(FAKE_RAZORPAY.keySecret, `${payment_id}|${subscription_id}`),
-      });
+      const { payment_id, subscription_id, order_id } = (await readJson(req)) as Record<
+        string,
+        string
+      >;
+      // Subscriptions sign payment|subscription; one-time orders sign order|payment.
+      const message = order_id ? `${order_id}|${payment_id}` : `${payment_id}|${subscription_id}`;
+      return send(res, 200, { signature: await hmacSha256Hex(FAKE_RAZORPAY.keySecret, message) });
     }
     if (url.pathname.startsWith('/functions/v1/billing/')) {
       return await handleBilling(req, res, url.pathname.slice('/functions/v1/billing/'.length));

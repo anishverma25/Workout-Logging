@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   handleCancel,
+  handleOrder,
   handleSubscribe,
   handleVerify,
   handleWebhook,
@@ -27,6 +28,7 @@ interface FakeSub {
   plan_id: string;
 }
 const subs = new Map<string, FakeSub>();
+const orders: { id: string; amount: number }[] = [];
 let counter = 0;
 
 function deps(): BillingDeps {
@@ -44,6 +46,11 @@ function deps(): BillingDeps {
         };
         subs.set(sub.id, sub);
         return sub;
+      }
+      if (method === 'POST' && path === '/orders') {
+        const order = { id: `order_test${++counter}`, amount: (body as { amount: number }).amount };
+        orders.push(order);
+        return order;
       }
       const cancel = /^\/subscriptions\/(\w+)\/cancel$/.exec(path);
       if (cancel) return subs.get(cancel[1]!) ?? null;
@@ -213,6 +220,135 @@ describe('billing', () => {
     expect(now.pro_expires_at).toBe(before);
   });
 
+  it('pay once: a valid payment adds the plan months, once, and nothing renews', async () => {
+    const user = await server.createUser('once@example.com');
+    const started = await handleOrder(deps(), user, { plan: 'quarterly' });
+    expect(started.status).toBe(200);
+    const orderId = started.body.order_id as string;
+    // The server fixes the price: 69 rupees in paise, whatever the browser says.
+    expect(started.body.amount).toBe(6900);
+    expect(orders.find((o) => o.id === orderId)!.amount).toBe(6900);
+
+    const signature = await hmacSha256Hex(config.keySecret, `${orderId}|pay_o1`);
+    const verified = await handleVerify(deps(), user, {
+      razorpay_payment_id: 'pay_o1',
+      razorpay_order_id: orderId,
+      razorpay_signature: signature,
+    });
+    expect(verified.status).toBe(200);
+    const first = await mine(user);
+    expect(first).toMatchObject({
+      status: 'active',
+      billing_plan: 'quarterly',
+      billing_kind: 'once',
+      cancel_at_period_end: false,
+    });
+    const end = Date.parse(first.pro_expires_at as string);
+    expect(end - Date.now()).toBeGreaterThan(88 * DAY);
+    expect(end - Date.now()).toBeLessThan(93 * DAY);
+
+    // The same payment again (a retried request, then the webhook) adds nothing.
+    await handleVerify(deps(), user, {
+      razorpay_payment_id: 'pay_o1',
+      razorpay_order_id: orderId,
+      razorpay_signature: signature,
+    });
+    const raw = JSON.stringify({
+      event: 'order.paid',
+      payload: { order: { entity: { id: orderId } }, payment: { entity: { id: 'pay_o1' } } },
+    });
+    await handleWebhook(deps(), raw, await hmacSha256Hex(config.webhookSecret, raw), 'evt_o1');
+    expect(Date.parse((await mine(user)).pro_expires_at as string)).toBe(end);
+
+    // A second payment adds on top of the time left.
+    const second = (await handleOrder(deps(), user, { plan: 'monthly' })).body.order_id as string;
+    await handleVerify(deps(), user, {
+      razorpay_payment_id: 'pay_o2',
+      razorpay_order_id: second,
+      razorpay_signature: await hmacSha256Hex(config.keySecret, `${second}|pay_o2`),
+    });
+    const stacked = Date.parse((await mine(user)).pro_expires_at as string);
+    expect(stacked - end).toBeGreaterThan(27 * DAY);
+    expect(stacked - end).toBeLessThan(32 * DAY);
+  });
+
+  it('pay once: the webhook alone is enough, and a forged or borrowed payment is not', async () => {
+    const user = await server.createUser('once-hook@example.com');
+    const other = await server.createUser('once-other@example.com');
+    const orderId = (await handleOrder(deps(), user, { plan: 'monthly' })).body.order_id as string;
+
+    const forged = await handleVerify(deps(), user, {
+      razorpay_payment_id: 'pay_f',
+      razorpay_order_id: orderId,
+      razorpay_signature: 'f'.repeat(64),
+    });
+    expect(forged.status).toBe(400);
+    // Someone else's order, even with a correct signature, is refused.
+    const borrowed = await handleVerify(deps(), other, {
+      razorpay_payment_id: 'pay_b',
+      razorpay_order_id: orderId,
+      razorpay_signature: await hmacSha256Hex(config.keySecret, `${orderId}|pay_b`),
+    });
+    expect(borrowed.status).toBe(409);
+    expect((await mine(user)).pro_expires_at).toBeNull();
+    expect((await mine(other)).pro_expires_at).toBeNull();
+
+    const raw = JSON.stringify({
+      event: 'order.paid',
+      payload: { order: { entity: { id: orderId } }, payment: { entity: { id: 'pay_h' } } },
+    });
+    expect((await handleWebhook(deps(), raw, 'nope', 'evt_h0')).status).toBe(401);
+    expect(
+      (await handleWebhook(deps(), raw, await hmacSha256Hex(config.webhookSecret, raw), 'evt_h1'))
+        .body.applied,
+    ).toBe('order.paid');
+    expect((await mine(user)).billing_kind).toBe('once');
+    expect((await mine(user)).pro_expires_at).not.toBeNull();
+
+    // An order we never created (a subscription charge) is ignored.
+    const stray = JSON.stringify({
+      event: 'order.paid',
+      payload: { order: { entity: { id: 'order_unknown' } }, payment: { entity: { id: 'pay_s' } } },
+    });
+    const ignored = await handleWebhook(
+      deps(),
+      stray,
+      await hmacSha256Hex(config.webhookSecret, stray),
+      'evt_h2',
+    );
+    expect(ignored.body.ignored).toBe(true);
+  });
+
+  it('pay once: refused while a renewing plan is running, and the plan list shows the price', async () => {
+    const user = await server.createUser('once-sub@example.com');
+    const subId = (await handleSubscribe(deps(), user, { plan: 'monthly' })).body
+      .subscription_id as string;
+    Object.assign(subs.get(subId)!, {
+      status: 'active',
+      current_end: Math.floor((Date.now() + 30 * DAY) / 1000),
+    });
+    await webhook('subscription.activated', subs.get(subId)!, 'evt_s1');
+    expect((await handleOrder(deps(), user, { plan: 'monthly' })).status).toBe(409);
+    expect((await handleOrder(deps(), user, { plan: 'weekly' })).status).toBe(400);
+
+    await server.pg.exec(
+      `update public.billing_plans set once_price_inr = 79 where id = 'quarterly'`,
+    );
+    const plans = (
+      await server.asAnon((tx) =>
+        tx.query<{ p: { id: string; once_price_inr: number }[] }>(
+          'select public.get_billing_plans() as p',
+        ),
+      )
+    ).rows[0]!.p;
+    expect(plans.map((p) => [p.id, Number(p.once_price_inr)])).toEqual([
+      ['monthly', 29],
+      ['quarterly', 79],
+      ['yearly', 249],
+    ]);
+    await server.pg.exec(`update public.billing_plans set once_price_inr = null`);
+  });
+
   it('keeps the billing functions and tables closed to the app', async () => {
     const user = await server.createUser('sneaky@example.com');
     for (const sql of [
@@ -220,6 +356,9 @@ describe('billing', () => {
       `select public.billing_attach('${user}', 'monthly', 'sub_x')`,
       `select * from public.billing_plans`,
       `select * from public.billing_events`,
+      `select * from public.billing_orders`,
+      `select public.billing_order_paid('order_x', 'pay_x')`,
+      `select public.billing_order_create('${user}', 'monthly', 'order_x', 29)`,
       `update public.billing_plans set price_inr = 1`,
     ]) {
       await expect(

@@ -9,6 +9,9 @@
  * - The checkout signature is checked against the subscription id stored on the server for that
  *   account, never the one the browser sends back.
  * - Webhooks are checked with the webhook secret and applied once per event id.
+ * - Pay once: the server creates the Razorpay order for a price it holds, the checkout signature
+ *   is checked against the order stored for that account, and a paid order adds Pro time once,
+ *   whether the checkout response or the `order.paid` webhook arrives first.
  */
 
 export interface BillingConfig {
@@ -77,6 +80,17 @@ export async function checkoutSignatureValid(
   return safeEqual(expected, signature);
 }
 
+/** One-time checkout success: HMAC-SHA256 of "order_id|payment_id" with the key secret. */
+export async function orderSignatureValid(
+  keySecret: string,
+  orderId: string,
+  paymentId: string,
+  signature: string,
+): Promise<boolean> {
+  const expected = await hmacSha256Hex(keySecret, `${orderId}|${paymentId}`);
+  return safeEqual(expected, signature);
+}
+
 /** Webhook: HMAC-SHA256 of the raw request body with the webhook secret. */
 export async function webhookSignatureValid(
   webhookSecret: string,
@@ -142,6 +156,7 @@ interface CheckoutInfo {
   razorpay_plan_id: string | null;
   total_count: number | null;
   months: number | null;
+  once_price_inr: number | null;
   current_subscription_id: string | null;
   current_status: string | null;
   current_months: number | null;
@@ -213,6 +228,9 @@ export async function handleVerify(
   if (typeof paymentId !== 'string' || typeof signature !== 'string') {
     return fail(400, 'The payment details are incomplete.');
   }
+  if (typeof b.razorpay_order_id === 'string') {
+    return verifyOrder(deps, userId, b.razorpay_order_id, paymentId, signature);
+  }
   const info = await checkoutInfo(deps, userId, null);
   const stored = info?.current_subscription_id;
   if (!info || !stored) return fail(409, 'No payment was started for this account.');
@@ -231,6 +249,71 @@ export async function handleVerify(
     p_status: status === 'created' ? 'authenticated' : status,
   });
   return ok({ active: true, pro_expires_at: end.toISOString() });
+}
+
+/** Creates a one-time Razorpay order for the chosen plan: one payment, no mandate. */
+export async function handleOrder(
+  deps: BillingDeps,
+  userId: string,
+  body: unknown,
+): Promise<BillingResponse> {
+  const plan = (body as { plan?: unknown } | null)?.plan;
+  if (typeof plan !== 'string' || !PLAN_IDS.includes(plan as PlanId)) {
+    return fail(400, 'Choose a plan.');
+  }
+  const info = await checkoutInfo(deps, userId, plan as PlanId);
+  if (!info) return fail(409, 'Your account is still being set up. Try again in a minute.');
+  if (!info.plan_exists || !info.once_price_inr) return fail(400, 'That plan is not available.');
+  const live =
+    info.current_subscription_id &&
+    info.current_status &&
+    info.current_status !== 'created' &&
+    LIVE.has(info.current_status);
+  if (live) {
+    return fail(
+      409,
+      'You already have a plan that renews. Cancel it first, or wait until it ends, to pay once.',
+    );
+  }
+  const paise = Math.round(Number(info.once_price_inr) * 100);
+  const receipt = `ov_${userId.replaceAll('-', '').slice(0, 12)}_${Date.now().toString(36)}`;
+  const created = (await deps.razorpay('POST', '/orders', {
+    amount: paise,
+    currency: 'INR',
+    receipt,
+    notes: { user_id: userId, plan, kind: 'once' },
+  })) as { id?: unknown } | null;
+  if (!created || typeof created.id !== 'string') {
+    return fail(502, 'Could not start the payment. Try again.');
+  }
+  await deps.rpc('billing_order_create', {
+    p_user: userId,
+    p_plan: plan,
+    p_order: created.id,
+    p_amount: paise / 100,
+  });
+  return ok({ order_id: created.id, amount: paise, key_id: deps.config.keyId });
+}
+
+async function verifyOrder(
+  deps: BillingDeps,
+  userId: string,
+  orderId: string,
+  paymentId: string,
+  signature: string,
+): Promise<BillingResponse> {
+  // The order must be one this account created; the signature then covers that order.
+  const order = await deps.rpc('billing_order_info', { p_user: userId, p_order: orderId });
+  if (!order) return fail(409, 'No payment was started for this account.');
+  if (!(await orderSignatureValid(deps.config.keySecret, orderId, paymentId, signature))) {
+    return fail(400, 'The payment could not be confirmed.');
+  }
+  const done = (await deps.rpc('billing_order_paid', {
+    p_order: orderId,
+    p_payment: paymentId,
+  })) as { pro_expires_at?: string } | null;
+  if (!done) return fail(409, 'No payment was started for this account.');
+  return ok({ active: true, pro_expires_at: done.pro_expires_at ?? null });
 }
 
 /** Stops renewal. Pro stays on until the end of the period already paid for. */
@@ -272,13 +355,31 @@ export async function handleWebhook(
   if (!signature || !(await webhookSignatureValid(deps.config.webhookSecret, rawBody, signature))) {
     return fail(401, 'Bad signature');
   }
-  let payload: { event?: string; payload?: { subscription?: { entity?: unknown } } };
+  let payload: {
+    event?: string;
+    payload?: {
+      subscription?: { entity?: unknown };
+      order?: { entity?: { id?: unknown } };
+      payment?: { entity?: { id?: unknown } };
+    };
+  };
   try {
     payload = JSON.parse(rawBody);
   } catch {
     return fail(400, 'Bad body');
   }
   const event = payload.event ?? '';
+  if (event === 'order.paid') {
+    const orderId = payload.payload?.order?.entity?.id;
+    const paymentId = payload.payload?.payment?.entity?.id;
+    if (typeof orderId !== 'string' || typeof paymentId !== 'string') return ok({ ignored: true });
+    if (eventId && !(await deps.rpc('billing_record_event', { p_id: eventId, p_event: event }))) {
+      return ok({ duplicate: true });
+    }
+    // Unknown orders (subscription charges also send order.paid) come back null and are ignored.
+    const done = await deps.rpc('billing_order_paid', { p_order: orderId, p_payment: paymentId });
+    return ok(done ? { applied: event } : { ignored: true });
+  }
   const sub = asSubscription(payload.payload?.subscription?.entity);
   if (!event.startsWith('subscription.') || !sub) return ok({ ignored: true });
   if (eventId && !(await deps.rpc('billing_record_event', { p_id: eventId, p_event: event }))) {

@@ -65,6 +65,7 @@ export function devSnapshot(state: DevEntitlementState, now: Date): Subscription
     early_access: false,
     founding_member: false,
     billing_plan: null,
+    billing_kind: null,
     billing_status: null,
     cancel_at_period_end: false,
   };

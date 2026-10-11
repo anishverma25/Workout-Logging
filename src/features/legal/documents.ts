@@ -48,7 +48,8 @@ export const TERMS: LegalDocument = {
         'New accounts get a 7 day free trial of Pro. It needs no payment details.',
         'Pro is sold as a monthly, 3 month or yearly plan. The prices in Indian rupees are shown on the Pro page when you subscribe.',
         'Prices on the Pro page can be introductory prices. We may change prices for new subscriptions in the future.',
-        'A plan renews automatically at the end of each period until you cancel it.',
+        'A subscription renews automatically at the end of each period until you cancel it.',
+        'You can also pay once for a period of Pro. A one-time payment does not renew, and each one adds that period to the Pro time you have left.',
         'Payments are handled by Razorpay. We never see or store your card number or UPI PIN.',
         'Pro turns on as soon as your payment is confirmed.',
       ],
@@ -196,7 +197,7 @@ export const REFUNDS: LegalDocument = {
     {
       heading: 'Cancel any time',
       items: [
-        'Open the Pro page in the app, find your plan and choose Cancel plan.',
+        'Open the Pro page in the app, find your plan and choose Cancel plan. A plan you paid for once does not renew, so there is nothing to cancel.',
         'There is no cancellation fee.',
         'Pro stays on until the end of the period you have already paid for. After that it ends and you are not charged again.',
         'To avoid the next charge, cancel before your renewal date.',
