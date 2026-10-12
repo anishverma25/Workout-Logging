@@ -181,8 +181,8 @@ const RecordRow = memo(function RecordRow({
   return (
     <button type="button" onClick={() => onOpen(record.exerciseId)} className={rowCls}>
       <span className="min-w-0 flex-1">
-        <span className="flex min-w-0 items-center gap-2">
-          <span className="type-headline min-w-0 text-text-1 [overflow-wrap:anywhere]">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="type-headline min-w-0 text-text-1 [overflow-wrap:break-word]">
             {record.exerciseName}
           </span>
           {isNew ? <Badge tone="lime">New</Badge> : null}
@@ -233,8 +233,8 @@ const BestRow = memo(function BestRow({
   return (
     <button type="button" onClick={() => onOpen(r.exerciseId)} className={rowCls}>
       <span className="min-w-0 flex-1">
-        <span className="flex min-w-0 items-center gap-2">
-          <span className="type-headline min-w-0 text-text-1 [overflow-wrap:anywhere]">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="type-headline min-w-0 text-text-1 [overflow-wrap:break-word]">
             {r.name}
           </span>
           {isNew ? <Badge tone="lime">New</Badge> : null}

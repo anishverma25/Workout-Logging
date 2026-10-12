@@ -10,6 +10,7 @@ import {
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { DestructiveButton, IconButton, PrimaryButton, SecondaryButton } from './actions';
+import { keyboardInset } from './keyboard';
 
 interface BottomSheetProps {
   open: boolean;
@@ -29,6 +30,24 @@ interface BottomSheetProps {
   /** Wider on desktop (672 instead of 480), for forms with columns. */
   wide?: boolean;
   className?: string;
+}
+
+/** Follows the keyboard while a sheet is open, so the sheet can sit above it. */
+function useKeyboardInset(active: boolean): number {
+  const [inset, setInset] = useState(0);
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!active || !vv) return;
+    const update = () => setInset(keyboardInset(window.innerHeight, vv));
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+      setInset(0);
+    };
+  }, [active]);
+  return inset;
 }
 
 const DISMISS_DISTANCE = 96;
@@ -61,6 +80,7 @@ export function BottomSheet({
   });
   const [drag, setDrag] = useState(0);
   const dragStart = useRef<{ y: number; t: number } | null>(null);
+  const keyboard = useKeyboardInset(open && presentation === 'sheet');
 
   useEffect(() => {
     const dialog = ref.current;
@@ -127,14 +147,21 @@ export function BottomSheet({
         // A click on the backdrop lands on the dialog element itself.
         if (e.target === e.currentTarget) onCloseRef.current();
       }}
-      style={drag ? { transform: `translateY(${drag}px)`, transition: 'none' } : undefined}
+      style={{
+        ...(drag ? { transform: `translateY(${drag}px)`, transition: 'none' } : null),
+        // Above the keyboard on iPhone, and never taller than the space left.
+        ...(keyboard
+          ? { marginBottom: keyboard, maxHeight: `calc(100% - ${keyboard}px - 1rem)` }
+          : null),
+      }}
       className={cn(
         'kit-sheet hidden w-full max-w-none flex-col overflow-hidden bg-surface p-0 text-text-1 open:flex backdrop:bg-overlay',
         'transition-transform duration-[var(--dur-move)] ease-[var(--ease-standard)]',
         dialogLike
-          ? 'kit-dialog m-auto max-h-[85dvh] max-w-[min(30rem,calc(100vw-2rem))] rounded-panel'
+          ? 'kit-dialog m-auto max-h-[85vh] max-w-[min(30rem,calc(100vw-2rem))] rounded-panel supports-[height:1dvh]:max-h-[85dvh]'
           : cn(
-              'm-0 mt-auto max-h-[85dvh] rounded-t-panel lg:m-auto lg:rounded-panel',
+              // 85vh first for browsers without dvh (Chrome before 108, older Samsung Internet).
+              'm-0 mt-auto max-h-[85vh] rounded-t-panel supports-[height:1dvh]:max-h-[85dvh] lg:m-auto lg:rounded-panel',
               wide ? 'lg:max-w-2xl' : 'lg:max-w-[30rem]',
             ),
         className,

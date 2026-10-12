@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn';
 export function FitText({
   children,
   className,
-  minScale = 0.85,
+  minScale = 0.7,
 }: {
   children: ReactNode;
   className?: string;
@@ -22,15 +22,20 @@ export function FitText({
     const fit = () => {
       el.style.fontSize = '';
       el.style.whiteSpace = 'nowrap';
+      el.style.textOverflow = '';
       const base = parseFloat(getComputedStyle(el).fontSize);
       const ratio = el.clientWidth > 0 ? el.clientWidth / el.scrollWidth : 1;
       if (ratio >= 1) return;
       if (ratio >= minScale) {
         el.style.fontSize = `${Math.floor(base * ratio * 10) / 10}px`;
-      } else {
-        el.style.fontSize = `${base * minScale}px`;
-        el.style.whiteSpace = 'normal';
+        return;
       }
+      el.style.fontSize = `${base * minScale}px`;
+      // Still too long: wrap between words, never inside one ("Pus / h"). A single word that
+      // cannot fit ends in an ellipsis instead.
+      const words = (el.textContent ?? '').trim().split(/\s+/).length;
+      el.style.whiteSpace = words > 1 ? 'normal' : 'nowrap';
+      el.style.textOverflow = words > 1 ? '' : 'ellipsis';
     };
     fit();
     if (typeof ResizeObserver === 'undefined') return;
@@ -42,10 +47,7 @@ export function FitText({
   return (
     <span
       ref={ref}
-      className={cn(
-        'block w-full overflow-hidden text-center leading-tight break-words',
-        className,
-      )}
+      className={cn('block w-full overflow-hidden text-center leading-tight', className)}
     >
       {children}
     </span>
