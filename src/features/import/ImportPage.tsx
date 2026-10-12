@@ -12,6 +12,7 @@ import {
   PrimaryButton,
   SecondaryButton,
   SegmentedControl,
+  Switch,
   TextLink,
 } from '@/components/kit';
 import { db } from '@/data/db';
@@ -24,6 +25,7 @@ import {
   type ImportSource,
 } from '@/domain/import/formats';
 import { planImport, type ExerciseChoice, type ImportPlan } from '@/domain/import/plan';
+import { ROUTINE_WINDOW_DAYS, type InferredRoutine } from '@/domain/import/routine';
 import { MUSCLE_GROUPS, type Exercise, type MuscleGroup } from '@/domain/models/schemas';
 import { MUSCLE_LABELS } from '@/domain/models/labels';
 import { formatCalendarDate, pluralize } from '@/lib/format';
@@ -75,6 +77,7 @@ export function ImportPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [makeRoutine, setMakeRoutine] = useState(true);
   const fileInput = useId();
 
   const exercises = useMemo(() => catalog.data?.exercises ?? [], [catalog.data]);
@@ -120,7 +123,11 @@ export function ImportPage() {
     setError(null);
     try {
       const namespace = account.user?.id ?? 'device';
-      setResult(await applyImport(db, log, choices, namespace));
+      setResult(
+        await applyImport(db, log, choices, namespace, {
+          routine: makeRoutine ? (plan?.routine ?? null) : null,
+        }),
+      );
       setStep('done');
     } catch (err) {
       console.error(err);
@@ -264,6 +271,8 @@ export function ImportPage() {
             choices={choices}
             exercises={exercises}
             onChoice={(name, c) => setChoices((prev) => ({ ...prev, [name]: c }))}
+            makeRoutine={makeRoutine}
+            onMakeRoutine={setMakeRoutine}
             busy={busy}
             error={error}
             onImport={() => void runImport()}
@@ -291,6 +300,8 @@ function Review({
   choices,
   exercises,
   onChoice,
+  makeRoutine,
+  onMakeRoutine,
   busy,
   error,
   onImport,
@@ -300,6 +311,8 @@ function Review({
   choices: Record<string, ExerciseChoice>;
   exercises: Exercise[];
   onChoice: (name: string, choice: ExerciseChoice) => void;
+  makeRoutine: boolean;
+  onMakeRoutine: (on: boolean) => void;
   busy: boolean;
   error: string | null;
   onImport: () => void;
@@ -347,6 +360,15 @@ function Review({
           </p>
         ) : null}
       </Card>
+
+      {plan.routine && plan.routine.days.length > 0 ? (
+        <RoutinePreview
+          routine={plan.routine}
+          source={source}
+          on={makeRoutine}
+          onChange={onMakeRoutine}
+        />
+      ) : null}
 
       {plan.exercises.length > 0 ? (
         <>
@@ -517,7 +539,9 @@ function Done({
   onContinue: () => void;
   onProgress: () => void;
 }) {
-  const anything = result.workoutsAdded + result.bodyWeightsAdded + result.measurementsAdded > 0;
+  const anything =
+    result.workoutsAdded + result.bodyWeightsAdded + result.measurementsAdded > 0 ||
+    result.routine !== null;
   return (
     <section aria-labelledby="done-title" className="mt-4 flex flex-1 flex-col">
       <span className="inline-flex size-12 items-center justify-center rounded-full bg-lime-dim text-lime">
@@ -545,6 +569,9 @@ function Done({
               : null,
             result.measurementsAdded > 0
               ? `${pluralize(result.measurementsAdded, 'set of measurements', 'sets of measurements')} added`
+              : null,
+            result.routine
+              ? `Your routine, ${result.routine.name}, set up with ${pluralize(result.routine.days, 'day')}${result.routine.active ? ' and ready on Home' : ' under Routines'}`
               : null,
             result.workoutsSkipped > 0
               ? `${pluralize(result.workoutsSkipped, 'workout')} already here, left as they were`
@@ -579,5 +606,55 @@ function Done({
         )}
       </div>
     </section>
+  );
+}
+
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** The routine rebuilt from recent workouts, created along with the import unless turned off. */
+function RoutinePreview({
+  routine,
+  source,
+  on,
+  onChange,
+}: {
+  routine: InferredRoutine;
+  source: ImportSource;
+  on: boolean;
+  onChange: (on: boolean) => void;
+}) {
+  const titleId = useId();
+  return (
+    <Card as="section" className="mt-4" aria-labelledby={titleId}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="type-meta text-text-2">Your routine</p>
+          <h2 id={titleId} className="type-title mt-0.5 break-words text-text-1">
+            {routine.name}
+          </h2>
+        </div>
+        <Switch checked={on} onChange={onChange} aria-label="Create this routine" />
+      </div>
+      <p className="type-meta mt-2 text-text-2">
+        Rebuilt from your last {ROUTINE_WINDOW_DAYS / 7} weeks in {APPS[source].name}: each day with
+        its exercises, sets and rep ranges, planned on the days you usually trained it. Your next
+        workout starts from it, and you can edit it any time.
+      </p>
+      {on ? (
+        <ul className="mt-4 flex flex-col gap-2" aria-label="Days in this routine">
+          {routine.days.map((d) => (
+            <li key={d.title} className="rounded-nested bg-surface-2 px-4 py-3">
+              <p className="type-headline break-words text-text-1">{d.name}</p>
+              <p className="type-meta tabular mt-0.5 text-text-2">
+                {pluralize(d.slots.length, 'exercise')} ·{' '}
+                {d.weekdays.length > 0
+                  ? d.weekdays.map((w) => WEEKDAY_SHORT[w]).join(', ')
+                  : 'no fixed day'}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </Card>
   );
 }

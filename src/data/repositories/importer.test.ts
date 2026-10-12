@@ -145,3 +145,56 @@ describe('applyImport', () => {
     expect(we?.exerciseName).toBe('Hack squat');
   });
 });
+
+describe('the routine from recent workouts', () => {
+  it('is created active, with its days and slots, and the workouts linked to their days', async () => {
+    const log = readExport([fixture('hevy-workouts.csv')], { strongUnit: 'kg' });
+    const plan = planImport(log, await db.exercises.toArray());
+    const choices = Object.fromEntries(plan.exercises.map((e) => [e.name, e.choice]));
+    const result = await applyImport(db, log, choices, 'user-a', { routine: plan.routine });
+    expect(result.routine).toMatchObject({ name: 'My Hevy routine', days: 2, active: true });
+
+    const routine = (await db.routines.toArray())[0]!;
+    expect(routine).toMatchObject({
+      isActive: true,
+      description: 'Imported from Hevy',
+      origin: 'user',
+    });
+    const days = (await db.routineDays.toArray()).sort((a, b) => a.order - b.order);
+    expect(days.map((d) => d.name)).toEqual(['Lower B', 'Upper A']);
+    const slots = await db.routineExercises.toArray();
+    expect(slots).toHaveLength(10);
+    const bench = (await db.exercises.toArray()).find((e) => e.name === 'Barbell bench press')!;
+    expect(slots.find((s) => s.exerciseId === bench.id)).toMatchObject({
+      targetSets: 2,
+      repMin: 7,
+      repMax: 8,
+      targetRir: 2,
+    });
+    // The imported workouts belong to their days, as if they had been logged here.
+    const upper = (await db.workouts.toArray()).find((w) => w.name === 'Upper A')!;
+    expect(upper.routineDayId).toBe(days[1]!.id);
+    expect(upper.routineId).toBe(routine.id);
+  });
+
+  it('is not made twice, and does not replace a routine the person already uses', async () => {
+    await db.routines.add({
+      id: '22222222-2222-4222-8222-222222222222',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      deletedAt: null,
+      origin: 'user',
+      name: 'Mine',
+      description: null,
+      isActive: true,
+    });
+    const log = readExport([fixture('hevy-workouts.csv')], { strongUnit: 'kg' });
+    const plan = planImport(log, await db.exercises.toArray());
+    const choices = Object.fromEntries(plan.exercises.map((e) => [e.name, e.choice]));
+    const first = await applyImport(db, log, choices, 'user-a', { routine: plan.routine });
+    expect(first.routine).toMatchObject({ active: false });
+    const again = await applyImport(db, log, choices, 'user-a', { routine: plan.routine });
+    expect(again.routine).toBeNull();
+    expect(await db.routines.count()).toBe(2);
+  });
+});

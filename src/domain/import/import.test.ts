@@ -6,6 +6,7 @@ import { parseDuration, parseExportDate } from './dates';
 import { detectFile, ImportFormatError, readExport } from './formats';
 import { inferExercise, matchExercise } from './match';
 import { planImport } from './plan';
+import { inferRoutine } from './routine';
 
 /**
  * Reading Hevy and Strong exports. The fixtures copy the real files' headers, quoting and date
@@ -253,5 +254,85 @@ describe('the plan shown before importing', () => {
       reason: 'yours',
       choice: { kind: 'existing', exerciseId: mine.id },
     });
+  });
+});
+
+describe('the routine rebuilt from recent workouts', () => {
+  it('turns each recent workout title into a day, with exercises, sets and reps', () => {
+    const routine = inferRoutine(hevy(), 'hevy')!;
+    // No shared name between "Lower B" and "Upper A", so it is named after the app.
+    expect(routine.name).toBe('My Hevy routine');
+    expect(routine.days.map((d) => [d.name, d.weekdays])).toEqual([
+      ['Lower B', [6]],
+      ['Upper A', [1]],
+    ]);
+    const upper = routine.days[1]!;
+    expect(upper.slots.map((s) => s.name)).toEqual([
+      'Bench Press (Barbell)',
+      'Lat Pulldown (Cable)',
+      'Single Arm Triceps Pushdown (Cable)',
+      'Pullover (Dumbbell)',
+      'Plank',
+    ]);
+    // Warm-ups are not target sets; the reps span the working sets; RPE 8 and 10 give RIR 2.
+    expect(upper.slots[0]).toMatchObject({ sets: 2, repMin: 7, repMax: 8, targetRir: 2 });
+    expect(upper.slots[2]).toMatchObject({ sets: 2, repMin: 4, repMax: 6, supersetKey: '0' });
+    // A hold has no reps, so it gets an ordinary range to edit later.
+    expect(upper.slots[4]).toMatchObject({ sets: 1, repMin: 8, repMax: 12, targetRir: null });
+  });
+
+  it('names the routine after what its days share, and gives each weekday to one day', () => {
+    const day = (title: string, date: Date) => ({
+      key: `${title}${date.toISOString()}`,
+      title,
+      startedAt: date,
+      endedAt: null,
+      notes: null,
+      exercises: [
+        {
+          name: 'Squat (Barbell)',
+          notes: null,
+          supersetKey: null,
+          sets: [
+            {
+              setType: 'working' as const,
+              weightKg: 100,
+              reps: 5,
+              durationSec: null,
+              distanceM: null,
+              rpe: null,
+              notes: null,
+            },
+          ],
+        },
+      ],
+    });
+    const log = {
+      source: 'hevy' as const,
+      body: [],
+      skippedRows: 0,
+      workouts: [
+        // An old programme, outside the last six weeks, is left out.
+        day('Old Push', new Date(2026, 6, 1, 18)),
+        day('FULL BODY EACH OTHER DAY (A)', new Date(2026, 8, 26, 19)), // Sat
+        day('FULL BODY EACH OTHER DAY (B)', new Date(2026, 8, 28, 19)), // Mon
+        day('FULL BODY EACH OTHER DAY (A)', new Date(2026, 9, 3, 19)), // Sat
+        day('Evening Workout', new Date(2026, 9, 7, 19)),
+        day('FULL BODY EACH OTHER DAY (A)', new Date(2026, 9, 12, 19)), // Mon, the latest
+      ],
+    };
+    const routine = inferRoutine(log, 'hevy')!;
+    expect(routine.name).toBe('FULL BODY EACH OTHER DAY');
+    // Monday was trained as A once and B once: the most recent wins.
+    expect(routine.days.map((d) => [d.name, d.weekdays])).toEqual([
+      ['FULL BODY EACH OTHER DAY (A)', [1, 6]],
+      ['FULL BODY EACH OTHER DAY (B)', []],
+    ]);
+  });
+
+  it('makes no routine from sessions that were never from one', () => {
+    expect(
+      inferRoutine(readExport([fixture('strong.csv')], { strongUnit: 'kg' }), 'strong'),
+    ).toBeNull();
   });
 });
