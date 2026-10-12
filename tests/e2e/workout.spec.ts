@@ -23,6 +23,26 @@ async function startRoutineWorkout(page: Page) {
 
 const firstCard = (page: Page) => page.locator('section[aria-labelledby^="ex-"]').first();
 
+test('fewer sets than the routine plans: remove the open ones, with undo', async ({ page }) => {
+  await startRoutineWorkout(page);
+  const card = firstCard(page);
+  const rows = card.getByRole('button', { name: /^Mark set \d+ done$/ });
+  const planned = await rows.count();
+  expect(planned).toBeGreaterThanOrEqual(2);
+
+  await card.getByRole('button', { name: 'Remove set' }).click();
+  await expect(rows).toHaveCount(planned - 1);
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(rows).toHaveCount(planned);
+
+  // A done set is never removed this way.
+  await card.getByRole('button', { name: 'Mark set 1 done' }).click();
+  for (let i = 1; i < planned; i++) await card.getByRole('button', { name: 'Remove set' }).click();
+  // Only the done set is left, so the exercise folds as finished, with nothing more to remove.
+  await expect(rows).toHaveCount(0);
+  await expect(card.getByRole('button', { name: 'Remove set' })).toHaveCount(0);
+});
+
 test('logging a set from a routine, with last time visible and rest starting', async ({ page }) => {
   await startRoutineWorkout(page);
   const card = firstCard(page);

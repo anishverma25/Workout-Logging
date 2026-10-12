@@ -449,6 +449,43 @@ export async function deleteSet(db: WorkoutDatabase, setId: string) {
   });
 }
 
+/**
+ * Removes the last set not yet done, for training fewer sets than the routine planned.
+ * Done sets are never removed this way: they are what was lifted. Returns the removed set's id,
+ * or null when every set is done.
+ */
+export async function removeLastOpenSet(
+  db: WorkoutDatabase,
+  workoutExerciseId: string,
+): Promise<string | null> {
+  return db.transaction('rw', WORKOUT_TABLES(db), async () => {
+    const sets = await setsOf(db, workoutExerciseId);
+    const open = [...sets].reverse().find((s) => s.completedAt === null);
+    if (!open) return null;
+    await softDelete(db, 'sets', [open.id]);
+    await renumber(
+      db,
+      'sets',
+      sets.filter((s) => s.id !== open.id),
+    );
+    return open.id;
+  });
+}
+
+/** Puts a removed set back where it was (the undo after removing it). */
+export async function restoreSet(db: WorkoutDatabase, setId: string): Promise<void> {
+  await db.transaction('rw', WORKOUT_TABLES(db), async () => {
+    const set = await db.sets.get(setId);
+    if (!set || set.deletedAt === null) return;
+    await patchRecord<WorkoutSet>(db, 'sets', setId, { deletedAt: null });
+    // Its old position is now shared with the set that moved up into it: it goes first.
+    const sets = (await setsOf(db, set.workoutExerciseId)).sort(
+      (a, b) => a.order - b.order || (a.id === setId ? -1 : b.id === setId ? 1 : 0),
+    );
+    await renumber(db, 'sets', sets);
+  });
+}
+
 export type SetPatch = Partial<
   Pick<
     WorkoutSet,
