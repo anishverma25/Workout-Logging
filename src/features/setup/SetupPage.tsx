@@ -27,6 +27,7 @@ import { SegmentedControl as OptionalSegmentedControl } from '@/components/ui/Se
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { usePreferences, useTrainingData } from '@/data/hooks';
+import { activeRoutine } from '@/domain/analytics/schedule';
 import { recommendProgram, personalizeTemplate } from '@/data/library/programs';
 import { addBodyWeight } from '@/data/repositories/bodyweight';
 import { ProfileError, saveProfile } from '@/data/repositories/profile';
@@ -43,6 +44,7 @@ import type {
   Goal,
   GymAccess,
   Profile,
+  Routine,
   Sex,
 } from '@/domain/models/schemas';
 import { cn } from '@/lib/cn';
@@ -165,10 +167,22 @@ export function SetupPage() {
   const latestKg = training.data.bodyWeights
     .filter((b) => b.origin === 'user')
     .sort((a, b) => b.measuredAt.localeCompare(a.measuredAt))[0]?.weightKg;
-  return <SetupFlow own={own} latestKg={latestKg ?? null} />;
+  // A routine brought over from Hevy or Strong is already the plan: setup does not offer
+  // another one on top of it.
+  const current = activeRoutine(training.data.routines);
+  const imported = current && current.description?.startsWith('Imported from') ? current : null;
+  return <SetupFlow own={own} latestKg={latestKg ?? null} imported={imported} />;
 }
 
-function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | null }) {
+function SetupFlow({
+  own,
+  latestKg,
+  imported,
+}: {
+  own: Profile | null;
+  latestKg: number | null;
+  imported: Routine | null;
+}) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get('next') ?? '/';
@@ -281,7 +295,7 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
         navigate(`/routines/${routine.id}`, { replace: true });
         return;
       }
-      toast('Profile saved');
+      toast(imported ? 'You are all set' : 'Profile saved');
       navigate(next, { replace: true });
     } catch (err) {
       setError(err instanceof ProfileError ? err.message : 'Could not save. Try again.');
@@ -517,6 +531,7 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
               experience={experience}
               energy={energy}
               recommendation={recommendation}
+              imported={imported}
               templateKey={templateKey}
               onChoose={setChosen}
               planOptions={{
@@ -535,7 +550,11 @@ function SetupFlow({ own, latestKg }: { own: Profile | null; latestKg: number | 
           ) : null}
 
           <div className="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 bg-bg pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-            {step === 'plan' && !guided ? (
+            {step === 'plan' && imported ? (
+              <PrimaryButton block disabled={busy} onClick={() => void finish(false)}>
+                {busy ? 'Saving...' : 'Save and start training'}
+              </PrimaryButton>
+            ) : step === 'plan' && !guided ? (
               <>
                 <PrimaryButton block disabled={busy} onClick={() => void finish('blank')}>
                   {busy ? 'Saving...' : 'Build my routine'}
@@ -683,6 +702,7 @@ function PlanSummary({
   experience,
   energy,
   recommendation,
+  imported,
   templateKey,
   onChoose,
   planOptions,
@@ -692,6 +712,7 @@ function PlanSummary({
   experience: Experience;
   energy: ReturnType<typeof energyPlan>;
   recommendation: ReturnType<typeof recommendProgram>;
+  imported: Routine | null;
   templateKey: string | null;
   onChoose: (key: string) => void;
   planOptions: Parameters<typeof personalizeTemplate>[1];
@@ -735,7 +756,17 @@ function PlanSummary({
         </p>
       )}
 
-      {experience !== 'beginner' ? (
+      {imported ? (
+        <div className="mt-6 rounded-panel border border-border bg-surface p-5">
+          <p className="type-meta text-text-2">Your routine</p>
+          <h2 className="type-title mt-0.5 break-words text-text-1">{imported.name}</h2>
+          <p className="type-body mt-2 text-text-2">
+            {imported.description}, with your days, exercises and sets as you left them. Your next
+            workout starts from it, with last time&rsquo;s numbers ready. Change it any time under
+            Routines.
+          </p>
+        </div>
+      ) : experience !== 'beginner' ? (
         <div className="mt-6 rounded-panel border border-border bg-surface p-5">
           <h2 className="type-title text-text-1">Bring your own split</h2>
           <p className="type-body mt-2 text-text-2">

@@ -2,12 +2,16 @@ import {
   BodyMeasurement,
   BodyWeightEntry,
   Exercise,
+  Routine,
+  RoutineDay,
+  RoutineExercise,
   Workout,
   WorkoutExercise,
   WorkoutSet,
 } from '@/domain/models/schemas';
 import { normalize } from '@/domain/exercises/search';
 import type { ImportedLog } from '@/domain/import/formats';
+import type { InferredRoutine } from '@/domain/import/routine';
 import type { ExerciseChoice } from '@/domain/import/plan';
 import { stableId } from '@/lib/ids';
 import type { WorkoutDatabase } from '../db';
@@ -33,7 +37,15 @@ export interface ImportResult {
   measurementsAdded: number;
   /** Sets and entries left out because a value was impossible. */
   dropped: number;
+  /** The routine created from recent workouts, if one was asked for and is new. */
+  routine: { id: string; name: string; days: number; active: boolean } | null;
 }
+
+/** How an imported routine says where it came from, in its description. */
+export const IMPORTED_ROUTINE_NOTE = {
+  hevy: 'Imported from Hevy',
+  strong: 'Imported from Strong',
+} as const;
 
 const ms = (d: Date) => d.toISOString();
 const clampRir = (rpe: number) => Math.max(0, Math.min(10, Math.round((10 - rpe) * 2) / 2));
@@ -52,6 +64,7 @@ export async function applyImport(
   log: ImportedLog,
   choices: Record<string, ExerciseChoice>,
   namespace: string,
+  options: { routine?: InferredRoutine | null } = {},
 ): Promise<ImportResult> {
   const result: ImportResult = {
     workoutsAdded: 0,
@@ -61,6 +74,7 @@ export async function applyImport(
     bodyWeightsAdded: 0,
     measurementsAdded: 0,
     dropped: 0,
+    routine: null,
   };
   const at = nowIso();
   const meta = (id: string) => ({
@@ -83,6 +97,9 @@ export async function applyImport(
       db.sets,
       db.bodyWeights,
       db.bodyMeasurements,
+      db.routines,
+      db.routineDays,
+      db.routineExercises,
       db.outbox,
     ],
     async () => {
@@ -117,6 +134,79 @@ export async function applyImport(
       }
       await putRecords(db, 'exercises', newExercises);
       result.exercisesCreated = newExercises.length;
+
+      // Workouts done from a routine day are linked to it, as if they had been logged here.
+      const dayFor = new Map<string, { routineId: string; dayId: string }>();
+      // --- The routine they were following, so the next workout starts from it.
+      if (options.routine && options.routine.days.length > 0) {
+        const plan = options.routine;
+        const routineId = key('routine', normalize(plan.name));
+        if (!(await db.routines.get(routineId))) {
+          const hasActive =
+            (await db.routines.filter((r) => r.deletedAt === null && r.isActive).count()) > 0;
+          const days: RoutineDay[] = [];
+          const slots: RoutineExercise[] = [];
+          for (const d of plan.days) {
+            const dayId = stableId(`${routineId}|day|${days.length}`);
+            const supersets = new Map<string, number>();
+            const daySlots: RoutineExercise[] = [];
+            for (const slot of d.slots) {
+              const exercise = exerciseFor.get(slot.name);
+              if (!exercise) continue;
+              let group: number | null = null;
+              if (slot.supersetKey) {
+                if (!supersets.has(slot.supersetKey) && supersets.size < 50)
+                  supersets.set(slot.supersetKey, supersets.size + 1);
+                group = supersets.get(slot.supersetKey) ?? null;
+              }
+              const parsed = RoutineExercise.safeParse({
+                ...meta(stableId(`${dayId}|slot|${daySlots.length}`)),
+                routineDayId: dayId,
+                exerciseId: exercise.id,
+                order: daySlots.length,
+                targetSets: slot.sets,
+                repMin: Math.min(slot.repMin, slot.repMax),
+                repMax: Math.max(slot.repMin, slot.repMax),
+                targetRir: slot.targetRir,
+                restSeconds: exercise.category === 'compound' ? 150 : 90,
+                notes: null,
+                supersetGroup: group,
+              });
+              if (parsed.success) daySlots.push(parsed.data);
+            }
+            if (daySlots.length === 0) continue;
+            const day = RoutineDay.safeParse({
+              ...meta(dayId),
+              routineId,
+              name: d.name,
+              order: days.length,
+              weekdays: d.weekdays,
+            });
+            if (!day.success) continue;
+            days.push(day.data);
+            slots.push(...daySlots);
+            dayFor.set(d.title, { routineId, dayId });
+          }
+          const routine = Routine.safeParse({
+            ...meta(routineId),
+            name: plan.name,
+            description: IMPORTED_ROUTINE_NOTE[log.source],
+            isActive: !hasActive,
+          });
+          if (!routine.success || days.length === 0) dayFor.clear();
+          if (routine.success && days.length > 0) {
+            await putRecords(db, 'routines', [routine.data]);
+            await putRecords(db, 'routineDays', days);
+            await putRecords(db, 'routineExercises', slots);
+            result.routine = {
+              id: routine.data.id,
+              name: routine.data.name,
+              days: days.length,
+              active: routine.data.isActive,
+            };
+          }
+        }
+      }
 
       // --- Workouts, their exercises and sets.
       const workouts: Workout[] = [];
@@ -190,8 +280,8 @@ export async function applyImport(
         const workout = Workout.safeParse({
           ...meta(workoutId),
           name: w.title.slice(0, 60),
-          routineId: null,
-          routineDayId: null,
+          routineId: dayFor.get(w.title)?.routineId ?? null,
+          routineDayId: dayFor.get(w.title)?.dayId ?? null,
           status: 'completed',
           startedAt: ms(w.startedAt),
           endedAt: w.endedAt ? ms(w.endedAt) : null,

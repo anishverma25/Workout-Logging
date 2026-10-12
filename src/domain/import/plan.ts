@@ -2,6 +2,7 @@ import type { Exercise } from '@/domain/models/schemas';
 import { normalize } from '@/domain/exercises/search';
 import type { ImportedLog } from './formats';
 import { inferExercise, matchExercise, type InferredExercise } from './match';
+import { inferRoutine, type InferredRoutine } from './routine';
 
 /**
  * What an import will do, shown to the person before anything is saved: how many workouts and
@@ -32,6 +33,8 @@ export interface ImportPlan {
   lastWorkout: Date | null;
   bodyEntries: number;
   exercises: ExercisePlan[];
+  /** The routine they were following, rebuilt from recent workouts, or null if there is none. */
+  routine: InferredRoutine | null;
 }
 
 export function planImport(log: ImportedLog, exercises: Exercise[]): ImportPlan {
@@ -98,5 +101,6 @@ export function planImport(log: ImportedLog, exercises: Exercise[]): ImportPlan 
     lastWorkout: log.workouts[log.workouts.length - 1]?.startedAt ?? null,
     bodyEntries: log.body.length,
     exercises: plans,
+    routine: inferRoutine(log, log.source),
   };
 }

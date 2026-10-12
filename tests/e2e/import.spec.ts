@@ -39,11 +39,25 @@ test('a new account imports from Hevy, checks the matches, and carries on in set
   // The person can say what an unmatched exercise works.
   await pullover.getByLabel('Main muscle').selectOption('chest');
 
+  // The routine they were following, rebuilt from the workouts, on by default.
+  const routineCard = page.getByRole('region', { name: 'My Hevy routine' });
+  await expect(routineCard.getByRole('switch', { name: 'Create this routine' })).toBeChecked();
+  const days = routineCard.getByRole('list', { name: 'Days in this routine' });
+  await expect(days).toContainText('Upper A');
+  await expect(days).toContainText('5 exercises · Mon');
+
   await page.getByRole('button', { name: 'Import 2 workouts' }).click();
   await expect(page.getByRole('heading', { name: 'Your history is in' })).toBeVisible();
   await expect(page.getByText('2 workouts and 13 sets added')).toBeVisible();
+  await expect(
+    page.getByText('Your routine, My Hevy routine, set up with 2 days and ready on Home'),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Continue setting up' }).click();
   await expect(page).toHaveURL(/\/setup/);
+
+  // The routine is theirs to start from and edit.
+  await page.goto('/routines');
+  await expect(page.getByText('My Hevy routine').first()).toBeVisible();
 
   // Imported training is ordinary training everywhere.
   await page.goto('/history');
@@ -65,6 +79,8 @@ test('an existing account imports from Strong in pounds, and a second import add
   await page.getByRole('radio', { name: 'lb' }).click();
   await page.getByLabel('Strong export file').setInputFiles(`${FIXTURES}/strong.csv`);
   await expect(page.getByRole('heading', { name: 'Check before importing' })).toBeVisible();
+  // "Evening Workout" and "Morning Workout" are Strong's names for unplanned sessions: no routine.
+  await expect(page.getByRole('switch', { name: 'Create this routine' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Import 2 workouts' }).click();
   await expect(page.getByText('2 workouts and 6 sets added')).toBeVisible();
   await page.getByRole('button', { name: 'Done' }).click();

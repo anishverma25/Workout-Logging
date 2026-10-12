@@ -133,6 +133,10 @@ Read README.md for setup, architecture and calculation rules.
   empty Home): pure readers in `domain/import` (CSV, dates, formats, exercise matching that only
   matches the same movement on the same equipment), saved by `data/repositories/importer.ts`
   through `putRecords` with ids from `stableId(account, source, workout)`, so importing twice
-  adds nothing. Strong files do not say kg or lb; the person chooses.
+  adds nothing. Strong files do not say kg or lb; the person chooses. The routine they followed
+  is rebuilt from the last six weeks (`domain/import/routine.ts`: each workout title is a day,
+  exercises and sets from its latest session, weekdays from when they trained it), created
+  active unless they already have one, described "Imported from Hevy", with imported workouts
+  linked to their days; setup then skips its own routine step.
 - Deployed on Cloudflare Pages from `phase-2-wip`. Each new Supabase migration must be applied
   in the SQL editor before the code that needs it is pushed.
