@@ -12,6 +12,7 @@ import {
   Link2,
   NotebookPen,
   Replace,
+  Minus,
   Plus,
   Trash2,
   TrendingUp,
@@ -23,6 +24,8 @@ import { db } from '@/data/db';
 import type { WorkoutExerciseView } from '@/data/repositories/workoutView';
 import {
   addSet,
+  removeLastOpenSet,
+  restoreSet,
   addWarmupSets,
   swapWorkoutExercise,
   toggleSupersetWithNext,
@@ -394,9 +397,29 @@ function ExerciseCardImpl({
           </div>
 
           <div className="mt-3 flex items-center justify-between gap-3 px-4">
-            <SecondaryButton compact icon={<Plus />} onClick={() => void addSet(db, we.id)}>
-              Add set
-            </SecondaryButton>
+            <div className="flex items-center gap-2">
+              <SecondaryButton compact icon={<Plus />} onClick={() => void addSet(db, we.id)}>
+                Add set
+              </SecondaryButton>
+              {/* Fewer sets than planned today: drops the last set not yet done. */}
+              {doneCount < sets.length ? (
+                <SecondaryButton
+                  compact
+                  icon={<Minus />}
+                  onClick={async () => {
+                    const removed = await removeLastOpenSet(db, we.id);
+                    if (removed) {
+                      toast('Set removed', {
+                        label: 'Undo',
+                        onSelect: () => void restoreSet(db, removed),
+                      });
+                    }
+                  }}
+                >
+                  Remove set
+                </SecondaryButton>
+              ) : null}
+            </div>
             {allDone && expanded ? (
               <TextLink small onClick={() => setExpanded(false)}>
                 Hide sets

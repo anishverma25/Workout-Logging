@@ -19,7 +19,9 @@ import {
   getActiveWorkout,
   moveWorkoutExercise,
   pauseWorkout,
+  removeLastOpenSet,
   removeWorkoutExercise,
+  restoreSet,
   resumeWorkout,
   startEmptyWorkout,
   startWorkoutFromDay,
@@ -155,6 +157,34 @@ describe('editing a workout', () => {
     await deleteSet(db, sets[1]!.id);
     sets = await liveSets(we!.id);
     expect(sets.map((s) => s.order)).toEqual([0, 1, 2, 3]);
+  });
+
+  it('removes the last set not yet done, never a done one, and can put it back', async () => {
+    const { day } = await pushDay();
+    const w = await startWorkoutFromDay(db, day.id, T0);
+    const [we] = await liveExercises(w.id);
+    const planned = await liveSets(we!.id);
+    expect(planned.length).toBeGreaterThanOrEqual(3);
+    await updateSet(db, planned[0]!.id, { weightKg: 60, reps: 8 });
+    await completeSet(db, planned[0]!.id);
+
+    // Fewer sets today: the last open set goes.
+    const removed = await removeLastOpenSet(db, we!.id);
+    expect(removed).toBe(planned[planned.length - 1]!.id);
+    let sets = await liveSets(we!.id);
+    expect(sets).toHaveLength(planned.length - 1);
+    expect(sets.map((s) => s.order)).toEqual(sets.map((_, i) => i));
+
+    // Undo puts it back where it was.
+    await restoreSet(db, removed!);
+    sets = await liveSets(we!.id);
+    expect(sets.map((s) => s.id)).toEqual(planned.map((s) => s.id));
+
+    // Only open sets are ever removed: the done one stays.
+    for (let i = 0; i < planned.length; i++) await removeLastOpenSet(db, we!.id);
+    sets = await liveSets(we!.id);
+    expect(sets.map((s) => s.id)).toEqual([planned[0]!.id]);
+    expect(await removeLastOpenSet(db, we!.id)).toBeNull();
   });
 
   it('clamps impossible values instead of storing them', async () => {
