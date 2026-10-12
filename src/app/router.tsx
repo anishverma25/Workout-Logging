@@ -72,6 +72,11 @@ export const router = createBrowserRouter([
         path: 'setup',
         lazy: page(() => import('@/features/setup/SetupPage'), 'SetupPage'),
       },
+      // Bringing history over from Hevy or Strong: after sign-up, and from More and Settings.
+      {
+        path: 'import',
+        lazy: page(() => import('@/features/import/ImportPage'), 'ImportPage'),
+      },
       {
         element: <AppShell />,
         children: [

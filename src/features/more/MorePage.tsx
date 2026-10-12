@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { ChevronRight, Crown, Sparkles } from 'lucide-react';
+import { ChevronRight, Crown, FileUp, Sparkles } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import { useEntitlement } from '@/app/entitlement';
 import { SECONDARY_NAV, type NavItem } from '@/app/navigation';
@@ -38,7 +38,15 @@ export function MorePage() {
               />
             ))}
             {g.key === 'app' ? (
-              <ListRow to="/welcome" icon={Sparkles} tone="lime" title="Take the tour" />
+              <>
+                <ListRow
+                  to="/import?next=/more"
+                  icon={FileUp}
+                  tone="sky"
+                  title="Import from Hevy or Strong"
+                />
+                <ListRow to="/welcome" icon={Sparkles} tone="lime" title="Take the tour" />
+              </>
             ) : null}
           </ListGroup>
         ))}

@@ -129,5 +129,10 @@ Read README.md for setup, architecture and calculation rules.
   subscriptions. Paying members get a membership view (`features/pro/ProMember.tsx`); free
   members get at most four spaced Pro reminders on Home, each from their own numbers
   (`domain/entitlement/nudge.ts`).
+- Import from Hevy and Strong (`/import`, offered after sign-up and in More, Settings and the
+  empty Home): pure readers in `domain/import` (CSV, dates, formats, exercise matching that only
+  matches the same movement on the same equipment), saved by `data/repositories/importer.ts`
+  through `putRecords` with ids from `stableId(account, source, workout)`, so importing twice
+  adds nothing. Strong files do not say kg or lb; the person chooses.
 - Deployed on Cloudflare Pages from `phase-2-wip`. Each new Supabase migration must be applied
   in the SQL editor before the code that needs it is pushed.

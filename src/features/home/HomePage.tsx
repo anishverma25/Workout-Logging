@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { CalendarRange, Dumbbell, Sparkles } from 'lucide-react';
+import { CalendarRange, Dumbbell, FileUp, Sparkles } from 'lucide-react';
 import { buildDashboard } from '@/domain/analytics/dashboard';
 import { usePreferences, useTrainingData } from '@/data/hooks';
 import { ButtonLink } from '@/components/ui/Button';
@@ -81,6 +81,13 @@ export function HomePage() {
                 icon={<Dumbbell className="size-4" aria-hidden />}
               >
                 Start a workout
+              </ButtonLink>
+              <ButtonLink
+                to="/import?next=/"
+                variant="secondary"
+                icon={<FileUp className="size-4" aria-hidden />}
+              >
+                Import from Hevy or Strong
               </ButtonLink>
             </>
           }

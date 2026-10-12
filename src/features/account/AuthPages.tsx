@@ -215,8 +215,12 @@ export function SignUpPage() {
     markTourSeen();
     if (result === 'confirm') setSentTo(email.trim());
     // Someone who was on their way to a particular screen keeps going there. Otherwise a new
-    // account goes through setup, so the app is fitted to them before they log anything.
-    else navigate(params.get('next') ? next : '/setup?next=/', { replace: true });
+    // account is asked whether they are coming from Hevy or Strong, then goes through setup.
+    else
+      navigate(
+        params.get('next') ? next : `/import?welcome=1&next=${encodeURIComponent('/setup?next=/')}`,
+        { replace: true },
+      );
   });
 
   if (account.status === 'unavailable') return <AccountsUnavailable />;

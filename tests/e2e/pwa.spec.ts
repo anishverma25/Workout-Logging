@@ -66,7 +66,7 @@ test('opens and works offline after the first visit', async ({ page, context }) 
   await page.getByRole('textbox', { name: 'Email' }).fill(`pwa-off-${Date.now()}@example.com`);
   await page.getByLabel('Password', { exact: true }).fill('correct-horse-9');
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page).toHaveURL(/\/setup/);
+  await expect(page).toHaveURL(/\/import\?welcome=1/);
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await waitForServiceWorker(page);

@@ -21,6 +21,7 @@ const PAGES = [
   '/journey',
   '/feedback',
   '/setup',
+  '/import',
   '/settings',
   '/pro',
   '/more',
