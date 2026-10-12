@@ -310,6 +310,14 @@ function ExportSection() {
           Export
         </Button>
       </PanelRow>
+      <PanelRow
+        title="Import from Hevy or Strong"
+        detail="Bring your workout history and body weight over from another app."
+      >
+        <ButtonLink to="/import?next=/settings" size="sm" variant="secondary">
+          Import
+        </ButtonLink>
+      </PanelRow>
       <PanelRow title="Body" detail="Weigh-ins and measurements.">
         <Button
           size="sm"

@@ -37,26 +37,34 @@ test('history filters narrow the timeline and clear again', async ({ page }) => 
 
 test('workout detail: correcting a set saves it and recalculates', async ({ page }) => {
   await page.goto('/history');
-  // The most recent Push holds an overhead press record: 40 × 8 for an estimated 53.3 kg.
+  // The most recent Push. Its numbers depend on the date the demo was generated, so the test
+  // reads them from the screen rather than expecting fixed ones.
   await page.locator('a[href^="/history/"]', { hasText: 'Push' }).first().click();
   const records = page.locator('dt', { hasText: 'Records' }).locator('xpath=following-sibling::dd');
-  const before = Number(await records.textContent());
-  expect(before).toBeGreaterThan(0);
-  await expect(page.getByText('Best estimated 1RM 53.3 kg.')).toBeVisible();
+  expect(Number(await records.textContent())).toBeGreaterThanOrEqual(0);
 
-  await page.getByRole('button', { name: /^Working set 1: 40 × 8,/ }).click();
-  await page.getByRole('textbox', { name: 'Reps' }).fill('3');
+  const ohp = page.getByRole('region', { name: 'Overhead press' });
+  const best = async () =>
+    Number(
+      /1RM ([\d.]+) kg/.exec((await ohp.getByText(/^Best estimated 1RM/).textContent()) ?? '')?.[1],
+    );
+  const before = await best();
+  expect(before).toBeGreaterThan(0);
+  const first = ohp.getByRole('button', { name: /^Working set 1: / });
+  const name = (await first.getAttribute('aria-label')) ?? '';
+  const [, load, reps] = /^Working set 1: ([\d.]+) × (\d+)/.exec(name) ?? [];
+  expect(load && reps).toBeTruthy();
+
+  // A heavier set 1 than anything logged: the best estimate must rise to match it.
+  const heavier = String(Number(load) + 20);
+  await first.click();
+  await page.getByRole('textbox', { name: /^Load/ }).fill(heavier);
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Set updated')).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Working set 1: 40 × 3,/ })).toBeVisible();
-  // The best estimate now comes from another set, so it falls, and the totals follow.
-  await expect(page.getByText('Best estimated 1RM 53.3 kg.')).toHaveCount(0);
-  // Overhead press is the only lift here between 40 and 53.3 kg; its estimate fell.
-  await expect(async () => {
-    const texts = await page.getByText(/^Best estimated 1RM [\d.]+ kg\./).allTextContents();
-    const values = texts.map((t) => Number(/1RM ([\d.]+) kg/.exec(t)?.[1]));
-    expect(values.some((v) => v > 40 && v < 53.3)).toBe(true);
-  }).toPass();
+  await expect(
+    ohp.getByRole('button', { name: new RegExp(`^Working set 1: ${heavier} × ${reps},`) }),
+  ).toBeVisible();
+  await expect(async () => expect(await best()).toBeGreaterThan(before)).toPass();
 });
 
 test('deleting a workout removes it from history', async ({ page }) => {

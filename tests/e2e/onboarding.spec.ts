@@ -36,7 +36,10 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
 
-  // Setup follows a new account on its own.
+  // A new account is asked whether it comes from another app, then setup follows.
+  await expect(page).toHaveURL(/\/import\?welcome=1/);
+  await expect(page.getByRole('heading', { name: 'Coming from another app?' })).toBeVisible();
+  await page.getByRole('button', { name: 'I am new, start fresh' }).click();
   await expect(page).toHaveURL(/\/setup/);
   await page.getByRole('textbox', { name: 'Your name' }).fill('Meera Shah');
   await page.getByRole('button', { name: 'Continue' }).click();
