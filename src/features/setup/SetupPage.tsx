@@ -1,3 +1,5 @@
+import { SYSTEM_EXERCISES, SYSTEM_EXERCISE_KEYS } from '@/data/library/exercises';
+import { shortDayName } from '@/lib/format/dates';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
@@ -220,18 +222,19 @@ function SetupFlow({
   const goal = draft.goal ?? 'strength_hypertrophy';
   const experience = draft.experience ?? 'beginner';
 
-  // Only beginners get a recommended routine. Intermediate and advanced lifters usually have a
-  // split they trust, so they are offered a blank routine to enter it instead.
-  const guided = experience === 'beginner';
+  // Everyone gets a recommended plan for their days. Beginners take it; intermediate and
+  // advanced lifters choose between it and building their own split.
+  const canBuildOwn = experience !== 'beginner';
+  const [mode, setMode] = useState<'recommended' | 'own'>('recommended');
+  const guided = !canBuildOwn || mode === 'recommended';
   const recommendation = useMemo(
     () =>
-      guided && draft.trainingDays
+      draft.trainingDays
         ? recommendProgram({ trainingDays: draft.trainingDays, experience, goal })
         : null,
-    [guided, draft.trainingDays, experience, goal],
+    [draft.trainingDays, experience, goal],
   );
-  const [chosen, setChosen] = useState<string | null>(null);
-  const templateKey = chosen ?? recommendation?.template.key ?? null;
+  const templateKey = recommendation?.template.key ?? null;
 
   const energy = energyPlan({
     sex: draft.sex,
@@ -533,7 +536,9 @@ function SetupFlow({
               recommendation={recommendation}
               imported={imported}
               templateKey={templateKey}
-              onChoose={setChosen}
+              canBuildOwn={canBuildOwn}
+              mode={guided ? 'recommended' : 'own'}
+              onMode={setMode}
               planOptions={{
                 goal,
                 experience,
@@ -591,6 +596,8 @@ function SetupFlow({
     </div>
   );
 }
+
+const EXERCISE_NAME = new Map(SYSTEM_EXERCISE_KEYS.map((k, i) => [k, SYSTEM_EXERCISES[i]!.name]));
 
 const toCm = (feet: number | null, inches: number | null) =>
   feet === null ? null : Math.round((feet * 12 + (inches ?? 0)) * CM_PER_INCH * 10) / 10;
@@ -704,7 +711,9 @@ function PlanSummary({
   recommendation,
   imported,
   templateKey,
-  onChoose,
+  canBuildOwn,
+  mode,
+  onMode,
   planOptions,
 }: {
   name: string;
@@ -714,7 +723,9 @@ function PlanSummary({
   recommendation: ReturnType<typeof recommendProgram>;
   imported: Routine | null;
   templateKey: string | null;
-  onChoose: (key: string) => void;
+  canBuildOwn: boolean;
+  mode: 'recommended' | 'own';
+  onMode: (mode: 'recommended' | 'own') => void;
   planOptions: Parameters<typeof personalizeTemplate>[1];
 }) {
   const options = recommendation ? [recommendation.template, ...recommendation.alternatives] : [];
@@ -766,46 +777,52 @@ function PlanSummary({
             Routines.
           </p>
         </div>
-      ) : experience !== 'beginner' ? (
-        <div className="mt-6 rounded-panel border border-border bg-surface p-5">
-          <h2 className="type-title text-text-1">Bring your own split</h2>
-          <p className="type-body mt-2 text-text-2">
-            At an {EXPERIENCE_LABEL[experience].toLowerCase()} level you most likely train to a
-            routine that already works for you, so we will not swap it for ours. Set it up once, day
-            by day, and every session after that opens with last time&rsquo;s numbers ready.
-          </p>
-          <p className="type-meta mt-3 text-text-2">
-            Prefer a starting point? Every template is still under Routines.
-          </p>
-        </div>
       ) : recommendation ? (
         <div className="mt-6">
-          <h2 className="type-title mb-3 text-text-1">Recommended routine</h2>
-          <div role="radiogroup" aria-label="Routine" className="flex flex-col gap-2">
-            {options.map((t, i) => (
+          <h2 className="type-title mb-3 text-text-1">Your routine</h2>
+          {canBuildOwn ? (
+            <div role="radiogroup" aria-label="Routine" className="mb-3 flex flex-col gap-2">
               <OptionCard
-                key={t.key}
-                title={t.name}
-                description={`${i === 0 ? 'Best fit' : `${t.daysPerWeek} days`} · ${
-                  i === 0 ? recommendation.reason : t.summary
-                }`}
-                selected={t.key === templateKey}
-                onSelect={() => onChoose(t.key)}
+                title="Use the recommended routine"
+                description={`${recommendation.template.name}. ${recommendation.reason}`}
+                selected={mode === 'recommended'}
+                onSelect={() => onMode('recommended')}
               />
-            ))}
-          </div>
-          {preview ? (
-            <ul className="mt-3 flex flex-wrap gap-2" aria-label="Days in this routine">
+              <OptionCard
+                title="Build my own"
+                description={`Set up the split you already follow, day by day. Every session after that opens with last time\u2019s numbers ready.`}
+                selected={mode === 'own'}
+                onSelect={() => onMode('own')}
+              />
+            </div>
+          ) : (
+            <div className="mb-3 rounded-panel border border-border bg-surface p-4">
+              <p className="type-headline text-text-1">{recommendation.template.name}</p>
+              <p className="type-body mt-1 text-text-2">{recommendation.reason}</p>
+            </div>
+          )}
+          {mode === 'recommended' && preview ? (
+            <ul className="flex flex-col gap-2" aria-label="Days in this routine">
               {preview.days.map((d) => (
-                <li
-                  key={d.name}
-                  className="type-meta rounded-full bg-surface-2 px-3 py-1.5 text-text-2"
-                >
-                  {d.name} · {d.exercises.length} exercises
+                <li key={d.name} className="rounded-nested bg-surface-2 px-4 py-3">
+                  <p className="type-headline text-text-1">
+                    {d.name}
+                    <span className="type-meta text-text-2">
+                      {' '}
+                      · {d.weekdays.map((w) => shortDayName(w)).join(', ')}
+                    </span>
+                  </p>
+                  <p className="type-meta mt-0.5 text-text-2">
+                    {d.exercises.map((e) => EXERCISE_NAME.get(e.key) ?? e.key).join(', ')}
+                  </p>
                 </li>
               ))}
             </ul>
           ) : null}
+          <p className="type-meta mt-3 text-text-2">
+            Every muscle is trained at least twice a week. Change days, exercises and sets any time
+            under Routines.
+          </p>
         </div>
       ) : (
         <p className="type-meta mt-6 rounded-nested bg-surface-2 px-4 py-3 text-text-2">

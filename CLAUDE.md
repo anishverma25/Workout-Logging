@@ -138,5 +138,25 @@ Read README.md for setup, architecture and calculation rules.
   exercises and sets from its latest session, weekdays from when they trained it), created
   active unless they already have one, described "Imported from Hevy", with imported workouts
   linked to their days; setup then skips its own routine step.
+- Charts on a time axis pick labels by pixel distance (`pickAxisLabels`), add the year when the
+  data is not all from this year (`dateAxisLabels`), and draw gaps over 4 weeks as a faint
+  dashed line, never a trend (`splitAtGaps`). Callers pass no `formatX` for dates.
+- Stalled lifts (`domain/analytics/stalls.ts`, science topic `stalls`): progress is a set that
+  beats every earlier set on weight or reps (sets within 80% of the top weight), and each stall
+  gets one cause in order: break, frequency, effort, volume, same load, then rep range, lighter
+  week, named variation (`VARIATIONS`). Copy in `features/progress/stallCopy.ts`.
+- Rest (`domain/analytics/rest.ts`, topic `rest-analysis`): measured from `completedAt` gaps less
+  3 s a rep (or the logged duration), only 10 s to 15 min. Shown before each set in the logger
+  and history, `RestCard` on the summary and detail, and a Progress section comparing rest
+  with the evidence and with the reps the person keeps after each band of rest.
+- Nutrition targets (migration 0010, `profiles.calorie_target`, `protein_target_g`): set on Body
+  (`TargetsCard`), checked by `domain/analytics/targets.ts` (7,700 kcal per kg, goal rate range,
+  real maintenance from the weight trend, protein per kg, lifts in a deficit), topic `targets`.
+- Setup recommends for every level by days (`RECOMMENDED_TEMPLATES`): 6 upper/lower three times
+  each, 5 upper/lower plus push/pull/legs, 4 full body every other day, 3 or fewer full body;
+  every muscle group at least twice a week (tested). Beginners get the recommendation only;
+  others choose it or build their own.
+- Import also reads .xlsx (`domain/import/spreadsheet.ts`, fflate), UTF-16 and tab files, and
+  dates Excel rewrote (`dateOrder` picks day or month first); old .xls asks for .xlsx or CSV.
 - Deployed on Cloudflare Pages from `phase-2-wip`. Each new Supabase migration must be applied
   in the SQL editor before the code that needs it is pushed.
