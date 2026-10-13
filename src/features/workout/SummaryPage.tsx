@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAccount, useSyncStatus } from '@/app/account';
 import { Card, IconTile, TextLink } from '@/components/kit';
+import { RestCard } from '@/features/shared/RestCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { ErrorState, Skeleton } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
@@ -152,6 +153,8 @@ export function SummaryPage() {
           compound lifts, top load for isolation lifts, most reps for bodyweight ones.
         </p>
       </Card>
+
+      <RestCard exercises={session.exercises} minutes={summary.minutes} className="mt-4" />
 
       {session.workout.notes ? (
         <Card as="section" aria-labelledby="summary-notes" className="mt-4">

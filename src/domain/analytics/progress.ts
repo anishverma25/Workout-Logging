@@ -36,6 +36,7 @@ import {
 import { detectPersonalRecords, type PersonalRecord } from './prs';
 import { activeRoutine, adherence, daysForRoutine, type Adherence } from './schedule';
 import { detectStalls, type Stall } from './stalls';
+import { restAnalysis, type RestAnalysis } from './rest';
 import { buildSessions, isWorkingSet, type Session, type TrainingData } from './sessions';
 import { strengthTrends } from './strength';
 import { sessionVolumeLoad, setVolumeLoad, totalVolumeLoad } from './volume';
@@ -145,6 +146,8 @@ export interface ProgressModel {
   /** Current state, whatever the date range: levels, plateaus, balance. */
   strength: StrengthProfile;
   plateaus: Stall[];
+  /** Rest between sets in the window, against the evidence and your own reps. */
+  rest: RestAnalysis;
   balance: BalanceRatio[];
 }
 
@@ -586,6 +589,7 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
     ),
     plateaus: detectStalls(sessions, now, data.profile?.experience, data.exercises),
     balance: balanceRatios(sessions, now),
+    rest: restAnalysis(sessions, window.start, window.end),
   };
 }
 

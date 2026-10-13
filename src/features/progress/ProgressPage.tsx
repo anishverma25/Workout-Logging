@@ -46,7 +46,13 @@ import { useStartWorkout } from '../workout/StartWorkout';
 import { InsightList, Suggestions } from './Insights';
 import { useFeature } from '@/app/entitlement';
 import { ProLock } from '../pro/ProLock';
-import { BalanceSection, LevelsSection, PlateausSection, RatesSection } from './StrengthExtras';
+import {
+  BalanceSection,
+  LevelsSection,
+  PlateausSection,
+  RatesSection,
+  RestSection,
+} from './StrengthExtras';
 
 const RANGES: { value: ProgressRange; label: string }[] = [
   { value: '7d', label: '7 days' },
@@ -226,6 +232,7 @@ export function ProgressPage() {
                 </Section>
               )}
               <ConsistencySection model={model} />
+              <RestSection model={model} />
               <BodySection model={model} unit={unit} />
               <RecordsSection model={model} unit={unit} />
             </>

@@ -23,6 +23,13 @@ import {
   TREND_DAYS,
 } from '@/domain/analytics/body';
 import {
+  COMPOUND_SHORT,
+  ISOLATION_SHORT,
+  MAX_REST,
+  MIN_REST,
+  SECONDS_PER_REP,
+} from '@/domain/analytics/rest';
+import {
   BREAK_DAYS,
   EFFORT_RIR,
   MIN_PER_WEEK,
@@ -443,6 +450,47 @@ export const SCIENCE: TopicGroup[] = [
         ],
         forYou: 'Rest at least a minute between hard sets. Longer does not cost you growth.',
         limits: 'The effect is small and mostly studied in untrained people.',
+      },
+      {
+        id: 'rest-analysis',
+        title: 'Rest you actually take',
+        evidence: 'restAnalysis',
+        shows:
+          'How long you rest between sets and between exercises, how that compares with the research, and how many reps you keep after each length of rest.',
+        formulas: [
+          {
+            tex: String.raw`\text{rest} = (t_{n} - t_{n-1}) - \text{set time}_n`,
+            spoken:
+              'Rest is the time between finishing two sets, less the time the second set took',
+            where: `t is when you ticked a set off. Set time is the logged duration, or ${SECONDS_PER_REP} seconds a rep. Gaps under ${MIN_REST} seconds (sets ticked off together) and over ${MAX_REST / 60} minutes (a pause) are left out.`,
+          },
+          {
+            tex: String.raw`\text{reps kept} = \dfrac{\text{reps}_n}{\text{reps}_{n-1}}`,
+            spoken: 'Reps kept is the reps of a set divided by the reps of the set before',
+            where:
+              'Two working sets of the same exercise at the same weight, averaged within each band of rest. A band needs 8 pairs.',
+          },
+        ],
+        why: [
+          <>
+            Schoenfeld and colleagues (2016) had trained men rest 1 or 3 minutes for 8 weeks: the
+            3-minute group gained more strength and more muscle, because they kept more reps on
+            later sets. Grgic and colleagues (2018) reviewed 23 studies: in trained people, rests of
+            2 minutes or more help strength on compound lifts. Singer and colleagues (2024) found
+            rests over 60 seconds grow slightly more muscle, with no further gain past about 90
+            seconds and no loss either.
+          </>,
+          <>
+            So compound lifts under {COMPOUND_SHORT} seconds and isolation lifts under{' '}
+            {ISOLATION_SHORT} seconds are called short. Your own bands show the same thing on your
+            sets: the shortest rest that keeps within 5 points of your best band is the one
+            suggested.
+          </>,
+        ],
+        forYou:
+          'Two to three minutes on squats, presses, rows and deadlifts; one to two on curls, raises and extensions.',
+        limits:
+          'Rest is measured from when you tick sets off, so ticking late or early moves it. Reps kept also depends on how close to failure each set was.',
       },
       {
         id: 'frequency',

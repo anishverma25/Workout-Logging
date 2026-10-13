@@ -1,4 +1,5 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { formatRest, type RestInterval } from '@/domain/analytics/rest';
+import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 import {
   GripVertical,
   ArrowDown,
@@ -16,6 +17,7 @@ import {
   Plus,
   Trash2,
   TrendingUp,
+  Timer,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ActionList, TextArea } from '@/components/ui/Fields';
@@ -81,6 +83,8 @@ interface Props {
   onReorder?: () => void;
   /** The first exercise with sets still to do: drawn with a stronger border. */
   active?: boolean;
+  /** Rest taken before each finished set of the workout, by set id. */
+  rests?: Map<string, RestInterval>;
 }
 
 function ExerciseCardImpl({
@@ -94,6 +98,7 @@ function ExerciseCardImpl({
   superset,
   hasNext,
   active = false,
+  rests,
 }: Props) {
   const { workoutExercise: we, exercise, sets, previous } = view;
   const tracking = trackingOf(exercise);
@@ -364,34 +369,37 @@ function ExerciseCardImpl({
             </div>
             <div className="flex flex-col gap-0.5">
               {sets.map((s) => (
-                <SetRow
-                  key={s.id}
-                  set={s}
-                  label={labels.get(s.id) ?? ''}
-                  tracking={tracking}
-                  perHand={perHand}
-                  prefs={prefs}
-                  previous={matchingPreviousSet(prevSets, sets, s.id)}
-                  suggestion={suggestFor(prevSets, sets, s.id)}
-                  loadSuggestion={
-                    previous === undefined
-                      ? async () => {
-                          const workout = await db.workouts.get(we.workoutId);
-                          if (!workout) return null;
-                          const map = await loadPreviousPerformance(
-                            db,
-                            [we.exerciseId],
-                            workout.startedAt,
-                            we.workoutId,
-                          );
-                          return suggestFor(map.get(we.exerciseId)?.sets ?? [], sets, s.id);
-                        }
-                      : undefined
-                  }
-                  targetRir={target?.rir ?? null}
-                  onOpenOptions={(set) => setOptionsFor(set.id)}
-                  onCompleted={onCompleted}
-                />
+                <Fragment key={s.id}>
+                  {rests?.get(s.id) ? <RestTaken rest={rests.get(s.id)!} /> : null}
+                  <SetRow
+                    key={s.id}
+                    set={s}
+                    label={labels.get(s.id) ?? ''}
+                    tracking={tracking}
+                    perHand={perHand}
+                    prefs={prefs}
+                    previous={matchingPreviousSet(prevSets, sets, s.id)}
+                    suggestion={suggestFor(prevSets, sets, s.id)}
+                    loadSuggestion={
+                      previous === undefined
+                        ? async () => {
+                            const workout = await db.workouts.get(we.workoutId);
+                            if (!workout) return null;
+                            const map = await loadPreviousPerformance(
+                              db,
+                              [we.exerciseId],
+                              workout.startedAt,
+                              we.workoutId,
+                            );
+                            return suggestFor(map.get(we.exerciseId)?.sets ?? [], sets, s.id);
+                          }
+                        : undefined
+                    }
+                    targetRir={target?.rir ?? null}
+                    onOpenOptions={(set) => setOptionsFor(set.id)}
+                    onCompleted={onCompleted}
+                  />
+                </Fragment>
               ))}
             </div>
           </div>
@@ -764,5 +772,17 @@ function AngleSheet({
     >
       <AnglePicker kind={kind} value={deg} startAt={DEFAULT_ANGLE[kind]} onChange={setDeg} />
     </Sheet>
+  );
+}
+
+/** The rest actually taken before a set, measured from when the sets were ticked off. */
+function RestTaken({ rest }: { rest: RestInterval }) {
+  return (
+    <p className="type-caption tabular flex items-center gap-1 pl-[34px] text-text-2">
+      <Timer className="size-3" strokeWidth={2} aria-hidden />
+      {rest.kind === 'set'
+        ? `Rested ${formatRest(rest.seconds)}`
+        : `${formatRest(rest.seconds)} since the last exercise`}
+    </p>
   );
 }

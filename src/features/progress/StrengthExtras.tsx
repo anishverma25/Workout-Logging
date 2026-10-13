@@ -12,6 +12,14 @@ import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units
 import { ProLock } from '../pro/ProLock';
 import { EvidenceLink } from '../science/EvidenceLink';
 import { stallBest, stallCopy } from './stallCopy';
+import {
+  COMPOUND_SHORT,
+  ISOLATION_SHORT,
+  REST_MIN_INTERVALS,
+  REST_MIN_PAIRS,
+  formatRest,
+  type RestBand,
+} from '@/domain/analytics/rest';
 
 /** Which section of the science page explains each block. */
 const BLOCK_SCIENCE: Record<string, string> = {
@@ -19,6 +27,7 @@ const BLOCK_SCIENCE: Record<string, string> = {
   rates: 'plateaus',
   plateaus: 'stalls',
   balance: 'load',
+  rest: 'rest-analysis',
 };
 
 function Block({
@@ -329,5 +338,110 @@ function StallCard({
         {copy.action}
       </p>
     </li>
+  );
+}
+
+const BAND_LABEL = (b: RestBand) =>
+  b.to === Infinity
+    ? `Over ${formatRest(b.from)}`
+    : b.from === 0
+      ? `Under ${formatRest(b.to)}`
+      : `${formatRest(b.from)} to ${formatRest(b.to)}`;
+
+export function RestSection({ model }: { model: ProgressModel }) {
+  const r = model.rest;
+  return (
+    <Block
+      id="rest"
+      title="Rest between sets"
+      detail="Measured from when you tick off each set, less the time the set took. Warm-ups left out."
+    >
+      {r.intervals < REST_MIN_INTERVALS ? (
+        <p className="rounded-panel border border-border bg-surface p-5 text-sm text-text-2">
+          Needs {REST_MIN_INTERVALS} timed rests in this period ({r.intervals} so far). Tick each
+          set off as you finish it and this fills in.
+        </p>
+      ) : (
+        <div className="rounded-panel border border-border bg-surface p-4">
+          <dl className="grid grid-cols-3 gap-3">
+            {(
+              [
+                ['Compound lifts', r.compound.median],
+                ['Isolation lifts', r.isolation.median],
+                ['Between exercises', r.betweenExercises.median],
+              ] as const
+            ).map(([label, v]) => (
+              <div key={label} className="min-w-0">
+                <dt className="type-meta text-text-2">{label}</dt>
+                <dd className="type-headline tabular mt-0.5 text-text-1">
+                  {v !== null ? formatRest(v) : 'None'}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <ul className="type-body mt-4 flex flex-col gap-2 text-text-1">
+            {r.verdicts.includes('compound_short') ? (
+              <li>
+                {pluralize(r.compound.underFloor, 'set')} of {r.compound.count} on compound lifts
+                started after less than {formatRest(COMPOUND_SHORT)}. Rest 2 to 3 minutes on these:
+                in trained lifters it kept more reps and built more strength and muscle than 1
+                minute.
+              </li>
+            ) : null}
+            {r.verdicts.includes('isolation_short') ? (
+              <li>
+                Your isolation sets usually start within {formatRest(ISOLATION_SHORT)}. Rest at
+                least a minute: rests over 60 seconds grow slightly more muscle, and longer costs
+                nothing.
+              </li>
+            ) : null}
+            {r.verdicts.includes('on_target') ? (
+              <li>Your rest is in the range the research supports. Keep it there.</li>
+            ) : null}
+            {r.personal ? (
+              <li>
+                {r.personal.band === r.personal.shortest
+                  ? `On your own sets, short rests cost you little: under ${formatRest(r.personal.band.to)} you kept ${Math.round(r.personal.band.kept! * 100)}% of your reps on the next set at the same weight.`
+                  : `On your own sets, resting ${BAND_LABEL(r.personal.band).toLowerCase()} kept ${Math.round(r.personal.band.kept! * 100)}% of your reps on the next set at the same weight, against ${Math.round(r.personal.shortest.kept! * 100)}% after ${BAND_LABEL(r.personal.shortest).toLowerCase()}. Rest at least ${formatRest(r.personal.band.from)} when the reps matter.`}
+              </li>
+            ) : null}
+          </ul>
+          {r.bands.some((b) => b.pairs >= REST_MIN_PAIRS) ? (
+            <>
+              <p className="type-meta mt-4 text-text-2">
+                Reps kept on the next set at the same weight, by rest
+              </p>
+              <ul className="mt-2 flex flex-col gap-2">
+                {r.bands.map((b) => (
+                  <li
+                    key={b.from}
+                    className="grid grid-cols-[6.5rem_minmax(0,1fr)_3.5rem] items-center gap-3"
+                  >
+                    <span className="type-meta text-text-2">{BAND_LABEL(b)}</span>
+                    {b.pairs >= REST_MIN_PAIRS && b.kept !== null ? (
+                      <>
+                        <span className="h-1.5 overflow-hidden rounded-full bg-track">
+                          <span
+                            className="block h-full rounded-full bg-lime"
+                            style={{ width: `${Math.min(100, b.kept * 100)}%` }}
+                          />
+                        </span>
+                        <span className="type-meta tabular text-right text-text-1">
+                          {Math.round(b.kept * 100)}%
+                        </span>
+                      </>
+                    ) : (
+                      <span className="type-meta col-span-2 text-text-2">
+                        {b.pairs} of {REST_MIN_PAIRS} sets needed
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </div>
+      )}
+    </Block>
   );
 }
