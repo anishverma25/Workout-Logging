@@ -1,3 +1,5 @@
+import { formatRest, restIntervals, type RestInterval } from '@/domain/analytics/rest';
+import { RestCard } from '@/features/shared/RestCard';
 import { useId, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import {
@@ -112,6 +114,7 @@ export function WorkoutDetailPage() {
     prBySet.set(pr.setId, [...(prBySet.get(pr.setId) ?? []), pr]);
   const exercises = data.exercises.filter((e) => e.sets.some((s) => s.completedAt !== null));
   const allSets = exercises.flatMap((e) => e.sets);
+  const rests = restIntervals(allSets);
   const editing_set = allSets.find((s) => s.id === editSet) ?? null;
   const editingView = exercises.find((e) => e.sets.some((s) => s.id === editSet));
   const routine = training.data?.routines.find((r) => r.id === workout.routineId);
@@ -177,6 +180,8 @@ export function WorkoutDetailPage() {
         </p>
       ) : null}
 
+      <RestCard exercises={exercises} minutes={summary?.minutes ?? null} className="mt-4" />
+
       <div className="mt-6 grid gap-4 lg:grid-cols-2 lg:items-start">
         {exercises.map((ex) => (
           <ExerciseBlock
@@ -190,6 +195,7 @@ export function WorkoutDetailPage() {
                 ?.change ?? null
             }
             onEditSet={setEditSet}
+            rests={rests}
           />
         ))}
       </div>
@@ -293,7 +299,9 @@ function ExerciseBlock({
   change,
   onEditSet,
   reference,
+  rests,
 }: {
+  rests: Map<string, RestInterval>;
   view: WorkoutExerciseView;
   prefs: Preferences;
   prBySet: Map<string, PersonalRecord[]>;
@@ -406,6 +414,7 @@ function ExerciseBlock({
             unit={unit}
             onEdit={() => onEditSet(s.id)}
             percent={showPercent ? percentOf(s) : undefined}
+            rest={rests.get(s.id)}
           />
         ))}
       </ol>
@@ -431,7 +440,9 @@ function SetLine({
   unit,
   onEdit,
   percent,
+  rest,
 }: {
+  rest?: RestInterval;
   set: WorkoutSet;
   label: string;
   text: string;
@@ -459,6 +470,13 @@ function SetLine({
         : null;
   return (
     <li>
+      {rest ? (
+        <p className="type-caption tabular pl-[42px] text-text-2">
+          {rest.kind === 'set'
+            ? `Rested ${formatRest(rest.seconds)}`
+            : `${formatRest(rest.seconds)} since the last exercise`}
+        </p>
+      ) : null}
       <button
         type="button"
         onClick={onEdit}

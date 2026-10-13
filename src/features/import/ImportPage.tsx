@@ -26,6 +26,8 @@ import {
 } from '@/domain/import/formats';
 import { planImport, type ExerciseChoice, type ImportPlan } from '@/domain/import/plan';
 import { ROUTINE_WINDOW_DAYS, type InferredRoutine } from '@/domain/import/routine';
+import { localeDateOrder } from '@/domain/import/dates';
+import { readTableFile } from '@/domain/import/spreadsheet';
 import { MUSCLE_GROUPS, type Exercise, type MuscleGroup } from '@/domain/models/schemas';
 import { MUSCLE_LABELS } from '@/domain/models/labels';
 import { formatCalendarDate, pluralize } from '@/lib/format';
@@ -46,7 +48,8 @@ const APPS: Record<ImportSource, { name: string; how: string[]; files: string }>
       'Choose Export data, then export your workouts.',
       'If you log body weight in Hevy, export your measurements too.',
     ],
-    files: 'Choose the workouts file, and the measurements file if you have one.',
+    files:
+      'Choose the workouts file, and the measurements file if you have one. CSV or Excel (.xlsx) both work.',
   },
   strong: {
     name: 'Strong',
@@ -55,7 +58,7 @@ const APPS: Record<ImportSource, { name: string; how: string[]; files: string }>
       'Choose Export data and save the CSV file.',
       'Tell us below whether you logged in kg or lb in Strong.',
     ],
-    files: 'Choose the CSV file Strong saved.',
+    files: 'Choose the file Strong saved. CSV or Excel (.xlsx) both work.',
   },
 };
 
@@ -90,9 +93,15 @@ export function ImportPage() {
     setBusy(true);
     try {
       const files = await Promise.all(
-        picked.map(async (f) => ({ name: f.name, text: await f.text() })),
+        picked.map(async (f) => ({
+          name: f.name,
+          table: readTableFile(f.name, new Uint8Array(await f.arrayBuffer())),
+        })),
       );
-      const read = readExport(files, { strongUnit });
+      const read = readExport(files, {
+        strongUnit,
+        dateOrder: localeDateOrder(navigator.language),
+      });
       if (read.source !== source) {
         throw new ImportFormatError(
           `That looks like a ${APPS[read.source].name} export. Go back and choose ${APPS[read.source].name}, or pick the ${APPS[source].name} file.`,
@@ -246,7 +255,7 @@ export function ImportPage() {
               <input
                 id={fileInput}
                 type="file"
-                accept=".csv,text/csv,text/comma-separated-values,application/vnd.ms-excel"
+                accept=".csv,.tsv,.txt,.xlsx,.xlsm,.xls,text/csv,text/comma-separated-values,text/tab-separated-values,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 multiple={source === 'hevy'}
                 onChange={(e) => void onFiles(e)}
                 className="sr-only"

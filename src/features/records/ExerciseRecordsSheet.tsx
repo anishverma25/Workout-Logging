@@ -6,7 +6,7 @@ import { performanceByExercise } from '@/domain/analytics/performance';
 import { formatRecordValue, PR_LABELS } from '@/domain/analytics/prs';
 import type { BestSet, ExerciseRecords } from '@/domain/analytics/records';
 import { buildSessions } from '@/domain/analytics/sessions';
-import { formatDayMonth, formatShortDate } from '@/lib/dates';
+import { formatShortDate } from '@/lib/dates';
 import { pluralize } from '@/lib/format';
 import { formatWeight, formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { improvementText } from './format';
@@ -80,7 +80,7 @@ function Body({ records: r, unit, onClose }: Props & { records: ExerciseRecords 
         <section className="mt-8">
           <h3 className="type-title text-text-1">Estimated 1RM by session</h3>
           <p className="type-meta mt-0.5 mb-3 text-text-2">
-            Best set each session, sets of 12 reps or fewer. Brzycki up to 5 reps, Epley above.
+            The most you could likely lift once, from your best set each session of 10 reps or fewer.
           </p>
           <LineChart
             label={`Estimated 1RM for ${r.name} by session, in ${unit}`}
@@ -95,7 +95,6 @@ function Body({ records: r, unit, onClose }: Props & { records: ExerciseRecords 
               },
             ]}
             formatY={(v) => formatWeightValue(v, 'kg')}
-            formatX={(x) => formatDayMonth(new Date(x))}
             formatXLong={(x) => formatShortDate(new Date(x))}
             endLabel
           />

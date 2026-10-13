@@ -318,54 +318,52 @@ export interface Recommendation {
 const byKey = (key: string) => ROUTINE_TEMPLATES.find((t) => t.key === key)!;
 
 /**
- * Picks a split from the days a week the person can train and their experience. Every muscle
- * is trained at least twice a week where the days allow it, which research favours for growth.
+ * Picks a plan from the days a week the person can train. Every muscle group is trained at least
+ * twice a week, which the research favours for growth over once (Schoenfeld 2016, Pelland 2026):
+ * 6 days upper and lower body three times each, 5 days upper and lower then push, pull and legs,
+ * 4 days full body every other day, 3 days and fewer full body.
  */
 export function recommendProgram(
   profile: Pick<Profile, 'experience' | 'goal' | 'trainingDays'>,
 ): Recommendation | null {
   const days = profile.trainingDays ?? null;
   if (days === null) return null;
-  const beginner = profile.experience === 'beginner';
   if (days <= 2)
     return {
-      template: byKey('full-body'),
+      template: byKey('rec-full-body-2'),
       reason:
-        'With two days, full-body sessions train every muscle each time. Do any two of the three workouts.',
+        days === 1
+          ? 'With one day a week, do workout A; add workout C on a second day as soon as you can, so every muscle is trained twice a week.'
+          : 'Two full-body workouts that each train every muscle group, so each one gets two sessions a week.',
       alternatives: [],
     };
   if (days === 3)
-    return beginner
-      ? {
-          template: byKey('beginner-full-body'),
-          reason:
-            'Three full-body days built on the main lifts: the fastest way to get stronger in your first year.',
-          alternatives: [byKey('full-body'), byKey('ppl-3')],
-        }
-      : {
-          template: byKey('full-body'),
-          reason: 'Three full-body days hit every muscle three times a week.',
-          alternatives: [byKey('ppl-3'), byKey('beginner-full-body')],
-        };
+    return {
+      template: byKey('rec-full-body-3'),
+      reason:
+        'Three full-body workouts: every muscle trained three times a week, with a rest day between.',
+      alternatives: [],
+    };
   if (days === 4)
     return {
-      template: byKey('upper-lower'),
-      reason: 'Four days of upper and lower body trains every muscle twice a week.',
-      alternatives: [byKey('four-day')],
+      template: byKey('rec-full-body-4'),
+      reason:
+        'Full body every other day: each workout trains every muscle, so each one gets about four sessions a week with a day to recover between.',
+      alternatives: [],
     };
   if (days === 5)
     return {
-      template: byKey('pplul'),
+      template: byKey('rec-ul-ppl-5'),
       reason:
-        'Push, pull and legs, then upper and lower: five days with every muscle trained twice a week.',
-      alternatives: [byKey('ulppl'), byKey('five-day')],
+        'Upper and lower body, then push, pull and legs: five days with every muscle trained twice a week.',
+      alternatives: [],
     };
   return {
-    template: byKey('ppl'),
+    template: byKey('rec-upper-lower-6'),
     reason:
       days === 7
-        ? 'Push, pull and legs twice a week. Keep one day off: muscles grow while you rest.'
-        : 'Push, pull and legs twice a week: high volume for every muscle.',
-    alternatives: [byKey('six-day'), byKey('pplul')],
+        ? 'Upper and lower body three times a week each. Keep the seventh day off: muscles grow while you rest.'
+        : 'Upper and lower body three times a week each: high frequency with the work spread out.',
+    alternatives: [],
   };
 }

@@ -80,3 +80,82 @@ export function spacedIndices(length: number, count: number): number[] {
   for (let i = 0; i < count; i++) out.add(Math.round((i * (length - 1)) / (count - 1)));
   return [...out];
 }
+
+const DAY_MS = 86_400_000;
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * Axis labels for timestamps. A short range shows "5 Oct"; a range over about four months shows
+ * "Oct 2025". When the data is not all from this year, the first label and every label where the
+ * year changes carry the year, so a date is never read as the wrong year.
+ */
+export function dateAxisLabels(xs: number[], now = new Date()): string[] {
+  if (xs.length === 0) return [];
+  const span = xs[xs.length - 1]! - xs[0]!;
+  const dates = xs.map((x) => new Date(x));
+  if (span > 120 * DAY_MS) {
+    return dates.map((d) => `${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`);
+  }
+  const allThisYear = dates.every((d) => d.getFullYear() === now.getFullYear());
+  return dates.map((d, i) => {
+    const base = `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+    const yearChanged = i > 0 && dates[i - 1]!.getFullYear() !== d.getFullYear();
+    return !allThisYear && (i === 0 || yearChanged) ? `${base} ${d.getFullYear()}` : base;
+  });
+}
+
+/**
+ * Which x labels to draw so none overlap: walks left to right keeping a label only when it
+ * clears the last kept one by `gap` px and reads differently from it. The first and last are
+ * preferred; a middle label too close to the last is dropped instead of the last.
+ */
+export function pickAxisLabels(
+  positions: number[],
+  texts: string[],
+  charWidth = 6.6,
+  gap = 14,
+): number[] {
+  const n = positions.length;
+  if (n === 0) return [];
+  const width = (i: number) => texts[i]!.length * charWidth;
+  // Edges are anchored start/end, middles centred: compute each label's [left, right].
+  const box = (i: number): [number, number] =>
+    i === 0
+      ? [positions[i]!, positions[i]! + width(i)]
+      : i === n - 1
+        ? [positions[i]! - width(i), positions[i]!]
+        : [positions[i]! - width(i) / 2, positions[i]! + width(i) / 2];
+  const kept = [0];
+  const lastBox = n > 1 ? box(n - 1) : null;
+  for (let i = 1; i < n - 1; i++) {
+    const prev = kept[kept.length - 1]!;
+    const [l, r] = box(i);
+    if (l < box(prev)[1] + gap) continue;
+    if (texts[i] === texts[prev]) continue;
+    if (lastBox && (r + gap > lastBox[0] || texts[i] === texts[n - 1])) continue;
+    kept.push(i);
+  }
+  if (n > 1) {
+    const prev = kept[kept.length - 1]!;
+    if (texts[n - 1] !== texts[prev] && box(n - 1)[0] >= box(prev)[1] + gap) kept.push(n - 1);
+    else if (prev === 0 && texts[n - 1] !== texts[0]) {
+      // Two labels that do not fit side by side: keep the latest, it matters most.
+      kept[0] = n - 1;
+    }
+  }
+  return kept;
+}
+
+/**
+ * Splits points into runs with no gap longer than `maxGap` (ms). A line across a long break
+ * would draw a trend that never happened.
+ */
+export function splitAtGaps<T extends { x: number }>(points: T[], maxGap: number): T[][] {
+  const runs: T[][] = [];
+  for (const p of points) {
+    const run = runs[runs.length - 1];
+    if (run && p.x - run[run.length - 1]!.x <= maxGap) run.push(p);
+    else runs.push([p]);
+  }
+  return runs;
+}

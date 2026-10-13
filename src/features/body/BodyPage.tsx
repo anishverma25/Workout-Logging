@@ -1,3 +1,4 @@
+import { TargetsCard } from './TargetsCard';
 import { useMemo, useState } from 'react';
 import { Plus, Scale } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
@@ -15,13 +16,7 @@ import {
   type BodyWeightPoint,
 } from '@/domain/analytics/bodyweight';
 import type { BodyWeightEntry } from '@/domain/models/schemas';
-import {
-  addDays,
-  formatDayMonth,
-  formatRelativeDay,
-  formatShortDate,
-  startOfDay,
-} from '@/lib/dates';
+import { addDays, formatRelativeDay, formatShortDate, startOfDay } from '@/lib/dates';
 import { pluralize } from '@/lib/format';
 import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { useNow } from '@/lib/useNow';
@@ -118,6 +113,9 @@ export function BodyPage() {
             unit={unit}
             hasProfile={!!profile}
           />
+          {profile ? (
+            <TargetsCard profile={profile} snapshot={snapshot} data={data} now={now} />
+          ) : null}
         </div>
       ) : null}
 
@@ -234,7 +232,6 @@ export function BodyPage() {
                     },
                   ]}
                   formatY={(v) => v.toLocaleString('en-GB', { maximumFractionDigits: 1 })}
-                  formatX={(x) => formatDayMonth(new Date(x))}
                   formatXLong={(x) => formatShortDate(new Date(x))}
                 />
               ) : (

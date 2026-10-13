@@ -118,7 +118,157 @@ const lowerVolume = (weekdays: number[]): TemplateDay => ({
   ],
 });
 
+// ---------------------------------------------------------------------------------------------
+// Recommended plans (setup): every muscle group at least twice a week (Schoenfeld 2016,
+// Pelland 2026), built from exercises any commercial gym has. programs.test.ts checks the rule.
+// ---------------------------------------------------------------------------------------------
+
+/** Upper 1: flat press first, then upper chest, vertical and horizontal pulls, arms, abs. */
+const upper1 = (weekdays: number[]): TemplateDay => ({
+  name: 'Upper 1',
+  weekdays,
+  exercises: [
+    c('barbell-bench-press', 3, 5, 8, 2, 180),
+    c('incline-dumbbell-press', 3, 8, 12),
+    c('lat-pulldown', 3, 8, 12),
+    c('chest-supported-row', 3, 8, 12),
+    i('dumbbell-lateral-raise', 3, 12, 15),
+    i('triceps-rope-pushdown', 3, 10, 15),
+    i('dumbbell-curl', 3, 8, 12),
+    i('cable-crunch', 3, 10, 15),
+  ],
+});
+/** Upper 2: the same pattern with different tools and angles. */
+const upper2 = (weekdays: number[]): TemplateDay => ({
+  name: 'Upper 2',
+  weekdays,
+  exercises: [
+    c('machine-chest-press', 3, 6, 10, 2, 180),
+    c('incline-barbell-bench-press', 3, 8, 12),
+    c('close-grip-lat-pulldown', 3, 8, 12),
+    c('chest-supported-row', 3, 10, 12),
+    i('cable-lateral-raise', 3, 12, 15),
+    i('overhead-triceps-extension', 3, 10, 15),
+    i('hammer-curl', 3, 10, 12),
+  ],
+});
+/** Lower 1: hinge focus. */
+const lower1 = (weekdays: number[]): TemplateDay => ({
+  name: 'Lower 1',
+  weekdays,
+  exercises: [
+    i('hip-adduction', 3, 12, 15),
+    c('stiff-leg-deadlift', 3, 6, 10, 2, 180),
+    i('lying-leg-curl', 3, 10, 12),
+    i('leg-extension', 3, 10, 15),
+    i('standing-calf-raise', 3, 10, 15),
+  ],
+});
+/** Lower 2: quad focus. */
+const lower2 = (weekdays: number[]): TemplateDay => ({
+  name: 'Lower 2',
+  weekdays,
+  exercises: [
+    i('hip-adduction', 3, 12, 15),
+    c('leg-press', 3, 8, 12, 2, 180),
+    i('leg-extension', 3, 10, 15),
+    i('seated-leg-curl', 3, 10, 12),
+    i('seated-calf-raise', 3, 12, 15),
+  ],
+});
+/** Legs for the 5-day plan, with abs so they are trained twice that week. */
+const legsWithAbs = (weekdays: number[]): TemplateDay => {
+  const day = legs(weekdays);
+  return { ...day, exercises: [...day.exercises, i('hanging-leg-raise', 3, 8, 15)] };
+};
+/** Full-body days: each trains every muscle group, big lifts first. */
+const fullA = (weekdays: number[]): TemplateDay => ({
+  name: 'Full body A',
+  weekdays,
+  exercises: [
+    c('back-squat', 3, 5, 8, 2, 180),
+    c('barbell-bench-press', 3, 5, 8, 2, 180),
+    c('lat-pulldown', 3, 8, 12),
+    i('lying-leg-curl', 3, 10, 12),
+    i('dumbbell-lateral-raise', 3, 12, 15),
+    i('hip-adduction', 2, 12, 15),
+    i('standing-calf-raise', 2, 10, 15),
+    i('cable-crunch', 2, 10, 15),
+  ],
+});
+const fullB = (weekdays: number[]): TemplateDay => ({
+  name: 'Full body B',
+  weekdays,
+  exercises: [
+    c('romanian-deadlift', 3, 6, 10, 2, 180),
+    c('incline-dumbbell-press', 3, 8, 12),
+    c('chest-supported-row', 3, 8, 12),
+    c('leg-press', 3, 10, 12),
+    i('dumbbell-curl', 2, 10, 12),
+    i('triceps-rope-pushdown', 2, 10, 15),
+    i('seated-calf-raise', 2, 12, 15),
+    i('hanging-leg-raise', 2, 8, 15),
+  ],
+});
+const fullC = (weekdays: number[]): TemplateDay => ({
+  name: 'Full body C',
+  weekdays,
+  exercises: [
+    c('hack-squat', 3, 6, 10, 2, 180),
+    c('dumbbell-bench-press', 3, 8, 12),
+    c('seated-cable-row', 3, 8, 12),
+    c('seated-dumbbell-press', 3, 8, 12),
+    i('seated-leg-curl', 3, 10, 12),
+    i('hip-adduction', 2, 12, 15),
+    i('standing-calf-raise', 2, 10, 15),
+    i('cable-crunch', 2, 10, 15),
+  ],
+});
+
+/** The plans setup recommends, by days a week (recommendProgram). */
+export const RECOMMENDED_TEMPLATES: RoutineTemplate[] = [
+  {
+    key: 'rec-upper-lower-6',
+    name: 'Upper Lower, 6 days',
+    summary:
+      'Upper 1, Lower 1, Upper 2, Lower 2, then Upper 1 and Lower 1 again: upper and lower body three times a week.',
+    daysPerWeek: 6,
+    days: [upper1([1, 5]), lower1([2, 6]), upper2([3]), lower2([4])],
+  },
+  {
+    key: 'rec-ul-ppl-5',
+    name: 'Upper Lower Push Pull Legs',
+    summary:
+      'Five days: upper and lower body, then push, pull and legs, so every muscle is trained twice a week.',
+    daysPerWeek: 5,
+    days: [upper1([1]), lower1([2]), push([4]), pull([5]), legsWithAbs([6])],
+  },
+  {
+    key: 'rec-full-body-4',
+    name: 'Full Body, every other day',
+    summary:
+      'Two full-body workouts, alternating every other day: about four sessions a week, every muscle each time.',
+    daysPerWeek: 4,
+    days: [fullA([1, 5]), fullB([3, 0])],
+  },
+  {
+    key: 'rec-full-body-3',
+    name: 'Full Body, 3 days',
+    summary: 'Three different full-body workouts a week, every muscle trained each session.',
+    daysPerWeek: 3,
+    days: [fullA([1]), fullB([3]), fullC([5])],
+  },
+  {
+    key: 'rec-full-body-2',
+    name: 'Full Body, 2 days',
+    summary: 'Two full-body workouts a week that each train every muscle group.',
+    daysPerWeek: 2,
+    days: [fullA([1]), fullC([4])],
+  },
+];
+
 export const ROUTINE_TEMPLATES: RoutineTemplate[] = [
+  ...RECOMMENDED_TEMPLATES,
   {
     key: 'ppl',
     name: 'Push Pull Legs',

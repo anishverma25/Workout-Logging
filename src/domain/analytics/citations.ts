@@ -331,6 +331,74 @@ export const CITATIONS: Record<string, Citation> = {
     doi: '10.1519/00124278-200102000-00019',
     openAccess: false,
   },
+  bosquet2013: {
+    id: 'bosquet2013',
+    authors: 'Bosquet L, Berryman N, Dupuy O, Mekary S, Arvisais D, Bherer L, Mujika I',
+    year: 2013,
+    title: 'Effect of training cessation on muscular performance: a meta-analysis',
+    journal: 'Scandinavian Journal of Medicine and Science in Sports 23(3):e140-e149',
+    doi: '10.1111/sms.12047',
+    openAccess: false,
+  },
+  bell2023: {
+    id: 'bell2023',
+    authors: 'Bell L, Nolan D, Immonen V, Helms E, Dallamore J, Wolf M, Androulakis Korakakis P',
+    year: 2023,
+    title:
+      'Integrating Deloading into Strength and Physique Sports Training Programmes: An International Delphi Consensus Approach',
+    journal: 'Sports Medicine - Open 9:87',
+    doi: '10.1186/s40798-023-00633-0',
+    openAccess: true,
+  },
+  kassiano2022: {
+    id: 'kassiano2022',
+    authors: 'Kassiano W, Nunes JP, Costa B, Ribeiro AS, Schoenfeld BJ, Cyrino ES',
+    year: 2022,
+    title:
+      'Does Varying Resistance Exercises Promote Superior Muscle Hypertrophy and Strength Gains? A Systematic Review',
+    journal: 'Journal of Strength and Conditioning Research 36(6):1753-1762',
+    doi: '10.1519/JSC.0000000000004258',
+    openAccess: false,
+  },
+  schoenfeld2016rest: {
+    id: 'schoenfeld2016rest',
+    authors:
+      'Schoenfeld BJ, Pope ZK, Benik FM, Hester GM, Sellers J, Nooner JL, Schnaiter JA, Bond-Williams KE, Carter AS, Ross CL, Just BL, Henselmans M, Krieger JW',
+    year: 2016,
+    title:
+      'Longer Interset Rest Periods Enhance Muscle Strength and Hypertrophy in Resistance-Trained Men',
+    journal: 'Journal of Strength and Conditioning Research 30(7):1805-1812',
+    doi: '10.1519/JSC.0000000000001272',
+    openAccess: false,
+  },
+  hall2008: {
+    id: 'hall2008',
+    authors: 'Hall KD',
+    year: 2008,
+    title: 'What is the required energy deficit per unit weight loss?',
+    journal: 'International Journal of Obesity 32(3):573-576',
+    doi: '10.1038/sj.ijo.0803720',
+    openAccess: false,
+  },
+  iraki2019: {
+    id: 'iraki2019',
+    authors: 'Iraki J, Fitschen P, Espinar S, Helms E',
+    year: 2019,
+    title: 'Nutrition Recommendations for Bodybuilders in the Off-Season: A Narrative Review',
+    journal: 'Sports 7(7):154',
+    doi: '10.3390/sports7070154',
+    openAccess: true,
+  },
+  grgic2018rest: {
+    id: 'grgic2018rest',
+    authors: 'Grgic J, Schoenfeld BJ, Skrepnik M, Davies TB, Mikulic P',
+    year: 2018,
+    title:
+      'Effects of Rest Interval Duration in Resistance Training on Measures of Muscular Strength: A Systematic Review',
+    journal: 'Sports Medicine 48(1):137-151',
+    doi: '10.1007/s40279-017-0788-x',
+    openAccess: false,
+  },
 };
 
 // Which citations back each calculated metric. "definition" = arithmetic / product rule, no paper.
@@ -364,6 +432,25 @@ export const METRIC_EVIDENCE: Record<
   strengthLevels: { kind: 'evidence', citations: ['rippetoe2009', 'dots2019'] },
   muscleShares: { kind: 'evidence', citations: ['lopezVivancos2023'] },
   trainingLoad: { kind: 'evidence', citations: ['gabbett2016', 'foster2001'] },
+  stalls: {
+    kind: 'evidence',
+    citations: [
+      'bosquet2013',
+      'schoenfeld2019freq',
+      'robinson2024',
+      'plotkin2022',
+      'bell2023',
+      'kassiano2022',
+    ],
+  },
+  nutritionTargets: {
+    kind: 'evidence',
+    citations: ['hall2008', 'helms2014', 'iraki2019', 'morton2018'],
+  },
+  restAnalysis: {
+    kind: 'evidence',
+    citations: ['singer2024', 'schoenfeld2016rest', 'grgic2018rest'],
+  },
 };
 
 export function citationUrl(c: Citation): string {

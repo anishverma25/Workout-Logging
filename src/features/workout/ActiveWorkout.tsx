@@ -1,3 +1,4 @@
+import { restIntervals } from '@/domain/analytics/rest';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Check, Dumbbell, Pause, Play, Plus, Timer, Trash2 } from 'lucide-react';
@@ -72,6 +73,8 @@ export function ActiveWorkout({ view, prefs }: Props) {
   const paused = workout.pausedAt !== null;
 
   const allSets = exercises.flatMap((e) => e.sets);
+  // Rest actually taken before each finished set, shown on the set and saved with the workout.
+  const rests = restIntervals(allSets);
   const exercisesRef = useRef(exercises);
   useEffect(() => {
     exercisesRef.current = exercises;
@@ -286,6 +289,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
             superset={supersets.get(ex.workoutExercise.id) ?? null}
             hasNext={i < exercises.length - 1}
             active={ex.workoutExercise.id === activeId}
+            rests={rests}
           />
         ))}
       </div>

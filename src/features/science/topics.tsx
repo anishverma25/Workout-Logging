@@ -22,7 +22,22 @@ import {
   TRAINING_MET,
   TREND_DAYS,
 } from '@/domain/analytics/body';
-import { PLATEAU_MIN_SESSIONS, PLATEAU_WEEKS } from '@/domain/analytics/standards';
+import { KCAL_PER_KG, RATE_MISMATCH } from '@/domain/analytics/targets';
+import {
+  COMPOUND_SHORT,
+  ISOLATION_SHORT,
+  MAX_REST,
+  MIN_REST,
+  SECONDS_PER_REP,
+} from '@/domain/analytics/rest';
+import {
+  BREAK_DAYS,
+  EFFORT_RIR,
+  MIN_PER_WEEK,
+  STALL_MIN_SESSIONS,
+  STALL_WEEKS,
+  VOLUME_DROP,
+} from '@/domain/analytics/stalls';
 import { REST_PRESETS } from '@/domain/workout/restTimer';
 import { GOAL_LABEL } from '@/domain/models/labels';
 
@@ -259,8 +274,8 @@ export const SCIENCE: TopicGroup[] = [
       },
       {
         id: 'plateaus',
-        title: 'Rate of progress and stalled lifts',
-        shows: 'How fast a compound lift is moving, and when it has stopped.',
+        title: 'Rate of progress',
+        shows: 'How fast a compound lift is moving.',
         formulas: [
           {
             tex: String.raw`\text{rate} = 7 \cdot \dfrac{\sum_i (x_i - \bar{x})(y_i - \bar{y})}{\sum_i (x_i - \bar{x})^2}`,
@@ -269,15 +284,43 @@ export const SCIENCE: TopicGroup[] = [
               'x is the day and y the session best e1RM, over the last 8 weeks (at least 4 sessions across 3 weeks).',
           },
         ],
+        why: [<>The rate is fitted to every session, so one good or bad day barely moves it.</>],
+        limits: 'Only compound lifts, which have an estimated 1RM.',
+      },
+      {
+        id: 'stalls',
+        title: 'Stalled lifts and why',
+        evidence: 'stalls',
+        shows:
+          'Lifts that have stopped moving, the most likely reason read from your own sets, and what to do about that lift.',
         why: [
           <>
-            A lift has stalled when its best has not been beaten for {PLATEAU_WEEKS} weeks or more,
-            across at least {PLATEAU_MIN_SESSIONS} sessions, and you trained it in the last 2 weeks.
-            The suggestion: a new rep range at 3 weeks, a lighter week at 4 or more, a variation
-            after 6.
+            Progress is judged on what you lifted, not an estimate: a session counts when a set
+            beats every earlier set with more weight for the same reps or more, or more reps at the
+            same weight or more. Only sets within 80% of your heaviest weight count, so a light pump
+            set cannot hide a stall. A lift has stalled when nothing has moved for {STALL_WEEKS}{' '}
+            weeks or more, across at least {STALL_MIN_SESSIONS} sessions of it, and you trained it
+            in the last 2 weeks.
+          </>,
+          <>
+            The reason is the first of these that fits. A break of {BREAK_DAYS / 7} weeks or more:
+            strength starts to fade after about 3 weeks off (Bosquet 2013), so being below your best
+            is expected. Under {MIN_PER_WEEK} sessions a week: progress follows weekly hard sets
+            (Schoenfeld 2019, Pelland 2026). A median of {EFFORT_RIR} or more reps left in the tank,
+            when you log it: sets far from failure give less (Robinson 2024). A quarter fewer sets
+            than in the 6 weeks before your best (below {VOLUME_DROP * 100}%). The same top weight
+            every session: adding reps first works as well as adding weight (Plotkin 2022).
+          </>,
+          <>
+            When none of those fits, it is a real plateau: a new rep range under 4 weeks, one
+            lighter week from 4 weeks (sooner for advanced lifters; Bell 2023), and from 6 weeks a
+            close variation of the lift, named for you (Kassiano 2022).
           </>,
         ],
-        limits: 'An app rule built on your own data, not a scientific threshold.',
+        forYou:
+          'Fix the reason shown first. Most stalls are about frequency, effort or sets, not the exercise.',
+        limits:
+          'The order of the checks and the cut-offs are app rules built on the research, not thresholds from it. Effort needs reps in reserve logged on at least half your sets.',
       },
       {
         id: 'records',
@@ -408,6 +451,47 @@ export const SCIENCE: TopicGroup[] = [
         ],
         forYou: 'Rest at least a minute between hard sets. Longer does not cost you growth.',
         limits: 'The effect is small and mostly studied in untrained people.',
+      },
+      {
+        id: 'rest-analysis',
+        title: 'Rest you actually take',
+        evidence: 'restAnalysis',
+        shows:
+          'How long you rest between sets and between exercises, how that compares with the research, and how many reps you keep after each length of rest.',
+        formulas: [
+          {
+            tex: String.raw`\text{rest} = (t_{n} - t_{n-1}) - \text{set time}_n`,
+            spoken:
+              'Rest is the time between finishing two sets, less the time the second set took',
+            where: `t is when you ticked a set off. Set time is the logged duration, or ${SECONDS_PER_REP} seconds a rep. Gaps under ${MIN_REST} seconds (sets ticked off together) and over ${MAX_REST / 60} minutes (a pause) are left out.`,
+          },
+          {
+            tex: String.raw`\text{reps kept} = \dfrac{\text{reps}_n}{\text{reps}_{n-1}}`,
+            spoken: 'Reps kept is the reps of a set divided by the reps of the set before',
+            where:
+              'Two working sets of the same exercise at the same weight, averaged within each band of rest. A band needs 8 pairs.',
+          },
+        ],
+        why: [
+          <>
+            Schoenfeld and colleagues (2016) had trained men rest 1 or 3 minutes for 8 weeks: the
+            3-minute group gained more strength and more muscle, because they kept more reps on
+            later sets. Grgic and colleagues (2018) reviewed 23 studies: in trained people, rests of
+            2 minutes or more help strength on compound lifts. Singer and colleagues (2024) found
+            rests over 60 seconds grow slightly more muscle, with no further gain past about 90
+            seconds and no loss either.
+          </>,
+          <>
+            So compound lifts under {COMPOUND_SHORT} seconds and isolation lifts under{' '}
+            {ISOLATION_SHORT} seconds are called short. Your own bands show the same thing on your
+            sets: the shortest rest that keeps within 5 points of your best band is the one
+            suggested.
+          </>,
+        ],
+        forYou:
+          'Two to three minutes on squats, presses, rows and deadlifts; one to two on curls, raises and extensions.',
+        limits:
+          'Rest is measured from when you tick sets off, so ticking late or early moves it. Reps kept also depends on how close to failure each set was.',
       },
       {
         id: 'frequency',
@@ -623,6 +707,45 @@ export const SCIENCE: TopicGroup[] = [
         ],
         limits:
           'Total daily protein matters most. Not medical advice for kidney or other conditions.',
+      },
+      {
+        id: 'targets',
+        title: 'Checking your own targets',
+        evidence: 'nutritionTargets',
+        shows:
+          'What the calories and protein you set mean for your weight, your goal and your lifts, using your own weigh-ins.',
+        formulas: [
+          {
+            tex: String.raw`\Delta m_{\text{week}} = \dfrac{7\,(E_{\text{target}} - E_{\text{maint}})}{${KCAL_PER_KG}}`,
+            spoken: `Weekly change in kilograms is 7 times target calories minus maintenance, divided by ${KCAL_PER_KG}`,
+            where: `About ${KCAL_PER_KG} kcal per kg of body weight. A guide for the first weeks: as weight changes, the body adapts and the rate slows.`,
+          },
+          {
+            tex: String.raw`E_{\text{maint, real}} = E_{\text{target}} - \dfrac{r \times ${KCAL_PER_KG}}{7}`,
+            spoken: 'Real maintenance is the target minus the weekly rate times 7,700 divided by 7',
+            where:
+              'r is the weekly change of your 7-day average weight, from at least 6 weigh-ins over 2 weeks. It assumes you ate close to your target.',
+          },
+        ],
+        why: [
+          <>
+            The rate your calories predict is compared with the evidence for your goal: losing 0.5
+            to 1% of body weight a week keeps muscle while cutting (Helms 2014), and small surpluses
+            gain muscle with the least fat (Iraki 2019). Outside that range you get a target that
+            would land in the middle of it.
+          </>,
+          <>
+            When your weight trend differs from the prediction by more than {RATE_MISMATCH} kg a
+            week, your real maintenance is worked out from the trend, since the formulas are
+            averages and people differ by a few hundred calories. In a deficit, estimated 1RM
+            falling on most of your lifts over 8 weeks suggests the deficit is too big. Protein is
+            checked in g per kg against your goal's range (Morton 2018).
+          </>,
+        ],
+        forYou:
+          'Weigh in most mornings. After two weeks the trend tells you your real maintenance better than any formula.',
+        limits:
+          'Overload does not log food, so it assumes you eat close to your target. Water and food in the gut move daily weight by a kilo or more, which is why only the 7-day average is used.',
       },
       {
         id: 'composition',

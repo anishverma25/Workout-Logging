@@ -73,10 +73,15 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   // The plan: numbers worked out from what was entered, and a recommended routine.
   await expect(page.getByText('Daily calories')).toBeVisible();
   await expect(page.getByText(/^Maintenance [\d,]+, \+10% for your goal$/)).toBeVisible();
-  await expect(page.getByRole('radio', { name: /Push Pull Legs Upper Lower/ })).toBeVisible();
+  // Beginners get the recommendation only: five days is upper, lower, push, pull and legs.
+  await expect(page.getByText('Upper Lower Push Pull Legs', { exact: true })).toBeVisible();
+  await expect(page.getByRole('radio', { name: /Build my own/ })).toHaveCount(0);
+  await expect(
+    page.getByRole('list', { name: 'Days in this routine' }).getByRole('listitem'),
+  ).toHaveCount(5);
   await page.getByRole('button', { name: 'Create my routine' }).click();
   await expect(page).toHaveURL(/\/routines\/[\w-]+$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Push Pull Legs Upper Lower');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Upper Lower Push Pull Legs');
 
   // Home is theirs: their name, no sample lifter.
   await page.goto('/');
@@ -85,14 +90,14 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   // Today is a planned day of the new routine, or its rest day (the plan has no Sunday session).
   await expect(
     page
-      .getByText('Today in Push Pull Legs Upper Lower')
+      .getByText('Today in Upper Lower Push Pull Legs')
       .or(page.getByRole('heading', { name: 'Rest day', level: 2 })),
   ).toBeVisible();
   // Days before the routine existed are not counted as missed.
   await expect(page.getByRole('listitem').filter({ hasText: 'missed' })).toHaveCount(0);
 });
 
-test('intermediate and advanced lifters build their own routine instead of a recommendation', async ({
+test('intermediate and advanced lifters choose the recommendation or their own routine', async ({
   page,
 }) => {
   await signUpFresh(page, { at: '/setup?next=/', tag: 'adv' });
@@ -104,8 +109,11 @@ test('intermediate and advanced lifters build their own routine instead of a rec
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: '4', exact: true }).click();
   for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByRole('heading', { name: 'Bring your own split' })).toBeVisible();
-  await expect(page.getByText('Recommended routine')).toHaveCount(0);
+  // Four days: full body every other day is recommended, and they can build their own instead.
+  await expect(page.getByRole('radio', { name: /Use the recommended routine/ })).toBeChecked();
+  await expect(page.getByRole('radio', { name: /Full Body, every other day/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Create my routine' })).toBeVisible();
+  await page.getByRole('radio', { name: /Build my own/ }).click();
   await page.getByRole('button', { name: 'Build my routine' }).click();
   await expect(page).toHaveURL(/\/routines\/[\w-]+$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('My routine');

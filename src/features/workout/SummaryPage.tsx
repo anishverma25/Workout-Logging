@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAccount, useSyncStatus } from '@/app/account';
 import { Card, IconTile, TextLink } from '@/components/kit';
+import { RestCard } from '@/features/shared/RestCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { ErrorState, Skeleton } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
@@ -153,6 +154,8 @@ export function SummaryPage() {
         </p>
       </Card>
 
+      <RestCard exercises={session.exercises} minutes={summary.minutes} className="mt-4" />
+
       {session.workout.notes ? (
         <Card as="section" aria-labelledby="summary-notes" className="mt-4">
           <h2 id="summary-notes" className="type-title text-text-1">
@@ -256,8 +259,8 @@ function RecordsCard({ prs, unit }: { prs: PersonalRecord[]; unit: WeightUnit })
       </ul>
       {prs.some((p) => p.type === 'e1rm') ? (
         <p className="type-meta mt-2 text-text-2">
-          Estimated 1RM is calculated from your sets (Brzycki up to 5 reps, Epley above). It is not
-          a lift you performed.
+          Estimated 1RM is the most you could likely lift once, worked out from the weight and reps
+          of your sets. It is an estimate, not a lift you did.
         </p>
       ) : null}
     </section>

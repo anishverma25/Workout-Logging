@@ -247,6 +247,9 @@ export const Profile = z.object({
   sessionMinutes: z.number().int().min(15).max(240).nullish(),
   equipment: GymAccess.nullish(),
   dailyActivity: DailyActivity.nullish(),
+  /** Daily targets the person set themselves; null uses the calculated ones. */
+  calorieTarget: z.number().int().min(800).max(8000).nullish(),
+  proteinTargetG: z.number().int().min(20).max(500).nullish(),
 });
 export type Profile = z.infer<typeof Profile>;
 

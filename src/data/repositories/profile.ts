@@ -13,6 +13,8 @@ export interface ProfileInput {
   sessionMinutes?: number | null;
   equipment?: Profile['equipment'];
   dailyActivity?: Profile['dailyActivity'];
+  calorieTarget?: number | null;
+  proteinTargetG?: number | null;
 }
 
 export class ProfileError extends Error {}
@@ -44,6 +46,10 @@ export async function saveProfile(
     throw new ProfileError('Pick between 1 and 7 training days.');
   if (input.sessionMinutes != null && !(input.sessionMinutes >= 15 && input.sessionMinutes <= 240))
     throw new ProfileError('Pick a session length between 15 and 240 minutes.');
+  if (input.calorieTarget != null && !(input.calorieTarget >= 800 && input.calorieTarget <= 8000))
+    throw new ProfileError('Enter calories between 800 and 8,000 a day.');
+  if (input.proteinTargetG != null && !(input.proteinTargetG >= 20 && input.proteinTargetG <= 500))
+    throw new ProfileError('Enter protein between 20 and 500 g a day.');
   // Fields left out keep their current value; null clears them.
   const heightCm = input.heightCm == null ? input.heightCm : Math.round(input.heightCm * 10) / 10;
   const fields = Object.fromEntries(

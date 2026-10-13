@@ -46,7 +46,13 @@ import { useStartWorkout } from '../workout/StartWorkout';
 import { InsightList, Suggestions } from './Insights';
 import { useFeature } from '@/app/entitlement';
 import { ProLock } from '../pro/ProLock';
-import { BalanceSection, LevelsSection, PlateausSection, RatesSection } from './StrengthExtras';
+import {
+  BalanceSection,
+  LevelsSection,
+  PlateausSection,
+  RatesSection,
+  RestSection,
+} from './StrengthExtras';
 
 const RANGES: { value: ProgressRange; label: string }[] = [
   { value: '7d', label: '7 days' },
@@ -226,6 +232,7 @@ export function ProgressPage() {
                 </Section>
               )}
               <ConsistencySection model={model} />
+              <RestSection model={model} />
               <BodySection model={model} unit={unit} />
               <RecordsSection model={model} unit={unit} />
             </>
@@ -406,7 +413,6 @@ function Summary({ model, unit }: { model: ProgressModel; unit: WeightUnit }) {
 function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUnit }) {
   const s = model.selected;
   const fmt = (v: number) => formatWeightValue(v, 'kg', 1);
-  const xFmt = (x: number) => formatDayMonth(new Date(x));
   const xLong = (x: number) => formatShortDate(new Date(x));
   return (
     <Section id="strength" title="Strength" science="e1rm" detail={undefined}>
@@ -455,7 +461,6 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
                   },
                 ]}
                 formatY={fmt}
-                formatX={xFmt}
                 formatXLong={xLong}
               />
             ) : (
@@ -463,13 +468,14 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
                 {s.points.length === 1
                   ? 'One session in this period. A trend needs at least two; try a longer range.'
                   : s.points.every((p) => p.bestE1rm === null) && s.points.length > 1
-                    ? 'Estimated 1RM is only calculated for compound lifts with sets of 12 reps or fewer. Top set load and reps below still track this exercise.'
-                    : 'Not enough sets of 12 reps or fewer in this period for a trend.'}
+                    ? 'Estimated 1RM is worked out for compound lifts from sets of 10 reps or fewer. Top set load and reps below still track this exercise.'
+                    : 'Not enough sets of 10 reps or fewer in this period for a trend.'}
               </ChartEmpty>
             )}
             <p className="type-meta mt-2 text-text-2">
-              Brzycki up to 5 reps, Epley above, reps in reserve counted, sets of 12 reps or fewer.
-              An estimate, not a lift you performed.
+              The most you could likely lift once, worked out from your best set each session: the
+              weight, the reps, and any reps you had left. Sets of 10 reps or fewer. An estimate,
+              not a lift you did.
             </p>
           </Card>
 
@@ -495,7 +501,6 @@ function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUn
                     },
                   ]}
                   formatY={fmt}
-                  formatX={xFmt}
                   formatXLong={xLong}
                 />
               ) : (
@@ -840,7 +845,6 @@ function BodySection({ model, unit }: { model: ProgressModel; unit: WeightUnit }
                 },
               ]}
               formatY={(v) => v.toLocaleString('en-GB', { maximumFractionDigits: 1 })}
-              formatX={(x) => formatDayMonth(new Date(x))}
               formatXLong={(x) => formatShortDate(new Date(x))}
             />
             <p className="type-meta mt-2 text-text-2">

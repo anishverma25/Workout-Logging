@@ -142,7 +142,6 @@ export function MeasurementsSection({
                       },
                     ]}
                     formatY={(v) => v.toLocaleString('en-GB', { maximumFractionDigits: 1 })}
-                    formatX={(x) => formatDayMonth(new Date(x))}
                     formatXLong={(x) => formatShortDate(new Date(x))}
                   />
                 ) : (
