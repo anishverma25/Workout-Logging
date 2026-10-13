@@ -140,3 +140,33 @@ test('setting up a profile greets you by name and keeps the demo profile separat
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Asha');
 });
+
+test('tapping the tab you are on scrolls back to the top', async ({ page }) => {
+  const scrollDown = async () => {
+    await page.evaluate(() => window.scrollTo(0, 1200));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+  };
+  await mainNav(page).getByRole('link', { name: 'Progress' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Progress');
+  await expect(page.locator('#strength')).toBeVisible();
+  await scrollDown();
+  await mainNav(page).getByRole('link', { name: 'Progress' }).click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await expect(page).toHaveURL(/\/progress$/);
+
+  // Inside a tab (a workout in History), the tab button goes back to the list, at the top.
+  await mainNav(page).getByRole('link', { name: 'History' }).click();
+  await page.locator('a[href^="/history/"]').first().click();
+  await expect(page.getByRole('button', { name: 'Start this workout' })).toBeVisible();
+  await scrollDown();
+  await mainNav(page).getByRole('link', { name: 'History' }).click();
+  await expect(page).toHaveURL(/\/history$/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+
+  // Home too.
+  await mainNav(page).getByRole('link', { name: 'Home' }).click();
+  await expect(page.locator('#today-title')).toBeVisible();
+  await scrollDown();
+  await mainNav(page).getByRole('link', { name: 'Home' }).click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+});

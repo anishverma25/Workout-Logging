@@ -74,8 +74,11 @@ test('deleting a workout removes it from history', async ({ page }) => {
   const before = await rows.count();
   await rows.first().click();
   await page.getByRole('button', { name: 'Workout options' }).click();
-  await page.getByRole('button', { name: /^Delete workout/ }).click();
-  await page.getByRole('button', { name: 'Delete workout' }).last().click();
+  // The options drop from the button as a menu, not a sheet from the bottom.
+  await expect(page.getByRole('menu', { name: /^Options for/ })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('menuitem', { name: /^Delete workout/ }).click();
+  await page.getByRole('button', { name: 'Delete workout' }).click();
   await expect(page).toHaveURL(/\/history$/);
   await expect(rows).toHaveCount(before - 1);
 });
@@ -124,4 +127,31 @@ test('body weight: add in lb, see it in kg, edit and delete', async ({ page }) =
   await page.getByRole('button', { name: 'Delete' }).last().click();
   await expect(page.getByText('Weigh-in deleted')).toBeVisible();
   await expect(page.getByRole('button', { name: /68\.5 kg/ })).toHaveCount(0);
+});
+
+test('a past workout can be started again from its page', async ({ page }) => {
+  await page.goto('/history');
+  await page.locator('a[href^="/history/"]').first().click();
+  await expect(page.getByRole('button', { name: 'Start this workout' })).toBeVisible();
+  await expect(page.locator('section[aria-labelledby]').first()).toBeVisible();
+  const name = (await page.getByRole('heading', { level: 1 }).innerText()).trim();
+  const exercises = await page
+    .locator('section[aria-labelledby]')
+    .getByRole('heading', { level: 2 })
+    .allInnerTexts();
+  await page.getByRole('button', { name: 'Start this workout' }).click();
+  await expect(page).toHaveURL(/\/workout$/);
+  await expect(page.getByRole('button', { name: 'Finish' })).toBeVisible();
+  await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+  const logged = page.locator('section[aria-labelledby^="ex-"]');
+  const expected = exercises.filter((e) => e !== 'Rest');
+  await expect(logged).toHaveCount(expected.length);
+  await expect(logged.first()).toContainText(expected[0]!);
+  // Every set starts empty, ready to log.
+  await expect(
+    logged
+      .first()
+      .getByRole('button', { name: /^Mark set \d+ done$/ })
+      .first(),
+  ).toBeVisible();
 });

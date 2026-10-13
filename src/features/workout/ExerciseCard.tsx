@@ -1,5 +1,6 @@
+import { ActionMenu } from '@/components/kit/menu';
 import { formatRest, type RestInterval } from '@/domain/analytics/rest';
-import { Fragment, memo, useCallback, useMemo, useState } from 'react';
+import { Fragment, memo, useCallback, useMemo, useState, useRef } from 'react';
 import {
   GripVertical,
   ArrowDown,
@@ -20,7 +21,7 @@ import {
   Timer,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { ActionList, TextArea } from '@/components/ui/Fields';
+import { TextArea } from '@/components/ui/Fields';
 import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { db } from '@/data/db';
 import type { WorkoutExerciseView } from '@/data/repositories/workoutView';
@@ -104,6 +105,7 @@ function ExerciseCardImpl({
   const tracking = trackingOf(exercise);
   const cols = columnsFor(tracking, prefs.weightUnit);
   const [menu, setMenu] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const [editingAngle, setEditingAngle] = useState(false);
   const [showingShares, setShowingShares] = useState(false);
   const shares = sharesFor(we.exerciseId);
@@ -289,7 +291,10 @@ function ExerciseCardImpl({
             <KitIconButton
               label={`Options for ${we.exerciseName}`}
               icon={<Ellipsis />}
-              onClick={() => setMenu(true)}
+              ref={menuButton}
+              aria-expanded={menu}
+              aria-haspopup="menu"
+              onClick={() => setMenu((m) => !m)}
               className="-mt-1"
             />
           </header>
@@ -488,124 +493,126 @@ function ExerciseCardImpl({
           {showingShares ? <MuscleShares shares={shares} /> : null}
         </Sheet>
       ) : null}
-      <Sheet open={menu} onClose={() => setMenu(false)} title={we.exerciseName}>
-        <ActionList
-          items={[
-            ...(loadTracked
-              ? [
-                  {
-                    label: 'Add warm-up sets',
-                    hint: barbell
-                      ? 'Empty bar, then about 40%, 60% and 80% of your working weight.'
-                      : 'About 40%, 60% and 80% of your working weight.',
-                    icon: <Flame className="size-5" aria-hidden />,
-                    onSelect: async () => {
-                      setMenu(false);
-                      await addWarmups();
-                    },
+      <ActionMenu
+        open={menu}
+        onClose={() => setMenu(false)}
+        anchor={menuButton}
+        label={`Options for ${we.exerciseName}`}
+        items={[
+          ...(loadTracked
+            ? [
+                {
+                  label: 'Add warm-up sets',
+                  hint: barbell
+                    ? 'Empty bar, then about 40%, 60% and 80% of your working weight.'
+                    : 'About 40%, 60% and 80% of your working weight.',
+                  icon: <Flame className="size-5" aria-hidden />,
+                  onSelect: async () => {
+                    setMenu(false);
+                    await addWarmups();
                   },
-                ]
-              : []),
-            {
-              label: 'Add one warm-up set',
-              hint: 'Warm-ups do not count toward volume, estimated 1RM or records.',
-              icon: <Flame className="size-5" aria-hidden />,
-              onSelect: async () => {
-                await addSet(db, we.id, 'warmup');
-                setMenu(false);
-              },
+                },
+              ]
+            : []),
+          {
+            label: 'Add one warm-up set',
+            hint: 'Warm-ups do not count toward volume, estimated 1RM or records.',
+            icon: <Flame className="size-5" aria-hidden />,
+            onSelect: async () => {
+              await addSet(db, we.id, 'warmup');
+              setMenu(false);
             },
-            ...(barbell
-              ? [
-                  {
-                    label: 'Plate calculator',
-                    icon: <Calculator className="size-5" aria-hidden />,
-                    onSelect: () => {
-                      setMenu(false);
-                      setPlates(true);
-                    },
+          },
+          ...(barbell
+            ? [
+                {
+                  label: 'Plate calculator',
+                  icon: <Calculator className="size-5" aria-hidden />,
+                  onSelect: () => {
+                    setMenu(false);
+                    setPlates(true);
                   },
-                ]
-              : []),
-            {
-              label: 'Swap exercise',
-              hint:
-                doneCount > 0
-                  ? 'Sets are already done. Add the other exercise instead.'
-                  : 'Machine taken? Pick another exercise for the same muscle.',
-              icon: <Replace className="size-5" aria-hidden />,
-              disabled: doneCount > 0,
-              onSelect: () => {
-                setMenu(false);
-                setSwapping(true);
-              },
+                },
+              ]
+            : []),
+          {
+            label: 'Swap exercise',
+            hint:
+              doneCount > 0
+                ? 'Sets are already done. Add the other exercise instead.'
+                : 'Machine taken? Pick another exercise for the same muscle.',
+            icon: <Replace className="size-5" aria-hidden />,
+            disabled: doneCount > 0,
+            onSelect: () => {
+              setMenu(false);
+              setSwapping(true);
             },
-            {
-              label: superset?.linkedNext
-                ? 'Unlink from next exercise'
-                : 'Superset with next exercise',
-              hint: superset?.linkedNext
-                ? undefined
-                : 'Do the two back to back and rest after the round.',
-              icon: <Link2 className="size-5" aria-hidden />,
-              disabled: !hasNext,
-              onSelect: async () => {
-                setMenu(false);
-                await toggleSupersetWithNext(db, we.id);
-              },
+          },
+          {
+            label: superset?.linkedNext
+              ? 'Unlink from next exercise'
+              : 'Superset with next exercise',
+            hint: superset?.linkedNext
+              ? undefined
+              : 'Do the two back to back and rest after the round.',
+            icon: <Link2 className="size-5" aria-hidden />,
+            disabled: !hasNext,
+            onSelect: async () => {
+              setMenu(false);
+              await toggleSupersetWithNext(db, we.id);
             },
-            {
-              label: we.notes ? 'Edit notes' : 'Add notes',
-              icon: <NotebookPen className="size-5" aria-hidden />,
-              onSelect: () => {
-                setMenu(false);
-                setEditingNotes(true);
-              },
+          },
+          {
+            label: we.notes ? 'Edit notes' : 'Add notes',
+            icon: <NotebookPen className="size-5" aria-hidden />,
+            onSelect: () => {
+              setMenu(false);
+              setEditingNotes(true);
             },
-            {
-              label: 'Move up',
-              icon: <ArrowUp className="size-5" aria-hidden />,
-              disabled: index === 0,
-              onSelect: async () => {
-                await moveWorkoutExercise(db, we.id, -1);
-                setMenu(false);
-              },
+          },
+          {
+            label: 'Move up',
+            icon: <ArrowUp className="size-5" aria-hidden />,
+            disabled: index === 0,
+            onSelect: async () => {
+              await moveWorkoutExercise(db, we.id, -1);
+              setMenu(false);
             },
-            {
-              label: 'Move down',
-              icon: <ArrowDown className="size-5" aria-hidden />,
-              disabled: index === count - 1,
-              onSelect: async () => {
-                await moveWorkoutExercise(db, we.id, 1);
-                setMenu(false);
-              },
+          },
+          {
+            label: 'Move down',
+            icon: <ArrowDown className="size-5" aria-hidden />,
+            disabled: index === count - 1,
+            onSelect: async () => {
+              await moveWorkoutExercise(db, we.id, 1);
+              setMenu(false);
             },
-            ...(onReorder && count > 1
-              ? [
-                  {
-                    label: 'Reorder exercises',
-                    hint: 'Or press and hold an exercise name.',
-                    icon: <GripVertical className="size-5" aria-hidden />,
-                    onSelect: () => {
-                      setMenu(false);
-                      onReorder();
-                    },
+          },
+          ...(onReorder && count > 1
+            ? [
+                {
+                  label: 'Reorder exercises',
+                  hint: 'Or press and hold an exercise name.',
+                  icon: <GripVertical className="size-5" aria-hidden />,
+                  onSelect: () => {
+                    setMenu(false);
+                    onReorder();
                   },
-                ]
-              : []),
-            {
-              label: 'Remove from workout',
-              icon: <Trash2 className="size-5" aria-hidden />,
-              danger: true,
-              onSelect: async () => {
-                setMenu(false);
-                if (doneCount > 0) setConfirmRemove(true);
-                else await removeWorkoutExercise(db, we.id);
-              },
+                },
+              ]
+            : []),
+          {
+            label: 'Remove from workout',
+            icon: <Trash2 className="size-5" aria-hidden />,
+            danger: true,
+            onSelect: async () => {
+              setMenu(false);
+              if (doneCount > 0) setConfirmRemove(true);
+              else await removeWorkoutExercise(db, we.id);
             },
-          ]}
-        />
-      </Sheet>
+          },
+        ]}
+      />
       <ConfirmSheet
         open={confirmRemove}
         title={`Remove ${we.exerciseName}?`}

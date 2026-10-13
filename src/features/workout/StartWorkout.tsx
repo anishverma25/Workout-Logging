@@ -8,9 +8,12 @@ import {
   cancelWorkout,
   startEmptyWorkout,
   startWorkoutFromDay,
+  startWorkoutFromPast,
 } from '@/data/repositories/workouts';
 
-type Start = (dayId: string | null) => Promise<void>;
+/** A routine day's id, null for an empty workout, or a past workout to do again. */
+type Source = string | null | { fromWorkoutId: string };
+type Start = (source: Source) => Promise<void>;
 
 const StartContext = createContext<Start>(async () => {});
 
@@ -22,18 +25,20 @@ const StartContext = createContext<Start>(async () => {});
 export function StartWorkoutProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const toast = useToast();
-  const [conflict, setConflict] = useState<{ activeId: string; dayId: string | null } | null>(null);
+  const [conflict, setConflict] = useState<{ activeId: string; source: Source } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const start = useCallback<Start>(
-    async (dayId) => {
+    async (source) => {
       try {
-        if (dayId) await startWorkoutFromDay(db, dayId);
+        if (source && typeof source === 'object')
+          await startWorkoutFromPast(db, source.fromWorkoutId);
+        else if (source) await startWorkoutFromDay(db, source);
         else await startEmptyWorkout(db);
         navigate('/workout');
       } catch (err) {
         if (err instanceof ActiveWorkoutExistsError) {
-          setConflict({ activeId: err.workoutId, dayId });
+          setConflict({ activeId: err.workoutId, source });
         } else {
           toast(err instanceof Error ? err.message : 'Could not start the workout');
         }
@@ -63,7 +68,7 @@ export function StartWorkoutProvider({ children }: { children: ReactNode }) {
           try {
             await cancelWorkout(db, conflict.activeId);
             setConflict(null);
-            await start(conflict.dayId);
+            await start(conflict.source);
           } finally {
             setBusy(false);
           }

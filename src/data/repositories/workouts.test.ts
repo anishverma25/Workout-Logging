@@ -25,6 +25,7 @@ import {
   resumeWorkout,
   startEmptyWorkout,
   startWorkoutFromDay,
+  startWorkoutFromPast,
   uncompleteSet,
   updateSet,
   updateWorkoutDetails,
@@ -89,6 +90,41 @@ describe('starting', () => {
     expect(
       sets.every((s) => s.setType === 'working' && s.completedAt === null && s.weightKg === null),
     ).toBe(true);
+  });
+
+  it('starts again from a past workout: same exercises, order, set types and targets', async () => {
+    const { routine, day } = await pushDay();
+    const w = await startWorkoutFromDay(db, day.id, T0);
+    const wes = await liveExercises(w.id);
+    // First exercise: a warm-up and two of three working sets done; the second skipped.
+    const warm = await addSet(db, wes[0]!.id, 'warmup');
+    await updateSet(db, warm.id, { weightKg: 40, reps: 8 });
+    await completeSet(db, warm.id, null, at(1));
+    const working = (await liveSets(wes[0]!.id)).filter((x) => x.setType === 'working');
+    for (const [i, x] of working.slice(0, 2).entries()) {
+      await updateSet(db, x.id, { weightKg: 80, reps: 6 });
+      await completeSet(db, x.id, null, at(3 + i * 3));
+    }
+    await finishWorkout(db, w.id, { now: at(20) });
+
+    const again = await startWorkoutFromPast(db, w.id, at(60 * 48));
+    expect(again).toMatchObject({
+      name: 'Push',
+      status: 'in_progress',
+      routineId: routine.id,
+      routineDayId: day.id,
+    });
+    const copy = await liveExercises(again.id);
+    // Finishing dropped the exercises with nothing done, so the copy has what was trained.
+    const kept = await liveExercises(w.id);
+    expect(copy.map((e) => e.exerciseName)).toEqual(kept.map((e) => e.exerciseName));
+    expect(copy[0]!.target).toEqual(wes[0]!.target);
+    const first = await liveSets(copy[0]!.id);
+    // What was done: the order sets were ticked off, warm-up included, all empty again.
+    expect(first.map((x) => x.setType).sort()).toEqual(['warmup', 'working', 'working'].sort());
+    expect(first.every((x) => x.completedAt === null && x.weightKg === null)).toBe(true);
+    // The past workout is untouched.
+    expect((await db.workouts.get(w.id))!.status).toBe('completed');
   });
 
   it('allows only one workout in progress', async () => {

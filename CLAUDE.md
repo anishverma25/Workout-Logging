@@ -158,5 +158,13 @@ Read README.md for setup, architecture and calculation rules.
   others choose it or build their own.
 - Import also reads .xlsx (`domain/import/spreadsheet.ts`, fflate), UTF-16 and tab files, and
   dates Excel rewrote (`dateOrder` picks day or month first); old .xls asks for .xlsx or CSV.
+- Three-dot menus are `ActionMenu` (`components/kit/menu.tsx`): a dropdown anchored to its
+  button (fade and scale, portal, no <dialog>, no scroll lock), placed above the tab bar
+  (`data-bottom-bar`), hints only on disabled items. Sheets stay for forms; `BottomSheet` is
+  pinned with fixed offsets and no longer locks page scroll (iOS placed it partly off screen).
+- A past workout starts again from its History page (`startWorkoutFromPast`: same exercises,
+  order, set types and targets, linked to its routine day if it still exists), through
+  `useStartWorkout({ fromWorkoutId })`. Tapping the current tab scrolls to the top
+  (`useTabTap` in AppShell); from a page inside a tab it opens the tab at the top.
 - Deployed on Cloudflare Pages from `phase-2-wip`. Each new Supabase migration must be applied
   in the SQL editor before the code that needs it is pushed.
