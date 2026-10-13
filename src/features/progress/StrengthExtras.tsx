@@ -3,20 +3,21 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useFeature } from '@/app/entitlement';
 import type { ProgressModel } from '@/domain/analytics/progress';
-import { LEVELS, type Plateau } from '@/domain/analytics/standards';
+import { LEVELS } from '@/domain/analytics/standards';
+import type { Stall } from '@/domain/analytics/stalls';
 import type { Exercise } from '@/domain/models/schemas';
 import { cn } from '@/lib/cn';
-import { formatDayMonth } from '@/lib/dates';
 import { formatNumber, pluralize } from '@/lib/format';
 import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { ProLock } from '../pro/ProLock';
 import { EvidenceLink } from '../science/EvidenceLink';
+import { stallBest, stallCopy } from './stallCopy';
 
 /** Which section of the science page explains each block. */
 const BLOCK_SCIENCE: Record<string, string> = {
   levels: 'levels',
   rates: 'plateaus',
-  plateaus: 'plateaus',
+  plateaus: 'stalls',
   balance: 'load',
 };
 
@@ -201,15 +202,6 @@ export function RatesSection({
   );
 }
 
-const SUGGESTION: Record<Plateau['suggestion'], string> = {
-  rep_range:
-    'Try a new rep range for 4 weeks, for example 4 to 6 reps if you train 8 to 12, or the other way round.',
-  deload:
-    'Take a lighter week: the same exercises at about 60% of your usual weight, then build back up.',
-  variation:
-    'Swap it for a close variation for a few weeks (incline for flat bench, front squat for back squat), then return.',
-};
-
 export function PlateausSection({
   model,
   unit,
@@ -240,14 +232,7 @@ export function PlateausSection({
       ) : (
         <ul className="flex flex-col gap-2.5">
           {plateaus.map((p) => (
-            <li key={p.exerciseId} className="rounded-panel border border-border bg-surface p-4">
-              <p className="font-semibold">{names.get(p.exerciseId) ?? 'Exercise'}</p>
-              <p className="mt-0.5 text-sm text-faint">
-                Best {formatWeightValue(p.bestE1rm, unit)} {unit} on {formatDayMonth(p.bestDate)},{' '}
-                {pluralize(p.weeks, 'week')} and {pluralize(p.sessionsSince, 'session')} ago.
-              </p>
-              <p className="mt-2 text-sm">{SUGGESTION[p.suggestion]}</p>
-            </li>
+            <StallCard key={p.exerciseId} stall={p} unit={unit} names={names} />
           ))}
         </ul>
       )}
@@ -309,5 +294,40 @@ export function BalanceSection({ model }: { model: ProgressModel }) {
         </ul>
       )}
     </Block>
+  );
+}
+
+function StallCard({
+  stall,
+  unit,
+  names,
+}: {
+  stall: Stall;
+  unit: WeightUnit;
+  names: Map<string, string>;
+}) {
+  const name = names.get(stall.exerciseId) ?? 'This exercise';
+  const copy = stallCopy(stall, unit, name, names);
+  return (
+    <li className="rounded-panel border border-border bg-surface p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <p className="type-headline min-w-0 break-words text-text-1">{name}</p>
+        <span className="type-caption rounded-full bg-surface-2 px-2 py-0.5 text-text-2">
+          {copy.label}
+        </span>
+      </div>
+      <p className="type-meta tabular mt-1 text-text-2">
+        Last best {stallBest(stall, unit)}. Not beaten in {pluralize(stall.weeks, 'week')} and{' '}
+        {pluralize(stall.sessionsSince, 'session')}.
+      </p>
+      <p className="type-body mt-3 text-text-1">
+        <span className="font-semibold">What your sets show. </span>
+        {copy.finding}
+      </p>
+      <p className="type-body mt-2 text-text-1">
+        <span className="font-semibold">Try this. </span>
+        {copy.action}
+      </p>
+    </li>
   );
 }

@@ -21,12 +21,10 @@ import { muscleRecency, muscleWorkload, type MuscleRecency, type MuscleWorkload 
 import { performanceByExercise, performanceFor } from './performance';
 import {
   balanceRatios,
-  detectPlateaus,
   readinessPattern,
   loadSpike,
   strengthProfile,
   type BalanceRatio,
-  type Plateau,
   type StrengthProfile,
 } from './standards';
 import { weightTrend } from './body';
@@ -37,6 +35,7 @@ import {
 } from './progression';
 import { detectPersonalRecords, type PersonalRecord } from './prs';
 import { activeRoutine, adherence, daysForRoutine, type Adherence } from './schedule';
+import { detectStalls, type Stall } from './stalls';
 import { buildSessions, isWorkingSet, type Session, type TrainingData } from './sessions';
 import { strengthTrends } from './strength';
 import { sessionVolumeLoad, setVolumeLoad, totalVolumeLoad } from './volume';
@@ -145,7 +144,7 @@ export interface ProgressModel {
   progression: ProgressionSuggestion[];
   /** Current state, whatever the date range: levels, plateaus, balance. */
   strength: StrengthProfile;
-  plateaus: Plateau[];
+  plateaus: Stall[];
   balance: BalanceRatio[];
 }
 
@@ -585,7 +584,7 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
       data.profile?.sex,
       now,
     ),
-    plateaus: detectPlateaus(history, now, data.profile?.experience),
+    plateaus: detectStalls(sessions, now, data.profile?.experience, data.exercises),
     balance: balanceRatios(sessions, now),
   };
 }

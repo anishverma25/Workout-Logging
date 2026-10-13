@@ -1,7 +1,8 @@
 /**
  * A small, strict CSV reader for exports from other workout apps (RFC 4180: quoted fields,
  * doubled quotes inside them, line breaks inside quotes). Strong has shipped both comma and
- * semicolon files over the years, so the delimiter is read from the header line.
+ * semicolon files over the years, and Excel saves tabs, so the delimiter is read from the header
+ * line.
  */
 
 export interface CsvTable {
@@ -9,7 +10,7 @@ export interface CsvTable {
   rows: Record<string, string>[];
 }
 
-function detectDelimiter(text: string): ',' | ';' {
+function detectDelimiter(text: string): ',' | ';' | '\t' {
   const firstLine = text.slice(0, text.indexOf('\n') === -1 ? undefined : text.indexOf('\n'));
   const count = (ch: string) => {
     let n = 0;
@@ -20,7 +21,12 @@ function detectDelimiter(text: string): ',' | ';' {
     }
     return n;
   };
-  return count(';') > count(',') ? ';' : ',';
+  // Excel saves "Unicode text" with tabs, and semicolons where the comma is the decimal mark.
+  const tabs = count('\t');
+  const semis = count(';');
+  const commas = count(',');
+  if (tabs > semis && tabs > commas) return '\t';
+  return semis > commas ? ';' : ',';
 }
 
 export function parseCsvRows(text: string): string[][] {
@@ -63,7 +69,12 @@ export function parseCsvRows(text: string): string[][] {
 
 /** Rows keyed by header, with headers lowercased and trimmed so small changes do not matter. */
 export function parseCsv(text: string): CsvTable {
-  const [head, ...body] = parseCsvRows(text);
+  return tableFromRows(parseCsvRows(text));
+}
+
+/** The same table from rows read any other way, such as a spreadsheet. */
+export function tableFromRows(rows: string[][]): CsvTable {
+  const [head, ...body] = rows.filter((r) => r.some((cell) => cell.trim() !== ''));
   const headers = (head ?? []).map((h) => h.trim().toLowerCase());
   return {
     headers,

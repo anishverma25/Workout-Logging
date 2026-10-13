@@ -2,7 +2,14 @@ import { useId, useMemo, useState } from 'react';
 import { firstPlay } from './motion';
 import { ChartTable, Legend, Tooltip } from './ChartParts';
 import { useWidth } from './useWidth';
-import { linearScale, nearestIndex, niceDomain, spacedIndices } from './scale';
+import {
+  dateAxisLabels,
+  linearScale,
+  nearestIndex,
+  niceDomain,
+  pickAxisLabels,
+  splitAtGaps,
+} from './scale';
 
 export interface LinePoint {
   /** Usually a timestamp in ms. */
@@ -27,13 +34,18 @@ interface Props {
   label: string;
   height?: number;
   formatY: (v: number) => string;
-  formatX: (x: number) => string;
+  /** Axis label. Default: dates, with the year whenever it is not this year. */
+  formatX?: (x: number) => string;
   /** Longer form for the tooltip title and table, defaults to formatX. */
   formatXLong?: (x: number) => string;
   zeroBased?: boolean;
   /** Label the last value of the first series at the line end. */
   endLabel?: boolean;
+  /** A break longer than this (ms) is drawn as a faint dashed line, not a trend. 4 weeks. */
+  maxGap?: number;
 }
+
+const FOUR_WEEKS = 28 * 86_400_000;
 
 const M = { top: 12, right: 14, bottom: 26 };
 
@@ -50,7 +62,8 @@ export function LineChart({
   height = 220,
   formatY,
   formatX,
-  formatXLong = formatX,
+  formatXLong: formatXLongProp,
+  maxGap = FOUR_WEEKS,
   zeroBased = false,
   endLabel = false,
 }: Props) {
@@ -85,8 +98,18 @@ export function LineChart({
   const xScale = linearScale(x0 === x1 ? [x0 - 1, x1 + 1] : [x0, x1], [left, left + plotW]);
   const yScale = linearScale(domain, [M.top + plotH, M.top], ticks);
   const xPositions = xs.map(xScale);
-  const labelCount = Math.max(2, Math.min(6, Math.floor(plotW / 84)));
-  const xLabels = spacedIndices(xs.length, labelCount);
+  const xTexts = formatX ? xs.map(formatX) : dateAxisLabels(xs);
+  const xLabels = pickAxisLabels(xPositions, xTexts);
+  const formatXLong =
+    formatXLongProp ??
+    formatX ??
+    ((x: number) =>
+      new Date(x).toLocaleDateString(undefined, {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }));
 
   const valueAt = (s: LineSeries, x: number) => s.points.find((p) => p.x === x);
   const activeX = active !== null ? xs[active] : undefined;
@@ -94,6 +117,14 @@ export function LineChart({
   const pathFor = (pts: LinePoint[]) =>
     pts
       .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.x).toFixed(1)},${yScale(p.y).toFixed(1)}`)
+      .join('');
+  const areaFor = (pts: LinePoint[]) =>
+    `${pathFor(pts)}L${xScale(pts[pts.length - 1]!.x).toFixed(1)},${M.top + plotH}L${xScale(pts[0]!.x).toFixed(1)},${M.top + plotH}Z`;
+  /** The bridges across long breaks: from the end of one run to the start of the next. */
+  const bridgesFor = (runs: LinePoint[][]) =>
+    runs
+      .slice(1)
+      .map((run, i) => pathFor([runs[i]![runs[i]!.length - 1]!, run[0]!]))
       .join('');
 
   const first = series[0];
@@ -167,7 +198,7 @@ export function LineChart({
                 textAnchor={i === 0 ? 'start' : i === xs.length - 1 ? 'end' : 'middle'}
                 className="type-meta tabular fill-text-2"
               >
-                {formatX(xs[i]!)}
+                {xTexts[i]}
               </text>
             ))}
 
@@ -187,27 +218,51 @@ export function LineChart({
               const showDots = style !== 'line' || s.points.length <= 12;
               const area = (s.area ?? s.color === 'var(--chart-1)') && style !== 'dots';
               const lastPoint = s.points[s.points.length - 1];
+              const runs = splitAtGaps(s.points, maxGap);
+              // A point alone between two breaks has no line through it: show it as a dot.
+              const lone = new Set(runs.filter((r) => r.length === 1).map((r) => r[0]!.x));
               return (
                 <g key={s.id}>
-                  {area && s.points.length > 1 ? (
+                  {area
+                    ? runs
+                        .filter((run) => run.length > 1)
+                        .map((run) => (
+                          <path
+                            key={`a${run[0]!.x}`}
+                            d={areaFor(run)}
+                            fill={`url(#${gradientId})`}
+                            className={draw ? 'chart-fade' : undefined}
+                          />
+                        ))
+                    : null}
+                  {style !== 'dots' && runs.length > 1 ? (
                     <path
-                      d={`${pathFor(s.points)}L${xScale(lastPoint!.x).toFixed(1)},${M.top + plotH}L${xScale(s.points[0]!.x).toFixed(1)},${M.top + plotH}Z`}
-                      fill={`url(#${gradientId})`}
-                      className={draw ? 'chart-fade' : undefined}
-                    />
-                  ) : null}
-                  {style !== 'dots' && s.points.length > 1 ? (
-                    <path
-                      d={pathFor(s.points)}
-                      pathLength={1}
+                      d={bridgesFor(runs)}
                       fill="none"
                       stroke={s.color}
-                      strokeWidth={2}
-                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      strokeDasharray="2 5"
                       strokeLinecap="round"
-                      className={draw ? 'chart-draw' : undefined}
+                      opacity={0.45}
                     />
                   ) : null}
+                  {style !== 'dots'
+                    ? runs
+                        .filter((run) => run.length > 1)
+                        .map((run) => (
+                          <path
+                            key={`l${run[0]!.x}`}
+                            d={pathFor(run)}
+                            pathLength={1}
+                            fill="none"
+                            stroke={s.color}
+                            strokeWidth={2}
+                            strokeLinejoin="round"
+                            strokeLinecap="round"
+                            className={draw ? 'chart-draw' : undefined}
+                          />
+                        ))
+                    : null}
                   {area && lastPoint && !showDots ? (
                     <circle
                       cx={xScale(lastPoint.x)}
@@ -219,19 +274,21 @@ export function LineChart({
                       className={draw ? 'chart-fade' : undefined}
                     />
                   ) : null}
-                  {showDots || s.points.length === 1
-                    ? s.points.map((p) => (
-                        <circle
-                          key={p.x}
-                          cx={xScale(p.x)}
-                          cy={yScale(p.y)}
-                          r={style === 'dots' ? 3.5 : 4}
-                          fill={s.color}
-                          stroke="var(--surface)"
-                          strokeWidth={2}
-                          opacity={style === 'dots' ? 0.75 : 1}
-                        />
-                      ))
+                  {showDots || s.points.length === 1 || lone.size > 0
+                    ? s.points
+                        .filter((p) => showDots || s.points.length === 1 || lone.has(p.x))
+                        .map((p) => (
+                          <circle
+                            key={p.x}
+                            cx={xScale(p.x)}
+                            cy={yScale(p.y)}
+                            r={style === 'dots' ? 3.5 : 4}
+                            fill={s.color}
+                            stroke="var(--surface)"
+                            strokeWidth={2}
+                            opacity={style === 'dots' ? 0.75 : 1}
+                          />
+                        ))
                     : null}
                   {activeX !== undefined && valueAt(s, activeX) ? (
                     <circle

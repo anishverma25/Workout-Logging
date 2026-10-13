@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge, IconTile, TextLink } from '@/components/kit';
 import { MUSCLE_LABELS } from '@/domain/models/labels';
 import { TRIAL_HOURS } from '@/domain/entitlement/entitlement';
-import type { Plateau } from '@/domain/analytics/standards';
+import type { StallCause } from '@/domain/analytics/stalls';
 import { Rings, RingLegend, type RingSpec } from '@/components/ui/Rings';
 import { useAccount } from '@/app/account';
 import { markTourSeen } from '@/app/seenTour';
@@ -39,7 +39,7 @@ import { buildSessions, type TrainingData } from '@/domain/analytics/sessions';
 import { loggedDaysPerWeek } from '@/domain/analytics/week';
 import { cn } from '@/lib/cn';
 import { DEFAULT_PREFERENCES } from '@/domain/models/schemas';
-import { ageFromBirthDate, formatDayMonth, formatShortDate } from '@/lib/dates';
+import { ageFromBirthDate, formatShortDate } from '@/lib/dates';
 import { formatClock } from '@/lib/format';
 import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
 
@@ -480,7 +480,6 @@ function Progress({ sample, unit }: SlideProps) {
               },
             ]}
             formatY={(v) => v.toLocaleString('en-GB', { maximumFractionDigits: 0 })}
-            formatX={(x) => formatDayMonth(new Date(x))}
             formatXLong={(x) => formatShortDate(new Date(x))}
           />
         </div>
@@ -575,7 +574,6 @@ function Body({ sample, unit }: SlideProps) {
               },
             ]}
             formatY={(v) => v.toLocaleString('en-GB', { maximumFractionDigits: 1 })}
-            formatX={(x) => formatDayMonth(new Date(x))}
           />
         </div>
       ) : null}
@@ -618,8 +616,13 @@ function Journey({ sample, unit }: SlideProps) {
 
 const TRIAL_DAYS = Math.round(TRIAL_HOURS / 24);
 
-const PLATEAU_FIX: Record<Plateau['suggestion'], string> = {
-  rep_range: 'Try a new rep range for the next 4 weeks',
+const STALL_LABEL: Record<StallCause, string> = {
+  break: 'Back after a break: rebuild over 2 to 4 weeks',
+  frequency: 'Trained too rarely: aim for twice a week',
+  effort: 'Sets stop too far from failure',
+  volume: 'Fewer sets than while it was improving',
+  same_load: 'Same weight every session: add reps first',
+  rep_range: 'Try a new rep range for 4 weeks',
   deload: 'Take a lighter week, then build back up',
   variation: 'Swap in a close variation for a few weeks',
 };
@@ -654,7 +657,7 @@ function ProSlide({ sample }: SlideProps) {
               <span className="type-headline block text-text-1">
                 {plateauName} has stalled for {plateau.weeks} weeks
               </span>
-              <span className="type-meta block text-text-2">{PLATEAU_FIX[plateau.suggestion]}</span>
+              <span className="type-meta block text-text-2">{STALL_LABEL[plateau.cause]}</span>
             </span>
           </div>
         ) : null}

@@ -1,6 +1,6 @@
 import type { SetType } from '@/domain/models/schemas';
 import { num, parseCsv, type CsvTable } from './csv';
-import { parseDuration, parseExportDate } from './dates';
+import { dateOrder, parseDuration, parseExportDate, type DateOrder } from './dates';
 
 /**
  * Reading workout history exported from Hevy and Strong into one shape, before anything is
@@ -134,14 +134,21 @@ function assemble(
   return [...workouts.values()].sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
 }
 
-export function readHevyWorkouts(table: CsvTable): Pick<ImportedLog, 'workouts' | 'skippedRows'> {
+export function readHevyWorkouts(
+  table: CsvTable,
+  fallback: DateOrder = 'dmy',
+): Pick<ImportedLog, 'workouts' | 'skippedRows'> {
   const inLb = table.headers.includes('weight_lbs') && !table.headers.includes('weight_kg');
   const distanceInMiles =
     table.headers.includes('distance_miles') && !table.headers.includes('distance_km');
+  const order = dateOrder(
+    table.rows.flatMap((r) => [r.start_time, r.end_time]),
+    fallback,
+  );
   let skipped = 0;
   const rows = [];
   for (const row of table.rows) {
-    const startedAt = parseExportDate(row.start_time);
+    const startedAt = parseExportDate(row.start_time, order);
     const name = text(row.exercise_title);
     if (!startedAt || !name) {
       skipped++;
@@ -165,7 +172,7 @@ export function readHevyWorkouts(table: CsvTable): Pick<ImportedLog, 'workouts' 
       continue;
     }
     const title = text(row.title) ?? 'Workout';
-    const endedAt = parseExportDate(row.end_time);
+    const endedAt = parseExportDate(row.end_time, order);
     rows.push({
       workoutKey: `${row.start_time}|${title}`,
       workout: {
@@ -196,9 +203,16 @@ function sides(row: Record<string, string>, base: string, toCm: (n: number) => n
   return values.length === 0 ? null : round(values.reduce((a, b) => a + b, 0) / values.length, 1);
 }
 
-export function readHevyMeasurements(table: CsvTable): Pick<ImportedLog, 'body' | 'skippedRows'> {
+export function readHevyMeasurements(
+  table: CsvTable,
+  fallback: DateOrder = 'dmy',
+): Pick<ImportedLog, 'body' | 'skippedRows'> {
   const inLb = table.headers.includes('weight_lbs') && !table.headers.includes('weight_kg');
   const toCm = (n: number) => round(n * IN_TO_CM, 1);
+  const order = dateOrder(
+    table.rows.map((r) => r.date),
+    fallback,
+  );
   const one = (row: Record<string, string>, key: string) => {
     const cm = num(row[`${key}_cm`]);
     if (cm !== null && cm > 0) return round(cm, 1);
@@ -208,7 +222,7 @@ export function readHevyMeasurements(table: CsvTable): Pick<ImportedLog, 'body' 
   let skipped = 0;
   const body: ImportedBodyEntry[] = [];
   for (const row of table.rows) {
-    const measuredAt = parseExportDate(row.date);
+    const measuredAt = parseExportDate(row.date, order);
     if (!measuredAt) {
       skipped++;
       continue;
@@ -251,11 +265,16 @@ const STRONG_SET_TYPES: Record<string, SetType> = { w: 'warmup', d: 'drop', f: '
 export function readStrongWorkouts(
   table: CsvTable,
   unit: 'kg' | 'lb',
+  fallback: DateOrder = 'dmy',
 ): Pick<ImportedLog, 'workouts' | 'skippedRows'> {
+  const dates = dateOrder(
+    table.rows.map((r) => r.date),
+    fallback,
+  );
   let skipped = 0;
   const rows = [];
   for (const row of table.rows) {
-    const startedAt = parseExportDate(row.date);
+    const startedAt = parseExportDate(row.date, dates);
     const name = text(row['exercise name']);
     const order = (row['set order'] ?? '').trim().toLowerCase();
     // Rest timer and note rows carry no set.
@@ -307,38 +326,40 @@ export function readStrongWorkouts(
  * measurements file too; Strong has one file.
  */
 export function readExport(
-  files: { name: string; text: string }[],
-  options: { strongUnit: 'kg' | 'lb' },
+  /** Each file as text (CSV) or as a table already read from a spreadsheet. */
+  files: { name: string; text?: string; table?: CsvTable }[],
+  /** dateOrder: how this device writes dates, for slash dates that read both ways. */
+  options: { strongUnit: 'kg' | 'lb'; dateOrder?: DateOrder },
 ): ImportedLog {
   const log: ImportedLog = { source: 'hevy', workouts: [], body: [], skippedRows: 0 };
   let recognised = 0;
   const kinds = new Set<FileKind>();
   for (const file of files) {
-    const table = parseCsv(file.text);
+    const table = file.table ?? parseCsv(file.text ?? '');
     const kind = detectFile(table);
     if (!kind) {
       throw new ImportFormatError(
-        `${file.name} is not a Hevy or Strong export. Export it again from the app and choose the CSV file.`,
+        `${file.name} is not a Hevy or Strong export. Export it again from the app and choose the CSV file (or an Excel copy of it).`,
       );
     }
     recognised++;
     kinds.add(kind);
     if (kind === 'hevy-workouts') {
-      const r = readHevyWorkouts(table);
+      const r = readHevyWorkouts(table, options.dateOrder);
       log.workouts.push(...r.workouts);
       log.skippedRows += r.skippedRows;
     } else if (kind === 'hevy-measurements') {
-      const r = readHevyMeasurements(table);
+      const r = readHevyMeasurements(table, options.dateOrder);
       log.body.push(...r.body);
       log.skippedRows += r.skippedRows;
     } else {
-      const r = readStrongWorkouts(table, options.strongUnit);
+      const r = readStrongWorkouts(table, options.strongUnit, options.dateOrder);
       log.workouts.push(...r.workouts);
       log.skippedRows += r.skippedRows;
       log.source = 'strong';
     }
   }
-  if (recognised === 0) throw new ImportFormatError('Choose at least one CSV file.');
+  if (recognised === 0) throw new ImportFormatError('Choose at least one export file.');
   if (
     kinds.has('strong-workouts') &&
     (kinds.has('hevy-workouts') || kinds.has('hevy-measurements'))

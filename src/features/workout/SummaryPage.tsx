@@ -256,8 +256,8 @@ function RecordsCard({ prs, unit }: { prs: PersonalRecord[]; unit: WeightUnit })
       </ul>
       {prs.some((p) => p.type === 'e1rm') ? (
         <p className="type-meta mt-2 text-text-2">
-          Estimated 1RM is calculated from your sets (Brzycki up to 5 reps, Epley above). It is not
-          a lift you performed.
+          Estimated 1RM is the most you could likely lift once, worked out from the weight and reps
+          of your sets. It is an estimate, not a lift you did.
         </p>
       ) : null}
     </section>

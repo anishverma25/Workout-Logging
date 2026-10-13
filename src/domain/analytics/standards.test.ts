@@ -3,7 +3,6 @@ import { performanceByExercise } from './performance';
 import { buildSessions } from './sessions';
 import {
   balanceRatios,
-  detectPlateaus,
   dotsScore,
   e1rmRate,
   loadSpike,
@@ -70,31 +69,6 @@ describe('rate and plateaus', () => {
     const rate = e1rmRate(history, NOW)!;
     expect(rate).toBeCloseTo(2.5 * (35 / 30), 5);
     expect(e1rmRate(history.slice(0, 3), NOW)).toBeNull();
-  });
-
-  it('flags a lift that has not beaten its best for 3 weeks', () => {
-    const data = buildData([
-      benchAt('2026-09-07T10:00:00', 80),
-      benchAt('2026-09-10T10:00:00', 85),
-      benchAt('2026-09-14T10:00:00', 82.5),
-      benchAt('2026-09-21T10:00:00', 85),
-      benchAt('2026-09-28T10:00:00', 82.5),
-      benchAt('2026-10-05T10:00:00', 85),
-    ]);
-    const plateaus = detectPlateaus(
-      performanceByExercise(buildSessions(data)),
-      NOW,
-      'intermediate',
-    );
-    expect(plateaus).toHaveLength(1);
-    expect(plateaus[0]).toMatchObject({ weeks: 3, sessionsSince: 4, suggestion: 'rep_range' });
-    expect(
-      detectPlateaus(performanceByExercise(buildSessions(data)), NOW, 'advanced')[0]!.suggestion,
-    ).toBe('deload');
-    // Stopped doing it: not a plateau.
-    expect(
-      detectPlateaus(performanceByExercise(buildSessions(data)), new Date(2026, 10, 1), null),
-    ).toEqual([]);
   });
 });
 

@@ -22,7 +22,14 @@ import {
   TRAINING_MET,
   TREND_DAYS,
 } from '@/domain/analytics/body';
-import { PLATEAU_MIN_SESSIONS, PLATEAU_WEEKS } from '@/domain/analytics/standards';
+import {
+  BREAK_DAYS,
+  EFFORT_RIR,
+  MIN_PER_WEEK,
+  STALL_MIN_SESSIONS,
+  STALL_WEEKS,
+  VOLUME_DROP,
+} from '@/domain/analytics/stalls';
 import { REST_PRESETS } from '@/domain/workout/restTimer';
 import { GOAL_LABEL } from '@/domain/models/labels';
 
@@ -259,8 +266,8 @@ export const SCIENCE: TopicGroup[] = [
       },
       {
         id: 'plateaus',
-        title: 'Rate of progress and stalled lifts',
-        shows: 'How fast a compound lift is moving, and when it has stopped.',
+        title: 'Rate of progress',
+        shows: 'How fast a compound lift is moving.',
         formulas: [
           {
             tex: String.raw`\text{rate} = 7 \cdot \dfrac{\sum_i (x_i - \bar{x})(y_i - \bar{y})}{\sum_i (x_i - \bar{x})^2}`,
@@ -269,15 +276,43 @@ export const SCIENCE: TopicGroup[] = [
               'x is the day and y the session best e1RM, over the last 8 weeks (at least 4 sessions across 3 weeks).',
           },
         ],
+        why: [<>The rate is fitted to every session, so one good or bad day barely moves it.</>],
+        limits: 'Only compound lifts, which have an estimated 1RM.',
+      },
+      {
+        id: 'stalls',
+        title: 'Stalled lifts and why',
+        evidence: 'stalls',
+        shows:
+          'Lifts that have stopped moving, the most likely reason read from your own sets, and what to do about that lift.',
         why: [
           <>
-            A lift has stalled when its best has not been beaten for {PLATEAU_WEEKS} weeks or more,
-            across at least {PLATEAU_MIN_SESSIONS} sessions, and you trained it in the last 2 weeks.
-            The suggestion: a new rep range at 3 weeks, a lighter week at 4 or more, a variation
-            after 6.
+            Progress is judged on what you lifted, not an estimate: a session counts when a set
+            beats every earlier set with more weight for the same reps or more, or more reps at the
+            same weight or more. Only sets within 80% of your heaviest weight count, so a light pump
+            set cannot hide a stall. A lift has stalled when nothing has moved for {STALL_WEEKS}{' '}
+            weeks or more, across at least {STALL_MIN_SESSIONS} sessions of it, and you trained it
+            in the last 2 weeks.
+          </>,
+          <>
+            The reason is the first of these that fits. A break of {BREAK_DAYS / 7} weeks or more:
+            strength starts to fade after about 3 weeks off (Bosquet 2013), so being below your best
+            is expected. Under {MIN_PER_WEEK} sessions a week: progress follows weekly hard sets
+            (Schoenfeld 2019, Pelland 2026). A median of {EFFORT_RIR} or more reps left in the tank,
+            when you log it: sets far from failure give less (Robinson 2024). A quarter fewer sets
+            than in the 6 weeks before your best (below {VOLUME_DROP * 100}%). The same top weight
+            every session: adding reps first works as well as adding weight (Plotkin 2022).
+          </>,
+          <>
+            When none of those fits, it is a real plateau: a new rep range under 4 weeks, one
+            lighter week from 4 weeks (sooner for advanced lifters; Bell 2023), and from 6 weeks a
+            close variation of the lift, named for you (Kassiano 2022).
           </>,
         ],
-        limits: 'An app rule built on your own data, not a scientific threshold.',
+        forYou:
+          'Fix the reason shown first. Most stalls are about frequency, effort or sets, not the exercise.',
+        limits:
+          'The order of the checks and the cut-offs are app rules built on the research, not thresholds from it. Effort needs reps in reserve logged on at least half your sets.',
       },
       {
         id: 'records',

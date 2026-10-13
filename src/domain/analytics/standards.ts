@@ -1,6 +1,6 @@
 import { addDays, startOfDay } from '@/lib/dates';
 import { stableId } from '@/lib/ids';
-import type { Exercise, Experience, MuscleGroup, Sex } from '../models/schemas';
+import type { Exercise, MuscleGroup, Sex } from '../models/schemas';
 import type { ExercisePerformance } from './performance';
 import { isWorkingSet, sessionsBetween, type Session } from './sessions';
 
@@ -143,54 +143,6 @@ export function e1rmRate(history: ExercisePerformance[], now: Date, weeks = 8): 
     den += (x - mx) ** 2;
   });
   return den === 0 ? null : num / den;
-}
-
-export const PLATEAU_WEEKS = 3;
-export const PLATEAU_MIN_SESSIONS = 4;
-
-export interface Plateau {
-  exerciseId: string;
-  bestE1rm: number;
-  bestDate: Date;
-  weeks: number;
-  sessionsSince: number;
-  suggestion: 'rep_range' | 'deload' | 'variation';
-}
-
-/**
- * A lift has stalled when its best e1RM has not been beaten for 3 weeks or more, across at least
- * 4 sessions of it, and it was trained in the last 2 weeks (a lift you stopped doing is not
- * stalled). What to try depends on how long: a new rep range first, then a lighter week, then
- * a variation of the lift.
- */
-export function detectPlateaus(
-  byExercise: Map<string, ExercisePerformance[]>,
-  now: Date,
-  experience: Experience | null | undefined,
-): Plateau[] {
-  const out: Plateau[] = [];
-  for (const [exerciseId, history] of byExercise) {
-    const withE1rm = history.filter((p) => p.bestE1rm !== null && p.date <= now);
-    if (withE1rm.length < PLATEAU_MIN_SESSIONS) continue;
-    const last = withE1rm[withE1rm.length - 1]!;
-    if (now.getTime() - last.date.getTime() > 14 * 86_400_000) continue;
-    let best = withE1rm[0]!;
-    for (const p of withE1rm) if (p.bestE1rm! > best.bestE1rm! + 1e-9) best = p;
-    const weeks = Math.floor((now.getTime() - best.date.getTime()) / (7 * 86_400_000));
-    const sessionsSince = withE1rm.filter((p) => p.date > best.date).length;
-    if (weeks < PLATEAU_WEEKS || sessionsSince < PLATEAU_MIN_SESSIONS - 1) continue;
-    const suggestion: Plateau['suggestion'] =
-      weeks >= 6 ? 'variation' : weeks >= 4 || experience === 'advanced' ? 'deload' : 'rep_range';
-    out.push({
-      exerciseId,
-      bestE1rm: best.bestE1rm!,
-      bestDate: best.date,
-      weeks,
-      sessionsSince,
-      suggestion,
-    });
-  }
-  return out.sort((a, b) => b.weeks - a.weeks);
 }
 
 // ---------------------------------------------------------------------------------------------

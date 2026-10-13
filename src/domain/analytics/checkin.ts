@@ -3,7 +3,8 @@ import type { Experience } from '../models/schemas';
 import { performanceByExercise } from './performance';
 import { detectPersonalRecords } from './prs';
 import { sessionsBetween, workingSetCount, type Session } from './sessions';
-import { balanceRatios, detectPlateaus, loadSpike } from './standards';
+import { balanceRatios, loadSpike } from './standards';
+import { detectStalls } from './stalls';
 import type { Exercise } from '../models/schemas';
 
 export interface WeeklyCheckin {
@@ -60,7 +61,7 @@ export function weeklyCheckin(input: {
     (r) => r.date >= weekStart && r.date < thisWeek,
   ).length;
   const lastDay = addDays(thisWeek, -1);
-  const stalled = detectPlateaus(performanceByExercise(upToWeekEnd), lastDay, input.experience).map(
+  const stalled = detectStalls(upToWeekEnd, lastDay, input.experience, exercises).map(
     (p) => ({
       exerciseId: p.exerciseId,
       name: names.get(p.exerciseId) ?? 'Exercise',
