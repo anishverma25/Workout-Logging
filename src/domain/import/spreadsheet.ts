@@ -111,12 +111,18 @@ function readXlsx(name: string, bytes: Uint8Array): CsvTable {
       next = col + 1;
       const type = /\bt="(\w+)"/.exec(attrs)?.[1] ?? 'n';
       const v = /<v>([\s\S]*?)<\/v>/.exec(body)?.[1];
-      let value = '';
-      if (type === 's') value = shared[Number(v)] ?? '';
-      else if (type === 'inlineStr') value = textOf(body);
-      else if (type === 'b') value = v === '1' ? 'TRUE' : 'FALSE';
-      else if (type === 'e') value = '';
-      else value = v !== undefined ? unescapeXml(v) : '';
+      const value =
+        type === 's'
+          ? (shared[Number(v)] ?? '')
+          : type === 'inlineStr'
+            ? textOf(body)
+            : type === 'b'
+              ? v === '1'
+                ? 'TRUE'
+                : 'FALSE'
+              : type === 'e' || v === undefined
+                ? ''
+                : unescapeXml(v);
       while (row.length < col) row.push('');
       row[col] = value;
     }
