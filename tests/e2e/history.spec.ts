@@ -155,3 +155,24 @@ test('a past workout can be started again from its page', async ({ page }) => {
       .first(),
   ).toBeVisible();
 });
+
+test('a workout makes story cards that save as 1080 × 1920 images', async ({ page }) => {
+  await page.goto('/history');
+  await page.locator('a[href^="/history/"]').first().click();
+  await page.getByRole('button', { name: 'Share', exact: true }).click();
+  const sheet = page.getByRole('dialog', { name: 'Share to your story' });
+  await expect(sheet.getByRole('img')).toBeVisible();
+  for (const name of ['Receipt', 'Total lifted']) {
+    await sheet.getByRole('button', { name, exact: true }).click();
+    await expect(sheet.getByRole('img')).toHaveAttribute('alt', new RegExp(name));
+    const size = await sheet.getByRole('img').evaluate(async (el) => {
+      const img = el as HTMLImageElement;
+      await img.decode();
+      return [img.naturalWidth, img.naturalHeight];
+    });
+    expect(size).toEqual([1080, 1920]);
+  }
+  const download = page.waitForEvent('download');
+  await sheet.getByRole('button', { name: 'Save image' }).click();
+  expect((await download).suggestedFilename()).toMatch(/^overload-total-.+\.png$/);
+});

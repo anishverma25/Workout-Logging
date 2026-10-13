@@ -166,5 +166,10 @@ Read README.md for setup, architecture and calculation rules.
   order, set types and targets, linked to its routine day if it still exists), through
   `useStartWorkout({ fromWorkoutId })`. Tapping the current tab scrolls to the top
   (`useTabTap` in AppShell); from a page inside a tab it opens the tab at the top.
+- Story cards (`features/share`): 1080 × 1920 canvas drawings (`draw.ts`) of data from
+  `domain/share/cards.ts`: New PR, workout receipt, total lifted (vs `COMPARISONS`), streak.
+  Content stays inside Instagram's safe area (y 250 to 1650). Fonts Inter Tight and JetBrains
+  Mono from @fontsource, loaded only when sharing. `ShareSheet` on the summary and workout
+  detail: Web Share with the PNG file only (no text, Instagram drops those), else Save image.
 - Deployed on Cloudflare Pages from `phase-2-wip`. Each new Supabase migration must be applied
   in the SQL editor before the code that needs it is pushed.

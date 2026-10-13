@@ -1,3 +1,4 @@
+import { ShareSheet } from '@/features/share/ShareSheet';
 import { useStartWorkout } from '@/features/workout/StartWorkout';
 import { ActionMenu } from '@/components/kit/menu';
 import { formatRest, restIntervals, type RestInterval } from '@/domain/analytics/rest';
@@ -12,6 +13,7 @@ import {
   NotebookPen,
   Pencil,
   Play,
+  Share,
   Trash2,
   Trophy,
 } from 'lucide-react';
@@ -62,6 +64,7 @@ export function WorkoutDetailPage() {
   const menuButton = useRef<HTMLButtonElement>(null);
   const startWorkout = useStartWorkout();
   const [starting, setStarting] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -146,22 +149,27 @@ export function WorkoutDetailPage() {
         }
       />
 
-      <PrimaryButton
-        block
-        icon={<Play className="fill-current" aria-hidden />}
-        loading={starting}
-        onClick={async () => {
-          setStarting(true);
-          try {
-            await startWorkout({ fromWorkoutId: workout.id });
-          } finally {
-            setStarting(false);
-          }
-        }}
-        className="mb-4"
-      >
-        Start this workout
-      </PrimaryButton>
+      <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+        <PrimaryButton
+          block
+          icon={<Play className="fill-current" aria-hidden />}
+          loading={starting}
+          onClick={async () => {
+            setStarting(true);
+            try {
+              await startWorkout({ fromWorkoutId: workout.id });
+            } finally {
+              setStarting(false);
+            }
+          }}
+        >
+          Start this workout
+        </PrimaryButton>
+        <SecondaryButton icon={<Share aria-hidden />} onClick={() => setSharing(true)}>
+          Share
+        </SecondaryButton>
+      </div>
+      <ShareSheet workoutId={workout.id} open={sharing} onClose={() => setSharing(false)} />
 
       {summary ? (
         <dl className="grid grid-cols-2 gap-3 tab:grid-cols-4">
