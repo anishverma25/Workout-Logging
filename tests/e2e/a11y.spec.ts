@@ -87,6 +87,10 @@ test('no accessibility violations in an active workout and its sheets', async ({
   await card.getByRole('button', { name: 'Mark set 1 done' }).click();
   await expect(page.getByRole('timer', { name: 'Rest timer' })).toBeVisible();
   const problems = await scan('workout');
+  await card.getByRole('button', { name: /^Options for/ }).click();
+  await expect(page.getByRole('menu')).toBeVisible();
+  problems.push(...(await scan('exercise menu')));
+  await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Add exercise' }).click();
   problems.push(...(await scan('add-exercise sheet')));
   await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();

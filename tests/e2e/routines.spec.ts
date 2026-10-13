@@ -38,11 +38,11 @@ test('routine from a template: rename, add a day and exercise, duplicate, delete
 
   // Duplicate and delete
   await page.getByRole('button', { name: 'Routine options' }).click();
-  await page.getByRole('button', { name: 'Duplicate routine' }).click();
+  await page.getByRole('menuitem', { name: 'Duplicate routine' }).click();
   await expect(page.getByRole('heading', { level: 1, name: /Off-season \(copy\)/ })).toBeVisible();
   await page.getByRole('button', { name: 'Routine options' }).click();
+  await page.getByRole('menuitem', { name: 'Delete routine' }).click();
   await page.getByRole('button', { name: 'Delete routine' }).click();
-  await page.getByRole('button', { name: 'Delete routine' }).last().click();
   await expect(page).toHaveURL(/\/routines$/);
   await expect(page.getByRole('link', { name: 'Off-season', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Off-season (copy)' })).toHaveCount(0);

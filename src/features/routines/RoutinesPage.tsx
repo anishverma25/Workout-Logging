@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { ActionMenu } from '@/components/kit/menu';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { CalendarRange, ChevronRight, Copy, Ellipsis, Plus, Star, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { ActionList } from '@/components/ui/Fields';
 import { IconButton } from '@/components/ui/Button';
 import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
@@ -109,6 +109,7 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
   const navigate = useNavigate();
   const today = useNow().getDay();
   const [menu, setMenu] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const days = daysForRoutine(routine, data.routineDays);
   const planned = new Map<number, string>();
@@ -141,7 +142,10 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
         <IconButton
           label={`Options for ${routine.name}`}
           icon={<Ellipsis className="size-5" aria-hidden />}
-          onClick={() => setMenu(true)}
+          ref={menuButton}
+          aria-expanded={menu}
+          aria-haspopup="menu"
+          onClick={() => setMenu((m) => !m)}
           className="relative z-10 -mr-2 -mt-1"
         />
       </div>
@@ -185,41 +189,43 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
         <ChevronRight className="size-4 text-text-2" aria-hidden />
       </div>
 
-      <Sheet open={menu} onClose={() => setMenu(false)} title={routine.name}>
-        <ActionList
-          items={[
-            {
-              label: routine.isActive ? 'This is your active routine' : 'Make active',
-              hint: 'Home suggests its days, and adherence is measured against it.',
-              icon: <Star className="size-5" aria-hidden />,
-              disabled: routine.isActive,
-              onSelect: async () => {
-                await setActiveRoutine(db, routine.id);
-                toast(`${routine.name} is now active`);
-                setMenu(false);
-              },
+      <ActionMenu
+        open={menu}
+        onClose={() => setMenu(false)}
+        anchor={menuButton}
+        label={`Options for ${routine.name}`}
+        items={[
+          {
+            label: routine.isActive ? 'This is your active routine' : 'Make active',
+            hint: 'Home suggests its days, and adherence is measured against it.',
+            icon: <Star className="size-5" aria-hidden />,
+            disabled: routine.isActive,
+            onSelect: async () => {
+              await setActiveRoutine(db, routine.id);
+              toast(`${routine.name} is now active`);
+              setMenu(false);
             },
-            {
-              label: 'Duplicate',
-              icon: <Copy className="size-5" aria-hidden />,
-              onSelect: async () => {
-                const copy = await duplicateRoutine(db, routine.id);
-                setMenu(false);
-                navigate(`/routines/${copy.id}`);
-              },
+          },
+          {
+            label: 'Duplicate',
+            icon: <Copy className="size-5" aria-hidden />,
+            onSelect: async () => {
+              const copy = await duplicateRoutine(db, routine.id);
+              setMenu(false);
+              navigate(`/routines/${copy.id}`);
             },
-            {
-              label: 'Delete',
-              icon: <Trash2 className="size-5" aria-hidden />,
-              danger: true,
-              onSelect: () => {
-                setMenu(false);
-                setConfirmDelete(true);
-              },
+          },
+          {
+            label: 'Delete',
+            icon: <Trash2 className="size-5" aria-hidden />,
+            danger: true,
+            onSelect: () => {
+              setMenu(false);
+              setConfirmDelete(true);
             },
-          ]}
-        />
-      </Sheet>
+          },
+        ]}
+      />
       <ConfirmSheet
         open={confirmDelete}
         title={`Delete ${routine.name}?`}

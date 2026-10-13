@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, type MouseEvent } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -74,11 +74,33 @@ function NavIcon({ item, active }: { item: NavItem; active: boolean }) {
   return <Icon className="size-6 shrink-0" strokeWidth={1.75} aria-hidden />;
 }
 
+/**
+ * Tapping the tab you are on takes you back to its top, as in iOS apps: on the tab's own page
+ * it scrolls up; on a page inside it (a workout in History) it goes to the tab and starts at
+ * the top.
+ */
+function useTabTap() {
+  const { pathname } = useLocation();
+  return (to: string, e: MouseEvent) => {
+    const home = to === '/' ? pathname === '/' : pathname === to;
+    const inside = to !== '/' && pathname.startsWith(`${to}/`);
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (home) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    } else if (inside) {
+      requestAnimationFrame(() => window.scrollTo({ top: 0 }));
+    }
+  };
+}
+
 function SidebarLink({ item }: { item: NavItem }) {
+  const tap = useTabTap();
   return (
     <NavLink
       to={item.to}
       end={item.to === '/'}
+      onClick={(e) => tap(item.to, e)}
       className={({ isActive }) =>
         cn(
           'pressable chrome type-body flex h-11 items-center gap-3 rounded-field px-3 font-medium',
@@ -132,9 +154,11 @@ function Sidebar() {
 
 function BottomNav() {
   const { pathname } = useLocation();
+  const tap = useTabTap();
   return (
     <nav
       aria-label="Main navigation"
+      data-bottom-bar
       className="chrome fixed inset-x-0 bottom-0 z-40 border-t-[0.5px] border-white/10 bg-bar pb-safe lg:hidden"
     >
       <ul className="mx-auto grid h-[3.0625rem] max-w-md grid-cols-5 px-1">
@@ -145,8 +169,9 @@ function BottomNav() {
               <NavLink
                 to={item.to}
                 end={item.to === '/'}
-                onClick={() => {
+                onClick={(e) => {
                   if (!active) haptic('light');
+                  tap(item.to, e);
                 }}
                 aria-current={active ? 'page' : undefined}
                 className={cn(

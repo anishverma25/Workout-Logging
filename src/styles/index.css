@@ -570,3 +570,20 @@
     animation: none;
   }
 }
+
+/* Three-dot menus drop from their button: a short fade and scale, nothing slides. */
+@keyframes kit-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+.kit-menu {
+  animation: kit-menu-in 140ms var(--ease-standard);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+@media (prefers-reduced-motion: reduce) {
+  .kit-menu {
+    animation: none;
+  }
+}

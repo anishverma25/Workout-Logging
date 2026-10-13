@@ -383,3 +383,40 @@ test('keyboard toolbar steps the focused cell and moves to the next one', async 
   await toolbar.getByRole('button', { name: '+1' }).click();
   await expect(reps).toHaveValue('9');
 });
+
+test('the three-dot menu drops from its button, stays on screen and closes cleanly', async ({
+  page,
+}) => {
+  await startRoutineWorkout(page);
+  const card = firstCard(page);
+  const button = card.getByRole('button', { name: /^Options for/ });
+  await button.click();
+  const menu = page.getByRole('menu');
+  await expect(menu).toBeVisible();
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  // Fully inside the screen, next to the button, and not a sheet.
+  const box = (await menu.boundingBox())!;
+  const view = page.viewportSize()!;
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height).toBeLessThanOrEqual(view.height);
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(view.width);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  // The first item has focus; Escape closes and gives focus back to the button.
+  await expect(menu.getByRole('menuitem').first()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  await expect(button).toBeFocused();
+  // Tapping the button again, or outside, closes it.
+  await button.click();
+  await button.click();
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await button.click();
+  await page.mouse.click(5, view.height / 2);
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  // An item does its job: notes open in their own sheet.
+  await button.click();
+  await page.getByRole('menuitem', { name: 'Add notes' }).click();
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toBeVisible();
+});

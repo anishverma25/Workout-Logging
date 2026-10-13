@@ -21,6 +21,8 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
   },
   "dependencies": {
+    "@fontsource/inter-tight": "5.2.5",
+    "@fontsource/jetbrains-mono": "5.2.5",
     "@supabase/supabase-js": "^2.117.2",
     "clsx": "^2.1.1",
     "dexie": "^4.4.6",

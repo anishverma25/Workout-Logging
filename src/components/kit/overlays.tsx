@@ -88,20 +88,11 @@ export function BottomSheet({
     if (open && !dialog.open) {
       opener.current = document.activeElement;
       dialog.showModal();
-      document.documentElement.style.overflow = 'hidden';
     }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
-  useEffect(
-    () => () => {
-      document.documentElement.style.overflow = '';
-    },
-    [],
-  );
-
   const restoreFocus = () => {
-    document.documentElement.style.overflow = '';
     const el = opener.current;
     opener.current = null;
     if (el instanceof HTMLElement && el.isConnected) el.focus({ preventScroll: true });
@@ -160,8 +151,11 @@ export function BottomSheet({
         dialogLike
           ? 'kit-dialog m-auto max-h-[85vh] max-w-[min(30rem,calc(100vw-2rem))] rounded-panel supports-[height:1dvh]:max-h-[85dvh]'
           : cn(
+              // Pinned to the bottom edge with fixed offsets, not an auto margin: iOS placed
+              // auto-margin dialogs partly below the screen. The page is not scroll-locked
+              // either, which moved fixed elements on iOS; the backdrop already blocks it.
               // 85vh first for browsers without dvh (Chrome before 108, older Samsung Internet).
-              'm-0 mt-auto max-h-[85vh] rounded-t-panel supports-[height:1dvh]:max-h-[85dvh] lg:m-auto lg:rounded-panel',
+              'fixed inset-x-0 top-auto bottom-0 m-0 max-h-[85vh] rounded-t-panel supports-[height:1dvh]:max-h-[85dvh] lg:top-0 lg:m-auto lg:rounded-panel',
               wide ? 'lg:max-w-2xl' : 'lg:max-w-[30rem]',
             ),
         className,

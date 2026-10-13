@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { ActionMenu } from '@/components/kit/menu';
+import { useState, type ReactNode, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
   ArrowDown,
@@ -91,6 +92,7 @@ export function RoutineEditorPage() {
   const prefs = usePreferences();
   const [renaming, setRenaming] = useState(false);
   const [menu, setMenu] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (training.status === 'loading') return <Skeleton className="mt-10 h-96" />;
@@ -165,7 +167,10 @@ export function RoutineEditorPage() {
           <IconButton
             label="Routine options"
             icon={<Ellipsis className="size-5" aria-hidden />}
-            onClick={() => setMenu(true)}
+            ref={menuButton}
+            aria-expanded={menu}
+            aria-haspopup="menu"
+            onClick={() => setMenu((m) => !m)}
           />
         </div>
       </header>
@@ -206,50 +211,52 @@ export function RoutineEditorPage() {
       {renaming ? (
         <RenameRoutineSheet routine={routine} onClose={() => setRenaming(false)} />
       ) : null}
-      <Sheet open={menu} onClose={() => setMenu(false)} title={routine.name}>
-        <ActionList
-          items={[
-            {
-              label: 'Rename or describe',
-              icon: <Pencil className="size-5" aria-hidden />,
-              onSelect: () => {
-                setMenu(false);
-                setRenaming(true);
-              },
+      <ActionMenu
+        open={menu}
+        onClose={() => setMenu(false)}
+        anchor={menuButton}
+        label={`Options for ${routine.name}`}
+        items={[
+          {
+            label: 'Rename or describe',
+            icon: <Pencil className="size-5" aria-hidden />,
+            onSelect: () => {
+              setMenu(false);
+              setRenaming(true);
             },
-            {
-              label: routine.isActive ? 'This is your active routine' : 'Make active',
-              hint: 'Home suggests its days, and adherence is measured against it.',
-              icon: <Star className="size-5" aria-hidden />,
-              disabled: routine.isActive,
-              onSelect: async () => {
-                await setActiveRoutine(db, routine.id);
-                setMenu(false);
-                toast(`${routine.name} is now active`);
-              },
+          },
+          {
+            label: routine.isActive ? 'This is your active routine' : 'Make active',
+            hint: 'Home suggests its days, and adherence is measured against it.',
+            icon: <Star className="size-5" aria-hidden />,
+            disabled: routine.isActive,
+            onSelect: async () => {
+              await setActiveRoutine(db, routine.id);
+              setMenu(false);
+              toast(`${routine.name} is now active`);
             },
-            {
-              label: 'Duplicate routine',
-              icon: <Copy className="size-5" aria-hidden />,
-              onSelect: async () => {
-                const copy = await duplicateRoutine(db, routine.id);
-                setMenu(false);
-                toast('Copy created');
-                navigate(`/routines/${copy.id}`);
-              },
+          },
+          {
+            label: 'Duplicate routine',
+            icon: <Copy className="size-5" aria-hidden />,
+            onSelect: async () => {
+              const copy = await duplicateRoutine(db, routine.id);
+              setMenu(false);
+              toast('Copy created');
+              navigate(`/routines/${copy.id}`);
             },
-            {
-              label: 'Delete routine',
-              icon: <Trash2 className="size-5" aria-hidden />,
-              danger: true,
-              onSelect: () => {
-                setMenu(false);
-                setConfirmDelete(true);
-              },
+          },
+          {
+            label: 'Delete routine',
+            icon: <Trash2 className="size-5" aria-hidden />,
+            danger: true,
+            onSelect: () => {
+              setMenu(false);
+              setConfirmDelete(true);
             },
-          ]}
-        />
-      </Sheet>
+          },
+        ]}
+      />
       <ConfirmSheet
         open={confirmDelete}
         title={`Delete ${routine.name}?`}
@@ -331,6 +338,7 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
   const prefs = usePreferences();
   const start = useStartWorkout();
   const [menu, setMenu] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const [renaming, setRenaming] = useState(false);
   const [picking, setPicking] = useState(false);
   const [reordering, setReordering] = useState(false);
@@ -409,7 +417,10 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
           <IconButton
             label={`Options for ${day.name}`}
             icon={<Ellipsis className="size-5" aria-hidden />}
-            onClick={() => setMenu(true)}
+            ref={menuButton}
+            aria-expanded={menu}
+            aria-haspopup="menu"
+            onClick={() => setMenu((m) => !m)}
           />
         </div>
       </div>
@@ -622,57 +633,59 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
         onClose={() => setOpenSlot(null)}
       />
       {renaming ? <RenameDaySheet day={day} onClose={() => setRenaming(false)} /> : null}
-      <Sheet open={menu} onClose={() => setMenu(false)} title={day.name}>
-        <ActionList
-          items={[
-            {
-              label: 'Rename day',
-              icon: <Pencil className="size-5" aria-hidden />,
-              onSelect: () => {
-                setMenu(false);
-                setRenaming(true);
-              },
+      <ActionMenu
+        open={menu}
+        onClose={() => setMenu(false)}
+        anchor={menuButton}
+        label={`Options for ${day.name}`}
+        items={[
+          {
+            label: 'Rename day',
+            icon: <Pencil className="size-5" aria-hidden />,
+            onSelect: () => {
+              setMenu(false);
+              setRenaming(true);
             },
-            {
-              label: 'Move earlier',
-              icon: <ArrowUp className="size-5" aria-hidden />,
-              disabled: index === 0,
-              onSelect: async () => {
-                await moveDay(db, day.id, -1);
-                setMenu(false);
-              },
+          },
+          {
+            label: 'Move earlier',
+            icon: <ArrowUp className="size-5" aria-hidden />,
+            disabled: index === 0,
+            onSelect: async () => {
+              await moveDay(db, day.id, -1);
+              setMenu(false);
             },
-            {
-              label: 'Move later',
-              icon: <ArrowDown className="size-5" aria-hidden />,
-              disabled: index === dayCount - 1,
-              onSelect: async () => {
-                await moveDay(db, day.id, 1);
-                setMenu(false);
-              },
+          },
+          {
+            label: 'Move later',
+            icon: <ArrowDown className="size-5" aria-hidden />,
+            disabled: index === dayCount - 1,
+            onSelect: async () => {
+              await moveDay(db, day.id, 1);
+              setMenu(false);
             },
-            {
-              label: 'Duplicate day',
-              hint: 'Copies the exercises and targets. Weekdays are left for you to pick.',
-              icon: <Copy className="size-5" aria-hidden />,
-              disabled: dayCount >= 7,
-              onSelect: async () => {
-                await duplicateDay(db, day.id);
-                setMenu(false);
-              },
+          },
+          {
+            label: 'Duplicate day',
+            hint: 'Copies the exercises and targets. Weekdays are left for you to pick.',
+            icon: <Copy className="size-5" aria-hidden />,
+            disabled: dayCount >= 7,
+            onSelect: async () => {
+              await duplicateDay(db, day.id);
+              setMenu(false);
             },
-            {
-              label: 'Delete day',
-              icon: <Trash2 className="size-5" aria-hidden />,
-              danger: true,
-              onSelect: () => {
-                setMenu(false);
-                setConfirmDelete(true);
-              },
+          },
+          {
+            label: 'Delete day',
+            icon: <Trash2 className="size-5" aria-hidden />,
+            danger: true,
+            onSelect: () => {
+              setMenu(false);
+              setConfirmDelete(true);
             },
-          ]}
-        />
-      </Sheet>
+          },
+        ]}
+      />
       <ConfirmSheet
         open={confirmDelete}
         title={`Delete ${day.name}?`}

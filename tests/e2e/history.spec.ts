@@ -74,8 +74,11 @@ test('deleting a workout removes it from history', async ({ page }) => {
   const before = await rows.count();
   await rows.first().click();
   await page.getByRole('button', { name: 'Workout options' }).click();
-  await page.getByRole('button', { name: /^Delete workout/ }).click();
-  await page.getByRole('button', { name: 'Delete workout' }).last().click();
+  // The options drop from the button as a menu, not a sheet from the bottom.
+  await expect(page.getByRole('menu', { name: /^Options for/ })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('menuitem', { name: /^Delete workout/ }).click();
+  await page.getByRole('button', { name: 'Delete workout' }).click();
   await expect(page).toHaveURL(/\/history$/);
   await expect(rows).toHaveCount(before - 1);
 });
@@ -124,4 +127,52 @@ test('body weight: add in lb, see it in kg, edit and delete', async ({ page }) =
   await page.getByRole('button', { name: 'Delete' }).last().click();
   await expect(page.getByText('Weigh-in deleted')).toBeVisible();
   await expect(page.getByRole('button', { name: /68\.5 kg/ })).toHaveCount(0);
+});
+
+test('a past workout can be started again from its page', async ({ page }) => {
+  await page.goto('/history');
+  await page.locator('a[href^="/history/"]').first().click();
+  await expect(page.getByRole('button', { name: 'Start this workout' })).toBeVisible();
+  await expect(page.locator('section[aria-labelledby]').first()).toBeVisible();
+  const name = (await page.getByRole('heading', { level: 1 }).innerText()).trim();
+  const exercises = await page
+    .locator('section[aria-labelledby]')
+    .getByRole('heading', { level: 2 })
+    .allInnerTexts();
+  await page.getByRole('button', { name: 'Start this workout' }).click();
+  await expect(page).toHaveURL(/\/workout$/);
+  await expect(page.getByRole('button', { name: 'Finish' })).toBeVisible();
+  await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+  const logged = page.locator('section[aria-labelledby^="ex-"]');
+  const expected = exercises.filter((e) => e !== 'Rest');
+  await expect(logged).toHaveCount(expected.length);
+  await expect(logged.first()).toContainText(expected[0]!);
+  // Every set starts empty, ready to log.
+  await expect(
+    logged
+      .first()
+      .getByRole('button', { name: /^Mark set \d+ done$/ })
+      .first(),
+  ).toBeVisible();
+});
+
+test('a workout makes story cards that save as 1080 × 1920 images', async ({ page }) => {
+  await page.goto('/history');
+  await page.locator('a[href^="/history/"]').first().click();
+  await page.getByRole('button', { name: 'Share', exact: true }).click();
+  const sheet = page.getByRole('dialog', { name: 'Share to your story' });
+  await expect(sheet.getByRole('img')).toBeVisible();
+  for (const name of ['Receipt', 'Total lifted']) {
+    await sheet.getByRole('button', { name, exact: true }).click();
+    await expect(sheet.getByRole('img')).toHaveAttribute('alt', new RegExp(name));
+    const size = await sheet.getByRole('img').evaluate(async (el) => {
+      const img = el as HTMLImageElement;
+      await img.decode();
+      return [img.naturalWidth, img.naturalHeight];
+    });
+    expect(size).toEqual([1080, 1920]);
+  }
+  const download = page.waitForEvent('download');
+  await sheet.getByRole('button', { name: 'Save image' }).click();
+  expect((await download).suggestedFilename()).toMatch(/^overload-total-.+\.png$/);
 });

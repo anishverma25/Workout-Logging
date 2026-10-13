@@ -1,15 +1,19 @@
+import { ShareSheet } from '@/features/share/ShareSheet';
+import { useStartWorkout } from '@/features/workout/StartWorkout';
+import { ActionMenu } from '@/components/kit/menu';
 import { formatRest, restIntervals, type RestInterval } from '@/domain/analytics/rest';
 import { RestCard } from '@/features/shared/RestCard';
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import {
   ArrowDownRight,
   ArrowUpRight,
-  ChevronRight,
   Ellipsis,
   Minus,
   NotebookPen,
   Pencil,
+  Play,
+  Share,
   Trash2,
   Trophy,
 } from 'lucide-react';
@@ -19,7 +23,6 @@ import {
   BottomSheet,
   Card,
   ConfirmSheet,
-  DestructiveButton,
   IconButton,
   IconTile,
   PrimaryButton,
@@ -58,6 +61,10 @@ export function WorkoutDetailPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const [menu, setMenu] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const startWorkout = useStartWorkout();
+  const [starting, setStarting] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -134,10 +141,35 @@ export function WorkoutDetailPage() {
           <IconButton
             label="Workout options"
             icon={<Ellipsis aria-hidden />}
-            onClick={() => setMenu(true)}
+            ref={menuButton}
+            aria-expanded={menu}
+            aria-haspopup="menu"
+            onClick={() => setMenu((m) => !m)}
           />
         }
       />
+
+      <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+        <PrimaryButton
+          block
+          icon={<Play className="fill-current" aria-hidden />}
+          loading={starting}
+          onClick={async () => {
+            setStarting(true);
+            try {
+              await startWorkout({ fromWorkoutId: workout.id });
+            } finally {
+              setStarting(false);
+            }
+          }}
+        >
+          Start this workout
+        </PrimaryButton>
+        <SecondaryButton icon={<Share aria-hidden />} onClick={() => setSharing(true)}>
+          Share
+        </SecondaryButton>
+      </div>
+      <ShareSheet workoutId={workout.id} open={sharing} onClose={() => setSharing(false)} />
 
       {summary ? (
         <dl className="grid grid-cols-2 gap-3 tab:grid-cols-4">
@@ -203,38 +235,32 @@ export function WorkoutDetailPage() {
         Tap a set to correct it. Records and analytics update automatically.
       </p>
 
-      <BottomSheet open={menu} onClose={() => setMenu(false)} title={workout.name}>
-        <div className="flex flex-col gap-4 pt-1">
-          <button
-            type="button"
-            onClick={() => {
+      <ActionMenu
+        open={menu}
+        onClose={() => setMenu(false)}
+        anchor={menuButton}
+        label={`Options for ${workout.name}`}
+        items={[
+          {
+            label: 'Rename and edit notes',
+            icon: <Pencil aria-hidden />,
+            onSelect: () => {
               setMenu(false);
               setEditing(true);
-            }}
-            className="pressable chrome flex min-h-14 w-full items-center gap-3 rounded-field text-left"
-          >
-            <IconTile icon={<Pencil />} />
-            <span className="type-headline min-w-0 flex-1 text-text-1">Rename and edit notes</span>
-            <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
-          </button>
-          <div>
-            <DestructiveButton
-              block
-              icon={<Trash2 aria-hidden />}
-              aria-describedby="delete-workout-hint"
-              onClick={() => {
-                setMenu(false);
-                setConfirmDelete(true);
-              }}
-            >
-              Delete workout
-            </DestructiveButton>
-            <p id="delete-workout-hint" className="type-meta mt-2 text-center text-text-2">
-              Removes it from history, records and analytics.
-            </p>
-          </div>
-        </div>
-      </BottomSheet>
+            },
+          },
+          {
+            label: 'Delete workout',
+            hint: 'Removes it from history, records and analytics.',
+            icon: <Trash2 aria-hidden />,
+            danger: true,
+            onSelect: () => {
+              setMenu(false);
+              setConfirmDelete(true);
+            },
+          },
+        ]}
+      />
       {editing ? (
         <EditWorkoutSheet
           name={workout.name}

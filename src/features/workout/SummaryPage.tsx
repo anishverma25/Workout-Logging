@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import {
   AlertTriangle,
@@ -9,11 +9,13 @@ import {
   Medal,
   Minus,
   RefreshCw,
+  Share,
   Trophy,
   type LucideIcon,
 } from 'lucide-react';
 import { useAccount, useSyncStatus } from '@/app/account';
-import { Card, IconTile, TextLink } from '@/components/kit';
+import { Card, IconTile, PrimaryButton, TextLink } from '@/components/kit';
+import { ShareSheet } from '@/features/share/ShareSheet';
 import { RestCard } from '@/features/shared/RestCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { ErrorState, Skeleton } from '@/components/ui/States';
@@ -53,6 +55,8 @@ export function SummaryPage() {
       training.data.profile?.trainingDays ?? null,
     ).filter((m) => m.workoutId === workoutId);
   }, [training.data, workoutId, prefs.weekStartsOn]);
+
+  const [sharing, setSharing] = useState(false);
 
   if (training.status === 'loading') return <Skeleton className="mt-10 h-96" />;
   if (training.status === 'error') return <ErrorState error={training.error} />;
@@ -105,6 +109,16 @@ export function SummaryPage() {
           </span>
         </p>
       ) : null}
+
+      <PrimaryButton
+        block
+        icon={<Share aria-hidden />}
+        onClick={() => setSharing(true)}
+        className="mt-5"
+      >
+        {summary.prs.length > 0 ? 'Share your PR' : 'Share to your story'}
+      </PrimaryButton>
+      <ShareSheet workoutId={session.workout.id} open={sharing} onClose={() => setSharing(false)} />
 
       {summary.prs.length > 0 ? <RecordsCard prs={summary.prs} unit={unit} /> : null}
 

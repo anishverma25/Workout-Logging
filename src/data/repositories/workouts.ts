@@ -180,6 +180,73 @@ export async function startWorkoutFromDay(
   });
 }
 
+/**
+ * Starts a workout again from one in history: the same exercises in the same order, as many
+ * sets of each type as were done, and the same targets. Sets start empty; the logger fills them
+ * from last time. It stays linked to its routine day when that day still exists, so it counts
+ * for the plan.
+ */
+export async function startWorkoutFromPast(
+  db: WorkoutDatabase,
+  pastWorkoutId: string,
+  now: Date = new Date(),
+): Promise<Workout> {
+  return db.transaction('rw', WORKOUT_TABLES(db), async () => {
+    await assertNoActiveWorkout(db);
+    const past = await db.workouts.get(pastWorkoutId);
+    if (!past || past.deletedAt !== null) throw new WorkoutError('That workout no longer exists.');
+    const day = past.routineDayId ? await db.routineDays.get(past.routineDayId) : undefined;
+    const routine = past.routineId ? await db.routines.get(past.routineId) : undefined;
+    const dayAlive = !!day && day.deletedAt === null;
+    const routineAlive = !!routine && routine.deletedAt === null;
+    const at = now.toISOString();
+    const workout: Workout = {
+      ...newRecordMeta('user', at),
+      name: past.name,
+      routineId: routineAlive && dayAlive ? routine.id : null,
+      routineDayId: routineAlive && dayAlive ? day.id : null,
+      status: 'in_progress',
+      startedAt: at,
+      endedAt: null,
+      pausedAt: null,
+      pausedMs: 0,
+      notes: null,
+      timeZone: timeZone(),
+    };
+    const workoutExercises: WorkoutExercise[] = [];
+    const sets: WorkoutSet[] = [];
+    let order = 0;
+    for (const old of await exercisesOf(db, past.id)) {
+      const exercise = await db.exercises.get(old.exerciseId);
+      if (!exercise || exercise.deletedAt !== null) continue;
+      const oldSets = (await setsOf(db, old.id)).filter((x) => x.completedAt !== null);
+      const types = oldSets.length > 0 ? oldSets.map((x) => x.setType) : null;
+      const count = types?.length ?? old.target?.sets ?? 3;
+      const we: WorkoutExercise = {
+        ...newRecordMeta('user', at),
+        workoutId: workout.id,
+        exerciseId: exercise.id,
+        exerciseName: exercise.name,
+        order: order++,
+        notes: old.notes,
+        target: old.target,
+        supersetGroup: old.supersetGroup ?? null,
+        angleDeg: old.angleDeg ?? null,
+      };
+      workoutExercises.push(we);
+      for (let i = 0; i < count; i++) {
+        sets.push(blankSet(workout.id, we.id, exercise.id, i, types?.[i] ?? 'working', at));
+      }
+    }
+    if (workoutExercises.length === 0)
+      throw new WorkoutError('None of the exercises in that workout exist any more.');
+    await putRecords(db, 'workouts', [workout]);
+    await putRecords(db, 'workoutExercises', workoutExercises);
+    await putRecords(db, 'sets', sets);
+    return workout;
+  });
+}
+
 export async function startEmptyWorkout(
   db: WorkoutDatabase,
   now: Date = new Date(),
