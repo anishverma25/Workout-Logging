@@ -16,7 +16,7 @@ export const COPY = {
   strengthTrendsEmpty: `Trends appear after ${MIN_TREND_SESSIONS} sessions of a lift in ${TREND_WINDOW_WEEKS} weeks.`,
   strengthTrendsDetail: `Estimated 1RM from your best set each session, last ${TREND_WINDOW_WEEKS} weeks`,
   stalledLiftsEmpty: `Needs ${STALL_MIN_SESSIONS + 1} sessions per lift.`,
-  stalledLiftsDetail: `Lifts with no heavier weight for the same reps, and no more reps at the same weight, for ${STALL_WEEKS} weeks or more across at least ${STALL_MIN_SESSIONS} sessions. Each comes with the likely reason, read from your sets.`,
+  stalledLiftsDetail: `No more weight or reps for ${STALL_WEEKS} weeks, over ${STALL_MIN_SESSIONS} sessions or more.`,
   goalProjectionEmpty: `A projection needs ${PROJECTION_MIN_POINTS} sessions over ${PROJECTION_MIN_WEEKS} weeks of recent data.`,
   frequencyEmpty: `Needs at least ${FREQUENCY_MIN_DAYS} days of history.`,
   recordsEmpty: 'Records appear when you beat an earlier best.',
