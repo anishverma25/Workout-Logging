@@ -444,6 +444,19 @@ describe('row level security', () => {
       server.asUser(userA, (tx) => insertRow(tx, 'profiles', { ...rows.profiles, height_cm: 20 })),
       /check constraint/,
     );
+    // Nutrition targets: 800 to 8,000 kcal and 20 to 500 g of protein.
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'profiles', { ...rows.profiles, calorie_target: 300 }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'profiles', { ...rows.profiles, protein_target_g: 900 }),
+      ),
+      /check constraint/,
+    );
     await expectError(
       server.asUser(userA, (tx) =>
         insertRow(tx, 'workouts', {

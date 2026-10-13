@@ -22,6 +22,7 @@ import {
   TRAINING_MET,
   TREND_DAYS,
 } from '@/domain/analytics/body';
+import { KCAL_PER_KG, RATE_MISMATCH } from '@/domain/analytics/targets';
 import {
   COMPOUND_SHORT,
   ISOLATION_SHORT,
@@ -706,6 +707,45 @@ export const SCIENCE: TopicGroup[] = [
         ],
         limits:
           'Total daily protein matters most. Not medical advice for kidney or other conditions.',
+      },
+      {
+        id: 'targets',
+        title: 'Checking your own targets',
+        evidence: 'nutritionTargets',
+        shows:
+          'What the calories and protein you set mean for your weight, your goal and your lifts, using your own weigh-ins.',
+        formulas: [
+          {
+            tex: String.raw`\Delta m_{\text{week}} = \dfrac{7\,(E_{\text{target}} - E_{\text{maint}})}{${KCAL_PER_KG}}`,
+            spoken: `Weekly change in kilograms is 7 times target calories minus maintenance, divided by ${KCAL_PER_KG}`,
+            where: `About ${KCAL_PER_KG} kcal per kg of body weight. A guide for the first weeks: as weight changes, the body adapts and the rate slows.`,
+          },
+          {
+            tex: String.raw`E_{\text{maint, real}} = E_{\text{target}} - \dfrac{r \times ${KCAL_PER_KG}}{7}`,
+            spoken: 'Real maintenance is the target minus the weekly rate times 7,700 divided by 7',
+            where:
+              'r is the weekly change of your 7-day average weight, from at least 6 weigh-ins over 2 weeks. It assumes you ate close to your target.',
+          },
+        ],
+        why: [
+          <>
+            The rate your calories predict is compared with the evidence for your goal: losing 0.5
+            to 1% of body weight a week keeps muscle while cutting (Helms 2014), and small surpluses
+            gain muscle with the least fat (Iraki 2019). Outside that range you get a target that
+            would land in the middle of it.
+          </>,
+          <>
+            When your weight trend differs from the prediction by more than {RATE_MISMATCH} kg a
+            week, your real maintenance is worked out from the trend, since the formulas are
+            averages and people differ by a few hundred calories. In a deficit, estimated 1RM
+            falling on most of your lifts over 8 weeks suggests the deficit is too big. Protein is
+            checked in g per kg against your goal's range (Morton 2018).
+          </>,
+        ],
+        forYou:
+          'Weigh in most mornings. After two weeks the trend tells you your real maintenance better than any formula.',
+        limits:
+          'Overload does not log food, so it assumes you eat close to your target. Water and food in the gut move daily weight by a kilo or more, which is why only the 7-day average is used.',
       },
       {
         id: 'composition',

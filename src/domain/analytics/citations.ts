@@ -371,6 +371,24 @@ export const CITATIONS: Record<string, Citation> = {
     doi: '10.1519/JSC.0000000000001272',
     openAccess: false,
   },
+  hall2008: {
+    id: 'hall2008',
+    authors: 'Hall KD',
+    year: 2008,
+    title: 'What is the required energy deficit per unit weight loss?',
+    journal: 'International Journal of Obesity 32(3):573-576',
+    doi: '10.1038/sj.ijo.0803720',
+    openAccess: false,
+  },
+  iraki2019: {
+    id: 'iraki2019',
+    authors: 'Iraki J, Fitschen P, Espinar S, Helms E',
+    year: 2019,
+    title: 'Nutrition Recommendations for Bodybuilders in the Off-Season: A Narrative Review',
+    journal: 'Sports 7(7):154',
+    doi: '10.3390/sports7070154',
+    openAccess: true,
+  },
   grgic2018rest: {
     id: 'grgic2018rest',
     authors: 'Grgic J, Schoenfeld BJ, Skrepnik M, Davies TB, Mikulic P',
@@ -424,6 +442,10 @@ export const METRIC_EVIDENCE: Record<
       'bell2023',
       'kassiano2022',
     ],
+  },
+  nutritionTargets: {
+    kind: 'evidence',
+    citations: ['hall2008', 'helms2014', 'iraki2019', 'morton2018'],
   },
   restAnalysis: {
     kind: 'evidence',
