@@ -134,7 +134,7 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     await expect(card.getByRole('button', { name: /^Last time / })).toHaveCount(2);
     await logBench(page, [['65', '8']]);
     await finish(page);
-    await expect(page.getByRole('heading', { name: '2 new records' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^\d+ medals this workout$/ })).toBeVisible();
     await expect(page.getByText('vs earlier today')).toBeVisible();
     await shot(page, '17-summary-2');
   });

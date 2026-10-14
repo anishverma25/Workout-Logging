@@ -235,14 +235,14 @@ export const CONTACT: LegalDocument = {
   slug: 'contact',
   title: 'Contact us',
   label: 'Contact',
-  summary: 'How to reach the person who builds Overload.',
+  summary: 'How to reach the Overload team, by email or on Instagram.',
   sections: [
     {
       heading: 'What to write to us about',
       items: [
         'Billing, plans and refund questions.',
         'Problems with your account or with signing in.',
-        'Bugs and ideas. You can also use the feedback page inside the app.',
+        'Bugs and ideas for new features: tell us what you want in Overload and we will build it as soon as we can. You can also use the feedback page inside the app.',
         'Requests about your data, such as a copy or a deletion.',
       ],
     },

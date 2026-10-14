@@ -1,4 +1,4 @@
-import { Trophy } from 'lucide-react';
+import { MedalIcon } from '@/features/medals/Medal';
 import { LineChart } from '@/components/charts/LineChart';
 import { BottomSheet } from '@/components/kit';
 import { useTrainingData } from '@/data/hooks';
@@ -80,7 +80,8 @@ function Body({ records: r, unit, onClose }: Props & { records: ExerciseRecords 
         <section className="mt-8">
           <h3 className="type-title text-text-1">Estimated 1RM by session</h3>
           <p className="type-meta mt-0.5 mb-3 text-text-2">
-            The most you could likely lift once, from your best set each session of 10 reps or fewer.
+            The most you could likely lift once, from your best set each session of 10 reps or
+            fewer.
           </p>
           <LineChart
             label={`Estimated 1RM for ${r.name} by session, in ${unit}`}
@@ -98,6 +99,44 @@ function Body({ records: r, unit, onClose }: Props & { records: ExerciseRecords 
             formatXLong={(x) => formatShortDate(new Date(x))}
             endLabel
           />
+        </section>
+      ) : null}
+
+      {r.setRecords.length > 0 ? (
+        <section className="mt-8">
+          <h3 className="type-title text-text-1">Set records</h3>
+          <p className="type-meta mt-0.5 mb-3 text-text-2">
+            The heaviest weight for each number of reps. No medal, just the number to beat when you
+            train in that rep range.
+          </p>
+          <div className="max-h-64 overflow-auto rounded-nested bg-surface-2">
+            <table className="type-body w-full">
+              <thead className="type-caption sticky top-0 bg-surface-2 text-left text-text-2">
+                <tr className="border-b-[0.5px] border-divider">
+                  <th scope="col" className="px-4 py-2.5 font-medium">
+                    Reps
+                  </th>
+                  <th scope="col" className="px-4 py-2.5 font-medium">
+                    Heaviest
+                  </th>
+                  <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                    Date
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="tabular divide-y-[0.5px] divide-divider">
+                {r.setRecords.map((row) => (
+                  <tr key={row.reps}>
+                    <td className="px-4 py-2.5 font-semibold text-text-1">{row.reps}</td>
+                    <td className="px-4 py-2.5 text-text-1">{formatWeight(row.weightKg, unit)}</td>
+                    <td className="type-meta px-4 py-2.5 text-right text-text-2">
+                      {formatShortDate(row.date)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       ) : null}
 
@@ -152,7 +191,7 @@ function Body({ records: r, unit, onClose }: Props & { records: ExerciseRecords 
               <li key={pr.id} className="flex min-h-14 items-center justify-between gap-3 py-3">
                 <span className="min-w-0">
                   <span className="type-headline flex items-center gap-2 text-text-1">
-                    <Trophy className="size-4 shrink-0 text-text-2" aria-hidden />
+                    <MedalIcon className="size-4" />
                     {PR_LABELS[pr.type]}
                   </span>
                   <span className="type-meta mt-0.5 block text-text-2">

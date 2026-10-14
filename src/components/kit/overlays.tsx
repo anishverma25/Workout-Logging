@@ -75,6 +75,8 @@ export function BottomSheet({
     if (open && !dialog.open) {
       opener.current = document.activeElement;
       dialog.showModal();
+      // The browser focuses the first control; a sheet can name a better one.
+      dialog.querySelector<HTMLElement>('[data-autofocus]')?.focus();
     }
     if (!open && dialog.open) dialog.close();
   }, [open]);

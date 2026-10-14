@@ -76,6 +76,20 @@
   --lime-dim: rgb(198 244 50 / 0.14);
   --on-lime: #000000;
 
+  /* Medals: records only (UI rules: lime stays the one accent everywhere else). */
+  --gold: #f5c542;
+  --gold-dim: rgb(245 197 66 / 0.16);
+  --on-gold: #000000;
+  /* Badge tiers: two stops each for the medallion's gradient. */
+  --tier-bronze-1: #e3a06e;
+  --tier-bronze-2: #9a5a30;
+  --tier-silver-1: #eef1f5;
+  --tier-silver-2: #9aa3ad;
+  --tier-gold-1: #ffdd73;
+  --tier-gold-2: #c9971a;
+  --tier-legend-1: #d8ff5a;
+  --tier-legend-2: #78a300;
+
   --focus: #ffffff;
   --warning: #ffb340;
   --danger: #ff453a;

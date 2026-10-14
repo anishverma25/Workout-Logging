@@ -1,3 +1,6 @@
+import { badgesEarnedIn, computeBadges } from '@/domain/achievements/badges';
+import { BadgeMedallion } from '@/features/medals/BadgeMedallion';
+import { MedalIcon } from '@/features/medals/Medal';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import {
@@ -6,22 +9,19 @@ import {
   ArrowUpRight,
   Check,
   HardDrive,
-  Medal,
   Minus,
   RefreshCw,
   Share,
-  Trophy,
   type LucideIcon,
 } from 'lucide-react';
 import { useAccount, useSyncStatus } from '@/app/account';
-import { Card, IconTile, PrimaryButton, TextLink } from '@/components/kit';
+import { Card, PrimaryButton, TextLink } from '@/components/kit';
 import { ShareSheet } from '@/features/share/ShareSheet';
 import { RestCard } from '@/features/shared/RestCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { ErrorState, Skeleton } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
 import { describeSync, type SyncTone } from '@/data/sync/describe';
-import { milestones } from '@/domain/analytics/milestones';
 import { formatRecordValue, PR_LABELS, type PersonalRecord } from '@/domain/analytics/prs';
 import { buildSessions } from '@/domain/analytics/sessions';
 import { summarizeWorkout, type ExerciseChange } from '@/domain/workout/summary';
@@ -45,15 +45,19 @@ export function SummaryPage() {
     [training.data, workoutId],
   );
   // Milestones this workout reached: counted over all history up to and including it.
-  const reached = useMemo(() => {
+  // Badges this workout unlocked: counted over all history up to and including it.
+  const unlocked = useMemo(() => {
     if (!training.data || !workoutId) return [];
-    return milestones(
-      buildSessions(training.data),
-      training.data.bodyWeights,
-      new Date(),
-      prefs.weekStartsOn,
-      training.data.profile?.trainingDays ?? null,
-    ).filter((m) => m.workoutId === workoutId);
+    return badgesEarnedIn(
+      computeBadges({
+        sessions: buildSessions(training.data),
+        exercises: training.data.exercises,
+        bodyWeights: training.data.bodyWeights,
+        now: new Date(),
+        weekStartsOn: prefs.weekStartsOn,
+      }),
+      workoutId,
+    );
   }, [training.data, workoutId, prefs.weekStartsOn]);
 
   const [sharing, setSharing] = useState(false);
@@ -122,25 +126,33 @@ export function SummaryPage() {
 
       {summary.prs.length > 0 ? <RecordsCard prs={summary.prs} unit={unit} /> : null}
 
-      {reached.length > 0 ? (
+      {unlocked.length > 0 ? (
         <section
-          aria-label="Milestones reached"
+          aria-labelledby="summary-badges"
           className="mt-4 rounded-panel border border-border bg-surface p-5"
         >
-          <div className="flex items-center gap-3">
-            <IconTile icon={<Medal />} />
-            <p className="type-headline text-text-1">
-              {reached.length === 1 ? 'Milestone' : `${reached.length} milestones`}
-            </p>
-          </div>
+          <h2 id="summary-badges" className="type-title text-text-1">
+            {unlocked.length === 1 ? 'Badge unlocked' : `${unlocked.length} badges unlocked`}
+          </h2>
           <ul className="mt-3 flex flex-col gap-3">
-            {reached.map((m) => (
-              <li key={m.id}>
-                <p className="type-title text-text-1">{m.title}</p>
-                <p className="type-meta mt-0.5 text-text-2">{m.detail}</p>
+            {unlocked.map((b) => (
+              <li key={b.id} className="flex items-center gap-3">
+                <BadgeMedallion badge={b} className="size-16" />
+                <span className="min-w-0">
+                  <span className="type-headline block text-text-1">{b.title}</span>
+                  <span className="type-meta block text-text-2">{b.goal}</span>
+                </span>
               </li>
             ))}
           </ul>
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <TextLink small onClick={() => setSharing(true)}>
+              Share a badge
+            </TextLink>
+            <TextLink small to="/badges" chevron>
+              All badges
+            </TextLink>
+          </div>
         </section>
       ) : null}
 
@@ -245,20 +257,25 @@ function RecordsCard({ prs, unit }: { prs: PersonalRecord[]; unit: WeightUnit })
     <section
       ref={ref}
       aria-labelledby="summary-records"
-      className="mt-4 rounded-panel bg-lime-dim p-5"
+      className="mt-4 rounded-panel border border-gold/30 bg-gold-dim p-5"
     >
       <div className="flex items-center gap-3">
-        <IconTile icon={<Trophy />} pro />
+        <span className="flex size-11 items-center justify-center rounded-full bg-black/30">
+          <MedalIcon className="size-7" />
+        </span>
         <h2 id="summary-records" className="type-title text-text-1">
-          {pluralize(prs.length, 'new record')}
+          {pluralize(prs.length, 'medal')} this workout
         </h2>
       </div>
       <ul className="mt-3 divide-y-[0.5px] divide-divider">
         {prs.map((pr) => (
           <li key={pr.id} className="flex items-start justify-between gap-3 py-3">
-            <span className="min-w-0">
-              <span className="type-headline block truncate text-text-1">{pr.exerciseName}</span>
-              <span className="type-meta mt-0.5 block text-text-2">{PR_LABELS[pr.type]}</span>
+            <span className="flex min-w-0 items-start gap-2.5">
+              <MedalIcon className="mt-0.5 size-5" />
+              <span className="min-w-0">
+                <span className="type-headline block truncate text-text-1">{pr.exerciseName}</span>
+                <span className="type-meta mt-0.5 block text-text-2">{PR_LABELS[pr.type]}</span>
+              </span>
             </span>
             <span className="shrink-0 text-right">
               <span className="type-headline tabular block text-text-1">

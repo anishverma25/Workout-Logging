@@ -227,6 +227,13 @@ function WorkoutSection() {
           onChange={(v) => setDeviceSetting('keepAwake', v)}
         />
       </PanelRow>
+      <PanelRow title="Live record alerts" detail="A gold medal the moment a set beats your best.">
+        <Switch
+          label="Live record alerts"
+          checked={device.liveRecords}
+          onChange={(v) => setDeviceSetting('liveRecords', v)}
+        />
+      </PanelRow>
     </Panel>
   );
 }

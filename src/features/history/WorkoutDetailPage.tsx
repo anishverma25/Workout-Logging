@@ -1,3 +1,4 @@
+import { MedalIcon } from '@/features/medals/Medal';
 import { ShareSheet } from '@/features/share/ShareSheet';
 import { useStartWorkout } from '@/features/workout/StartWorkout';
 import { ActionMenu } from '@/components/kit/menu';
@@ -15,11 +16,9 @@ import {
   Play,
   Share,
   Trash2,
-  Trophy,
 } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import {
-  Badge,
   BottomSheet,
   Card,
   ConfirmSheet,
@@ -536,9 +535,10 @@ function SetLine({
           <span className="mt-1 flex flex-col gap-1 pl-[34px]">
             {prs.length > 0 ? (
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <Badge tone="lime" icon={<Trophy aria-hidden />}>
-                  Record
-                </Badge>
+                <span className="type-caption inline-flex h-6 items-center gap-1 rounded-full bg-gold-dim pr-2.5 pl-1.5 font-semibold text-gold">
+                  <MedalIcon className="size-4" />
+                  {prs.length > 1 ? `${prs.length} medals` : 'Medal'}
+                </span>
                 <span className="type-meta tabular text-text-2">
                   {prs
                     .map((p) => `${PR_LABELS[p.type]} ${formatRecordValue(p.type, p.value, unit)}`)

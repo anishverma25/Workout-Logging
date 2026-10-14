@@ -19,7 +19,9 @@ import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { EmptyState } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
-import { useProfile } from '@/data/hooks';
+import { useBestsBefore, useProfile } from '@/data/hooks';
+import { medalsForSet } from '@/domain/analytics/medals';
+import { MedalAlert, type MedalNews } from './MedalAlert';
 import { useDeviceSettings } from '@/app/deviceSettings';
 import { useWakeLock } from './useWakeLock';
 import type { WorkoutExerciseView, WorkoutView } from '@/data/repositories/workoutView';
@@ -71,6 +73,18 @@ export function ActiveWorkout({ view, prefs }: Props) {
   const [readinessHidden, setReadinessHidden] = useState(false);
   const [editingReadiness, setEditingReadiness] = useState(false);
   const paused = workout.pausedAt !== null;
+  // Live records: each finished set is compared with the bests from before this workout.
+  const bests = useBestsBefore(workout.id);
+  const bestsRef = useRef(bests);
+  useEffect(() => {
+    bestsRef.current = bests;
+  });
+  const liveRecordsRef = useRef(device.liveRecords);
+  useEffect(() => {
+    liveRecordsRef.current = device.liveRecords;
+  });
+  const [medal, setMedal] = useState<MedalNews | null>(null);
+  const clearMedal = useCallback(() => setMedal(null), []);
 
   const allSets = exercises.flatMap((e) => e.sets);
   // Rest actually taken before each finished set, shown on the set and saved with the workout.
@@ -141,6 +155,18 @@ export function ActiveWorkout({ view, prefs }: Props) {
 
   const onSetCompleted = useCallback(
     (set: WorkoutSet, ex: WorkoutExerciseView) => {
+      if (liveRecordsRef.current && bestsRef.current && set.setType !== 'warmup') {
+        const won = medalsForSet(
+          set,
+          ex.exercise,
+          ex.sets.map((x) => (x.id === set.id ? set : x)),
+          bestsRef.current.get(ex.workoutExercise.exerciseId),
+        );
+        if (won.length > 0) {
+          haptic('success');
+          setMedal({ key: Date.now(), exerciseName: ex.workoutExercise.exerciseName, medals: won });
+        }
+      }
       if (ex.sets.every((x) => x.id === set.id || x.completedAt !== null)) {
         scrollToNext(ex.workoutExercise.id);
       }
@@ -195,6 +221,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
 
   return (
     <div className="mx-auto max-w-[640px] pb-32">
+      <MedalAlert news={medal} unit={prefs.weightUnit} onDone={clearMedal} />
       <header className="chrome sticky top-0 z-20 -mx-4 border-b-[0.5px] border-divider bg-bg px-4 pt-[max(0.5rem,env(safe-area-inset-top))] lg:-mx-10 lg:px-10 lg:pt-5">
         <div className="flex min-h-14 items-center gap-2">
           <button

@@ -1,3 +1,4 @@
+import { WhatsNew } from './WhatsNew';
 import { Suspense, type MouseEvent } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { FlaskConical } from 'lucide-react';
@@ -34,6 +35,7 @@ export function AppShell() {
           className="mx-auto w-full max-w-[calc(70rem+4rem)] px-[max(1rem,env(safe-area-inset-left))] pt-safe pb-[calc(6rem+env(safe-area-inset-bottom))] outline-none tab:px-6 lg:px-8 lg:pb-16"
         >
           <AppNotices />
+          <WhatsNew />
           <StartWorkoutProvider>
             <Suspense fallback={null}>
               <div key={pathname} className="page-in">

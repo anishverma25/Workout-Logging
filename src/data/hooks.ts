@@ -2,7 +2,8 @@ import { liveQuery } from 'dexie';
 import { useEffect, useState } from 'react';
 import { DEFAULT_PREFERENCES, type Exercise, type Preferences } from '@/domain/models/schemas';
 import { exerciseUsage, type ExerciseUsage } from '@/domain/exercises/search';
-import type { TrainingData } from '@/domain/analytics/sessions';
+import { buildSessions, type TrainingData } from '@/domain/analytics/sessions';
+import { bestsBefore, type Bests } from '@/domain/analytics/medals';
 import { db, guestDatabase } from './db';
 import { migrationHandled, summarizeGuestData, type GuestDataSummary } from './sync/migrate';
 import { getDemoStatus, type DemoStatus } from './demo/service';
@@ -161,4 +162,23 @@ export function useGuestImport(userId: string | null) {
       handled: await migrationHandled(guest, userId),
     };
   }, [userId]);
+}
+
+/**
+ * All-time bests per exercise before a workout, read once when it opens (not live: the sets
+ * logged during the workout are compared against these, not folded into them).
+ */
+export function useBestsBefore(workoutId: string): Map<string, Bests> | null {
+  const [state, setState] = useState<{ id: string; bests: Map<string, Bests> } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void loadTrainingData(db).then((data) => {
+      if (!cancelled)
+        setState({ id: workoutId, bests: bestsBefore(buildSessions(data), workoutId) });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [workoutId]);
+  return state && state.id === workoutId ? state.bests : null;
 }

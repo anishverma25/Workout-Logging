@@ -59,7 +59,16 @@ function highlightFor(
   exercises: Map<string, Exercise>,
 ): Highlight {
   // The headline record: big free-weight compounds first, then actual load before estimates.
-  const order = { load: 0, e1rm: 1, reps: 2, duration: 3, distance: 3 } as const;
+  const order: Record<PersonalRecord['type'], number> = {
+    load: 0,
+    e1rm: 1,
+    reps: 2,
+    duration: 3,
+    distance: 3,
+    set_volume: 4,
+    session_volume: 5,
+    session_reps: 5,
+  };
   const liftRank = (id: string) => {
     const e = exercises.get(id);
     if (!e) return 9;

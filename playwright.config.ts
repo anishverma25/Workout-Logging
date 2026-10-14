@@ -6,6 +6,12 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const executablePath = process.env.PW_CHROMIUM_PATH;
 
+/** The release announcement is marked seen, so it never covers what a test is doing. */
+const seenAnnouncement = (origin: string) => ({
+  cookies: [],
+  origins: [{ origin, localStorage: [{ name: 'overload.whatsNew', value: '2026-10-badges' }] }],
+});
+
 export default defineConfig({
   testDir: 'tests/e2e',
   fullyParallel: true,
@@ -14,6 +20,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   use: {
     baseURL: 'http://localhost:5175',
+    storageState: seenAnnouncement('http://localhost:5175'),
     timezoneId: 'Asia/Kolkata',
     trace: 'retain-on-failure',
     ...(executablePath ? { launchOptions: { executablePath } } : {}),
@@ -29,7 +36,11 @@ export default defineConfig({
       // The production build (service worker, security headers), served by `vite preview`.
       name: 'pwa',
       testMatch: /pwa\.spec\.ts/,
-      use: { ...devices['Pixel 7'], baseURL: 'http://localhost:4175' },
+      use: {
+        ...devices['Pixel 7'],
+        baseURL: 'http://localhost:4175',
+        storageState: seenAnnouncement('http://localhost:4175'),
+      },
     },
   ],
   webServer: [

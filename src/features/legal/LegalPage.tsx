@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router';
-import { Mail, MapPin, Phone } from 'lucide-react';
+import { AtSign, Mail, MapPin } from 'lucide-react';
 import { BrandMark } from '@/app/layout/BrandMark';
 import { APP_NAME } from '@/app/navigation';
 import { cn } from '@/lib/cn';
@@ -9,8 +9,8 @@ import {
   LAST_UPDATED,
   OWNER_NAME,
   SUPPORT_EMAIL,
-  SUPPORT_PHONE,
-  SUPPORT_PHONE_TEL,
+  INSTAGRAM_HANDLE,
+  INSTAGRAM_URL,
 } from './contact';
 
 /** Small row of links to the four legal pages. Used in the page footer, More, Pro and sign up. */
@@ -128,14 +128,16 @@ export function ContactPage() {
           </span>
         </li>
         <li className="flex items-start gap-3">
-          <Phone className="mt-0.5 size-5 shrink-0 text-text-2" aria-hidden />
+          <AtSign className="mt-0.5 size-5 shrink-0 text-text-2" aria-hidden />
           <span>
-            <span className="type-meta block text-text-2">Phone</span>
+            <span className="type-meta block text-text-2">Instagram</span>
             <a
-              href={`tel:${SUPPORT_PHONE_TEL}`}
-              className="type-headline tabular block text-text-1 underline"
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="type-headline block text-text-1 underline"
             >
-              {SUPPORT_PHONE}
+              {INSTAGRAM_HANDLE}
             </a>
           </span>
         </li>

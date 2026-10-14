@@ -27,14 +27,16 @@ for (const { path, title } of PAGES) {
 test('the contact page shows who runs Overload and how to reach them', async ({ page }) => {
   await page.goto('/contact');
   await expect(page.getByText('Anish Verma, India', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'anish.verma.2505@gmail.com' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'overloadgymofficial@gmail.com' })).toHaveAttribute(
     'href',
-    'mailto:anish.verma.2505@gmail.com',
+    'mailto:overloadgymofficial@gmail.com',
   );
-  await expect(page.getByRole('link', { name: '+91 82768 81982' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: '@overloadxgym' })).toHaveAttribute(
     'href',
-    'tel:+918276881982',
+    'https://www.instagram.com/overloadxgym/',
   );
+  // No personal email or phone number.
+  await expect(page.getByText(/anish\.verma|82768/)).toHaveCount(0);
 });
 
 test('the refund policy says plainly that payments are not refunded', async ({ page }) => {

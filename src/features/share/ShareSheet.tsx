@@ -3,11 +3,15 @@ import { Download, Share } from 'lucide-react';
 import { BottomSheet, ChipGroup, PrimaryButton, SecondaryButton } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import { usePreferences, useTrainingData } from '@/data/hooks';
-import { prCard, streakCard, workoutCard } from '@/domain/share/cards';
+import { badgesEarnedIn, computeBadges } from '@/domain/achievements/badges';
+import { buildSessions } from '@/domain/analytics/sessions';
+import { bestBadge, medalsCard, prCard, streakCard, workoutCard } from '@/domain/share/cards';
 import {
   CARD_H,
   CARD_W,
   canDrawTotal,
+  drawBadgeCard,
+  drawMedalsCard,
   drawPrCard,
   drawReceiptCard,
   drawStreakCard,
@@ -16,22 +20,29 @@ import {
   type CardContext,
 } from './draw';
 
-type Kind = 'pr' | 'receipt' | 'total' | 'streak';
+type Kind = 'pr' | 'medals' | 'badge' | 'receipt' | 'total' | 'streak';
 
 const LABELS: Record<Kind, string> = {
   pr: 'New PR',
+  medals: 'Medals',
+  badge: 'Badge',
   receipt: 'Receipt',
   total: 'Total lifted',
   streak: 'Streak',
 };
 
-/** Story cards for a workout: pick one, see it, then share it or save the image. */
+/**
+ * Story cards: for a workout, pick one and share it or save the image; for a badge
+ * (`badgeId`), its own card.
+ */
 export function ShareSheet({
   workoutId,
+  badgeId,
   open,
   onClose,
 }: {
-  workoutId: string;
+  workoutId: string | null;
+  badgeId?: string;
   open: boolean;
   onClose: () => void;
 }) {
@@ -42,12 +53,12 @@ export function ShareSheet({
       title="Share to your story"
       subtitle="Instagram story or WhatsApp status"
     >
-      {open ? <ShareForm workoutId={workoutId} /> : null}
+      {open ? <ShareForm workoutId={workoutId} badgeId={badgeId} /> : null}
     </BottomSheet>
   );
 }
 
-function ShareForm({ workoutId }: { workoutId: string }) {
+function ShareForm({ workoutId, badgeId }: { workoutId: string | null; badgeId?: string }) {
   const training = useTrainingData();
   const prefs = usePreferences();
   const toast = useToast();
@@ -55,24 +66,42 @@ function ShareForm({ workoutId }: { workoutId: string }) {
 
   const cards = useMemo(() => {
     if (!data) return null;
-    const workout = workoutCard(data, workoutId);
-    if (!workout) return null;
+    const now = new Date();
+    const badges = computeBadges({
+      sessions: buildSessions(data),
+      exercises: data.exercises,
+      bodyWeights: data.bodyWeights,
+      now,
+      weekStartsOn: prefs.weekStartsOn,
+    });
+    const workout = workoutId ? workoutCard(data, workoutId) : null;
     return {
       workout,
-      pr: prCard(data, workoutId),
-      streak: streakCard(data, new Date(), prefs.weekStartsOn),
+      pr: workoutId ? prCard(data, workoutId) : null,
+      medals: workoutId ? medalsCard(data, workoutId) : null,
+      streak: streakCard(data, now, prefs.weekStartsOn),
+      badge: badgeId
+        ? (badges.find((b) => b.id === badgeId && b.earnedAt) ?? null)
+        : workoutId
+          ? (bestBadge(badgesEarnedIn(badges, workoutId)) ?? null)
+          : null,
     };
-  }, [data, workoutId, prefs.weekStartsOn]);
+  }, [data, workoutId, badgeId, prefs.weekStartsOn]);
 
   const kinds = useMemo<Kind[]>(() => {
     if (!cards) return [];
+    if (badgeId) return cards.badge ? ['badge'] : [];
     const out: Kind[] = [];
     if (cards.pr) out.push('pr');
-    out.push('receipt');
-    if (canDrawTotal(cards.workout)) out.push('total');
+    if (cards.medals && cards.medals.medals.length >= 2) out.push('medals');
+    if (cards.badge) out.push('badge');
+    if (cards.workout) {
+      out.push('receipt');
+      if (canDrawTotal(cards.workout)) out.push('total');
+    }
     if (cards.streak && cards.streak.weeks >= 2) out.push('streak');
     return out;
-  }, [cards]);
+  }, [cards, badgeId]);
 
   const [picked, setPicked] = useState<Kind | null>(null);
   const kind = picked ?? kinds[0] ?? null;
@@ -96,11 +125,14 @@ function ShareForm({ workoutId }: { workoutId: string }) {
       canvas.height = CARD_H;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-      if (kind === 'pr' && cards.pr) drawPrCard(ctx, cards.pr, cards.workout, context);
-      else if (kind === 'total') drawTotalCard(ctx, cards.workout, context);
+      if (kind === 'pr' && cards.pr && cards.workout)
+        drawPrCard(ctx, cards.pr, cards.workout, context);
+      else if (kind === 'medals' && cards.medals) drawMedalsCard(ctx, cards.medals, context);
+      else if (kind === 'badge' && cards.badge) drawBadgeCard(ctx, cards.badge, context);
+      else if (kind === 'total' && cards.workout) drawTotalCard(ctx, cards.workout, context);
       else if (kind === 'streak' && cards.streak)
         drawStreakCard(ctx, cards.streak, context, prefs.weekStartsOn);
-      else drawReceiptCard(ctx, cards.workout, context);
+      else if (cards.workout) drawReceiptCard(ctx, cards.workout, context);
       const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
       if (!blob || cancelled) return;
       made = URL.createObjectURL(blob);
@@ -118,7 +150,7 @@ function ShareForm({ workoutId }: { workoutId: string }) {
     return <p className="type-body py-6 text-text-2">This workout cannot be shared.</p>;
 
   const ready = image && image.kind === kind ? image : null;
-  const fileName = `overload-${kind}-${workoutId.slice(0, 8)}.png`;
+  const fileName = `overload-${kind}-${(badgeId ?? workoutId ?? 'card').slice(0, 12)}.png`;
   const file = ready ? new File([ready.blob], fileName, { type: 'image/png' }) : null;
   const canShareFile =
     !!file && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] });
