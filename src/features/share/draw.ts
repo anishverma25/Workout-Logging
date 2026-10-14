@@ -717,7 +717,8 @@ export function drawMedalsCard(ctx: Ctx, m: MedalsCard, c: CardContext) {
   text(ctx, word, wordsX, SAFE_TOP + 210, font(800, ws, TIGHT), C.white);
   text(ctx, 'in one workout.', wordsX, SAFE_TOP + 290, font(800, ws, TIGHT), C.white);
 
-  const shown = m.medals.slice(0, 7);
+  // Six rows and a 'more' line still clear the footer.
+  const shown = m.medals.slice(0, 6);
   // The list sits in the middle of the space between the headline and the footer.
   const listH = shown.length * 132 + (m.medals.length > shown.length ? 60 : 0);
   const top = SAFE_TOP + 400;
