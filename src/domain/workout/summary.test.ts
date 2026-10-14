@@ -82,7 +82,10 @@ describe('workout summary', () => {
     expect(s.prs.map((p) => `${p.exerciseName}:${p.type}`).sort()).toEqual([
       'Barbell bench press:e1rm',
       'Barbell bench press:load',
+      'Barbell bench press:session_volume',
+      'Barbell bench press:set_volume',
       'Pull-up:reps',
+      'Pull-up:session_reps',
     ]);
     expect(summarizeWorkout(data, data.workouts[0]!.id)!.prs).toEqual([]);
   });

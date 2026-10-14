@@ -45,6 +45,9 @@
   --color-text-3: var(--text-3);
   --color-lime: var(--lime);
   --color-lime-dim: var(--lime-dim);
+  --color-gold: var(--gold);
+  --color-gold-dim: var(--gold-dim);
+  --color-on-gold: var(--on-gold);
   --color-on-lime: var(--on-lime);
   --color-focus: var(--focus);
   --color-warning: var(--warning);
@@ -547,6 +550,22 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .kit-menu {
+    animation: none;
+  }
+}
+
+/* Live record alert: drops in from the top and settles. */
+@keyframes medal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+}
+.medal-in {
+  animation: medal-in 260ms var(--ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  .medal-in {
     animation: none;
   }
 }

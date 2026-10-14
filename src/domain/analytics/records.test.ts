@@ -76,6 +76,13 @@ describe('exercise records', () => {
     ]);
   });
 
+  it('keeps set records: the heaviest weight for each rep count', () => {
+    const rows = of(BENCH).setRecords.map((r) => [r.reps, r.weightKg]);
+    expect(rows.map((r) => r[0])).toEqual([...rows.map((r) => r[0])].sort((a, b) => a! - b!));
+    expect(rows).toContainEqual([5, 85]);
+    expect(rows).toContainEqual([9, 80]);
+  });
+
   it('tracks most reps for bodyweight and added load for weighted bodyweight moves', () => {
     expect(of(PULL_UP).mostReps?.value).toBe(11);
     expect(of(PULL_UP).heaviest).toBeNull();
@@ -93,7 +100,7 @@ describe('exercise records', () => {
     const types = of(BENCH)
       .history.map((h) => h.type)
       .sort();
-    expect(types).toEqual(['e1rm', 'load']);
+    expect(types).toEqual(['e1rm', 'load', 'set_volume']);
   });
 });
 

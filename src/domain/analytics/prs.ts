@@ -4,7 +4,15 @@ import type { Exercise } from '../models/schemas';
 import { performanceByExercise } from './performance';
 import type { Session } from './sessions';
 
-export type PrType = 'e1rm' | 'load' | 'reps' | 'duration' | 'distance';
+export type PrType =
+  | 'e1rm'
+  | 'load'
+  | 'set_volume'
+  | 'session_volume'
+  | 'reps'
+  | 'session_reps'
+  | 'duration'
+  | 'distance';
 
 export interface PersonalRecord {
   id: string;
@@ -14,7 +22,7 @@ export interface PersonalRecord {
   workoutId: string;
   setId: string;
   date: Date;
-  /** e1RM or load in kg, reps for bodyweight, seconds for timed, metres for distance. */
+  /** kg for e1RM, load and volume; reps; seconds for timed; metres for distance. */
   value: number;
   previousBest: number;
   weightKg: number | null;
@@ -24,7 +32,10 @@ export interface PersonalRecord {
 export const PR_LABELS: Record<PrType, string> = {
   e1rm: 'Estimated 1RM',
   load: 'Heaviest load',
+  set_volume: 'Best set volume',
+  session_volume: 'Best session volume',
   reps: 'Most reps',
+  session_reps: 'Most session reps',
   duration: 'Longest time',
   distance: 'Longest distance',
 };
@@ -50,6 +61,9 @@ export function detectPersonalRecords(
     let bestReps: number | null = null;
     let bestDuration: number | null = null;
     let bestDistance: number | null = null;
+    let bestSetVolume: number | null = null;
+    let bestSessionVolume: number | null = null;
+    let bestSessionReps: number | null = null;
     const name = nameById.get(exerciseId) ?? 'Exercise';
 
     for (const perf of history) {
@@ -107,6 +121,39 @@ export function detectPersonalRecords(
         }
         bestReps = Math.max(bestReps ?? 0, perf.mostReps);
       }
+      if (perf.bestSetVolume !== null && perf.bestSetVolume > 0 && perf.bestSetVolumeSet) {
+        if (bestSetVolume !== null && perf.bestSetVolume > bestSetVolume + EPSILON) {
+          push(
+            'set_volume',
+            perf.bestSetVolume,
+            bestSetVolume,
+            perf.bestSetVolumeSet.id,
+            perf.bestSetVolumeSet.weightKg,
+            perf.bestSetVolumeSet.reps,
+          );
+        }
+        bestSetVolume = Math.max(bestSetVolume ?? 0, perf.bestSetVolume);
+      }
+      if (perf.sessionVolume !== null && perf.sessionVolume > 0 && perf.bestSetVolumeSet) {
+        if (bestSessionVolume !== null && perf.sessionVolume > bestSessionVolume + EPSILON) {
+          // The session's record sits on its biggest set.
+          push(
+            'session_volume',
+            perf.sessionVolume,
+            bestSessionVolume,
+            perf.bestSetVolumeSet.id,
+            null,
+            null,
+          );
+        }
+        bestSessionVolume = Math.max(bestSessionVolume ?? 0, perf.sessionVolume);
+      }
+      if (perf.sessionReps !== null && perf.mostRepsSet) {
+        if (bestSessionReps !== null && perf.sessionReps > bestSessionReps) {
+          push('session_reps', perf.sessionReps, bestSessionReps, perf.mostRepsSet.id, null, null);
+        }
+        bestSessionReps = Math.max(bestSessionReps ?? 0, perf.sessionReps);
+      }
       if (perf.longestDuration !== null && perf.longestDurationSet) {
         if (bestDuration !== null && perf.longestDuration > bestDuration) {
           push(
@@ -146,7 +193,16 @@ export function detectPersonalRecords(
 export function featuredRecord(records: PersonalRecord[]): PersonalRecord | null {
   const newest = records[0];
   if (!newest) return null;
-  const priority: Record<PrType, number> = { load: 0, e1rm: 1, reps: 2, duration: 3, distance: 3 };
+  const priority: Record<PrType, number> = {
+    load: 0,
+    e1rm: 1,
+    reps: 2,
+    duration: 3,
+    distance: 3,
+    set_volume: 4,
+    session_volume: 5,
+    session_reps: 5,
+  };
   const sameSession = records.filter((r) => r.workoutId === newest.workoutId);
   return (
     [...sameSession].sort((a, b) => priority[a.type] - priority[b.type] || b.value - a.value)[0] ??
@@ -158,6 +214,7 @@ export function featuredRecord(records: PersonalRecord[]): PersonalRecord | null
 export function formatRecordValue(type: PrType, value: number, unit: WeightUnit): string {
   switch (type) {
     case 'reps':
+    case 'session_reps':
       return `${value} reps`;
     case 'duration':
       return formatClock(value);

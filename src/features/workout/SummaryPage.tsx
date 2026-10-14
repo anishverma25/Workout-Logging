@@ -1,3 +1,4 @@
+import { MedalIcon } from '@/features/medals/Medal';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import {
@@ -10,7 +11,6 @@ import {
   Minus,
   RefreshCw,
   Share,
-  Trophy,
   type LucideIcon,
 } from 'lucide-react';
 import { useAccount, useSyncStatus } from '@/app/account';
@@ -245,20 +245,25 @@ function RecordsCard({ prs, unit }: { prs: PersonalRecord[]; unit: WeightUnit })
     <section
       ref={ref}
       aria-labelledby="summary-records"
-      className="mt-4 rounded-panel bg-lime-dim p-5"
+      className="mt-4 rounded-panel border border-gold/30 bg-gold-dim p-5"
     >
       <div className="flex items-center gap-3">
-        <IconTile icon={<Trophy />} pro />
+        <span className="flex size-11 items-center justify-center rounded-full bg-black/30">
+          <MedalIcon className="size-7" />
+        </span>
         <h2 id="summary-records" className="type-title text-text-1">
-          {pluralize(prs.length, 'new record')}
+          {pluralize(prs.length, 'medal')} this workout
         </h2>
       </div>
       <ul className="mt-3 divide-y-[0.5px] divide-divider">
         {prs.map((pr) => (
           <li key={pr.id} className="flex items-start justify-between gap-3 py-3">
-            <span className="min-w-0">
-              <span className="type-headline block truncate text-text-1">{pr.exerciseName}</span>
-              <span className="type-meta mt-0.5 block text-text-2">{PR_LABELS[pr.type]}</span>
+            <span className="flex min-w-0 items-start gap-2.5">
+              <MedalIcon className="mt-0.5 size-5" />
+              <span className="min-w-0">
+                <span className="type-headline block truncate text-text-1">{pr.exerciseName}</span>
+                <span className="type-meta mt-0.5 block text-text-2">{PR_LABELS[pr.type]}</span>
+              </span>
             </span>
             <span className="shrink-0 text-right">
               <span className="type-headline tabular block text-text-1">

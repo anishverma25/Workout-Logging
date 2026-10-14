@@ -76,6 +76,11 @@
   --lime-dim: rgb(198 244 50 / 0.14);
   --on-lime: #000000;
 
+  /* Medals: records only (UI rules: lime stays the one accent everywhere else). */
+  --gold: #f5c542;
+  --gold-dim: rgb(245 197 66 / 0.16);
+  --on-gold: #000000;
+
   --focus: #ffffff;
   --warning: #ffb340;
   --danger: #ff453a;

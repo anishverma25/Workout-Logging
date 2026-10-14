@@ -1,3 +1,4 @@
+import { setVolumeLoad } from './volume';
 import type { Exercise, WorkoutSet } from '../models/schemas';
 import { estimateOneRepMax, E1RM_PREFERRED_MAX_REPS, supportsE1rm } from './e1rm';
 import { isLoadEligible, isWorkingSet, type Session } from './sessions';
@@ -22,6 +23,13 @@ export interface ExercisePerformance {
   /** Distance exercises: longest completed working set, metres. */
   longestDistance: number | null;
   longestDistanceSet: WorkoutSet | null;
+  /** Weight and reps: the set with the most load × reps (both sides for per-hand moves). */
+  bestSetVolume: number | null;
+  bestSetVolumeSet: WorkoutSet | null;
+  /** Weight and reps: load × reps over every working set of the session. */
+  sessionVolume: number | null;
+  /** Bodyweight and assisted moves: reps over every working set of the session. */
+  sessionReps: number | null;
 }
 
 export function performanceFor(
@@ -46,6 +54,10 @@ export function performanceFor(
     longestDurationSet: null,
     longestDistance: null,
     longestDistanceSet: null,
+    bestSetVolume: null,
+    bestSetVolumeSet: null,
+    sessionVolume: null,
+    sessionReps: null,
   };
   const tracking = exercise?.trackingType;
   let chartLow: number | null = null;
@@ -68,6 +80,12 @@ export function performanceFor(
       if (perf.heaviestLoad === null || w > perf.heaviestLoad) {
         perf.heaviestLoad = w;
         perf.heaviestLoadSet = set;
+      }
+      const v = setVolumeLoad(set, exercise);
+      perf.sessionVolume = (perf.sessionVolume ?? 0) + v;
+      if (perf.bestSetVolume === null || v > perf.bestSetVolume) {
+        perf.bestSetVolume = v;
+        perf.bestSetVolumeSet = set;
       }
     }
     // Weighted bodyweight moves: the heaviest added load is a real, comparable record.
@@ -106,8 +124,13 @@ export function performanceFor(
         perf.longestDistanceSet = set;
       }
     }
-    if (tracking === 'bodyweight_reps' && isWorkingSet(set) && (set.reps ?? 0) > 0) {
+    if (
+      (tracking === 'bodyweight_reps' || tracking === 'assisted_bodyweight') &&
+      isWorkingSet(set) &&
+      (set.reps ?? 0) > 0
+    ) {
       const r = set.reps ?? 0;
+      perf.sessionReps = (perf.sessionReps ?? 0) + r;
       if (perf.mostReps === null || r > perf.mostReps) {
         perf.mostReps = r;
         perf.mostRepsSet = set;

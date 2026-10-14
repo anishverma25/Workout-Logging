@@ -34,6 +34,11 @@ export interface ExerciseRecords {
   longestDistance: BestSet | null;
   /** Best reps achieved at each load, heaviest first. Load-tracked exercises only. */
   repsAtLoad: RepsAtLoad[];
+  /**
+   * Set records: the heaviest weight lifted for each rep count, fewest reps first. Tracked
+   * quietly (no medal), to pick a weight for a rep range.
+   */
+  setRecords: RepsAtLoad[];
   /** Record events for this exercise, newest first. */
   history: PersonalRecord[];
 }
@@ -78,6 +83,7 @@ export function exerciseRecords(sessions: Session[], exercises: Exercise[]): Exe
     };
 
     const repsAtLoad = new Map<number, RepsAtLoad>();
+    const byReps = new Map<number, RepsAtLoad>();
     if (
       exercise?.trackingType === 'weight_reps' ||
       exercise?.trackingType === 'weighted_bodyweight'
@@ -89,14 +95,15 @@ export function exerciseRecords(sessions: Session[], exercises: Exercise[]): Exe
             if (!isWorkingSet(set) || !set.weightKg || !set.reps) continue;
             const key = loadKey(set.weightKg);
             const current = repsAtLoad.get(key);
-            if (!current || set.reps > current.reps) {
-              repsAtLoad.set(key, {
-                weightKg: set.weightKg,
-                reps: set.reps,
-                date: session.date,
-                workoutId: session.workout.id,
-              });
-            }
+            const row = {
+              weightKg: set.weightKg,
+              reps: set.reps,
+              date: session.date,
+              workoutId: session.workout.id,
+            };
+            if (!current || set.reps > current.reps) repsAtLoad.set(key, row);
+            const atReps = byReps.get(set.reps);
+            if (!atReps || set.weightKg > atReps.weightKg + 1e-9) byReps.set(set.reps, row);
           }
         }
       }
@@ -115,6 +122,7 @@ export function exerciseRecords(sessions: Session[], exercises: Exercise[]): Exe
       longestDuration: best((p) => ({ v: p.longestDuration, set: p.longestDurationSet })),
       longestDistance: best((p) => ({ v: p.longestDistance, set: p.longestDistanceSet })),
       repsAtLoad: [...repsAtLoad.values()].sort((a, b) => b.weightKg - a.weightKg),
+      setRecords: [...byReps.values()].sort((a, b) => a.reps - b.reps),
       history: events.filter((e) => e.exerciseId === exerciseId),
     });
   }

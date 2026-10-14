@@ -8,10 +8,17 @@ export interface DeviceSettings {
   restSound: boolean;
   restVibrate: boolean;
   keepAwake: boolean;
+  /** Announce a personal record the moment the set is ticked off. */
+  liveRecords: boolean;
 }
 
 const KEY = 'overload.device';
-const DEFAULTS: DeviceSettings = { restSound: true, restVibrate: true, keepAwake: true };
+const DEFAULTS: DeviceSettings = {
+  restSound: true,
+  restVibrate: true,
+  keepAwake: true,
+  liveRecords: true,
+};
 const listeners = new Set<() => void>();
 let cache: DeviceSettings | null = null;
 
