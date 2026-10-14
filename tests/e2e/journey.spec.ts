@@ -32,7 +32,8 @@ async function logBench(page: Page, sets: [string, string][]) {
 async function startPush(page: Page) {
   await page.goto('/workout');
   await page
-    .getByRole('button', { name: /^Start Push/ })
+    // Once Push is done today it offers Repeat instead of Start.
+    .getByRole('button', { name: /^(Start|Repeat) Push/ })
     .first()
     .click();
   await expect(page.getByRole('button', { name: 'Finish' })).toBeVisible();
