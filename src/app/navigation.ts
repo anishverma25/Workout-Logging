@@ -9,6 +9,7 @@ import {
   History,
   House,
   Library,
+  Medal,
   MessageSquareHeart,
   Route,
   Scale,
@@ -41,6 +42,7 @@ export const PRIMARY_NAV: NavItem[] = [
 ];
 
 export const SECONDARY_NAV: NavItem[] = [
+  { to: '/badges', label: 'Badges', icon: Medal, tone: 'amber', group: 'you' },
   { to: '/journey', label: 'Journey', icon: Route, tone: 'ember', group: 'you' },
   { to: '/body', label: 'Body metrics', icon: Scale, tone: 'sky', group: 'you' },
   { to: '/records', label: 'Records', icon: Trophy, tone: 'amber', group: 'training' },

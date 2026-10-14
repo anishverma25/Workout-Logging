@@ -48,7 +48,7 @@ export function MedalAlert({
               {news.medals.length > 1 ? `${news.medals.length} new records` : 'New record'}
             </span>
             <span className="type-headline block truncate text-text-1">{news.exerciseName}</span>
-            <span className="type-meta tabular block truncate text-text-2">
+            <span className="type-meta tabular line-clamp-2 block text-text-2">
               {news.medals
                 .map((m) => `${PR_LABELS[m.type]} ${formatRecordValue(m.type, m.value, unit)}`)
                 .join(' · ')}

@@ -1,3 +1,4 @@
+import type { Badge } from '../achievements/badges';
 import { addDays, startOfDay, startOfWeek, type WeekStartsOn } from '@/lib/dates';
 import { estimateOneRepMax, supportsE1rm } from '../analytics/e1rm';
 import { detectPersonalRecords, type PersonalRecord } from '../analytics/prs';
@@ -239,4 +240,50 @@ export function streakCard(
     hours: Math.round(minutes / 60),
     grid,
   };
+}
+
+export interface MedalsCard {
+  title: string;
+  date: Date;
+  /** Every medal won in the workout, best first. */
+  medals: { exerciseName: string; type: PersonalRecord['type']; value: number }[];
+}
+
+const MEDAL_ORDER: PersonalRecord['type'][] = [
+  'load',
+  'e1rm',
+  'reps',
+  'duration',
+  'distance',
+  'set_volume',
+  'session_volume',
+  'session_reps',
+];
+
+/** The PR summary for one workout: all its medals. */
+export function medalsCard(data: TrainingData, workoutId: string): MedalsCard | null {
+  const sessions = buildSessions(data);
+  const session = sessions.find((s) => s.workout.id === workoutId);
+  if (!session) return null;
+  const position = new Map(session.exercises.map((e, i) => [e.workoutExercise.exerciseId, i]));
+  const order = (id: string) => position.get(id) ?? 99;
+  const medals = detectPersonalRecords(sessions, data.exercises)
+    .filter((p) => p.workoutId === workoutId)
+    // Grouped by exercise, in workout order; the strongest kind of medal first.
+    .sort(
+      (a, b) =>
+        order(a.exerciseId) - order(b.exerciseId) ||
+        MEDAL_ORDER.indexOf(a.type) - MEDAL_ORDER.indexOf(b.type),
+    )
+    .map((p) => ({ exerciseName: p.exerciseName, type: p.type, value: p.value }));
+  return { title: session.workout.name, date: session.date, medals };
+}
+
+const TIER_RANK: Record<Badge['tier'], number> = { legend: 0, gold: 1, silver: 2, bronze: 3 };
+
+/** The badge most worth showing off from a set of them. */
+export function bestBadge(badges: Badge[]): Badge | undefined {
+  return [...badges].sort(
+    (a, b) => TIER_RANK[a.tier] - TIER_RANK[b.tier] || b.target - a.target,
+  )[0];
 }

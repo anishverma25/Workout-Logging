@@ -172,5 +172,18 @@ Read README.md for setup, architecture and calculation rules.
   Content stays inside Instagram's safe area (y 250 to 1650). Fonts Inter Tight and JetBrains
   Mono from @fontsource, loaded only when sharing. `ShareSheet` on the summary and workout
   detail: Web Share with the PNG file only (no text, Instagram drops those), else Save image.
+- Medals (October 2026, Hevy rules): PR types per tracking type in `prs.ts` (load, e1rm,
+  set_volume, session_volume for weight and reps; reps, session_reps for bodyweight and
+  assisted; added load for weighted; duration, distance). Live alerts during a workout
+  (`domain/analytics/medals.ts`, `MedalAlert`, device setting `liveRecords`), gold `MedalIcon`
+  on sets in history and the summary, set records (heaviest weight per rep count, no medal) on
+  the exercise records sheet. Gold and tier colours are tokens (`--gold`, `--tier-*`).
+- Badges (`domain/achievements/badges.ts`, page `/badges`, `BadgeMedallion`): workouts,
+  streaks, medals, tonnage, plate club, body-weight lifts and habits, each with progress when
+  locked; unlocked ones show on the workout summary. Story cards add Medals (all records of a
+  workout) and Badge. The release announcement (`app/layout/WhatsNew.tsx`, `RELEASE_ID` in
+  `whatsNewStore.ts`) shows once per device; e2e marks it seen through `storageState`. Change
+  `RELEASE_ID` and the copy for the next announcement.
+- Contact: `features/legal/contact.ts` (team email and Instagram, no personal details).
 - Deployed on Cloudflare Pages from `phase-2-wip`. Each new Supabase migration must be applied
   in the SQL editor before the code that needs it is pushed.

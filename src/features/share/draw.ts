@@ -2,8 +2,11 @@ import interTight800 from '@fontsource/inter-tight/files/inter-tight-latin-800-n
 import interTight900 from '@fontsource/inter-tight/files/inter-tight-latin-900-normal.woff2?url';
 import mono500 from '@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2?url';
 import mono800 from '@fontsource/jetbrains-mono/files/jetbrains-mono-latin-800-normal.woff2?url';
+import { badgeStamp, GROUP_LABELS, type Badge } from '@/domain/achievements/badges';
+import { formatRecordValue, PR_LABELS } from '@/domain/analytics/prs';
 import {
   compareVolume,
+  type MedalsCard,
   type PrCard,
   type StreakCard,
   type WorkoutCard,
@@ -552,4 +555,198 @@ export function drawStreakCard(ctx: Ctx, s: StreakCard, c: CardContext, weekStar
   });
 
   footer(ctx, 'Your streak lives here', c.link);
+}
+
+// ---------------------------------------------------------------------------------------------
+// 5. Badge unlocked
+// ---------------------------------------------------------------------------------------------
+
+const TIER_STOPS: Record<Badge['tier'], [string, string]> = {
+  bronze: ['#e3a06e', '#9a5a30'],
+  silver: ['#eef1f5', '#9aa3ad'],
+  gold: ['#ffdd73', '#c9971a'],
+  legend: ['#d8ff5a', '#78a300'],
+};
+const TIER_NAME: Record<Badge['tier'], string> = {
+  bronze: 'Bronze',
+  silver: 'Silver',
+  gold: 'Gold',
+  legend: 'Legend',
+};
+
+function octagonPath(ctx: Ctx, cx: number, cy: number, r: number) {
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = ((i * 45 + 22.5) * Math.PI) / 180;
+    const x = cx + r * Math.cos(a);
+    const y = cy + r * Math.sin(a);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+/** The medallion, as on the Badges page, at any size. */
+export function drawMedallion(ctx: Ctx, badge: Badge, cx: number, cy: number, r: number) {
+  const [a, b] = TIER_STOPS[badge.tier];
+  // A soft glow in the tier's colour.
+  const glow = ctx.createRadialGradient(cx, cy, r * 0.4, cx, cy, r * 1.6);
+  glow.addColorStop(0, `${a}55`);
+  glow.addColorStop(1, `${a}00`);
+  ctx.fillStyle = glow;
+  ctx.fillRect(cx - r * 1.7, cy - r * 1.7, r * 3.4, r * 3.4);
+  const g = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+  g.addColorStop(0, a);
+  g.addColorStop(1, b);
+  octagonPath(ctx, cx, cy, r);
+  ctx.fillStyle = g;
+  ctx.fill();
+  octagonPath(ctx, cx, cy, r * 0.83);
+  ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+  ctx.lineWidth = r * 0.03;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  const { big, small } = badgeStamp(badge);
+  const size = fit(ctx, big, r * 1.3, r * 0.75, 900, TIGHT);
+  text(
+    ctx,
+    big,
+    cx,
+    cy + (small ? size * 0.22 : size * 0.36),
+    font(900, size, TIGHT),
+    '#000000',
+    'center',
+  );
+  if (small)
+    text(
+      ctx,
+      small,
+      cx,
+      cy + size * 0.22 + r * 0.3,
+      font(700, r * 0.17),
+      'rgba(0,0,0,0.7)',
+      'center',
+    );
+}
+
+export function drawBadgeCard(ctx: Ctx, badge: Badge, c: CardContext) {
+  rr(ctx, 0, 0, CARD_W, CARD_H, 0, C.black);
+  const who = c.person ? `${c.person} unlocked` : 'Unlocked';
+  text(ctx, who, X, SAFE_TOP + 30, font(600, 30), C.text2);
+  if (badge.earnedAt)
+    text(ctx, dateLine(badge.earnedAt), CARD_W - X, SAFE_TOP + 30, font(600, 30), C.text2, 'right');
+
+  drawMedallion(ctx, badge, CARD_W / 2, 700, 290);
+
+  text(ctx, 'Badge unlocked', CARD_W / 2, 1120, font(800, 40, TIGHT), C.lime, 'center');
+  const ts = fit(ctx, badge.title, INNER, 110, 900, TIGHT);
+  text(ctx, badge.title, CARD_W / 2, 1120 + 20 + ts, font(900, ts, TIGHT), C.white, 'center');
+  ctx.font = font(500, 34);
+  const goal = clip(ctx, `${badge.goal}.`, INNER);
+  text(ctx, goal, CARD_W / 2, 1120 + ts + 100, font(500, 34), C.text2, 'center');
+
+  const pill = `${TIER_NAME[badge.tier]} · ${GROUP_LABELS[badge.group]}`;
+  ctx.font = font(700, 30);
+  const pw = ctx.measureText(pill).width + 64;
+  const py = 1120 + ts + 150;
+  rr(ctx, (CARD_W - pw) / 2, py, pw, 64, 32, C.surface);
+  text(ctx, pill, CARD_W / 2, py + 33, font(700, 30), C.white, 'center', 'middle');
+
+  footer(ctx, 'Earn yours, one set at a time', c.link);
+}
+
+// ---------------------------------------------------------------------------------------------
+// 6. Medals: every record of one workout
+// ---------------------------------------------------------------------------------------------
+
+function goldMedal(ctx: Ctx, cx: number, cy: number, r: number) {
+  ctx.fillStyle = '#f5c542';
+  ctx.globalAlpha = 0.65;
+  ctx.beginPath();
+  ctx.moveTo(cx - r * 0.7, cy - r * 1.9);
+  ctx.lineTo(cx - r * 0.15, cy - r * 1.9);
+  ctx.lineTo(cx + r * 0.25, cy - r * 0.8);
+  ctx.lineTo(cx - r * 0.3, cy - r * 0.8);
+  ctx.fill();
+  ctx.globalAlpha = 0.9;
+  ctx.beginPath();
+  ctx.moveTo(cx + r * 0.7, cy - r * 1.9);
+  ctx.lineTo(cx + r * 0.15, cy - r * 1.9);
+  ctx.lineTo(cx - r * 0.25, cy - r * 0.8);
+  ctx.lineTo(cx + r * 0.3, cy - r * 0.8);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  // A five-point star.
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const rad = i % 2 === 0 ? r * 0.55 : r * 0.24;
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const x = cx + rad * Math.cos(a);
+    const y = cy + rad * Math.sin(a);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = '#000000';
+  ctx.fill();
+}
+
+export function drawMedalsCard(ctx: Ctx, m: MedalsCard, c: CardContext) {
+  rr(ctx, 0, 0, CARD_W, CARD_H, 0, C.black);
+  ctx.font = font(600, 30);
+  text(
+    ctx,
+    clip(ctx, `${dateLine(m.date)} · ${m.title}`, INNER),
+    X,
+    SAFE_TOP + 30,
+    font(600, 30),
+    C.text2,
+  );
+
+  goldMedal(ctx, X + 70, SAFE_TOP + 230, 70);
+  const n = String(m.medals.length);
+  text(ctx, n, X + 180, SAFE_TOP + 290, font(900, 220, TIGHT), '#f5c542');
+  ctx.font = font(900, 220, TIGHT);
+  const nw = ctx.measureText(n).width;
+  const wordsX = X + 200 + nw;
+  const ws = fit(ctx, 'in one workout.', CARD_W - X - wordsX, 76, 800, TIGHT);
+  const word = m.medals.length === 1 ? 'medal' : 'medals';
+  text(ctx, word, wordsX, SAFE_TOP + 210, font(800, ws, TIGHT), C.white);
+  text(ctx, 'in one workout.', wordsX, SAFE_TOP + 290, font(800, ws, TIGHT), C.white);
+
+  const shown = m.medals.slice(0, 7);
+  // The list sits in the middle of the space between the headline and the footer.
+  const listH = shown.length * 132 + (m.medals.length > shown.length ? 60 : 0);
+  const top = SAFE_TOP + 400;
+  let y = top + Math.max(0, (SAFE_BOTTOM - 140 - top - listH) / 2);
+  for (const medal of shown) {
+    rr(ctx, X, y, INNER, 118, 28, C.surface);
+    ctx.beginPath();
+    ctx.arc(X + 58, y + 59, 26, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(245,197,66,0.18)';
+    ctx.fill();
+    goldMedal(ctx, X + 58, y + 64, 15);
+    const value = formatRecordValue(medal.type, medal.value, c.unit);
+    ctx.font = font(800, 40, TIGHT);
+    const vw = ctx.measureText(value).width;
+    ctx.font = font(700, 34);
+    text(
+      ctx,
+      clip(ctx, medal.exerciseName, INNER - 150 - vw - 30),
+      X + 108,
+      y + 52,
+      font(700, 34),
+      C.white,
+    );
+    text(ctx, PR_LABELS[medal.type], X + 108, y + 92, font(400, 26), C.text2);
+    text(ctx, value, CARD_W - X - 34, y + 74, font(800, 40, TIGHT), '#f5c542', 'right');
+    y += 132;
+  }
+  if (m.medals.length > shown.length)
+    text(ctx, `+ ${m.medals.length - shown.length} more`, X, y + 30, font(600, 30), C.text2);
+
+  footer(ctx, 'Medals earned on Overload', c.link);
 }

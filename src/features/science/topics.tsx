@@ -324,15 +324,27 @@ export const SCIENCE: TopicGroup[] = [
       },
       {
         id: 'records',
-        title: 'Personal records',
+        title: 'Personal records, medals and set records',
         evidence: 'personalRecords',
         shows:
-          'The best value you have actually recorded: heaviest load, best estimated 1RM, most reps, longest hold or distance.',
+          'A gold medal each time you beat your best, with the measures that fit the exercise, and set records for every rep count.',
         why: [
           <>
             Found by going through your sessions in order and noting each time a best is beaten.
             Your first session with an exercise is the baseline, not a record. Editing a past set
             recalculates every record.
+          </>,
+          <>
+            Medals by kind of exercise. Weight and reps: heaviest weight, best estimated 1RM
+            (compound lifts), best set volume (weight × reps) and best session volume. Bodyweight
+            and assisted moves: most reps in a set and most reps in a session (less assistance
+            is not a record). Weighted bodyweight: heaviest added weight. Timed and distance
+            work: longest time and longest distance. During a workout, a set that beats your
+            best is announced right away (Settings, Live record alerts).
+          </>,
+          <>
+            Set records are the heaviest weight for each number of reps. They win no medal: they
+            are the number to beat when you train in that rep range.
           </>,
         ],
       },

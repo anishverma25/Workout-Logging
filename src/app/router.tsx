@@ -119,6 +119,10 @@ export const router = createBrowserRouter([
           },
           { path: 'body', lazy: page(() => import('@/features/body/BodyPage'), 'BodyPage') },
           {
+            path: 'badges',
+            lazy: page(() => import('@/features/medals/BadgesPage'), 'BadgesPage'),
+          },
+          {
             path: 'journey',
             lazy: page(() => import('@/features/journey/JourneyPage'), 'JourneyPage'),
           },
