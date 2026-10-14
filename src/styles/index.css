@@ -210,62 +210,25 @@
   padding-right: max(1rem, env(safe-area-inset-right));
 }
 
-/* Sheets slide up on phones and settle in on larger screens. */
-@keyframes sheet-up {
-  from {
-    transform: translateY(100%);
-  }
-}
-@keyframes sheet-pop {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.98);
-  }
-}
 @keyframes fade-in {
   from {
     opacity: 0;
   }
 }
-.sheet[open] {
-  animation: sheet-up 0.26s var(--ease-snap);
-}
-.sheet[open]::backdrop {
-  animation: fade-in 0.2s ease-out;
-}
-@media (min-width: 640px) {
-  .sheet[open] {
-    animation-name: sheet-pop;
-    animation-duration: 0.2s;
-  }
-}
 
-/* Kit sheets (components/kit/overlays.tsx): slide up on phones, settle in as a dialog from
-   1024px. 250 ms on the standard curve. */
-@keyframes kit-sheet-up {
-  from {
-    transform: translateY(100%);
-  }
-}
 @keyframes kit-pop {
   from {
     opacity: 0;
     transform: scale(0.96);
   }
 }
+/* Kit sheets (components/kit/overlays.tsx): every sheet is a centred panel that fades and
+   scales in, 250 ms on the standard curve. Nothing slides up from the bottom. */
 .kit-sheet[open] {
-  animation: kit-sheet-up var(--dur-move) var(--ease-standard);
+  animation: kit-pop var(--dur-move) var(--ease-standard);
 }
 .kit-sheet[open]::backdrop {
   animation: fade-in var(--dur-move) var(--ease-standard);
-}
-.kit-sheet.kit-dialog[open] {
-  animation-name: kit-pop;
-}
-@media (min-width: 1024px) {
-  .kit-sheet[open] {
-    animation-name: kit-pop;
-  }
 }
 
 /* Skeleton shimmer: a white 4% band every 1.2 s. Off with reduced motion. */

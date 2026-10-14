@@ -160,8 +160,9 @@ Read README.md for setup, architecture and calculation rules.
   dates Excel rewrote (`dateOrder` picks day or month first); old .xls asks for .xlsx or CSV.
 - Three-dot menus are `ActionMenu` (`components/kit/menu.tsx`): a dropdown anchored to its
   button (fade and scale, portal, no <dialog>, no scroll lock), placed above the tab bar
-  (`data-bottom-bar`), hints only on disabled items. Sheets stay for forms; `BottomSheet` is
-  pinned with fixed offsets and no longer locks page scroll (iOS placed it partly off screen).
+  (`data-bottom-bar`), hints only on disabled items. `BottomSheet` (and every sheet built on
+  it) is a centred panel on all widths that fades and scales in, with no slide-up, drag or
+  scroll lock: iOS placed bottom-anchored dialogs partly off screen.
 - A past workout starts again from its History page (`startWorkoutFromPast`: same exercises,
   order, set types and targets, linked to its routine day if it still exists), through
   `useStartWorkout({ fromWorkoutId })`. Tapping the current tab scrolls to the top

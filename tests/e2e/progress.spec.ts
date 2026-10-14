@@ -98,3 +98,20 @@ test('progress shows an honest empty state without data', async ({ page }) => {
     page.getByRole('heading', { name: 'Your progress starts with your first workout' }),
   ).toBeVisible();
 });
+
+test('sheets open as a centred panel, fully on screen, even after scrolling', async ({ page }) => {
+  await page.goto('/progress');
+  await page.evaluate(() => window.scrollTo(0, 400));
+  await page.getByRole('button', { name: /^Exercise/ }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await page.waitForTimeout(400); // the fade and scale have finished
+  const box = (await dialog.boundingBox())!;
+  const view = page.viewportSize()!;
+  expect(box.y).toBeGreaterThan(0);
+  expect(box.y + box.height).toBeLessThan(view.height);
+  // Centred, not pinned to the bottom edge.
+  expect(Math.abs(box.y + box.height / 2 - view.height / 2)).toBeLessThan(4);
+  await expect(dialog.getByRole('button', { name: 'Close' })).toBeInViewport();
+  await page.screenshot({ path: test.info().outputPath('sheet.png') });
+});

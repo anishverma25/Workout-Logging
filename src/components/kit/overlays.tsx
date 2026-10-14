@@ -1,12 +1,4 @@
-import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type PointerEvent,
-  type ReactNode,
-} from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { DestructiveButton, IconButton, PrimaryButton, SecondaryButton } from './actions';
@@ -25,7 +17,7 @@ interface BottomSheetProps {
   children: ReactNode;
   /** Pinned footer: buttons 52 high, above the safe area. */
   footer?: ReactNode;
-  /** Always a centred dialog, never a bottom sheet. */
+  /** Kept for older callers: every sheet is now a centred dialog. */
   presentation?: 'sheet' | 'dialog';
   /** Wider on desktop (672 instead of 480), for forms with columns. */
   wide?: boolean;
@@ -50,13 +42,11 @@ function useKeyboardInset(active: boolean): number {
   return inset;
 }
 
-const DISMISS_DISTANCE = 96;
-const DISMISS_VELOCITY = 0.6; // px per ms
-
 /**
- * Bottom sheet on phones, centred dialog (max 480, radius 24) from 1024px. Built on <dialog>:
- * focus is trapped, Escape and a backdrop tap close it, and focus returns to the control that
- * opened it. Drag the handle or header down to dismiss.
+ * A centred panel on every screen size (max 480, or 672 when `wide`), fading and scaling in.
+ * It never slides up from the bottom: iPhones placed bottom-anchored dialogs partly below the
+ * screen. Built on <dialog>: focus is trapped, Escape and a tap outside close it, and focus
+ * returns to the control that opened it. With the keyboard up it moves above it.
  */
 export function BottomSheet({
   open,
@@ -66,7 +56,6 @@ export function BottomSheet({
   hideHeader,
   children,
   footer,
-  presentation = 'sheet',
   wide,
   className,
 }: BottomSheetProps) {
@@ -78,9 +67,7 @@ export function BottomSheet({
   useLayoutEffect(() => {
     onCloseRef.current = onClose;
   });
-  const [drag, setDrag] = useState(0);
-  const dragStart = useRef<{ y: number; t: number } | null>(null);
-  const keyboard = useKeyboardInset(open && presentation === 'sheet');
+  const keyboard = useKeyboardInset(open);
 
   useEffect(() => {
     const dialog = ref.current;
@@ -98,29 +85,6 @@ export function BottomSheet({
     if (el instanceof HTMLElement && el.isConnected) el.focus({ preventScroll: true });
   };
 
-  const onPointerDown = (e: PointerEvent) => {
-    if (presentation === 'dialog' || window.matchMedia('(min-width: 1024px)').matches) return;
-    // Taps on the close button and other controls must stay clicks, not start a drag: pointer
-    // capture would send their click to the header instead.
-    if ((e.target as HTMLElement).closest('button, a, input, select, textarea')) return;
-    dragStart.current = { y: e.clientY, t: performance.now() };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-  };
-  const onPointerMove = (e: PointerEvent) => {
-    if (!dragStart.current) return;
-    setDrag(Math.max(0, e.clientY - dragStart.current.y));
-  };
-  const onPointerUp = (e: PointerEvent) => {
-    const start = dragStart.current;
-    dragStart.current = null;
-    if (!start) return;
-    const distance = e.clientY - start.y;
-    const velocity = distance / Math.max(1, performance.now() - start.t);
-    setDrag(0);
-    if (distance > DISMISS_DISTANCE || velocity > DISMISS_VELOCITY) onCloseRef.current();
-  };
-
-  const dialogLike = presentation === 'dialog';
   return (
     <dialog
       ref={ref}
@@ -138,56 +102,30 @@ export function BottomSheet({
         // A click on the backdrop lands on the dialog element itself.
         if (e.target === e.currentTarget) onCloseRef.current();
       }}
-      style={{
-        ...(drag ? { transform: `translateY(${drag}px)`, transition: 'none' } : null),
+      style={
         // Above the keyboard on iPhone, and never taller than the space left.
-        ...(keyboard
-          ? { marginBottom: keyboard, maxHeight: `calc(100% - ${keyboard}px - 1rem)` }
-          : null),
-      }}
+        keyboard
+          ? { marginBottom: keyboard + 8, maxHeight: `calc(100% - ${keyboard}px - 1.5rem)` }
+          : undefined
+      }
       className={cn(
-        'kit-sheet hidden w-full max-w-none flex-col overflow-hidden bg-surface p-0 text-text-1 open:flex backdrop:bg-overlay',
-        'transition-transform duration-[var(--dur-move)] ease-[var(--ease-standard)]',
-        dialogLike
-          ? 'kit-dialog m-auto max-h-[85vh] max-w-[min(30rem,calc(100vw-2rem))] rounded-panel supports-[height:1dvh]:max-h-[85dvh]'
-          : cn(
-              // Pinned to the bottom edge with fixed offsets, not an auto margin: iOS placed
-              // auto-margin dialogs partly below the screen. The page is not scroll-locked
-              // either, which moved fixed elements on iOS; the backdrop already blocks it.
-              // 85vh first for browsers without dvh (Chrome before 108, older Samsung Internet).
-              'fixed inset-x-0 top-auto bottom-0 m-0 max-h-[85vh] rounded-t-panel supports-[height:1dvh]:max-h-[85dvh] lg:top-0 lg:m-auto lg:rounded-panel',
-              wide ? 'lg:max-w-2xl' : 'lg:max-w-[30rem]',
-            ),
+        'kit-sheet hidden flex-col overflow-hidden rounded-panel bg-surface p-0 text-text-1 open:flex backdrop:bg-overlay',
+        // 80vh first for browsers without dvh (Chrome before 108, older Samsung Internet).
+        'm-auto max-h-[80vh] w-[calc(100vw-1.5rem)] supports-[height:1dvh]:max-h-[80dvh]',
+        wide ? 'max-w-2xl' : 'max-w-[30rem]',
         className,
       )}
     >
       {open ? (
         <>
-          <div
-            className="chrome shrink-0 touch-none"
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-          >
-            {!dialogLike ? (
-              <div
-                aria-hidden
-                className="mx-auto mt-2 h-[5px] w-9 rounded-full bg-text-1/20 lg:hidden"
-              />
-            ) : null}
+          <div className="chrome shrink-0">
             {hideHeader ? (
               // The visible title is part of the content; this names the dialog.
               <h2 id={titleId} className="sr-only">
                 {title}
               </h2>
             ) : (
-              <header
-                className={cn(
-                  'flex items-start justify-between gap-3 px-5 pt-3 pb-3',
-                  dialogLike ? 'pt-5' : 'lg:pt-5',
-                )}
-              >
+              <header className="flex items-start justify-between gap-3 px-5 pt-5 pb-3">
                 <div className="min-w-0">
                   <h2 id={titleId} className="type-title text-text-1">
                     {title}
@@ -211,13 +149,13 @@ export function BottomSheet({
           <div
             className={cn(
               'min-h-0 flex-1 overflow-y-auto overscroll-contain px-5',
-              footer ? 'pb-4' : 'pb-[max(1.25rem,env(safe-area-inset-bottom))]',
+              footer ? 'pb-4' : 'pb-5',
             )}
           >
             {children}
           </div>
           {footer ? (
-            <footer className="shrink-0 border-t-[0.5px] border-divider bg-surface px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <footer className="shrink-0 border-t-[0.5px] border-divider bg-surface px-5 pt-3 pb-4">
               {footer}
             </footer>
           ) : null}
