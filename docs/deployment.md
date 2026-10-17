@@ -97,6 +97,30 @@ site. The app uses well under 100 files.
    Variables (Production) and redeploy. Anyone opening `overload-gym.pages.dev` is then sent to
    the same page on the new domain, once their changes are saved to their account
    (`src/app/domain.ts`). Previews and localhost never move. Unset it to turn the move off.
+   The same variable switches on a real 301 for page requests on the old address
+   (`functions/_middleware.ts`, read at request time, no redeploy needed), so search engines
+   move the old address's place in results. Phones with the app installed open it from the
+   service worker and never reach the 301; `_routes.json` (built by `build/seo.ts`) keeps files
+   and `/sw.js` away from the function so installed apps still update and move themselves.
+   Pages Functions count against the free 100,000 requests a day; only page loads without the
+   service worker reach it.
+8. Google Search Console: add a Domain property for `overloadgym.in`, verify it with the TXT
+   record Google gives (Cloudflare > DNS > Records > Add record, type TXT, name `@`), then
+   Sitemaps > submit `https://overloadgym.in/sitemap.xml`. URL inspection on
+   `https://overloadgym.in/` > Request indexing speeds up the first crawl.
+
+## Search engines
+
+- `/` shows a public home page to anyone not signed in who has not finished the tour: plain
+  HTML in `index.html` (between the `landing` markers), shown before any script runs by the
+  inline script in its head (allowed by a CSP hash computed from the file). The rule is in
+  `src/app/landing.ts`; `landing.test.ts` keeps the two in step and checks every count and
+  feature on the page against the app. Signed-in people and returning visitors never see it.
+- The build writes one HTML file per public page (`src/app/publicPages.ts`: title, description,
+  canonical address and share tags) plus `sitemap.xml`. Add a public page there and it is in
+  both. `robots.txt` names the sitemap.
+- App screens sit behind an account, so search engines only see the public pages. That is
+  intended.
 
 Data in a browser belongs to one address, so people sign in again on the new domain; what was
 synced comes back. Share previews use the tags and `public/og-image.png` in `index.html`.

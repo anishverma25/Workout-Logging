@@ -17,8 +17,10 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   page,
 }) => {
   test.setTimeout(90_000);
-  // Opening the app without an account lands on the tour, not on anyone's data.
+  // Opening the app without an account lands on the public home page, then the tour, never on
+  // anyone's data.
   await page.goto('/');
+  await page.getByRole('link', { name: 'Take the tour' }).first().click();
   await expect(page).toHaveURL(/\/welcome$/);
 
   // The tour: clearly labelled sample data, and the logger can be tried.

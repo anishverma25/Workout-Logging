@@ -3,6 +3,21 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
 
+const INDEX_HTML = fileURLToPath(new URL('../index.html', import.meta.url));
+
+/**
+ * CSP hashes of the inline scripts in index.html (the one that decides, before the first paint,
+ * whether the public home page shows). Read from the file itself, so editing the script can
+ * never leave a stale hash; scripts/verify-build.mjs checks the built page against `_headers`.
+ */
+export function inlineScriptHashes(html: string): string[] {
+  return [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
+    (m) => `'sha256-${createHash('sha256').update(m[1] ?? '').digest('base64')}'`,
+  );
+}
+
+const INLINE_SCRIPTS = inlineScriptHashes(readFileSync(INDEX_HTML, 'utf8')).join(' ');
+
 /**
  * Security headers for every response. The Supabase origin comes from the build's environment,
  * so the Content Security Policy allows exactly that API and nothing else.
@@ -20,7 +35,7 @@ export function securityHeaders(supabaseUrl: string | undefined): Record<string,
   const csp = [
     "default-src 'self'",
     // Razorpay Checkout for Pro plans: its script, its payment window and its API.
-    "script-src 'self' https://checkout.razorpay.com",
+    `script-src 'self' ${INLINE_SCRIPTS} https://checkout.razorpay.com`,
     // React sets inline style attributes (chart sizes, progress bars).
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://cdn.razorpay.com",

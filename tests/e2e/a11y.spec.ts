@@ -4,8 +4,8 @@ import { startWithDemo } from './session';
 
 /** Automated accessibility checks (WCAG 2.1 A and AA) on every screen. The app is dark only (D3). */
 
-/** Reachable without an account: the welcome tour, the account screens and the policies. */
-const PUBLIC_PAGES = ['/welcome', '/sign-in', '/sign-up', '/forgot-password', '/terms', '/privacy'];
+/** Reachable without an account: the home page, the tour, the account screens and the policies. */
+const PUBLIC_PAGES = ['/', '/welcome', '/sign-in', '/sign-up', '/forgot-password', '/terms', '/privacy'];
 
 const PAGES = [
   '/',

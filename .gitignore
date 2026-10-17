@@ -21,3 +21,6 @@ blob-report
 *.log
 dist-e2e
 *.tmp.mjs
+
+# Local Cloudflare Pages emulation (wrangler pages dev)
+.wrangler

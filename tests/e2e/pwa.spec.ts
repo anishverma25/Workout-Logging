@@ -58,8 +58,9 @@ test('sends security headers', async ({ request }) => {
 });
 
 test('opens and works offline after the first visit', async ({ page, context }) => {
-  // A brand-new install opens with the welcome tour, which leads to an account.
+  // A brand-new install opens with the public home page and its tour, which lead to an account.
   await page.goto('/');
+  await page.getByRole('link', { name: 'Take the tour' }).first().click();
   await expect(page).toHaveURL(/\/welcome$/);
   await expect(page.getByText('Sample data', { exact: true })).toBeVisible();
   await page.goto('/sign-up');

@@ -1,5 +1,5 @@
 import { WhatsNew } from './WhatsNew';
-import { Suspense, type MouseEvent } from 'react';
+import { Suspense, useEffect, type MouseEvent } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -15,6 +15,10 @@ import { TAB_ICONS } from './TabIcons';
 
 export function AppShell() {
   const { pathname } = useLocation();
+  // index.html carries the home page's search title; inside the app the tab just says Overload.
+  useEffect(() => {
+    document.title = APP_NAME;
+  }, []);
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[15rem_1fr]">
       <a

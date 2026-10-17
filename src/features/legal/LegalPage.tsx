@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { AtSign, Mail, MapPin } from 'lucide-react';
 import { BrandMark } from '@/app/layout/BrandMark';
 import { APP_NAME } from '@/app/navigation';
+import { usePageMeta } from '@/app/usePageMeta';
 import { cn } from '@/lib/cn';
 import { CONTACT, LEGAL_DOCUMENTS, PRIVACY, REFUNDS, TERMS, type LegalDocument } from './documents';
 import {
@@ -27,13 +28,9 @@ export function LegalLinks({ className }: { className?: string }) {
 }
 
 function LegalLayout({ doc, children }: { doc: LegalDocument; children: React.ReactNode }) {
+  usePageMeta(`/${doc.slug}`);
   useEffect(() => {
-    const previous = document.title;
-    document.title = `${doc.title} | ${APP_NAME}`;
     window.scrollTo(0, 0);
-    return () => {
-      document.title = previous;
-    };
   }, [doc]);
 
   return (

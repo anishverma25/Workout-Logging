@@ -124,7 +124,8 @@ Read README.md for setup, architecture and calculation rules.
   reorder (`useDragReorder`) in routines and the workout (`ReorderSheet`). Weight on dumbbell
   moves is per dumbbell; volume counts both. Non-beginners build their own routine in setup.
 - Accounts are required (October 2026): `RequireAccount` gates every screen except `/welcome`,
-  the sign-in screens and the policies. A first visit opens the tour, which ends in create
+  the sign-in screens and the policies. A first visit opens the public home page at `/` (the
+  tour anywhere else), which leads to the tour, which ends in create
   account or sign in; a new account goes to setup. Pay once (migration 0009) sits next to
   subscriptions. Paying members get a membership view (`features/pro/ProMember.tsx`); free
   members get at most four spaced Pro reminders on Home, each from their own numbers
@@ -192,3 +193,11 @@ Read README.md for setup, architecture and calculation rules.
   moves to the new domain only when `VITE_CANONICAL_ORIGIN` is set for the build
   (`src/app/domain.ts`, `MoveToNewHome`), and only once the account's changes are synced.
   Turn it on after Razorpay approves the new domain.
+- Search (October 2026): a public home page at `/` for visitors who are not signed in and have
+  not finished the tour (static HTML in `index.html` between `landing` markers, shown by an
+  inline head script allowed by CSP hash; rule in `src/app/landing.ts`, `<Landing />` in
+  `RequireAccount`). Every count and feature on it is tested against the app. Public pages,
+  titles, descriptions and canonicals live in `src/app/publicPages.ts`; the build
+  (`build/seo.ts`) writes a page per entry, `sitemap.xml` and `_routes.json`. The old address
+  also gets a server 301 (`functions/_middleware.ts`) when `VITE_CANONICAL_ORIGIN` is set,
+  never for `/sw.js` or files.

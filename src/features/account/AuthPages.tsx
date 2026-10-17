@@ -23,6 +23,7 @@ import {
 import { buttonClasses } from '@/components/ui/buttonStyles';
 import { useToast } from '@/components/ui/Toast';
 import { TRIAL_HOURS } from '@/domain/entitlement/entitlement';
+import { usePageMeta } from '@/app/usePageMeta';
 import { safeNext } from './next';
 
 const TRIAL_DAYS = Math.round(TRIAL_HOURS / 24);
@@ -144,6 +145,7 @@ const ACCOUNT_PITCH =
 const HOME = '/';
 
 export function SignInPage() {
+  usePageMeta('/sign-in');
   const account = useAccount();
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -203,6 +205,7 @@ export function SignInPage() {
 }
 
 export function SignUpPage() {
+  usePageMeta('/sign-up');
   const account = useAccount();
   const [params] = useSearchParams();
   const navigate = useNavigate();

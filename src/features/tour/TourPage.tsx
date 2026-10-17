@@ -24,6 +24,7 @@ import type { StallCause } from '@/domain/analytics/stalls';
 import { Rings, RingLegend, type RingSpec } from '@/components/ui/Rings';
 import { useAccount } from '@/app/account';
 import { markTourSeen } from '@/app/seenTour';
+import { usePageMeta } from '@/app/usePageMeta';
 import { safeNext } from '@/features/account/next';
 import { generateDemoDataset } from '@/data/demo/generate';
 import { SYSTEM_EXERCISES } from '@/data/library/exercises';
@@ -49,6 +50,7 @@ import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units
  * database, so it can never mix with the person's own data.
  */
 export function TourPage() {
+  usePageMeta('/welcome');
   const navigate = useNavigate();
   const [params] = useSearchParams();
   // Where they were headed before the gate sent them here, kept through sign in.
