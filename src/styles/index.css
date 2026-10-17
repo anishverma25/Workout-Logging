@@ -70,6 +70,15 @@
   --ease-spring: cubic-bezier(0.34, 1.32, 0.5, 1);
 }
 
+/* The public home page in index.html: hidden unless the head script or the app shows it
+   (src/app/landing.ts). Hidden by default, so it never flashes over the app. */
+#landing {
+  display: none;
+}
+html[data-landing] #landing {
+  display: block;
+}
+
 @layer base {
   html {
     background: var(--bg);

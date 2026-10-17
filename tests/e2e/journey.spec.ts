@@ -55,9 +55,11 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
   const email = `journey-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`;
 
   await test.step('1-4. open, create an account, see a clean Home', async () => {
-    // No account yet: the app opens on the welcome tour.
+    // No account yet: the app opens on the public home page.
     await page.goto('/');
-    await expect(page).toHaveURL(/\/welcome$/);
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Log every set. See real progress.' }),
+    ).toBeVisible();
     await page.goto('/sign-up?next=/');
     await page.getByRole('textbox', { name: 'Email' }).fill(email);
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);

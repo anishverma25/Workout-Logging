@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { OFF_STATE, type SyncState } from '@/data/sync/controller';
-import { LEGACY_HOSTS, moveTarget, readyToMove } from './domain';
+import { LEGACY_HOSTS, legacyRedirect, moveTarget, readyToMove } from './domain';
 
 const NEW = 'https://overloadgym.in';
 const at = (hostname: string, pathname = '/', search = '', hash = '') => ({
@@ -47,5 +47,22 @@ describe('readyToMove', () => {
     expect(readyToMove({ status: 'signedIn' }, { ...idle, phase: 'syncing' })).toBe(false);
     expect(readyToMove({ status: 'signedIn' }, { ...idle, phase: 'offline' })).toBe(false);
     expect(readyToMove({ status: 'signedIn' }, OFF_STATE)).toBe(false);
+  });
+});
+
+describe('legacyRedirect', () => {
+  const OLD = `https://${LEGACY_HOSTS[0]}`;
+  it('sends a page on the old address to the same page on the new one, permanently', () => {
+    const res = legacyRedirect('GET', `${OLD}/history?x=1`, NEW);
+    expect(res?.status).toBe(301);
+    expect(res?.headers.get('Location')).toBe('https://overloadgym.in/history?x=1');
+  });
+  it('does nothing until the move is switched on', () => {
+    expect(legacyRedirect('GET', `${OLD}/`, undefined)).toBeNull();
+  });
+  it('leaves the new domain, previews and other methods alone', () => {
+    expect(legacyRedirect('GET', 'https://overloadgym.in/', NEW)).toBeNull();
+    expect(legacyRedirect('GET', 'https://abc123.overload-gym.pages.dev/', NEW)).toBeNull();
+    expect(legacyRedirect('POST', `${OLD}/`, NEW)).toBeNull();
   });
 });

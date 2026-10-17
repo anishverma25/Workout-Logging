@@ -1,5 +1,7 @@
 // Fails the build if the production bundle contains anything that must never ship:
-// development-only access overrides, or a Supabase secret (service role) key.
+// development-only access overrides, or a Supabase secret (service role) key. Also checks the
+// public pages: the home page's inline script is allowed by the CSP, and the SEO files exist.
+import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -32,6 +34,30 @@ for (const file of files('dist').filter((f) => /\.(js|html|css|json|webmanifest)
   for (const { pattern, why } of FORBIDDEN) {
     if (pattern.test(text)) problems.push(`${file}: ${why}`);
   }
+}
+
+// The inline script that shows the public home page must be allowed by the CSP, or first-time
+// visitors would wait for the app to start before seeing anything.
+const headers = readFileSync('dist/_headers', 'utf8');
+for (const page of ['index.html', 'welcome.html', 'terms.html']) {
+  const html = readFileSync(join('dist', page), 'utf8');
+  for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+    const hash = `'sha256-${createHash('sha256').update(m[1]).digest('base64')}'`;
+    if (!headers.includes(hash)) problems.push(`dist/${page}: inline script not allowed by CSP`);
+  }
+}
+for (const file of ['sitemap.xml', '_routes.json', 'robots.txt']) {
+  try {
+    statSync(join('dist', file));
+  } catch {
+    problems.push(`dist/${file} is missing`);
+  }
+}
+if (!readFileSync('dist/index.html', 'utf8').includes('id="landing"')) {
+  problems.push('dist/index.html has no public home page');
+}
+if (readFileSync('dist/terms.html', 'utf8').includes('id="landing"')) {
+  problems.push('dist/terms.html still carries the home page');
 }
 
 if (problems.length) {

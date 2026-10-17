@@ -45,3 +45,23 @@ export function readyToMove(account: Pick<AccountState, 'status'>, sync: SyncSta
   if (account.status === 'loading') return false;
   return sync.phase === 'idle' && sync.pending === 0 && sync.rejected === 0;
 }
+
+/**
+ * The server side of the move (`functions/_middleware.ts`): a permanent redirect for a page
+ * request on an old address, or null to serve it as usual. Search engines follow a 301 and move
+ * the old address's place in results to the new one.
+ *
+ * Safe for local data: a phone that already has the app installed on the old address opens it
+ * from its service worker, which never asks the server, so its changes are still saved before
+ * the app moves itself. Only a browser with nothing installed there reaches this redirect.
+ */
+export function legacyRedirect(
+  method: string,
+  requestUrl: string,
+  canonicalOrigin: string | undefined,
+): Response | null {
+  if (method !== 'GET' && method !== 'HEAD') return null;
+  const target = moveTarget(new URL(requestUrl), canonicalOrigin);
+  if (!target) return null;
+  return new Response(null, { status: 301, headers: { Location: target } });
+}
