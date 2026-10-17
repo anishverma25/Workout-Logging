@@ -1,7 +1,8 @@
 # Deployment
 
 Free-tier only: GitHub for code, Supabase for accounts and data, Cloudflare Pages for hosting.
-No paid infrastructure and no domain purchase are needed; the app runs on a `*.pages.dev` address.
+No paid infrastructure is needed: the app runs on a `*.pages.dev` address, and the production site is
+served from the custom domain `overloadgym.in` (see Custom domain below).
 
 ## Environments
 
@@ -42,8 +43,9 @@ app never needs them. `pnpm build` fails if a service role key ends up in the bu
    - For a first closed test only: turn off "Confirm email". The app signs people in straight
      away. Password reset emails still use the 2 per hour limit.
 5. Authentication > URL configuration: Site URL = your production address (for example
-   `https://overload.pages.dev`). Add redirect URLs `https://overload.pages.dev/account` and
-   `https://overload.pages.dev/reset-password`.
+   `https://overloadgym.in`). Add redirect URLs `https://overloadgym.in/account` and
+   `https://overloadgym.in/reset-password`. Keep the old `pages.dev` ones while that address is
+   still in use.
 6. Project settings > API: copy the URL and the anon / publishable key for step 2 below.
 
 **Free plan pausing.** Free projects are paused after about a week of low activity (a warning
@@ -70,6 +72,34 @@ configured Supabase URL. If you change `VITE_SUPABASE_URL`, redeploy.
 
 Free plan limits that matter here: 500 builds a month, one build at a time, 20,000 files per
 site. The app uses well under 100 files.
+
+## Custom domain (overloadgym.in)
+
+1. Cloudflare: add the domain as a site (Free plan). At the registrar (GoDaddy) set the two
+   Cloudflare nameservers. A `.in` domain stays on Registrar Hold until the owner email is
+   verified (WHOIS verification), and nameservers cannot be changed until then.
+2. Workers & Pages > the project > Custom domains: add `overloadgym.in` (and `www`). DNS
+   records and the certificate are created by Cloudflare.
+3. Rules > Redirect Rules: "Redirect from WWW to root" (301, preserve query string). The `www`
+   record stays proxied.
+4. Email: Brevo domain authentication (DKIM, verification and DMARC records in Cloudflare DNS,
+   CNAMEs set to DNS only), sender `no-reply@overloadgym.in`, an SMTP key. In Supabase,
+   Authentication > Emails > SMTP: host `smtp-relay.brevo.com`, port `587`, the SMTP login and
+   key. The key expires with its date and after 90 days of no use: renew it before then.
+5. Supabase: Site URL and redirect URLs on the new domain (above), and the `APP_ORIGIN` secret
+   of the `billing` function set to `https://overloadgym.in` (the function only accepts calls
+   from that origin).
+6. Razorpay: add `https://overloadgym.in` under Account & Settings > Business website details
+   (verification takes 24 to 48 hours; the review logs in with a free test account). Keep the old
+   entry until the move is done. Payments on an unapproved address can be refused.
+7. Move the old address (only after Razorpay approves the new one and a test payment works):
+   set `VITE_CANONICAL_ORIGIN=https://overloadgym.in` in Cloudflare Pages > Settings >
+   Variables (Production) and redeploy. Anyone opening `overload-gym.pages.dev` is then sent to
+   the same page on the new domain, once their changes are saved to their account
+   (`src/app/domain.ts`). Previews and localhost never move. Unset it to turn the move off.
+
+Data in a browser belongs to one address, so people sign in again on the new domain; what was
+synced comes back. Share previews use the tags and `public/og-image.png` in `index.html`.
 
 ## 3. After the first deploy
 
