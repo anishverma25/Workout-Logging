@@ -3,4 +3,4 @@ export const OWNER_NAME = 'Anish Verma';
 export const SUPPORT_EMAIL = 'overloadgymofficial@gmail.com';
 export const INSTAGRAM_HANDLE = '@overloadxgym';
 export const INSTAGRAM_URL = 'https://www.instagram.com/overloadxgym/';
-export const LAST_UPDATED = '15 October 2026';
+export const LAST_UPDATED = '18 October 2026';
