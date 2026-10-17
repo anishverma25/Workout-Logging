@@ -30,7 +30,7 @@ export const TERMS: LegalDocument = {
     {
       heading: 'Using Overload',
       items: [
-        'You can use the free features without an account. Your data then stays on your device.',
+        'You need an account to use Overload, so your training is backed up and the same on every device. The welcome tour and these policies can be read without one.',
         'An account needs a real email address. You are responsible for keeping your password safe and for what happens under your account.',
         'If you are under 18, use Overload with the permission of a parent or guardian.',
         'Do not misuse the app: no attempts to break it, scrape it, resell it or get around its limits.',
@@ -102,15 +102,15 @@ export const PRIVACY: LegalDocument = {
       ],
     },
     {
-      heading: 'Without an account',
+      heading: 'On your phone',
       paragraphs: [
-        'You can use Overload without an account. Your workouts, routines, profile and photos are then stored only on your device, in the browser. We do not receive them.',
+        'Overload keeps a copy of your data on your phone, in the browser, so it opens and works without internet. The welcome tour uses sample data that stays on your phone and is never sent to us.',
       ],
     },
     {
-      heading: 'With an account',
+      heading: 'Your account',
       paragraphs: [
-        'When you create an account, we store the following on our servers so it can sync between your devices:',
+        'Overload needs an account. We store the following on our servers so your training is backed up and in sync between your devices:',
       ],
       items: [
         'Your email address and your password. The password is stored in scrambled form by our sign in provider, so we cannot read it.',
