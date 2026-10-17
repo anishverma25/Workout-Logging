@@ -187,3 +187,8 @@ Read README.md for setup, architecture and calculation rules.
 - Contact: `features/legal/contact.ts` (team email and Instagram, no personal details).
 - Deployed on Cloudflare Pages from `phase-2-wip`. Each new Supabase migration must be applied
   in the SQL editor before the code that needs it is pushed.
+- Custom domain `overloadgym.in` (October 2026): steps in `docs/deployment.md`. Share previews
+  (Open Graph tags, `public/og-image.png`) and `robots.txt`. The old `overload-gym.pages.dev`
+  moves to the new domain only when `VITE_CANONICAL_ORIGIN` is set for the build
+  (`src/app/domain.ts`, `MoveToNewHome`), and only once the account's changes are synced.
+  Turn it on after Razorpay approves the new domain.

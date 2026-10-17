@@ -53,7 +53,7 @@ const deps: BillingDeps = {
 };
 
 // Only the app's own origin may call the signed-in routes from a browser. Set APP_ORIGIN to
-// the site's address, for example https://overload.pages.dev.
+// the site's address, for example https://overloadgym.in.
 const allowedOrigin = env('APP_ORIGIN');
 
 function cors(origin: string | null): Record<string, string> {

@@ -7,6 +7,7 @@ import { registerServiceWorker } from './app/pwa';
 import { router } from './app/router';
 import { DatabaseScope } from './app/DatabaseScope';
 import { ToastProvider } from './components/ui/Toast';
+import { MoveToNewHome } from './app/layout/MoveToNewHome';
 
 const root = createRoot(document.getElementById('root')!);
 
@@ -15,6 +16,7 @@ function render() {
     <StrictMode>
       <ToastProvider>
         <DatabaseScope>
+          <MoveToNewHome />
           <RouterProvider router={router} />
         </DatabaseScope>
       </ToastProvider>
