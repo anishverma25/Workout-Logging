@@ -10,6 +10,8 @@ import { cn } from '@/lib/cn';
 import { formatNumber, pluralize } from '@/lib/format';
 import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { ProLock } from '../pro/ProLock';
+import type { CoachTopic } from '@/app/coach';
+import { ExplainButton } from '../coach/CoachParts';
 import { EvidenceLink } from '../science/EvidenceLink';
 import { stallBest, stallCopy } from './stallCopy';
 import {
@@ -20,6 +22,15 @@ import {
   formatRest,
   type RestBand,
 } from '@/domain/analytics/rest';
+
+/** The AI coach topic for each block. */
+const BLOCK_COACH: Record<string, CoachTopic> = {
+  levels: 'levels',
+  rates: 'levels',
+  plateaus: 'plateaus',
+  balance: 'balance',
+  rest: 'rest',
+};
 
 /** Which section of the science page explains each block. */
 const BLOCK_SCIENCE: Record<string, string> = {
@@ -42,6 +53,7 @@ function Block({
   children: ReactNode;
 }) {
   const science = BLOCK_SCIENCE[id];
+  const coach = BLOCK_COACH[id];
   return (
     <section id={id} aria-labelledby={`sec-${id}`} className="mt-8 scroll-mt-28">
       <div className="flex items-center gap-2">
@@ -49,6 +61,9 @@ function Block({
           {title}
         </h2>
         {science ? <EvidenceLink topic={science} about={title.toLowerCase()} /> : null}
+        {coach ? (
+          <ExplainButton topic={coach} about={title.toLowerCase()} className="ml-auto" />
+        ) : null}
       </div>
       {detail ? (
         <p className="type-meta mt-0.5 mb-3 line-clamp-2 text-text-2">{detail}</p>

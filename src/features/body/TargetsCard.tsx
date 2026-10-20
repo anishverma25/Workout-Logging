@@ -19,6 +19,8 @@ import { targetInsights, type TargetInsight } from '@/domain/analytics/targets';
 import type { Profile } from '@/domain/models/schemas';
 import { cn } from '@/lib/cn';
 import { EvidenceLink } from '../science/EvidenceLink';
+import { ExplainButton } from '../coach/CoachParts';
+import { buildBrief } from '../coach/brief';
 import { INSIGHT_TONE } from '../shared/insightTone';
 
 const TONE = {
@@ -95,6 +97,25 @@ export function TargetsCard({
             Your targets
           </h2>
           <EvidenceLink topic="targets" about="target checks" />
+          <ExplainButton
+            topic="targets"
+            about="your targets"
+            brief={() =>
+              buildBrief('targets', {
+                unit: 'kg',
+                now,
+                profile,
+                model: null,
+                targets: {
+                  kcal: targets.kcal,
+                  proteinG: targets.proteinG,
+                  calculatedKcal: calc ? Math.round(calc.targetKcal) : null,
+                  bodyWeightKg: snapshot.weightKg,
+                  insights,
+                },
+              })
+            }
+          />
         </div>
         <TextLink small icon={<Pencil />} onClick={() => setEditing(true)}>
           {set ? 'Edit' : 'Set your own'}

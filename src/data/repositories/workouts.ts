@@ -646,7 +646,13 @@ export interface FinishCheck {
 }
 
 export async function finishCheck(db: WorkoutDatabase, workoutId: string): Promise<FinishCheck> {
-  const sets = alive(await db.sets.where('workoutId').equals(workoutId).toArray());
+  // A read-write transaction waits for writes already queued on these tables, so a set ticked
+  // a moment before Finish is counted (a read-only one could run before it lands).
+  const sets = alive(
+    await db.transaction('rw', db.sets, () =>
+      db.sets.where('workoutId').equals(workoutId).toArray(),
+    ),
+  );
   const completed = sets.filter((s) => s.completedAt !== null);
   const open = sets.filter((s) => s.completedAt === null);
   const hasValues = (s: WorkoutSet) =>

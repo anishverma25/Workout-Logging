@@ -133,10 +133,10 @@ test('a past workout can be started again from its page', async ({ page }) => {
   await page.goto('/history');
   await page.locator('a[href^="/history/"]').first().click();
   await expect(page.getByRole('button', { name: 'Start this workout' })).toBeVisible();
-  await expect(page.locator('section[aria-labelledby]').first()).toBeVisible();
+  await expect(page.locator('#main section[aria-labelledby]').first()).toBeVisible();
   const name = (await page.getByRole('heading', { level: 1 }).innerText()).trim();
   const exercises = await page
-    .locator('section[aria-labelledby]')
+    .locator('#main section[aria-labelledby]')
     .getByRole('heading', { level: 2 })
     .allInnerTexts();
   await page.getByRole('button', { name: 'Start this workout' }).click();

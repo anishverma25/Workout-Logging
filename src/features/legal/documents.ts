@@ -131,6 +131,13 @@ export const PRIVACY: LegalDocument = {
       ],
     },
     {
+      heading: 'AI coach (Pro, only if you turn it on)',
+      paragraphs: [
+        'The AI coach is off until you turn it on. When you ask it a question or tap Explain, the app sends the numbers needed for that answer (for example your sets, records, rest times, body weight, goal and targets), your question and your recent coach messages to a third-party AI service that writes the answer. Your name, email and account details are never sent.',
+        'The AI service may keep what is sent and use it to improve its products, so please do not include private details in your questions. We do not store your questions or the answers on our servers. Your coach chat is kept only on your phone, for 7 days, and you can turn the coach off or clear the chat in Settings at any time.',
+      ],
+    },
+    {
       heading: 'How we use your data',
       items: [
         'To run the app, keep your data in sync and show your progress.',
@@ -144,7 +151,7 @@ export const PRIVACY: LegalDocument = {
     {
       heading: 'Who handles it for us',
       paragraphs: [
-        'We use a small number of providers to run Overload: Supabase for the database and sign in, Cloudflare to host the app, and Razorpay for payments. They process data only to provide those services. Their servers may be in other countries.',
+        'We use a small number of providers to run Overload: Supabase for the database and sign in, Cloudflare to host the app, Razorpay for payments, Brevo to send account emails, and third-party AI services for the AI coach when you turn it on. They process data to provide those services. Their servers may be in other countries.',
       ],
     },
     {

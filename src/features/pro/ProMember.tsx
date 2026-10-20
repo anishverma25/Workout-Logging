@@ -10,6 +10,7 @@ import {
   Scale,
   Target,
   TrendingUp,
+  Sparkles,
 } from 'lucide-react';
 import type { EntitlementView } from '@/app/entitlement';
 import { Badge, Card, IconTile, ListGroup, ListRow, TextLink } from '@/components/kit';
@@ -46,6 +47,7 @@ const WHERE: { icon: ReactNode; title: string; to: string; features: ProFeature[
   },
   { icon: <CalendarCheck />, title: 'Home', to: '/', features: ['weekly_checkin'] },
   { icon: <Target />, title: 'Journey', to: '/journey', features: ['goal_projection', 'recaps'] },
+  { icon: <Sparkles />, title: 'Coach', to: '/coach', features: ['ai_coach'] },
 ];
 
 export function ProMemberSection({ entitlement: e }: { entitlement: EntitlementView }) {
@@ -124,7 +126,7 @@ export function ProMemberSection({ entitlement: e }: { entitlement: EntitlementV
       <div>
         <h3 className="type-title text-text-1">What is open to you now</h3>
         <p className="type-meta mt-1 text-text-2">
-          Nine features, across four screens. Tap any one to use it.
+          Ten features, across five screens. Tap any one to use it.
         </p>
         <div className="mt-4 flex flex-col gap-4">
           {WHERE.map((group) => (

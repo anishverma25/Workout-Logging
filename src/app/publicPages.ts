@@ -56,7 +56,8 @@ export const PUBLIC_PAGES: PublicPage[] = [
   {
     path: '/terms',
     title: 'Terms and conditions | Overload',
-    description: 'The rules for using Overload, the workout log and progress tracker, in plain language.',
+    description:
+      'The rules for using Overload, the workout log and progress tracker, in plain language.',
     inSitemap: true,
   },
   {

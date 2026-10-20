@@ -19,6 +19,7 @@ import { TodayCard } from './TodayCard';
 import { WeekCard } from './WeekCard';
 import { RingsCard } from './RingsCard';
 import { CheckinCard } from './CheckinCard';
+import { buildBrief } from '../coach/brief';
 import { activeRoutine } from '@/domain/analytics/schedule';
 
 export function HomePage() {
@@ -117,7 +118,21 @@ export function HomePage() {
               unit={prefs.weightUnit}
               className="order-2"
             />
-            <CheckinCard checkin={model.checkin} unit={prefs.weightUnit} className="order-3" />
+            <CheckinCard
+              checkin={model.checkin}
+              unit={prefs.weightUnit}
+              className="order-3"
+              brief={() =>
+                buildBrief('checkin', {
+                  unit: prefs.weightUnit,
+                  now,
+                  profile: training.data?.profile ?? null,
+                  data: training.data,
+                  model: null,
+                  checkin: model.checkin,
+                })
+              }
+            />
             <InsightCard insights={model.insights} className="order-3" />
             <div className="order-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
               <RecordCard

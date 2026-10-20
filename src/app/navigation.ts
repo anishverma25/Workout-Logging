@@ -14,6 +14,7 @@ import {
   Route,
   Scale,
   Settings,
+  Sparkles,
   Trophy,
   UserRound,
 } from 'lucide-react';
@@ -48,6 +49,7 @@ export const SECONDARY_NAV: NavItem[] = [
   { to: '/records', label: 'Records', icon: Trophy, tone: 'amber', group: 'training' },
   { to: '/exercises', label: 'Exercises', icon: Library, tone: 'lime', group: 'training' },
   { to: '/science', label: 'The science', icon: FlaskConical, tone: 'sky', group: 'training' },
+  { to: '/coach', label: 'AI coach', icon: Sparkles, tone: 'lime', group: 'training' },
   { to: '/profile', label: 'Profile', icon: UserRound, tone: 'iris', group: 'you' },
   { to: '/account', label: 'Account', icon: CircleUserRound, tone: 'graphite', group: 'app' },
   { to: '/settings', label: 'Settings', icon: Settings, tone: 'graphite', group: 'app' },

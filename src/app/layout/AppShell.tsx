@@ -10,6 +10,7 @@ import { BrandMark } from './BrandMark';
 import { AppNotices } from './AppNotices';
 import { StartWorkoutProvider } from '@/features/workout/StartWorkout';
 import { WorkoutDock } from '@/features/workout/WorkoutDock';
+import { CoachLauncher } from '@/features/coach/CoachLauncher';
 import { SyncBadge } from '@/features/account/SyncStatus';
 import { TAB_ICONS } from './TabIcons';
 
@@ -47,6 +48,7 @@ export function AppShell() {
               </div>
             </Suspense>
             <WorkoutDock />
+            <CoachLauncher />
           </StartWorkoutProvider>
         </main>
       </div>

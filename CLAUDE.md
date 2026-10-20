@@ -201,3 +201,13 @@ Read README.md for setup, architecture and calculation rules.
   (`build/seo.ts`) writes a page per entry, `sitemap.xml` and `_routes.json`. The old address
   also gets a server 301 (`functions/_middleware.ts`) when `VITE_CANONICAL_ORIGIN` is set,
   never for `/sw.js` or files.
+- AI coach (Pro, October 2026, `docs/ai-coach.md`): Explain buttons on Progress sections, the
+  check-in and targets, and the chat at `/coach`. The phone builds a brief of numbers the app
+  already calculated (`features/coach/brief.ts`, no name or email); the `coach` Edge Function
+  (`_shared/coach.ts`, shared with the fake Supabase) checks Pro on the server, asks Gemini
+  then Groq, and drops answers quoting loads or calories not in the brief. Nothing stored on
+  the server; chat kept on the phone 7 days (`app/coach.ts`); consent once per phone. The AI
+  explains, it never calculates. Pro feature `ai_coach`. Users never see the provider names
+  ("a third-party AI service"). A round button (`CoachLauncher`) opens the coach on every
+  screen except `/coach` and the logger. Answers quoting none of the person's numbers are
+  treated as generic and the next provider is tried (`isSpecific`).

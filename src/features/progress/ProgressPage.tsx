@@ -45,6 +45,8 @@ import { useNow } from '@/lib/useNow';
 import { useStartWorkout } from '../workout/StartWorkout';
 import { InsightList, Suggestions } from './Insights';
 import { useFeature } from '@/app/entitlement';
+import type { CoachTopic } from '@/app/coach';
+import { AskCoachRow, CoachBriefProvider, ExplainButton } from '../coach/CoachParts';
 import { ProLock } from '../pro/ProLock';
 import {
   BalanceSection,
@@ -122,6 +124,7 @@ export function ProgressPage() {
         </span>
         <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
       </Link>
+      <AskCoachRow className="mb-4" />
       {training.status === 'loading' ? <Skeleton className="h-96" /> : null}
       {training.status === 'error' ? <ErrorState error={training.error} /> : null}
 
@@ -184,7 +187,9 @@ export function ProgressPage() {
               lead="Your history is all here. Trends over 90 days and all time are part of Pro."
             />
           ) : (
-            <>
+            <CoachBriefProvider
+              value={{ unit, now, profile: training.data!.profile ?? null, model }}
+            >
               <p className="type-meta mt-2 text-text-2">
                 {formatDateRange(model.window.start, new Date(model.window.end.getTime() - 1), now)}
                 {model.sessionsInWindow === 0 ? '. No workouts logged in this period.' : ''}
@@ -235,7 +240,7 @@ export function ProgressPage() {
               <RestSection model={model} />
               <BodySection model={model} unit={unit} />
               <RecordsSection model={model} unit={unit} />
-            </>
+            </CoachBriefProvider>
           )}
         </>
       ) : null}
@@ -294,6 +299,18 @@ function ProgressionBlock({
   );
 }
 
+/** The AI coach topic for each Progress section. */
+const SECTION_COACH: Record<string, CoachTopic> = {
+  insights: 'insights',
+  progression: 'progression',
+  strength: 'strength',
+  volume: 'volume',
+  muscles: 'muscles',
+  consistency: 'consistency',
+  body: 'body',
+  records: 'records',
+};
+
 function Section({
   id,
   title,
@@ -308,6 +325,7 @@ function Section({
   science?: string;
   children: React.ReactNode;
 }) {
+  const coach = SECTION_COACH[id];
   return (
     <section id={id} aria-labelledby={`sec-${id}`} className="mt-8 scroll-mt-28">
       <div className="flex items-center gap-2">
@@ -315,6 +333,9 @@ function Section({
           {title}
         </h2>
         {science ? <EvidenceLink topic={science} about={title.toLowerCase()} /> : null}
+        {coach ? (
+          <ExplainButton topic={coach} about={title.toLowerCase()} className="ml-auto" />
+        ) : null}
       </div>
       {detail ? (
         <p className="type-meta mt-0.5 mb-3 line-clamp-2 text-text-2">{detail}</p>

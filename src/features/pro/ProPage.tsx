@@ -373,7 +373,7 @@ const PILLARS: { icon: ReactNode; title: string; line: string; features: ProFeat
     icon: <TrendingUp />,
     title: 'Know your next move',
     line: 'Walk into every session knowing what to lift.',
-    features: ['progression', 'plateaus', 'weekly_checkin'],
+    features: ['progression', 'plateaus', 'weekly_checkin', 'ai_coach'],
   },
   {
     icon: <Sparkles />,
@@ -439,6 +439,7 @@ const COMPARE: { label: string; free: boolean }[] = [
   { label: PRO_FEATURES.weekly_checkin.title, free: false },
   { label: PRO_FEATURES.goal_projection.title, free: false },
   { label: PRO_FEATURES.recaps.title, free: false },
+  { label: PRO_FEATURES.ai_coach.title, free: false },
 ];
 
 function Compare() {
