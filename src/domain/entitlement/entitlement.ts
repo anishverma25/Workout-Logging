@@ -139,7 +139,8 @@ export type ProFeature =
   | 'plateaus'
   | 'weekly_checkin'
   | 'goal_projection'
-  | 'recaps';
+  | 'recaps'
+  | 'ai_coach';
 
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
   long_range: {
@@ -178,6 +179,11 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
   recaps: {
     title: 'Monthly and yearly recaps',
     description: 'Your month and your year in numbers, as a card you can share.',
+  },
+  ai_coach: {
+    title: 'AI coach',
+    description:
+      'Ask about your training in any language, or tap Explain on a card. Answers use your own logged numbers.',
   },
 };
 

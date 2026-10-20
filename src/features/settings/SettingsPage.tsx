@@ -14,6 +14,8 @@ import { DEMO_AUTOLOAD, useAccount } from '@/app/account';
 import { SyncSummary } from '@/features/account/SyncStatus';
 import { Panel, PanelRow, Switch } from '@/components/ui/List';
 import { setDeviceSetting, useDeviceSettings } from '@/app/deviceSettings';
+import { clearCoachHistory, setCoachConsent, useCoachStore } from '@/app/coach';
+import { useFeature } from '@/app/entitlement';
 import { bodyCsv, downloadText, setsCsv } from '@/data/export';
 import { trainingCalendar } from '@/data/calendar';
 import { activeRoutine, daysForRoutine } from '@/domain/analytics/schedule';
@@ -38,6 +40,7 @@ export function SettingsPage() {
         <UnitsSection />
         <RestSection />
         <WorkoutSection />
+        <CoachSection />
         <RemindersSection />
         <ExportSection />
         <InstallSection />
@@ -233,6 +236,53 @@ function WorkoutSection() {
           checked={device.liveRecords}
           onChange={(v) => setDeviceSetting('liveRecords', v)}
         />
+      </PanelRow>
+    </Panel>
+  );
+}
+
+/** The AI coach: whether it may send training numbers, and the chat kept on this phone. */
+function CoachSection() {
+  const account = useAccount();
+  const pro = useFeature('ai_coach');
+  const coach = useCoachStore();
+  const toast = useToast();
+  if (account.status !== 'signedIn') return null;
+  const saved = coach.messages.length;
+  return (
+    <Panel
+      title="AI coach"
+      footer={
+        pro
+          ? 'When on, questions and the numbers they need are sent to a third-party AI service to answer. The chat stays on this phone for 7 days.'
+          : 'The AI coach is part of Pro.'
+      }
+    >
+      <PanelRow
+        title="Use the AI coach"
+        detail={pro ? 'Ask about your training and explain cards.' : 'Available with Pro.'}
+      >
+        <Switch
+          label="Use the AI coach"
+          checked={coach.consent}
+          onChange={(v) => setCoachConsent(v)}
+        />
+      </PanelRow>
+      <PanelRow
+        title="Clear coach chat"
+        detail={saved ? `${saved} messages on this phone.` : 'Nothing saved on this phone.'}
+      >
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={saved === 0 && Object.keys(coach.explained).length === 0}
+          onClick={() => {
+            clearCoachHistory();
+            toast('Coach chat cleared.');
+          }}
+        >
+          Clear
+        </Button>
       </PanelRow>
     </Panel>
   );

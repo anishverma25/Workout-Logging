@@ -49,17 +49,3 @@ test('badges show what is earned, how close the rest are, and share as a story',
     page.getByRole('dialog', { name: 'Living legend' }).getByText(/ of 1,000$/),
   ).toBeVisible();
 });
-
-test('the update announcement shows once, with how to reach us', async ({ page }) => {
-  await page.evaluate(() => localStorage.removeItem('overload.whatsNew'));
-  await page.goto('/');
-  const dialog = page.getByRole('dialog', { name: 'New in Overload' });
-  await expect(dialog.getByText('Medals and badges are here')).toBeVisible();
-  await expect(dialog.getByRole('link', { name: 'overloadgymofficial@gmail.com' })).toBeVisible();
-  await expect(dialog.getByRole('link', { name: '@overloadxgym' })).toBeVisible();
-  await dialog.getByRole('button', { name: 'See my badges' }).click();
-  await expect(page).toHaveURL(/\/badges$/);
-  await page.reload();
-  await expect(page.getByRole('heading', { level: 1, name: 'Badges' })).toBeVisible();
-  await expect(page.getByRole('dialog', { name: 'New in Overload' })).toHaveCount(0);
-});

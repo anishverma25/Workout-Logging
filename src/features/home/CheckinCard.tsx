@@ -6,16 +6,20 @@ import { formatDayMonth, addDays } from '@/lib/dates';
 import { pluralize } from '@/lib/format';
 import { formatWeightValue, type WeightUnit } from '@/lib/units';
 import { ProLock } from '@/features/pro/ProLock';
+import { ExplainButton } from '@/features/coach/CoachParts';
 
 /** Monday's look back at last week: what improved, what stalled, one thing to focus on. */
 export function CheckinCard({
   checkin,
   unit,
   className,
+  brief,
 }: {
   checkin: WeeklyCheckin | null;
   unit: WeightUnit;
   className?: string;
+  /** The AI coach brief for this check-in, for its Explain button. */
+  brief?: () => string;
 }) {
   const included = useFeature('weekly_checkin');
   if (!checkin) return null;
@@ -33,10 +37,15 @@ export function CheckinCard({
       aria-labelledby="checkin-title"
       className={cn('rounded-panel border border-border bg-surface p-5', className)}
     >
-      <p className="type-meta text-text-2">{range}</p>
-      <h2 id="checkin-title" className="type-title text-text-1">
-        Last week
-      </h2>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="type-meta text-text-2">{range}</p>
+          <h2 id="checkin-title" className="type-title text-text-1">
+            Last week
+          </h2>
+        </div>
+        {brief ? <ExplainButton topic="checkin" about="last week" brief={brief} /> : null}
+      </div>
       <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
         <Stat
           icon={<CalendarCheck className="size-4" aria-hidden />}

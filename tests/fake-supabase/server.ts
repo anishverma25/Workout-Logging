@@ -24,6 +24,7 @@ import {
   hmacSha256Hex,
   type BillingDeps,
 } from '../../supabase/functions/_shared/billing.ts';
+import { handleCoach, type CoachProvider } from '../../supabase/functions/_shared/coach.ts';
 
 export const FAKE_SUPABASE_PORT = Number(process.env.FAKE_SUPABASE_PORT ?? 54329);
 export const JWT_SECRET = 'local-e2e-secret-not-used-anywhere-else';
@@ -453,6 +454,49 @@ async function handleBilling(req: IncomingMessage, res: ServerResponse, route: s
 }
 
 // ---------------------------------------------------------------------------------------------
+// AI coach: the real handler with stand-in providers, so tests never use a real AI or quota.
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Stand-in providers. A question can steer them, so tests running in parallel never share
+ * state: "#gemini-down" makes the first provider fail, "#all-down" both, "#invent" makes them
+ * quote a load that is not in the data.
+ */
+function fakeCoachProvider(name: 'gemini' | 'groq'): CoachProvider {
+  return {
+    name,
+    async generate(_system, messages) {
+      const last = messages[messages.length - 1]!.text;
+      if (last.includes('#all-down') || (name === 'gemini' && last.includes('#gemini-down')))
+        throw new Error(`${name} is over its limit`);
+      if (last.includes('#invent')) return 'Your squat is 999 kg, so add more weight.';
+      const question = /^Question: (.*)$/m.exec(last)?.[1];
+      const fact = last.split('\n').find((l) => l.startsWith('- ')) ?? '- Your data is in.';
+      return `${question ? `You asked: ${question}\n` : ''}Here is what your numbers say (${name === 'gemini' ? 'main' : 'backup'}).\n${fact}\n- Keep logging every set so the next answer has more to go on.`;
+    },
+  };
+}
+
+async function handleCoachRoute(req: IncomingMessage, res: ServerResponse) {
+  const claims = bearerClaims(req);
+  if (claims?.role !== 'authenticated')
+    return send(res, 401, { error: 'Sign in first.', code: 'signed_out' });
+  const body = await readJson(req);
+  const r = await handleCoach(
+    {
+      providers: [fakeCoachProvider('gemini'), fakeCoachProvider('groq')],
+      subscription: () =>
+        asRequester(req, async (tx) => {
+          const q = await tx.query<{ r: unknown }>('select public.get_my_subscription() as r');
+          return q.rows[0]?.r ?? null;
+        }),
+    },
+    body,
+  );
+  return send(res, r.status, r.body);
+}
+
+// ---------------------------------------------------------------------------------------------
 // HTTP plumbing
 // ---------------------------------------------------------------------------------------------
 
@@ -545,6 +589,9 @@ const server = createServer(async (req, res) => {
       // Subscriptions sign payment|subscription; one-time orders sign order|payment.
       const message = order_id ? `${order_id}|${payment_id}` : `${payment_id}|${subscription_id}`;
       return send(res, 200, { signature: await hmacSha256Hex(FAKE_RAZORPAY.keySecret, message) });
+    }
+    if (url.pathname === '/functions/v1/coach') {
+      return await handleCoachRoute(req, res);
     }
     if (url.pathname.startsWith('/functions/v1/billing/')) {
       return await handleBilling(req, res, url.pathname.slice('/functions/v1/billing/'.length));
