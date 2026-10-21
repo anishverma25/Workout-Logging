@@ -94,6 +94,7 @@ test('no horizontal scrolling on any main page', async ({ page }) => {
     '/',
     '/routines',
     '/workout',
+    '/food',
     '/progress',
     '/progress?range=7d',
     '/science',
