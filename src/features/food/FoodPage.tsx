@@ -126,24 +126,28 @@ export function FoodPage() {
             />
           ))}
           <ListGroup label="Food settings">
-            <ListRow
-              title="Food settings"
-              subtitle={[
-                ctx.diet ? DIET_LABEL[ctx.diet].title : 'Diet not set',
-                ctx.katoriMl ? `your katori ${ctx.katoriMl} ml` : 'standard katori',
-                `${ctx.customFoods.length} of your own foods`,
-              ].join(' · ')}
-              leading={<Settings2 className="size-5 text-text-2" aria-hidden />}
-              chevron
-              onClick={() => setSettings(true)}
-            />
-            <ListRow
-              title="How food numbers are worked out"
-              subtitle="Home recipes, USDA ingredient values, your own katori"
-              leading={<UtensilsCrossed className="size-5 text-text-2" aria-hidden />}
-              chevron
-              to="/science#food-values"
-            />
+            <li>
+              <ListRow
+                title="Food settings"
+                subtitle={[
+                  ctx.diet ? DIET_LABEL[ctx.diet].title : 'Diet not set',
+                  ctx.katoriMl ? `your katori ${ctx.katoriMl} ml` : 'standard katori',
+                  `${ctx.customFoods.length} of your own foods`,
+                ].join(' · ')}
+                leading={<Settings2 className="size-5 text-text-2" aria-hidden />}
+                chevron
+                onClick={() => setSettings(true)}
+              />
+            </li>
+            <li>
+              <ListRow
+                title="How food numbers are worked out"
+                subtitle="Home recipes, USDA ingredient values, your own katori"
+                leading={<UtensilsCrossed className="size-5 text-text-2" aria-hidden />}
+                chevron
+                to="/science#food-values"
+              />
+            </li>
           </ListGroup>
         </div>
       ) : null}

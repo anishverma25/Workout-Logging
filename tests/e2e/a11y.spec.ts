@@ -10,6 +10,7 @@ const PUBLIC_PAGES = ['/', '/welcome', '/sign-in', '/sign-up', '/forgot-password
 const PAGES = [
   '/',
   '/workout',
+  '/food',
   '/routines',
   '/progress',
   '/science',
