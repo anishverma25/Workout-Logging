@@ -29,8 +29,8 @@ export function CoachLauncher() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={pro ? 'Ask your coach' : 'Ask your coach (Pro)'}
-        title="Ask your coach"
+        aria-label={pro ? 'Ask OverloadGPT' : 'Ask OverloadGPT (Pro)'}
+        title="Ask OverloadGPT"
         data-coach-launcher
         className={cn(
           'pressable chrome fixed right-4 z-30 flex size-12 items-center justify-center rounded-full border border-border-strong bg-surface-2 text-lime lg:right-8',
@@ -44,7 +44,7 @@ export function CoachLauncher() {
       <BottomSheet
         open={open}
         onClose={() => setOpen(false)}
-        title="Coach"
+        title="OverloadGPT"
         subtitle="Ask about your training, in any language"
         wide
       >

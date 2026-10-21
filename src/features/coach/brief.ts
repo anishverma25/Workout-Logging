@@ -7,6 +7,9 @@ import { formatRest } from '@/domain/analytics/rest';
 import type { TargetInsight } from '@/domain/analytics/targets';
 import { MUSCLE_LABELS } from '@/domain/models/labels';
 import type { Profile } from '@/domain/models/schemas';
+import type { NutritionSummary, RealMaintenance } from '@/domain/nutrition/analysis';
+import type { DailyTargets } from '@/domain/nutrition/targets';
+import type { DietType, Nutrients } from '@/domain/nutrition/types';
 import { formatWeightValue, type WeightUnit } from '@/lib/units';
 import type { CoachTopic } from '@/app/coach';
 import { stallCopy } from '../progress/stallCopy';
@@ -33,6 +36,14 @@ export interface BriefInput {
     calculatedKcal: number | null;
     bodyWeightKg: number | null;
     insights: TargetInsight[];
+  } | null;
+  /** What the food log says, when the person logs food. */
+  nutrition?: {
+    summary: NutritionSummary;
+    today: Nutrients;
+    maintenance: RealMaintenance | null;
+    targets: DailyTargets;
+    diet: DietType | null;
   } | null;
 }
 
@@ -355,6 +366,50 @@ function targetLines(t: NonNullable<BriefInput['targets']>) {
   ];
 }
 
+const DIET_WORDS: Record<DietType, string> = {
+  veg: 'vegetarian',
+  egg: 'eggetarian (vegetarian and eggs)',
+  nonveg: 'non-vegetarian',
+  jain: 'Jain (vegetarian, no onion, garlic or root vegetables)',
+};
+
+/** Food: averages from the log, today so far, real maintenance and where protein comes from. */
+function nutritionLines(n: NonNullable<BriefInput['nutrition']>): string[] {
+  const s = n.summary;
+  const lines: string[] = [];
+  if (n.diet) lines.push(`Diet: ${DIET_WORDS[n.diet]}.`);
+  lines.push(
+    `Daily targets: ${n.targets.kcal !== null ? `${n.targets.kcal} kcal` : 'calories not set'}, ${n.targets.proteinG !== null ? `${n.targets.proteinG} g protein` : 'protein not set'}${n.targets.kcalSource === 'calculated' ? ' (calculated by the app)' : ''}.`,
+  );
+  if (!s.avg) {
+    lines.push(
+      `Food log: ${s.loggedDays} fully logged days in the last ${s.days} days, too few for averages.`,
+    );
+  } else {
+    lines.push(
+      `Food log, last ${s.days} days: ${s.loggedDays} fully logged days. Average ${s.avg.kcal} kcal, ${s.avg.proteinG} g protein, ${s.avg.carbsG} g carbs, ${s.avg.fatG} g fat, ${s.avg.fibreG} g fibre a day.`,
+    );
+    if (n.targets.proteinG !== null)
+      lines.push(`Protein target met on ${s.proteinHitDays} of ${s.loggedDays} logged days.`);
+    if (s.proteinTraining !== null && s.proteinRest !== null)
+      lines.push(
+        `Protein on training days ${s.proteinTraining} g, on rest days ${s.proteinRest} g.`,
+      );
+  }
+  if (s.topProtein.length)
+    lines.push(
+      `Biggest protein sources: ${s.topProtein.map((t) => `${t.foodName} ${t.proteinG} g`).join(', ')}.`,
+    );
+  lines.push(
+    `Today so far: ${Math.round(n.today.kcal)} kcal, ${round1(n.today.proteinG)} g protein.`,
+  );
+  if (n.maintenance)
+    lines.push(
+      `Real maintenance from the food log and weight trend: ${n.maintenance.kcal} kcal a day (average intake ${n.maintenance.meanIntake} kcal over ${n.maintenance.loggedDays} logged days, trend weight ${n.maintenance.changeKg >= 0 ? '+' : ''}${round1(n.maintenance.changeKg)} kg over ${n.maintenance.days} days).`,
+    );
+  return lines;
+}
+
 /** The last few workouts, each exercise with its heaviest working set and its set count. */
 function recentWorkouts(data: TrainingData, unit: WeightUnit, limit = 6): string[] {
   const sessions = buildSessions(data).slice(-limit);
@@ -405,6 +460,7 @@ export function buildBrief(topic: CoachTopic, input: BriefInput): string {
   }
   if (topic === 'targets') {
     if (input.targets) lines.push(...targetLines(input.targets));
+    if (input.nutrition) lines.push(...nutritionLines(input.nutrition));
     if (m) lines.push(...body(m, unit));
     return lines.join('\n');
   }
@@ -465,6 +521,7 @@ export function buildBrief(topic: CoachTopic, input: BriefInput): string {
         ),
       );
       if (input.targets) lines.push(...targetLines(input.targets));
+      if (input.nutrition) lines.push(...nutritionLines(input.nutrition));
       break;
   }
   return lines.join('\n');
@@ -483,9 +540,17 @@ const MAIN_MUSCLES = new Set<string>([
 ]);
 
 /** Questions worth asking, from what the data actually shows. */
-export function suggestedQuestions(m: ProgressModel | null, hasTargets: boolean): string[] {
-  if (!m || !m.hasAnyData) return ['How should I start training with Overload?'];
+export function suggestedQuestions(
+  m: ProgressModel | null,
+  hasTargets: boolean,
+  logsFood = false,
+): string[] {
+  if (!m || !m.hasAnyData)
+    return logsFood
+      ? ['Am I eating enough protein?', 'How should I start training with Overload?']
+      : ['How should I start training with Overload?'];
   const out: string[] = [];
+  if (logsFood) out.push('Am I eating enough protein for my goal?');
   const names = exerciseNames(m);
   const stall = m.plateaus[0];
   if (stall)

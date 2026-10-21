@@ -1,6 +1,12 @@
 import { liveQuery } from 'dexie';
 import { useEffect, useState } from 'react';
-import { DEFAULT_PREFERENCES, type Exercise, type Preferences } from '@/domain/models/schemas';
+import {
+  DEFAULT_PREFERENCES,
+  type CustomFood,
+  type Exercise,
+  type FoodLog,
+  type Preferences,
+} from '@/domain/models/schemas';
 import { exerciseUsage, type ExerciseUsage } from '@/domain/exercises/search';
 import { buildSessions, type TrainingData } from '@/domain/analytics/sessions';
 import { bestsBefore, type Bests } from '@/domain/analytics/medals';
@@ -182,3 +188,21 @@ export function useBestsBefore(workoutId: string): Map<string, Bests> | null {
   }, [workoutId]);
   return state && state.id === workoutId ? state.bests : null;
 }
+
+export interface FoodData {
+  logs: FoodLog[];
+  customFoods: CustomFood[];
+}
+
+/** Every food logged and the person's own foods. Small: a few thousand rows after years. */
+export const useFoodData = () =>
+  useLiveData<FoodData>(async () => {
+    const [logs, customFoods] = await Promise.all([
+      db.foodLogs.toArray(),
+      db.customFoods.toArray(),
+    ]);
+    return {
+      logs: logs.filter((l) => l.deletedAt === null),
+      customFoods: customFoods.filter((c) => c.deletedAt === null),
+    };
+  });

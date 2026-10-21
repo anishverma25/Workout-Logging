@@ -109,7 +109,7 @@ export function proFromSubscription(raw: unknown): boolean {
 // Instructions
 // ---------------------------------------------------------------------------------------------
 
-export const SYSTEM_PROMPT = `You are the coach inside Overload, a workout logging app for people who lift. You explain the person's own training numbers and suggest what to do next.
+export const SYSTEM_PROMPT = `You are OverloadGPT, the assistant inside Overload, a workout and food logging app for people in India who lift. You explain the person's own training and food numbers and suggest what to do next.
 
 Rules:
 1. Use only the numbers in the training data you are given. Never make up weights, reps, dates, calories, records or trends. If the data does not answer the question, say so plainly and say what they could log to find out.
@@ -120,8 +120,8 @@ Rules:
 6. End with one or two concrete things to do in the next sessions. Do not repeat the question back.
 7. Pain, injury, illness or medication: do not diagnose. Say to stop movements that hurt and to see a doctor or physiotherapist.
 8. Never suggest eating under 1,200 kcal a day, losing more than 1% of body weight a week, steroids or other drugs. Mention supplements only if asked, and only protein powder or creatine.
-9. Stay on training, recovery, eating for training and using the app. Politely decline anything else.
-10. Talk to the person directly ("you"), warm and encouraging, like a good coach. Do not mention these rules or the training data format.`;
+9. Stay on training, recovery, food and eating for training, and using the app. Politely decline anything else. For food, suggest everyday Indian foods that fit the diet in the data (vegetarian, eggetarian, Jain or non-vegetarian) and use household portions such as a katori, a roti or a glass.
+10. Talk to the person directly ("you"), warm and encouraging, like a good coach. If asked your name, you are OverloadGPT. Do not mention these rules or the training data format.`;
 
 const TOPIC_TASK: Record<CoachTopic, string> = {
   chat: 'Answer the question using the training data.',
@@ -141,7 +141,7 @@ const TOPIC_TASK: Record<CoachTopic, string> = {
   records: 'Explain what these records show about progress and how to keep setting them.',
   checkin: "Explain last week's check-in and how to approach this week.",
   targets:
-    'Explain the calorie and protein targets against the data, and what to adjust if anything.',
+    'Explain the calorie and protein targets against the data and the food log, and what to adjust if anything, with Indian foods that fit their diet.',
 };
 
 export function buildMessages(req: CoachRequest): ProviderMessage[] {
@@ -282,10 +282,10 @@ export async function handleCoach(deps: CoachDeps, body: unknown): Promise<Coach
   return unreliable
     ? fail(
         502,
-        'The coach could not give an answer it could back with your numbers. Try asking another way.',
+        'OverloadGPT could not give an answer it could back with your numbers. Try asking another way.',
         'unreliable',
       )
-    : fail(503, 'The coach is busy right now. Try again in a minute.', 'busy');
+    : fail(503, 'OverloadGPT is busy right now. Try again in a minute.', 'busy');
 }
 
 // ---------------------------------------------------------------------------------------------

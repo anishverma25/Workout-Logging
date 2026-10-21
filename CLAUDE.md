@@ -211,3 +211,10 @@ Read README.md for setup, architecture and calculation rules.
   ("a third-party AI service"). A round button (`CoachLauncher`) opens the coach on every
   screen except `/coach` and the logger. Answers quoting none of the person's numbers are
   treated as generic and the next provider is tried (`isSpecific`).
+- Food logging (October 2026, `docs/food-logging.md`): Food tab (`/food`) between Workout and
+  Progress, Dexie v4 (`foodLogs`, `customFoods`), migration `20261021000011_food_logging.sql`,
+  profile `dietType` and `katoriMl`. Ingredients are USDA SR28 (`data/library/ingredients.ts`,
+  generated); dishes are our own recipes (`data/library/foods.ts`), every one tested in
+  `domain/nutrition/library.test.ts`. Logs snapshot their numbers. Pro feature `food_insights`.
+  The AI coach is shown to users as OverloadGPT (route `/coach`, feature `ai_coach` and the
+  `coach` function keep their names).

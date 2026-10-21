@@ -15,6 +15,8 @@ export interface ProfileInput {
   dailyActivity?: Profile['dailyActivity'];
   calorieTarget?: number | null;
   proteinTargetG?: number | null;
+  dietType?: Profile['dietType'];
+  katoriMl?: number | null;
 }
 
 export class ProfileError extends Error {}
@@ -50,6 +52,8 @@ export async function saveProfile(
     throw new ProfileError('Enter calories between 800 and 8,000 a day.');
   if (input.proteinTargetG != null && !(input.proteinTargetG >= 20 && input.proteinTargetG <= 500))
     throw new ProfileError('Enter protein between 20 and 500 g a day.');
+  if (input.katoriMl != null && !(input.katoriMl >= 80 && input.katoriMl <= 500))
+    throw new ProfileError('Enter a katori size between 80 and 500 ml.');
   // Fields left out keep their current value; null clears them.
   const heightCm = input.heightCm == null ? input.heightCm : Math.round(input.heightCm * 10) / 10;
   const fields = Object.fromEntries(
@@ -61,5 +65,23 @@ export async function saveProfile(
     const profile = Profile.parse({ ...newRecordMeta('user', now.toISOString()), ...fields });
     await putRecords(db, 'profiles', [profile]);
     return profile;
+  });
+}
+
+/** Food settings on the person's own profile: what they eat and the size of their katori. */
+export async function saveFoodSettings(
+  db: WorkoutDatabase,
+  settings: { dietType?: Profile['dietType']; katoriMl?: number | null },
+): Promise<void> {
+  if (settings.katoriMl != null && !(settings.katoriMl >= 80 && settings.katoriMl <= 500))
+    throw new ProfileError('Enter a katori size between 80 and 500 ml.');
+  const katoriMl = settings.katoriMl == null ? settings.katoriMl : Math.round(settings.katoriMl);
+  const changes = Object.fromEntries(
+    Object.entries({ ...settings, katoriMl }).filter(([, v]) => v !== undefined),
+  ) as Partial<Profile>;
+  await db.transaction('rw', [db.profiles, db.outbox], async () => {
+    const current = await ownProfile(db);
+    if (!current) throw new ProfileError('Set up your profile first.');
+    await patchRecord<Profile>(db, 'profiles', current.id, changes);
   });
 }

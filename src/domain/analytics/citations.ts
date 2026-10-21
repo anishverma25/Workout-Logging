@@ -399,6 +399,33 @@ export const CITATIONS: Record<string, Citation> = {
     doi: '10.1007/s40279-017-0788-x',
     openAccess: false,
   },
+  usdaSr28: {
+    id: 'usdaSr28',
+    authors: 'US Department of Agriculture, Agricultural Research Service',
+    year: 2016,
+    title:
+      'USDA National Nutrient Database for Standard Reference, Release 28 (in FoodData Central)',
+    journal: 'Nutrient Data Laboratory',
+    url: 'https://fdc.nal.usda.gov',
+    openAccess: true,
+  },
+  vijayakumar2024: {
+    id: 'vijayakumar2024',
+    authors: 'Vijayakumar A, Dubasi HB, Awasthi A, Jaacks LM',
+    year: 2024,
+    title: 'Development of an Indian Food Composition Database',
+    journal: 'Current Developments in Nutrition',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11277795',
+    openAccess: true,
+  },
+  merrill1973: {
+    id: 'merrill1973',
+    authors: 'Merrill AL, Watt BK',
+    year: 1973,
+    title: 'Energy Value of Foods: Basis and Derivation',
+    journal: 'Agriculture Handbook No. 74, USDA',
+    openAccess: true,
+  },
 };
 
 // Which citations back each calculated metric. "definition" = arithmetic / product rule, no paper.
@@ -446,6 +473,10 @@ export const METRIC_EVIDENCE: Record<
   nutritionTargets: {
     kind: 'evidence',
     citations: ['hall2008', 'helms2014', 'iraki2019', 'morton2018'],
+  },
+  foodValues: {
+    kind: 'evidence',
+    citations: ['usdaSr28', 'vijayakumar2024', 'merrill1973', 'hall2008'],
   },
   restAnalysis: {
     kind: 'evidence',

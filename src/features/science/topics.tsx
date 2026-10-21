@@ -39,6 +39,14 @@ import {
   VOLUME_DROP,
 } from '@/domain/analytics/stalls';
 import { REST_PRESETS } from '@/domain/workout/restTimer';
+import { FOODS } from '@/data/library/foods';
+import { FILL, KATORI_ML } from '@/domain/nutrition/calc';
+import { OIL_FACTOR } from '@/domain/nutrition/types';
+import {
+  LOGGED_DAY_MIN_KCAL,
+  MAINTENANCE_MIN_DAYS,
+  MAINTENANCE_WINDOW_DAYS,
+} from '@/domain/nutrition/analysis';
 import { GOAL_LABEL } from '@/domain/models/labels';
 
 /**
@@ -337,14 +345,14 @@ export const SCIENCE: TopicGroup[] = [
           <>
             Medals by kind of exercise. Weight and reps: heaviest weight, best estimated 1RM
             (compound lifts), best set volume (weight × reps) and best session volume. Bodyweight
-            and assisted moves: most reps in a set and most reps in a session (less assistance
-            is not a record). Weighted bodyweight: heaviest added weight. Timed and distance
-            work: longest time and longest distance. During a workout, a set that beats your
-            best is announced right away (Settings, Live record alerts).
+            and assisted moves: most reps in a set and most reps in a session (less assistance is
+            not a record). Weighted bodyweight: heaviest added weight. Timed and distance work:
+            longest time and longest distance. During a workout, a set that beats your best is
+            announced right away (Settings, Live record alerts).
           </>,
           <>
-            Set records are the heaviest weight for each number of reps. They win no medal: they
-            are the number to beat when you train in that rep range.
+            Set records are the heaviest weight for each number of reps. They win no medal: they are
+            the number to beat when you train in that rep range.
           </>,
         ],
       },
@@ -757,7 +765,65 @@ export const SCIENCE: TopicGroup[] = [
         forYou:
           'Weigh in most mornings. After two weeks the trend tells you your real maintenance better than any formula.',
         limits:
-          'Overload does not log food, so it assumes you eat close to your target. Water and food in the gut move daily weight by a kilo or more, which is why only the 7-day average is used.',
+          'Without a food log this assumes you eat close to your target; when you log food, real maintenance uses what you actually ate (see Food values). Water and food in the gut move daily weight by a kilo or more, which is why only the 7-day average is used.',
+      },
+      {
+        id: 'food-values',
+        title: 'Food values and real maintenance',
+        evidence: 'foodValues',
+        shows: `Calories, protein, carbs, fat and fibre for each of the ${FOODS.length} foods, your daily totals, and your real maintenance from what you eat and weigh.`,
+        formulas: [
+          {
+            tex: String.raw`N_{100} = \dfrac{\sum_i m_i\, n_i / 100}{W_{\text{cooked}}} \times 100`,
+            spoken:
+              'Nutrients per 100 grams cooked equal the sum of each raw ingredient weight times its nutrients per 100 grams, divided by the cooked weight of the pot, times 100',
+            where:
+              'm is each raw ingredient in grams in a standard home recipe, n its value per 100 g from USDA lab data, W the weight of the pot after cooking.',
+          },
+          {
+            tex: String.raw`W_{\text{cooked}} = \dfrac{\text{dry matter}}{1 - \text{moisture}}`,
+            spoken:
+              'For breads and batters, cooked weight equals dry matter over one minus moisture',
+            where:
+              'Breads use 34% moisture, as in USDA chapati and naan. A roti from 30 g of atta is about 100 kcal whatever it weighs.',
+          },
+          {
+            tex: String.raw`g = V \times f \times \rho`,
+            spoken: 'Portion grams equal volume times how full it is served times density',
+            where: `Katori ${KATORI_ML.small}, ${KATORI_ML.medium} or ${KATORI_ML.large} ml (or your own), served ${Math.round((FILL.katori ?? 1) * 100)}% full; ρ is the dish's density in g per ml.`,
+          },
+          {
+            tex: String.raw`E_{\text{oil}} = 8.84 \times o \times (k - 1)`,
+            spoken:
+              'Extra energy from oil equals 8.84 times the standard oil in the portion times k minus 1',
+            where: `k is ${OIL_FACTOR.light} for light, ${OIL_FACTOR.normal} for normal and ${OIL_FACTOR.rich} for rich. Only the cooking fat changes.`,
+          },
+          {
+            tex: String.raw`\text{maintenance} = \bar{I} - ${KCAL_PER_KG} \times \dfrac{\Delta W}{d}`,
+            spoken: `Real maintenance equals average daily intake minus ${KCAL_PER_KG} times the change in trend weight over the days`,
+            where: `Needs ${MAINTENANCE_MIN_DAYS} fully logged days (over ${LOGGED_DAY_MIN_KCAL} kcal) in the last ${MAINTENANCE_WINDOW_DAYS}, and weigh-ins at both ends.`,
+          },
+        ],
+        why: [
+          <>
+            Ingredient values are USDA lab data (public domain). Each dish is built from its
+            ingredients, the same recipe method the Indian Nutrient Databank uses, so every number
+            can be traced to its source.
+          </>,
+          <>
+            Every food is tested: its calories must match its protein, carbs and fat (4, 4, 9 and 2
+            for fibre) within 12%, portions must be realistic, and light oil must be below normal
+            and rich.
+          </>,
+          <>
+            Real maintenance uses what you logged, so if you always miss a little, the number
+            absorbs it and targets set from it still work.
+          </>,
+        ],
+        forYou:
+          'Set your own katori size in Food settings, and pick light or rich oil when a dish was cooked that way.',
+        limits:
+          'Home cooking varies, so a dish is an estimate, usually within 10 to 20%. A few Indian ingredients use the closest USDA food: paneer uses queso blanco (made the same way), poha uses white rice.',
       },
       {
         id: 'composition',

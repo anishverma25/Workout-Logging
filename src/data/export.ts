@@ -1,3 +1,4 @@
+import type { FoodLog } from '@/domain/models/schemas';
 import { buildSessions, type TrainingData } from '@/domain/analytics/sessions';
 import { isAlive } from '@/domain/analytics/sessions';
 import { MEASUREMENT_FIELDS } from '@/domain/models/schemas';
@@ -99,6 +100,47 @@ export function bodyCsv(data: TrainingData): string {
     rows.length - 1,
     ...rows.slice(1).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
   );
+  return toCsv(rows);
+}
+
+/** Every food logged, one per row, with the numbers saved at the time. */
+export function foodCsv(logs: FoodLog[]): string {
+  const rows: (string | number | null)[][] = [
+    [
+      'date',
+      'meal',
+      'food',
+      'amount',
+      'unit',
+      'size',
+      'grams',
+      'oil',
+      'kcal',
+      'protein_g',
+      'carbs_g',
+      'fat_g',
+      'fibre_g',
+    ],
+  ];
+  const sorted = logs
+    .filter((l) => l.deletedAt === null)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
+  for (const l of sorted)
+    rows.push([
+      l.date,
+      l.meal,
+      l.foodName,
+      l.amount,
+      l.unit,
+      l.size,
+      l.grams,
+      l.oilLevel,
+      l.kcal,
+      l.proteinG,
+      l.carbsG,
+      l.fatG,
+      l.fibreG,
+    ]);
   return toCsv(rows);
 }
 

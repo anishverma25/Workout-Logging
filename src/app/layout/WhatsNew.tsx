@@ -1,21 +1,20 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { Crown, Sparkles } from 'lucide-react';
+import { Crown, Sparkles, UtensilsCrossed } from 'lucide-react';
 import { formatRupees, usePlans } from '@/app/billing';
 import { useFeature } from '@/app/entitlement';
 import { BottomSheet, PrimaryButton, SecondaryButton } from '@/components/kit';
 import { seenRelease, markReleaseSeen, RELEASE_ID } from './whatsNewStore';
 
 /**
- * Shown once per release when the app opens, to everyone. This release: the AI coach, a Pro
- * feature. The price comes from the server's plans, never from this file, so it is always the
- * price people actually pay. Never over a running workout; it waits until the person is
- * elsewhere.
+ * Shown once per release when the app opens, to everyone. This release: food logging built for
+ * Indian meals (free), with food insights and OverloadGPT in Pro. The price comes from the
+ * server's plans, never from this file. Never over a running workout or setup.
  */
 export function WhatsNew() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const pro = useFeature('ai_coach');
+  const pro = useFeature('food_insights');
   const plans = usePlans();
   const monthly = plans?.find((p) => p.id === 'monthly' && p.priceInr > 0) ?? null;
   const [open, setOpen] = useState(() => !seenRelease());
@@ -35,53 +34,65 @@ export function WhatsNew() {
           className="flex size-20 items-center justify-center rounded-full border border-border-strong bg-surface-2 text-lime"
           aria-hidden
         >
-          <Sparkles className="size-10" strokeWidth={1.5} />
+          <UtensilsCrossed className="size-10" strokeWidth={1.5} />
         </span>
         <p className="type-caption mt-4 font-semibold text-lime">New update</p>
-        <p className="type-title mt-1 text-text-1">Meet your AI coach</p>
+        <p className="type-title mt-1 text-text-1">Food, made for Indian meals</p>
         <p className="type-body mt-1 text-text-2 [text-wrap:balance]">
-          The biggest thing we have ever built for Overload. A coach that knows every set you have
-          logged.
+          Log roti, dal, sabzi and chawal the way you actually eat them. Your training and your
+          food, finally in one app.
         </p>
         <ul className="type-body mt-4 flex flex-col gap-2.5 text-left text-text-2">
           <Point>
-            <strong className="font-semibold text-text-1">
-              Answers about you, not the internet.
-            </strong>{' '}
-            It reads your last 30 days: every lift, record, rest time and muscle group.
+            <strong className="font-semibold text-text-1">By the katori, not the gram.</strong>{' '}
+            Katori, roti, glass and ladle portions, with light, normal or rich oil.
           </Point>
           <Point>
-            <strong className="font-semibold text-text-1">Why your lift is stuck,</strong> and the
-            exact weight and reps to try in your next session.
+            <strong className="font-semibold text-text-1">Your usual in one tap.</strong> The
+            breakfast you eat every day, a whole thali, or the family pot, logged in seconds.
           </Point>
           <Point>
-            <strong className="font-semibold text-text-1">Ask in your language.</strong> English,
-            Hindi or Hinglish: "bench kyu nahi badh raha?" works.
+            <strong className="font-semibold text-text-1">Numbers you can trust.</strong> Every dish
+            worked out from a home recipe and lab values, and the method is on the science page.
           </Point>
           <Point>
-            <strong className="font-semibold text-text-1">Explain on every card,</strong> and a
-            round coach button on every screen, so help is always one tap away.
+            <strong className="font-semibold text-text-1">Free for everyone.</strong> Calories and
+            protein against your targets, every day.
           </Point>
         </ul>
         <div className="mt-4 w-full rounded-nested bg-surface-2 p-4 text-left">
           <p className="type-headline flex items-center gap-2 text-text-1">
             <Crown className="size-4 text-lime" aria-hidden />
-            {pro ? 'You have Pro, so it is ready now' : 'Part of Overload Pro'}
+            {pro ? 'You have Pro, so you also get' : 'Pro goes further'}
           </p>
-          <p className="type-meta mt-1 text-text-2">
-            {pro
-              ? 'Tap the round button at the bottom of any screen, or Explain on any Progress card.'
-              : monthly
-                ? `Just ${formatRupees(monthly.priceInr)} a month, less than a cup of coffee, for a coach who knows every rep you have done. Longer plans cost even less.`
-                : 'A coach who knows every rep you have done, for less than a cup of coffee a month.'}
-          </p>
+          <ul className="type-meta mt-2 flex flex-col gap-1.5 text-text-2">
+            <li>
+              <strong className="font-semibold text-text-1">Your real maintenance calories</strong>{' '}
+              from what you eat and weigh, not a guess.
+            </li>
+            <li>
+              <strong className="font-semibold text-text-1">Protein help in one tap</strong> with
+              foods you already eat, and typing a whole meal in one line.
+            </li>
+            <li>
+              <strong className="font-semibold text-text-1">OverloadGPT</strong>, our AI assistant
+              (the coach, renamed), now reads your food too.
+            </li>
+          </ul>
+          {pro ? null : (
+            <p className="type-meta mt-2 text-text-2">
+              {monthly
+                ? `Just ${formatRupees(monthly.priceInr)} a month. Longer plans cost even less.`
+                : 'Less than a cup of coffee a month.'}
+            </p>
+          )}
         </div>
         <div className="mt-5 flex w-full flex-col gap-2">
-          <PrimaryButton block data-autofocus onClick={() => go(pro ? '/coach' : '/pro')}>
-            {pro ? 'Ask my coach' : 'Get Pro'}
+          <PrimaryButton block data-autofocus onClick={() => go('/food')}>
+            Log my first meal
           </PrimaryButton>
-          <SecondaryButton block onClick={close}>
-            Later
+          <SecondaryButton block onClick={() => (pro ? close() : go('/pro'))}>
+            {pro ? 'Later' : 'See Pro'}
           </SecondaryButton>
         </div>
       </div>

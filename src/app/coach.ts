@@ -142,7 +142,7 @@ async function call(body: {
   if (!supabase) throw new CoachError('Accounts are not set up in this version of the app.', 'off');
   const { data, error } = await supabase.functions.invoke('coach', { body });
   if (error) {
-    let message = 'The coach could not be reached. Check your connection and try again.';
+    let message = 'OverloadGPT could not be reached. Check your connection and try again.';
     let code = 'network';
     try {
       const ctx = (error as { context?: Response }).context;
@@ -156,7 +156,7 @@ async function call(body: {
   }
   const answer = (data as { answer?: unknown } | null)?.answer;
   if (typeof answer !== 'string' || !answer)
-    throw new CoachError('The coach gave no answer.', 'empty');
+    throw new CoachError('OverloadGPT gave no answer.', 'empty');
   return answer;
 }
 

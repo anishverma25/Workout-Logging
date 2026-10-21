@@ -18,6 +18,7 @@ import { useAccount, useSyncStatus } from '@/app/account';
 import { Card, PrimaryButton, TextLink } from '@/components/kit';
 import { ShareSheet } from '@/features/share/ShareSheet';
 import { RestCard } from '@/features/shared/RestCard';
+import { RefuelCard } from './RefuelCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { ErrorState, Skeleton } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
@@ -181,6 +182,12 @@ export function SummaryPage() {
       </Card>
 
       <RestCard exercises={session.exercises} minutes={summary.minutes} className="mt-4" />
+      <RefuelCard
+        training={training}
+        workoutDate={session.date}
+        now={new Date()}
+        className="mt-4"
+      />
 
       {session.workout.notes ? (
         <Card as="section" aria-labelledby="summary-notes" className="mt-4">

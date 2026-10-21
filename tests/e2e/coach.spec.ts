@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { expireTrial, signUpFresh, startWithDemo } from './session';
 
 /**
- * The AI coach, against the real server handler with stand-in AI providers (tests never call a
+ * OverloadGPT (the AI coach), against the real server handler with stand-in AI providers (tests never call a
  * real AI). Pro only; asked once before anything is sent; answers come from the brief; Gemini
  * failing falls back to Groq; the chat stays on the phone and can be cleared.
  */
@@ -20,9 +20,11 @@ test('free accounts see the coach everywhere, marked Pro, and locked', async ({ 
   await expect(page.getByRole('textbox', { name: 'Your question' })).toHaveCount(0);
 
   await page.goto('/progress');
-  await expect(page.getByRole('link', { name: /Ask your coach/ })).toContainText('Pro');
+  await expect(page.getByRole('link', { name: /Ask OverloadGPT/ })).toContainText('Pro');
   await page.goto('/pro');
-  await expect(page.locator('#main').getByText('AI coach', { exact: true }).first()).toBeVisible();
+  await expect(
+    page.locator('#main').getByText('OverloadGPT', { exact: true }).first(),
+  ).toBeVisible();
 });
 
 test('Explain asks once, then answers from the numbers on the card', async ({ page }) => {
@@ -86,7 +88,9 @@ test('when the AI is down or makes up numbers, the coach says so and can retry',
 
   await box.fill('Help #all-down');
   await box.press('Enter');
-  await expect(page.getByText('The coach is busy right now. Try again in a minute.')).toBeVisible();
+  await expect(
+    page.getByText('OverloadGPT is busy right now. Try again in a minute.'),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
 
   await box.fill('My squat? #invent');

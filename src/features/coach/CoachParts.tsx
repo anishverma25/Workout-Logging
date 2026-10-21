@@ -68,7 +68,7 @@ export function ExplainButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={`Explain ${about} with the AI coach${pro ? '' : ' (Pro)'}`}
+        aria-label={`Explain ${about} with OverloadGPT${pro ? '' : ' (Pro)'}`}
         className={cn(
           'pressable chrome tap-target type-caption inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-surface-2 px-2.5 font-semibold text-text-1',
           className,
@@ -82,7 +82,7 @@ export function ExplainButton({
       <BottomSheet
         open={open}
         onClose={() => setOpen(false)}
-        title="AI coach"
+        title="OverloadGPT"
         subtitle={`About ${about}`}
       >
         {open ? <ExplainBody topic={topic} getBrief={getBrief} pro={pro} /> : null}
@@ -101,7 +101,7 @@ function ExplainBody({
   pro: boolean;
 }) {
   const store = useCoachStore();
-  if (!pro) return <CoachLock lead="The AI coach explains this card with your own numbers." />;
+  if (!pro) return <CoachLock lead="OverloadGPT explains this card with your own numbers." />;
   if (!store.consent) return <CoachConsent />;
   return <ExplainAnswer topic={topic} getBrief={getBrief} />;
 }
@@ -167,7 +167,7 @@ function ExplainAnswer({ topic, getBrief }: { topic: CoachTopic; getBrief: () =>
 export function Thinking({ className }: { className?: string }) {
   return (
     <div className={cn('flex flex-col gap-2', className)} role="status" aria-live="polite">
-      <span className="sr-only">The coach is thinking</span>
+      <span className="sr-only">OverloadGPT is thinking</span>
       <Skeleton height={16} width="92%" radius="full" />
       <Skeleton height={16} width="80%" radius="full" />
       <Skeleton height={16} width="64%" radius="full" />
@@ -218,7 +218,7 @@ export function CoachFootnote({ className }: { className?: string }) {
 export function CoachConsent({ onDone }: { onDone?: () => void }) {
   return (
     <div data-coach-consent>
-      <h3 className="type-headline text-text-1">Turn on the AI coach</h3>
+      <h3 className="type-headline text-text-1">Turn on OverloadGPT</h3>
       <ul className="type-meta mt-3 flex list-disc flex-col gap-2 pl-5 text-text-2">
         <li>
           To answer, the numbers it needs (your sets, records, body weight and goals) and your
@@ -230,7 +230,7 @@ export function CoachConsent({ onDone }: { onDone?: () => void }) {
         </li>
         <li>
           Nothing is kept on our servers. Your chat stays on this phone for 7 days, and you can turn
-          the coach off or clear it in Settings.
+          OverloadGPT off or clear it in Settings.
         </li>
       </ul>
       <div className="mt-5 flex flex-col gap-2 tab:flex-row">
@@ -276,7 +276,7 @@ export function AskCoachRow({ className }: { className?: string }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="type-headline flex items-center gap-2 text-text-1">
-          Ask your coach
+          Ask OverloadGPT
           {pro ? null : (
             <span className="type-caption rounded-full bg-surface-2 px-2 py-0.5 font-semibold text-text-2">
               Pro
@@ -284,7 +284,7 @@ export function AskCoachRow({ className }: { className?: string }) {
           )}
         </span>
         <span className="type-meta block text-text-2">
-          AI answers from your own numbers, in any language
+          Answers from your own training and food, in any language
         </span>
       </span>
     </Link>

@@ -82,7 +82,7 @@ function FeedbackForm() {
   const [tags, setTags] = useState<FeedbackTag[]>(() =>
     params.get('tag') === 'bug' ? ['bug'] : [],
   );
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(() => params.get('message')?.slice(0, 300) ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<'sent' | 'queued' | null>(null);

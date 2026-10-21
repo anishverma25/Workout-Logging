@@ -19,6 +19,7 @@ import { TodayCard } from './TodayCard';
 import { WeekCard } from './WeekCard';
 import { RingsCard } from './RingsCard';
 import { CheckinCard } from './CheckinCard';
+import { FoodCard } from './FoodCard';
 import { buildBrief } from '../coach/brief';
 import { activeRoutine } from '@/domain/analytics/schedule';
 
@@ -100,6 +101,9 @@ export function HomePage() {
           {/* Columns flatten on mobile so cards can be ordered by priority. */}
           <div className="contents lg:flex lg:flex-col lg:gap-4">
             <TodayCard plan={model.today} unit={prefs.weightUnit} className="order-1" />
+            {training.data?.profile ? (
+              <FoodCard training={training} now={now} className="order-2" />
+            ) : null}
             <RingsCard
               week={model.week}
               streak={model.streak}

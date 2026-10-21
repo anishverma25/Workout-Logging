@@ -91,6 +91,7 @@ export const router = createBrowserRouter([
             path: 'routines/:routineId',
             lazy: page(() => import('@/features/routines/RoutineEditorPage'), 'RoutineEditorPage'),
           },
+          { path: 'food', lazy: page(() => import('@/features/food/FoodPage'), 'FoodPage') },
           {
             path: 'progress',
             lazy: page(() => import('@/features/progress/ProgressPage'), 'ProgressPage'),
