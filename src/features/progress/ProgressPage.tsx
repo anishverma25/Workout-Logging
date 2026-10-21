@@ -48,6 +48,8 @@ import { useFeature } from '@/app/entitlement';
 import type { CoachTopic } from '@/app/coach';
 import { AskCoachRow, CoachBriefProvider, ExplainButton } from '../coach/CoachParts';
 import { ProLock } from '../pro/ProLock';
+import { useFoodContextFrom } from '../food/useFoodContext';
+import { NutritionSection } from './NutritionSection';
 import {
   BalanceSection,
   LevelsSection,
@@ -80,6 +82,7 @@ export function ProgressPage() {
   const longRangeIncluded = useFeature('long_range');
   const muscleBalanceIncluded = useFeature('muscle_balance');
   const progressionIncluded = useFeature('progression');
+  const food = useFoodContextFrom(now, training);
   const rangeLocked = (range === '90d' || range === 'all') && !longRangeIncluded;
 
   const model = useMemo(
@@ -239,6 +242,7 @@ export function ProgressPage() {
               <ConsistencySection model={model} />
               <RestSection model={model} />
               <BodySection model={model} unit={unit} />
+              <NutritionSection ctx={food} days={model.window.days} now={now} />
               <RecordsSection model={model} unit={unit} />
             </CoachBriefProvider>
           )}
@@ -941,6 +945,7 @@ const JUMPS = [
   { id: 'balance', label: 'Balance' },
   { id: 'consistency', label: 'Consistency' },
   { id: 'body', label: 'Body' },
+  { id: 'nutrition', label: 'Food' },
 ] as const;
 
 /** Sticky section bar (Part 4): tap to jump, the section in view is selected. */

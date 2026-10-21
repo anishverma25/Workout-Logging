@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 
 /*
- * The five primary navigation icons, drawn as outline and filled pairs (lucide has no filled
+ * The six primary navigation icons, drawn as outline and filled pairs (lucide has no filled
  * variants). 24px grid, 1.75 stroke on every outline, so the set reads as one family.
  * Filled shapes cut their details out in --bar, the colour behind the tab bar and sidebar.
  */
@@ -126,11 +126,27 @@ export function HistoryIcon({ filled, className }: TabIconProps) {
   );
 }
 
+/** A katori with steam rising from it. */
+export function FoodIcon({ filled, className }: TabIconProps) {
+  return (
+    <Svg className={className}>
+      <path
+        d="M3.5 11.5h17a8.5 7.4 0 0 1-17 0z"
+        {...stroke}
+        fill={filled ? 'currentColor' : 'none'}
+      />
+      <path d="M9 20.4h6" {...stroke} />
+      <path d="M9.2 3.6c-.9 1.1.9 2.1 0 3.4M14.8 3.6c-.9 1.1.9 2.1 0 3.4" {...stroke} />
+    </Svg>
+  );
+}
+
 // eslint-disable-next-line react-refresh/only-export-components
 export const TAB_ICONS = {
   '/': HomeIcon,
   '/routines': RoutinesIcon,
   '/workout': WorkoutIcon,
+  '/food': FoodIcon,
   '/progress': ProgressIcon,
   '/history': HistoryIcon,
 } as const;

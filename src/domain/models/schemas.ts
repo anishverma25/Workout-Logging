@@ -250,6 +250,10 @@ export const Profile = z.object({
   /** Daily targets the person set themselves; null uses the calculated ones. */
   calorieTarget: z.number().int().min(800).max(8000).nullish(),
   proteinTargetG: z.number().int().min(20).max(500).nullish(),
+  /** What the person eats, for food suggestions: Jain is vegetarian without onion, garlic, roots. */
+  dietType: z.enum(['veg', 'egg', 'nonveg', 'jain']).nullish(),
+  /** The size of their own katori in ml, set once; portions use it instead of the standard. */
+  katoriMl: z.number().int().min(80).max(500).nullish(),
 });
 export type Profile = z.infer<typeof Profile>;
 
@@ -281,6 +285,75 @@ export type MeasurementField = (typeof MEASUREMENT_FIELDS)[number];
 
 export const GoalKind = z.enum(['exercise_e1rm', 'exercise_load', 'body_weight']);
 export type GoalKind = z.infer<typeof GoalKind>;
+
+export const MealSlot = z.enum(['breakfast', 'lunch', 'snacks', 'dinner']);
+export const FoodUnit = z.enum([
+  'katori',
+  'ladle',
+  'glass',
+  'cup',
+  'tbsp',
+  'tsp',
+  'piece',
+  'serving',
+  'share',
+  'g',
+]);
+const grams = z.number().min(0).max(1000);
+
+/**
+ * One food eaten. The numbers are a snapshot taken when it was logged, the way workouts keep
+ * exercise names: improving the food library later never rewrites someone's history.
+ */
+export const FoodLog = z.object({
+  ...baseRecord,
+  /** Local calendar day it was eaten, yyyy-mm-dd. */
+  date: isoDate,
+  meal: MealSlot,
+  /** A built-in food id ("dal-tadka") or the id of the person's own food. */
+  foodId: z.string().min(1).max(80),
+  foodName: z.string().min(1).max(80),
+  amount: z.number().positive().max(5000),
+  unit: FoodUnit,
+  size: z.enum(['small', 'medium', 'large']).nullable(),
+  grams: z.number().positive().max(5000),
+  oilLevel: z.enum(['light', 'normal', 'rich']).nullable(),
+  kcal: z.number().min(0).max(10000),
+  proteinG: grams,
+  carbsG: grams,
+  fatG: grams,
+  fibreG: grams,
+  /** Library version the numbers came from; null for the person's own foods. */
+  libraryVersion: z.number().int().nullable(),
+});
+export type FoodLog = z.infer<typeof FoodLog>;
+
+/**
+ * A food the person added: from a label (per 100 g) or their own recipe, such as the family
+ * pot. Recipes keep their ingredients so they can be edited; the per 100 g values are worked
+ * out from them when saved.
+ */
+export const CustomFood = z.object({
+  ...baseRecord,
+  name: z.string().trim().min(1).max(60),
+  kind: z.enum(['food', 'recipe']),
+  kcal: z.number().min(0).max(900),
+  proteinG: z.number().min(0).max(100),
+  carbsG: z.number().min(0).max(100),
+  fatG: z.number().min(0).max(100),
+  fibreG: z.number().min(0).max(100),
+  /** Weight of one piece, when it comes in pieces. */
+  pieceG: z.number().positive().max(2000).nullable(),
+  /** People a recipe feeds; one share is the pot divided by this. */
+  servings: z.number().int().min(1).max(50).nullable(),
+  cookedG: z.number().positive().max(20000).nullable(),
+  ingredients: z
+    .array(z.object({ id: z.string().min(1).max(40), grams: z.number().positive().max(10000) }))
+    .max(40)
+    .nullable(),
+  diet: z.enum(['veg', 'egg', 'nonveg']),
+});
+export type CustomFood = z.infer<typeof CustomFood>;
 
 /** A target the person set: a lift or a body weight, optionally by a date. */
 export const TrainingGoal = z.object({

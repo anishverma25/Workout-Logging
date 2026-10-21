@@ -27,7 +27,7 @@ export const HOME_PAGE: PublicPage = {
   path: '/',
   title: 'Overload: workout log and strength progress tracker',
   description:
-    'Log every set in seconds, see your strength, volume and records grow, and train with routines built on published research. Works offline. Free to start.',
+    'Log every set and every meal, Indian food by the katori. Watch strength, volume and records grow with research-based routines. Works offline. Free to start.',
   inSitemap: true,
 };
 

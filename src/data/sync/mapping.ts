@@ -2,7 +2,9 @@ import type { ZodType } from 'zod';
 import {
   BodyMeasurement,
   BodyWeightEntry,
+  CustomFood,
   Exercise,
+  FoodLog,
   Preferences,
   Profile,
   Routine,
@@ -32,7 +34,9 @@ export type ServerTable =
   | 'sets'
   | 'body_weight'
   | 'body_measurements'
-  | 'goals';
+  | 'goals'
+  | 'food_logs'
+  | 'custom_foods';
 
 export type ServerRow = Record<string, unknown>;
 
@@ -64,6 +68,8 @@ export const TABLE_SPECS: TableSpec[] = [
       'dailyActivity',
       'calorieTarget',
       'proteinTargetG',
+      'dietType',
+      'katoriMl',
     ],
     schema: Profile,
   },
@@ -196,6 +202,47 @@ export const TABLE_SPECS: TableSpec[] = [
     fields: ['kind', 'exerciseId', 'targetValue', 'startValue', 'targetDate', 'achievedAt'],
     schema: TrainingGoal,
   },
+  {
+    local: 'customFoods',
+    server: 'custom_foods',
+    fields: [
+      'name',
+      'kind',
+      'kcal',
+      'proteinG',
+      'carbsG',
+      'fatG',
+      'fibreG',
+      'pieceG',
+      'servings',
+      'cookedG',
+      'ingredients',
+      'diet',
+    ],
+    schema: CustomFood,
+  },
+  {
+    local: 'foodLogs',
+    server: 'food_logs',
+    fields: [
+      'date',
+      'meal',
+      'foodId',
+      'foodName',
+      'amount',
+      'unit',
+      'size',
+      'grams',
+      'oilLevel',
+      'kcal',
+      'proteinG',
+      'carbsG',
+      'fatG',
+      'fibreG',
+      'libraryVersion',
+    ],
+    schema: FoodLog,
+  },
 ];
 
 export const specFor = (table: DomainTable) => TABLE_SPECS.find((s) => s.local === table);
@@ -228,6 +275,16 @@ const NUMERIC_FIELDS = new Set([
   'bodyFatPct',
   'targetValue',
   'startValue',
+  'katoriMl',
+  'kcal',
+  'proteinG',
+  'carbsG',
+  'fatG',
+  'fibreG',
+  'pieceG',
+  'cookedG',
+  'amount',
+  'grams',
 ]);
 
 export function toSnake(field: string): string {
@@ -260,7 +317,7 @@ export function fromServerRow(spec: TableSpec, row: ServerRow): Record<string, u
     let value = row[toSnake(f)] ?? null;
     if (value !== null && f.endsWith('At')) value = normalizeTimestamp(value);
     // `date` columns stay plain YYYY-MM-DD strings.
-    if (typeof value === 'string' && (f === 'birthDate' || f === 'targetDate'))
+    if (typeof value === 'string' && (f === 'birthDate' || f === 'targetDate' || f === 'date'))
       value = value.slice(0, 10);
     if (value !== null && NUMERIC_FIELDS.has(f)) value = Number(value);
     record[f] = value;

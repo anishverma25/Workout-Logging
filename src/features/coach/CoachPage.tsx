@@ -8,6 +8,7 @@ import { usePreferences, useTrainingData } from '@/data/hooks';
 import { buildProgress } from '@/domain/analytics/progress';
 import { cn } from '@/lib/cn';
 import { useNow } from '@/lib/useNow';
+import { nutritionBrief, useFoodContextFrom } from '../food/useFoodContext';
 import { buildBrief, suggestedQuestions, type BriefInput } from './brief';
 import { CoachConsent, CoachLock, CoachText, Thinking } from './CoachParts';
 
@@ -20,8 +21,8 @@ export function CoachPage() {
     <>
       <PageHeader
         back={{ to: '/progress', label: 'Progress' }}
-        title="Coach"
-        subtitle="Ask about your training, in any language"
+        title="OverloadGPT"
+        subtitle="Ask about your training and food, in any language"
       />
       <div className="flex max-w-2xl flex-col gap-4">
         <CoachBody />
@@ -37,7 +38,7 @@ export function CoachBody() {
   if (!pro)
     return (
       <>
-        <CoachLock lead="Ask the AI coach anything about your training." />
+        <CoachLock lead="Ask OverloadGPT anything about your training and food." />
         <WhatItDoes />
       </>
     );
@@ -53,14 +54,15 @@ export function CoachBody() {
 function WhatItDoes() {
   return (
     <Card>
-      <h2 className="type-headline text-text-1">What the coach does</h2>
+      <h2 className="type-headline text-text-1">What OverloadGPT does</h2>
       <ul className="type-meta mt-3 flex list-disc flex-col gap-2 pl-5 text-text-2">
         <li>
           Explains why a lift has stalled, using the cause Overload found, and what to change.
         </li>
         <li>Tells you which lifts are ready for more weight, and how much.</li>
         <li>
-          Checks your weekly sets, rest times, balance and calorie targets against the evidence.
+          Checks your weekly sets, rest times, balance, food and calorie targets against the
+          evidence.
         </li>
         <li>Answers in your language, Hinglish included, from your own logged numbers.</li>
         <li>Every card on Progress has an Explain button that does this in one tap.</li>
@@ -73,6 +75,8 @@ function useBriefInput(): BriefInput | null {
   const training = useTrainingData();
   const prefs = usePreferences();
   const now = useNow();
+  const food = useFoodContextFrom(now, training);
+  const nutrition = useMemo(() => nutritionBrief(food, now), [food, now]);
   return useMemo(() => {
     if (!training.data) return null;
     const profile = training.data.profile ?? null;
@@ -98,8 +102,9 @@ function useBriefInput(): BriefInput | null {
               insights: [],
             }
           : null,
+      nutrition,
     };
-  }, [training.data, prefs.weightUnit, prefs.weekStartsOn, now]);
+  }, [training.data, prefs.weightUnit, prefs.weekStartsOn, now, nutrition]);
 }
 
 function Chat() {
@@ -111,7 +116,7 @@ function Chat() {
   const end = useRef<HTMLDivElement>(null);
   const messages = store.messages.filter((m) => !m.topic);
   const suggestions = useMemo(
-    () => suggestedQuestions(input?.model ?? null, !!input?.targets),
+    () => suggestedQuestions(input?.model ?? null, !!input?.targets, !!input?.nutrition),
     [input],
   );
 
@@ -150,16 +155,16 @@ function Chat() {
         <Card>
           <div className="flex items-center gap-2 text-text-1">
             <Sparkles className="size-5" aria-hidden />
-            <h2 className="type-headline">Ask about your training</h2>
+            <h2 className="type-headline">Ask about your training and food</h2>
           </div>
           <p className="type-meta mt-1 text-text-2">
-            The coach reads your last 30 days: lifts, records, stalls, sets per muscle, rest and
-            body weight. Pick a question or write your own.
+            OverloadGPT reads your last 30 days: lifts, records, stalls, sets per muscle, rest, body
+            weight and what you ate. Pick a question or write your own.
           </p>
         </Card>
       ) : null}
 
-      <ol className="flex flex-col gap-3" aria-label="Chat with the coach" aria-live="polite">
+      <ol className="flex flex-col gap-3" aria-label="Chat with OverloadGPT" aria-live="polite">
         {messages.map((m) => (
           <li key={m.id}>
             <Bubble role={m.role} text={m.text} />

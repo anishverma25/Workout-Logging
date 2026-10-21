@@ -385,7 +385,7 @@ const PILLARS: { icon: ReactNode; title: string; line: string; features: ProFeat
     icon: <CalendarCheck />,
     title: 'Stay on course',
     line: 'A date for every goal, and a record of how you got there.',
-    features: ['goal_projection', 'recaps'],
+    features: ['goal_projection', 'recaps', 'food_insights'],
   },
 ];
 
@@ -427,6 +427,7 @@ const COMPARE: { label: string; free: boolean }[] = [
   { label: 'Unlimited logging, routines and custom exercises', free: true },
   { label: 'Full workout history and every personal record', free: true },
   { label: 'Body weight, measurements, calories and protein', free: true },
+  { label: 'Food logging for Indian meals, with daily totals', free: true },
   { label: 'Goals, milestones and progress photos', free: true },
   { label: 'Progress for the last 7 and 30 days', free: true },
   { label: 'Backup and sync across your devices', free: true },
@@ -439,6 +440,7 @@ const COMPARE: { label: string; free: boolean }[] = [
   { label: PRO_FEATURES.weekly_checkin.title, free: false },
   { label: PRO_FEATURES.goal_projection.title, free: false },
   { label: PRO_FEATURES.recaps.title, free: false },
+  { label: PRO_FEATURES.food_insights.title, free: false },
   { label: PRO_FEATURES.ai_coach.title, free: false },
 ];
 

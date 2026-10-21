@@ -1,4 +1,8 @@
-# AI coach
+# OverloadGPT (the AI coach)
+
+Users see the AI coach as **OverloadGPT**. Code, the route `/coach`, the Pro feature
+`ai_coach` and the `coach` Edge Function keep their names. Since food logging, the chat brief
+and the targets Explain include food lines (averages, today, real maintenance, diet).
 
 Pro members can ask the coach about their training (`/coach`, or the round button at the
 bottom right of every screen except the coach page and a running workout) or tap **Explain**

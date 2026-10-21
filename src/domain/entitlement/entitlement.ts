@@ -140,7 +140,8 @@ export type ProFeature =
   | 'weekly_checkin'
   | 'goal_projection'
   | 'recaps'
-  | 'ai_coach';
+  | 'ai_coach'
+  | 'food_insights';
 
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
   long_range: {
@@ -181,9 +182,14 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
     description: 'Your month and your year in numbers, as a card you can share.',
   },
   ai_coach: {
-    title: 'AI coach',
+    title: 'OverloadGPT',
     description:
-      'Ask about your training in any language, or tap Explain on a card. Answers use your own logged numbers.',
+      'Ask about your training and food in any language, or tap Explain on a card. Answers use your own logged numbers.',
+  },
+  food_insights: {
+    title: 'Food insights',
+    description:
+      'Your real maintenance calories from what you eat and weigh, food trends, protein help with one tap, and typing a whole meal in one line.',
   },
 };
 
@@ -193,6 +199,7 @@ export const FREE_FEATURES = [
   'Your full workout history and every personal record',
   'Profile setup, every routine template and personalised routines',
   'Body weight, measurements, calories, protein, BMI and body fat',
+  'Food logging for Indian meals: thalis, katori portions, your usual meals and daily totals',
   'Goals, milestones and progress photos',
   'Progress for the last 7 and 30 days, with insights',
   'Backup and sync across your devices',

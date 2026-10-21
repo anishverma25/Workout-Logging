@@ -647,12 +647,20 @@ export interface FinishCheck {
 
 export async function finishCheck(db: WorkoutDatabase, workoutId: string): Promise<FinishCheck> {
   // A read-write transaction waits for writes already queued on these tables, so a set ticked
-  // a moment before Finish is counted (a read-only one could run before it lands).
-  const sets = alive(
-    await db.transaction('rw', db.sets, () =>
-      db.sets.where('workoutId').equals(workoutId).toArray(),
-    ),
-  );
+  // a moment before Finish is counted (a read-only one could run before it lands). A tick whose
+  // write has not started yet can still be missed, so when nothing is done yet it looks again
+  // briefly before saying "Nothing logged yet".
+  const read = async () =>
+    alive(
+      await db.transaction('rw', db.sets, () =>
+        db.sets.where('workoutId').equals(workoutId).toArray(),
+      ),
+    );
+  let sets = await read();
+  for (let i = 0; i < 3 && !sets.some((s) => s.completedAt !== null); i += 1) {
+    await new Promise((r) => setTimeout(r, 120));
+    sets = await read();
+  }
   const completed = sets.filter((s) => s.completedAt !== null);
   const open = sets.filter((s) => s.completedAt === null);
   const hasValues = (s: WorkoutSet) =>

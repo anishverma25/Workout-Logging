@@ -11,6 +11,7 @@ import {
   Target,
   TrendingUp,
   Sparkles,
+  UtensilsCrossed,
 } from 'lucide-react';
 import type { EntitlementView } from '@/app/entitlement';
 import { Badge, Card, IconTile, ListGroup, ListRow, TextLink } from '@/components/kit';
@@ -47,7 +48,8 @@ const WHERE: { icon: ReactNode; title: string; to: string; features: ProFeature[
   },
   { icon: <CalendarCheck />, title: 'Home', to: '/', features: ['weekly_checkin'] },
   { icon: <Target />, title: 'Journey', to: '/journey', features: ['goal_projection', 'recaps'] },
-  { icon: <Sparkles />, title: 'Coach', to: '/coach', features: ['ai_coach'] },
+  { icon: <UtensilsCrossed />, title: 'Food', to: '/food', features: ['food_insights'] },
+  { icon: <Sparkles />, title: 'OverloadGPT', to: '/coach', features: ['ai_coach'] },
 ];
 
 export function ProMemberSection({ entitlement: e }: { entitlement: EntitlementView }) {

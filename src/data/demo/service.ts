@@ -56,6 +56,7 @@ export async function loadDemoData(
     await db.bodyWeights.bulkPut(data.bodyWeights);
     await db.bodyMeasurements.bulkPut(data.measurements);
     await db.goals.bulkPut(data.goals);
+    await db.foodLogs.bulkPut(data.foodLogs);
     await setMeta(db, META_KEYS.demoLoadedAt, now.toISOString());
   });
   return getDemoStatus(db);

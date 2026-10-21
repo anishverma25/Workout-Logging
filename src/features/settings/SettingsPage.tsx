@@ -16,7 +16,7 @@ import { Panel, PanelRow, Switch } from '@/components/ui/List';
 import { setDeviceSetting, useDeviceSettings } from '@/app/deviceSettings';
 import { clearCoachHistory, setCoachConsent, useCoachStore } from '@/app/coach';
 import { useFeature } from '@/app/entitlement';
-import { bodyCsv, downloadText, setsCsv } from '@/data/export';
+import { bodyCsv, downloadText, foodCsv, setsCsv } from '@/data/export';
 import { trainingCalendar } from '@/data/calendar';
 import { activeRoutine, daysForRoutine } from '@/domain/analytics/schedule';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
@@ -24,7 +24,7 @@ import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { clearDemoData, loadDemoData, resetDemoData } from '@/data/demo/service';
 import { DEMO_FEATURED_DAYS, DEMO_HISTORY_DAYS } from '@/data/demo/generate';
-import { useDemoStatus, usePreferences, useTrainingData } from '@/data/hooks';
+import { useDemoStatus, useFoodData, usePreferences, useTrainingData } from '@/data/hooks';
 import { updatePreferences } from '@/data/repositories/meta';
 import { getStorageState, requestPersistentStorage, type StorageState } from '@/data/storage';
 import { formatShortDate, toDateKey } from '@/lib/dates';
@@ -251,25 +251,25 @@ function CoachSection() {
   const saved = coach.messages.length;
   return (
     <Panel
-      title="AI coach"
+      title="OverloadGPT"
       footer={
         pro
           ? 'When on, questions and the numbers they need are sent to a third-party AI service to answer. The chat stays on this phone for 7 days.'
-          : 'The AI coach is part of Pro.'
+          : 'OverloadGPT is part of Pro.'
       }
     >
       <PanelRow
-        title="Use the AI coach"
+        title="Use OverloadGPT"
         detail={pro ? 'Ask about your training and explain cards.' : 'Available with Pro.'}
       >
         <Switch
-          label="Use the AI coach"
+          label="Use OverloadGPT"
           checked={coach.consent}
           onChange={(v) => setCoachConsent(v)}
         />
       </PanelRow>
       <PanelRow
-        title="Clear coach chat"
+        title="Clear OverloadGPT chat"
         detail={saved ? `${saved} messages on this phone.` : 'Nothing saved on this phone.'}
       >
         <Button
@@ -349,6 +349,7 @@ function RemindersSection() {
 
 function ExportSection() {
   const training = useTrainingData();
+  const food = useFoodData();
   const data = training.data;
   const date = toDateKey(new Date());
   return (
@@ -382,6 +383,17 @@ function ExportSection() {
           disabled={!data}
           icon={<Download className="size-4" aria-hidden />}
           onClick={() => data && downloadText(bodyCsv(data), `body-${date}.csv`)}
+        >
+          Export
+        </Button>
+      </PanelRow>
+      <PanelRow title="Food" detail="Every food logged, with its calories and protein.">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!food.data}
+          icon={<Download className="size-4" aria-hidden />}
+          onClick={() => food.data && downloadText(foodCsv(food.data.logs), `food-${date}.csv`)}
         >
           Export
         </Button>

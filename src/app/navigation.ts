@@ -17,6 +17,7 @@ import {
   Sparkles,
   Trophy,
   UserRound,
+  UtensilsCrossed,
 } from 'lucide-react';
 
 import type { TileTone } from '@/components/ui/List';
@@ -33,11 +34,12 @@ export interface NavItem {
   group?: 'you' | 'training' | 'app';
 }
 
-/** Bottom navigation on mobile (Workout sits in the centre, in thumb reach). */
+/** Bottom navigation on mobile: training on the left, food and results on the right. */
 export const PRIMARY_NAV: NavItem[] = [
   { to: '/', label: 'Home', icon: House },
   { to: '/routines', label: 'Routines', icon: CalendarRange },
   { to: '/workout', label: 'Workout', icon: Dumbbell },
+  { to: '/food', label: 'Food', icon: UtensilsCrossed },
   { to: '/progress', label: 'Progress', icon: ChartNoAxesColumnIncreasing },
   { to: '/history', label: 'History', icon: History },
 ];
@@ -49,7 +51,7 @@ export const SECONDARY_NAV: NavItem[] = [
   { to: '/records', label: 'Records', icon: Trophy, tone: 'amber', group: 'training' },
   { to: '/exercises', label: 'Exercises', icon: Library, tone: 'lime', group: 'training' },
   { to: '/science', label: 'The science', icon: FlaskConical, tone: 'sky', group: 'training' },
-  { to: '/coach', label: 'AI coach', icon: Sparkles, tone: 'lime', group: 'training' },
+  { to: '/coach', label: 'OverloadGPT', icon: Sparkles, tone: 'lime', group: 'training' },
   { to: '/profile', label: 'Profile', icon: UserRound, tone: 'iris', group: 'you' },
   { to: '/account', label: 'Account', icon: CircleUserRound, tone: 'graphite', group: 'app' },
   { to: '/settings', label: 'Settings', icon: Settings, tone: 'graphite', group: 'app' },

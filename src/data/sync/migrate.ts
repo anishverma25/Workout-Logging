@@ -116,6 +116,9 @@ export async function copyGuestData(
     (g) => g.exerciseId === null || exerciseIds.has(g.exerciseId),
   );
 
+  const foodLogs = await own<SyncedRecord>('foodLogs');
+  const customFoods = await own<SyncedRecord>('customFoods');
+
   const plan: [DomainTable, SyncedRecord[]][] = [
     ['profiles', profiles],
     ['exercises', exercises],
@@ -128,6 +131,8 @@ export async function copyGuestData(
     ['bodyWeights', bodyWeights],
     ['bodyMeasurements', measurements],
     ['goals', goals],
+    ['customFoods', customFoods],
+    ['foodLogs', foodLogs],
   ];
 
   // Read before the account transaction: awaiting another database inside it would end it.
