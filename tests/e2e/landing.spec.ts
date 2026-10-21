@@ -17,7 +17,7 @@ test('a first visit opens the public home page, which leads to the tour and an a
   await expect(page).toHaveTitle('Overload: workout log and strength progress tracker');
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     'content',
-    /Log every set in seconds/,
+    /Log every set and every meal/,
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',
