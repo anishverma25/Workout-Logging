@@ -118,7 +118,9 @@ export function foodScore(food: Food, query: string): number {
   // tadka, "paneer" is plain paneer. Shorter names win the remaining ties.
   const q = normalize(query);
   const exact = food.aliases.some((a) => normalize(a) === q) ? 3 : 0;
-  return total + exact - normalize(food.name).length * 0.01;
+  // The curated library first, then Indian Nutrient Databank dishes, then USDA foods.
+  const tail = food.source === 'usda' ? 4 : food.source === 'indb' ? 2 : 0;
+  return total + exact - tail - normalize(food.name).length * 0.01;
 }
 
 /** Whether a food fits a diet. Jain food is vegetarian without onion, garlic or roots. */

@@ -48,7 +48,7 @@ const WHERE: { icon: ReactNode; title: string; to: string; features: ProFeature[
   },
   { icon: <CalendarCheck />, title: 'Home', to: '/', features: ['weekly_checkin'] },
   { icon: <Target />, title: 'Journey', to: '/journey', features: ['goal_projection', 'recaps'] },
-  { icon: <UtensilsCrossed />, title: 'Food', to: '/food', features: ['food_insights'] },
+  { icon: <UtensilsCrossed />, title: 'Food', to: '/food', features: ['ai_food', 'food_insights'] },
   { icon: <Sparkles />, title: 'OverloadGPT', to: '/coach', features: ['ai_coach'] },
 ];
 

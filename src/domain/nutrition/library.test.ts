@@ -53,7 +53,8 @@ describe('the food library', () => {
     expect(piece('dosa')).toBeLessThan(120);
     for (const f of FOODS) {
       const kcal = portionNutrients(f, grams(f) * f.defaultAmount).kcal;
-      expect(kcal, f.id).toBeGreaterThan(5);
+      // Black coffee and green tea really are close to nothing.
+      if (f.per100.kcal >= 5) expect(kcal, f.id).toBeGreaterThan(5);
       expect(kcal, f.id).toBeLessThan(800);
     }
   });

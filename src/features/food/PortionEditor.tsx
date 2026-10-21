@@ -11,6 +11,11 @@ import { cap, unitName } from './foodText';
 const SOURCE: Record<Food['source'], string> = {
   recipe: 'Calculated from a home recipe. Varies with oil and portion.',
   ingredient: 'USDA lab values.',
+  label: 'From the pack label.',
+  usda: 'USDA lab values.',
+  indb: 'Indian Nutrient Databank, calculated from a published Indian recipe.',
+  off: 'From the pack label, via Open Food Facts.',
+  ai: 'Worked out by OverloadGPT. Check the portion.',
   custom: 'Your food, from its label.',
   custom_recipe: 'Your recipe.',
 };

@@ -7,11 +7,14 @@ import { resolveEntitlement, SubscriptionSnapshot } from '@/domain/entitlement/e
 import {
   COACH_TOPICS,
   buildMessages,
+  checkFoodItem,
+  FOOD_PROMPT,
   geminiProvider,
   groqProvider,
   handleCoach,
   inventedFigures,
   isSpecific,
+  parseFoodJson,
   parseRequest,
   proFromSubscription,
   tidyAnswer,
@@ -274,5 +277,118 @@ describe('the training brief', () => {
     expect(q.length).toBeGreaterThan(0);
     expect(q.length).toBeLessThanOrEqual(4);
     expect(q).toContain('What should I focus on this week?');
+  });
+});
+
+describe('AI food logging on the server', () => {
+  const good = {
+    name: 'aloo paratha',
+    portion: '2 parathas',
+    grams: 200,
+    kcal: 560,
+    protein_g: 12,
+    carbs_g: 76,
+    fat_g: 22,
+    fibre_g: 6,
+    diet: 'veg',
+    basis: 'estimate',
+    ref: 'typical home recipe',
+  };
+
+  it('reads the JSON even inside a code block', () => {
+    expect(parseFoodJson('```json\n[{"a":1}]\n```')).toEqual([{ a: 1 }]);
+    expect(parseFoodJson('no list here')).toBeNull();
+  });
+
+  it('keeps an item whose numbers hang together', () => {
+    const item = checkFoodItem(good)!;
+    expect(item).toMatchObject({ name: 'Aloo paratha', grams: 200, kcal: 560, basis: 'estimate' });
+  });
+
+  it('drops items that cannot be true', () => {
+    // More energy than pure fat.
+    expect(checkFoodItem({ ...good, kcal: 2000 })).toBeNull();
+    // Macros heavier than the food.
+    expect(checkFoodItem({ ...good, carbs_g: 300 })).toBeNull();
+    // Energy far from what the macros add up to.
+    expect(checkFoodItem({ ...good, kcal: 200 })).toBeNull();
+    expect(checkFoodItem({ ...good, grams: 0 })).toBeNull();
+    expect(checkFoodItem({ name: '', grams: 100, kcal: 100 })).toBeNull();
+  });
+
+  const deps = (answers: (string | Error)[], sub: unknown = ROWS.pro) => {
+    const calls: { name: string; system: string; search?: boolean }[] = [];
+    const providers: CoachProvider[] = answers.map((a, i) => ({
+      name: `p${i}`,
+      async generate(system, _m, options) {
+        calls.push({ name: `p${i}`, system, search: options?.search });
+        if (a instanceof Error) throw a;
+        return a;
+      },
+    }));
+    return { deps: { providers, subscription: async () => sub } as CoachDeps, calls };
+  };
+
+  it('is Pro only, checked on the server', async () => {
+    const { deps: d } = deps([JSON.stringify([good])], ROWS.trialOver);
+    const r = await handleCoach(d, { kind: 'food', text: '2 aloo paratha' });
+    expect(r.status).toBe(403);
+    expect(r.body.code).toBe('not_pro');
+  });
+
+  it('asks with web search and returns checked items', async () => {
+    const { deps: d, calls } = deps([JSON.stringify([good, { ...good, kcal: 9999 }])]);
+    const r = await handleCoach(d, { kind: 'food', text: '2 aloo paratha', diet: 'veg' });
+    expect(r.status).toBe(200);
+    expect((r.body.items as unknown[]).length).toBe(1);
+    expect(calls[0]).toMatchObject({ system: FOOD_PROMPT, search: true });
+  });
+
+  it('moves to the next provider when one fails or gives nothing usable', async () => {
+    const { deps: d, calls } = deps([
+      new Error('quota'),
+      'I think it was about 500 calories',
+      JSON.stringify([good]),
+    ]);
+    const r = await handleCoach(d, { kind: 'food', text: 'paratha' });
+    expect(r.status).toBe(200);
+    expect(calls).toHaveLength(3);
+  });
+
+  it('turns down empty or long text', async () => {
+    const { deps: d } = deps([JSON.stringify([good])]);
+    expect((await handleCoach(d, { kind: 'food', text: '' })).status).toBe(400);
+    expect((await handleCoach(d, { kind: 'food', text: 'x'.repeat(501) })).status).toBe(400);
+  });
+
+  it('Gemini searches with Google and answers without search if that fails', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const fetchFn = vi.fn(async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(init.body as string) as Record<string, unknown>;
+      bodies.push(body);
+      if (body.tools) return new Response('search not allowed', { status: 400 });
+      return Response.json({ candidates: [{ content: { parts: [{ text: '[]' }] } }] });
+    });
+    const text = await geminiProvider('k', 'm', fetchFn as unknown as typeof fetch).generate(
+      'r',
+      [{ role: 'user', text: 'q' }],
+      { search: true },
+    );
+    expect(text).toBe('[]');
+    expect(bodies[0]!.tools).toEqual([{ google_search: {} }]);
+    expect(bodies[1]!.tools).toBeUndefined();
+  });
+
+  it('Groq uses browser search on GPT-OSS models only', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const fetchFn = vi.fn(async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(init.body as string) as Record<string, unknown>);
+      return Response.json({ choices: [{ message: { content: '[]' } }] });
+    });
+    const f = fetchFn as unknown as typeof fetch;
+    await groqProvider('k', 'openai/gpt-oss-120b', f).generate('r', [], { search: true });
+    await groqProvider('k', 'llama-3.3', f).generate('r', [], { search: true });
+    expect(bodies[0]!.tools).toEqual([{ type: 'browser_search' }]);
+    expect(bodies[1]!.tools).toBeUndefined();
   });
 });

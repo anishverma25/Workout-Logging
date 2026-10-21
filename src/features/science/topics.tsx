@@ -771,7 +771,7 @@ export const SCIENCE: TopicGroup[] = [
         id: 'food-values',
         title: 'Food values and real maintenance',
         evidence: 'foodValues',
-        shows: `Calories, protein, carbs, fat and fibre for each of the ${FOODS.length} foods, your daily totals, and your real maintenance from what you eat and weigh.`,
+        shows: `Calories, protein, carbs, fat and fibre for the ${FOODS.length} foods in our own library and about 9,000 more, your daily totals, and your real maintenance from what you eat and weigh.`,
         formulas: [
           {
             tex: String.raw`N_{100} = \dfrac{\sum_i m_i\, n_i / 100}{W_{\text{cooked}}} \times 100`,
@@ -811,6 +811,20 @@ export const SCIENCE: TopicGroup[] = [
             can be traced to its source.
           </>,
           <>
+            Where each food comes from is shown under its name. Our own dishes are built as above.
+            Packaged products use the values printed on their pack. About 8,000 more foods (fruit,
+            dairy, fast food, packaged and restaurant items from around the world) are USDA lab
+            values, and about 860 more Indian dishes come from the Indian Nutrient Databank
+            (Vijayakumar et al. 2024). Search shows our own dishes first.
+          </>,
+          <>
+            With Pro, OverloadGPT can log a meal you describe. It looks up brands and restaurant
+            items on the web, or estimates from a typical recipe, and each food is marked as from
+            the web or estimated. Its numbers are checked before you see them: no more than 9.5 kcal
+            a gram, protein, carbs and fat that fit in the weight, and energy within 30% of 4, 4 and
+            9 kcal a gram. A food the library already has by that name uses the library's values.
+          </>,
+          <>
             Every food is tested: its calories must match its protein, carbs and fat (4, 4, 9 and 2
             for fibre) within 12%, portions must be realistic, and light oil must be below normal
             and rich.
@@ -823,7 +837,7 @@ export const SCIENCE: TopicGroup[] = [
         forYou:
           'Set your own katori size in Food settings, and pick light or rich oil when a dish was cooked that way.',
         limits:
-          'Home cooking varies, so a dish is an estimate, usually within 10 to 20%. A few Indian ingredients use the closest USDA food: paneer uses queso blanco (made the same way), poha uses white rice.',
+          'Home cooking varies, so a dish is an estimate, usually within 10 to 20%. A few Indian ingredients use the closest USDA food: paneer uses queso blanco (made the same way), poha uses white rice. Brands change recipes, so a pack in your hand beats the value here. OverloadGPT estimates can be wrong; check the portion before logging.',
       },
       {
         id: 'composition',

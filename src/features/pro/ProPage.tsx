@@ -11,6 +11,7 @@ import {
   Target,
   TrendingUp,
   Zap,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import { useEntitlement, type EntitlementView } from '@/app/entitlement';
@@ -382,10 +383,16 @@ const PILLARS: { icon: ReactNode; title: string; line: string; features: ProFeat
     features: ['long_range', 'muscle_balance', 'training_balance', 'strength_levels'],
   },
   {
+    icon: <UtensilsCrossed />,
+    title: 'Log food in seconds',
+    line: 'Say what you ate. OverloadGPT finds it and does the maths.',
+    features: ['ai_food', 'food_insights'],
+  },
+  {
     icon: <CalendarCheck />,
     title: 'Stay on course',
     line: 'A date for every goal, and a record of how you got there.',
-    features: ['goal_projection', 'recaps', 'food_insights'],
+    features: ['goal_projection', 'recaps'],
   },
 ];
 
@@ -395,7 +402,7 @@ function Pillars() {
       <h2 id="pillars-title" className="type-title text-text-1">
         Everything in Pro
       </h2>
-      <div className="mt-4 grid gap-3 tab:grid-cols-3">
+      <div className="mt-4 grid gap-3 tab:grid-cols-2">
         {PILLARS.map((p) => (
           <Card key={p.title} className="flex flex-col">
             <IconTile pro icon={p.icon} />
@@ -440,6 +447,7 @@ const COMPARE: { label: string; free: boolean }[] = [
   { label: PRO_FEATURES.weekly_checkin.title, free: false },
   { label: PRO_FEATURES.goal_projection.title, free: false },
   { label: PRO_FEATURES.recaps.title, free: false },
+  { label: PRO_FEATURES.ai_food.title, free: false },
   { label: PRO_FEATURES.food_insights.title, free: false },
   { label: PRO_FEATURES.ai_coach.title, free: false },
 ];

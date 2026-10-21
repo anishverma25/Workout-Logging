@@ -8,7 +8,7 @@ import { seenRelease, markReleaseSeen, RELEASE_ID } from './whatsNewStore';
 
 /**
  * Shown once per release when the app opens, to everyone. This release: food logging built for
- * Indian meals (free), with food insights and OverloadGPT in Pro. The price comes from the
+ * Indian meals (free), with AI food logging, food insights and OverloadGPT in Pro. The price comes from the
  * server's plans, never from this file. Never over a running workout or setup.
  */
 export function WhatsNew() {
@@ -37,10 +37,10 @@ export function WhatsNew() {
           <UtensilsCrossed className="size-10" strokeWidth={1.5} />
         </span>
         <p className="type-caption mt-4 font-semibold text-lime">New update</p>
-        <p className="type-title mt-1 text-text-1">Food, made for Indian meals</p>
+        <p className="type-title mt-1 text-text-1">Food logging is here</p>
         <p className="type-body mt-1 text-text-2 [text-wrap:balance]">
-          Log roti, dal, sabzi and chawal the way you actually eat them. Your training and your
-          food, finally in one app.
+          Roti and dal, whey and oats, biryani, burgers and momos: over 9,000 foods, logged the way
+          you actually eat them.
         </p>
         <ul className="type-body mt-4 flex flex-col gap-2.5 text-left text-text-2">
           <Point>
@@ -52,8 +52,9 @@ export function WhatsNew() {
             breakfast you eat every day, a whole thali, or the family pot, logged in seconds.
           </Point>
           <Point>
-            <strong className="font-semibold text-text-1">Numbers you can trust.</strong> Every dish
-            worked out from a home recipe and lab values, and the method is on the science page.
+            <strong className="font-semibold text-text-1">Gym food and brands.</strong> Egg whites,
+            chicken breast, soya chunks, whey from ON, MuscleBlaze and Avvatar, peanut butter, oats,
+            muesli and protein bars, with their pack values.
           </Point>
           <Point>
             <strong className="font-semibold text-text-1">Free for everyone.</strong> Calories and
@@ -71,8 +72,13 @@ export function WhatsNew() {
               from what you eat and weigh, not a guess.
             </li>
             <li>
+              <strong className="font-semibold text-text-1">AI food logging.</strong> Tell
+              OverloadGPT what you ate, typed or spoken. It finds any food, brand or restaurant dish
+              and fills your plate.
+            </li>
+            <li>
               <strong className="font-semibold text-text-1">Protein help in one tap</strong> with
-              foods you already eat, and typing a whole meal in one line.
+              foods you already eat.
             </li>
             <li>
               <strong className="font-semibold text-text-1">OverloadGPT</strong>, our AI assistant

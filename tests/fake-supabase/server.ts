@@ -24,7 +24,11 @@ import {
   hmacSha256Hex,
   type BillingDeps,
 } from '../../supabase/functions/_shared/billing.ts';
-import { handleCoach, type CoachProvider } from '../../supabase/functions/_shared/coach.ts';
+import {
+  FOOD_PROMPT,
+  handleCoach,
+  type CoachProvider,
+} from '../../supabase/functions/_shared/coach.ts';
 
 export const FAKE_SUPABASE_PORT = Number(process.env.FAKE_SUPABASE_PORT ?? 54329);
 export const JWT_SECRET = 'local-e2e-secret-not-used-anywhere-else';
@@ -465,8 +469,9 @@ async function handleBilling(req: IncomingMessage, res: ServerResponse, route: s
 function fakeCoachProvider(name: 'gemini' | 'groq'): CoachProvider {
   return {
     name,
-    async generate(_system, messages) {
+    async generate(system, messages) {
       const last = messages[messages.length - 1]!.text;
+      if (system === FOOD_PROMPT) return fakeFoodAnswer(name, last);
       if (last.includes('#all-down') || (name === 'gemini' && last.includes('#gemini-down')))
         throw new Error(`${name} is over its limit`);
       if (last.includes('#invent')) return 'Your squat is 999 kg, so add more weight.';
@@ -475,6 +480,35 @@ function fakeCoachProvider(name: 'gemini' | 'groq'): CoachProvider {
       return `${question ? `You asked: ${question}\n` : ''}Here is what your numbers say (${name === 'gemini' ? 'main' : 'backup'}).\n${fact}\n- Keep logging every set so the next answer has more to go on.`;
     },
   };
+}
+
+/**
+ * AI food logging stand-in: each comma or "and" separated part becomes one 150 g food of
+ * 240 kcal (12 g protein, 30 g carbs, 8 g fat), marked as found on the web when it names a
+ * brand in capitals. "#food-down" makes both providers fail.
+ */
+function fakeFoodAnswer(name: string, message: string): string {
+  if (message.includes('#food-down')) throw new Error(`${name} is over its limit`);
+  const text = /What they ate: (.*)$/m.exec(message)?.[1] ?? '';
+  const parts = text
+    .split(/,|\band\b|\baur\b/i)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return JSON.stringify(
+    parts.map((p) => ({
+      name: p.replace(/^\d+\s*/, ''),
+      portion: /^\d+/.test(p) ? p : `1 serving`,
+      grams: 150,
+      kcal: 240,
+      protein_g: 12,
+      carbs_g: 30,
+      fat_g: 8,
+      fibre_g: 0,
+      diet: /chicken|egg/i.test(p) ? (/chicken/i.test(p) ? 'nonveg' : 'egg') : 'veg',
+      basis: /[A-Z]{2,}|Starbucks|Amul/.test(p) ? 'web' : 'estimate',
+      ref: /[A-Z]{2,}|Starbucks|Amul/.test(p) ? 'brand website' : 'typical recipe',
+    })),
+  );
 }
 
 async function handleCoachRoute(req: IncomingMessage, res: ServerResponse) {

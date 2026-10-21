@@ -1,7 +1,7 @@
 import { CustomFood, FoodLog } from '@/domain/models/schemas';
 import { portionNutrients, roundNutrients, unitGrams, type Food } from '@/domain/nutrition/calc';
 import type { Meal, OilLevel, SizeId, UnitId } from '@/domain/nutrition/types';
-import { FOOD_LIBRARY_VERSION, recipeDiet, recipePer100 } from '../library/foods';
+import { customToFood, FOOD_LIBRARY_VERSION, recipeDiet, recipePer100 } from '../library/foods';
 import type { WorkoutDatabase } from '../db';
 import { newRecordMeta, patchRecord, patchRecords, putRecords, softDelete } from './write';
 
@@ -208,6 +208,50 @@ export async function saveCustomFood(
     await putRecords(db, 'customFoods', [food]);
     return food;
   });
+}
+
+/**
+ * Foods that exist only on the plate (OverloadGPT estimates, Open Food Facts products) become
+ * the person's own foods when logged, so the log can be edited and logged again later.
+ */
+export async function keepPlateFoods(
+  db: WorkoutDatabase,
+  plate: FoodPortion[],
+): Promise<FoodPortion[]> {
+  const saved = new Map<string, Food>();
+  const out: FoodPortion[] = [];
+  for (const p of plate) {
+    if (p.food.source !== 'ai' && p.food.source !== 'off') {
+      out.push(p);
+      continue;
+    }
+    let food = saved.get(p.food.id);
+    if (!food) {
+      const n = p.food.per100;
+      const sum = n.proteinG + n.carbsG + n.fatG;
+      const scale = sum > 100 ? 100 / sum : 1;
+      const custom = await saveCustomFood(db, {
+        name: p.food.name.slice(0, 60),
+        per100: {
+          kcal: Math.min(900, n.kcal),
+          proteinG: n.proteinG * scale,
+          carbsG: n.carbsG * scale,
+          fatG: n.fatG * scale,
+          fibreG: Math.min(100, n.fibreG),
+        },
+        pieceG: p.food.servingG ?? p.food.pieceG ?? null,
+        diet: p.food.diet,
+      });
+      food = customToFood(custom);
+      saved.set(p.food.id, food);
+    }
+    const portion =
+      p.unit === 'serving' || p.unit === 'piece'
+        ? { ...p, food, unit: 'piece' as const }
+        : { ...p, food, unit: 'g' as const, amount: round1(measurePortion(p).grams) };
+    out.push(food.units.includes(portion.unit) ? portion : { ...p, food, unit: 'g' as const });
+  }
+  return out;
 }
 
 export async function deleteCustomFood(db: WorkoutDatabase, id: string): Promise<void> {
