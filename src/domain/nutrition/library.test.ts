@@ -32,8 +32,11 @@ describe('the food library', () => {
     for (const f of FOODS) {
       if (f.per100.kcal < 20) continue;
       const ratio = atwaterKcal(f.per100) / f.per100.kcal;
-      expect(ratio, f.id).toBeGreaterThan(0.88);
-      expect(ratio, f.id).toBeLessThan(1.12);
+      // Pack labels round their figures and count fibre and sugar alcohols at less energy, so
+      // they are checked a little more loosely; the label is kept as printed.
+      const slack = f.source === 'label' ? 0.2 : 0.12;
+      expect(ratio, f.id).toBeGreaterThan(1 - slack);
+      expect(ratio, f.id).toBeLessThan(1 + slack);
     }
   });
 
