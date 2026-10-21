@@ -44,3 +44,35 @@ logs keep the numbers they were saved with.
 - OverloadGPT: the chat and the targets Explain include food lines (`nutritionLines` in
   `features/coach/brief.ts`).
 - Science page: topic `food-values`. Settings: Food CSV export.
+
+## The wider library (October 2026)
+
+- Curated foods in `data/library/foods.ts`: our recipes (`DISHES`, `BASICS`) plus pack labels
+  (`LABELS`: whey, plant and yeast protein, soya chunks, peanut butter, oats, muesli, protein
+  bars and drinks, everyday snacks), each with `source: 'label'`. Gym staples (egg whites,
+  grilled chicken breast, brown rice, quinoa, sweet potato, boiled chana and rajma, soya chunks,
+  Greek yogurt, skimmed milk, makhana, sattu, overnight oats, shakes) are in `STARTER_FOODS`
+  and the protein suggestions. Dishes were chosen from what India eats and orders most (HCES
+  2023-24 spending shares, Swiggy How India Eats 2025).
+- The long tail, loaded only on the Food tab and the Add food sheet (`moreFoods.ts`):
+  `usdaFoods.json` (about 8,250 USDA SR28 foods with household measures, written by
+  `scripts/usda-ingredients.mjs`, baby and native foods left out) and `indbFoods.json` (about
+  860 Indian Nutrient Databank dishes, Vijayakumar et al. 2024; dishes that counted all the
+  frying oil or whose energy did not add up were dropped). Search ranks curated foods, then
+  INDB, then USDA. The meal parser never uses the long tail.
+
+## AI food logging (Pro, `ai_food`)
+
+- Add food opens with "Tell OverloadGPT what you ate". Pro types or speaks (Web Speech, en-IN)
+  a meal; `src/app/foodAi.ts` sends `{ kind: 'food', text, diet }` to the `coach` function.
+- Server (`_shared/coach.ts`, `handleFoodLog`): Pro checked from the subscription row, the AI
+  asked with web search (Gemini Google Search grounding, Groq `browser_search` on GPT-OSS; both
+  retry without search on error), the JSON read leniently and every item checked
+  (`checkFoodItem`: 1 to 2,000 g, at most 9.5 kcal a gram, macros within the weight, energy
+  within 30% of 4/4/9). Nothing is stored.
+- The phone (`features/food/AiFoodLog.tsx`) uses a library food when the name matches exactly;
+  otherwise the item becomes an `ai` food marked "From the web" or "Estimated". On logging,
+  `keepPlateFoods` saves AI foods as the person's own foods so logs can be edited later.
+- Offline or AI down: the library parser fills what it can and says so.
+- This is the one exception to "No AI for numbers": AI values are always labelled and checked.
+- The fake Supabase answers food requests with fixed numbers ("#food-down" makes it fail).

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Crown, Plus, Settings2, UtensilsCrossed } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
@@ -13,6 +13,7 @@ import {
   SecondaryButton,
   Skeleton,
 } from '@/components/kit';
+import { loadMoreFoods } from '@/data/library/moreFoods';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { copyFoodLogs, deleteFoodLogs, logFoods } from '@/data/repositories/food';
@@ -45,6 +46,9 @@ const n = (v: number) => Math.round(v).toLocaleString('en-GB');
  * built for Indian home food (katori portions, oil levels, thalis, the usual meal in one tap).
  */
 export function FoodPage() {
+  useEffect(() => {
+    void loadMoreFoods();
+  }, []);
   const now = useNow();
   const ctx = useFoodContext(now);
   const [params, setParams] = useSearchParams();

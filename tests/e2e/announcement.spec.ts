@@ -9,7 +9,7 @@ test('the food announcement shows once and sells Pro to free accounts', async ({
   await page.evaluate(() => localStorage.removeItem('overload.whatsNew'));
   await page.goto('/');
   const dialog = page.getByRole('dialog', { name: 'New in Overload' });
-  await expect(dialog.getByText('Food, made for Indian meals')).toBeVisible();
+  await expect(dialog.getByText('Food logging is here')).toBeVisible();
   await expect(dialog.getByText('Pro goes further')).toBeVisible();
   await expect(dialog.getByText(/Just ₹\d+ a month/)).toBeVisible();
   await dialog.getByRole('button', { name: 'See Pro' }).click();

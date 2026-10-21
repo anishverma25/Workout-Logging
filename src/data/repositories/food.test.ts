@@ -4,12 +4,14 @@ import {
   copyFoodLogs,
   deleteFoodLogs,
   FoodError,
+  keepPlateFoods,
   logFoods,
   restoreFoodLogs,
   saveCustomFood,
   updateFoodLog,
 } from './food';
 import { saveFoodSettings, saveProfile } from './profile';
+import { foodFromItem } from '@/app/foodAi';
 
 let db: WorkoutDatabase;
 let n = 0;
@@ -128,5 +130,34 @@ describe('food logging', () => {
     await saveFoodSettings(db, { dietType: 'jain', katoriMl: 180 });
     const p = (await db.profiles.toArray())[0]!;
     expect(p).toMatchObject({ dietType: 'jain', katoriMl: 180 });
+  });
+});
+
+describe('OverloadGPT foods on the plate', () => {
+  it('become the person\'s own foods when logged, with the same numbers', async () => {
+    const shake = foodFromItem({
+      name: 'Starbucks cold coffee',
+      portion: '1 tall',
+      grams: 350,
+      kcal: 200,
+      proteinG: 7,
+      carbsG: 32,
+      fatG: 5,
+      fibreG: 0,
+      diet: 'veg',
+      basis: 'web',
+      ref: 'Starbucks India menu',
+    });
+    const plate = [
+      { food: shake, amount: 1, unit: 'serving' as const, size: null, oilLevel: null },
+      { food: roti, amount: 2, unit: 'piece' as const, size: null, oilLevel: null },
+    ];
+    const kept = await keepPlateFoods(db, plate);
+    expect(kept[1]!.food).toBe(roti);
+    expect(kept[0]!.food.source).toBe('custom');
+    const logs = await logFoods(db, kept, { date: '2026-10-20', meal: 'snacks' });
+    expect(logs[0]!.kcal).toBeCloseTo(200, 0);
+    expect(logs[0]!.foodId).toBe(kept[0]!.food.id);
+    expect(await db.customFoods.count()).toBe(1);
   });
 });

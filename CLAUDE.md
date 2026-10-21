@@ -218,3 +218,9 @@ Read README.md for setup, architecture and calculation rules.
   `domain/nutrition/library.test.ts`. Logs snapshot their numbers. Pro feature `food_insights`.
   The AI coach is shown to users as OverloadGPT (route `/coach`, feature `ai_coach` and the
   `coach` function keep their names).
+- Food library (October 2026): pack labels for gym brands (`LABELS`), gym staples first in
+  starters and protein help, and a lazy long tail (`moreFoods.ts`: USDA SR28 and Indian
+  Nutrient Databank, curated foods rank first). AI food logging (Pro `ai_food`): the `coach`
+  function's food mode with web search and checked numbers (`checkFoodItem`); AI foods are
+  labelled "From the web" or "Estimated" and saved as the person's own foods when logged. This
+  is the only place AI gives numbers. Details in `docs/food-logging.md`.

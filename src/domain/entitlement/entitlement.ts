@@ -141,6 +141,7 @@ export type ProFeature =
   | 'goal_projection'
   | 'recaps'
   | 'ai_coach'
+  | 'ai_food'
   | 'food_insights';
 
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
@@ -186,10 +187,15 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
     description:
       'Ask about your training and food in any language, or tap Explain on a card. Answers use your own logged numbers.',
   },
+  ai_food: {
+    title: 'AI food logging',
+    description:
+      'Tell OverloadGPT what you ate, typed or spoken. It finds any food, brand or restaurant dish, looks up labels on the web and fills your plate.',
+  },
   food_insights: {
     title: 'Food insights',
     description:
-      'Your real maintenance calories from what you eat and weigh, food trends, protein help with one tap, and typing a whole meal in one line.',
+      'Your real maintenance calories from what you eat and weigh, food trends and protein help with one tap.',
   },
 };
 

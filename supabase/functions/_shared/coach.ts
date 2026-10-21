@@ -53,9 +53,18 @@ export interface ProviderMessage {
   text: string;
 }
 
+export interface GenerateOptions {
+  /** Let the model look things up on the web (Gemini Google Search, Groq browser search). */
+  search?: boolean;
+}
+
 export interface CoachProvider {
   name: string;
-  generate: (system: string, messages: ProviderMessage[]) => Promise<string>;
+  generate: (
+    system: string,
+    messages: ProviderMessage[],
+    options?: GenerateOptions,
+  ) => Promise<string>;
 }
 
 export interface CoachDeps {
@@ -244,6 +253,8 @@ export function parseRequest(body: unknown): CoachRequest | null {
 }
 
 export async function handleCoach(deps: CoachDeps, body: unknown): Promise<CoachResponse> {
+  if (body && typeof body === 'object' && (body as { kind?: unknown }).kind === 'food')
+    return handleFoodLog(deps, body);
   const req = parseRequest(body);
   if (!req) return fail(400, 'That request could not be read.', 'bad_request');
   if (!proFromSubscription(await deps.subscription()))
@@ -294,6 +305,28 @@ export async function handleCoach(deps: CoachDeps, body: unknown): Promise<Coach
 
 type Fetch = typeof fetch;
 
+/**
+ * Runs a request with web search first when asked, and again without it if that fails (search
+ * not enabled for the key, over its allowance, or not offered by the model).
+ */
+async function withSearch(
+  options: GenerateOptions | undefined,
+  run: (grounded: boolean) => Promise<string>,
+  canSearch = true,
+): Promise<string> {
+  if (options?.search && canSearch) {
+    try {
+      return await run(true);
+    } catch (err) {
+      console.error(
+        'search request failed, retrying without',
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+  return run(false);
+}
+
 /** Google Gemini (Generative Language API). Free tier: Flash-Lite models. */
 export function geminiProvider(
   apiKey: string,
@@ -302,60 +335,71 @@ export function geminiProvider(
 ): CoachProvider {
   return {
     name: 'gemini',
-    async generate(system, messages) {
-      const res = await fetchFn(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: system }] },
-            contents: messages.map((m) => ({
-              role: m.role === 'assistant' ? 'model' : 'user',
-              parts: [{ text: m.text }],
-            })),
-            generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
-          }),
-          signal: AbortSignal.timeout(25_000),
-        },
-      );
-      if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
-      const json = (await res.json()) as {
-        candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[];
-      };
-      return (json.candidates?.[0]?.content?.parts ?? [])
-        .filter((p) => !p.thought)
-        .map((p) => p.text ?? '')
-        .join('');
-    },
+    generate: (system, messages, options) =>
+      withSearch(options, async (grounded) => {
+        const res = await fetchFn(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: system }] },
+              contents: messages.map((m) => ({
+                role: m.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: m.text }],
+              })),
+              generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
+              // Grounding with Google Search, for packaged and restaurant foods.
+              ...(grounded ? { tools: [{ google_search: {} }] } : {}),
+            }),
+            signal: AbortSignal.timeout(grounded ? 40_000 : 25_000),
+          },
+        );
+        if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
+        const json = (await res.json()) as {
+          candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[];
+        };
+        return (json.candidates?.[0]?.content?.parts ?? [])
+          .filter((p) => !p.thought)
+          .map((p) => p.text ?? '')
+          .join('');
+      }),
   };
 }
 
 /** Groq (OpenAI-compatible chat completions). Free tier on open models. */
 export function groqProvider(apiKey: string, model: string, fetchFn: Fetch = fetch): CoachProvider {
+  const gptOss = model.startsWith('openai/gpt-oss');
   return {
     name: 'groq',
-    async generate(system, messages) {
-      const res = await fetchFn('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: system },
-            ...messages.map((m) => ({ role: m.role, content: m.text })),
-          ],
-          temperature: 0.4,
-          max_completion_tokens: 2048,
-          // GPT-OSS models think before answering; a little is enough for this.
-          ...(model.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
-        }),
-        signal: AbortSignal.timeout(25_000),
-      });
-      if (!res.ok) throw new Error(`Groq ${res.status}: ${(await res.text()).slice(0, 300)}`);
-      const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-      return json.choices?.[0]?.message?.content ?? '';
-    },
+    generate: (system, messages, options) =>
+      withSearch(
+        options,
+        async (grounded) => {
+          const res = await fetchFn('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: 'system', content: system },
+                ...messages.map((m) => ({ role: m.role, content: m.text })),
+              ],
+              temperature: 0.4,
+              max_completion_tokens: 2048,
+              // GPT-OSS models think before answering; a little is enough for this.
+              ...(gptOss ? { reasoning_effort: 'low' } : {}),
+              // Groq's built-in browser search, offered on GPT-OSS models.
+              ...(grounded ? { tools: [{ type: 'browser_search' }], tool_choice: 'auto' } : {}),
+            }),
+            signal: AbortSignal.timeout(grounded ? 40_000 : 25_000),
+          });
+          if (!res.ok) throw new Error(`Groq ${res.status}: ${(await res.text()).slice(0, 300)}`);
+          const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+          return json.choices?.[0]?.message?.content ?? '';
+        },
+        gptOss,
+      ),
   };
 }
 
@@ -363,3 +407,150 @@ export const DEFAULT_MODELS = {
   gemini: 'gemini-3.5-flash-lite',
   groq: 'openai/gpt-oss-120b',
 } as const;
+
+// ---------------------------------------------------------------------------------------------
+// AI food logging (Pro)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The person describes what they ate in their own words ("2 aloo parathas with curd and a
+ * Starbucks cold coffee"); the AI splits it into foods with a weight and nutrients, looking up
+ * branded and restaurant items on the web. This is the one place the AI gives numbers, so
+ * every item is checked here and the app labels them as OverloadGPT estimates.
+ */
+
+export const FOOD_LIMITS = { text: 500, items: 15 } as const;
+
+export interface FoodItem {
+  name: string;
+  /** How the person would say the portion: "2 parathas", "1 katori", "1 tall cup". */
+  portion: string;
+  grams: number;
+  kcal: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  fibreG: number;
+  diet: 'veg' | 'egg' | 'nonveg';
+  /** "web" when a label or menu was found, "estimate" when worked out from a typical recipe. */
+  basis: 'web' | 'estimate';
+  /** Where the numbers came from, as a short name ("Starbucks India menu"). */
+  ref: string;
+}
+
+export const FOOD_PROMPT = `You are OverloadGPT inside Overload, a food logging app used in India. The person tells you what they ate. Split it into separate foods and give each one's weight and nutrients for the portion they ate.
+
+Rules:
+1. Reply with JSON only: an array of objects with these keys: "name" (short food name in English, for example "Aloo paratha"), "portion" (the amount the way they said it, for example "2 parathas" or "1 katori"), "grams" (weight of that portion in grams, as eaten), "kcal", "protein_g", "carbs_g", "fat_g", "fibre_g" (all for that portion), "diet" ("veg", "egg" or "nonveg"), "basis" ("web" if you found the product, menu or label values, otherwise "estimate"), "ref" (where the values come from, a few words, for example "Amul label" or "typical home recipe").
+2. For packaged foods, brands, supplements and restaurant or delivery items, search the web for the label or the brand's published nutrition and use it. For home food, use a typical Indian home recipe and Indian household portions: a katori is about 150 g of dal or sabzi, a roti about 40 g, a paratha 80 to 100 g, a glass 250 ml, a cup of chai 120 ml.
+3. When no amount is given, use one normal portion.
+4. Energy must agree with the macronutrients: about 4 kcal per g of protein and carbs and 9 per g of fat.
+5. Never invent a food they did not mention. If something is not a food, leave it out. If nothing is a food, reply [].
+6. Write the names in English even when the message is in Hindi or Hinglish.`;
+
+const num = (v: unknown): number | null =>
+  typeof v === 'number' && Number.isFinite(v)
+    ? v
+    : typeof v === 'string' && v.trim() && Number.isFinite(Number(v))
+      ? Number(v)
+      : null;
+
+/** The first JSON array in a model answer (models sometimes wrap it in a code block or text). */
+export function parseFoodJson(text: string): unknown[] | null {
+  const start = text.indexOf('[');
+  const end = text.lastIndexOf(']');
+  if (start === -1 || end <= start) return null;
+  try {
+    const v = JSON.parse(text.slice(start, end + 1)) as unknown;
+    return Array.isArray(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * One item, checked: a real weight, no more than 9.5 kcal a gram (pure fat is 9), macros that
+ * fit in the weight, and energy within 30% of what the macros add up to. Anything else is
+ * dropped rather than shown.
+ */
+export function checkFoodItem(raw: unknown): FoodItem | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const name = typeof r.name === 'string' ? r.name.trim().replace(/\s+/g, ' ').slice(0, 60) : '';
+  const portion = typeof r.portion === 'string' ? r.portion.trim().slice(0, 40) : '';
+  const grams = num(r.grams);
+  const kcal = num(r.kcal);
+  const p = num(r.protein_g) ?? 0;
+  const c = num(r.carbs_g) ?? 0;
+  const f = num(r.fat_g) ?? 0;
+  const fib = num(r.fibre_g ?? r.fiber_g) ?? 0;
+  if (!name || grams === null || kcal === null) return null;
+  if (grams < 1 || grams > 2000 || kcal < 0 || p < 0 || c < 0 || f < 0 || fib < 0) return null;
+  if (kcal > grams * 9.5) return null;
+  if (p + c + f > grams * 1.05) return null;
+  const macros = 4 * p + 4 * Math.max(0, c - fib) + 2 * Math.min(fib, c) + 9 * f;
+  if (kcal >= 20 && Math.abs(macros - kcal) / kcal > 0.3) return null;
+  if (kcal < 20 && macros > 40) return null;
+  const diet = r.diet === 'egg' || r.diet === 'nonveg' ? r.diet : 'veg';
+  const round = (v: number) => Math.round(v * 10) / 10;
+  return {
+    name: name.charAt(0).toUpperCase() + name.slice(1),
+    portion: portion || `${Math.round(grams)} g`,
+    grams: Math.round(grams),
+    kcal: Math.round(kcal),
+    proteinG: round(p),
+    carbsG: round(c),
+    fatG: round(f),
+    fibreG: round(fib),
+    diet,
+    basis: r.basis === 'web' ? 'web' : 'estimate',
+    ref: typeof r.ref === 'string' ? tidyAnswer(r.ref).slice(0, 60) : '',
+  };
+}
+
+export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<CoachResponse> {
+  const b = body as Record<string, unknown>;
+  const text = typeof b.text === 'string' ? b.text.trim() : '';
+  if (!text || text.length > FOOD_LIMITS.text)
+    return fail(400, 'That request could not be read.', 'bad_request');
+  const diet = typeof b.diet === 'string' ? b.diet.slice(0, 10) : '';
+  if (!proFromSubscription(await deps.subscription()))
+    return fail(403, 'AI food logging is part of Pro.', 'not_pro');
+  if (deps.providers.length === 0)
+    return fail(503, 'AI food logging is not set up yet.', 'not_configured');
+
+  const messages: ProviderMessage[] = [
+    {
+      role: 'user',
+      text: `${diet ? `The person eats ${diet} food.\n` : ''}What they ate: ${text}`,
+    },
+  ];
+  let empty = false;
+  for (const provider of deps.providers) {
+    let answer: string;
+    try {
+      answer = await provider.generate(FOOD_PROMPT, messages, { search: true });
+    } catch (err) {
+      console.error(`food: ${provider.name} failed`, err instanceof Error ? err.message : err);
+      continue;
+    }
+    const list = parseFoodJson(answer);
+    if (!list) {
+      console.error(`food: ${provider.name} gave no JSON`);
+      continue;
+    }
+    const items = list
+      .slice(0, FOOD_LIMITS.items)
+      .map(checkFoodItem)
+      .filter((i): i is FoodItem => i !== null);
+    if (items.length === 0) {
+      // A clear "nothing here is a food" is an answer; a list where every item failed is not.
+      if (list.length === 0) empty = true;
+      else console.error(`food: ${provider.name} items failed the checks`);
+      continue;
+    }
+    return { status: 200, body: { items } };
+  }
+  if (empty) return { status: 200, body: { items: [] } };
+  return fail(503, 'OverloadGPT is busy right now. Try again in a minute.', 'busy');
+}

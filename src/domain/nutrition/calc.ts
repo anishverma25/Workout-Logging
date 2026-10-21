@@ -55,9 +55,20 @@ export interface Food {
   pieceName: [string, string] | null;
   servingG: number | null;
   /** Where the numbers come from, shown under the name. */
-  source: 'recipe' | 'ingredient' | 'custom' | 'custom_recipe';
+  source:
+    | 'recipe'
+    | 'ingredient'
+    | 'label'
+    | 'usda'
+    | 'indb'
+    | 'off'
+    | 'ai'
+    | 'custom'
+    | 'custom_recipe';
   /** The recipe as it was calculated, for the detail view. */
   recipe: { lines: { name: string; grams: number }[]; cookedG: number; makes: string } | null;
+  /** For OverloadGPT estimates: whether a label or menu was found, and where. */
+  ai?: { basis: 'web' | 'estimate'; ref: string; portion: string };
 }
 
 /** Kitchen volumes in ml (common steel katori, ladle, glass and tea cup sizes). */

@@ -1919,6 +1919,66 @@ const DISHES: DishDef[] = [
     units: PIECES,
   },
 
+
+  // Most ordered and street food (Swiggy 2025: biryani, burgers, pizza, dosa, idli, rolls,
+  // samosa, momos, cakes, gulab jamun, kaju barfi) ------------------------------------------
+  { id: 'gulab-jamun', name: 'Gulab jamun', aliases: ['gulabjamun', 'kala jamun'], category: 'sweet', region: 'all', meals: ['snacks', 'dinner'], lines: [['milk-powder', 40], ['maida', 8], ['ghee', 8], ['sugar', 40], ['water', 30]], fat: ['ghee'], cooked: 120, pieces: 3, piece: ['gulab jamun', 'gulab jamuns'], units: PIECES },
+  { id: 'jalebi', name: 'Jalebi', aliases: ['jilapi', 'imarti'], category: 'sweet', region: 'all', meals: ['breakfast', 'snacks'], lines: [['maida', 50], ['curd', 10], ['ghee', 15], ['sugar', 60], ['water', 25]], fat: ['ghee'], cooked: 140, pieces: 7, piece: ['jalebi', 'jalebis'], units: PIECES, amount: 2 },
+  { id: 'kaju-katli', name: 'Kaju katli', aliases: ['kaju barfi', 'kaju burfi', 'cashew barfi'], category: 'sweet', region: 'all', meals: ['snacks'], lines: [['cashews', 100], ['sugar', 50], ['ghee', 3]], cooked: 150, pieces: 12, piece: ['piece', 'pieces'], units: PIECES, amount: 2 },
+  { id: 'motichoor-ladoo', name: 'Motichoor ladoo', aliases: ['boondi ladoo', 'laddu'], category: 'sweet', region: 'north', meals: ['snacks'], lines: [['besan', 100], ['ghee', 45], ['sugar', 120], ['water', 20]], fat: ['ghee'], cooked: 270, pieces: 9, piece: ['ladoo', 'ladoos'], units: PIECES },
+  { id: 'modak', name: 'Ukadiche modak', aliases: ['modak', 'kozhukattai'], category: 'sweet', region: 'west', meals: ['snacks'], lines: [['rice-flour', 100], ['coconut', 100], ['jaggery', 70], ['ghee', 10], ['water', 120]], fat: ['ghee'], cooked: 380, pieces: 8, piece: ['modak', 'modaks'], units: PIECES, amount: 2 },
+  { id: 'veg-momos', name: 'Veg momos', aliases: ['momo', 'dumplings', 'steamed momos'], category: 'snack', region: 'all', meals: ['snacks', 'dinner'], lines: [['maida', 100], ['cabbage', 100], ['carrot', 40], ['onion', 30], ['oil', 8], ['soy-sauce', 5]], fat: ['oil'], cooked: 330, pieces: 12, piece: ['momo', 'momos'], units: PIECES, amount: 6 },
+  { id: 'chicken-momos', name: 'Chicken momos', aliases: ['momo', 'chicken dumplings'], category: 'chicken', region: 'all', meals: ['snacks', 'dinner'], lines: [['maida', 100], ['chicken', 150], ['onion', 40], ['oil', 8], ['soy-sauce', 5]], fat: ['oil'], cooked: 330, pieces: 12, piece: ['momo', 'momos'], units: PIECES, amount: 6 },
+  { id: 'chicken-roll', name: 'Chicken kathi roll', aliases: ['chicken roll', 'kathi roll', 'chicken frankie', 'chicken wrap'], category: 'chicken', region: 'all', meals: ['snacks', 'lunch', 'dinner'], lines: [['maida', 60], ['chicken', 80], ['onion', 30], ['oil', 12], ['ketchup', 10]], fat: ['oil'], cooked: 220, pieces: 1, piece: ['roll', 'rolls'], units: PIECES },
+  { id: 'egg-roll', name: 'Egg roll', aliases: ['anda roll', 'egg kathi roll', 'egg frankie'], category: 'egg', region: 'east', meals: ['snacks', 'dinner'], lines: [['maida', 60], ['egg', 50], ['onion', 30], ['oil', 12], ['ketchup', 10]], fat: ['oil'], cooked: 180, pieces: 1, piece: ['roll', 'rolls'], units: PIECES },
+  { id: 'paneer-roll', name: 'Paneer roll', aliases: ['paneer kathi roll', 'paneer frankie', 'paneer wrap'], category: 'paneer', region: 'all', meals: ['snacks', 'lunch', 'dinner'], lines: [['maida', 60], ['paneer', 70], ['onion', 30], ['capsicum', 20], ['oil', 12]], fat: ['oil'], cooked: 210, pieces: 1, piece: ['roll', 'rolls'], units: PIECES },
+  { id: 'chicken-shawarma', name: 'Chicken shawarma', aliases: ['shawarma', 'shawarma roll'], category: 'chicken', region: 'all', meals: ['snacks', 'dinner'], lines: [['maida', 60], ['chicken', 100], ['mayonnaise', 20], ['cabbage', 20], ['onion', 15], ['oil', 6]], fat: ['oil'], cooked: 230, pieces: 1, piece: ['roll', 'rolls'], units: PIECES },
+  { id: 'veg-burger', name: 'Veg burger (aloo tikki)', aliases: ['burger', 'aloo tikki burger', 'mcaloo'], category: 'snack', region: 'all', meals: ['snacks', 'lunch', 'dinner'], lines: [['bread', 60], ['potato', 70], ['peas', 10], ['oil', 10], ['mayonnaise', 12], ['tomato', 15], ['onion', 10]], fat: ['oil'], cooked: 175, pieces: 1, piece: ['burger', 'burgers'], units: PIECES },
+  { id: 'chicken-burger', name: 'Chicken burger', aliases: ['burger', 'crispy chicken burger', 'mcchicken'], category: 'chicken', region: 'all', meals: ['snacks', 'lunch', 'dinner'], lines: [['bread', 60], ['chicken', 75], ['maida', 8], ['oil', 6], ['mayonnaise', 10], ['cabbage', 15], ['tomato', 10]], fat: ['oil'], cooked: 175, pieces: 1, piece: ['burger', 'burgers'], units: PIECES },
+  { id: 'vada-pav', name: 'Vada pav', aliases: ['wada pav', 'batata vada'], category: 'snack', region: 'west', meals: ['breakfast', 'snacks'], lines: [['bread', 40], ['potato', 70], ['besan', 15], ['oil', 12]], fat: ['oil'], cooked: 140, pieces: 1, piece: ['vada pav', 'vada pavs'], units: PIECES },
+  { id: 'pani-puri', name: 'Pani puri', aliases: ['golgappa', 'gol gappe', 'puchka', 'phuchka'], category: 'snack', region: 'all', meals: ['snacks'], lines: [['sooji', 30], ['maida', 6], ['oil', 6], ['potato', 40], ['kabuli-chana', 10], ['tamarind', 8], ['water', 150]], fat: ['oil'], cooked: 250, pieces: 1, piece: ['plate of 6', 'plates of 6'], units: PIECES },
+  { id: 'bhel-puri', name: 'Bhel puri', aliases: ['bhel', 'jhal muri'], category: 'snack', region: 'west', meals: ['snacks'], lines: [['puffed-rice', 40], ['onion', 25], ['tomato', 20], ['potato', 20], ['tamarind', 8], ['peanuts', 8], ['besan', 10], ['oil', 6]], fat: ['oil'], cooked: 136, servings: 1, units: ['serving', 'katori', 'g'], density: 0.35 },
+  { id: 'kachori', name: 'Khasta kachori', aliases: ['kachori', 'dal kachori', 'pyaaz kachori'], category: 'snack', region: 'north', meals: ['breakfast', 'snacks'], lines: [['maida', 35], ['urad-dal', 12], ['oil', 14]], fat: ['oil'], cooked: 65, pieces: 1, piece: ['kachori', 'kachoris'], units: PIECES },
+  { id: 'dahi-vada', name: 'Dahi vada', aliases: ['dahi bhalla', 'thayir vadai'], category: 'snack', region: 'north', meals: ['snacks', 'lunch'], lines: [['urad-dal', 100], ['oil', 30], ['curd', 300], ['sugar', 10]], fat: ['oil'], cooked: 600, pieces: 10, piece: ['vada with curd', 'vadas with curd'], units: PIECES, amount: 2 },
+  { id: 'misal-pav', name: 'Misal (without pav)', aliases: ['misal', 'misal pav', 'usal'], category: 'snack', region: 'west', meals: ['breakfast', 'snacks'], lines: [['moong-sprouts', 200], ['onion', 60], ['tomato', 60], ['oil', 25], ['peanuts', 10], ['besan', 30], ['water', 200]], fat: ['oil'], cooked: 520, servings: 2, units: ['serving', 'katori', 'g'], density: 0.9 },
+  { id: 'sabudana-vada', name: 'Sabudana vada', aliases: ['sago vada', 'vrat vada'], category: 'snack', region: 'west', meals: ['snacks'], lines: [['sabudana', 80], ['potato', 80], ['peanuts', 20], ['oil', 20]], fat: ['oil'], cooked: 200, pieces: 6, piece: ['vada', 'vadas'], units: PIECES, amount: 2 },
+  { id: 'veg-hakka-noodles', name: 'Veg hakka noodles', aliases: ['noodles', 'chowmein', 'chow mein', 'hakka noodles'], category: 'snack', region: 'all', meals: ['lunch', 'dinner', 'snacks'], lines: [['vermicelli', 100], ['cabbage', 60], ['carrot', 40], ['capsicum', 40], ['spring-onion', 20], ['oil', 20], ['soy-sauce', 10]], fat: ['oil'], cooked: 450, servings: 2, units: ['serving', 'katori', 'g'], density: 0.6 },
+  { id: 'chicken-noodles', name: 'Chicken hakka noodles', aliases: ['chicken chowmein', 'chicken noodles'], category: 'chicken', region: 'all', meals: ['lunch', 'dinner'], lines: [['vermicelli', 100], ['chicken', 100], ['cabbage', 50], ['capsicum', 30], ['oil', 20], ['soy-sauce', 10]], fat: ['oil'], cooked: 480, servings: 2, units: ['serving', 'katori', 'g'], density: 0.6 },
+  { id: 'veg-fried-rice', name: 'Veg fried rice', aliases: ['fried rice', 'chinese fried rice'], category: 'rice', region: 'all', meals: ['lunch', 'dinner'], lines: [['rice', 150], ['carrot', 40], ['beans', 30], ['capsicum', 30], ['spring-onion', 20], ['oil', 20], ['soy-sauce', 10]], fat: ['oil'], cooked: 560, servings: 3, units: RICE, density: 0.66 },
+  { id: 'egg-fried-rice', name: 'Egg fried rice', aliases: ['fried rice egg'], category: 'egg', region: 'all', meals: ['lunch', 'dinner'], lines: [['rice', 150], ['egg', 100], ['spring-onion', 20], ['oil', 20], ['soy-sauce', 10]], fat: ['oil'], cooked: 560, servings: 3, units: RICE, density: 0.66 },
+  { id: 'chicken-fried-rice', name: 'Chicken fried rice', aliases: ['fried rice chicken'], category: 'chicken', region: 'all', meals: ['lunch', 'dinner'], lines: [['rice', 150], ['chicken', 120], ['carrot', 30], ['spring-onion', 20], ['oil', 20], ['soy-sauce', 10]], fat: ['oil'], cooked: 580, servings: 3, units: RICE, density: 0.66 },
+  { id: 'veg-manchurian', name: 'Veg manchurian (gravy)', aliases: ['manchurian', 'gobi manchurian'], category: 'snack', region: 'all', meals: ['lunch', 'dinner', 'snacks'], lines: [['cabbage', 150], ['carrot', 50], ['maida', 30], ['cornflour', 25], ['oil', 30], ['soy-sauce', 10], ['ketchup', 15], ['water', 150]], fat: ['oil'], cooked: 420, servings: 3, units: CURRY },
+  { id: 'chilli-paneer', name: 'Chilli paneer (dry)', aliases: ['chilli paneer', 'paneer chilli', 'chilly paneer'], category: 'paneer', region: 'all', meals: ['lunch', 'dinner', 'snacks'], lines: [['paneer', 200], ['capsicum', 80], ['onion', 60], ['cornflour', 20], ['oil', 25], ['soy-sauce', 10], ['ketchup', 10]], fat: ['oil'], cooked: 380, servings: 3, units: DRY, density: 0.7 },
+  { id: 'chilli-chicken', name: 'Chilli chicken', aliases: ['chicken chilli', 'chilly chicken'], category: 'chicken', region: 'all', meals: ['lunch', 'dinner', 'snacks'], lines: [['chicken', 400], ['capsicum', 80], ['onion', 60], ['cornflour', 25], ['egg', 25], ['oil', 35], ['soy-sauce', 15]], fat: ['oil'], cooked: 500, servings: 4, units: DRY, density: 0.7 },
+  { id: 'chicken-65', name: 'Chicken 65', aliases: ['chicken sixty five'], category: 'chicken', region: 'south', meals: ['snacks', 'dinner'], lines: [['chicken', 400], ['curd', 40], ['cornflour', 20], ['rice-flour', 15], ['oil', 20]], fat: ['oil'], cooked: 380, servings: 4, units: ['serving', 'g'] },
+  { id: 'red-sauce-pasta', name: 'Red sauce pasta', aliases: ['pasta', 'arrabbiata', 'tomato pasta'], category: 'snack', region: 'all', meals: ['lunch', 'dinner'], lines: [['vermicelli', 100], ['tomato', 200], ['onion', 40], ['capsicum', 30], ['oil', 15], ['parmesan', 10]], fat: ['oil'], cooked: 480, servings: 2, units: ['serving', 'katori', 'g'], density: 0.75 },
+  { id: 'white-sauce-pasta', name: 'White sauce pasta', aliases: ['pasta alfredo', 'white pasta'], category: 'snack', region: 'all', meals: ['lunch', 'dinner'], lines: [['vermicelli', 100], ['milk', 250], ['butter', 20], ['maida', 15], ['cheese', 25], ['corn', 40]], fat: ['butter'], cooked: 560, servings: 2, units: ['serving', 'katori', 'g'], density: 0.8 },
+  { id: 'garlic-bread', name: 'Garlic bread', aliases: ['garlic breadsticks', 'garlic toast'], category: 'snack', region: 'all', meals: ['snacks'], lines: [['bread', 100], ['butter', 12], ['garlic', 6]], fat: ['butter'], cooked: 118, pieces: 4, piece: ['piece', 'pieces'], units: PIECES, amount: 2 },
+  { id: 'luchi', name: 'Luchi', aliases: ['loochi'], category: 'bread', region: 'east', meals: ['breakfast', 'dinner'], lines: [['maida', 20], ['oil', 5]], fat: ['oil'], cooked: { moisture: 0.2 }, pieces: 1, piece: ['luchi', 'luchis'], units: PIECES, amount: 4 },
+  { id: 'kerala-parotta', name: 'Kerala parotta', aliases: ['malabar parotta', 'porotta', 'parotta'], category: 'bread', region: 'south', meals: ['lunch', 'dinner'], lines: [['maida', 60], ['oil', 10]], fat: ['oil'], cooked: { moisture: 0.3 }, pieces: 1, piece: ['parotta', 'parottas'], units: PIECES, amount: 2 },
+  { id: 'appam', name: 'Appam', aliases: ['palappam', 'hoppers'], category: 'south', region: 'south', meals: ['breakfast', 'dinner'], lines: [['rice', 200], ['coconut', 50], ['sugar', 10]], cooked: { moisture: 0.55 }, pieces: 8, piece: ['appam', 'appams'], units: PIECES, amount: 2 },
+  { id: 'bisi-bele-bath', name: 'Bisi bele bath', aliases: ['bisibelebath', 'sambar rice'], category: 'south', region: 'south', meals: ['lunch', 'dinner'], lines: [['rice', 100], ['toor-dal', 60], ['carrot', 40], ['beans', 40], ['tamarind', 10], ['ghee', 15], ['peanuts', 10]], fat: ['ghee'], cooked: 750, servings: 3, units: CURRY },
+  { id: 'cold-coffee', name: 'Cold coffee', aliases: ['iced coffee', 'coffee shake'], category: 'drink', region: 'all', meals: ['snacks'], lines: [['milk', 200], ['sugar', 15], ['coffee-powder', 3]], cooked: 220, servings: 1, units: ['glass', 'g'], density: 1.03 },
+  { id: 'mango-lassi', name: 'Mango lassi', aliases: ['aam lassi'], category: 'drink', region: 'north', meals: ['snacks', 'lunch'], lines: [['curd', 150], ['mango', 80], ['sugar', 15], ['milk', 30]], cooked: 275, servings: 1, units: ['glass', 'g'], density: 1.05 },
+  { id: 'masala-chai', name: 'Adrak chai', aliases: ['ginger tea', 'masala tea', 'adrak wali chai'], category: 'drink', region: 'all', meals: ALL_MEALS, lines: [['milk', 60], ['tea', 90], ['sugar', 6], ['ginger', 2]], cooked: 140, servings: 1, units: ['cup', 'g'], density: 1.02 },
+  { id: 'protein-shake', name: 'Whey shake with milk', aliases: ['protein shake', 'whey with milk'], category: 'drink', region: 'all', meals: ALL_MEALS, lines: [['whey', 30], ['milk', 250]], cooked: 280, servings: 1, units: ['serving', 'glass', 'g'], density: 1.04 },
+  { id: 'peanut-butter-toast', name: 'Peanut butter toast', aliases: ['pb toast', 'peanut butter bread'], category: 'breakfast', region: 'all', meals: ['breakfast', 'snacks'], lines: [['bread', 50], ['peanut-butter', 16]], cooked: 66, pieces: 2, piece: ['slice', 'slices'], units: PIECES, amount: 2 },
+  { id: 'cornflakes-milk', name: 'Cornflakes with milk', aliases: ['cornflakes', 'cereal with milk'], category: 'breakfast', region: 'all', meals: ['breakfast'], lines: [['cornflakes', 30], ['milk', 200], ['sugar', 5]], cooked: 235, servings: 1, units: ['serving', 'g'] },
+  { id: 'tofu-bhurji', name: 'Tofu bhurji', aliases: ['tofu scramble'], category: 'breakfast', region: 'all', meals: ['breakfast', 'dinner'], lines: [['tofu', 200], ['onion', 40], ['tomato', 40], ['oil', 10]], fat: ['oil'], cooked: 270, servings: 2, units: DRY, density: 0.7 },
+
+
+  // Gym meals
+  { id: 'roasted-makhana', name: 'Makhana, roasted', aliases: ['makhana', 'fox nuts', 'phool makhana', 'lotus seeds'], category: 'snack', region: 'all', meals: ['snacks'], lines: [['lotus-seeds', 30], ['ghee', 3]], fat: ['ghee'], cooked: 33, servings: 1, units: ['serving', 'g'] },
+  { id: 'egg-white-omelette', name: 'Egg white omelette', aliases: ['egg white omelet', 'white omelette'], category: 'egg', region: 'all', meals: ['breakfast', 'dinner'], lines: [['egg-white', 132], ['onion', 15], ['tomato', 15], ['oil', 3]], fat: ['oil'], cooked: 150, pieces: 1, piece: ['omelette (4 whites)', 'omelettes (4 whites each)'], units: PIECES },
+  { id: 'soya-chunks-boiled', name: 'Soya chunks, boiled', aliases: ['boiled soya', 'soya chunks', 'nutrela boiled'], category: 'basic', region: 'all', meals: MAINS, lines: [['soya-chunks', 50]], cooked: 150, servings: 1, units: ['katori', 'serving', 'g'], density: 0.5 },
+  { id: 'sattu-drink', name: 'Sattu drink', aliases: ['sattu sharbat', 'sattu', 'sattu shake'], category: 'drink', region: 'east', meals: ['breakfast', 'snacks'], lines: [['besan', 40], ['water', 200], ['lemon', 5]], cooked: 245, servings: 1, units: ['serving', 'glass', 'g'], density: 1.05 },
+  { id: 'overnight-oats', name: 'Overnight oats', aliases: ['overnight oats', 'oats jar'], category: 'breakfast', region: 'all', meals: ['breakfast'], lines: [['oats', 40], ['milk', 150], ['banana', 50], ['peanut-butter', 8]], cooked: 248, servings: 1, units: ['serving', 'g'] },
+  { id: 'peanut-chikki', name: 'Peanut chikki', aliases: ['chikki', 'gajak'], category: 'sweet', region: 'west', meals: ['snacks'], lines: [['peanuts', 60], ['jaggery', 40]], cooked: 100, pieces: 5, piece: ['piece', 'pieces'], units: PIECES },
+  { id: 'chicken-salad', name: 'Chicken salad bowl', aliases: ['chicken salad', 'protein bowl'], category: 'chicken', region: 'all', meals: MAINS, lines: [['chicken-breast-cooked', 120], ['cucumber', 60], ['tomato', 50], ['onion', 20], ['oil', 5], ['lemon', 5]], fat: ['oil'], cooked: 260, servings: 1, units: ['serving', 'g'] },
+  { id: 'black-coffee', name: 'Black coffee', aliases: ['americano', 'pre workout coffee'], category: 'drink', region: 'all', meals: ALL_MEALS, lines: [['coffee', 200]], cooked: 200, servings: 1, units: ['cup', 'g'] },
+  { id: 'green-tea', name: 'Green tea', aliases: ['green tea'], category: 'drink', region: 'all', meals: ALL_MEALS, lines: [['tea', 200]], cooked: 200, servings: 1, units: ['cup', 'g'] },
+  { id: 'banana-pb-shake', name: 'Banana peanut butter shake', aliases: ['gainer shake', 'mass gainer shake', 'banana shake'], category: 'drink', region: 'all', meals: ['breakfast', 'snacks'], lines: [['milk', 250], ['banana', 120], ['peanut-butter', 16], ['oats', 20]], cooked: 400, servings: 1, units: ['serving', 'glass', 'g'], density: 1.05 },
+
   // Drinks ----------------------------------------------------------------------------------
   {
     id: 'chai',
@@ -2040,6 +2100,21 @@ const DISHES: DishDef[] = [
 ];
 
 const BASICS: BasicDef[] = [
+
+  // Gym staples: what people who train eat most, plain and simple to log.
+  { id: 'egg-white', name: 'Egg whites', aliases: ['egg white', 'anda safedi', 'whites'], category: 'egg', region: 'all', meals: ALL_MEALS, ingredient: 'egg-white', units: PIECES, pieceG: 33, piece: ['egg white', 'egg whites'], amount: 4 },
+  { id: 'chicken-breast', name: 'Chicken breast, grilled', aliases: ['chicken breast', 'grilled chicken', 'boiled chicken breast', 'chicken'], category: 'chicken', region: 'all', meals: MAINS, ingredient: 'chicken-breast-cooked', units: ['g', 'piece'], pieceG: 120, piece: ['breast (120 g)', 'breasts (120 g)'], amount: 150 },
+  { id: 'brown-rice', name: 'Brown rice, cooked', aliases: ['brown rice'], category: 'rice', region: 'all', meals: MAINS, ingredient: 'brown-rice-cooked', units: ['katori', 'g'], density: 0.66 },
+  { id: 'quinoa', name: 'Quinoa, cooked', aliases: ['quinoa'], category: 'rice', region: 'all', meals: MAINS, ingredient: 'quinoa-cooked', units: ['katori', 'g'], density: 0.75 },
+  { id: 'sweet-potato', name: 'Sweet potato, baked or boiled', aliases: ['shakarkandi', 'sweet potato', 'shakarkand'], category: 'basic', region: 'all', meals: ALL_MEALS, ingredient: 'sweet-potato-baked', units: ['piece', 'g'], pieceG: 150, piece: ['medium sweet potato', 'medium sweet potatoes'] },
+  { id: 'dates', name: 'Dates', aliases: ['khajur', 'khajoor', 'dates'], category: 'fruit', region: 'all', meals: ALL_MEALS, ingredient: 'dates', units: PIECES, pieceG: 8, piece: ['date', 'dates'], amount: 3 },
+  { id: 'tuna', name: 'Tuna, canned in water', aliases: ['tuna'], category: 'fish', region: 'all', meals: MAINS, ingredient: 'tuna-canned', units: ['g'], amount: 100 },
+  { id: 'milk-skimmed', name: 'Milk, skimmed', aliases: ['skimmed milk', 'skim milk', 'double toned milk', 'fat free milk'], category: 'dairy', region: 'all', meals: ALL_MEALS, ingredient: 'milk-skimmed', units: ['glass', 'cup', 'g'], density: 1.03 },
+  { id: 'greek-yogurt', name: 'Greek yogurt / hung curd', aliases: ['greek yogurt', 'hung curd', 'chakka', 'high protein curd'], category: 'dairy', region: 'all', meals: ALL_MEALS, ingredient: 'greek-yogurt', units: ['katori', 'g'], density: 1.05 },
+  { id: 'brown-bread', name: 'Brown bread', aliases: ['whole wheat bread', 'atta bread', 'multigrain bread'], category: 'bread', region: 'all', meals: ['breakfast', 'snacks'], ingredient: 'brown-bread', units: PIECES, pieceG: 28, piece: ['slice', 'slices'], amount: 2 },
+  { id: 'kala-chana-boiled', name: 'Chana, boiled', aliases: ['boiled chana', 'kala chana', 'boiled chickpeas', 'chana salad'], category: 'snack', region: 'all', meals: ALL_MEALS, ingredient: 'chickpeas-boiled', units: ['katori', 'g'], density: 0.7 },
+  { id: 'rajma-boiled', name: 'Rajma, boiled', aliases: ['boiled rajma', 'kidney beans'], category: 'snack', region: 'all', meals: ALL_MEALS, ingredient: 'rajma-boiled', units: ['katori', 'g'], density: 0.75 },
+  { id: 'tofu', name: 'Tofu', aliases: ['soya paneer', 'tofu'], category: 'basic', region: 'all', meals: ALL_MEALS, ingredient: 'tofu', units: ['g'], amount: 100 },
   {
     id: 'curd',
     name: 'Curd',
@@ -2327,11 +2402,103 @@ const BASICS: BasicDef[] = [
   },
 ];
 
-const NONVEG = new Set<IngredientId>(['chicken', 'mutton', 'fish', 'prawns']);
+
+/**
+ * Packaged foods people log most, from the values printed on their labels (read through
+ * FatSecret India, Open Food Facts and the makers' sites, October 2026). `serving` is the
+ * label's own serving; values are per 100 g unless `perServing` is set.
+ */
+interface LabelDef {
+  id: string;
+  name: string;
+  aliases?: string[];
+  category: FoodCategory;
+  diet?: Food['diet'];
+  /** kcal, protein, carbs, fat, fibre. */
+  values: [number, number, number, number, number];
+  /** The values above are for one serving of this many grams, not 100 g. */
+  perServing?: number;
+  serving?: { g: number; name: [string, string] };
+  amount?: number;
+  meals?: Meal[];
+}
+
+const LABELS: LabelDef[] = [
+  // Whey, plant and yeast protein (one scoop as on the label)
+  { id: 'on-gold-standard-whey', name: 'Optimum Nutrition Gold Standard 100% Whey', aliases: ['on whey', 'gold standard', 'optimum nutrition', 'whey protein'], category: 'drink', values: [120, 24, 3, 1.5, 0], perServing: 30.4, serving: { g: 30.4, name: ['scoop', 'scoops'] } },
+  { id: 'muscleblaze-biozyme-whey', name: 'MuscleBlaze Biozyme Performance Whey', aliases: ['muscleblaze', 'mb whey', 'biozyme', 'whey protein'], category: 'drink', values: [140, 25, 5.65, 1.8, 0], perServing: 36, serving: { g: 36, name: ['scoop', 'scoops'] } },
+  { id: 'avvatar-whey', name: 'Avvatar Whey Protein', aliases: ['avvatar', 'whey protein'], category: 'drink', values: [141, 27.6, 3, 2.1, 0], perServing: 35, serving: { g: 35, name: ['scoop', 'scoops'] } },
+  { id: 'myprotein-impact-whey', name: 'Myprotein Impact Whey Protein', aliases: ['myprotein', 'impact whey', 'whey protein'], category: 'drink', values: [100, 19, 1.9, 1.9, 0.4], perServing: 25, serving: { g: 25, name: ['scoop', 'scoops'] } },
+  { id: 'asitis-whey-concentrate', name: 'AS-IT-IS Whey Protein Concentrate 80%', aliases: ['asitis', 'as it is', 'raw whey', 'whey protein'], category: 'drink', values: [141, 28, 2.9, 1.8, 0], perServing: 35, serving: { g: 35, name: ['scoop', 'scoops'] } },
+  { id: 'oziva-plant-protein', name: 'OZiva Organic Plant Protein', aliases: ['oziva', 'plant protein', 'vegan protein'], category: 'drink', values: [140, 30, 3.8, 0.45, 0], perServing: 36, serving: { g: 36, name: ['scoop', 'scoops'] } },
+  { id: 'plix-plant-protein', name: 'Plix Plant Protein', aliases: ['plix', 'plant protein', 'vegan protein'], category: 'drink', values: [108, 25, 5, 0.6, 0], perServing: 34, serving: { g: 34, name: ['scoop', 'scoops'] } },
+  { id: 'muscleblaze-plant-protein', name: 'MuscleBlaze Plant Protein', aliases: ['muscleblaze plant', 'plant protein', 'vegan protein'], category: 'drink', values: [144, 24, 5.1, 2.74, 0], perServing: 36.5, serving: { g: 36.5, name: ['scoop', 'scoops'] } },
+  // The label gives energy and protein only; the rest of the energy is shown as carbs.
+  { id: 'yogabar-yeast-protein', name: 'Yogabar Yeast Protein', aliases: ['yeast protein', 'yoga bar protein', 'yogabar'], category: 'drink', values: [148.8, 30.8, 6.4, 0, 0], perServing: 38, serving: { g: 38, name: ['scoop', 'scoops'] } },
+  { id: 'nutrela-soya-chunks', name: 'Nutrela Soya Chunks (dry)', aliases: ['nutrela', 'soya chunks', 'soy protein', 'meal maker'], category: 'basic', values: [354, 53.19, 33.5, 0.82, 0], amount: 30, serving: { g: 10, name: ['handful (10 g)', 'handfuls (10 g)'] } },
+  // Peanut butter (1 tbsp is about 16 g)
+  { id: 'pintola-peanut-butter', name: 'Pintola Classic Peanut Butter', aliases: ['pintola', 'peanut butter'], category: 'basic', values: [605, 26, 22, 44.6, 0], serving: { g: 16, name: ['tbsp', 'tbsp'] } },
+  { id: 'pintola-crunchy-peanut-butter', name: 'Pintola Crunchy Peanut Butter', aliases: ['pintola crunchy', 'peanut butter'], category: 'basic', values: [639, 30, 18, 49, 0], serving: { g: 16, name: ['tbsp', 'tbsp'] } },
+  { id: 'pintola-high-protein-peanut-butter', name: 'Pintola High Protein Peanut Butter', aliases: ['pintola high protein', 'peanut butter'], category: 'basic', values: [583, 30, 27, 38, 0], serving: { g: 16, name: ['tbsp', 'tbsp'] } },
+  { id: 'myfitness-chocolate-peanut-butter', name: 'MyFitness Chocolate Peanut Butter', aliases: ['myfitness', 'peanut butter'], category: 'basic', values: [628, 28, 17.5, 49.6, 0], serving: { g: 16, name: ['tbsp', 'tbsp'] } },
+  { id: 'alpino-natural-peanut-butter', name: 'Alpino Natural Peanut Butter', aliases: ['alpino', 'peanut butter'], category: 'basic', values: [645, 29, 17, 52, 0], serving: { g: 16, name: ['tbsp', 'tbsp'] } },
+  { id: 'sundrop-peanut-butter', name: 'Sundrop Peanut Butter', aliases: ['sundrop', 'peanut butter'], category: 'basic', values: [647, 26.8, 15.2, 55, 7.8], serving: { g: 16, name: ['tbsp', 'tbsp'] } },
+  // Oats and muesli (dry)
+  { id: 'quaker-oats', name: 'Quaker Oats (dry)', aliases: ['quaker', 'oats', 'rolled oats'], category: 'breakfast', values: [407, 11.8, 68.5, 9.5, 10], amount: 40, meals: ['breakfast'] },
+  { id: 'quaker-masala-oats', name: 'Quaker Instant Masala Oats (dry)', aliases: ['quaker masala', 'masala oats'], category: 'breakfast', values: [385, 9.8, 68.3, 8.1, 0], serving: { g: 40, name: ['pack', 'packs'] }, meals: ['breakfast', 'snacks'] },
+  { id: 'saffola-masala-oats', name: 'Saffola Masala Oats Classic Masala (dry)', aliases: ['saffola', 'masala oats'], category: 'breakfast', values: [365, 8.68, 70.53, 7.63, 9.74], serving: { g: 38, name: ['pack', 'packs'] }, meals: ['breakfast', 'snacks'] },
+  { id: 'kelloggs-muesli-fruit-magic', name: "Kellogg's Extra Muesli Fruit Magic", aliases: ['kelloggs muesli', 'muesli'], category: 'breakfast', values: [365, 8, 77.3, 5, 0], amount: 40, meals: ['breakfast'] },
+  { id: 'yogabar-muesli', name: 'Yoga Bar Muesli+', aliases: ['yoga bar muesli', 'yogabar muesli', 'muesli'], category: 'breakfast', values: [417, 13, 70, 9.5, 7.5], amount: 40, meals: ['breakfast'] },
+  { id: 'yogabar-nuts-seeds-muesli', name: 'Yoga Bar Fruits, Nuts & Seeds Muesli', aliases: ['yoga bar fruits nuts', 'yoga bar seeds', 'muesli'], category: 'breakfast', values: [367, 9.7, 73, 6.2, 0], amount: 40, meals: ['breakfast'] },
+  { id: 'bagrrys-protein-muesli', name: "Bagrry's Protein Muesli", aliases: ['bagrrys', 'protein muesli', 'muesli'], category: 'breakfast', values: [399, 20.3, 64.5, 8.2, 0], amount: 40, meals: ['breakfast'] },
+  { id: 'true-elements-muesli', name: 'True Elements Muesli No Added Sugar', aliases: ['true elements', 'muesli'], category: 'breakfast', values: [425, 13.5, 68.1, 10.9, 0], amount: 40, meals: ['breakfast'] },
+  // High-protein dairy, bars and snacks people in the gym buy
+  { id: 'epigamia-greek-yogurt', name: 'Epigamia Greek Yogurt Natural', aliases: ['epigamia', 'greek yogurt'], category: 'dairy', values: [65, 7, 5, 2, 0], amount: 90, meals: ALL_MEALS },
+  { id: 'amul-high-protein-milk', name: 'Amul High Protein Milk', aliases: ['amul protein milk', 'protein milk'], category: 'dairy', values: [225, 35, 20, 0.5, 0], perServing: 250, serving: { g: 250, name: ['pack (250 ml)', 'packs (250 ml)'] } },
+  { id: 'amul-protein-buttermilk', name: 'Amul Protein Buttermilk', aliases: ['amul buttermilk', 'protein chaas', 'protein buttermilk'], category: 'drink', values: [54, 7.5, 4, 0.5, 0], serving: { g: 200, name: ['pack (200 ml)', 'packs (200 ml)'] } },
+  { id: 'ritebite-max-protein-bar', name: 'RiteBite Max Protein Daily Choco Almond', aliases: ['max protein', 'ritebite', 'protein bar'], category: 'snack', values: [179, 10, 27.5, 6.8, 4], perServing: 50, serving: { g: 50, name: ['bar', 'bars'] } },
+  { id: 'whole-truth-protein-bar', name: 'The Whole Truth Peanut Cocoa Protein Bar', aliases: ['whole truth', 'twt bar', 'protein bar'], category: 'snack', values: [348, 20.6, 19.8, 20.7, 0], perServing: 67, serving: { g: 67, name: ['bar', 'bars'] } },
+  { id: 'fortune-chana-sattu', name: 'Fortune Chana Sattu (dry)', aliases: ['sattu', 'chana sattu', 'fortune sattu'], category: 'basic', values: [418, 23, 68, 6, 0], amount: 40 },
+  // Packaged snacks and noodles (the biggest food spend in Indian homes, HCES 2023-24)
+  { id: 'parle-g', name: 'Parle-G biscuits', aliases: ['parle g', 'glucose biscuit', 'biscuit'], category: 'snack', values: [454, 6.9, 77.3, 13, 0], serving: { g: 6.6, name: ['biscuit', 'biscuits'] }, amount: 4, meals: ['snacks', 'breakfast'] },
+  { id: 'maggi-masala', name: 'Maggi 2-Minute Masala Noodles', aliases: ['maggi', 'instant noodles'], category: 'snack', values: [303, 6.5, 43.6, 10.7, 2.9], perServing: 70, serving: { g: 70, name: ['pack (cooked)', 'packs (cooked)'] }, meals: ['snacks', 'breakfast', 'dinner'] },
+  { id: 'haldiram-aloo-bhujia', name: "Haldiram's Aloo Bhujia", aliases: ['bhujia', 'namkeen', 'haldiram'], category: 'snack', values: [562, 8.68, 46.1, 38.12, 0.83], amount: 30, meals: ['snacks'] },
+  { id: 'lays-classic', name: "Lay's Classic Salted Chips", aliases: ['lays', 'chips', 'potato chips', 'wafers'], category: 'snack', values: [547, 6.7, 50.7, 34.9, 0], amount: 30, meals: ['snacks'] },
+];
+
+function fromLabel(l: LabelDef): Food {
+  const [kcal, proteinG, carbsG, fatG, fibreG] = l.values;
+  const factor = l.perServing ? 100 / l.perServing : 1;
+  const unit = l.serving ? 'piece' : 'g';
+  return {
+    id: l.id,
+    name: l.name,
+    aliases: l.aliases ?? [],
+    category: l.category,
+    region: 'all',
+    meals: l.meals ?? ALL_MEALS,
+    diet: l.diet ?? 'veg',
+    jain: false,
+    per100: scaleNutrients({ kcal, proteinG, carbsG, fatG, fibreG }, factor),
+    fatPer100: null,
+    units: unit === 'piece' ? ['piece', 'g'] : ['g'],
+    defaultAmount: l.amount && unit === 'g' ? l.amount : 1,
+    density: 1,
+    pieceG: l.serving?.g ?? null,
+    pieceName: l.serving?.name ?? null,
+    servingG: null,
+    source: 'label',
+    recipe: null,
+  };
+}
+
+const NONVEG = new Set<IngredientId>(['chicken', 'chicken-breast-cooked', 'mutton', 'fish', 'prawns', 'tuna-canned']);
 /** Jain food also leaves out onion, garlic and root vegetables. */
 const NOT_JAIN = new Set<IngredientId>([
   ...NONVEG,
   'egg',
+  'egg-white',
+  'sweet-potato-baked',
   'onion',
   'garlic',
   'ginger',
@@ -2350,7 +2517,7 @@ const lookup = (id: string): Ingredient => {
 
 function dietOf(ids: IngredientId[]): Food['diet'] {
   if (ids.some((i) => NONVEG.has(i))) return 'nonveg';
-  if (ids.includes('egg')) return 'egg';
+  if (ids.includes('egg') || ids.includes('egg-white')) return 'egg';
   return 'veg';
 }
 
@@ -2422,7 +2589,11 @@ function fromBasic(b: BasicDef): Food {
 }
 
 /** Every built-in food, resolved to per 100 g. */
-export const FOODS: Food[] = [...DISHES.map(fromDish), ...BASICS.map(fromBasic)];
+export const FOODS: Food[] = [
+  ...DISHES.map(fromDish),
+  ...BASICS.map(fromBasic),
+  ...LABELS.map(fromLabel),
+];
 export const FOOD_BY_ID = new Map(FOODS.map((f) => [f.id, f]));
 
 /** Ingredients a person can use in their own recipes. */
@@ -2432,10 +2603,10 @@ export const RECIPE_INGREDIENTS = Object.entries(INGREDIENTS)
 
 /** The few foods offered first for each meal before the person has history. */
 export const STARTER_FOODS: Record<Meal, string[]> = {
-  breakfast: ['chai', 'poha', 'aloo-paratha', 'idli', 'omelette', 'upma', 'boiled-egg', 'milk'],
-  lunch: ['roti', 'dal-tadka', 'rice', 'rajma', 'chole', 'curd', 'aloo-gobhi', 'sambar'],
-  snacks: ['chai', 'banana', 'samosa', 'peanuts', 'roasted-chana', 'sprouts-chaat', 'apple'],
-  dinner: ['roti', 'dal-tadka', 'paneer-bhurji', 'chicken-curry', 'rice', 'mix-veg', 'curd'],
+  breakfast: ['chai', 'poha', 'aloo-paratha', 'idli', 'omelette', 'boiled-egg', 'oats-milk', 'protein-shake', 'milk', 'peanut-butter-toast'],
+  lunch: ['roti', 'dal-tadka', 'rice', 'rajma', 'chole', 'curd', 'chicken-breast', 'aloo-gobhi', 'sambar'],
+  snacks: ['chai', 'banana', 'protein-shake', 'roasted-makhana', 'peanuts', 'roasted-chana', 'greek-yogurt', 'samosa', 'apple'],
+  dinner: ['roti', 'dal-tadka', 'paneer-bhurji', 'chicken-curry', 'soya-chunks-boiled', 'rice', 'mix-veg', 'curd'],
 };
 
 /** A person's own food or recipe, as a food the logger can use. */

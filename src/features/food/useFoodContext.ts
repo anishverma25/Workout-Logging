@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import { useFoodData, useTrainingData, type QueryState } from '@/data/hooks';
 import { customToFood, FOODS } from '@/data/library/foods';
+import { moreFoodsStore } from '@/data/library/moreFoods';
 import { bodySnapshot } from '@/domain/analytics/body';
 import { buildSessions, isAlive, type TrainingData } from '@/domain/analytics/sessions';
 import { loggedDaysPerWeek } from '@/domain/analytics/week';
@@ -54,9 +55,10 @@ export function useFoodContextFrom(now: Date, training: QueryState<TrainingData>
     });
   }, [data, profile, day]);
 
+  const more = useSyncExternalStore(moreFoodsStore.subscribe, moreFoodsStore.get);
   const foods = useMemo<Food[]>(
-    () => [...(food.data?.customFoods ?? []).map(customToFood), ...FOODS],
-    [food.data?.customFoods],
+    () => [...(food.data?.customFoods ?? []).map(customToFood), ...FOODS, ...more],
+    [food.data?.customFoods, more],
   );
   const foodById = useMemo(() => new Map(foods.map((f) => [f.id, f])), [foods]);
   const trainingDates = useMemo(

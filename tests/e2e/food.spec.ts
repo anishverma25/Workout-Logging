@@ -3,8 +3,8 @@ import { expireTrial, signUpFresh, startWithDemo } from './session';
 
 /**
  * Food logging for Indian meals: the Food tab, a thali built by tapping foods, katori portions
- * and oil levels, edits with undo, family recipes, and what Pro adds (typing a meal, protein
- * help, the Food section on Progress). Every number comes from the food library.
+ * and oil levels, edits with undo, family recipes, and what Pro adds (AI food logging, protein
+ * help, the Food section on Progress).
  */
 
 async function openFood(page: Page) {
@@ -104,7 +104,7 @@ test('free accounts see what Pro adds to food', async ({ page }) => {
   await expect(page.getByRole('dialog').locator('[data-type-meal]')).toContainText('Pro');
 });
 
-test('Pro types a whole meal, gets protein help and sees food on Progress', async ({ page }) => {
+test('Pro tells OverloadGPT a meal, gets protein help and sees food on Progress', async ({ page }) => {
   await startWithDemo(page, { tag: 'food-pro' });
   await openFood(page);
 
@@ -116,18 +116,31 @@ test('Pro types a whole meal, gets protein help and sees food on Progress', asyn
   const sheet = page.getByRole('dialog');
   await sheet.getByRole('radio', { name: 'Dinner' }).click();
   await sheet.locator('[data-type-meal]').click();
-  await sheet.getByRole('textbox').fill('3 roti, 1 katori rajma aur pizza');
-  await expect(sheet).toContainText('Not in the library: pizza');
+  // Asked once per phone before anything is sent.
+  await sheet.getByRole('button', { name: 'Turn on' }).click();
+  await sheet.getByRole('textbox').fill('3 roti, 1 katori rajma aur Domino pizza #food-down');
+  await sheet.getByRole('button', { name: 'Work it out' }).click();
+  // The AI is down: the library fills what it knows.
+  await expect(sheet.locator('[data-ai-result]')).toContainText('could not be reached');
+  await expect(sheet.locator('[data-ai-result]')).toContainText('Not in the library');
+  await sheet.getByRole('textbox').fill('3 roti, 1 katori rajma aur Domino pizza');
+  await sheet.getByRole('button', { name: 'Ask again' }).click();
+  const result = sheet.locator('[data-ai-result]');
+  await expect(result).toContainText('Domino pizza');
+  await expect(result).toContainText('Estimated');
+  await expect(result).toContainText('Library');
   await sheet.getByRole('button', { name: 'Put on my plate' }).click();
   await expect(sheet.locator('[data-plate]')).toContainText('3 rotis');
   await sheet.locator('[data-log-plate]').click();
-  await expect(page.locator('[data-meal="dinner"]')).toContainText('Rajma');
+  const dinner = page.locator('[data-meal="dinner"]');
+  await expect(dinner).toContainText('Roti');
+  await expect(dinner).toContainText('Domino pizza');
 
   const help = page.locator('[data-protein-help]');
   await expect(help).toContainText('protein to go');
   await help.getByRole('button', { name: 'Apply' }).first().click();
   await expect(
-    page.getByText(/^Logged (Paneer|Curd|Boiled|Chicken|Soya|Milk|Roasted|Moong|Sprouts)/),
+    page.getByText(/^Logged (Paneer|Curd|Boiled|Chicken|Soya|Milk|Roasted|Moong|Sprouts|Whey|Greek|Egg|Tofu)/),
   ).toBeVisible();
 
   await page.goto('/progress');

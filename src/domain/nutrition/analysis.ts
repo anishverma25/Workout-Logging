@@ -254,6 +254,12 @@ export function nutritionSummary(input: {
 
 /** Everyday Indian protein foods, with the portion suggested. */
 const PROTEIN_FOODS: { id: string; amount: number; unit: UnitId }[] = [
+  { id: 'protein-shake', amount: 1, unit: 'serving' },
+  { id: 'greek-yogurt', amount: 1, unit: 'katori' },
+  { id: 'egg-white-omelette', amount: 1, unit: 'piece' },
+  { id: 'soya-chunks-boiled', amount: 1, unit: 'katori' },
+  { id: 'chicken-breast', amount: 150, unit: 'g' },
+  { id: 'tofu', amount: 100, unit: 'g' },
   { id: 'curd', amount: 1, unit: 'katori' },
   { id: 'paneer', amount: 100, unit: 'g' },
   { id: 'boiled-egg', amount: 2, unit: 'piece' },

@@ -100,6 +100,41 @@ const PICK = [
   ['watermelon', 'Watermelon', '09326'],
   ['grapes', 'Grapes', '09132'],
   ['pomegranate', 'Pomegranate', '09286'],
+  ['poppy-seeds', 'Poppy seeds (posto, khus khus)', '02033'],
+  ['soy-sauce', 'Soy sauce', '16123'],
+  ['cornflour', 'Cornflour', '20027'],
+  ['milk-powder', 'Milk powder (for khoa)', '01090'],
+  ['condensed-milk', 'Condensed milk', '01095'],
+  ['puffed-rice', 'Puffed rice (murmura)', '08066'],
+  ['peanut-butter', 'Peanut butter', '16098'],
+  ['honey', 'Honey', '19296'],
+  ['coconut-water', 'Coconut water', '12119'],
+  ['cornflakes', 'Cornflakes', '08020'],
+  ['mayonnaise', 'Mayonnaise', '04025'],
+  ['ketchup', 'Tomato ketchup', '11935'],
+  ['spring-onion', 'Spring onion', '11291'],
+  ['vinegar', 'Vinegar', '02048'],
+  ['coconut-milk', 'Coconut milk', '12117'],
+  ['mustard-seeds', 'Mustard seeds', '02024'],
+  ['sesame', 'Sesame seeds (til)', '12023'],
+  ['parmesan', 'Parmesan cheese', '01032'],
+  ['whey', 'Whey protein powder', '14066'],
+  ['black-pepper', 'Black pepper', '02030'],
+  ['tofu', 'Tofu', '16426'],
+  ['egg-white', 'Egg white', '01124'],
+  ['chicken-breast-cooked', 'Chicken breast, roasted', '05064'],
+  ['brown-rice-cooked', 'Brown rice, cooked', '20037'],
+  ['quinoa-cooked', 'Quinoa, cooked', '20137'],
+  ['sweet-potato-baked', 'Sweet potato, baked', '11508'],
+  ['dates', 'Dates (khajur)', '09087'],
+  ['tuna-canned', 'Tuna, canned in water', '15121'],
+  ['milk-skimmed', 'Milk, skimmed', '01085'],
+  ['greek-yogurt', 'Greek yogurt / hung curd, low fat', '01256'],
+  ['brown-bread', 'Brown bread (whole wheat)', '18075'],
+  ['chickpeas-boiled', 'Chickpeas, boiled', '16057'],
+  ['rajma-boiled', 'Kidney beans, boiled', '16033'],
+  ['oats-cooked', 'Oats, cooked in water', '08121'],
+  ['lotus-seeds', 'Lotus seeds (makhana), dried', '12013'],
 ];
 
 const rows = new Map();
@@ -134,3 +169,44 @@ export type IngredientId = keyof typeof INGREDIENTS;
 `;
 writeFileSync(new URL('../src/data/library/ingredients.ts', import.meta.url), ts);
 console.log(`Wrote ${PICK.length + 1} ingredients`);
+
+// The whole of SR28 as searchable foods, loaded only when food logging opens. Long names come
+// from FOOD_DES.txt (same folder). Baby foods (0300) and American Indian/Alaska Native foods
+// (3500) are left out. Each row: [ndb, name, group, kcal, protein, carbs, fat, fibre,
+// grams of measure 1, measure 1, grams of measure 2, measure 2].
+const desPath = process.argv[2].replace(/ABBREV\.txt$/, 'FOOD_DES.txt');
+const names = new Map();
+for (const line of readFileSync(desPath, 'latin1').split(/\r?\n/)) {
+  if (!line) continue;
+  const f = line.split('^').map((x) => x.replace(/^~|~$/g, ''));
+  names.set(f[0], { group: f[1], name: f[2] });
+}
+const r1 = (v) => Math.round(num(v) * 10) / 10;
+const rows2 = [];
+for (const [ndb, f] of rows) {
+  const d = names.get(ndb);
+  if (!d || d.group === '0300' || d.group === '3500') continue;
+  if (f[3] === '') continue;
+  const n = f.length;
+  const m1 = num(f[n - 5]);
+  const m2 = num(f[n - 3]);
+  rows2.push([
+    ndb,
+    d.name,
+    d.group,
+    r1(f[3]),
+    r1(f[4]),
+    r1(f[7]),
+    r1(f[5]),
+    r1(f[8]),
+    m1 > 0 ? r1(m1) : 0,
+    m1 > 0 ? f[n - 4] : '',
+    m2 > 0 ? r1(m2) : 0,
+    m2 > 0 ? f[n - 2] : '',
+  ]);
+}
+writeFileSync(
+  new URL('../src/data/library/usdaFoods.json', import.meta.url),
+  JSON.stringify(rows2),
+);
+console.log(`Wrote ${rows2.length} USDA foods`);

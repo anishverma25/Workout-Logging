@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { ChevronLeft, Crown, Plus, Sparkles, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, Crown, Globe, Mic, Plus, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router';
 import {
   BottomSheet,
@@ -13,10 +13,12 @@ import { useToast } from '@/components/ui/Toast';
 import { useFeature } from '@/app/entitlement';
 import { db } from '@/data/db';
 import { STARTER_FOODS } from '@/data/library/foods';
+import { loadMoreFoods } from '@/data/library/moreFoods';
 import {
   copyFoodLogs,
   deleteFoodLogs,
   FoodError,
+  keepPlateFoods,
   logFoods,
   measurePortion,
   type FoodPortion,
@@ -24,10 +26,10 @@ import {
 import type { FoodLog } from '@/domain/models/schemas';
 import { mealTemplates, recentFoods, type MealTemplate } from '@/domain/nutrition/analysis';
 import { portionText, roundNutrients, sumNutrients, type Food } from '@/domain/nutrition/calc';
-import { parseMeal } from '@/domain/nutrition/parse';
 import { fitsDiet, searchFoods } from '@/domain/nutrition/search';
 import { MEALS, ZERO, type Meal } from '@/domain/nutrition/types';
 import { haptic } from '@/lib/haptics';
+import { AiFoodLog } from './AiFoodLog';
 import { defaultPortion } from './foodText';
 import { NutrientLine, PortionEditor } from './PortionEditor';
 import { MEAL_LABEL, type FoodContext } from './useFoodContext';
@@ -83,7 +85,10 @@ function AddFoodBody({
   onCreateFood: (name: string) => void;
 }) {
   const toast = useToast();
-  const pro = useFeature('food_insights');
+  const pro = useFeature('ai_food');
+  useEffect(() => {
+    void loadMoreFoods();
+  }, []);
   const [meal, setMeal] = useState<Meal>(initialMeal);
   const [query, setQuery] = useState('');
   const [plate, setPlate] = useState<FoodPortion[]>([]);
@@ -131,7 +136,8 @@ function AddFoodBody({
   async function logPlate() {
     setBusy(true);
     try {
-      const logs = await logFoods(db, plate, { date, meal, katoriMl: ctx.katoriMl });
+      const kept = await keepPlateFoods(db, plate);
+      const logs = await logFoods(db, kept, { date, meal, katoriMl: ctx.katoriMl });
       haptic('medium');
       toast(
         `Logged ${logs.length === 1 ? logs[0]!.foodName : `${logs.length} foods`} to ${MEAL_LABEL[meal].toLowerCase()}`,
@@ -226,8 +232,8 @@ function AddFoodBody({
   if (view.kind === 'type')
     return (
       <div className="flex flex-col gap-4 pt-5">
-        <BackRow label="Type a meal" onBack={() => setView({ kind: 'pick' })} />
-        <TypeMeal
+        <BackRow label="Tell OverloadGPT" onBack={() => setView({ kind: 'pick' })} />
+        <AiFoodLog
           ctx={ctx}
           onFill={(items) => {
             setPlate((p) => [...p, ...items]);
@@ -345,6 +351,13 @@ function describe(food: Food, katoriMl: number | null): string {
   }
 }
 
+const DIET_WORD = {
+  veg: 'vegetarian',
+  egg: 'eggetarian',
+  nonveg: 'non-vegetarian',
+  jain: 'Jain',
+} as const;
+
 function Results({
   ctx,
   query,
@@ -360,6 +373,10 @@ function Results({
     () => searchFoods(ctx.foods, query, ctx.diet),
     [ctx.foods, query, ctx.diet],
   );
+  const hidden = useMemo(
+    () => results.length === 0 && !!ctx.diet && searchFoods(ctx.foods, query, null, 1).length > 0,
+    [results.length, ctx.foods, query, ctx.diet],
+  );
   return (
     <div data-food-results>
       {results.length ? (
@@ -370,7 +387,9 @@ function Results({
         </ul>
       ) : (
         <p className="type-meta rounded-nested bg-surface-2 p-4 text-center text-text-2">
-          No food called “{query.trim()}” yet.
+          {hidden
+            ? `“${query.trim()}” does not fit your ${DIET_WORD[ctx.diet!]} diet. You can change your diet in food settings.`
+            : `No food called “${query.trim()}” yet. Tell OverloadGPT and it will find it.`}
         </p>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
@@ -463,30 +482,7 @@ function Quick({
         </section>
       ) : null}
 
-      <button
-        type="button"
-        onClick={pro ? onType : undefined}
-        disabled={!pro}
-        className="pressable chrome flex min-h-14 items-center gap-3 rounded-nested bg-surface-2 px-4 text-left disabled:opacity-100"
-        data-type-meal
-      >
-        <Sparkles className="size-5 shrink-0 text-text-2" aria-hidden />
-        <span className="min-w-0 flex-1">
-          <span className="type-headline block text-text-1">Type a meal</span>
-          <span className="type-meta block text-text-2">
-            “2 roti, dal, aloo gobhi” fills your plate
-          </span>
-        </span>
-        {pro ? null : (
-          <Link
-            to="/pro"
-            className="type-caption inline-flex items-center gap-1 rounded-full bg-surface px-2 py-1 font-semibold text-text-2"
-          >
-            <Crown className="size-3.5" aria-hidden />
-            Pro
-          </Link>
-        )}
-      </button>
+      <AiHero pro={pro} onOpen={onType} />
 
       {recent.length ? (
         <section aria-labelledby="recent-foods">
@@ -521,61 +517,54 @@ function Quick({
   );
 }
 
-function TypeMeal({ ctx, onFill }: { ctx: FoodContext; onFill: (items: FoodPortion[]) => void }) {
-  const [text, setText] = useState('');
-  const parsed = useMemo(
-    () => (text.trim() ? parseMeal(text, ctx.foods, ctx.diet) : null),
-    [text, ctx.foods, ctx.diet],
+/**
+ * The way in to AI food logging. Pro opens it; free accounts see what it does and where to
+ * get it, because this is the fastest and most complete way to log.
+ */
+function AiHero({ pro, onOpen }: { pro: boolean; onOpen: () => void }) {
+  const body = (
+    <>
+      <span className="flex items-center gap-3">
+        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime">
+          <Sparkles className="size-5" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="type-headline block text-text-1">Tell OverloadGPT what you ate</span>
+          <span className="type-meta block text-text-2">
+            Any food, any brand, any restaurant. Type it or say it.
+          </span>
+        </span>
+        <span className="type-caption inline-flex shrink-0 items-center gap-1 rounded-full bg-surface px-2 py-1 font-semibold text-text-2">
+          <Crown className="size-3.5" aria-hidden />
+          Pro
+        </span>
+      </span>
+      <span className="type-caption mt-3 flex flex-wrap gap-x-4 gap-y-1 text-text-2">
+        <span className="inline-flex items-center gap-1">
+          <Globe className="size-3.5" aria-hidden />
+          Looks up labels and menus
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <Mic className="size-3.5" aria-hidden />
+          Speak in English or Hinglish
+        </span>
+      </span>
+      {pro ? null : (
+        <span className="type-meta mt-3 block font-semibold text-text-1">
+          Get Pro for the quickest, most accurate logging
+        </span>
+      )}
+    </>
   );
-  const items: FoodPortion[] =
-    parsed?.items.map((i) => {
-      const base = defaultPortion(i.food);
-      const unit = i.unit ?? base.unit;
-      return {
-        ...base,
-        unit,
-        amount: i.amount,
-        size: unit === 'katori' || unit === 'cup' ? 'medium' : null,
-      };
-    }) ?? [];
-  return (
-    <div className="flex flex-col gap-3">
-      <label className="type-meta text-text-2" htmlFor="type-meal">
-        Write it the way you would say it. Only foods in the library are used; nothing is guessed.
-      </label>
-      <textarea
-        id="type-meal"
-        data-autofocus
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={3}
-        placeholder="2 roti, 1 katori dal, aloo gobhi, chaas"
-        className="type-body w-full resize-none rounded-field bg-surface-2 p-3 text-text-1 placeholder:text-text-3"
-      />
-      {parsed ? (
-        <div className="type-meta text-text-2" aria-live="polite">
-          {items.length ? (
-            <ul className="flex flex-col gap-1">
-              {items.map((p, i) => (
-                <li key={i} className="text-text-1">
-                  {portionText(p.amount, p.unit, p.size, p.food.pieceName)}
-                  {p.unit === 'piece' && p.food.pieceName ? '' : ` ${p.food.name.toLowerCase()}`}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No foods found yet.</p>
-          )}
-          {parsed.unknown.length ? (
-            <p className="mt-2">
-              Not in the library: {parsed.unknown.join(', ')}. Search for them or add your own.
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-      <PrimaryButton block disabled={!items.length} onClick={() => onFill(items)}>
-        Put on my plate
-      </PrimaryButton>
-    </div>
+  const cls =
+    'pressable chrome block w-full rounded-nested border-[0.5px] border-divider bg-surface-2 p-4 text-left';
+  return pro ? (
+    <button type="button" onClick={onOpen} className={cls} data-type-meal>
+      {body}
+    </button>
+  ) : (
+    <Link to="/pro" className={cls} data-type-meal>
+      {body}
+    </Link>
   );
 }
