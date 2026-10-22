@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 import { MethodologyRedirect } from './layout/MethodologyRedirect';
 import { AppShell } from './layout/AppShell';
 import { AuthScreen } from './layout/AuthScreen';
@@ -92,7 +92,7 @@ export const router = createBrowserRouter([
             lazy: page(() => import('@/features/routines/RoutineEditorPage'), 'RoutineEditorPage'),
           },
           { path: 'food', lazy: page(() => import('@/features/food/FoodPage'), 'FoodPage') },
-          { path: 'water', lazy: page(() => import('@/features/food/WaterPage'), 'WaterPage') },
+          { path: 'water', element: <Navigate to="/food#water" replace /> },
           {
             path: 'activity',
             lazy: page(() => import('@/features/activity/ActivityPage'), 'ActivityPage'),

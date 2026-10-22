@@ -23,10 +23,10 @@ test('home shows the demo athlete with real dashboard sections', async ({ page }
 });
 
 test('primary navigation reaches every main area', async ({ page }) => {
-  // Routines sit under More on a phone, to leave room for Water and Activity in the bottom bar.
+  // Activity sits under More on a phone (and on Home); the desktop sidebar lists it.
   const areas = isMobile(page)
-    ? ['Workout', 'Food', 'Water', 'Activity', 'Progress', 'History']
-    : ['Routines', 'Workout', 'Food', 'Water', 'Activity', 'Progress', 'History'];
+    ? ['Routines', 'Workout', 'Food', 'Progress', 'History']
+    : ['Routines', 'Workout', 'Food', 'Activity', 'Progress', 'History'];
   for (const name of areas) {
     await mainNav(page).getByRole('link', { name }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);

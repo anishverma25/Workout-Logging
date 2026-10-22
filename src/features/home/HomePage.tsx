@@ -19,6 +19,7 @@ import { TodayCard } from './TodayCard';
 import { WeekCard } from './WeekCard';
 import { RingsCard } from './RingsCard';
 import { CheckinCard } from './CheckinCard';
+import { ActivityCard } from './ActivityCard';
 import { FoodCard } from './FoodCard';
 import { buildBrief } from '../coach/brief';
 import { activeRoutine } from '@/domain/analytics/schedule';
@@ -103,6 +104,9 @@ export function HomePage() {
             <TodayCard plan={model.today} unit={prefs.weightUnit} className="order-1" />
             {training.data?.profile ? (
               <FoodCard training={training} now={now} className="order-2" />
+            ) : null}
+            {training.data?.profile ? (
+              <ActivityCard training={training} now={now} className="order-2" />
             ) : null}
             <RingsCard
               week={model.week}

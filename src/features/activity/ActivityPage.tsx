@@ -74,9 +74,10 @@ export function ActivityPage() {
             compact
             icon={<Plus className="size-4" aria-hidden />}
             onClick={() => setCardio(true)}
+            aria-label="Add cardio"
             data-add-cardio
           >
-            Add cardio
+            Cardio
           </PrimaryButton>
         }
       />

@@ -78,6 +78,9 @@ ${all}
 /sw.js
   Cache-Control: no-cache
 
+/
+  Cache-Control: no-cache
+
 /index.html
   Cache-Control: no-cache
 
