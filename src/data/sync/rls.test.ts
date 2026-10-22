@@ -530,4 +530,41 @@ describe('row level security', () => {
       /check constraint/,
     );
   });
+
+  it('photo allowance: 15 a day per person, counted only through the functions', async () => {
+    const claim = (user: string) =>
+      server.asUser(user, (tx) =>
+        tx.query<{ left: number }>(`select public.claim_ai_use('photo') as left`),
+      );
+    const first = await claim(userA);
+    expect(first.rows[0]!.left).toBe(14);
+    for (let i = 0; i < 14; i++) await claim(userA);
+    expect((await claim(userA)).rows[0]!.left).toBe(-1);
+    // Giving one back after a failure lets one more through.
+    await server.asUser(userA, (tx) => tx.query(`select public.release_ai_use('photo')`));
+    expect((await claim(userA)).rows[0]!.left).toBe(0);
+    // Each person has their own allowance.
+    expect((await claim(userB)).rows[0]!.left).toBe(14);
+    // Nobody reads or changes the counts directly, and visitors cannot claim.
+    await expectError(
+      server.asUser(userA, (tx) => tx.query('select * from public.ai_usage')),
+      /permission denied/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        tx.query(`update public.ai_usage set used = 0 where user_id = $1`, [userA]),
+      ),
+      /permission denied/,
+    );
+    await expectError(
+      server.asAnon((tx) => tx.query(`select public.claim_ai_use('photo')`)),
+      /permission denied/,
+    );
+    await expectError(
+      claim(userA).then(() =>
+        server.asUser(userA, (tx) => tx.query(`select public.claim_ai_use('chat')`)),
+      ),
+      /Unknown kind/,
+    );
+  });
 });

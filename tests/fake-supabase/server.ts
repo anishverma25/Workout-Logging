@@ -25,6 +25,7 @@ import {
   type BillingDeps,
 } from '../../supabase/functions/_shared/billing.ts';
 import {
+  FOOD_PHOTO_PROMPT,
   FOOD_PROMPT,
   handleCoach,
   type CoachProvider,
@@ -472,6 +473,7 @@ function fakeCoachProvider(name: 'gemini' | 'groq'): CoachProvider {
     async generate(system, messages) {
       const last = messages[messages.length - 1]!.text;
       if (system === FOOD_PROMPT) return fakeFoodAnswer(name, last);
+      if (system === FOOD_PHOTO_PROMPT) return fakePhotoAnswer(name, last);
       if (last.includes('#all-down') || (name === 'gemini' && last.includes('#gemini-down')))
         throw new Error(`${name} is over its limit`);
       if (last.includes('#invent')) return 'Your squat is 999 kg, so add more weight.';
@@ -511,6 +513,58 @@ function fakeFoodAnswer(name: string, message: string): string {
   );
 }
 
+/**
+ * Photo stand-in: every photo is "2 rotis and a katori of dal tadka" plus one dish the library
+ * does not have. A note containing "#photo-down" makes both providers fail.
+ */
+function fakePhotoAnswer(name: string, message: string): string {
+  if (message.includes('#photo-down')) throw new Error(`${name} is over its limit`);
+  return JSON.stringify([
+    {
+      name: 'Roti',
+      portion: '2 rotis',
+      grams: 80,
+      kcal: 230,
+      protein_g: 7,
+      carbs_g: 44,
+      fat_g: 3,
+      fibre_g: 6,
+      diet: 'veg',
+      basis: 'photo',
+      confidence: 'high',
+      ref: 'two on the plate',
+    },
+    {
+      name: 'Dal tadka',
+      portion: '1 katori',
+      grams: 160,
+      kcal: 150,
+      protein_g: 7,
+      carbs_g: 18,
+      fat_g: 5.5,
+      fibre_g: 4,
+      diet: 'veg',
+      basis: 'photo',
+      confidence: 'medium',
+      ref: 'one katori, full',
+    },
+    {
+      name: 'Mango pickle',
+      portion: '1 tsp',
+      grams: 10,
+      kcal: 25,
+      protein_g: 0.2,
+      carbs_g: 1,
+      fat_g: 2.2,
+      fibre_g: 0.3,
+      diet: 'veg',
+      basis: 'photo',
+      confidence: 'low',
+      ref: 'small amount on the side',
+    },
+  ]);
+}
+
 async function handleCoachRoute(req: IncomingMessage, res: ServerResponse) {
   const claims = bearerClaims(req);
   if (claims?.role !== 'authenticated')
@@ -524,6 +578,17 @@ async function handleCoachRoute(req: IncomingMessage, res: ServerResponse) {
           const q = await tx.query<{ r: unknown }>('select public.get_my_subscription() as r');
           return q.rows[0]?.r ?? null;
         }),
+      photoQuota: {
+        claim: () =>
+          asRequester(req, async (tx) => {
+            const q = await tx.query<{ r: number }>(`select public.claim_ai_use('photo') as r`);
+            return q.rows[0]?.r ?? -1;
+          }),
+        release: () =>
+          asRequester(req, async (tx) => {
+            await tx.query(`select public.release_ai_use('photo')`);
+          }),
+      },
     },
     body,
   );

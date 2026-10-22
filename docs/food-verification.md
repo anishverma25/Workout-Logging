@@ -69,3 +69,55 @@ and were not re-checked one by one.
 Pack labels are now checked in the unit tests with 20% slack instead of 12%: labels round
 their figures and count fibre and sugar alcohols at less energy, and the app keeps the label
 as printed.
+
+## Protein powders added on 22 October 2026
+
+Each value is from a listing of the printed label (FatSecret India, HealthKart, Open Food Facts,
+iHerb or the brand), per scoop as printed.
+
+| Product | Scoop | kcal | Protein | Carbs | Fat |
+| --- | --- | --- | --- | --- | --- |
+| Naturaltein Whey Concentrate | 30 g | 110 | 21.8 | 2.4 | 1.6 |
+| Naturaltein Whey Isolate | 30 g | 119 | 24 | 1.6 | 1.8 |
+| The Whole Truth Whey Isolate | 35 g | 132 | 30.4 | 1.1 | 0.7 |
+| The Whole Truth Whey Light Cocoa | 35 g | 139 | 24.9 | 6.4 | 1.5 |
+| Dymatize Elite 100% Whey | 34.9 g | 130 | 25 | 3 | 1.5 |
+| MuscleTech Nitro-Tech Whey Gold | 33 g | 120 | 24 | 2 | 2 |
+| Nakpro Perform Whey | 33 g | 126 | 24 | 4.6 | 1.8 |
+| BeastLife Whey | 35 g | 135 | 24.3 | 4.2 | 2.4 |
+| SuperYou Pro Yeast Protein | 33 g | 134 | 27 | 2.2 | 1.9 |
+| Mille Yeast Protein | 38 g | 141 | 25.2 | 5.2 | 2.6 |
+| Naturaltein Yeast Protein | per 100 g | 398 | 73.6 | 8.3 | 7.8 |
+| Nutrabay Yeast Protein | 36 g | 134 | 25.2 | 6.2 | 1.5 |
+| GNC Select Yeast Protein | 35 g | 145 | 25 | 6.2 | 1.7 |
+| Cosmix Plant Protein | 38 g | 144 | 23.6 | 10.2 | 0.9 |
+| The Whole Truth Plant Protein | 38 g | 150 | 25.4 | 5.3 | 3 |
+| Nutrabox Soy Isolate | 37 g | 133 | 30 | 2.8 | 0.2 |
+| Nutrabox Vegan Protein | 36 g | 138 | 25 | 3 | 0.5 |
+| Ace Blend Intense Plant Protein | 45 g | 172 | 30 | 8.3 | 2.2 |
+| Nakpro Soy Isolate | per 100 g | 392 | 90 | 1 | 3.1 |
+
+Partly printed, so energy or carbs are worked out and marked in the code: Cosmix yeast protein
+and Plix yeast protein (protein, carbs and fat per 100 g printed), AS-IT-IS soy isolate
+(protein, carbs and fat per 35 g printed), Origin Nutrition plant protein (protein from an
+independent lab test that matched the label, carbs and fat as labelled), Wellbeing Nutrition
+plant protein (energy and protein printed).
+
+Not added because no printed nutrition panel could be found: TrueBasics yeast protein (only
+"25 g protein per 37 g"), AS-IT-IS yeast protein, BeastLife yeast protein, Dymatize ISO100
+(energy only). Search still finds them through OverloadGPT.
+
+## Cafe, dessert and global foods (22 October 2026)
+
+About 50 recipes and 15 single foods (USDA values: cheesecake, brownie, cookie, doughnut,
+croissant, ice cream, chocolate, hummus, avocado, granola, berries, pita). Recipes checked
+against references:
+
+| Dish | Ours per 100 g | Reference |
+| --- | --- | --- |
+| Tiramisu | 271 | FatSecret 283 |
+| Tres leches | 247 | FatSecret 246 |
+| Avocado toast | 213 (158 a slice) | FatSecret 184 (147 a slice) |
+| Margherita pizza | 250 | FatSecret 275 |
+| Cappuccino | 51 | Starbucks tall 31 (more foam, less milk) |
+| Bubble tea | 69 (500 ml cup, 358 kcal) | Shop cups vary from about 300 to 700 kcal |

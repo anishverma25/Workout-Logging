@@ -825,6 +825,12 @@ export const SCIENCE: TopicGroup[] = [
             9 kcal a gram. A food the library already has by that name uses the library's values.
           </>,
           <>
+            Photos work the same way. OverloadGPT judges amounts from things of known size in the
+            picture (the plate, a katori, a roti, a glass), counts visible oil, reads nutrition
+            labels, and says how sure it is about each food. Unsure foods are marked, and nothing is
+            logged until you check your plate.
+          </>,
+          <>
             Every food is tested: its calories must match its protein, carbs and fat (4, 4, 9 and 2
             for fibre) within 12%, portions must be realistic, and light oil must be below normal
             and rich.

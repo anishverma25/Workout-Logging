@@ -8,6 +8,7 @@ import {
   COACH_TOPICS,
   buildMessages,
   checkFoodItem,
+  FOOD_PHOTO_PROMPT,
   FOOD_PROMPT,
   geminiProvider,
   groqProvider,
@@ -390,5 +391,110 @@ describe('AI food logging on the server', () => {
     await groqProvider('k', 'llama-3.3', f).generate('r', [], { search: true });
     expect(bodies[0]!.tools).toEqual([{ type: 'browser_search' }]);
     expect(bodies[1]!.tools).toBeUndefined();
+  });
+});
+
+describe('photo food logging on the server', () => {
+  const item = {
+    name: 'Roti',
+    portion: '2 rotis',
+    grams: 80,
+    kcal: 230,
+    protein_g: 7,
+    carbs_g: 44,
+    fat_g: 3,
+    fibre_g: 6,
+    diet: 'veg',
+    basis: 'photo',
+    confidence: 'high',
+    ref: 'two on the plate',
+  };
+  const image = btoa('not really a jpeg but base64');
+
+  function deps(answers: (string | Error)[], opts: { sub?: unknown; left?: number[] } = {}) {
+    const seen: { system: string; image?: unknown }[] = [];
+    const left = [...(opts.left ?? [14])];
+    let released = 0;
+    const d: CoachDeps = {
+      subscription: async () => opts.sub ?? ROWS.pro,
+      providers: answers.map((a, i) => ({
+        name: `p${i}`,
+        async generate(system, messages) {
+          seen.push({ system, image: messages[0]?.image });
+          if (a instanceof Error) throw a;
+          return a;
+        },
+      })),
+      photoQuota: {
+        claim: async () => left.shift() ?? -1,
+        release: async () => {
+          released++;
+        },
+      },
+    };
+    return { d, seen, released: () => released };
+  }
+
+  it('is Pro only', async () => {
+    const { d } = deps([JSON.stringify([item])], { sub: ROWS.trialOver });
+    const r = await handleCoach(d, { kind: 'food_photo', image });
+    expect(r.status).toBe(403);
+  });
+
+  it('sends the photo with the photo instructions and returns checked foods and photos left', async () => {
+    const { d, seen } = deps([JSON.stringify([item, { ...item, kcal: 5000 }])]);
+    const r = await handleCoach(d, { kind: 'food_photo', image, note: '2 rotis', known: ['Roti'] });
+    expect(r.status).toBe(200);
+    expect(r.body.items).toHaveLength(1);
+    expect(r.body.left).toBe(14);
+    expect(seen[0]!.system).toBe(FOOD_PHOTO_PROMPT);
+    expect(seen[0]!.image).toEqual({ mime: 'image/jpeg', data: image });
+    expect((r.body.items as { confidence?: string }[])[0]!.confidence).toBe('high');
+  });
+
+  it('stops at the daily allowance before asking the AI', async () => {
+    const { d, seen } = deps([JSON.stringify([item])], { left: [-1] });
+    const r = await handleCoach(d, { kind: 'food_photo', image });
+    expect(r.status).toBe(429);
+    expect(r.body.code).toBe('photo_limit');
+    expect(seen).toHaveLength(0);
+  });
+
+  it('gives the photo back to the allowance when every provider fails', async () => {
+    const { d, released } = deps([new Error('down'), 'no json here']);
+    const r = await handleCoach(d, { kind: 'food_photo', image });
+    expect(r.status).toBe(503);
+    expect(released()).toBe(1);
+  });
+
+  it('turns down missing, oversized or non-base64 photos', async () => {
+    const { d } = deps([JSON.stringify([item])]);
+    expect((await handleCoach(d, { kind: 'food_photo', image: '' })).status).toBe(400);
+    expect(
+      (await handleCoach(d, { kind: 'food_photo', image: 'a'.repeat(1_500_001) })).status,
+    ).toBe(400);
+    expect((await handleCoach(d, { kind: 'food_photo', image: 'not base64!' })).status).toBe(400);
+  });
+
+  it('Gemini gets the photo inline and Groq gets it on its vision model', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    const fetchFn = vi.fn(async (url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(init.body as string) as Record<string, unknown>);
+      return url.includes('groq')
+        ? Response.json({ choices: [{ message: { content: '<think>hmm</think>[]' } }] })
+        : Response.json({ candidates: [{ content: { parts: [{ text: '[]' }] } }] });
+    });
+    const f = fetchFn as unknown as typeof fetch;
+    const msg = [{ role: 'user' as const, text: 'q', image: { mime: 'image/jpeg', data: image } }];
+    await geminiProvider('k', 'm', f).generate('r', msg);
+    const groqText = await groqProvider('k', 'openai/gpt-oss-120b', f).generate('r', msg);
+    const gemini = bodies[0] as { contents: { parts: Record<string, unknown>[] }[] };
+    expect(gemini.contents[0]!.parts[0]).toEqual({
+      inline_data: { mime_type: 'image/jpeg', data: image },
+    });
+    const groq = bodies[1] as { model: string; messages: { content: unknown }[] };
+    expect(groq.model).toBe('qwen/qwen3.8-27b');
+    expect(JSON.stringify(groq.messages[1]!.content)).toContain('data:image/jpeg;base64,');
+    expect(groqText).toBe('[]');
   });
 });

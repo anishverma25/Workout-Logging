@@ -51,6 +51,8 @@ export interface CoachRequest {
 export interface ProviderMessage {
   role: 'user' | 'assistant';
   text: string;
+  /** A photo sent with the message (base64, no data: prefix). */
+  image?: { mime: string; data: string };
 }
 
 export interface GenerateOptions {
@@ -71,6 +73,11 @@ export interface CoachDeps {
   /** The account's subscription row, as `get_my_subscription` returns it for that user. */
   subscription: () => Promise<unknown>;
   providers: CoachProvider[];
+  /**
+   * Takes one of today's photo analyses for this account and returns how many are left, or -1
+   * when none are (the `claim_ai_use` function). `release` gives one back after a failure.
+   */
+  photoQuota?: { claim: () => Promise<number>; release: () => Promise<void> };
 }
 
 export interface CoachResponse {
@@ -255,6 +262,8 @@ export function parseRequest(body: unknown): CoachRequest | null {
 export async function handleCoach(deps: CoachDeps, body: unknown): Promise<CoachResponse> {
   if (body && typeof body === 'object' && (body as { kind?: unknown }).kind === 'food')
     return handleFoodLog(deps, body);
+  if (body && typeof body === 'object' && (body as { kind?: unknown }).kind === 'food_photo')
+    return handleFoodPhoto(deps, body);
   const req = parseRequest(body);
   if (!req) return fail(400, 'That request could not be read.', 'bad_request');
   if (!proFromSubscription(await deps.subscription()))
@@ -346,13 +355,18 @@ export function geminiProvider(
               systemInstruction: { parts: [{ text: system }] },
               contents: messages.map((m) => ({
                 role: m.role === 'assistant' ? 'model' : 'user',
-                parts: [{ text: m.text }],
+                parts: m.image
+                  ? [
+                      { inline_data: { mime_type: m.image.mime, data: m.image.data } },
+                      { text: m.text },
+                    ]
+                  : [{ text: m.text }],
               })),
               generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
               // Grounding with Google Search, for packaged and restaurant foods.
               ...(grounded ? { tools: [{ google_search: {} }] } : {}),
             }),
-            signal: AbortSignal.timeout(grounded ? 40_000 : 25_000),
+            signal: AbortSignal.timeout(grounded || hasImage(messages) ? 40_000 : 25_000),
           },
         );
         if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
@@ -368,22 +382,41 @@ export function geminiProvider(
 }
 
 /** Groq (OpenAI-compatible chat completions). Free tier on open models. */
-export function groqProvider(apiKey: string, model: string, fetchFn: Fetch = fetch): CoachProvider {
-  const gptOss = model.startsWith('openai/gpt-oss');
+export function groqProvider(
+  apiKey: string,
+  model: string,
+  fetchFn: Fetch = fetch,
+  visionModel: string = DEFAULT_MODELS.groqVision,
+): CoachProvider {
   return {
     name: 'groq',
-    generate: (system, messages, options) =>
-      withSearch(
+    generate: (system, messages, options) => {
+      // GPT-OSS cannot see images, so a photo goes to Groq's vision model instead.
+      const photo = hasImage(messages);
+      const use = photo ? visionModel : model;
+      const gptOss = use.startsWith('openai/gpt-oss');
+      return withSearch(
         options,
         async (grounded) => {
           const res = await fetchFn('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
             body: JSON.stringify({
-              model,
+              model: use,
               messages: [
                 { role: 'system', content: system },
-                ...messages.map((m) => ({ role: m.role, content: m.text })),
+                ...messages.map((m) => ({
+                  role: m.role,
+                  content: m.image
+                    ? [
+                        { type: 'text', text: m.text },
+                        {
+                          type: 'image_url',
+                          image_url: { url: `data:${m.image.mime};base64,${m.image.data}` },
+                        },
+                      ]
+                    : m.text,
+                })),
               ],
               temperature: 0.4,
               max_completion_tokens: 2048,
@@ -392,20 +425,29 @@ export function groqProvider(apiKey: string, model: string, fetchFn: Fetch = fet
               // Groq's built-in browser search, offered on GPT-OSS models.
               ...(grounded ? { tools: [{ type: 'browser_search' }], tool_choice: 'auto' } : {}),
             }),
-            signal: AbortSignal.timeout(grounded ? 40_000 : 25_000),
+            signal: AbortSignal.timeout(grounded || photo ? 40_000 : 25_000),
           });
           if (!res.ok) throw new Error(`Groq ${res.status}: ${(await res.text()).slice(0, 300)}`);
           const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-          return json.choices?.[0]?.message?.content ?? '';
+          // Reasoning models may write their thinking in <think> tags before the answer.
+          return (json.choices?.[0]?.message?.content ?? '').replace(
+            /<think>[\s\S]*?<\/think>/g,
+            '',
+          );
         },
         gptOss,
-      ),
+      );
+    },
   };
 }
+
+const hasImage = (messages: ProviderMessage[]) => messages.some((m) => m.image);
 
 export const DEFAULT_MODELS = {
   gemini: 'gemini-3.5-flash-lite',
   groq: 'openai/gpt-oss-120b',
+  /** Groq's model that can see images (Qwen 3.8, up to 3 images, 2,048 tokens each). */
+  groqVision: 'qwen/qwen3.8-27b',
 } as const;
 
 // ---------------------------------------------------------------------------------------------
@@ -432,8 +474,13 @@ export interface FoodItem {
   fatG: number;
   fibreG: number;
   diet: 'veg' | 'egg' | 'nonveg';
-  /** "web" when a label or menu was found, "estimate" when worked out from a typical recipe. */
-  basis: 'web' | 'estimate';
+  /**
+   * "web" when a label or menu was found, "estimate" when worked out from a typical recipe,
+   * "photo" when read from a photo, "label" when a nutrition label in the photo was read.
+   */
+  basis: 'web' | 'estimate' | 'photo' | 'label';
+  /** For photos: how sure the AI is about the food and the amount. */
+  confidence?: 'high' | 'medium' | 'low';
   /** Where the numbers came from, as a short name ("Starbucks India menu"). */
   ref: string;
 }
@@ -503,7 +550,13 @@ export function checkFoodItem(raw: unknown): FoodItem | null {
     fatG: round(f),
     fibreG: round(fib),
     diet,
-    basis: r.basis === 'web' ? 'web' : 'estimate',
+    basis:
+      r.basis === 'web' || r.basis === 'photo' || r.basis === 'label'
+        ? (r.basis as FoodItem['basis'])
+        : 'estimate',
+    ...(r.confidence === 'high' || r.confidence === 'medium' || r.confidence === 'low'
+      ? { confidence: r.confidence }
+      : {}),
     ref: typeof r.ref === 'string' ? tidyAnswer(r.ref).slice(0, 60) : '',
   };
 }
@@ -552,5 +605,93 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
     return { status: 200, body: { items } };
   }
   if (empty) return { status: 200, body: { items: [] } };
+  return fail(503, 'OverloadGPT is busy right now. Try again in a minute.', 'busy');
+}
+
+// ---------------------------------------------------------------------------------------------
+// Photo food logging (Pro)
+// ---------------------------------------------------------------------------------------------
+
+/** About 1.1 MB of JPEG once decoded; the app sends photos resized to 1,280 px, well under. */
+export const PHOTO_LIMITS = { base64: 1_500_000, note: 300, known: 160, knownName: 60 } as const;
+/** Photo analyses per account per day, so a few people cannot use up everyone's AI allowance. */
+export const PHOTOS_PER_DAY = 15;
+
+export const FOOD_PHOTO_PROMPT = `You are OverloadGPT inside Overload, a food logging app used in India. You get one photo of food someone is about to eat or has eaten. Work out each food in it and how much of it there is, as accurately as you can.
+
+Method:
+1. Look at the whole photo first. List every separate food and drink. Count pieces exactly when you can (rotis, idlis, momos, slices, pieces of chicken). Do not list garnish, cutlery or packaging.
+2. Judge amounts from things of known size in the photo: a dinner plate is about 27 cm across, a quarter plate 18 cm, a steel katori holds 150 to 200 ml, a steel glass 250 ml, a tea cup 120 ml, a phulka or roti is 15 to 18 cm and about 35 to 40 g, a slice of bread is about 28 g, a hand is about 18 cm long. Use the depth of curries and rice, not only the area.
+3. Look for oil and ghee: a shiny or oily surface, a layer of oil on a curry, fried food. Count that fat in the numbers.
+4. If a packaged food shows its nutrition label and you can read it, use the label values for the amount shown and set "basis" to "label".
+5. Name foods the way people in India say them, in English (for example "Dal tadka", "Jeera rice", "Paneer butter masala", "Aloo paratha", "Chicken biryani"). When one of the names in the list you are given is the same food, use that exact name.
+6. If the person added a note, it is more reliable than the photo for what the food is and how much: follow it.
+
+Reply with JSON only: an array of objects with these keys: "name", "portion" (how much, the way a person would say it, for example "2 rotis" or "1 katori" or "1 plate"), "grams" (weight of that portion as eaten), "kcal", "protein_g", "carbs_g", "fat_g", "fibre_g" (all for that portion), "diet" ("veg", "egg" or "nonveg"), "basis" ("photo" or "label"), "confidence" ("high" when you are sure of both the food and the amount, "medium" when one of them is uncertain, "low" when both are), "ref" (a few words on how you judged the amount, for example "about 1 katori, full"). Energy must agree with the macronutrients: about 4 kcal per g of protein and carbs and 9 per g of fat. If there is no food in the photo, reply [].`;
+
+export async function handleFoodPhoto(deps: CoachDeps, body: unknown): Promise<CoachResponse> {
+  const b = body as Record<string, unknown>;
+  const image = typeof b.image === 'string' ? b.image : '';
+  const mime = b.mime === 'image/png' || b.mime === 'image/webp' ? b.mime : 'image/jpeg';
+  if (!image || image.length > PHOTO_LIMITS.base64 || !/^[A-Za-z0-9+/=]+$/.test(image))
+    return fail(400, 'That photo could not be read.', 'bad_request');
+  const note = typeof b.note === 'string' ? b.note.trim().slice(0, PHOTO_LIMITS.note) : '';
+  const diet = typeof b.diet === 'string' ? b.diet.slice(0, 10) : '';
+  const known = Array.isArray(b.known)
+    ? b.known
+        .filter((k): k is string => typeof k === 'string')
+        .map((k) => k.slice(0, PHOTO_LIMITS.knownName))
+        .slice(0, PHOTO_LIMITS.known)
+    : [];
+  if (!proFromSubscription(await deps.subscription()))
+    return fail(403, 'Photo food logging is part of Pro.', 'not_pro');
+  if (deps.providers.length === 0)
+    return fail(503, 'Photo food logging is not set up yet.', 'not_configured');
+  const left = deps.photoQuota ? await deps.photoQuota.claim() : PHOTOS_PER_DAY;
+  if (left < 0)
+    return fail(
+      429,
+      `You have used today's ${PHOTOS_PER_DAY} photos. Type or say the meal instead, or try again tomorrow.`,
+      'photo_limit',
+    );
+
+  const text = [
+    diet ? `The person eats ${diet} food.` : '',
+    known.length ? `Names used in the app: ${known.join(', ')}.` : '',
+    note ? `Their note: ${note}` : 'No note.',
+    'Work out the food in this photo.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+  const messages: ProviderMessage[] = [{ role: 'user', text, image: { mime, data: image } }];
+  let empty = false;
+  for (const provider of deps.providers) {
+    let answer: string;
+    try {
+      answer = await provider.generate(FOOD_PHOTO_PROMPT, messages);
+    } catch (err) {
+      console.error(`photo: ${provider.name} failed`, err instanceof Error ? err.message : err);
+      continue;
+    }
+    const list = parseFoodJson(answer);
+    if (!list) {
+      console.error(`photo: ${provider.name} gave no JSON`);
+      continue;
+    }
+    const items = list
+      .slice(0, FOOD_LIMITS.items)
+      .map(checkFoodItem)
+      .filter((i): i is FoodItem => i !== null)
+      .map((i) => ({ ...i, basis: i.basis === 'label' ? ('label' as const) : ('photo' as const) }));
+    if (items.length === 0) {
+      if (list.length === 0) empty = true;
+      else console.error(`photo: ${provider.name} items failed the checks`);
+      continue;
+    }
+    return { status: 200, body: { items, left: Math.max(0, left) } };
+  }
+  if (empty) return { status: 200, body: { items: [], left: Math.max(0, left) } };
+  // Nothing usable came back, so the photo does not count against today's allowance.
+  await deps.photoQuota?.release().catch(() => undefined);
   return fail(503, 'OverloadGPT is busy right now. Try again in a minute.', 'busy');
 }

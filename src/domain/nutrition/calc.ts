@@ -68,7 +68,12 @@ export interface Food {
   /** The recipe as it was calculated, for the detail view. */
   recipe: { lines: { name: string; grams: number }[]; cookedG: number; makes: string } | null;
   /** For OverloadGPT estimates: whether a label or menu was found, and where. */
-  ai?: { basis: 'web' | 'estimate'; ref: string; portion: string };
+  ai?: {
+    basis: 'web' | 'estimate' | 'photo' | 'label';
+    ref: string;
+    portion: string;
+    confidence?: 'high' | 'medium' | 'low';
+  };
 }
 
 /** Kitchen volumes in ml (common steel katori, ladle, glass and tea cup sizes). */

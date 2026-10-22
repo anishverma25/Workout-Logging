@@ -49,10 +49,10 @@ describe('typing a meal', () => {
   });
 
   it('reads grams and leaves out what it does not know', () => {
-    const m = parseMeal('150g paneer and pizza', FOODS);
+    const m = parseMeal('150g paneer and kimchi', FOODS);
     expect(m.items).toHaveLength(1);
     expect(m.items[0]).toMatchObject({ amount: 150, unit: 'g' });
     expect(m.items[0]!.food.id).toBe('paneer');
-    expect(m.unknown).toEqual(['pizza']);
+    expect(m.unknown).toEqual(['kimchi']);
   });
 });

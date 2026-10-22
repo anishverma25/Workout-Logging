@@ -76,3 +76,23 @@ logs keep the numbers they were saved with.
 - Offline or AI down: the library parser fills what it can and says so.
 - This is the one exception to "No AI for numbers": AI values are always labelled and checked.
 - The fake Supabase answers food requests with fixed numbers ("#food-down" makes it fail).
+
+## Photo food logging (Pro, `ai_food`, October 2026)
+
+- Add food: "Let OverloadGPT log it" with Snap a photo and Type or say it. The photo screen
+  (`features/food/PhotoFoodLog.tsx`) takes a camera or gallery photo, resizes it on the phone to
+  1,280 px JPEG (`lib/photo.ts`, EXIF rotation kept), and sends it once with an optional note
+  and up to 160 food names the app knows (`knownNames` in `aiMatch.ts`).
+- Server (`_shared/coach.ts`, `handleFoodPhoto`): Pro from the subscription row, then today's
+  allowance through `claim_ai_use('photo')` (migration `20261022000012_ai_photo_quota.sql`,
+  15 a day per account, India day, given back by `release_ai_use` when every provider fails).
+  `FOOD_PHOTO_PROMPT` asks for each food, amounts judged from things of known size (plate,
+  katori, roti, glass), visible oil, label reading, and a confidence per item. Gemini gets the
+  image inline; Groq uses its vision model (`GROQ_VISION_MODEL`, default `qwen/qwen3.8-27b`).
+  Items go through `checkFoodItem` like typed meals. The photo is never stored.
+- The phone matches names to the curated library first (library values, AI amount); others are
+  "From the photo" or "From the label". Low-confidence items are marked to check. Nothing is
+  logged until the person puts it on the plate.
+- The fake Supabase answers every photo with 2 rotis, a katori of dal tadka and a low-confidence
+  mango pickle; "#photo-down" in the note makes it fail.
+

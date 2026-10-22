@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Globe, Mic, MicOff, Sparkles } from 'lucide-react';
+import { Mic, MicOff, Sparkles } from 'lucide-react';
 import { PrimaryButton, SecondaryButton } from '@/components/kit';
 import { useCoachStore } from '@/app/coach';
-import { askFoodLog, FOOD_LIMITS, FoodAiError, foodFromItem, type FoodItem } from '@/app/foodAi';
-import { measurePortion, type FoodPortion } from '@/data/repositories/food';
-import { normalize } from '@/domain/exercises/search';
-import { portionText, type Food } from '@/domain/nutrition/calc';
+import { askFoodLog, FOOD_LIMITS, FoodAiError } from '@/app/foodAi';
+import type { FoodPortion } from '@/data/repositories/food';
 import { parseMeal } from '@/domain/nutrition/parse';
-import { fitsDiet } from '@/domain/nutrition/search';
 import { CoachConsent, Thinking } from '../coach/CoachParts';
+import { AiItemRow } from './AiItemRow';
+import { portionForItem } from './aiMatch';
 import { defaultPortion } from './foodText';
 import type { FoodContext } from './useFoodContext';
 
@@ -35,38 +34,6 @@ function speechRecognition(): (new () => SpeechRecognitionLike) | null {
   const w = window as unknown as Record<string, unknown>;
   return (w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null) as
     (new () => SpeechRecognitionLike) | null;
-}
-
-/** A library food with exactly this name or alias, so its own values are used. */
-function libraryMatch(item: FoodItem, ctx: FoodContext): Food | null {
-  const name = normalize(item.name);
-  for (const f of ctx.foods) {
-    if (f.source === 'usda' || f.source === 'indb') continue;
-    if (normalize(f.name) === name || f.aliases.some((a) => normalize(a) === name))
-      return fitsDiet(f, ctx.diet) || item.diet === f.diet ? f : null;
-  }
-  return null;
-}
-
-/** The portion for an item: pieces when the library food has them and the weight agrees. */
-function portionForItem(item: FoodItem, ctx: FoodContext): FoodPortion {
-  const food = libraryMatch(item, ctx);
-  if (!food) return defaultPortion(foodFromItem(item));
-  const count = Number(/^\s*(\d+(?:\.\d+)?)/.exec(item.portion)?.[1] ?? '1');
-  if (food.pieceG && food.units.includes('piece')) {
-    const each = item.grams / count;
-    if (each > food.pieceG * 0.6 && each < food.pieceG * 1.6)
-      return { ...defaultPortion(food), unit: 'piece', amount: count };
-  }
-  if (food.units.includes('g'))
-    return {
-      food,
-      amount: item.grams,
-      unit: 'g',
-      size: null,
-      oilLevel: food.fatPer100 ? 'normal' : null,
-    };
-  return defaultPortion(food);
 }
 
 type State =
@@ -194,7 +161,7 @@ export function AiFoodLog({
           {portions.length ? (
             <ul className="flex flex-col gap-2">
               {portions.map((p, i) => (
-                <ItemRow key={i} portion={p} katoriMl={ctx.katoriMl} />
+                <AiItemRow key={i} portion={p} katoriMl={ctx.katoriMl} />
               ))}
             </ul>
           ) : (
@@ -230,54 +197,5 @@ export function AiFoodLog({
         portions on your plate before logging.
       </p>
     </div>
-  );
-}
-
-function ItemRow({ portion, katoriMl }: { portion: FoodPortion; katoriMl: number | null }) {
-  const f = portion.food;
-  const amount =
-    f.ai && portion.unit === 'serving'
-      ? `${f.ai.portion} (${f.servingG} g)`
-      : portionText(portion.amount, portion.unit, portion.size, f.pieceName);
-  let kcal: number | null = null;
-  let protein: number | null = null;
-  try {
-    const m = measurePortion(portion, katoriMl);
-    kcal = Math.round(m.nutrients.kcal);
-    protein = Math.round(m.nutrients.proteinG);
-  } catch {
-    // Shown without numbers; the plate measures it again.
-  }
-  return (
-    <li className="flex items-start gap-3 rounded-nested bg-surface-2 p-3">
-      <span className="min-w-0 flex-1">
-        <span className="type-headline block text-text-1">{f.name}</span>
-        {f.ai?.ref ? <span className="type-caption block text-text-3">{f.ai.ref}</span> : null}
-        <span className="type-meta block text-text-2">
-          {amount}
-          {kcal !== null ? ` · ${kcal} kcal · ${protein} g protein` : ''}
-        </span>
-      </span>
-      <span className="type-caption inline-flex shrink-0 items-center gap-1 rounded-full bg-surface px-2 py-1 font-semibold text-text-2">
-        {f.ai ? (
-          f.ai.basis === 'web' ? (
-            <>
-              <Globe className="size-3.5" aria-hidden />
-              From the web
-            </>
-          ) : (
-            <>
-              <Sparkles className="size-3.5" aria-hidden />
-              Estimated
-            </>
-          )
-        ) : (
-          <>
-            <Check className="size-3.5" aria-hidden />
-            Library
-          </>
-        )}
-      </span>
-    </li>
   );
 }

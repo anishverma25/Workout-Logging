@@ -104,7 +104,9 @@ test('free accounts see what Pro adds to food', async ({ page }) => {
   await expect(page.getByRole('dialog').locator('[data-type-meal]')).toContainText('Pro');
 });
 
-test('Pro tells OverloadGPT a meal, gets protein help and sees food on Progress', async ({ page }) => {
+test('Pro tells OverloadGPT a meal, gets protein help and sees food on Progress', async ({
+  page,
+}) => {
   await startWithDemo(page, { tag: 'food-pro' });
   await openFood(page);
 
@@ -140,7 +142,9 @@ test('Pro tells OverloadGPT a meal, gets protein help and sees food on Progress'
   await expect(help).toContainText('protein to go');
   await help.getByRole('button', { name: 'Apply' }).first().click();
   await expect(
-    page.getByText(/^Logged (Paneer|Curd|Boiled|Chicken|Soya|Milk|Roasted|Moong|Sprouts|Whey|Greek|Egg|Tofu)/),
+    page.getByText(
+      /^Logged (Paneer|Curd|Boiled|Chicken|Soya|Milk|Roasted|Moong|Sprouts|Whey|Greek|Egg|Tofu)/,
+    ),
   ).toBeVisible();
 
   await page.goto('/progress');
@@ -155,4 +159,52 @@ test('Home shows food today and the coach brief includes food', async ({ page })
   await expect(page.locator('[data-food-card]')).toContainText('Food today');
   await page.goto('/body');
   await expect(page.locator('[data-food-log-block]')).toContainText('From your food log');
+});
+
+test('Pro snaps a plate: foods from the photo, library values where known, then logged', async ({
+  page,
+}) => {
+  await signUpFresh(page, { tag: 'food-photo' });
+  await page.goto('/food');
+  await page.locator('[data-add-food]').click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByRole('radio', { name: 'Lunch' }).click();
+  await sheet.locator('[data-photo-meal]').click();
+  await sheet.getByRole('button', { name: 'Turn on' }).click();
+  // A small real image; the stand-in AI answers the same for every photo.
+  await sheet.locator('[data-photo-input]').setInputFiles({
+    name: 'thali.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR4nGM4UaGBFTEMLQkAUtVaAV8W4QQAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  });
+  await expect(sheet.getByRole('img', { name: 'Your food' })).toBeVisible();
+  await sheet.getByRole('textbox').fill('home made');
+  await sheet.getByRole('button', { name: 'Work it out' }).click();
+  const result = sheet.locator('[data-ai-result]');
+  await expect(result).toContainText('Roti');
+  await expect(result).toContainText('Library');
+  await expect(result).toContainText('Mango pickle');
+  await expect(result).toContainText('From the photo');
+  await expect(result.locator('[data-confidence="low"]')).toContainText('Not sure about this one');
+  await expect(sheet.locator('[data-photos-left]')).toContainText('14 photos left today');
+  await sheet.getByRole('button', { name: 'Put on my plate' }).click();
+  await expect(sheet.locator('[data-plate]')).toContainText('2 rotis');
+  await sheet.locator('[data-log-plate]').click();
+  const lunch = page.locator('[data-meal="lunch"]');
+  await expect(lunch).toContainText('Roti');
+  await expect(lunch).toContainText('Mango pickle');
+});
+
+test('free accounts see photo logging as part of Pro', async ({ page }) => {
+  const email = await signUpFresh(page, { tag: 'food-photo-free' });
+  await expireTrial(email);
+  await page.goto('/food');
+  await page.locator('[data-add-food]').click();
+  const hero = page.getByRole('dialog').locator('[data-type-meal]');
+  await expect(hero).toContainText('Snap a photo');
+  await expect(hero).toContainText('Pro');
+  await expect(page.getByRole('dialog').locator('[data-photo-meal]')).toHaveCount(0);
 });
