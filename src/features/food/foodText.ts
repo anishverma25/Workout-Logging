@@ -35,6 +35,7 @@ export const SOURCE: Record<Food['source'], string> = {
   recipe: 'Calculated from a home recipe. Varies with oil and portion.',
   ingredient: 'USDA lab values.',
   label: 'From the pack label.',
+  chain: "From the chain's published nutrition. Outlets vary a little.",
   usda: 'USDA lab values.',
   indb: 'Indian Nutrient Databank, calculated from a published Indian recipe.',
   off: 'From the pack label, via Open Food Facts.',

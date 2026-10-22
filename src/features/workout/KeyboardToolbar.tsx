@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { viewportBaseline } from '@/components/kit/keyboard';
 import { CELL_STEP_EVENT } from './CellInput';
 
 interface Focused {
@@ -19,16 +20,22 @@ const stepText = (n: number) => n.toLocaleString('en-GB', { maximumFractionDigit
 export function KeyboardToolbar() {
   const [focused, setFocused] = useState<Focused | null>(null);
   const [bottom, setBottom] = useState(0);
+  // What the visual viewport misses before the keyboard (newer iPhones' browser toolbars).
+  const baseline = useRef<number | null>(null);
 
   useEffect(() => {
     const onIn = (e: FocusEvent) => {
       const t = e.target;
       if (!(t instanceof HTMLInputElement) || !t.matches('input[data-cell]') || !coarse()) return;
+      const vv = window.visualViewport;
+      if (baseline.current === null && vv)
+        baseline.current = viewportBaseline(window.innerHeight, vv);
       setFocused({ el: t, step: Number(t.dataset.step) || 1 });
     };
     const onOut = (e: FocusEvent) => {
       const next = e.relatedTarget;
       if (next instanceof HTMLInputElement && next.matches('input[data-cell]')) return;
+      baseline.current = null;
       setFocused(null);
     };
     document.addEventListener('focusin', onIn);
@@ -42,7 +49,10 @@ export function KeyboardToolbar() {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!focused || !vv) return;
-    const place = () => setBottom(Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)));
+    const place = () =>
+      setBottom(
+        Math.max(0, window.innerHeight - (vv.height + vv.offsetTop) - (baseline.current ?? 0)),
+      );
     place();
     vv.addEventListener('resize', place);
     vv.addEventListener('scroll', place);

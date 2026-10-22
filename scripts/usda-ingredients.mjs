@@ -179,6 +179,19 @@ const PICK = [
   ['brown-sugar', 'Brown sugar', '19334'],
   ['sourdough', 'Sourdough (English muffin)', '18258'],
   ['multigrain-bread', 'Multigrain bread', '18036'],
+  ['pineapple', 'Pineapple', '09266'],
+  ['kiwi', 'Kiwi', '09148'],
+  ['lychee', 'Lychee', '09164'],
+  ['jackfruit', 'Jackfruit', '09144'],
+  ['sapota', 'Sapota (chikoo)', '09313', 'Sapodilla values.'],
+  ['custard-apple', 'Custard apple (sitaphal)', '09321', 'Sugar-apple (sweetsop) values.'],
+  ['soymilk', 'Soy milk', '16120'],
+  ['pistachios', 'Pistachios', '12151'],
+  ['walnuts', 'Walnuts', '12155'],
+  ['flaxseed', 'Flax seeds (alsi)', '12220'],
+  ['pumpkin-seeds', 'Pumpkin seeds', '12014'],
+  ['sunflower-seeds', 'Sunflower seeds', '12036'],
+  ['popcorn', 'Popcorn, air-popped', '19034'],
 ];
 
 const rows = new Map();
