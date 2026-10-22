@@ -1,7 +1,12 @@
 import { supabase } from '@/data/sync/supabase';
 import type { Food } from '@/domain/nutrition/calc';
 import type { DietType } from '@/domain/nutrition/types';
-import { FOOD_LIMITS, type FoodItem } from '../../supabase/functions/_shared/coach.ts';
+import {
+  FOOD_LIMITS,
+  PHOTO_LIMITS,
+  PHOTOS_PER_DAY,
+  type FoodItem,
+} from '../../supabase/functions/_shared/coach.ts';
 
 /**
  * AI food logging (Pro): the person says what they ate, OverloadGPT splits it into foods with
@@ -10,7 +15,7 @@ import { FOOD_LIMITS, type FoodItem } from '../../supabase/functions/_shared/coa
  */
 
 export type { FoodItem };
-export { FOOD_LIMITS };
+export { FOOD_LIMITS, PHOTO_LIMITS, PHOTOS_PER_DAY };
 
 export class FoodAiError extends Error {
   constructor(
@@ -21,12 +26,10 @@ export class FoodAiError extends Error {
   }
 }
 
-export async function askFoodLog(text: string, diet: DietType | null): Promise<FoodItem[]> {
+async function invoke(body: Record<string, unknown>): Promise<Record<string, unknown>> {
   if (!supabase)
     throw new FoodAiError('Accounts are not set up in this version of the app.', 'off');
-  const { data, error } = await supabase.functions.invoke('coach', {
-    body: { kind: 'food', text: text.trim().slice(0, FOOD_LIMITS.text), diet: diet ?? '' },
-  });
+  const { data, error } = await supabase.functions.invoke('coach', { body });
   if (error) {
     let message = 'OverloadGPT could not be reached. Check your connection and try again.';
     let code = 'network';
@@ -40,8 +43,41 @@ export async function askFoodLog(text: string, diet: DietType | null): Promise<F
     }
     throw new FoodAiError(message, code);
   }
-  const items = (data as { items?: unknown } | null)?.items;
-  return Array.isArray(items) ? (items as FoodItem[]) : [];
+  return (data ?? {}) as Record<string, unknown>;
+}
+
+export async function askFoodLog(text: string, diet: DietType | null): Promise<FoodItem[]> {
+  const data = await invoke({
+    kind: 'food',
+    text: text.trim().slice(0, FOOD_LIMITS.text),
+    diet: diet ?? '',
+  });
+  return Array.isArray(data.items) ? (data.items as FoodItem[]) : [];
+}
+
+/**
+ * Sends one photo (already resized on the phone) with an optional note. The server checks Pro
+ * and today's allowance, and returns checked foods and how many photos are left today.
+ */
+export async function askFoodPhoto(input: {
+  image: string;
+  mime: string;
+  note: string;
+  diet: DietType | null;
+  known: string[];
+}): Promise<{ items: FoodItem[]; left: number | null }> {
+  const data = await invoke({
+    kind: 'food_photo',
+    image: input.image,
+    mime: input.mime,
+    note: input.note.trim().slice(0, PHOTO_LIMITS.note),
+    diet: input.diet ?? '',
+    known: input.known.slice(0, PHOTO_LIMITS.known),
+  });
+  return {
+    items: Array.isArray(data.items) ? (data.items as FoodItem[]) : [],
+    left: typeof data.left === 'number' ? data.left : null,
+  };
 }
 
 const newId = () =>
@@ -80,6 +116,11 @@ export function foodFromItem(item: FoodItem): Food {
     servingG: item.grams,
     source: 'ai',
     recipe: null,
-    ai: { basis: item.basis, ref: item.ref, portion: item.portion },
+    ai: {
+      basis: item.basis,
+      ref: item.ref,
+      portion: item.portion,
+      ...(item.confidence ? { confidence: item.confidence } : {}),
+    },
   };
 }

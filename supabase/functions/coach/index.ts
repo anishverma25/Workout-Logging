@@ -1,9 +1,10 @@
 // Overload AI coach. Deployed as a Supabase Edge Function (Deno):
 //   supabase functions deploy coach --no-verify-jwt
-// POST /coach with { topic, question, brief, history }, signed in (checked here with the user's
+// POST /coach with { topic, question, brief, history }, { kind: 'food', text } or
+// { kind: 'food_photo', image, note }, signed in (checked here with the user's
 // access token). Pro is checked from the account's subscription row; nothing is stored.
 // Secrets: GEMINI_API_KEY (Google AI Studio) and/or GROQ_API_KEY (console.groq.com). Optional:
-// GEMINI_MODEL, GROQ_MODEL to change models, APP_ORIGIN as for billing.
+// GEMINI_MODEL, GROQ_MODEL, GROQ_VISION_MODEL to change models, APP_ORIGIN as for billing.
 // SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 import {
@@ -28,7 +29,14 @@ if (env('GEMINI_API_KEY'))
     geminiProvider(env('GEMINI_API_KEY'), env('GEMINI_MODEL') || DEFAULT_MODELS.gemini),
   );
 if (env('GROQ_API_KEY'))
-  providers.push(groqProvider(env('GROQ_API_KEY'), env('GROQ_MODEL') || DEFAULT_MODELS.groq));
+  providers.push(
+    groqProvider(
+      env('GROQ_API_KEY'),
+      env('GROQ_MODEL') || DEFAULT_MODELS.groq,
+      fetch,
+      env('GROQ_VISION_MODEL') || DEFAULT_MODELS.groqVision,
+    ),
+  );
 
 const allowedOrigin = env('APP_ORIGIN');
 
@@ -71,6 +79,19 @@ Deno.serve(async (req) => {
           const { data: sub, error: subError } = await asUser.rpc('get_my_subscription');
           if (subError) throw new Error(subError.message);
           return sub;
+        },
+        // Today's photo allowance for this person (migration 0012).
+        photoQuota: {
+          async claim() {
+            const { data: left, error: claimError } = await asUser.rpc('claim_ai_use', {
+              p_kind: 'photo',
+            });
+            if (claimError) throw new Error(claimError.message);
+            return typeof left === 'number' ? left : -1;
+          },
+          async release() {
+            await asUser.rpc('release_ai_use', { p_kind: 'photo' });
+          },
         },
       },
       body,

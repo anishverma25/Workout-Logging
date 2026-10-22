@@ -224,3 +224,10 @@ Read README.md for setup, architecture and calculation rules.
   function's food mode with web search and checked numbers (`checkFoodItem`); AI foods are
   labelled "From the web" or "Estimated" and saved as the person's own foods when logged. This
   is the only place AI gives numbers. Details in `docs/food-logging.md`.
+- Photo food logging (Pro `ai_food`, October 2026): `PhotoFoodLog` resizes on the phone, the
+  `coach` function's `food_photo` mode checks Pro and a daily allowance of 15 photos
+  (`claim_ai_use`, migration `20261022000012_ai_photo_quota.sql`), Gemini sees the image inline
+  and Groq uses `qwen/qwen3.8-27b`; library names win over AI numbers (`aiMatch.ts`). Release
+  `2026-10-food-ai` announces the new food logging. More protein powders (33) and cafe,
+  dessert and global foods were added and cross-checked (`docs/food-verification.md`).
+

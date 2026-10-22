@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, Crown, Globe, Mic, Plus, Sparkles, X } from 'lucide-react';
+import { Camera, ChevronLeft, Crown, Globe, Mic, Plus, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router';
 import {
   BottomSheet,
@@ -30,6 +30,7 @@ import { fitsDiet, searchFoods } from '@/domain/nutrition/search';
 import { MEALS, ZERO, type Meal } from '@/domain/nutrition/types';
 import { haptic } from '@/lib/haptics';
 import { AiFoodLog } from './AiFoodLog';
+import { PhotoFoodLog } from './PhotoFoodLog';
 import { defaultPortion } from './foodText';
 import { NutrientLine, PortionEditor } from './PortionEditor';
 import { MEAL_LABEL, type FoodContext } from './useFoodContext';
@@ -69,7 +70,8 @@ export function AddFoodSheet({
   );
 }
 
-type View = { kind: 'pick' } | { kind: 'edit'; index: number } | { kind: 'type' };
+type View =
+  { kind: 'pick' } | { kind: 'edit'; index: number } | { kind: 'type' } | { kind: 'photo' };
 
 function AddFoodBody({
   ctx,
@@ -229,6 +231,22 @@ function AddFoodBody({
     );
   }
 
+  if (view.kind === 'photo')
+    return (
+      <div className="flex flex-col gap-4 pt-5">
+        <BackRow label="Snap your plate" onBack={() => setView({ kind: 'pick' })} />
+        <PhotoFoodLog
+          ctx={ctx}
+          meal={meal}
+          onType={() => setView({ kind: 'type' })}
+          onFill={(items) => {
+            setPlate((p) => [...p, ...items]);
+            setView({ kind: 'pick' });
+          }}
+        />
+      </div>
+    );
+
   if (view.kind === 'type')
     return (
       <div className="flex flex-col gap-4 pt-5">
@@ -288,6 +306,7 @@ function AddFoodBody({
             onTemplate={(t) => void logTemplate(t)}
             onPick={add}
             onType={() => setView({ kind: 'type' })}
+            onPhoto={() => setView({ kind: 'photo' })}
             onCreate={() => onCreateFood('')}
           />
         )}
@@ -415,6 +434,7 @@ function Quick({
   onTemplate,
   onPick,
   onType,
+  onPhoto,
   onCreate,
 }: {
   ctx: FoodContext;
@@ -424,6 +444,7 @@ function Quick({
   onTemplate: (t: MealTemplate) => void;
   onPick: (f: Food) => void;
   onType: () => void;
+  onPhoto: () => void;
   onCreate: () => void;
 }) {
   const templates = useMemo(() => mealTemplates(ctx.logs, meal, date), [ctx.logs, meal, date]);
@@ -482,7 +503,7 @@ function Quick({
         </section>
       ) : null}
 
-      <AiHero pro={pro} onOpen={onType} />
+      <AiHero pro={pro} onType={onType} onPhoto={onPhoto} />
 
       {recent.length ? (
         <section aria-labelledby="recent-foods">
@@ -518,53 +539,78 @@ function Quick({
 }
 
 /**
- * The way in to AI food logging. Pro opens it; free accounts see what it does and where to
- * get it, because this is the fastest and most complete way to log.
+ * The way in to AI food logging: a photo of the plate, or the meal typed or spoken. Pro opens
+ * them; free accounts see what they do and where to get them, because this is the fastest and
+ * most complete way to log.
  */
-function AiHero({ pro, onOpen }: { pro: boolean; onOpen: () => void }) {
-  const body = (
-    <>
-      <span className="flex items-center gap-3">
-        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime">
-          <Sparkles className="size-5" aria-hidden />
+function AiHero({
+  pro,
+  onType,
+  onPhoto,
+}: {
+  pro: boolean;
+  onType: () => void;
+  onPhoto: () => void;
+}) {
+  const head = (
+    <span className="flex items-center gap-3">
+      <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime">
+        <Sparkles className="size-5" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="type-headline block text-text-1">Let OverloadGPT log it</span>
+        <span className="type-meta block text-text-2">
+          Snap your plate or just say what you ate. Any food, brand or restaurant.
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="type-headline block text-text-1">Tell OverloadGPT what you ate</span>
-          <span className="type-meta block text-text-2">
-            Any food, any brand, any restaurant. Type it or say it.
+      </span>
+      <span className="type-caption inline-flex shrink-0 items-center gap-1 rounded-full bg-surface px-2 py-1 font-semibold text-text-2">
+        <Crown className="size-3.5" aria-hidden />
+        Pro
+      </span>
+    </span>
+  );
+  const action =
+    'pressable chrome type-meta inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-surface px-3 font-semibold text-text-1';
+  if (!pro)
+    return (
+      <Link
+        to="/pro"
+        className="pressable chrome block w-full rounded-nested border-[0.5px] border-divider bg-surface-2 p-4 text-left"
+        data-type-meal
+      >
+        {head}
+        <span className="mt-3 grid grid-cols-2 gap-2" aria-hidden>
+          <span className={action}>
+            <Camera className="size-4" />
+            Snap a photo
+          </span>
+          <span className={action}>
+            <Mic className="size-4" />
+            Type or say it
           </span>
         </span>
-        <span className="type-caption inline-flex shrink-0 items-center gap-1 rounded-full bg-surface px-2 py-1 font-semibold text-text-2">
-          <Crown className="size-3.5" aria-hidden />
-          Pro
-        </span>
-      </span>
-      <span className="type-caption mt-3 flex flex-wrap gap-x-4 gap-y-1 text-text-2">
-        <span className="inline-flex items-center gap-1">
-          <Globe className="size-3.5" aria-hidden />
-          Looks up labels and menus
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <Mic className="size-3.5" aria-hidden />
-          Speak in English or Hinglish
-        </span>
-      </span>
-      {pro ? null : (
         <span className="type-meta mt-3 block font-semibold text-text-1">
           Get Pro for the quickest, most accurate logging
         </span>
-      )}
-    </>
-  );
-  const cls =
-    'pressable chrome block w-full rounded-nested border-[0.5px] border-divider bg-surface-2 p-4 text-left';
-  return pro ? (
-    <button type="button" onClick={onOpen} className={cls} data-type-meal>
-      {body}
-    </button>
-  ) : (
-    <Link to="/pro" className={cls} data-type-meal>
-      {body}
-    </Link>
+      </Link>
+    );
+  return (
+    <div className="rounded-nested border-[0.5px] border-divider bg-surface-2 p-4" data-ai-hero>
+      {head}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button type="button" onClick={onPhoto} className={action} data-photo-meal>
+          <Camera className="size-4" aria-hidden />
+          Snap a photo
+        </button>
+        <button type="button" onClick={onType} className={action} data-type-meal>
+          <Mic className="size-4" aria-hidden />
+          Type or say it
+        </button>
+      </div>
+      <span className="type-caption mt-3 flex items-center gap-1 text-text-2">
+        <Globe className="size-3.5" aria-hidden />
+        Looks up labels and menus, and reads nutrition labels in photos
+      </span>
+    </div>
   );
 }

@@ -190,7 +190,7 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
   ai_food: {
     title: 'AI food logging',
     description:
-      'Tell OverloadGPT what you ate, typed or spoken. It finds any food, brand or restaurant dish, looks up labels on the web and fills your plate.',
+      'Snap your plate or tell OverloadGPT what you ate, typed or spoken. It finds any food, brand or restaurant dish, reads nutrition labels and fills your plate.',
   },
   food_insights: {
     title: 'Food insights',
