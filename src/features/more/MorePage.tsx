@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { ChevronRight, Crown, FileUp, Sparkles } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import { useEntitlement } from '@/app/entitlement';
-import { SECONDARY_NAV, type NavItem } from '@/app/navigation';
+import { PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '@/app/navigation';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { ListGroup, ListRow } from '@/components/ui/List';
 import { SyncBadge } from '@/features/account/SyncStatus';
@@ -16,6 +16,16 @@ const GROUPS: { key: NonNullable<NavItem['group']>; title: string }[] = [
   { key: 'app', title: 'App' },
 ];
 
+// Areas kept out of the phone's bottom bar, listed here with the training pages.
+const MORE_NAV: NavItem[] = [
+  ...PRIMARY_NAV.filter((i) => i.bottom === false).map((i) => ({
+    ...i,
+    tone: 'sky' as const,
+    group: 'training' as const,
+  })),
+  ...SECONDARY_NAV,
+];
+
 export function MorePage() {
   // The email under Account, so signing out is easy to find.
   const email = useAccount().user?.email ?? null;
@@ -26,7 +36,7 @@ export function MorePage() {
         <ProfileCard />
         {GROUPS.map((g) => (
           <ListGroup key={g.key} title={g.title}>
-            {SECONDARY_NAV.filter((i) => i.group === g.key && i.to !== '/profile').map((i) => (
+            {MORE_NAV.filter((i) => i.group === g.key && i.to !== '/profile').map((i) => (
               <ListRow
                 key={i.to}
                 to={i.to}

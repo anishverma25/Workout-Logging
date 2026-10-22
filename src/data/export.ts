@@ -1,4 +1,4 @@
-import type { FoodLog } from '@/domain/models/schemas';
+import type { ActivityLog, FoodLog, WaterLog } from '@/domain/models/schemas';
 import { buildSessions, type TrainingData } from '@/domain/analytics/sessions';
 import { isAlive } from '@/domain/analytics/sessions';
 import { MEASUREMENT_FIELDS } from '@/domain/models/schemas';
@@ -141,6 +141,40 @@ export function foodCsv(logs: FoodLog[]): string {
       l.fatG,
       l.fibreG,
     ]);
+  return toCsv(rows);
+}
+
+/** Water and activity, one day per row: ml drunk, steps, and the calories burned by each part. */
+export function waterActivityCsv(water: WaterLog[], activity: ActivityLog[]): string {
+  const days = new Map<
+    string,
+    { ml: number; steps: number | null; cardioMin: number; cardioKcal: number; stepsKcal: number }
+  >();
+  const day = (date: string) => {
+    let d = days.get(date);
+    if (!d) {
+      d = { ml: 0, steps: null, cardioMin: 0, cardioKcal: 0, stepsKcal: 0 };
+      days.set(date, d);
+    }
+    return d;
+  };
+  for (const w of water) if (w.deletedAt === null) day(w.date).ml += w.ml;
+  for (const a of activity) {
+    if (a.deletedAt !== null) continue;
+    const d = day(a.date);
+    if (a.kind === 'steps') {
+      d.steps = a.steps;
+      d.stepsKcal += a.kcal;
+    } else {
+      d.cardioMin += a.minutes ?? 0;
+      d.cardioKcal += a.kcal;
+    }
+  }
+  const rows: (string | number | null)[][] = [
+    ['date', 'water_ml', 'steps', 'steps_kcal', 'cardio_minutes', 'cardio_kcal'],
+  ];
+  for (const [date, d] of [...days].sort((a, b) => a[0].localeCompare(b[0])))
+    rows.push([date, d.ml, d.steps, d.stepsKcal, d.cardioMin, d.cardioKcal]);
   return toCsv(rows);
 }
 

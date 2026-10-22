@@ -16,7 +16,7 @@ import { Panel, PanelRow, Switch } from '@/components/ui/List';
 import { setDeviceSetting, useDeviceSettings } from '@/app/deviceSettings';
 import { clearCoachHistory, setCoachConsent, useCoachStore } from '@/app/coach';
 import { useFeature } from '@/app/entitlement';
-import { bodyCsv, downloadText, foodCsv, setsCsv } from '@/data/export';
+import { bodyCsv, downloadText, foodCsv, setsCsv, waterActivityCsv } from '@/data/export';
 import { trainingCalendar } from '@/data/calendar';
 import { activeRoutine, daysForRoutine } from '@/domain/analytics/schedule';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
@@ -24,7 +24,14 @@ import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { clearDemoData, loadDemoData, resetDemoData } from '@/data/demo/service';
 import { DEMO_FEATURED_DAYS, DEMO_HISTORY_DAYS } from '@/data/demo/generate';
-import { useDemoStatus, useFoodData, usePreferences, useTrainingData } from '@/data/hooks';
+import {
+  useActivityData,
+  useDemoStatus,
+  useFoodData,
+  usePreferences,
+  useTrainingData,
+  useWaterData,
+} from '@/data/hooks';
 import { updatePreferences } from '@/data/repositories/meta';
 import { getStorageState, requestPersistentStorage, type StorageState } from '@/data/storage';
 import { formatShortDate, toDateKey } from '@/lib/dates';
@@ -350,6 +357,8 @@ function RemindersSection() {
 function ExportSection() {
   const training = useTrainingData();
   const food = useFoodData();
+  const water = useWaterData();
+  const activity = useActivityData();
   const data = training.data;
   const date = toDateKey(new Date());
   return (
@@ -394,6 +403,21 @@ function ExportSection() {
           disabled={!food.data}
           icon={<Download className="size-4" aria-hidden />}
           onClick={() => food.data && downloadText(foodCsv(food.data.logs), `food-${date}.csv`)}
+        >
+          Export
+        </Button>
+      </PanelRow>
+      <PanelRow title="Water and activity" detail="Water, steps and cardio, one day per row.">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!water.data || !activity.data}
+          icon={<Download className="size-4" aria-hidden />}
+          onClick={() =>
+            water.data &&
+            activity.data &&
+            downloadText(waterActivityCsv(water.data, activity.data), `water-activity-${date}.csv`)
+          }
         >
           Export
         </Button>

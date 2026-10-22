@@ -897,3 +897,17 @@ export function restAfterSet(
   const after = group.filter((e) => e.order > current.order);
   return !after.some((e) => e.pending > 0);
 }
+
+/** Calories burned in a workout, typed from a watch or tracker; null goes back to the estimate. */
+export async function setWorkoutKcal(
+  db: WorkoutDatabase,
+  workoutId: string,
+  kcal: number | null,
+): Promise<void> {
+  const value = kcal === null ? null : Math.round(kcal);
+  if (value !== null && !(value >= 0 && value <= 10000))
+    throw new Error('Enter calories from 0 to 10,000.');
+  await db.transaction('rw', [db.workouts, db.outbox], async () => {
+    await patchRecord<Workout>(db, 'workouts', workoutId, { kcalBurned: value });
+  });
+}

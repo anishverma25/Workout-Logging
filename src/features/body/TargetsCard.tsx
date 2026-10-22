@@ -1,13 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CircleCheck, Pencil } from 'lucide-react';
-import {
-  BottomSheet,
-  Card,
-  NumberField,
-  PrimaryButton,
-  SecondaryButton,
-  TextLink,
-} from '@/components/kit';
+import { Card, TextLink } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { ProfileError, saveProfile } from '@/data/repositories/profile';
@@ -24,6 +17,7 @@ import { useFeature } from '@/app/entitlement';
 import { toDateKey } from '@/lib/dates';
 import type { FoodLog, Profile } from '@/domain/models/schemas';
 import { cn } from '@/lib/cn';
+import { TargetsSheet } from '../food/TargetsSheet';
 import { EvidenceLink } from '../science/EvidenceLink';
 import { ExplainButton } from '../coach/CoachParts';
 import { buildBrief } from '../coach/brief';
@@ -81,9 +75,11 @@ export function TargetsCard({
           diet: profile.dietType ?? null,
         }
       : null;
+  // In calculated mode typed numbers are kept but not checked, since they are not in use.
+  const useOwn = profile.targetMode !== 'calculated';
   const targets = {
-    kcal: profile.calorieTarget ?? null,
-    proteinG: profile.proteinTargetG ?? null,
+    kcal: useOwn ? (profile.calorieTarget ?? null) : null,
+    proteinG: useOwn ? (profile.proteinTargetG ?? null) : null,
   };
   const liftRates = useMemo(() => {
     const rates: number[] = [];
@@ -120,7 +116,7 @@ export function TargetsCard({
   }
 
   const calc = snapshot.energy;
-  const daily = dailyTargets(profile, calc);
+  const daily = dailyTargets(profile, calc, snapshot.weightKg);
   const set = targets.kcal !== null || targets.proteinG !== null;
   return (
     <Card as="section" aria-labelledby="targets-title" className="mt-4 p-4 sm:p-5">
@@ -152,27 +148,29 @@ export function TargetsCard({
           />
         </div>
         <TextLink small icon={<Pencil />} onClick={() => setEditing(true)}>
-          {set ? 'Edit' : 'Set your own'}
+          {set || daily.mode ? 'Change' : 'Set targets'}
         </TextLink>
       </div>
       <dl className="mt-3 grid grid-cols-2 gap-3">
         <div className="min-w-0 rounded-nested bg-surface-2 px-3 py-2.5">
           <dt className="type-meta text-text-2">Calories a day</dt>
           <dd className="type-headline tabular mt-0.5 text-text-1">
-            {targets.kcal !== null ? `${n(targets.kcal)} kcal` : 'Not set'}
+            {daily.kcal !== null ? `${n(daily.kcal)} kcal` : 'Not set'}
           </dd>
-          {targets.kcal === null && calc ? (
-            <dd className="type-caption text-text-2">Using {n(calc.targetKcal)} worked out</dd>
+          {daily.kcal !== null ? (
+            <dd className="type-caption text-text-2">
+              {daily.kcalSource === 'set' ? 'Your own' : 'Worked out for you'}
+            </dd>
           ) : null}
         </div>
         <div className="min-w-0 rounded-nested bg-surface-2 px-3 py-2.5">
           <dt className="type-meta text-text-2">Protein a day</dt>
           <dd className="type-headline tabular mt-0.5 text-text-1">
-            {targets.proteinG !== null ? `${n(targets.proteinG)} g` : 'Not set'}
+            {daily.proteinG !== null ? `${n(daily.proteinG)} g` : 'Not set'}
           </dd>
-          {targets.proteinG === null && calc ? (
+          {daily.proteinG !== null ? (
             <dd className="type-caption text-text-2">
-              Using {n(calc.proteinG[0])} to {n(calc.proteinG[1])} g worked out
+              {daily.proteinSource === 'set' ? 'Your own' : 'Worked out for you'}
             </dd>
           ) : null}
         </div>
@@ -212,18 +210,13 @@ export function TargetsCard({
         </p>
       ) : null}
 
-      <BottomSheet open={editing} onClose={() => setEditing(false)} title="Your daily targets">
-        {editing ? (
-          <TargetsForm
-            initial={targets}
-            calc={calc ? { kcal: calc.targetKcal, proteinG: calc.proteinG } : null}
-            onCancel={() => setEditing(false)}
-            onSave={async (next) => {
-              if (await save(next)) setEditing(false);
-            }}
-          />
-        ) : null}
-      </BottomSheet>
+      <TargetsSheet
+        open={editing}
+        onClose={() => setEditing(false)}
+        profile={profile}
+        energy={calc}
+        weightKg={snapshot.weightKg}
+      />
     </Card>
   );
 }
@@ -357,84 +350,5 @@ function InsightRow({
         ) : null}
       </div>
     </li>
-  );
-}
-
-function TargetsForm({
-  initial,
-  calc,
-  onSave,
-  onCancel,
-}: {
-  initial: { kcal: number | null; proteinG: number | null };
-  calc: { kcal: number; proteinG: [number, number] } | null;
-  onSave: (next: { calorieTarget: number | null; proteinTargetG: number | null }) => Promise<void>;
-  onCancel: () => void;
-}) {
-  const [kcal, setKcal] = useState<number | null>(initial.kcal ?? calc?.kcal ?? null);
-  const [protein, setProtein] = useState<number | null>(
-    initial.proteinG ?? (calc ? Math.round((calc.proteinG[0] + calc.proteinG[1]) / 2) : null),
-  );
-  const [busy, setBusy] = useState(false);
-  return (
-    <form
-      className="flex flex-col gap-4 pt-1"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        setBusy(true);
-        await onSave({
-          calorieTarget: kcal === null ? null : Math.round(kcal),
-          proteinTargetG: protein === null ? null : Math.round(protein),
-        });
-        setBusy(false);
-      }}
-    >
-      <p className="type-body text-text-2">
-        Set what you are actually aiming to eat. Leave a field empty to use the worked-out number.
-      </p>
-      <NumberField
-        label="Calories a day"
-        value={kcal}
-        onValueChange={setKcal}
-        allowDecimal={false}
-        min={800}
-        max={8000}
-        unit="kcal"
-        placeholder={calc ? String(calc.kcal) : undefined}
-      />
-      <NumberField
-        label="Protein a day"
-        value={protein}
-        onValueChange={setProtein}
-        allowDecimal={false}
-        min={20}
-        max={500}
-        unit="g"
-        placeholder={calc ? String(Math.round(calc.proteinG[0])) : undefined}
-      />
-      {calc ? (
-        <p className="type-meta text-text-2">
-          Worked out for you: {n(calc.kcal)} kcal and {n(calc.proteinG[0])} to {n(calc.proteinG[1])}{' '}
-          g.
-        </p>
-      ) : null}
-      <div className="flex flex-col gap-2">
-        <PrimaryButton block type="submit" loading={busy}>
-          Save targets
-        </PrimaryButton>
-        <SecondaryButton
-          block
-          onClick={() => {
-            setKcal(null);
-            setProtein(null);
-          }}
-        >
-          Clear both
-        </SecondaryButton>
-        <SecondaryButton block onClick={onCancel}>
-          Cancel
-        </SecondaryButton>
-      </div>
-    </form>
   );
 }

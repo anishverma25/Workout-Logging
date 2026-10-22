@@ -2,6 +2,8 @@ import type { LucideIcon } from 'lucide-react';
 import {
   CalendarRange,
   CircleUserRound,
+  Droplets,
+  Flame,
   ChartNoAxesColumnIncreasing,
   Crown,
   Dumbbell,
@@ -32,17 +34,26 @@ export interface NavItem {
   tone?: TileTone;
   /** Group in the More list. */
   group?: 'you' | 'training' | 'app';
+  /** False keeps it out of the phone's bottom bar (it is under More instead). */
+  bottom?: boolean;
 }
 
-/** Bottom navigation on mobile: training on the left, food and results on the right. */
+/**
+ * The main areas: training on the left, food, water and activity together in the middle, then
+ * results. The phone's bottom bar shows seven of them (`BOTTOM_NAV`); the rest are under More.
+ */
 export const PRIMARY_NAV: NavItem[] = [
   { to: '/', label: 'Home', icon: House },
-  { to: '/routines', label: 'Routines', icon: CalendarRange },
+  { to: '/routines', label: 'Routines', icon: CalendarRange, bottom: false },
   { to: '/workout', label: 'Workout', icon: Dumbbell },
   { to: '/food', label: 'Food', icon: UtensilsCrossed },
+  { to: '/water', label: 'Water', icon: Droplets },
+  { to: '/activity', label: 'Activity', icon: Flame },
   { to: '/progress', label: 'Progress', icon: ChartNoAxesColumnIncreasing },
   { to: '/history', label: 'History', icon: History },
 ];
+
+export const BOTTOM_NAV = PRIMARY_NAV.filter((i) => i.bottom !== false);
 
 export const SECONDARY_NAV: NavItem[] = [
   { to: '/badges', label: 'Badges', icon: Medal, tone: 'amber', group: 'you' },

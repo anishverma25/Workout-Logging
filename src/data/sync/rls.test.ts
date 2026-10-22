@@ -158,6 +158,21 @@ function rowsFor(userId: string) {
       library_version: 1,
       ...meta,
     },
+    water_logs: { id: id(), user_id: userId, date: '2026-09-01', ml: 250, ...meta },
+    activity_logs: {
+      id: id(),
+      user_id: userId,
+      date: '2026-09-01',
+      kind: 'cardio',
+      activity: 'treadmill_walk',
+      minutes: 30,
+      distance_km: 3,
+      speed_kmh: 6,
+      incline_pct: 2,
+      kcal: 140,
+      kcal_source: 'estimated',
+      ...meta,
+    },
     user_preferences: {
       user_id: userId,
       weight_unit: 'kg',
@@ -491,6 +506,28 @@ describe('row level security', () => {
       server.asUser(userA, (tx) =>
         insertRow(tx, 'profiles', { ...rows.profiles, protein_target_g: 900 }),
       ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'profiles', { ...rows.profiles, water_target_ml: 100 }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'profiles', { ...rows.profiles, target_mode: 'other' }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'activity_logs', { ...rows.activity_logs, kcal_source: 'guess' }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) => insertRow(tx, 'water_logs', { ...rows.water_logs, ml: 20 })),
       /check constraint/,
     );
     await expectError(

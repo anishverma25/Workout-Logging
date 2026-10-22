@@ -5,6 +5,9 @@ import {
   type CustomFood,
   type Exercise,
   type FoodLog,
+  type WaterLog,
+  type BodyWeightEntry,
+  type ActivityLog,
   type Preferences,
 } from '@/domain/models/schemas';
 import { exerciseUsage, type ExerciseUsage } from '@/domain/exercises/search';
@@ -206,3 +209,21 @@ export const useFoodData = () =>
       customFoods: customFoods.filter((c) => c.deletedAt === null),
     };
   });
+
+/** Every water entry. */
+export const useWaterData = () =>
+  useLiveData<WaterLog[]>(async () =>
+    (await db.waterLogs.toArray()).filter((l) => l.deletedAt === null),
+  );
+
+/** Every cardio session and step count. */
+export const useActivityData = () =>
+  useLiveData<ActivityLog[]>(async () =>
+    (await db.activityLogs.toArray()).filter((l) => l.deletedAt === null),
+  );
+
+/** Every body weight entry, for estimates that need the person's weight. */
+export const useBodyWeights = () =>
+  useLiveData<BodyWeightEntry[]>(async () =>
+    (await db.bodyWeights.toArray()).filter((e) => e.deletedAt === null),
+  );

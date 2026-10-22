@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { ChevronLeft, ChevronRight, Crown, Plus, Settings2, UtensilsCrossed } from 'lucide-react';
+import { Crown, Plus, Settings2, Target, UtensilsCrossed } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { useFeature } from '@/app/entitlement';
 import {
@@ -9,6 +9,7 @@ import {
   ListGroup,
   ListRow,
   PrimaryButton,
+  ProgressBar,
   RingChart,
   SecondaryButton,
   Skeleton,
@@ -27,7 +28,6 @@ import {
 } from '@/domain/nutrition/analysis';
 import { portionText, roundNutrients, sumNutrients } from '@/domain/nutrition/calc';
 import { MEALS, type Meal } from '@/domain/nutrition/types';
-import { addDays, formatRelativeDay, toDateKey } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { useNow } from '@/lib/useNow';
 import { EvidenceLink } from '../science/EvidenceLink';
@@ -36,8 +36,12 @@ import { CustomFoodSheet } from './CustomFoodSheet';
 import { DayAnalysisCard } from './DayAnalysisCard';
 import { EditFoodSheet } from './EditFoodSheet';
 import { DietPicker, FoodSettingsSheet } from './FoodSettingsSheet';
+import { TargetsSheet } from './TargetsSheet';
 import { DIET_LABEL } from './foodText';
 import { NutrientLine } from './PortionEditor';
+import { DayBalance } from './DayBalance';
+import { DayNav } from './DayNav';
+import { useDayParam } from './useDayParam';
 import { MEAL_LABEL, mealForHour, useFoodContext, type FoodContext } from './useFoodContext';
 
 const n = (v: number) => Math.round(v).toLocaleString('en-GB');
@@ -52,11 +56,8 @@ export function FoodPage() {
   }, []);
   const now = useNow();
   const ctx = useFoodContext(now);
-  const [params, setParams] = useSearchParams();
-  const today = toDateKey(now);
-  const requested = params.get('date');
-  const date =
-    requested && /^\d{4}-\d{2}-\d{2}$/.test(requested) && requested <= today ? requested : today;
+  const [params] = useSearchParams();
+  const { date, today, go, label: dayLabel } = useDayParam(now);
   // A meal's own + logs to that meal only; the main Add food button lets the person choose.
   const [adding, setAdding] = useState<{ meal: Meal; locked: boolean } | null>(
     params.get('add') === '1' ? { meal: mealForHour(now.getHours()), locked: false } : null,
@@ -64,13 +65,7 @@ export function FoodPage() {
   const [editing, setEditing] = useState<FoodLog | null>(null);
   const [custom, setCustom] = useState<{ name: string; editing: CustomFood | null } | null>(null);
   const [settings, setSettings] = useState(false);
-
-  const go = (days: number) => {
-    const next = toDateKey(addDays(new Date(`${date}T12:00:00`), days));
-    setParams(next === today ? {} : { date: next }, { replace: true });
-  };
-
-  const dayLabel = date === today ? 'Today' : formatRelativeDay(new Date(`${date}T12:00:00`), now);
+  const [targetsOpen, setTargetsOpen] = useState(false);
 
   return (
     <>
@@ -124,7 +119,22 @@ export function FoodPage() {
               <DietPicker value={null} />
             </Card>
           ) : null}
-          <DaySummary ctx={ctx} date={date} />
+          {ctx.profile?.origin === 'user' && ctx.targets.mode === null ? (
+            <Card as="section" aria-labelledby="targets-first" data-targets-prompt>
+              <h2 id="targets-first" className="type-headline text-text-1">
+                Set your daily targets
+              </h2>
+              <p className="type-meta mt-1 mb-3 text-text-2">
+                Let Overload work out calories, protein, carbs, fat, fibre and water from your body
+                and goal, or type your own.
+              </p>
+              <PrimaryButton compact onClick={() => setTargetsOpen(true)}>
+                Choose how
+              </PrimaryButton>
+            </Card>
+          ) : null}
+          <DaySummary ctx={ctx} date={date} onTargets={() => setTargetsOpen(true)} />
+          <DayBalance ctx={ctx} date={date} />
           <DayAnalysisCard ctx={ctx} date={date} now={now} />
           {date === today ? <ProteinHelp ctx={ctx} date={date} now={now} /> : null}
           {MEALS.map((m) => (
@@ -138,6 +148,21 @@ export function FoodPage() {
             />
           ))}
           <ListGroup label="Food settings">
+            <li>
+              <ListRow
+                title="Daily targets"
+                subtitle={
+                  ctx.targets.mode === 'own'
+                    ? 'Your own numbers'
+                    : ctx.targets.mode === 'calculated'
+                      ? 'Worked out for you'
+                      : 'Not chosen yet'
+                }
+                leading={<Target className="size-5 text-text-2" aria-hidden />}
+                chevron
+                onClick={() => setTargetsOpen(true)}
+              />
+            </li>
             <li>
               <ListRow
                 title="Food settings"
@@ -183,6 +208,13 @@ export function FoodPage() {
         initialName={custom?.name}
         editing={custom?.editing}
       />
+      <TargetsSheet
+        open={targetsOpen}
+        onClose={() => setTargetsOpen(false)}
+        profile={ctx.profile}
+        energy={ctx.snapshot?.energy ?? null}
+        weightKg={ctx.snapshot?.weightKg ?? null}
+      />
       <FoodSettingsSheet
         open={settings}
         onClose={() => setSettings(false)}
@@ -197,90 +229,84 @@ export function FoodPage() {
   );
 }
 
-function DayNav({
-  label,
-  onPrev,
-  onNext,
+function DaySummary({
+  ctx,
+  date,
+  onTargets,
 }: {
-  label: string;
-  onPrev: () => void;
-  onNext: (() => void) | null;
+  ctx: FoodContext;
+  date: string;
+  onTargets: () => void;
 }) {
-  const btn =
-    'pressable tap-target inline-flex size-9 items-center justify-center rounded-full bg-surface-2 text-text-1 disabled:opacity-40';
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <button type="button" className={btn} onClick={onPrev} aria-label="Previous day">
-        <ChevronLeft className="size-5" aria-hidden />
-      </button>
-      <h2 className="type-headline text-text-1" aria-live="polite" data-food-day>
-        {label}
-      </h2>
-      <button
-        type="button"
-        className={btn}
-        onClick={onNext ?? undefined}
-        disabled={!onNext}
-        aria-label="Next day"
-      >
-        <ChevronRight className="size-5" aria-hidden />
-      </button>
-    </div>
-  );
-}
-
-function DaySummary({ ctx, date }: { ctx: FoodContext; date: string }) {
   const totals = dayTotals(ctx.logs, date);
   const { kcal, proteinG } = ctx.targets;
   const rings = [
     { label: 'Calories', value: totals.kcal, max: kcal ?? 0 },
     { label: 'Protein', value: totals.proteinG, max: proteinG ?? 0 },
   ];
+  const bars = [
+    { label: 'Carbs', value: totals.carbsG, target: ctx.targets.carbsG },
+    { label: 'Fat', value: totals.fatG, target: ctx.targets.fatG },
+    { label: 'Fibre', value: totals.fibreG, target: ctx.targets.fibreG },
+  ];
   return (
-    <Card
-      as="section"
-      aria-labelledby="day-totals"
-      className="flex items-center gap-5"
-      data-day-totals
-    >
-      {kcal !== null || proteinG !== null ? (
-        <RingChart rings={rings} size={112} label="Today against your targets" />
-      ) : null}
-      <div className="min-w-0 flex-1">
-        <h2 id="day-totals" className="sr-only">
-          Totals
-        </h2>
-        <p className="flex items-baseline gap-1">
-          <span className="type-stat tabular text-text-1">{n(totals.kcal)}</span>
-          <span className="type-meta text-text-2">
-            {kcal !== null ? `of ${n(kcal)} kcal` : 'kcal'}
-          </span>
-        </p>
-        <p className="mt-1 flex items-baseline gap-1">
-          <span className="type-title tabular font-bold text-text-1">
-            {totals.proteinG.toFixed(0)} g
-          </span>
-          <span className="type-meta text-text-2">
-            protein{proteinG !== null ? ` of ${proteinG} g` : ''}
-          </span>
-        </p>
-        <p className="type-meta mt-0.5 tabular text-text-2">
-          {totals.carbsG.toFixed(0)} g carbs · {totals.fatG.toFixed(0)} g fat ·{' '}
-          {totals.fibreG.toFixed(0)} g fibre
-        </p>
-        {kcal === null ? (
-          <Link
-            to="/body"
-            className="type-meta mt-1 inline-block font-semibold text-text-1 underline"
-          >
-            Set your targets on Body
-          </Link>
-        ) : (
-          <p className="type-caption mt-1 text-text-2">
-            Targets: {ctx.targets.kcalSource === 'set' ? 'your own' : 'calculated for you'}
+    <Card as="section" aria-labelledby="day-totals" data-day-totals>
+      <div className="flex items-center gap-5">
+        {kcal !== null || proteinG !== null ? (
+          <RingChart rings={rings} size={112} label="Today against your targets" />
+        ) : null}
+        <div className="min-w-0 flex-1">
+          <h2 id="day-totals" className="sr-only">
+            Totals
+          </h2>
+          <p className="flex items-baseline gap-1">
+            <span className="type-stat tabular text-text-1">{n(totals.kcal)}</span>
+            <span className="type-meta text-text-2">
+              {kcal !== null ? `of ${n(kcal)} kcal` : 'kcal'}
+            </span>
           </p>
-        )}
+          <p className="mt-1 flex items-baseline gap-1">
+            <span className="type-title tabular font-bold text-text-1">
+              {totals.proteinG.toFixed(0)} g
+            </span>
+            <span className="type-meta text-text-2">
+              protein{proteinG !== null ? ` of ${n(proteinG)} g` : ''}
+            </span>
+          </p>
+        </div>
       </div>
+      <ul className="mt-4 grid grid-cols-3 gap-3" data-macro-bars>
+        {bars.map((b) => (
+          <li key={b.label} className="min-w-0">
+            <p className="type-meta text-text-2">{b.label}</p>
+            <p className="type-headline tabular text-text-1">
+              {b.value.toFixed(0)} g
+              {b.target !== null ? (
+                <span className="type-meta font-normal text-text-2"> of {n(b.target)}</span>
+              ) : null}
+            </p>
+            {b.target ? (
+              <ProgressBar value={Math.min(b.value, b.target)} max={b.target} label={b.label} />
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      {kcal === null ? (
+        <button
+          type="button"
+          onClick={onTargets}
+          className="type-meta mt-3 inline-block font-semibold text-text-1 underline"
+        >
+          Set your targets
+        </button>
+      ) : (
+        <p className="type-caption mt-3 text-text-2">
+          Targets: {ctx.targets.mode === 'own' ? 'your own' : 'worked out for you'}.{' '}
+          <button type="button" onClick={onTargets} className="font-semibold text-text-1 underline">
+            Change
+          </button>
+        </p>
+      )}
     </Card>
   );
 }

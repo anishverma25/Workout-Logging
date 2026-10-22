@@ -18,6 +18,7 @@ import { useAccount, useSyncStatus } from '@/app/account';
 import { Card, PrimaryButton, TextLink } from '@/components/kit';
 import { ShareSheet } from '@/features/share/ShareSheet';
 import { RestCard } from '@/features/shared/RestCard';
+import { WorkoutBurnCard } from '@/features/shared/WorkoutBurnCard';
 import { RefuelCard } from './RefuelCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { ErrorState, Skeleton } from '@/components/ui/States';
@@ -181,6 +182,12 @@ export function SummaryPage() {
         </p>
       </Card>
 
+      <WorkoutBurnCard
+        workout={session.workout}
+        sets={session.exercises.flatMap((e) => e.sets)}
+        bodyWeights={training.data.bodyWeights}
+        className="mt-4"
+      />
       <RestCard exercises={session.exercises} minutes={summary.minutes} className="mt-4" />
       <RefuelCard
         training={training}
