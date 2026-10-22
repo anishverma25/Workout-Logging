@@ -248,10 +248,12 @@ test("a meal's + logs to that meal only, in a steady sheet that holds the page s
   // The page behind does not scroll while the sheet is open.
   expect(await page.evaluate(() => document.body.style.position)).toBe('fixed');
   // Typing does not change the sheet's size.
-  const before = await sheet.boundingBox();
+  // Layout height (offsetHeight ignores the opening scale animation).
+  const height = () => sheet.evaluate((el) => (el as HTMLElement).offsetHeight);
+  const before = await height();
   await sheet.getByRole('searchbox').fill('poha');
-  const after = await sheet.boundingBox();
-  expect(Math.round(after!.height)).toBe(Math.round(before!.height));
+  await expect(sheet.locator('[data-food-results]')).toBeVisible();
+  expect(await height()).toBe(before);
   await sheet.locator('[data-food-results] [data-quick-add]').first().click();
   await sheet.locator('[data-log-plate]').click();
   await expect(page.locator('[data-meal="breakfast"]')).toContainText('Poha');
