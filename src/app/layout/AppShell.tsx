@@ -5,7 +5,7 @@ import { FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
 import { useDemoStatus } from '@/data/hooks';
-import { APP_NAME, PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '../navigation';
+import { APP_NAME, BOTTOM_NAV, PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '../navigation';
 import { BrandMark } from './BrandMark';
 import { AppNotices } from './AppNotices';
 import { StartWorkoutProvider } from '@/features/workout/StartWorkout';
@@ -169,8 +169,8 @@ function BottomNav() {
       data-bottom-bar
       className="chrome fixed inset-x-0 bottom-0 z-40 border-t-[0.5px] border-white/10 bg-bar pb-safe lg:hidden"
     >
-      <ul className="mx-auto grid h-[3.0625rem] max-w-lg grid-cols-6 px-1">
-        {PRIMARY_NAV.map((item) => {
+      <ul className="mx-auto grid h-[3.0625rem] max-w-lg grid-cols-7 px-0.5">
+        {BOTTOM_NAV.map((item) => {
           const active = item.to === '/' ? pathname === '/' : pathname.startsWith(item.to);
           return (
             <li key={item.to} className="flex">

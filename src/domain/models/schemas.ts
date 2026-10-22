@@ -154,6 +154,8 @@ export const Workout = z.object({
     .nullish(),
   /** Whole-session effort, 1 to 10 (Foster's session RPE), asked when finishing. */
   sessionRpe: z.number().min(1).max(10).nullish(),
+  /** Active calories the person typed from a watch or tracker; null uses our estimate. */
+  kcalBurned: z.number().int().min(0).max(10000).nullish(),
 });
 export type Workout = z.infer<typeof Workout>;
 export type Readiness = NonNullable<Workout['readiness']>;
@@ -254,6 +256,14 @@ export const Profile = z.object({
   dietType: z.enum(['veg', 'egg', 'nonveg', 'jain']).nullish(),
   /** The size of their own katori in ml, set once; portions use it instead of the standard. */
   katoriMl: z.number().int().min(80).max(500).nullish(),
+  /** How food targets are set: worked out from the body and goal, or the person's own numbers. */
+  targetMode: z.enum(['calculated', 'own']).nullish(),
+  carbsTargetG: z.number().int().min(0).max(1500).nullish(),
+  fatTargetG: z.number().int().min(10).max(500).nullish(),
+  fibreTargetG: z.number().int().min(0).max(150).nullish(),
+  /** Water in ml a day, and the size of the person's own glass in ml. */
+  waterTargetMl: z.number().int().min(500).max(8000).nullish(),
+  waterGlassMl: z.number().int().min(100).max(1000).nullish(),
 });
 export type Profile = z.infer<typeof Profile>;
 
@@ -327,6 +337,54 @@ export const FoodLog = z.object({
   libraryVersion: z.number().int().nullable(),
 });
 export type FoodLog = z.infer<typeof FoodLog>;
+
+/** One drink of water: the amount in ml, on the day it was drunk. */
+export const WaterLog = z.object({
+  ...baseRecord,
+  date: isoDate,
+  ml: z.number().int().min(50).max(5000),
+});
+export type WaterLog = z.infer<typeof WaterLog>;
+
+export const CARDIO_ACTIVITIES = [
+  'treadmill_walk',
+  'treadmill_run',
+  'stair_machine',
+  'cycle_indoor',
+  'elliptical',
+  'rowing_machine',
+  'walk_outdoor',
+  'run_outdoor',
+  'cycle_outdoor',
+  'swimming',
+  'hiit',
+  'other',
+] as const;
+export const CardioActivity = z.enum(CARDIO_ACTIVITIES);
+export type CardioActivity = z.infer<typeof CardioActivity>;
+
+/**
+ * Movement outside the weights: a cardio session, or a day's steps (one record a day). The
+ * calories are what the person counts: an estimate worked out when it was saved, or a number
+ * they typed from a watch or a machine. Estimates are kept so history never shifts.
+ */
+export const ActivityLog = z.object({
+  ...baseRecord,
+  date: isoDate,
+  kind: z.enum(['cardio', 'steps']),
+  activity: CardioActivity.nullable(),
+  minutes: z.number().int().min(1).max(1000).nullable(),
+  distanceKm: z.number().min(0).max(500).nullable(),
+  speedKmh: z.number().min(0.5).max(30).nullable(),
+  inclinePct: z.number().min(0).max(40).nullable(),
+  watts: z.number().int().min(10).max(1000).nullable(),
+  effort: z.enum(['light', 'moderate', 'hard']).nullable(),
+  steps: z.number().int().min(1).max(200000).nullable(),
+  /** Active calories: above what the body burns at rest. */
+  kcal: z.number().int().min(0).max(10000),
+  kcalSource: z.enum(['estimated', 'typed']),
+});
+export type ActivityLog = z.infer<typeof ActivityLog>;
 
 /**
  * A food the person added: from a label (per 100 g) or their own recipe, such as the family

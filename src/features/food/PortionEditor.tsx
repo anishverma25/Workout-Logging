@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { ChipGroup, SegmentedControl, Stepper } from '@/components/kit';
+import { ChipGroup, SegmentedControl, stepValue } from '@/components/kit';
+import { Minus, Plus } from 'lucide-react';
+import { parseQuantity } from '@/domain/nutrition/quantity';
 import { measurePortion, type FoodPortion } from '@/data/repositories/food';
 import { CUP_ML, KATORI_ML } from '@/domain/nutrition/calc';
 import type { OilLevel, SizeId } from '@/domain/nutrition/types';
@@ -123,21 +125,12 @@ export function PortionEditor({
         />
       ) : null}
 
-      <div className="flex items-center justify-between gap-4">
-        <Stepper
-          label={`How many ${grams ? 'grams' : unitName(food, portion.unit).toLowerCase()}`}
-          value={portion.amount}
-          onChange={(amount) => set({ amount })}
-          min={grams ? 5 : 0.25}
-          max={grams ? 2000 : 20}
-          step={grams ? 10 : portion.unit === 'piece' ? 1 : 0.5}
-          size="headline"
-          format={(v) => (grams ? `${v} g` : String(v))}
-        />
-        {measured && !grams ? (
-          <span className="type-meta tabular text-text-2">{Math.round(measured.grams)} g</span>
-        ) : null}
-      </div>
+      <AmountInput
+        portion={portion}
+        grams={grams}
+        gramsText={measured && !grams ? `${Math.round(measured.grams)} g` : null}
+        onChange={set}
+      />
 
       {food.fatPer100 ? (
         <div>
@@ -195,6 +188,136 @@ export function PortionEditor({
             </div>
           ) : null}
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The quantity: type any number, or use the buttons, and type a whole quantity such as
+ * "2 scoops", "150 g" or "250 ml" to switch the unit with it. Numbers update as you type.
+ */
+function AmountInput({
+  portion,
+  grams,
+  gramsText,
+  onChange,
+}: {
+  portion: FoodPortion;
+  grams: boolean;
+  gramsText: string | null;
+  onChange: (changes: Partial<FoodPortion>) => void;
+}) {
+  const { food } = portion;
+  const [draft, setDraft] = useState<string | null>(null);
+  const [typed, setTyped] = useState('');
+  const [typedState, setTypedState] = useState<'idle' | 'ok' | 'bad'>('idle');
+  const min = grams ? 1 : 0.1;
+  const max = grams ? 5000 : 100;
+  const step = grams ? 10 : portion.unit === 'piece' ? 1 : 0.5;
+  const shown = draft ?? String(portion.amount);
+  const label = grams ? 'grams' : unitName(food, portion.unit).toLowerCase();
+  const btn =
+    'pressable chrome inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text-1 select-none disabled:text-text-3';
+
+  function typeAmount(text: string) {
+    setDraft(text);
+    const v = Number(text.replace(',', '.'));
+    if (text !== '' && Number.isFinite(v) && v >= min && v <= max) onChange({ amount: v });
+  }
+
+  function applyTyped() {
+    if (typed.trim() === '') return;
+    const q = parseQuantity(typed, food, portion.unit);
+    if (!q) {
+      setTypedState('bad');
+      return;
+    }
+    setTypedState('ok');
+    setDraft(null);
+    onChange({
+      amount: q.amount,
+      unit: q.unit,
+      size: q.unit === 'katori' || q.unit === 'cup' ? (portion.size ?? 'medium') : null,
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-2" data-amount>
+      <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          className={btn}
+          aria-label={`Decrease ${label}`}
+          disabled={portion.amount <= min}
+          onClick={() => {
+            setDraft(null);
+            onChange({ amount: stepValue(portion.amount, -step, min, max, grams ? 1 : 0.25) });
+          }}
+        >
+          <Minus className="size-5" aria-hidden />
+        </button>
+        <label className="flex min-w-0 flex-1 flex-col items-center">
+          <span className="sr-only">How many {label}</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            value={shown}
+            aria-label={`How many ${label}`}
+            data-amount-input
+            onFocus={(e) => e.currentTarget.select()}
+            onChange={(e) => typeAmount(e.target.value.replace(/[^\d.,]/g, ''))}
+            onBlur={() => setDraft(null)}
+            className="type-headline tabular w-full min-w-0 rounded-nested bg-surface-2 px-3 py-2 text-center text-text-1 outline-none focus-visible:ring-2 focus-visible:ring-lime"
+          />
+          <span className="type-caption tabular mt-1 text-text-2">
+            {grams ? 'grams' : label}
+            {gramsText ? ` · ${gramsText}` : ''}
+          </span>
+        </label>
+        <button
+          type="button"
+          className={btn}
+          aria-label={`Increase ${label}`}
+          disabled={portion.amount >= max}
+          onClick={() => {
+            setDraft(null);
+            onChange({ amount: stepValue(portion.amount, step, min, max, grams ? 1 : 0.25) });
+          }}
+        >
+          <Plus className="size-5" aria-hidden />
+        </button>
+      </div>
+      <input
+        type="text"
+        inputMode="text"
+        enterKeyHint="done"
+        autoComplete="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        value={typed}
+        placeholder="Or type it: 2 scoops, 150 g, 250 ml"
+        aria-label="Type a quantity"
+        data-quantity-text
+        onChange={(e) => {
+          setTyped(e.target.value);
+          setTypedState('idle');
+        }}
+        onBlur={applyTyped}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            applyTyped();
+          }
+        }}
+        className="type-meta w-full rounded-nested bg-surface-2 px-3 py-2.5 text-text-1 outline-none placeholder:text-text-3 focus-visible:ring-2 focus-visible:ring-lime"
+      />
+      {typedState === 'bad' ? (
+        <p className="type-caption text-danger-text" role="alert">
+          {food.name} cannot be measured that way. Try one of:{' '}
+          {food.units.map((u) => unitName(food, u).toLowerCase()).join(', ')}.
+        </p>
       ) : null}
     </div>
   );

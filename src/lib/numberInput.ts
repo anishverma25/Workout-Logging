@@ -13,7 +13,7 @@ export interface ParseOptions {
 /** True when the raw text is an acceptable in-progress value (including empty or "77."). */
 export function isValidDraft(raw: string, allowDecimal = true): boolean {
   if (raw === '') return true;
-  const pattern = allowDecimal ? /^\d{0,4}([.,]\d{0,2})?$/ : /^\d{0,4}$/;
+  const pattern = allowDecimal ? /^\d{0,4}([.,]\d{0,2})?$/ : /^\d{0,6}$/;
   return pattern.test(raw);
 }
 

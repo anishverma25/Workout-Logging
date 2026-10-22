@@ -1,6 +1,6 @@
 import { WorkoutDatabase } from '../db';
 import { loadDemoData } from '../demo/service';
-import { saveProfile } from './profile';
+import { ProfileError, saveProfile, saveTargetSettings } from './profile';
 import { loadTrainingData } from './training';
 
 let db: WorkoutDatabase;
@@ -43,5 +43,33 @@ describe('profile', () => {
     await expect(saveProfile(db, { ...input, birthDate: '2024-01-01' })).rejects.toThrow(
       'birth date',
     );
+  });
+
+  it('saves target settings on the profile, keeps typed numbers, and rejects bad ones', async () => {
+    await expect(saveTargetSettings(db, { targetMode: 'own' })).rejects.toBeInstanceOf(ProfileError);
+    const p = await saveProfile(db, input);
+    await saveTargetSettings(db, {
+      targetMode: 'own',
+      calorieTarget: 2400.4,
+      carbsTargetG: 300,
+      fatTargetG: 70,
+      fibreTargetG: 35,
+      waterTargetMl: 3000,
+      waterGlassMl: 300,
+    });
+    // Switching to calculated leaves the typed numbers in place.
+    await saveTargetSettings(db, { targetMode: 'calculated' });
+    const saved = await db.profiles.get(p.id);
+    expect(saved).toMatchObject({
+      targetMode: 'calculated',
+      calorieTarget: 2400,
+      carbsTargetG: 300,
+      waterTargetMl: 3000,
+      waterGlassMl: 300,
+    });
+    await expect(saveTargetSettings(db, { waterTargetMl: 100 })).rejects.toThrow(/water/);
+    await expect(saveTargetSettings(db, { fatTargetG: 2 })).rejects.toThrow(/fat/);
+    await saveTargetSettings(db, { carbsTargetG: null });
+    expect((await db.profiles.get(p.id))?.carbsTargetG).toBeNull();
   });
 });

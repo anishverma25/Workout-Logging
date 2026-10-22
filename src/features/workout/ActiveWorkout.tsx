@@ -19,7 +19,8 @@ import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { EmptyState } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
-import { useBestsBefore, useProfile } from '@/data/hooks';
+import { useBestsBefore, useBodyWeights, useProfile } from '@/data/hooks';
+import { workoutBurn } from '@/domain/activity/burn';
 import { medalsForSet } from '@/domain/analytics/medals';
 import { MedalAlert, type MedalNews } from './MedalAlert';
 import { useDeviceSettings } from '@/app/deviceSettings';
@@ -237,6 +238,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
               <span>
                 {doneSets} of {allSets.length} sets
               </span>
+              <LiveBurn workout={workout} sets={allSets} doneSets={doneSets} />
             </span>
           </button>
           <KitIconButton label="Rest timer" icon={<Timer />} onClick={() => setTimerOpen(true)} />
@@ -409,6 +411,34 @@ export function ActiveWorkout({ view, prefs }: Props) {
         <RenameWorkoutSheet workout={workout} onClose={() => setRenaming(false)} />
       ) : null}
     </div>
+  );
+}
+
+/**
+ * A rough running estimate of calories burned, once a few sets are done. It updates when the
+ * minutes pass or a set is logged, and says it is an estimate.
+ */
+function LiveBurn({
+  workout,
+  sets,
+  doneSets,
+}: {
+  workout: Workout;
+  sets: WorkoutSet[];
+  doneSets: number;
+}) {
+  const weights = useBodyWeights();
+  const now = useNow(30_000);
+  if (doneSets < 2 || weights.status !== 'success') return null;
+  const burn = workoutBurn(workout, sets, weights.data ?? [], now);
+  if (!burn) return null;
+  return (
+    <>
+      <span aria-hidden>·</span>
+      <span title="A rough estimate. It can be wrong." data-live-burn>
+        ~{burn.kcal} kcal
+      </span>
+    </>
   );
 }
 

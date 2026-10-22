@@ -34,3 +34,10 @@ describe('number input drafts', () => {
     expect(toDraft(null)).toBe('');
   });
 });
+
+describe('whole-number drafts', () => {
+  it('allow up to six digits, such as a day of steps', () => {
+    expect(isValidDraft('10000', false)).toBe(true);
+    expect(isValidDraft('1234567', false)).toBe(false);
+  });
+});

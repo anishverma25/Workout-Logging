@@ -4,6 +4,7 @@ import { useStartWorkout } from '@/features/workout/StartWorkout';
 import { ActionMenu } from '@/components/kit/menu';
 import { formatRest, restIntervals, type RestInterval } from '@/domain/analytics/rest';
 import { RestCard } from '@/features/shared/RestCard';
+import { WorkoutBurnCard } from '@/features/shared/WorkoutBurnCard';
 import { useId, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import {
@@ -211,6 +212,12 @@ export function WorkoutDetailPage() {
         </p>
       ) : null}
 
+      <WorkoutBurnCard
+        workout={workout}
+        sets={allSets}
+        bodyWeights={training.data?.bodyWeights ?? []}
+        className="mt-4"
+      />
       <RestCard exercises={exercises} minutes={summary?.minutes ?? null} className="mt-4" />
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2 lg:items-start">

@@ -23,6 +23,13 @@ import {
   TREND_DAYS,
 } from '@/domain/analytics/body';
 import { KCAL_PER_KG, RATE_MISMATCH } from '@/domain/analytics/targets';
+import { STRENGTH_MET, STRIDE_PER_HEIGHT, WALK_KCAL_PER_KG_KM } from '@/domain/activity/burn';
+import {
+  CALC_FAT_SHARE,
+  FAT_MIN_G_PER_KG,
+  FIBRE_G_PER_1000_KCAL_TARGET,
+  WATER_ML_PER_KG,
+} from '@/domain/nutrition/targets';
 import {
   COMPOUND_SHORT,
   ISOLATION_SHORT,
@@ -768,11 +775,98 @@ export const SCIENCE: TopicGroup[] = [
             falling on most of your lifts over 8 weeks suggests the deficit is too big. Protein is
             checked in g per kg against your goal's range (Morton 2018).
           </>,
+          <>
+            You can have every target worked out for you or type your own. Worked out: calories from
+            your body, goal and training; protein from your goal&apos;s range; fat the larger of{' '}
+            {FAT_MIN_G_PER_KG} g per kg and {Math.round(CALC_FAT_SHARE * 100)}% of energy (inside
+            the 20 to 35% range of the Institute of Medicine); carbohydrate what is left at 4 kcal
+            per g; fibre {FIBRE_G_PER_1000_KCAL_TARGET} g per 1,000 kcal; water from your weight
+            (see Your water target). Numbers you type are used as they are, and anything you leave
+            empty falls back to the worked-out one.
+          </>,
         ],
         forYou:
           'Weigh in most mornings. After two weeks the trend tells you your real maintenance better than any formula.',
         limits:
           'Without a food log this assumes you eat close to your target; when you log food, real maintenance uses what you actually ate (see Food values). Water and food in the gut move daily weight by a kilo or more, which is why only the 7-day average is used.',
+      },
+      {
+        id: 'water',
+        title: 'Your water target',
+        evidence: 'water',
+        shows:
+          'How many glasses of water a day Overload suggests, and why it is a guide and not a rule.',
+        formulas: [
+          {
+            tex: String.raw`W = ${WATER_ML_PER_KG} \times m`,
+            spoken: `Water in millilitres is ${WATER_ML_PER_KG} times body weight in kilograms`,
+            where:
+              'm is your trend weight. Rounded to the nearest 250 ml and kept between 1.5 and 4.5 litres.',
+          },
+        ],
+        why: [
+          <>
+            Adequate intakes of total water are about 2.5 L a day for men and 2.0 L for women in
+            Europe (EFSA 2010) and 3.7 L and 2.7 L in the US and Canada (Institute of Medicine
+            2005). About a fifth comes from food. For a 60 to 80 kg person, {WATER_ML_PER_KG} ml per
+            kg gives 2.1 to 2.8 L of drinks, between the two.
+          </>,
+        ],
+        forYou:
+          'Drink to thirst and keep your urine pale. Heat, long sessions and sweating raise what you need, so add a glass or two on those days.',
+        limits:
+          "These are adequate intakes for healthy adults, not requirements. Tea, milk and other drinks count, and so do soups and fruit. People with kidney, heart or other conditions should follow their doctor's advice. You can set your own target under Daily targets.",
+      },
+      {
+        id: 'activity-energy',
+        title: 'Calories burned in training, cardio and steps',
+        evidence: 'activityEnergy',
+        shows:
+          'Rough estimates of the active calories burned in a workout, a cardio session or a day of steps. They can be wrong, so a number from a trusted watch or tracker always replaces them.',
+        formulas: [
+          {
+            tex: String.raw`E = (\text{MET} - 1) \times m \times t`,
+            spoken:
+              'Active calories are the activity MET minus one, times body weight in kilograms, times hours',
+            where:
+              'One MET is 1 kcal per kg per hour. Subtracting one removes what you burn at rest anyway, which your daily target already counts. MET values are from the Compendium of Physical Activities.',
+          },
+          {
+            tex: String.raw`\text{MET}_{\text{walk}} = \dfrac{0.1\,S + 1.8\,S\,G + 3.5}{3.5}`,
+            spoken:
+              'Walking MET is 0.1 times speed plus 1.8 times speed times grade, plus 3.5, all divided by 3.5',
+            where:
+              'S is speed in metres per minute and G the incline as a fraction (the ACSM walking equation). Running uses 0.2 and 0.9 in place of 0.1 and 1.8.',
+          },
+          {
+            tex: String.raw`\text{MET}_{\text{lift}} = ${STRENGTH_MET.easy} + (${STRENGTH_MET.hard} - ${STRENGTH_MET.easy}) \times h`,
+            spoken: `Weight training is ${STRENGTH_MET.easy} METs plus ${STRENGTH_MET.hard - STRENGTH_MET.easy} times the share of hard sets`,
+            where:
+              'h is the share of your working sets taken within 2 reps of failure. 3.5 and 6.0 are the Compendium values for moderate and vigorous weight training. With no effort logged, h is one half.',
+          },
+          {
+            tex: String.raw`E_{\text{steps}} = ${WALK_KCAL_PER_KG_KM} \times m \times n \times ${STRIDE_PER_HEIGHT}\,H / 100000`,
+            spoken: `Step calories are ${WALK_KCAL_PER_KG_KM} times body weight times steps times ${STRIDE_PER_HEIGHT} times height in centimetres, divided by 100,000`,
+            where:
+              'n is steps and H your height in cm: a step is about 0.414 of your height. Without a height, 0.7 m is used. Walking costs about 0.5 kcal per kg per km above rest.',
+          },
+        ],
+        why: [
+          <>
+            The Compendium (Ainsworth 2011, Herrmann 2024) lists the energy cost of hundreds of
+            activities as METs. The ACSM equations turn speed, incline and power into oxygen use for
+            walking, running and cycling, which is more exact than a single MET value.
+          </>,
+          <>
+            Weights burn less than their reputation: most of a session is rest between sets, so the
+            average MET over the whole session sits between 3.5 and 6. Harder sets, closer to
+            failure, push it up.
+          </>,
+        ],
+        forYou:
+          'Treat these as a guide to the size of the number, not the exact number. If your watch or tracker is one you trust, type its number in and Overload uses that.',
+        limits:
+          'Estimates can be 10 to 25% out for most people and further for some, because fitness, body size, technique and the machine all change the true cost. Gym machines often overstate. Calories burned after a session are not counted. Not medical advice.',
       },
       {
         id: 'food-values',

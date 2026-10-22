@@ -85,7 +85,7 @@ export function useFoodContextFrom(now: Date, training: QueryState<TrainingData>
     foodById,
     profile,
     snapshot,
-    targets: dailyTargets(profile, snapshot?.energy ?? null),
+    targets: dailyTargets(profile, snapshot?.energy ?? null, snapshot?.weightKg ?? null),
     diet: profile?.dietType ?? null,
     katoriMl: profile?.katoriMl ?? null,
     trainingDates,

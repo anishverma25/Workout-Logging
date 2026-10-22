@@ -85,3 +85,49 @@ export async function saveFoodSettings(
     await patchRecord<Profile>(db, 'profiles', current.id, changes);
   });
 }
+
+export interface TargetSettings {
+  targetMode?: Profile['targetMode'];
+  calorieTarget?: number | null;
+  proteinTargetG?: number | null;
+  carbsTargetG?: number | null;
+  fatTargetG?: number | null;
+  fibreTargetG?: number | null;
+  waterTargetMl?: number | null;
+  waterGlassMl?: number | null;
+}
+
+const TARGET_LIMITS: [keyof TargetSettings, number, number, string][] = [
+  ['calorieTarget', 800, 8000, 'Enter calories between 800 and 8,000 a day.'],
+  ['proteinTargetG', 20, 500, 'Enter protein between 20 and 500 g a day.'],
+  ['carbsTargetG', 0, 1500, 'Enter carbs between 0 and 1,500 g a day.'],
+  ['fatTargetG', 10, 500, 'Enter fat between 10 and 500 g a day.'],
+  ['fibreTargetG', 0, 150, 'Enter fibre between 0 and 150 g a day.'],
+  ['waterTargetMl', 500, 8000, 'Enter water between 500 and 8,000 ml a day.'],
+  ['waterGlassMl', 100, 1000, 'Enter a glass size between 100 and 1,000 ml.'],
+];
+
+/**
+ * Food and water targets on the person's own profile: the mode (calculated or their own) and
+ * the numbers they typed. Fields left out keep their value; null clears one. Typed numbers stay
+ * saved when the mode is calculated, so switching back brings them back.
+ */
+export async function saveTargetSettings(
+  db: WorkoutDatabase,
+  settings: TargetSettings,
+): Promise<void> {
+  const changes: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(settings)) {
+    if (value === undefined) continue;
+    changes[key] = typeof value === 'number' ? Math.round(value) : value;
+  }
+  for (const [key, lo, hi, message] of TARGET_LIMITS) {
+    const v = changes[key];
+    if (v != null && !(typeof v === 'number' && v >= lo && v <= hi)) throw new ProfileError(message);
+  }
+  await db.transaction('rw', [db.profiles, db.outbox], async () => {
+    const current = await ownProfile(db);
+    if (!current) throw new ProfileError('Set up your profile first.');
+    await patchRecord<Profile>(db, 'profiles', current.id, changes as Partial<Profile>);
+  });
+}

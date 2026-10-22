@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 
 /*
- * The six primary navigation icons, drawn as outline and filled pairs (lucide has no filled
+ * The primary navigation icons, drawn as outline and filled pairs (lucide has no filled
  * variants). 24px grid, 1.75 stroke on every outline, so the set reads as one family.
  * Filled shapes cut their details out in --bar, the colour behind the tab bar and sidebar.
  */
@@ -141,12 +141,42 @@ export function FoodIcon({ filled, className }: TabIconProps) {
   );
 }
 
+/** A drop of water, with a highlight when filled. */
+export function WaterIcon({ filled, className }: TabIconProps) {
+  return (
+    <Svg className={className}>
+      <path
+        d="M12 3.4c3.3 4.1 6 7.1 6 10.6a6 6 0 0 1-12 0c0-3.5 2.7-6.5 6-10.6z"
+        {...stroke}
+        fill={filled ? 'currentColor' : 'none'}
+      />
+      <path d="M9.2 14.4a2.9 2.9 0 0 0 2.2 2.6" {...(filled ? cut : stroke)} />
+    </Svg>
+  );
+}
+
+/** A flame, for calories burned. */
+export function ActivityIcon({ filled, className }: TabIconProps) {
+  return (
+    <Svg className={className}>
+      <path
+        d="M12.4 3c.4 3-1.4 4.3-2.9 6.2-1.4 1.8-2.4 3.4-2.4 5.5a5.1 5.1 0 0 0 10.2 0c0-2-1-3.5-2-4.6-.2 1.1-.8 1.9-1.6 2.3.5-2.7.2-6.1-1.3-9.4z"
+        {...stroke}
+        fill={filled ? 'currentColor' : 'none'}
+      />
+      <path d="M10.2 17.1a2.2 2.2 0 0 0 3.6 0" {...(filled ? cut : stroke)} />
+    </Svg>
+  );
+}
+
 // eslint-disable-next-line react-refresh/only-export-components
 export const TAB_ICONS = {
   '/': HomeIcon,
   '/routines': RoutinesIcon,
   '/workout': WorkoutIcon,
   '/food': FoodIcon,
+  '/water': WaterIcon,
+  '/activity': ActivityIcon,
   '/progress': ProgressIcon,
   '/history': HistoryIcon,
 } as const;

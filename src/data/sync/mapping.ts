@@ -1,5 +1,7 @@
 import type { ZodType } from 'zod';
 import {
+  ActivityLog,
+  WaterLog,
   BodyMeasurement,
   BodyWeightEntry,
   CustomFood,
@@ -36,7 +38,9 @@ export type ServerTable =
   | 'body_measurements'
   | 'goals'
   | 'food_logs'
-  | 'custom_foods';
+  | 'custom_foods'
+  | 'water_logs'
+  | 'activity_logs';
 
 export type ServerRow = Record<string, unknown>;
 
@@ -70,6 +74,12 @@ export const TABLE_SPECS: TableSpec[] = [
       'proteinTargetG',
       'dietType',
       'katoriMl',
+      'targetMode',
+      'carbsTargetG',
+      'fatTargetG',
+      'fibreTargetG',
+      'waterTargetMl',
+      'waterGlassMl',
     ],
     schema: Profile,
   },
@@ -135,6 +145,7 @@ export const TABLE_SPECS: TableSpec[] = [
       'timeZone',
       'readiness',
       'sessionRpe',
+      'kcalBurned',
     ],
     schema: Workout,
   },
@@ -243,6 +254,31 @@ export const TABLE_SPECS: TableSpec[] = [
     ],
     schema: FoodLog,
   },
+  {
+    local: 'waterLogs',
+    server: 'water_logs',
+    fields: ['date', 'ml'],
+    schema: WaterLog,
+  },
+  {
+    local: 'activityLogs',
+    server: 'activity_logs',
+    fields: [
+      'date',
+      'kind',
+      'activity',
+      'minutes',
+      'distanceKm',
+      'speedKmh',
+      'inclinePct',
+      'watts',
+      'effort',
+      'steps',
+      'kcal',
+      'kcalSource',
+    ],
+    schema: ActivityLog,
+  },
 ];
 
 export const specFor = (table: DomainTable) => TABLE_SPECS.find((s) => s.local === table);
@@ -262,6 +298,7 @@ const NUMERIC_FIELDS = new Set([
   'calorieTarget',
   'proteinTargetG',
   'sessionRpe',
+  'kcalBurned',
   'supersetGroup',
   'angleDeg',
   'exerciseChangeRestSeconds',
@@ -285,6 +322,18 @@ const NUMERIC_FIELDS = new Set([
   'cookedG',
   'amount',
   'grams',
+  'ml',
+  'distanceKm',
+  'speedKmh',
+  'inclinePct',
+  'watts',
+  'steps',
+  'minutes',
+  'carbsTargetG',
+  'fatTargetG',
+  'fibreTargetG',
+  'waterTargetMl',
+  'waterGlassMl',
 ]);
 
 export function toSnake(field: string): string {
