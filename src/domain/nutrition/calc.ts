@@ -59,6 +59,7 @@ export interface Food {
     | 'recipe'
     | 'ingredient'
     | 'label'
+    | 'chain'
     | 'usda'
     | 'indb'
     | 'off'

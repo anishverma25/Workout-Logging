@@ -2,7 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } f
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { DestructiveButton, IconButton, PrimaryButton, SecondaryButton } from './actions';
-import { keyboardInset } from './keyboard';
+import { isEditing, keyboardInset, viewportBaseline } from './keyboard';
 
 interface BottomSheetProps {
   open: boolean;
@@ -60,18 +60,27 @@ function unlockPageScroll() {
   window.scrollTo(0, lockedAt);
 }
 
-/** Follows the keyboard while a sheet is open, so the sheet can sit above it. */
+/**
+ * Follows the keyboard while a sheet is open, so the sheet can sit above it. Only counts while
+ * a field has focus, and only what the keyboard adds beyond what the visual viewport already
+ * missed when the sheet opened: on newer iPhones the browser's own toolbars make the visual
+ * viewport shorter than the window, and reading that as a keyboard squashed every sheet.
+ */
 function useKeyboardInset(active: boolean): number {
   const [inset, setInset] = useState(0);
   useEffect(() => {
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
     if (!active || !vv) return;
-    const update = () => setInset(keyboardInset(window.innerHeight, vv));
+    const baseline = viewportBaseline(window.innerHeight, vv);
+    const update = () =>
+      setInset(isEditing() ? keyboardInset(window.innerHeight, vv, baseline) : 0);
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
+    document.addEventListener('focusout', update);
     return () => {
       vv.removeEventListener('resize', update);
       vv.removeEventListener('scroll', update);
+      document.removeEventListener('focusout', update);
       setInset(0);
     };
   }, [active]);
@@ -152,8 +161,9 @@ export function BottomSheet({
         keyboard
           ? {
               marginBottom: keyboard + 8,
-              maxHeight: `calc(100% - ${keyboard}px - 1.5rem)`,
-              ...(tall ? { height: `calc(100% - ${keyboard}px - 1.5rem)` } : {}),
+              // Never squashed below a usable height, whatever the browser reports.
+              maxHeight: `max(16rem, calc(100% - ${keyboard}px - 1.5rem))`,
+              ...(tall ? { height: `max(16rem, calc(100% - ${keyboard}px - 1.5rem))` } : {}),
             }
           : undefined
       }
@@ -199,7 +209,9 @@ export function BottomSheet({
           </div>
           <div
             className={cn(
-              'min-h-0 flex-1 overflow-y-auto overscroll-contain px-5',
+              // Auto basis, not 0: a zero basis collapsed the content in a sheet with no fixed height
+              // on newer iPhone Safari, leaving only the header.
+              'min-h-0 flex-auto overflow-y-auto overscroll-contain px-5',
               footer ? 'pb-4' : 'pb-5',
             )}
           >

@@ -121,3 +121,46 @@ against references:
 | Margherita pizza | 250 | FatSecret 275 |
 | Cappuccino | 51 | Starbucks tall 31 (more foam, less milk) |
 | Bubble tea | 69 (500 ml cup, 358 kcal) | Shop cups vary from about 300 to 700 kcal |
+
+## Indian chains, street food, drinks and supplements (22 October 2026)
+
+**Chains** (`chain: true` labels, source "chain"): 39 items from McDonald's India, KFC, Domino's,
+Burger King and Subway. Each is one serving as the chain publishes it, read through FatSecret
+India (which mirrors the chains' own tables; McDonald's values carry the official decimals).
+Every item was checked in code: energy within 20% of 4/4/9 on its protein, carbs and fat, and
+macros not heavier than the serving. Fibre is not published, so it stays 0. Portions are the
+chain's, and outlets vary a little.
+
+Left out because the page showed no weight or the numbers disagreed with themselves: Domino's
+Choco Lava Cake (no weight, macros heavier than a plausible cake), Thin Crust Chicken slice (no
+weight), Pepsi and Mirinda (two pages gave 43 and 55, 28 and 55 kcal per 100 ml), Xtend BCAA
+(0 kcal with 7 g protein), Oreo (only kcal found), McDonald's masala chai (page not reachable).
+
+**Packaged labels** (per 100 g or per pack, FatSecret India): Bournvita 393, Horlicks Classic
+Malt 377, Horlicks Protein Plus 370, Protinex Original 350, Complan Chocolate 428, Cerelac 415,
+Marie Gold 445, Good Day 512, Dairy Milk 524, KitKat 481, Snickers 491, Kurkure 556,
+Haldiram's moong dal 479, Amul cheese slice 311 kcal per 100 g; Thums Up 42, Frooti 65, Maaza 48
+(Open Food Facts), Real mixed fruit 56, Amul Kool 89, Amul Taaza 58 kcal per 100 ml. Each
+reconciles with its macros within 5%. Bournvita's page is the only source found and is older
+than the 2023 reformulation, so treat it as approximate.
+
+**Supplements** (per scoop): pea protein isolate (Nutrabay 40 g 117 kcal 25.3 g protein, Nutrabay
+Gold hydrolysed 40 g 135 kcal 25 g, Nakpro 36 g 139 kcal 28.8 g, Myprotein 30 g 107 kcal 23 g),
+MuscleBlaze Raw Whey 30 g 118 kcal 24 g, Optimum Nutrition casein 34 g 120 kcal 24 g,
+MuscleBlaze micellar casein 35 g 120 kcal 24 g, MuscleBlaze Mass Gainer XXL and High Protein
+Gainer per 100 g, MuscleBlaze Creamp creatine 3 g 0 kcal, GNC BCAA 13.25 g 8 kcal.
+
+**Recipes** (from USDA ingredients, in the same way as the other dishes): chole bhature, chole
+kulche, Amritsari kulcha, litti chokha, dal baati, dabeli, ragda pattice, sev puri, dahi puri,
+papdi chaat, aloo chaat, samosa chaat, bun maska, maska pav, keema pav, egg bhurji pav, egg and
+veg puff, bread pakora, roasted corn, masala peanuts, a veg thali, chicken thukpa, idiyappam,
+puttu, puran poli, sandesh, Mysore pak, kulfi, rabri, shrikhand, malpua, peda, rasmalai, mutton
+keema, sugarcane juice, matcha latte, kombucha, almond and oat milk, khakhra, murukku. Plates
+(chole bhature, chaats, thali) are one typical restaurant plate; weights are in the code. These
+vary by cook like any home recipe.
+
+**USDA single foods**: kiwi, lychee, jackfruit, sapota, custard apple, pineapple, walnuts,
+pistachios, flax, pumpkin and sunflower seeds, popcorn, tender coconut water, soy milk.
+
+Not added (no checkable source): dragon fruit (not in USDA SR28), Starbucks, Electral and ORS
+sachets, PediaSure, Boost, pad thai, paella, seitan.

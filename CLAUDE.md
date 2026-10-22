@@ -238,4 +238,15 @@ Read README.md for setup, architecture and calculation rules.
   maintenance, IOM macro ranges, protein per kg and 0.4 g/kg per meal, fibre 14 g per 1,000
   kcal, training-day carbs 4 to 7 g/kg), topic `day-analysis`. OverloadGPT answers use
   `type-answer` / `type-answer-lead`, `ai-surface` and `AiByline`; numbers with units are bold.
-
+- Indian chains, street food and supplements (October 2026): `chain: true` labels (source `chain`,
+  "From the chain's published nutrition") for McDonald's, KFC, Domino's, Burger King and Subway
+  servings; Indian health drinks, biscuits, chocolates, soft drinks; four pea proteins, casein,
+  mass gainers, creatine, BCAA; about 40 street food, regional, sweet and drink recipes; kiwi,
+  lychee, sapota, custard apple, nuts and seeds from USDA (`scripts/usda-ingredients.mjs`).
+  Tests in `data/library/indiaFoods.test.ts`; sources and what was left out in
+  `docs/food-verification.md`.
+- Sheets on newer iPhones (October 2026): the visual viewport is shorter than the window by the
+  browser's toolbars, which `BottomSheet` once read as a keyboard and shrank to its header. The
+  keyboard only counts while a field has focus and only beyond what was missing when the sheet
+  opened (`viewportBaseline`, `isEditing` in `kit/keyboard.ts`); the content area uses an auto
+  flex basis, never 0. `tests/e2e/sheets-iphone.spec.ts` fakes a short viewport.
