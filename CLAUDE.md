@@ -241,7 +241,7 @@ Read README.md for setup, architecture and calculation rules.
 - Indian chains, street food and supplements (October 2026): `chain: true` labels (source `chain`,
   "From the chain's published nutrition") for McDonald's, KFC, Domino's, Burger King and Subway
   servings; Indian health drinks, biscuits, chocolates, soft drinks; four pea proteins, casein,
-  mass gainers, creatine, BCAA; about 40 street food, regional, sweet and drink recipes; kiwi,
+  mass gainers, creatine, BCAA; about 50 street food (incl. nine more chaats), regional, sweet and drink recipes; kiwi,
   lychee, sapota, custard apple, nuts and seeds from USDA (`scripts/usda-ingredients.mjs`).
   Tests in `data/library/indiaFoods.test.ts`; sources and what was left out in
   `docs/food-verification.md`.

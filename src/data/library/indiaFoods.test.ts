@@ -71,6 +71,18 @@ describe('people find them by the name they use', () => {
     ['sitaphal', 'custard-apple'],
     ['sugarcane juice', 'sugarcane-juice'],
     ['kurkure', 'kurkure-masala-munch'],
+    ['tamatar chaat', 'tamatar-chaat'],
+    ['tikki chaat', 'aloo-tikki-chaat'],
+    ['dahi puchka', 'dahi-puchka'],
+    ['raj kachori', 'raj-kachori'],
+    ['kachori chaat', 'kachori-chaat'],
+    ['corn chaat', 'corn-chaat'],
+    ['fruit chaat', 'fruit-chaat'],
+    ['palak patta chaat', 'palak-patta-chaat'],
+    ['basket chaat', 'basket-chaat'],
+    ['papri chat', 'papdi-chaat'],
+    ['samosa chat', 'samosa-chaat'],
+    ['puchka', 'pani-puri'],
   ])('%s finds a food whose id has %s', (query, part) => {
     expect(top(query), query).toContain(part);
   });

@@ -152,7 +152,7 @@ Gainer per 100 g, MuscleBlaze Creamp creatine 3 g 0 kcal, GNC BCAA 13.25 g 8 kca
 
 **Recipes** (from USDA ingredients, in the same way as the other dishes): chole bhature, chole
 kulche, Amritsari kulcha, litti chokha, dal baati, dabeli, ragda pattice, sev puri, dahi puri,
-papdi chaat, aloo chaat, samosa chaat, bun maska, maska pav, keema pav, egg bhurji pav, egg and
+papdi chaat, aloo chaat, tamatar, tikki, kachori, raj kachori, corn, fruit, palak patta and basket chaat, dahi golgappa, samosa chaat, bun maska, maska pav, keema pav, egg bhurji pav, egg and
 veg puff, bread pakora, roasted corn, masala peanuts, a veg thali, chicken thukpa, idiyappam,
 puttu, puran poli, sandesh, Mysore pak, kulfi, rabri, shrikhand, malpua, peda, rasmalai, mutton
 keema, sugarcane juice, matcha latte, kombucha, almond and oat milk, khakhra, murukku. Plates
