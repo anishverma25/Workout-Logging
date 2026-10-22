@@ -2,23 +2,11 @@ import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { ChipGroup, SegmentedControl, Stepper } from '@/components/kit';
 import { measurePortion, type FoodPortion } from '@/data/repositories/food';
-import { CUP_ML, KATORI_ML, type Food } from '@/domain/nutrition/calc';
+import { CUP_ML, KATORI_ML } from '@/domain/nutrition/calc';
 import type { OilLevel, SizeId } from '@/domain/nutrition/types';
 import { cn } from '@/lib/cn';
 import { EvidenceLink } from '../science/EvidenceLink';
-import { cap, unitName } from './foodText';
-
-const SOURCE: Record<Food['source'], string> = {
-  recipe: 'Calculated from a home recipe. Varies with oil and portion.',
-  ingredient: 'USDA lab values.',
-  label: 'From the pack label.',
-  usda: 'USDA lab values.',
-  indb: 'Indian Nutrient Databank, calculated from a published Indian recipe.',
-  off: 'From the pack label, via Open Food Facts.',
-  ai: 'Worked out by OverloadGPT. Check the portion.',
-  custom: 'Your food, from its label.',
-  custom_recipe: 'Your recipe.',
-};
+import { cap, SOURCE, unitName } from './foodText';
 
 export function NutrientLine({
   kcal,
@@ -37,7 +25,7 @@ export function NutrientLine({
     <p className={cn('type-meta tabular text-text-2', className)}>
       <span className="font-semibold text-text-1">{Math.round(kcal)} kcal</span>
       {' · '}
-      {proteinG.toFixed(1)} g protein
+      <span className="font-semibold text-text-1">{proteinG.toFixed(1)} g</span> protein
       {carbsG !== undefined ? ` · ${carbsG.toFixed(0)} g carbs` : ''}
       {fatG !== undefined ? ` · ${fatG.toFixed(0)} g fat` : ''}
     </p>
@@ -52,10 +40,15 @@ export function PortionEditor({
   portion,
   onChange,
   katoriMl,
+  showSource = true,
+  showTotals = true,
 }: {
   portion: FoodPortion;
   onChange: (next: FoodPortion) => void;
   katoriMl: number | null;
+  /** Off when the screen already shows where the numbers come from and the totals. */
+  showSource?: boolean;
+  showTotals?: boolean;
 }) {
   const { food } = portion;
   const [showRecipe, setShowRecipe] = useState(false);
@@ -70,12 +63,14 @@ export function PortionEditor({
 
   return (
     <div className="flex flex-col gap-4" data-portion={food.id}>
-      <p className="type-meta flex flex-wrap items-center gap-x-2 text-text-2">
-        {SOURCE[food.source]}
-        {food.source === 'recipe' || food.source === 'ingredient' ? (
-          <EvidenceLink topic="food-values" about="how food values are worked out" />
-        ) : null}
-      </p>
+      {showSource ? (
+        <p className="type-meta flex flex-wrap items-center gap-x-2 text-text-2">
+          {SOURCE[food.source]}
+          {food.source === 'recipe' || food.source === 'ingredient' ? (
+            <EvidenceLink topic="food-values" about="how food values are worked out" />
+          ) : null}
+        </p>
+      ) : null}
 
       {food.units.length > 1 ? (
         <ChipGroup
@@ -161,7 +156,7 @@ export function PortionEditor({
         </div>
       ) : null}
 
-      {measured ? (
+      {measured && showTotals ? (
         <div className="rounded-nested bg-surface-2 p-4">
           <NutrientLine {...measured.nutrients} />
           <p className="type-caption mt-1 tabular text-text-2">

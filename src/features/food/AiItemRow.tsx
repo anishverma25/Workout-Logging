@@ -37,12 +37,20 @@ export function AiItemRow({
       data-confidence={confidence}
     >
       <span className="min-w-0 flex-1">
-        <span className="type-headline block text-text-1">{f.name}</span>
+        <span className="type-headline block text-[1.125rem] text-text-1">{f.name}</span>
         {f.ai?.ref ? <span className="type-caption block text-text-3">{f.ai.ref}</span> : null}
-        <span className="type-meta block text-text-2">
-          {amount}
-          {kcal !== null ? ` · ${kcal} kcal · ${protein} g protein` : ''}
-        </span>
+        <span className="type-meta tabular block text-text-2">{amount}</span>
+        {kcal !== null ? (
+          <span className="mt-1 flex items-baseline gap-3">
+            <span className="type-title tabular font-bold text-text-1">
+              {kcal}
+              <span className="type-meta ml-0.5 font-normal text-text-2">kcal</span>
+            </span>
+            <span className="type-headline tabular text-text-1">
+              {protein} g<span className="type-meta ml-1 text-text-2">protein</span>
+            </span>
+          </span>
+        ) : null}
         {check ? (
           <span className="type-caption mt-1 flex items-center gap-1 font-semibold text-text-1">
             <AlertCircle className="size-3.5" aria-hidden />

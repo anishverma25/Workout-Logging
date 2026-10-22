@@ -74,6 +74,9 @@
   /* The one accent, sampled from the Start button. Dimmer lime is the same hue with opacity. */
   --lime: #c6f432;
   --lime-dim: rgb(198 244 50 / 0.14);
+  /* OverloadGPT answer surfaces: a faint lime wash and edge. */
+  --ai-wash: rgb(198 244 50 / 0.07);
+  --ai-edge: rgb(198 244 50 / 0.16);
   --on-lime: #000000;
 
   /* Medals: records only (UI rules: lime stays the one accent everywhere else). */

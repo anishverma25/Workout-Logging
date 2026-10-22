@@ -195,7 +195,7 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
   food_insights: {
     title: 'Food insights',
     description:
-      'Your real maintenance calories from what you eat and weigh, food trends and protein help with one tap.',
+      'A daily analysis of your food against published ranges, your real maintenance calories from what you eat and weigh, food trends and protein help with one tap.',
   },
 };
 

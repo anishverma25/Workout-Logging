@@ -186,6 +186,31 @@ html[data-landing] #landing {
   font-weight: 500;
   letter-spacing: 0.009em;
 }
+/*
+ * OverloadGPT answers: larger, airier reading text so AI answers feel crafted, not like small
+ * print. The first paragraph leads a step larger; numbers stand out (AiText).
+ */
+@utility type-answer {
+  font-family: var(--font-text);
+  font-size: 1.0625rem;
+  line-height: 1.6875rem;
+  font-weight: 400;
+  letter-spacing: -0.011em;
+}
+@utility type-answer-lead {
+  font-family: var(--font-text);
+  font-size: 1.1875rem;
+  line-height: 1.8125rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+/* A soft lime wash for surfaces that hold an AI answer. */
+@utility ai-surface {
+  background:
+    radial-gradient(120% 80% at 0% 0%, var(--ai-wash), transparent 60%),
+    var(--surface);
+  border: 1px solid var(--ai-edge);
+}
 /* Group labels: Meta 600, uppercase, 0.05em (Parts 5 and 6). */
 @utility type-label {
   font-family: var(--font-text);

@@ -16,10 +16,13 @@ async function openFood(page: Page) {
   await expect(page.locator('[data-food-page]')).toBeVisible();
 }
 
+/** Searches, opens the food's profile and adds it at its usual portion. */
 async function addFromSearch(page: Page, query: string) {
   const sheet = page.getByRole('dialog');
   await sheet.getByRole('searchbox').fill(query);
-  await sheet.locator('[data-food-results] li').first().click();
+  await sheet.locator('[data-food-results] [data-food-row]').first().click();
+  await expect(sheet.locator('[data-food-profile]')).toBeVisible();
+  await sheet.locator('[data-profile-action]').click();
 }
 
 test('a new account logs a thali by the katori, edits it and undoes a delete', async ({ page }) => {
@@ -207,4 +210,65 @@ test('free accounts see photo logging as part of Pro', async ({ page }) => {
   await expect(hero).toContainText('Snap a photo');
   await expect(hero).toContainText('Pro');
   await expect(page.getByRole('dialog').locator('[data-photo-meal]')).toHaveCount(0);
+});
+
+test('tapping a food opens its profile: nutrients, then the amount, then the plate', async ({
+  page,
+}) => {
+  await signUpFresh(page, { tag: 'food-profile' });
+  await page.goto('/food');
+  await page.locator('[data-add-food]').click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByRole('searchbox').fill('chapati');
+  await sheet.locator('[data-food-results] [data-food-row]').first().click();
+  const profile = sheet.locator('[data-food-profile]');
+  await expect(profile.locator('[data-nutrition-panel]')).toContainText('Protein');
+  await expect(profile.locator('[data-nutrition-panel]')).toContainText('Per 100 g');
+  // 2 rotis are 204 kcal; a third makes 306.
+  await expect(profile.locator('[data-portion-kcal]')).toHaveText('204');
+  await profile.getByRole('button', { name: /^Increase/ }).click();
+  await expect(profile.locator('[data-portion-kcal]')).toHaveText('306');
+  await sheet.locator('[data-profile-action]').click();
+  await expect(sheet.locator('[data-plate]')).toContainText('3 rotis');
+  // The plus button still adds in one tap.
+  await sheet.getByRole('searchbox').fill('daal');
+  await sheet.locator('[data-food-results] [data-quick-add]').first().click();
+  await expect(sheet.locator('[data-plate]')).toContainText('dal tadka');
+});
+
+test("a meal's + logs to that meal only, in a steady sheet that holds the page still", async ({
+  page,
+}) => {
+  await signUpFresh(page, { tag: 'food-meal-lock' });
+  await page.goto('/food');
+  await page.getByRole('button', { name: 'Add food to breakfast' }).click();
+  const sheet = page.getByRole('dialog');
+  await expect(sheet.getByRole('heading', { name: 'Add to breakfast' })).toBeVisible();
+  await expect(sheet.getByRole('radio', { name: 'Lunch' })).toHaveCount(0);
+  // The page behind does not scroll while the sheet is open.
+  expect(await page.evaluate(() => document.body.style.position)).toBe('fixed');
+  // Typing does not change the sheet's size.
+  // Layout height (offsetHeight ignores the opening scale animation).
+  const height = () => sheet.evaluate((el) => (el as HTMLElement).offsetHeight);
+  const before = await height();
+  await sheet.getByRole('searchbox').fill('poha');
+  await expect(sheet.locator('[data-food-results]')).toBeVisible();
+  expect(await height()).toBe(before);
+  await sheet.locator('[data-food-results] [data-quick-add]').first().click();
+  await sheet.locator('[data-log-plate]').click();
+  await expect(page.locator('[data-meal="breakfast"]')).toContainText('Poha');
+  expect(await page.evaluate(() => document.body.style.position)).toBe('');
+});
+
+test('Pro gets the day analysed against published ranges', async ({ page }) => {
+  await startWithDemo(page, { tag: 'food-analysis' });
+  await openFood(page);
+  await page.locator('[data-usual="breakfast"]').getByRole('button', { name: 'Log' }).click();
+  const card = page.locator('[data-day-analysis]');
+  await expect(card).toContainText('Day analysis');
+  await expect(card).toContainText('Today so far');
+  await expect(card).toContainText('Where the energy comes from');
+  await expect(card).toContainText('Fibre');
+  await card.getByRole('link', { name: 'About the day analysis' }).click();
+  await expect(page).toHaveURL(/\/science#day-analysis$/);
 });

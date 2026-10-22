@@ -3,6 +3,7 @@ import { BottomSheet, DestructiveButton, PrimaryButton, SegmentedControl } from 
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import {
+  measurePortion,
   deleteFoodLogs,
   FoodError,
   moveFoodLog,
@@ -11,7 +12,9 @@ import {
   type FoodPortion,
 } from '@/data/repositories/food';
 import type { FoodLog } from '@/domain/models/schemas';
+import { portionText } from '@/domain/nutrition/calc';
 import { MEALS, type Meal } from '@/domain/nutrition/types';
+import { NutritionPanel } from './FoodProfile';
 import { NutrientLine, PortionEditor } from './PortionEditor';
 import { MEAL_LABEL, type FoodContext } from './useFoodContext';
 
@@ -74,7 +77,15 @@ function EditBody({ log, ctx, onDone }: { log: FoodLog; ctx: FoodContext; onDone
         options={MEALS.map((m) => ({ value: m, label: MEAL_LABEL[m] }))}
       />
       {portion ? (
-        <PortionEditor portion={portion} onChange={setPortion} katoriMl={ctx.katoriMl} />
+        <>
+          <EditTotals portion={portion} ctx={ctx} />
+          <PortionEditor
+            portion={portion}
+            onChange={setPortion}
+            katoriMl={ctx.katoriMl}
+            showTotals={false}
+          />
+        </>
       ) : (
         <div className="rounded-nested bg-surface-2 p-4">
           <NutrientLine
@@ -101,5 +112,24 @@ function EditBody({ log, ctx, onDone }: { log: FoodLog; ctx: FoodContext; onDone
         </PrimaryButton>
       </div>
     </div>
+  );
+}
+
+function EditTotals({ portion, ctx }: { portion: FoodPortion; ctx: FoodContext }) {
+  let m: ReturnType<typeof measurePortion> | null;
+  try {
+    m = measurePortion(portion, ctx.katoriMl);
+  } catch {
+    m = null;
+  }
+  if (!m) return null;
+  return (
+    <NutritionPanel
+      nutrients={m.nutrients}
+      grams={m.grams}
+      portionLabel={portionText(portion.amount, portion.unit, portion.size, portion.food.pieceName)}
+      per100={portion.food.per100}
+      targets={ctx.targets}
+    />
   );
 }

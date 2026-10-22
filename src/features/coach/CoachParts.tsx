@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Link } from 'react-router';
 import { MessageCircle, Sparkles } from 'lucide-react';
+import { readable } from './readable';
 import { useAccount } from '@/app/account';
 import { CoachError, explain, setCoachConsent, useCoachStore, type CoachTopic } from '@/app/coach';
 import { useFeature } from '@/app/entitlement';
@@ -154,7 +155,8 @@ function ExplainAnswer({ topic, getBrief }: { topic: CoachTopic; getBrief: () =>
       />
     );
   return (
-    <div>
+    <div className="ai-surface rounded-panel p-4">
+      <AiByline />
       <CoachText text={state.text} />
       <CoachFootnote />
       <TextLink to="/coach" small chevron className="mt-3" icon={<MessageCircle />}>
@@ -175,33 +177,115 @@ export function Thinking({ className }: { className?: string }) {
   );
 }
 
-/** Answers are plain text: paragraphs, and lines starting "- " as a list. */
+/** Numbers with a unit (loads, grams, calories, reps), set in semibold so they stand out. */
+const FIGURE = /(\d[\d,]*(?:\.\d+)?\s?(?:kg|g|kcal|%|reps|sets|min|minutes|km|lb|ml)\b%?)/gi;
+
+function withFigures(text: string) {
+  const parts = text.split(FIGURE);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <strong key={i} className="tabular font-semibold text-text-1">
+        {part}
+      </strong>
+    ) : (
+      part
+    ),
+  );
+}
+
+type Block =
+  | { kind: 'p'; text: string }
+  | { kind: 'ul'; items: { text: string; lead?: string; parts?: string[] }[] };
+
+/**
+ * A long line listing several things separated by semicolons ("Legs: Back squat ...; Romanian
+ * deadlift ...; Leg press ...") reads better as its lead and one point per thing.
+ */
+function splitLong(text: string): { text: string; lead?: string; parts?: string[] } {
+  const pieces = text.split(/;\s+/).filter(Boolean);
+  if (pieces.length < 3) return { text };
+  const first = pieces[0]!;
+  const colon = first.indexOf(': ');
+  if (colon > 0 && colon < 60)
+    return {
+      text,
+      lead: first.slice(0, colon),
+      parts: [first.slice(colon + 2), ...pieces.slice(1)],
+    };
+  return { text, parts: pieces };
+}
+
+/**
+ * Answers are plain text: paragraphs, and lines starting "- " as a list. Set as reading text:
+ * the first paragraph leads a size up, numbers with units stand out, list items get lime
+ * markers, long lists inside a line become their own points, and dates read like speech.
+ */
 export function CoachText({ text, className }: { text: string; className?: string }) {
-  const blocks: ({ kind: 'p'; text: string } | { kind: 'ul'; items: string[] })[] = [];
-  for (const raw of text.split('\n')) {
+  const blocks: Block[] = [];
+  for (const raw of readable(text).split('\n')) {
     const line = raw.trim();
     if (!line) continue;
     const item = /^[-*•]\s+(.*)$/.exec(line) ?? /^\d+[.)]\s+(.*)$/.exec(line);
     const last = blocks[blocks.length - 1];
     if (item) {
-      if (last?.kind === 'ul') last.items.push(item[1]!);
-      else blocks.push({ kind: 'ul', items: [item[1]!] });
-    } else blocks.push({ kind: 'p', text: line });
+      if (last?.kind === 'ul') last.items.push(splitLong(item[1]!));
+      else blocks.push({ kind: 'ul', items: [splitLong(item[1]!)] });
+    } else {
+      const long = splitLong(line);
+      if (long.parts) blocks.push({ kind: 'ul', items: [long] });
+      else blocks.push({ kind: 'p', text: line });
+    }
   }
   return (
-    <div className={cn('type-body flex flex-col gap-2 text-text-1', className)}>
+    <div
+      className={cn('type-answer flex flex-col gap-3 text-text-1 [text-wrap:pretty]', className)}
+      data-ai-text
+    >
       {blocks.map((b, i) =>
         b.kind === 'p' ? (
-          <p key={i}>{b.text}</p>
+          <p key={i} className={i === 0 ? 'type-answer-lead' : 'text-text-1/90'}>
+            {withFigures(b.text)}
+          </p>
         ) : (
-          <ul key={i} className="flex list-disc flex-col gap-1 pl-5">
+          <ul key={i} className="flex flex-col gap-2.5">
             {b.items.map((t, j) => (
-              <li key={j}>{t}</li>
+              <li key={j} className="flex gap-3">
+                <span className="mt-[0.7rem] size-1.5 shrink-0 rounded-full bg-lime" aria-hidden />
+                {t.parts ? (
+                  <div className="min-w-0 flex-1">
+                    {t.lead ? (
+                      <p className="font-semibold text-text-1">{withFigures(t.lead)}</p>
+                    ) : null}
+                    <ul className="mt-1 flex flex-col gap-1.5 border-l border-divider pl-3">
+                      {t.parts.map((part, k) => (
+                        <li key={k}>{withFigures(part)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <span>{withFigures(t.text)}</span>
+                )}
+              </li>
             ))}
           </ul>
         ),
       )}
     </div>
+  );
+}
+
+/** The mark that heads every OverloadGPT answer. */
+export function AiByline({ className }: { className?: string }) {
+  return (
+    <p className={cn('mb-3 flex items-center gap-2', className)}>
+      <span
+        className="inline-flex size-7 items-center justify-center rounded-full bg-lime-dim text-lime"
+        aria-hidden
+      >
+        <Sparkles className="size-4" />
+      </span>
+      <span className="type-headline text-text-1">OverloadGPT</span>
+    </p>
   );
 }
 

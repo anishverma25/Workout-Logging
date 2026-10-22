@@ -162,8 +162,9 @@ Read README.md for setup, architecture and calculation rules.
 - Three-dot menus are `ActionMenu` (`components/kit/menu.tsx`): a dropdown anchored to its
   button (fade and scale, portal, no <dialog>, no scroll lock), placed above the tab bar
   (`data-bottom-bar`), hints only on disabled items. `BottomSheet` (and every sheet built on
-  it) is a centred panel on all widths that fades and scales in, with no slide-up, drag or
-  scroll lock: iOS placed bottom-anchored dialogs partly off screen.
+  it) is a centred panel on all widths that fades and scales in, with no slide-up or drag:
+  iOS placed bottom-anchored dialogs partly off screen. While any sheet is open the page behind
+  is held still (body fixed in place, scroll restored on close); `tall` sheets keep one height.
 - A past workout starts again from its History page (`startWorkoutFromPast`: same exercises,
   order, set types and targets, linked to its routine day if it still exists), through
   `useStartWorkout({ fromWorkoutId })`. Tapping the current tab scrolls to the top
@@ -230,4 +231,11 @@ Read README.md for setup, architecture and calculation rules.
   and Groq uses `qwen/qwen3.8-27b`; library names win over AI numbers (`aiMatch.ts`). Release
   `2026-10-food-ai` announces the new food logging. More protein powders (33) and cafe,
   dessert and global foods were added and cross-checked (`docs/food-verification.md`).
+- Food profile and day analysis (October 2026): tapping a food while logging opens
+  `FoodProfile` (nutrients for the portion, macro split, per 100 g, share of the day, then the
+  amount); the + adds at the usual portion. A meal's + opens Add food for that meal only.
+  Pro `DayAnalysisCard` from `domain/nutrition/dayAnalysis.ts` (energy against target and real
+  maintenance, IOM macro ranges, protein per kg and 0.4 g/kg per meal, fibre 14 g per 1,000
+  kcal, training-day carbs 4 to 7 g/kg), topic `day-analysis`. OverloadGPT answers use
+  `type-answer` / `type-answer-lead`, `ai-surface` and `AiByline`; numbers with units are bold.
 
