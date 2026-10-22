@@ -77,7 +77,6 @@ test('a person chooses worked-out targets, then types their own', async ({ page 
   await expect(totals).toContainText('of 150 g');
   await expect(totals.locator('[data-macro-bars]')).toContainText('of 280');
   await expect(totals).toContainText('your own');
-  await page.goto('/water');
   await expect(page.locator('[data-water-ml]')).toContainText('of 3,000 ml');
 });
 
@@ -109,8 +108,10 @@ test('any quantity can be typed, with its unit, and the numbers follow', async (
 
 test('water: glasses, other amounts, undo and the size of your glass', async ({ page }) => {
   await newPerson(page, 'water');
+  // Water lives on the Food page; the old /water address opens it there.
   await page.goto('/water');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Water');
+  await expect(page).toHaveURL(/\/food#water$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Food');
   await expect(page.locator('[data-water-glasses]')).toHaveText('0');
   await page.locator('[data-add-glass]').click();
   await expect(page.locator('[data-water-glasses]')).toHaveText('1');
@@ -125,13 +126,13 @@ test('water: glasses, other amounts, undo and the size of your glass', async ({ 
   await page.getByRole('button', { name: 'Remove the last drink' }).click();
   await expect(page.locator('[data-water-ml]')).toContainText('250 ml');
 
-  await page.getByRole('button', { name: '300 ml' }).click();
+  // Details: the seven day strip, the day's drinks and the size of your glass.
+  await page.locator('[data-water-details]').click();
+  const details = page.getByRole('dialog', { name: 'Water' });
+  await expect(details.locator('[data-water-week] li')).toHaveCount(7);
+  await details.getByRole('button', { name: '300 ml' }).click();
+  await page.keyboard.press('Escape');
   await expect(page.locator('[data-add-glass]')).toContainText('300 ml');
-
-  // The seven day strip and today's drinks are there, and Food links to the day's water.
-  await expect(page.locator('[data-water-week] li')).toHaveCount(7);
-  await page.goto('/food');
-  await expect(page.locator('[data-day-balance]')).toContainText('Water:');
 });
 
 test('activity: cardio and steps with estimates, typed numbers and the warning', async ({
@@ -222,4 +223,21 @@ test('a finished workout shows an estimated burn, and a tracker number replaces 
     .getByRole('button', { name: 'Use the estimate instead' })
     .click();
   await expect(card.locator('[data-burn-kcal]')).toContainText('~');
+});
+
+test('Home shows today’s activity under the food card, with steps and cardio in a tap', async ({
+  page,
+}) => {
+  await newPerson(page, 'home-activity');
+  await page.goto('/');
+  const card = page.locator('[data-activity-card]');
+  await expect(card).toBeVisible();
+  await card.locator('[data-home-add-steps]').click();
+  const steps = page.getByRole('dialog', { name: 'Steps' });
+  await steps.getByLabel('Steps today').fill('8000');
+  await steps.getByRole('button', { name: 'Save steps' }).click();
+  await expect(card.locator('[data-activity-steps]')).toHaveText('8,000');
+  await expect(card.locator('[data-estimate-note]')).toBeVisible();
+  await card.locator('[data-home-add-cardio]').click();
+  await expect(page.getByRole('dialog', { name: 'Add cardio' })).toBeVisible();
 });

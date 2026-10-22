@@ -40,6 +40,7 @@ import { TargetsSheet } from './TargetsSheet';
 import { DIET_LABEL } from './foodText';
 import { NutrientLine } from './PortionEditor';
 import { DayBalance } from './DayBalance';
+import { WaterCard } from './WaterTab';
 import { DayNav } from './DayNav';
 import { useDayParam } from './useDayParam';
 import { MEAL_LABEL, mealForHour, useFoodContext, type FoodContext } from './useFoodContext';
@@ -134,6 +135,7 @@ export function FoodPage() {
             </Card>
           ) : null}
           <DaySummary ctx={ctx} date={date} onTargets={() => setTargetsOpen(true)} />
+          <WaterCard ctx={ctx} date={date} />
           <DayBalance ctx={ctx} date={date} />
           <DayAnalysisCard ctx={ctx} date={date} now={now} />
           {date === today ? <ProteinHelp ctx={ctx} date={date} now={now} /> : null}

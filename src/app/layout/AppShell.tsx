@@ -169,7 +169,7 @@ function BottomNav() {
       data-bottom-bar
       className="chrome fixed inset-x-0 bottom-0 z-40 border-t-[0.5px] border-white/10 bg-bar pb-safe lg:hidden"
     >
-      <ul className="mx-auto grid h-[3.0625rem] max-w-lg grid-cols-7 px-0.5">
+      <ul className="mx-auto grid h-[3.0625rem] max-w-lg grid-cols-6 px-0.5">
         {BOTTOM_NAV.map((item) => {
           const active = item.to === '/' ? pathname === '/' : pathname.startsWith(item.to);
           return (

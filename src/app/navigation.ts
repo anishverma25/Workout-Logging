@@ -2,7 +2,6 @@ import type { LucideIcon } from 'lucide-react';
 import {
   CalendarRange,
   CircleUserRound,
-  Droplets,
   Flame,
   ChartNoAxesColumnIncreasing,
   Crown,
@@ -39,16 +38,15 @@ export interface NavItem {
 }
 
 /**
- * The main areas: training on the left, food, water and activity together in the middle, then
- * results. The phone's bottom bar shows seven of them (`BOTTOM_NAV`); the rest are under More.
+ * The main areas: training on the left, food in the middle; activity is under More on a phone and on Home, then
+ * results. The phone's bottom bar shows six of them (`BOTTOM_NAV`); the rest are under More.
  */
 export const PRIMARY_NAV: NavItem[] = [
   { to: '/', label: 'Home', icon: House },
-  { to: '/routines', label: 'Routines', icon: CalendarRange, bottom: false },
+  { to: '/routines', label: 'Routines', icon: CalendarRange },
   { to: '/workout', label: 'Workout', icon: Dumbbell },
   { to: '/food', label: 'Food', icon: UtensilsCrossed },
-  { to: '/water', label: 'Water', icon: Droplets },
-  { to: '/activity', label: 'Activity', icon: Flame },
+  { to: '/activity', label: 'Activity', icon: Flame, bottom: false },
   { to: '/progress', label: 'Progress', icon: ChartNoAxesColumnIncreasing },
   { to: '/history', label: 'History', icon: History },
 ];

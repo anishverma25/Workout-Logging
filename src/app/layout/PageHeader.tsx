@@ -90,10 +90,12 @@ export function PageHeader({
             {back ? null : <DemoPill className="lg:hidden" />}
           </div>
         ) : null}
-        <div className="flex items-end justify-between gap-4">
-          <h1 className="type-display min-w-0 text-text-1">{title}</h1>
+        {/* When the title and its buttons do not fit on one line, the buttons move below it
+            rather than covering the title. */}
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+          <h1 className="type-display max-w-full shrink-0 break-words text-text-1">{title}</h1>
           {back ? null : (
-            <div className="mb-0.5 flex shrink-0 items-center gap-2">
+            <div className="mb-0.5 ml-auto flex shrink-0 items-center gap-2">
               {eyebrow ? null : <DemoPill className="lg:hidden" />}
               {actions}
               <AvatarLink />

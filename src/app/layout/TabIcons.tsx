@@ -141,20 +141,6 @@ export function FoodIcon({ filled, className }: TabIconProps) {
   );
 }
 
-/** A drop of water, with a highlight when filled. */
-export function WaterIcon({ filled, className }: TabIconProps) {
-  return (
-    <Svg className={className}>
-      <path
-        d="M12 3.4c3.3 4.1 6 7.1 6 10.6a6 6 0 0 1-12 0c0-3.5 2.7-6.5 6-10.6z"
-        {...stroke}
-        fill={filled ? 'currentColor' : 'none'}
-      />
-      <path d="M9.2 14.4a2.9 2.9 0 0 0 2.2 2.6" {...(filled ? cut : stroke)} />
-    </Svg>
-  );
-}
-
 /** A flame, for calories burned. */
 export function ActivityIcon({ filled, className }: TabIconProps) {
   return (
@@ -175,7 +161,6 @@ export const TAB_ICONS = {
   '/routines': RoutinesIcon,
   '/workout': WorkoutIcon,
   '/food': FoodIcon,
-  '/water': WaterIcon,
   '/activity': ActivityIcon,
   '/progress': ProgressIcon,
   '/history': HistoryIcon,

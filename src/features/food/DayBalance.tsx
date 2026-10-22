@@ -1,23 +1,20 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router';
-import { ChevronRight, Droplets, Flame } from 'lucide-react';
+import { ChevronRight, Flame } from 'lucide-react';
 import { Card } from '@/components/kit';
-import { useActivityData, useWaterData } from '@/data/hooks';
+import { useActivityData } from '@/data/hooks';
 import { dayBurn, workoutKcalOn } from '@/domain/activity/burn';
 import { dayTotals } from '@/domain/nutrition/analysis';
-import { DEFAULT_GLASS_ML, toGlasses, waterOn } from '@/domain/nutrition/water';
 import { EstimateNote } from '../activity/EstimateNote';
 import type { FoodContext } from './useFoodContext';
 
 const n = (v: number) => Math.round(v).toLocaleString('en-GB');
 
 /**
- * The end of the day on one card: calories eaten, calories burned in activity, the difference,
- * and the water drunk. Burned calories are the active ones, estimates unless typed.
+ * The end of the day on one card: calories eaten, calories burned in activity, and the difference. Burned calories are the active ones, estimates unless typed.
  */
 export function DayBalance({ ctx, date }: { ctx: FoodContext; date: string }) {
   const activity = useActivityData();
-  const water = useWaterData();
   const eaten = dayTotals(ctx.logs, date).kcal;
   const logs = useMemo(() => activity.data ?? [], [activity.data]);
   const weights = useMemo(
@@ -25,12 +22,9 @@ export function DayBalance({ ctx, date }: { ctx: FoodContext; date: string }) {
       ctx.training ? workoutKcalOn(ctx.training, date) : { kcal: 0, sessions: 0, estimated: false },
     [ctx.training, date],
   );
-  if (activity.status !== 'success' || water.status !== 'success') return null;
+  if (activity.status !== 'success') return null;
   const burn = dayBurn({ logs, date, workoutKcal: weights.kcal });
   const net = eaten - burn.total;
-  const glassMl = ctx.profile?.waterGlassMl ?? DEFAULT_GLASS_ML;
-  const drunk = waterOn(water.data ?? [], date);
-  const target = ctx.targets.waterMl;
   return (
     <Card as="section" aria-labelledby="balance-title" data-day-balance>
       <h2 id="balance-title" className="type-title text-text-1">
@@ -70,19 +64,6 @@ export function DayBalance({ ctx, date }: { ctx: FoodContext; date: string }) {
           >
             <Flame className="size-5 text-text-2" aria-hidden />
             <span className="type-body min-w-0 flex-1">Weights, cardio and steps</span>
-            <ChevronRight className="size-4 text-text-3" aria-hidden />
-          </Link>
-        </li>
-        <li>
-          <Link
-            to={`/water?date=${date}`}
-            className="pressable flex min-h-11 items-center gap-3 rounded-nested px-1 text-text-1"
-          >
-            <Droplets className="size-5 text-text-2" aria-hidden />
-            <span className="type-body min-w-0 flex-1">
-              Water: {toGlasses(drunk, glassMl)}
-              {target ? ` of ${toGlasses(target, glassMl)}` : ''} glasses
-            </span>
             <ChevronRight className="size-4 text-text-3" aria-hidden />
           </Link>
         </li>
