@@ -154,7 +154,8 @@ function ExplainAnswer({ topic, getBrief }: { topic: CoachTopic; getBrief: () =>
       />
     );
   return (
-    <div>
+    <div className="ai-surface rounded-panel p-4">
+      <AiByline />
       <CoachText text={state.text} />
       <CoachFootnote />
       <TextLink to="/coach" small chevron className="mt-3" icon={<MessageCircle />}>
@@ -175,7 +176,26 @@ export function Thinking({ className }: { className?: string }) {
   );
 }
 
-/** Answers are plain text: paragraphs, and lines starting "- " as a list. */
+/** Numbers with a unit (loads, grams, calories, reps), set in semibold so they stand out. */
+const FIGURE = /(\d[\d,]*(?:\.\d+)?\s?(?:kg|g|kcal|%|reps|sets|min|minutes|km|lb|ml)\b%?)/gi;
+
+function withFigures(text: string) {
+  const parts = text.split(FIGURE);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <strong key={i} className="tabular font-semibold text-text-1">
+        {part}
+      </strong>
+    ) : (
+      part
+    ),
+  );
+}
+
+/**
+ * Answers are plain text: paragraphs, and lines starting "- " as a list. Set as reading text:
+ * the first paragraph leads a size up, numbers stand out, list items get lime markers.
+ */
 export function CoachText({ text, className }: { text: string; className?: string }) {
   const blocks: ({ kind: 'p'; text: string } | { kind: 'ul'; items: string[] })[] = [];
   for (const raw of text.split('\n')) {
@@ -189,19 +209,42 @@ export function CoachText({ text, className }: { text: string; className?: strin
     } else blocks.push({ kind: 'p', text: line });
   }
   return (
-    <div className={cn('type-body flex flex-col gap-2 text-text-1', className)}>
+    <div
+      className={cn('type-answer flex flex-col gap-3 text-text-1 [text-wrap:pretty]', className)}
+      data-ai-text
+    >
       {blocks.map((b, i) =>
         b.kind === 'p' ? (
-          <p key={i}>{b.text}</p>
+          <p key={i} className={i === 0 ? 'type-answer-lead' : 'text-text-1/90'}>
+            {withFigures(b.text)}
+          </p>
         ) : (
-          <ul key={i} className="flex list-disc flex-col gap-1 pl-5">
+          <ul key={i} className="flex flex-col gap-2">
             {b.items.map((t, j) => (
-              <li key={j}>{t}</li>
+              <li key={j} className="flex gap-3">
+                <span className="mt-[0.7rem] size-1.5 shrink-0 rounded-full bg-lime" aria-hidden />
+                <span>{withFigures(t)}</span>
+              </li>
             ))}
           </ul>
         ),
       )}
     </div>
+  );
+}
+
+/** The mark that heads every OverloadGPT answer. */
+export function AiByline({ className }: { className?: string }) {
+  return (
+    <p className={cn('mb-3 flex items-center gap-2', className)}>
+      <span
+        className="inline-flex size-7 items-center justify-center rounded-full bg-lime-dim text-lime"
+        aria-hidden
+      >
+        <Sparkles className="size-4" />
+      </span>
+      <span className="type-headline text-text-1">OverloadGPT</span>
+    </p>
   );
 }
 

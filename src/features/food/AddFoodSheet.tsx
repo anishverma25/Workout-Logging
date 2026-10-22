@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Camera, ChevronLeft, Crown, Globe, Mic, Plus, Sparkles, X } from 'lucide-react';
+import { Camera, ChevronLeft, Crown, Mic, Plus, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router';
 import {
   BottomSheet,
-  ListRow,
   PrimaryButton,
   SearchField,
   SecondaryButton,
@@ -32,7 +31,8 @@ import { haptic } from '@/lib/haptics';
 import { AiFoodLog } from './AiFoodLog';
 import { PhotoFoodLog } from './PhotoFoodLog';
 import { defaultPortion } from './foodText';
-import { NutrientLine, PortionEditor } from './PortionEditor';
+import { FoodProfile } from './FoodProfile';
+import { NutrientLine } from './PortionEditor';
 import { MEAL_LABEL, type FoodContext } from './useFoodContext';
 
 /**
@@ -46,6 +46,7 @@ export function AddFoodSheet({
   ctx,
   date,
   meal,
+  lockMeal = false,
   onCreateFood,
 }: {
   open: boolean;
@@ -53,15 +54,18 @@ export function AddFoodSheet({
   ctx: FoodContext;
   date: string;
   meal: Meal;
+  /** Opened from one meal's +: everything goes to that meal and there is no meal picker. */
+  lockMeal?: boolean;
   onCreateFood: (name: string) => void;
 }) {
   return (
-    <BottomSheet open={open} onClose={onClose} title="Add food" hideHeader wide>
+    <BottomSheet open={open} onClose={onClose} title="Add food" hideHeader wide tall>
       {open ? (
         <AddFoodBody
           ctx={ctx}
           date={date}
           initialMeal={meal}
+          lockMeal={lockMeal}
           onDone={onClose}
           onCreateFood={onCreateFood}
         />
@@ -71,18 +75,24 @@ export function AddFoodSheet({
 }
 
 type View =
-  { kind: 'pick' } | { kind: 'edit'; index: number } | { kind: 'type' } | { kind: 'photo' };
+  | { kind: 'pick' }
+  | { kind: 'edit'; index: number }
+  | { kind: 'type' }
+  | { kind: 'photo' }
+  | { kind: 'food'; portion: FoodPortion };
 
 function AddFoodBody({
   ctx,
   date,
   initialMeal,
+  lockMeal,
   onDone,
   onCreateFood,
 }: {
   ctx: FoodContext;
   date: string;
   initialMeal: Meal;
+  lockMeal: boolean;
   onDone: () => void;
   onCreateFood: (name: string) => void;
 }) {
@@ -122,6 +132,9 @@ function AddFoodBody({
     setPlate((p) => [...p, portionFor(food)]);
     setQuery('');
   };
+
+  /** Opens the food's profile to see its nutrients and set the amount before adding it. */
+  const open = (food: Food) => setView({ kind: 'food', portion: portionFor(food) });
 
   const totals = roundNutrients(
     sumNutrients(
@@ -219,17 +232,37 @@ function AddFoodBody({
     return (
       <div className="flex flex-col gap-4 pt-5">
         <BackRow label={p.food.name} onBack={() => setView({ kind: 'pick' })} />
-        <PortionEditor
+        <FoodProfile
           portion={p}
           katoriMl={ctx.katoriMl}
+          targets={ctx.targets}
+          actionLabel="Done"
           onChange={(next) => setPlate((list) => list.map((x, j) => (j === view.index ? next : x)))}
+          onDone={() => setView({ kind: 'pick' })}
         />
-        <PrimaryButton block onClick={() => setView({ kind: 'pick' })}>
-          Done
-        </PrimaryButton>
       </div>
     );
   }
+
+  if (view.kind === 'food')
+    return (
+      <div className="flex flex-col gap-4 pt-5">
+        <BackRow label={view.portion.food.name} onBack={() => setView({ kind: 'pick' })} />
+        <FoodProfile
+          portion={view.portion}
+          katoriMl={ctx.katoriMl}
+          targets={ctx.targets}
+          actionLabel="Add to plate"
+          onChange={(next) => setView({ kind: 'food', portion: next })}
+          onDone={() => {
+            haptic('light');
+            setPlate((list) => [...list, view.portion]);
+            setQuery('');
+            setView({ kind: 'pick' });
+          }}
+        />
+      </div>
+    );
 
   if (view.kind === 'photo')
     return (
@@ -265,7 +298,9 @@ function AddFoodBody({
     <div className="flex flex-col">
       <div className="sticky top-0 z-10 -mx-5 flex flex-col gap-3 bg-surface px-5 pt-5 pb-2">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="type-title text-text-1">Add food</h2>
+          <h2 className="type-title text-text-1">
+            {lockMeal ? `Add to ${MEAL_LABEL[meal].toLowerCase()}` : 'Add food'}
+          </h2>
           <button
             type="button"
             onClick={onDone}
@@ -275,13 +310,15 @@ function AddFoodBody({
             <X className="size-5" aria-hidden />
           </button>
         </div>
-        <SegmentedControl<Meal>
-          label="Meal"
-          block
-          value={meal}
-          onChange={setMeal}
-          options={MEALS.map((m) => ({ value: m, label: MEAL_LABEL[m] }))}
-        />
+        {lockMeal ? null : (
+          <SegmentedControl<Meal>
+            label="Meal"
+            block
+            value={meal}
+            onChange={setMeal}
+            options={MEALS.map((m) => ({ value: m, label: MEAL_LABEL[m] }))}
+          />
+        )}
         <SearchField
           label="Search food"
           value={query}
@@ -294,7 +331,8 @@ function AddFoodBody({
           <Results
             ctx={ctx}
             query={query}
-            onPick={add}
+            onPick={open}
+            onQuickAdd={add}
             onCreate={() => onCreateFood(query.trim())}
           />
         ) : (
@@ -304,7 +342,8 @@ function AddFoodBody({
             date={date}
             pro={pro}
             onTemplate={(t) => void logTemplate(t)}
-            onPick={add}
+            onPick={open}
+            onQuickAdd={add}
             onType={() => setView({ kind: 'type' })}
             onPhoto={() => setView({ kind: 'photo' })}
             onCreate={() => onCreateFood('')}
@@ -340,33 +379,55 @@ function FoodRow({
   food,
   ctx,
   onPick,
+  onQuickAdd,
 }: {
   food: Food;
   ctx: FoodContext;
   onPick: (f: Food) => void;
+  onQuickAdd: (f: Food) => void;
 }) {
   const detail = describe(food, ctx.katoriMl);
   return (
-    <li>
-      <ListRow
-        title={food.name}
-        subtitle={detail}
+    <li className="flex items-center gap-1">
+      <button
+        type="button"
         onClick={() => onPick(food)}
-        trailing={<Plus className="size-5 shrink-0 text-text-2" aria-hidden />}
-        className="px-1"
-      />
+        className="pressable chrome flex min-h-14 min-w-0 flex-1 flex-col justify-center rounded-nested px-1 py-2 text-left"
+        data-food-row={food.id}
+      >
+        <span className="type-headline block truncate text-text-1">{food.name}</span>
+        {detail ? (
+          <span className="type-meta tabular block truncate text-text-2">{detail}</span>
+        ) : null}
+      </button>
+      <button
+        type="button"
+        onClick={() => onQuickAdd(food)}
+        aria-label={`Add ${food.name} to plate`}
+        className="pressable tap-target inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text-1"
+        data-quick-add
+      >
+        <Plus className="size-5" aria-hidden />
+      </button>
     </li>
   );
 }
 
-/** "1 katori · 139 kcal · 7 g protein" for a food at its usual portion. */
-function describe(food: Food, katoriMl: number | null): string {
+/** "1 katori · 139 kcal · 7 g protein" for a food at its usual portion, numbers in bold. */
+function describe(food: Food, katoriMl: number | null) {
   try {
     const p = defaultPortion(food);
     const m = measurePortion(p, katoriMl);
-    return `${portionText(p.amount, p.unit, p.size, food.pieceName)} · ${m.nutrients.kcal} kcal · ${m.nutrients.proteinG.toFixed(0)} g protein`;
+    return (
+      <>
+        {portionText(p.amount, p.unit, p.size, food.pieceName)} ·{' '}
+        <strong className="font-semibold text-text-1">{m.nutrients.kcal} kcal</strong> ·{' '}
+        <strong className="font-semibold text-text-1">{m.nutrients.proteinG.toFixed(0)} g</strong>{' '}
+        protein
+      </>
+    );
   } catch {
-    return '';
+    return null;
   }
 }
 
@@ -381,11 +442,13 @@ function Results({
   ctx,
   query,
   onPick,
+  onQuickAdd,
   onCreate,
 }: {
   ctx: FoodContext;
   query: string;
   onPick: (f: Food) => void;
+  onQuickAdd: (f: Food) => void;
   onCreate: () => void;
 }) {
   const results = useMemo(
@@ -401,7 +464,7 @@ function Results({
       {results.length ? (
         <ul className="flex flex-col">
           {results.map((f) => (
-            <FoodRow key={f.id} food={f} ctx={ctx} onPick={onPick} />
+            <FoodRow key={f.id} food={f} ctx={ctx} onPick={onPick} onQuickAdd={onQuickAdd} />
           ))}
         </ul>
       ) : (
@@ -433,6 +496,7 @@ function Quick({
   pro,
   onTemplate,
   onPick,
+  onQuickAdd,
   onType,
   onPhoto,
   onCreate,
@@ -443,6 +507,7 @@ function Quick({
   pro: boolean;
   onTemplate: (t: MealTemplate) => void;
   onPick: (f: Food) => void;
+  onQuickAdd: (f: Food) => void;
   onType: () => void;
   onPhoto: () => void;
   onCreate: () => void;
@@ -512,7 +577,7 @@ function Quick({
           </h3>
           <ul className="flex flex-col">
             {recent.map((f) => (
-              <FoodRow key={f.id} food={f} ctx={ctx} onPick={onPick} />
+              <FoodRow key={f.id} food={f} ctx={ctx} onPick={onPick} onQuickAdd={onQuickAdd} />
             ))}
           </ul>
         </section>
@@ -525,7 +590,7 @@ function Quick({
           </h3>
           <ul className="flex flex-col">
             {starters.map((f) => (
-              <FoodRow key={f.id} food={f} ctx={ctx} onPick={onPick} />
+              <FoodRow key={f.id} food={f} ctx={ctx} onPick={onPick} onQuickAdd={onQuickAdd} />
             ))}
           </ul>
         </section>
@@ -560,7 +625,7 @@ function AiHero({
       <span className="min-w-0 flex-1">
         <span className="type-headline block text-text-1">Let OverloadGPT log it</span>
         <span className="type-meta block text-text-2">
-          Snap your plate or just say what you ate. Any food, brand or restaurant.
+          Snap your plate or say what you ate. Any food, brand or restaurant, even nutrition labels.
         </span>
       </span>
       <span className="type-caption inline-flex shrink-0 items-center gap-1 rounded-full bg-surface px-2 py-1 font-semibold text-text-2">
@@ -607,10 +672,6 @@ function AiHero({
           Type or say it
         </button>
       </div>
-      <span className="type-caption mt-3 flex items-center gap-1 text-text-2">
-        <Globe className="size-3.5" aria-hidden />
-        Looks up labels and menus, and reads nutrition labels in photos
-      </span>
     </div>
   );
 }

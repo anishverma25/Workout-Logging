@@ -5,7 +5,7 @@ import { useCoachStore } from '@/app/coach';
 import { askFoodLog, FOOD_LIMITS, FoodAiError } from '@/app/foodAi';
 import type { FoodPortion } from '@/data/repositories/food';
 import { parseMeal } from '@/domain/nutrition/parse';
-import { CoachConsent, Thinking } from '../coach/CoachParts';
+import { AiByline, CoachConsent, Thinking } from '../coach/CoachParts';
 import { AiItemRow } from './AiItemRow';
 import { portionForItem } from './aiMatch';
 import { defaultPortion } from './foodText';
@@ -157,7 +157,17 @@ export function AiFoodLog({
         <Thinking />
       ) : portions.length || state.kind !== 'idle' ? (
         <div className="type-meta text-text-2" aria-live="polite" data-ai-result>
-          {state.kind === 'fallback' ? <p className="mb-2">{state.message}</p> : null}
+          {state.kind === 'fallback' ? (
+            <p className="mb-2">{state.message}</p>
+          ) : portions.length ? (
+            <div className="ai-surface mb-3 rounded-panel p-4">
+              <AiByline className="mb-2" />
+              <p className="type-answer text-text-1">
+                Found {portions.length} {portions.length === 1 ? 'food' : 'foods'}. Adjust anything
+                on your plate before you log it.
+              </p>
+            </div>
+          ) : null}
           {portions.length ? (
             <ul className="flex flex-col gap-2">
               {portions.map((p, i) => (

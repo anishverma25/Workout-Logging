@@ -33,6 +33,7 @@ import { useNow } from '@/lib/useNow';
 import { EvidenceLink } from '../science/EvidenceLink';
 import { AddFoodSheet } from './AddFoodSheet';
 import { CustomFoodSheet } from './CustomFoodSheet';
+import { DayAnalysisCard } from './DayAnalysisCard';
 import { EditFoodSheet } from './EditFoodSheet';
 import { DietPicker, FoodSettingsSheet } from './FoodSettingsSheet';
 import { DIET_LABEL } from './foodText';
@@ -56,8 +57,9 @@ export function FoodPage() {
   const requested = params.get('date');
   const date =
     requested && /^\d{4}-\d{2}-\d{2}$/.test(requested) && requested <= today ? requested : today;
-  const [adding, setAdding] = useState<Meal | null>(
-    params.get('add') === '1' ? mealForHour(now.getHours()) : null,
+  // A meal's own + logs to that meal only; the main Add food button lets the person choose.
+  const [adding, setAdding] = useState<{ meal: Meal; locked: boolean } | null>(
+    params.get('add') === '1' ? { meal: mealForHour(now.getHours()), locked: false } : null,
   );
   const [editing, setEditing] = useState<FoodLog | null>(null);
   const [custom, setCustom] = useState<{ name: string; editing: CustomFood | null } | null>(null);
@@ -79,7 +81,12 @@ export function FoodPage() {
           <PrimaryButton
             compact
             icon={<Plus className="size-4" aria-hidden />}
-            onClick={() => setAdding(date === today ? mealForHour(now.getHours()) : 'lunch')}
+            onClick={() =>
+              setAdding({
+                meal: date === today ? mealForHour(now.getHours()) : 'lunch',
+                locked: false,
+              })
+            }
             data-add-food
           >
             Add food
@@ -118,6 +125,7 @@ export function FoodPage() {
             </Card>
           ) : null}
           <DaySummary ctx={ctx} date={date} />
+          <DayAnalysisCard ctx={ctx} date={date} now={now} />
           {date === today ? <ProteinHelp ctx={ctx} date={date} now={now} /> : null}
           {MEALS.map((m) => (
             <MealCard
@@ -125,7 +133,7 @@ export function FoodPage() {
               meal={m}
               ctx={ctx}
               date={date}
-              onAdd={() => setAdding(m)}
+              onAdd={() => setAdding({ meal: m, locked: true })}
               onEdit={setEditing}
             />
           ))}
@@ -161,7 +169,8 @@ export function FoodPage() {
         onClose={() => setAdding(null)}
         ctx={ctx}
         date={date}
-        meal={adding ?? 'lunch'}
+        meal={adding?.meal ?? 'lunch'}
+        lockMeal={adding?.locked ?? false}
         onCreateFood={(name) => {
           setAdding(null);
           setCustom({ name, editing: null });
@@ -247,10 +256,13 @@ function DaySummary({ ctx, date }: { ctx: FoodContext; date: string }) {
             {kcal !== null ? `of ${n(kcal)} kcal` : 'kcal'}
           </span>
         </p>
-        <p className="type-meta mt-0.5 text-text-2">
-          <span className="tabular font-semibold text-text-1">{totals.proteinG.toFixed(0)} g</span>{' '}
-          protein
-          {proteinG !== null ? ` of ${proteinG} g` : ''}
+        <p className="mt-1 flex items-baseline gap-1">
+          <span className="type-title tabular font-bold text-text-1">
+            {totals.proteinG.toFixed(0)} g
+          </span>
+          <span className="type-meta text-text-2">
+            protein{proteinG !== null ? ` of ${proteinG} g` : ''}
+          </span>
         </p>
         <p className="type-meta mt-0.5 tabular text-text-2">
           {totals.carbsG.toFixed(0)} g carbs · {totals.fatG.toFixed(0)} g fat ·{' '}
@@ -396,7 +408,9 @@ function MealCard({
         <div className="flex items-center gap-3">
           {items.length ? (
             <span className="type-meta tabular text-text-2">
-              {n(total.kcal)} kcal · {total.proteinG.toFixed(0)} g protein
+              <strong className="font-semibold text-text-1">{n(total.kcal)} kcal</strong> ·{' '}
+              <strong className="font-semibold text-text-1">{total.proteinG.toFixed(0)} g</strong>{' '}
+              protein
             </span>
           ) : null}
           <button
@@ -420,7 +434,14 @@ function MealCard({
                 <ListRow
                   title={l.foodName}
                   subtitle={`${portion}${oil}`}
-                  value={`${n(l.kcal)} kcal`}
+                  value={
+                    <span className="flex flex-col items-end">
+                      <span className="type-headline tabular text-text-1">{n(l.kcal)} kcal</span>
+                      <span className="type-caption tabular text-text-2">
+                        {l.proteinG.toFixed(0)} g protein
+                      </span>
+                    </span>
+                  }
                   onClick={() => onEdit(l)}
                   className="px-1"
                 />

@@ -14,7 +14,7 @@ import type { FoodPortion } from '@/data/repositories/food';
 import type { Meal } from '@/domain/nutrition/types';
 import { cn } from '@/lib/cn';
 import { preparePhoto, type PreparedPhoto } from '@/lib/photo';
-import { CoachConsent, Thinking } from '../coach/CoachParts';
+import { AiByline, CoachConsent, Thinking } from '../coach/CoachParts';
 import { AiItemRow } from './AiItemRow';
 import { knownNames, portionForItem } from './aiMatch';
 import type { FoodContext } from './useFoodContext';
@@ -212,9 +212,13 @@ export function PhotoFoodLog({
         <div className="flex flex-col gap-3" aria-live="polite" data-ai-result>
           {state.rows.length ? (
             <>
-              <p className="type-meta text-text-2">
-                Here is what OverloadGPT sees. Adjust anything on your plate before logging.
-              </p>
+              <div className="ai-surface rounded-panel p-4">
+                <AiByline className="mb-2" />
+                <p className="type-answer text-text-1">
+                  Found {state.rows.length} {state.rows.length === 1 ? 'food' : 'foods'} on your
+                  plate. Adjust anything before you log it.
+                </p>
+              </div>
               <ul className="flex flex-col gap-2">
                 {state.rows.map((r, i) => (
                   <AiItemRow

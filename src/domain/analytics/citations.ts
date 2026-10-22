@@ -184,6 +184,36 @@ export const CITATIONS: Record<string, Citation> = {
     openAccess: false,
   },
   // Protein targets (body page).
+  iom2005: {
+    id: 'iom2005',
+    authors: 'Institute of Medicine',
+    year: 2005,
+    title:
+      'Dietary Reference Intakes for Energy, Carbohydrate, Fiber, Fat, Fatty Acids, Cholesterol, Protein, and Amino Acids',
+    journal: 'The National Academies Press, Washington DC',
+    doi: '10.17226/10490',
+    openAccess: true,
+  },
+  schoenfeld2018meal: {
+    id: 'schoenfeld2018meal',
+    authors: 'Schoenfeld BJ, Aragon AA',
+    year: 2018,
+    title:
+      'How much protein can the body use in a single meal for muscle-building? Implications for daily protein distribution',
+    journal: 'Journal of the International Society of Sports Nutrition 15:10',
+    doi: '10.1186/s12970-018-0215-1',
+    openAccess: true,
+  },
+  slater2011: {
+    id: 'slater2011',
+    authors: 'Slater G, Phillips SM',
+    year: 2011,
+    title:
+      'Nutrition guidelines for strength sports: sprinting, weightlifting, throwing events, and bodybuilding',
+    journal: 'Journal of Sports Sciences 29(sup1):S67-S77',
+    doi: '10.1080/02640414.2011.574722',
+    openAccess: false,
+  },
   morton2018: {
     id: 'morton2018',
     authors:
@@ -477,6 +507,10 @@ export const METRIC_EVIDENCE: Record<
   foodValues: {
     kind: 'evidence',
     citations: ['usdaSr28', 'vijayakumar2024', 'merrill1973', 'hall2008'],
+  },
+  dayAnalysis: {
+    kind: 'evidence',
+    citations: ['iom2005', 'morton2018', 'helms2014protein', 'schoenfeld2018meal', 'slater2011'],
   },
   restAnalysis: {
     kind: 'evidence',

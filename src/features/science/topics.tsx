@@ -40,6 +40,13 @@ import {
 } from '@/domain/analytics/stalls';
 import { REST_PRESETS } from '@/domain/workout/restTimer';
 import { FOODS } from '@/data/library/foods';
+import {
+  AMDR,
+  ENERGY_TOLERANCE,
+  FIBRE_G_PER_1000_KCAL,
+  PROTEIN_PER_MEAL_G_PER_KG,
+  TRAINING_CARBS_G_PER_KG,
+} from '@/domain/nutrition/dayAnalysis';
 import { FILL, KATORI_ML } from '@/domain/nutrition/calc';
 import { OIL_FACTOR } from '@/domain/nutrition/types';
 import {
@@ -844,6 +851,52 @@ export const SCIENCE: TopicGroup[] = [
           'Set your own katori size in Food settings, and pick light or rich oil when a dish was cooked that way.',
         limits:
           'Home cooking varies, so a dish is an estimate, usually within 10 to 20%. A few Indian ingredients use the closest USDA food: paneer uses queso blanco (made the same way), poha uses white rice. Brands change recipes, so a pack in your hand beats the value here. OverloadGPT estimates can be wrong; check the portion before logging.',
+      },
+      {
+        id: 'day-analysis',
+        title: 'Your day of food, analysed',
+        evidence: 'dayAnalysis',
+        shows:
+          "Pro: the day's energy, how it splits between protein, carbs and fat, protein per kg and per meal, fibre, and carbs on training days, each against a published range.",
+        formulas: [
+          {
+            tex: String.raw`\%E_x = \dfrac{k_x\, m_x}{4P + 4C + 9F} \times 100`,
+            spoken:
+              'The share of energy from a macronutrient equals its kilocalories per gram times its grams, divided by four times protein plus four times carbs plus nine times fat, times 100',
+            where: `k is 4 kcal per g for protein and carbs, 9 for fat. Judged against the Acceptable Macronutrient Distribution Ranges: protein ${AMDR.protein[0]} to ${AMDR.protein[1]}%, carbohydrate ${AMDR.carbs[0]} to ${AMDR.carbs[1]}%, fat ${AMDR.fat[0]} to ${AMDR.fat[1]}%.`,
+          },
+          {
+            tex: String.raw`\text{dose} = ${PROTEIN_PER_MEAL_G_PER_KG} \times m`,
+            spoken: `The protein dose per meal equals ${PROTEIN_PER_MEAL_G_PER_KG} grams times body weight in kilograms`,
+            where: 'm is your trend weight. Each meal that reaches the dose counts.',
+          },
+          {
+            tex: String.raw`\text{fibre} \geq ${FIBRE_G_PER_1000_KCAL} \times \dfrac{E}{1000}\ \text{g}`,
+            spoken: `Fibre should be at least ${FIBRE_G_PER_1000_KCAL} grams for every 1,000 kilocalories eaten`,
+            where: 'E is the energy you logged for the day.',
+          },
+        ],
+        why: [
+          <>
+            The macronutrient ranges are the Institute of Medicine&apos;s: intakes inside them meet
+            needs with the lowest risk of chronic disease. Fibre is their Adequate Intake, 14 g per
+            1,000 kcal.
+          </>,
+          <>
+            Protein per kg uses your goal&apos;s range (Morton 2018, Helms 2014). Schoenfeld and
+            Aragon suggest about 0.4 g/kg a meal across at least four meals to make the most of
+            each.
+          </>,
+          <>
+            On days you train, Slater and Phillips advise {TRAINING_CARBS_G_PER_KG[0]} to{' '}
+            {TRAINING_CARBS_G_PER_KG[1]} g of carbohydrate per kg for strength sports. Energy is on
+            target within {Math.round(ENERGY_TOLERANCE * 100)}% of your daily target.
+          </>,
+        ],
+        forYou:
+          'Look at the whole day, not one meal. If protein per kg is low, spread it: a dose at each meal is easier than one large one.',
+        limits:
+          'Ranges are for healthy adults. While today is still being logged, everything is judged as it stands. Not medical advice for kidney, heart or other conditions.',
       },
       {
         id: 'composition',

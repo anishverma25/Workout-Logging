@@ -21,7 +21,43 @@ interface BottomSheetProps {
   presentation?: 'sheet' | 'dialog';
   /** Wider on desktop (672 instead of 480), for forms with columns. */
   wide?: boolean;
+  /**
+   * A fixed, tall panel (most of the screen) that does not change size as its content does:
+   * for search and logging, so results have room and the panel never jumps while typing.
+   */
+  tall?: boolean;
   className?: string;
+}
+
+/**
+ * Keeps the page behind an open sheet still. Fixing the body in place is the one way that also
+ * stops touch scrolling on iPhone; the scroll position is put back when the last sheet closes.
+ */
+let locks = 0;
+let lockedAt = 0;
+function lockPageScroll() {
+  locks += 1;
+  if (locks > 1) return;
+  lockedAt = window.scrollY;
+  const body = document.body.style;
+  body.position = 'fixed';
+  body.top = `-${lockedAt}px`;
+  body.left = '0';
+  body.right = '0';
+  body.width = '100%';
+  document.documentElement.style.overscrollBehavior = 'none';
+}
+function unlockPageScroll() {
+  locks = Math.max(0, locks - 1);
+  if (locks > 0) return;
+  const body = document.body.style;
+  body.position = '';
+  body.top = '';
+  body.left = '';
+  body.right = '';
+  body.width = '';
+  document.documentElement.style.overscrollBehavior = '';
+  window.scrollTo(0, lockedAt);
 }
 
 /** Follows the keyboard while a sheet is open, so the sheet can sit above it. */
@@ -57,6 +93,7 @@ export function BottomSheet({
   children,
   footer,
   wide,
+  tall,
   className,
 }: BottomSheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -68,6 +105,12 @@ export function BottomSheet({
     onCloseRef.current = onClose;
   });
   const keyboard = useKeyboardInset(open);
+
+  useEffect(() => {
+    if (!open) return;
+    lockPageScroll();
+    return unlockPageScroll;
+  }, [open]);
 
   useEffect(() => {
     const dialog = ref.current;
@@ -107,7 +150,11 @@ export function BottomSheet({
       style={
         // Above the keyboard on iPhone, and never taller than the space left.
         keyboard
-          ? { marginBottom: keyboard + 8, maxHeight: `calc(100% - ${keyboard}px - 1.5rem)` }
+          ? {
+              marginBottom: keyboard + 8,
+              maxHeight: `calc(100% - ${keyboard}px - 1.5rem)`,
+              ...(tall ? { height: `calc(100% - ${keyboard}px - 1.5rem)` } : {}),
+            }
           : undefined
       }
       className={cn(
@@ -115,6 +162,8 @@ export function BottomSheet({
         // 80vh first for browsers without dvh (Chrome before 108, older Samsung Internet).
         'm-auto max-h-[80vh] w-[calc(100vw-1.5rem)] supports-[height:1dvh]:max-h-[80dvh]',
         wide ? 'max-w-2xl' : 'max-w-[30rem]',
+        tall &&
+          'h-[88vh] max-h-[88vh] supports-[height:1dvh]:h-[88dvh] supports-[height:1dvh]:max-h-[88dvh]',
         className,
       )}
     >

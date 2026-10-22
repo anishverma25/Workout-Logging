@@ -6,11 +6,10 @@ import { PageHeader } from '@/app/layout/PageHeader';
 import { Card, ErrorState, IconButton, Skeleton } from '@/components/kit';
 import { usePreferences, useTrainingData } from '@/data/hooks';
 import { buildProgress } from '@/domain/analytics/progress';
-import { cn } from '@/lib/cn';
 import { useNow } from '@/lib/useNow';
 import { nutritionBrief, useFoodContextFrom } from '../food/useFoodContext';
 import { buildBrief, suggestedQuestions, type BriefInput } from './brief';
-import { CoachConsent, CoachLock, CoachText, Thinking } from './CoachParts';
+import { AiByline, CoachConsent, CoachLock, CoachText, Thinking } from './CoachParts';
 
 /**
  * Ask your coach: a chat about your own training. Each question carries a brief of the last
@@ -256,17 +255,14 @@ function Bubble({ role, text }: { role: 'user' | 'coach'; text: string }) {
   if (role === 'user')
     return (
       <div className="flex justify-end">
-        <p className="type-body max-w-[85%] rounded-panel rounded-br-tile bg-surface-2 px-4 py-2.5 whitespace-pre-wrap text-text-1">
+        <p className="type-answer max-w-[85%] rounded-panel rounded-br-tile bg-surface-2 px-4 py-2.5 whitespace-pre-wrap text-text-1">
           {text}
         </p>
       </div>
     );
   return (
-    <div className={cn('rounded-panel border border-border bg-surface p-4')}>
-      <p className="type-caption mb-2 flex items-center gap-1 font-semibold text-text-2">
-        <Sparkles className="size-3.5" aria-hidden />
-        Coach
-      </p>
+    <div className="ai-surface rounded-panel p-4 lg:p-5">
+      <AiByline />
       <CoachText text={text} />
     </div>
   );
