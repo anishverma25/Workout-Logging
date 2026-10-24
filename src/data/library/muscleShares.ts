@@ -380,6 +380,16 @@ export const SHARE_SOURCES: Record<string, Citation> = {
     doi: '10.1186/2045-709X-20-12',
     openAccess: false,
   },
+  padovan2025: {
+    id: 'padovan2025',
+    authors: 'Padovan R, Toninelli N, Longo S, Tornatore G, Esposito F, Cè E, Coratella G',
+    year: 2025,
+    title:
+      'High-Density Surface Electromyography Excitation in Front vs. Back Overhead Press Prime Movers',
+    journal: 'Journal of Human Kinetics',
+    doi: '10.5114/jhk/205466',
+    openAccess: true,
+  },
   pizzari2014: {
     id: 'pizzari2014',
     authors: 'Pizzari T, Wickham J, Balster S, Ganderton C, Watson L',
@@ -1520,5 +1530,58 @@ export const MUSCLE_SHARES: Record<string, ExerciseShares> = {
     confidence: 'moderate',
     sources: ['youdas2010'],
     note: 'Same movement as the pull-up with added load, so the same split applies.',
+  },
+  'kelso-shrug': {
+    regions: [
+      { region: 'Mid back', share: 55 },
+      { region: 'Upper back and traps', share: 30 },
+      { region: 'Rear delts', share: 10 },
+      { region: 'Grip', share: 5 },
+    ],
+    confidence: 'low',
+    sources: ['pizzari2014'],
+    note: 'Not measured as such: an estimate from what pulling the shoulder blades back works (middle and lower trapezius, rhomboids). The chest support and straight arms leave the lats and biceps little to do.',
+  },
+  'keenan-flap': {
+    regions: [
+      { region: 'Lats', share: 75 },
+      { region: 'Mid back', share: 15 },
+      { region: 'Rear delts', share: 10 },
+    ],
+    confidence: 'low',
+    sources: ['muyor2022'],
+    note: 'Not measured as such: estimated from the straight-arm pulldown, the closest studied exercise. Pulling the arm down to the side is the lats’ main job; the teres major helps.',
+  },
+  'behind-the-neck-press': {
+    regions: [
+      { region: 'Front delts', share: 30 },
+      { region: 'Side delts', share: 25 },
+      { region: 'Triceps', share: 25 },
+      { region: 'Rear delts', share: 10 },
+      { region: 'Upper back and traps', share: 10 },
+    ],
+    confidence: 'moderate',
+    sources: ['coratella2022ohp', 'padovan2025'],
+    note: 'Compared with pressing in front, pressing from behind the head works the front delts and chest less and the rear delts, upper traps and triceps more.',
+  },
+  'brachioradialis-curl': {
+    regions: [
+      { region: 'Forearms (brachioradialis)', share: 40 },
+      { region: 'Brachialis', share: 35 },
+      { region: 'Biceps', share: 25 },
+    ],
+    confidence: 'low',
+    sources: ['kleiber2015', 'marcolin2018'],
+    note: 'Turning the palms down takes work off the biceps and onto the brachioradialis and brachialis; the shares are an estimate from grip-position studies.',
+  },
+  'dumbbell-stiff-leg-deadlift': {
+    regions: [
+      { region: 'Hamstrings', share: 45 },
+      { region: 'Lower back', share: 30 },
+      { region: 'Glutes', share: 25 },
+    ],
+    confidence: 'moderate',
+    sources: ['martinfuentes2020'],
+    note: 'The same movement as the barbell stiff-leg deadlift with the load in the hands: hamstrings and spinal erectors work hardest, the glutes help.',
   },
 };

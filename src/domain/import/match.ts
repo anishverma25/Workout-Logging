@@ -169,6 +169,8 @@ const EQUIPMENT_WORDS: [RegExp, Equipment, string][] = [
   [/kettlebell/, 'kettlebell', 'kettlebell'],
   [/band/, 'band', 'band'],
   [/machine|plate loaded|lever/, 'machine', 'machine'],
+  // A seat or pin setting in the note means a machine ("Kelso shrugs (seat full down)").
+  [/\bseat\b|\bpin\b/, 'machine', ''],
   [/bodyweight|weighted|assisted/, 'bodyweight', ''],
 ];
 

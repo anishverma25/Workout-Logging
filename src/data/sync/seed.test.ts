@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createTestServer, MIGRATIONS_DIR } from '@/test/server';
 import { SYSTEM_EXERCISES, SYSTEM_EXERCISE_KEYS } from '../library/exercises';
-import { exerciseSeedSql, LIBRARY_ADDITIONS_SIZE } from './seed';
+import { exerciseSeedSql, TRAINING_DETAILS_SIZE } from './seed';
 
 /**
  * Applied migrations never change, so later library changes go in later migrations. What
@@ -10,12 +10,12 @@ import { exerciseSeedSql, LIBRARY_ADDITIONS_SIZE } from './seed';
  * the library in the app exactly (ids, names, muscles, everything).
  */
 
-const LATEST = join(MIGRATIONS_DIR, '20261010000007_training_details.sql');
+const LATEST = join(MIGRATIONS_DIR, '20261025000014_more_exercises.sql');
 const MARKER = '-- Generated from src/data/library/exercises.ts';
 
 describe('exercise library seed', () => {
   it('the latest migration seeds the rows changed or added since the last release', () => {
-    const changed = exerciseSeedSql(LIBRARY_ADDITIONS_SIZE - 1, SYSTEM_EXERCISES.length);
+    const changed = exerciseSeedSql(TRAINING_DETAILS_SIZE, SYSTEM_EXERCISES.length);
     if (process.env.UPDATE_SEED === '1') {
       const current = readFileSync(LATEST, 'utf8');
       const head = current.includes(MARKER) ? current.slice(0, current.indexOf(MARKER)) : current;

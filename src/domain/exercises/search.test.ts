@@ -245,4 +245,19 @@ describe('gym words', () => {
     expect(search('ohp')[0]).toBe('Overhead press');
     expect(search('db row')).toContain(byKey('one-arm-dumbbell-row').name);
   });
+
+  it('finds the round 2 exercises by the names people type', () => {
+    expect(search('kelso')[0]).toBe('Kelso shrug');
+    expect(search('keenan flaps')[0]).toBe('Keenan flap');
+    expect(search('behind the neck press')[0]).toBe('Behind-the-neck press');
+    expect(search('btn press')[0]).toBe('Behind-the-neck press');
+    expect(search('brachioradialis curls')[0]).toBe('Brachioradialis curl');
+    expect(search('sldl')).toEqual(
+      expect.arrayContaining(['Stiff-leg deadlift', 'Dumbbell stiff-leg deadlift']),
+    );
+    expect(search('straight legged deadlift')).toEqual(
+      expect.arrayContaining(['Stiff-leg deadlift', 'Dumbbell stiff-leg deadlift']),
+    );
+    expect(search('dumbbell sldl')[0]).toBe('Dumbbell stiff-leg deadlift');
+  });
 });

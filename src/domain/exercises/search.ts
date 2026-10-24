@@ -54,6 +54,14 @@ const SYNONYMS: Record<string, string[]> = {
   outer: ['abduction'],
   thigh: ['adduction', 'abduction'],
   rdl: ['romanian'],
+  sldl: ['stiff'],
+  straight: ['stiff', 'straight'],
+  legged: ['leg'],
+  brachioradialis: ['brachioradialis', 'reverse'],
+  forearm: ['brachioradialis', 'reverse', 'wrist'],
+  forearms: ['brachioradialis', 'reverse', 'wrist'],
+  reverse: ['reverse', 'brachioradialis'],
+  btn: ['behind'],
   ohp: ['overhead'],
   db: ['dumbbell'],
   bb: ['barbell'],
@@ -93,7 +101,15 @@ export function matchScore(exercise: Exercise, query: string): number {
 
   let score = 0;
   for (const word of q.split(' ')) {
-    const best = Math.max(...[word, ...(SYNONYMS[word] ?? [])].map((w) => wordScore(w)));
+    // "curls", "flaps", "presses": a plural also matches the singular in the name.
+    const singular =
+      word.length > 3 && word.endsWith('es') && /(ss|x|ch|sh)es$/.test(word)
+        ? word.slice(0, -2)
+        : word.length > 3 && word.endsWith('s') && !word.endsWith('ss')
+          ? word.slice(0, -1)
+          : null;
+    const forms = [word, ...(singular ? [singular] : []), ...(SYNONYMS[word] ?? [])];
+    const best = Math.max(...forms.map((w) => wordScore(w)));
     if (best === 0) return 0;
     score += best;
   }

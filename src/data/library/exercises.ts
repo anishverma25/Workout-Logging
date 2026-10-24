@@ -1098,6 +1098,58 @@ const SEEDS: ExerciseSeed[] = [
     instructions:
       'On a bench set 15 to 30 degrees head-down, press the dumbbells up over the lower chest and lower them slowly to chest level. Log one dumbbell.',
   },
+  // Round 2 additions (October 2026). New entries always go at the end: the server library is
+  // seeded by position.
+  {
+    key: 'kelso-shrug',
+    name: 'Kelso shrug',
+    primary: 'back',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    instructions:
+      'Lie chest down on a bench set to a low incline with the dumbbells hanging straight down. Keeping the arms straight, pull the shoulder blades back and together, hold for a second, then let them spread apart. The arms do not bend. Log one dumbbell.',
+  },
+  {
+    key: 'keenan-flap',
+    name: 'Keenan flap',
+    primary: 'back',
+    equipment: 'cable',
+    category: 'isolation',
+    instructions:
+      'Fit a cuff just above the elbow, with the cable set high. Sit sideways on a high incline bench and, with the arm nearly straight, pull the elbow down and in toward your side, then let it rise slowly overhead. One arm at a time.',
+  },
+  {
+    key: 'behind-the-neck-press',
+    name: 'Behind-the-neck press',
+    primary: 'shoulders',
+    secondary: ['triceps'],
+    equipment: 'barbell',
+    category: 'compound',
+    instructions:
+      'Seated or standing, hold the bar behind the head with a grip a little wider than the shoulders. Press it straight up to lockout, then lower it under control to about ear level. Only use it if you can reach that position without pain; stop short of the neck.',
+  },
+  {
+    key: 'brachioradialis-curl',
+    name: 'Brachioradialis curl',
+    primary: 'biceps',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    instructions:
+      'Hold the dumbbells with palms facing down (a reverse grip). Keep the elbows by your sides and curl up without letting the wrists drop, then lower slowly. Thumbs-up hammer curls work the same muscle a little less. Log one dumbbell.',
+  },
+  {
+    key: 'dumbbell-stiff-leg-deadlift',
+    name: 'Dumbbell stiff-leg deadlift',
+    primary: 'hamstrings',
+    secondary: ['glutes', 'back'],
+    equipment: 'dumbbell',
+    category: 'compound',
+    loadMode: 'per_hand',
+    instructions:
+      'Stand with the dumbbells in front of the thighs and the knees only slightly bent. Push the hips back and lower the dumbbells along the legs with a flat back until the hamstrings stretch, then stand tall by driving the hips forward. Log one dumbbell.',
+  },
 ];
 
 /** Fixed timestamp so system records are identical on every device and every load. */
