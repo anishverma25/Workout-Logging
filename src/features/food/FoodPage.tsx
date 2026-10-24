@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
-import { Crown, Plus, Settings2, Target, UtensilsCrossed } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
+import { Plus, Settings2, Target, UtensilsCrossed } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
-import { useFeature } from '@/app/entitlement';
 import {
   Card,
   ErrorState,
@@ -17,20 +16,13 @@ import {
 import { loadMoreFoods } from '@/data/library/moreFoods';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
-import { copyFoodLogs, deleteFoodLogs, logFoods } from '@/data/repositories/food';
+import { copyFoodLogs, deleteFoodLogs } from '@/data/repositories/food';
 import type { CustomFood, FoodLog } from '@/domain/models/schemas';
-import {
-  dayTotals,
-  mealsOn,
-  mealTemplates,
-  proteinSuggestions,
-  recentFoods,
-} from '@/domain/nutrition/analysis';
+import { dayTotals, mealsOn, mealTemplates } from '@/domain/nutrition/analysis';
 import { portionText, roundNutrients, sumNutrients } from '@/domain/nutrition/calc';
 import { MEALS, type Meal } from '@/domain/nutrition/types';
 import { haptic } from '@/lib/haptics';
 import { useNow } from '@/lib/useNow';
-import { EvidenceLink } from '../science/EvidenceLink';
 import { AddFoodSheet } from './AddFoodSheet';
 import { CustomFoodSheet } from './CustomFoodSheet';
 import { DayAnalysisCard } from './DayAnalysisCard';
@@ -38,8 +30,6 @@ import { EditFoodSheet } from './EditFoodSheet';
 import { DietPicker, FoodSettingsSheet } from './FoodSettingsSheet';
 import { TargetsSheet } from './TargetsSheet';
 import { DIET_LABEL } from './foodText';
-import { NutrientLine } from './PortionEditor';
-import { DayBalance } from './DayBalance';
 import { WaterCard } from './WaterTab';
 import { DayNav } from './DayNav';
 import { useDayParam } from './useDayParam';
@@ -135,10 +125,7 @@ export function FoodPage() {
             </Card>
           ) : null}
           <DaySummary ctx={ctx} date={date} onTargets={() => setTargetsOpen(true)} />
-          <WaterCard ctx={ctx} date={date} />
-          <DayBalance ctx={ctx} date={date} />
           <DayAnalysisCard ctx={ctx} date={date} now={now} />
-          {date === today ? <ProteinHelp ctx={ctx} date={date} now={now} /> : null}
           {MEALS.map((m) => (
             <MealCard
               key={m}
@@ -149,6 +136,7 @@ export function FoodPage() {
               onEdit={setEditing}
             />
           ))}
+          <WaterCard ctx={ctx} date={date} />
           <ListGroup label="Food settings">
             <li>
               <ListRow
@@ -308,89 +296,6 @@ function DaySummary({
             Change
           </button>
         </p>
-      )}
-    </Card>
-  );
-}
-
-/** Pro: what would close today's protein gap, from foods that fit the person's diet. */
-function ProteinHelp({ ctx, date, now }: { ctx: FoodContext; date: string; now: Date }) {
-  const pro = useFeature('food_insights');
-  const toast = useToast();
-  const totals = dayTotals(ctx.logs, date);
-  const target = ctx.targets.proteinG;
-  const eaten = useMemo(() => new Set(recentFoods(ctx.logs, 40).map((l) => l.foodId)), [ctx.logs]);
-  if (target === null || totals.kcal === 0) return null;
-  const gap = Math.round(target - totals.proteinG);
-  const ideas = proteinSuggestions({
-    gapG: gap,
-    diet: ctx.diet,
-    foods: ctx.foodById,
-    eatenIds: eaten,
-    katoriMl: ctx.katoriMl,
-  });
-  if (!ideas.length) return null;
-  return (
-    <Card as="section" aria-labelledby="protein-help" data-protein-help>
-      <div className="flex items-center gap-2">
-        <h2 id="protein-help" className="type-headline text-text-1">
-          {gap} g protein to go
-        </h2>
-        <EvidenceLink topic="protein" about="protein targets" />
-      </div>
-      {pro ? (
-        <ul className="mt-3 flex flex-col gap-2">
-          {ideas.map((s) => (
-            <li key={s.food.id} className="flex items-center gap-3 rounded-nested bg-surface-2 p-3">
-              <div className="min-w-0 flex-1">
-                <p className="type-headline text-text-1">
-                  {portionText(s.amount, s.unit, 'medium', s.food.pieceName)}
-                  {s.unit === 'piece' && s.food.pieceName ? '' : ` ${s.food.name.toLowerCase()}`}
-                </p>
-                <NutrientLine kcal={s.nutrients.kcal} proteinG={s.nutrients.proteinG} />
-              </div>
-              <SecondaryButton
-                compact
-                onClick={() =>
-                  void logFoods(
-                    db,
-                    [
-                      {
-                        food: s.food,
-                        amount: s.amount,
-                        unit: s.unit,
-                        size: s.unit === 'katori' ? 'medium' : null,
-                        oilLevel: null,
-                      },
-                    ],
-                    { date, meal: mealForHour(now.getHours()), katoriMl: ctx.katoriMl },
-                  ).then((logs) => {
-                    haptic('medium');
-                    toast(`Logged ${s.food.name}`, {
-                      label: 'Undo',
-                      onSelect: () =>
-                        void deleteFoodLogs(
-                          db,
-                          logs.map((l) => l.id),
-                        ),
-                    });
-                  })
-                }
-              >
-                Apply
-              </SecondaryButton>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <Link
-          to="/pro"
-          className="type-meta mt-2 inline-flex items-center gap-1.5 font-semibold text-text-2"
-          data-pro-lock="food_insights"
-        >
-          <Crown className="size-4" aria-hidden />
-          Pro suggests foods you eat that close it, in one tap
-        </Link>
       )}
     </Card>
   );

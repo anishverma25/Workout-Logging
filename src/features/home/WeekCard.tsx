@@ -3,12 +3,16 @@ import type { DashboardModel } from '@/domain/analytics/dashboard';
 import type { DayStatus } from '@/domain/analytics/schedule';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/cn';
+import { StreakPill, WeekRings } from './RingsCard';
 import { formatLongDay } from '@/lib/dates';
 import { formatDurationSummary, formatNumber, shortDayName } from '@/lib/format';
 import { toDisplayWeight, type WeightUnit } from '@/lib/units';
 
 interface WeekCardProps {
   days: DashboardModel['weekDays'];
+  week: DashboardModel['week'];
+  streak: DashboardModel['streak'];
+  routineName: string | null;
   window: DashboardModel['recentWindow'];
   consistency: DashboardModel['consistency'];
   unit: WeightUnit;
@@ -24,27 +28,40 @@ const STATE_LABEL: Record<DayStatus['state'], string> = {
 };
 
 /**
- * Training days of the current week, in the order of the week-start setting (D9), with the
- * last seven days' numbers underneath.
+ * The week on one card: rings against the person's targets, then the training days in the order
+ * of the week-start setting (D9), then the last seven days' numbers.
  */
-export function WeekCard({ days, window: w, consistency, unit, className }: WeekCardProps) {
+export function WeekCard({
+  days,
+  week,
+  streak,
+  routineName,
+  window: w,
+  consistency,
+  unit,
+  className,
+}: WeekCardProps) {
   const { planned, completed } = w.adherence;
   const showsPlanned = days.some((d) => d.state === 'planned');
   const first = days[0];
   const last = days[days.length - 1];
   return (
     <Card className={cn('p-5', className)} aria-labelledby="week-title">
-      <div className="mb-4">
-        <h2 id="week-title" className="type-title text-text-1">
-          Training days
-        </h2>
-        <p className="type-meta mt-0.5 text-text-2">
-          {first && last
-            ? `${shortDayName(first.date.getDay())} to ${shortDayName(last.date.getDay())}`
-            : null}
-          {planned > 0 ? ` · ${completed} of ${planned} planned, last 7 days` : null}
-        </p>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 id="week-title" className="type-title text-text-1">
+            This week
+          </h2>
+          <p className="type-meta mt-0.5 text-text-2">
+            {first && last
+              ? `${shortDayName(first.date.getDay())} to ${shortDayName(last.date.getDay())}`
+              : null}
+            {planned > 0 ? ` · ${completed} of ${planned} planned, last 7 days` : null}
+          </p>
+        </div>
+        <StreakPill weeks={streak.weeks} />
       </div>
+      <WeekRings week={week} routineName={routineName} />
 
       <ol className="grid grid-cols-7 gap-1.5" aria-label="This week, day by day">
         {days.map((d) => (
@@ -84,9 +101,8 @@ export function WeekCard({ days, window: w, consistency, unit, className }: Week
           </span>
         ) : null}
       </div>
-      <p className="type-meta mt-2 text-text-2">Today only counts once you log it.</p>
 
-      <div className="mt-5 border-t-[0.5px] border-divider pt-4">
+      <div className="mt-5 border-t-[0.5px] border-divider pt-4" data-last-7-days>
         <h3 className="type-label text-text-2">Last 7 days</h3>
         <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-4">
           <Stat label="Sessions" value={String(w.sessions)} />

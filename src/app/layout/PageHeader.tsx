@@ -67,7 +67,7 @@ export function PageHeader({
           </p>
         </div>
       ) : null}
-      <header className={cn('chrome pb-6', back ? 'pt-1 lg:pt-6' : 'pt-4 lg:pt-8')}>
+      <header className={cn('chrome pb-6', back ? 'pt-3 lg:pt-6' : 'pt-7 lg:pt-8')}>
         {back ? (
           <div className="mb-2 flex h-11 items-center justify-between gap-3">
             <Link
@@ -78,30 +78,22 @@ export function PageHeader({
               <ChevronLeft className="size-6" strokeWidth={1.75} aria-hidden />
               {back.label}
             </Link>
-            <div className="flex items-center gap-2">
-              <DemoPill className="lg:hidden" />
-              {actions}
-            </div>
+            <div className="flex items-center gap-2">{actions}</div>
           </div>
         ) : null}
-        {eyebrow ? (
-          <div className="mb-1 flex min-h-6 items-center justify-between gap-3">
-            <p className="type-meta text-text-2">{eyebrow}</p>
-            {back ? null : <DemoPill className="lg:hidden" />}
-          </div>
-        ) : null}
-        {/* When the title and its buttons do not fit on one line, the buttons move below it
-            rather than covering the title. */}
-        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-          <h1 className="type-display max-w-full shrink-0 break-words text-text-1">{title}</h1>
+        {eyebrow ? <p className="type-meta mb-1 text-text-2">{eyebrow}</p> : null}
+        {/* The title wraps onto a second line when it is long; the buttons and the avatar stay
+            at the top right, never below the title and never over it. */}
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="type-display min-w-0 flex-1 break-words text-text-1">{title}</h1>
           {back ? null : (
-            <div className="mb-0.5 ml-auto flex shrink-0 items-center gap-2">
-              {eyebrow ? null : <DemoPill className="lg:hidden" />}
+            <div className="flex shrink-0 items-center gap-2 pt-0.5">
               {actions}
               <AvatarLink />
             </div>
           )}
         </div>
+        <DemoPill className="mt-2 w-fit lg:hidden" />
         {subtitle ? (
           <p className="type-body mt-1 max-w-[60ch] text-text-2 [text-wrap:balance]">{subtitle}</p>
         ) : null}
