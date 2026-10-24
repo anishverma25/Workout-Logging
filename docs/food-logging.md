@@ -96,3 +96,19 @@ logs keep the numbers they were saved with.
 - The fake Supabase answers every photo with 2 rotis, a katori of dal tadka and a low-confidence
   mango pickle; "#photo-down" in the note makes it fail.
 
+
+## Round 2 (October 2026)
+
+- **Your numbers win.** Typed grams, ml, kg, calories and macros are read food by food on the
+  server and put on the matching food after the AI answers; such foods are marked "Your numbers".
+- **Honest sources.** "From the web" only when the provider reports that a search ran (Gemini
+  grounding metadata, Groq executed tools). Free Gemini 3.x keys have no search, so most typed
+  foods are "Estimated".
+- **Edit before logging.** Every AI food can be corrected (amount, calories, macros); a new
+  amount scales the rest.
+- **From a pack.** Barcode (free, Open Food Facts), label photo (Pro, the AI copies printed
+  values only and leaves unreadable ones empty) or typed label; the amount in grams or servings;
+  the app does the arithmetic (`domain/nutrition/label.ts`). Logged pack foods are saved as the
+  person's own foods.
+- **Measures.** Plate, bowl and ml by food type (`data/library/measures.ts`), with "half plate"
+  and number words understood.
