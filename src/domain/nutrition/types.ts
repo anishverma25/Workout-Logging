@@ -59,6 +59,18 @@ export const OIL_FACTOR: Record<OilLevel, number> = { light: 0.5, normal: 1, ric
 
 /** Household units. Volumes in ml, from common Indian kitchen sizes. */
 export type UnitId =
-  'katori' | 'ladle' | 'glass' | 'cup' | 'tbsp' | 'tsp' | 'piece' | 'serving' | 'share' | 'g';
+  | 'katori'
+  | 'ladle'
+  | 'glass'
+  | 'cup'
+  | 'tbsp'
+  | 'tsp'
+  | 'piece'
+  | 'serving'
+  | 'share'
+  | 'g'
+  | 'plate'
+  | 'bowl'
+  | 'ml';
 
 export type SizeId = 'small' | 'medium' | 'large';

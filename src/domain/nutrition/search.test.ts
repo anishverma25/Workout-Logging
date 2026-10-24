@@ -56,3 +56,14 @@ describe('typing a meal', () => {
     expect(m.unknown).toEqual(['kimchi']);
   });
 });
+
+describe('staples come first', () => {
+  it('milk is milk and rice is rice, ahead of milk peda and rice kheer', async () => {
+    const { FOODS } = await import('@/data/library/foods');
+    const top = (q: string) => searchFoods(FOODS, q, null)[0]!.name;
+    expect(top('milk')).toBe('Milk, full cream');
+    expect(top('rice')).toBe('Steamed rice');
+    expect(top('dal')).toBe('Dal tadka');
+    expect(top('paneer')).toBe('Paneer, plain');
+  });
+});

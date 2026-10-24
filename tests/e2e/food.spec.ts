@@ -490,3 +490,30 @@ test('an unknown barcode says so and offers the label', async ({ page }) => {
   await expect(sheet.locator('[data-label-error]')).toContainText('not in the database yet');
   await expect(sheet.locator('[data-label-manual]')).toBeVisible();
 });
+
+test('foods come in the measures they are eaten in: a plate of biryani, ml of milk', async ({
+  page,
+}) => {
+  await signUpFresh(page, { tag: 'food-measures' });
+  await page.goto('/food');
+  await page.locator('[data-add-food]').click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByRole('searchbox').fill('chicken biryani');
+  await sheet.locator('[data-food-results] [data-food-row]').first().click();
+  const profile = sheet.locator('[data-food-profile]');
+  await profile.getByRole('button', { name: 'Plate', exact: true }).click();
+  await expect(profile.locator('[data-amount]')).toContainText('plate · 350 g');
+  // "Half plate" typed the way it is ordered.
+  await profile.getByPlaceholder(/Or type it/).fill('half plate');
+  await profile.getByPlaceholder(/Or type it/).press('Enter');
+  await expect(profile.locator('[data-amount]')).toContainText('175 g');
+  await sheet.locator('[data-profile-action]').click();
+  await expect(sheet.locator('[data-plate]')).toContainText('½ plate');
+
+  await sheet.getByRole('searchbox').fill('milk');
+  await sheet.locator('[data-food-results] [data-food-row]').first().click();
+  await profile.getByRole('button', { name: 'ml', exact: true }).click();
+  await profile.getByRole('textbox', { name: 'How many ml' }).fill('300');
+  await sheet.locator('[data-profile-action]').click();
+  await expect(sheet.locator('[data-plate]')).toContainText('300 ml');
+});

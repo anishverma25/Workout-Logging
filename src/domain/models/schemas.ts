@@ -308,6 +308,9 @@ export const FoodUnit = z.enum([
   'serving',
   'share',
   'g',
+  'plate',
+  'bowl',
+  'ml',
 ]);
 const grams = z.number().min(0).max(1000);
 

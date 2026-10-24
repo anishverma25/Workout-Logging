@@ -117,7 +117,10 @@ export function foodScore(food: Food, query: string): number {
   // A query that is exactly one of the food's names picks the everyday dish: "dal" is dal
   // tadka, "paneer" is plain paneer. Shorter names win the remaining ties.
   const q = normalize(query);
-  const exact = food.aliases.some((a) => normalize(a) === q) ? 3 : 0;
+  // "Milk, full cream" is milk: the name before a comma or bracket counts as the food itself.
+  const base = normalize(food.name.split(/[,(]/)[0] ?? food.name);
+  const exact =
+    (food.aliases.some((a) => normalize(a) === q) ? 3 : 0) + (base === q ? 2 : 0);
   // The curated library first, then Indian Nutrient Databank dishes, then USDA foods.
   const tail = food.source === 'usda' ? 4 : food.source === 'indb' ? 2 : 0;
   return total + exact - tail - normalize(food.name).length * 0.01;

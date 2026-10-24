@@ -8,6 +8,7 @@ import {
 import type { FoodCategory, Ingredient, Meal, Region, UnitId } from '@/domain/nutrition/types';
 import type { CustomFood } from '@/domain/models/schemas';
 import { INGREDIENTS, type IngredientId } from './ingredients';
+import { withMeasures } from './measures';
 
 /**
  * The built-in Indian food library: standard home recipes in grams of raw ingredients, with
@@ -321,7 +322,7 @@ const DISHES: DishDef[] = [
   {
     id: 'rice',
     name: 'Steamed rice',
-    aliases: ['chawal', 'plain rice', 'boiled rice', 'bhaat', 'sadam', 'annam'],
+    aliases: ['rice', 'chawal', 'plain rice', 'boiled rice', 'bhaat', 'sadam', 'annam'],
     category: 'rice',
     region: 'all',
     meals: MAINS,
@@ -5290,7 +5291,7 @@ const BASICS: BasicDef[] = [
   {
     id: 'milk',
     name: 'Milk, full cream',
-    aliases: ['doodh', 'whole milk', 'cow milk'],
+    aliases: ['milk', 'doodh', 'whole milk', 'cow milk'],
     category: 'dairy',
     region: 'all',
     meals: ['breakfast', 'snacks', 'dinner'],
@@ -7169,7 +7170,7 @@ export const FOODS: Food[] = [
   ...DISHES.map(fromDish),
   ...BASICS.map(fromBasic),
   ...LABELS.map(fromLabel),
-];
+].map(withMeasures);
 export const FOOD_BY_ID = new Map(FOODS.map((f) => [f.id, f]));
 
 /** Ingredients a person can use in their own recipes. */

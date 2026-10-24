@@ -36,6 +36,10 @@ export function portionForItem(item: FoodItem, ctx: FoodContext): FoodPortion {
     if (each > food.pieceG * 0.6 && each < food.pieceG * 1.6)
       return { ...defaultPortion(food), unit: 'piece', amount: count };
   }
+  if (/plate/i.test(item.portion) && food.units.includes('plate'))
+    return { ...defaultPortion(food), unit: 'plate', amount: count, size: null };
+  if (/bowl/i.test(item.portion) && food.units.includes('bowl'))
+    return { ...defaultPortion(food), unit: 'bowl', amount: count, size: null };
   if (/katori|bowl/i.test(item.portion) && food.units.includes('katori'))
     return { ...defaultPortion(food), unit: 'katori', amount: count, size: 'medium' };
   if (food.units.includes('g'))

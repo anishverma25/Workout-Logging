@@ -7,6 +7,7 @@ export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export function unitName(food: Food, unit: UnitId) {
   if (unit === 'piece' && food.pieceName) return cap(food.pieceName[0]);
   if (unit === 'g') return 'Grams';
+  if (unit === 'ml') return 'ml';
   if (unit === 'share') return 'Share of the pot';
   return cap(UNIT_LABEL[unit][0]);
 }
