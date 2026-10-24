@@ -188,12 +188,11 @@ test('activity: cardio and steps with estimates, typed numbers and the warning',
   await expect(stepsCard).toContainText('180 kcal');
   await expect(stepsCard).toContainText('Calories typed by you');
 
-  // The day adds up on the Food page.
-  await page.goto('/food');
-  const day = page.locator('[data-day-balance]');
-  await expect(day).toContainText('Eaten');
-  await expect(day).toContainText('Burned');
-  await expect(day).toContainText('Net');
+  // The day adds up on Home: burned and net under the food, with the warning.
+  await page.goto('/');
+  const day = page.locator('[data-activity-card]');
+  await expect(day).toContainText('kcal burned');
+  await expect(day).toContainText('net');
   await expect(day.locator('[data-estimate-note]')).toContainText('can be wrong');
 });
 
