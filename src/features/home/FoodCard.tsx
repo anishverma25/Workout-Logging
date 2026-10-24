@@ -10,6 +10,7 @@ import { dayTotals, mealsOn, mealTemplates } from '@/domain/nutrition/analysis';
 import { cn } from '@/lib/cn';
 import { toDateKey } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { ActivitySection } from './ActivityCard';
 import { MEAL_LABEL, mealForHour, useFoodContextFrom } from '../food/useFoodContext';
 
 const n = (v: number) => Math.round(v).toLocaleString('en-GB');
@@ -114,6 +115,7 @@ export function FoodCard({
           Log {MEAL_LABEL[meal].toLowerCase()}
         </Link>
       ) : null}
+      <ActivitySection training={training} now={now} eatenKcal={totals.kcal} />
     </Card>
   );
 }

@@ -11,15 +11,11 @@ import { PageHeader } from '@/app/layout/PageHeader';
 import { ProNudgeCard } from '@/features/pro/ProNudgeCard';
 import { isAlive } from '@/domain/analytics/sessions';
 import { BodyWeightCard } from './BodyWeightCard';
-import { InsightCard } from './InsightCard';
-import { RecentActivity } from './RecentActivity';
 import { RecordCard } from './RecordCard';
 import { StrengthCard } from './StrengthCard';
 import { TodayCard } from './TodayCard';
 import { WeekCard } from './WeekCard';
-import { RingsCard } from './RingsCard';
 import { CheckinCard } from './CheckinCard';
-import { ActivityCard } from './ActivityCard';
 import { FoodCard } from './FoodCard';
 import { buildBrief } from '../coach/brief';
 import { activeRoutine } from '@/domain/analytics/schedule';
@@ -105,22 +101,18 @@ export function HomePage() {
             {training.data?.profile ? (
               <FoodCard training={training} now={now} className="order-2" />
             ) : null}
-            {training.data?.profile ? (
-              <ActivityCard training={training} now={now} className="order-2" />
-            ) : null}
-            <RingsCard
-              week={model.week}
-              streak={model.streak}
-              routineName={routineName}
-              weekStartsOn={prefs.weekStartsOn}
-              className="order-2"
+            <StrengthCard
+              trends={model.strength.slice(0, 3)}
+              unit={prefs.weightUnit}
+              className="order-4"
             />
-            <StrengthCard trends={model.strength} unit={prefs.weightUnit} className="order-4" />
-            <RecentActivity items={model.recent} unit={prefs.weightUnit} className="order-6" />
           </div>
           <div className="contents lg:flex lg:flex-col lg:gap-4">
             <WeekCard
               days={model.weekDays}
+              week={model.week}
+              streak={model.streak}
+              routineName={routineName}
               window={model.recentWindow}
               consistency={model.consistency}
               unit={prefs.weightUnit}
@@ -141,7 +133,6 @@ export function HomePage() {
                 })
               }
             />
-            <InsightCard insights={model.insights} className="order-3" />
             <div className="order-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
               <RecordCard
                 record={model.featuredPr}

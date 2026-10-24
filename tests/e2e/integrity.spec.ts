@@ -91,8 +91,8 @@ test('Home: last 7 days match the records', async ({ page }) => {
   );
   const expected = stats(raw, new Set(recent.map((w) => w.id)));
 
-  // The day strip card; its "Last 7 days" block holds the rolling numbers.
-  const week = page.getByRole('region', { name: 'Training days' });
+  // The week card; its "Last 7 days" block holds the rolling numbers.
+  const week = page.getByRole('region', { name: 'This week' });
   const value = (label: string) =>
     week.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]');
   await expect(value('Sessions')).toHaveText(String(recent.length));
