@@ -226,6 +226,16 @@ export function PhotoFoodLog({
                     portion={r.portion}
                     katoriMl={ctx.katoriMl}
                     confidence={r.item.confidence}
+                    onChange={(next) =>
+                      setState((st) =>
+                        st.kind === 'done'
+                          ? {
+                              ...st,
+                              rows: st.rows.map((x, j) => (j === i ? { ...x, portion: next } : x)),
+                            }
+                          : st,
+                      )
+                    }
                   />
                 ))}
               </ul>

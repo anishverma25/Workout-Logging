@@ -70,7 +70,7 @@ export interface Food {
   recipe: { lines: { name: string; grams: number }[]; cookedG: number; makes: string } | null;
   /** For OverloadGPT estimates: whether a label or menu was found, and where. */
   ai?: {
-    basis: 'web' | 'estimate' | 'photo' | 'label';
+    basis: 'web' | 'estimate' | 'photo' | 'label' | 'yours';
     ref: string;
     portion: string;
     confidence?: 'high' | 'medium' | 'low';

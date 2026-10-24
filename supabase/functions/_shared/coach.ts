@@ -58,6 +58,11 @@ export interface ProviderMessage {
 export interface GenerateOptions {
   /** Let the model look things up on the web (Gemini Google Search, Groq browser search). */
   search?: boolean;
+  /**
+   * Told whether a web search really ran for the answer: false when search was not available
+   * (free keys, over the allowance) and the request went again without it.
+   */
+  onSearch?: (searched: boolean) => void;
 }
 
 export interface CoachProvider {
@@ -327,12 +332,14 @@ async function withSearch(
     try {
       return await run(true);
     } catch (err) {
+      options.onSearch?.(false);
       console.error(
         'search request failed, retrying without',
         err instanceof Error ? err.message : err,
       );
     }
   }
+  if (options?.search) options.onSearch?.(false);
   return run(false);
 }
 
@@ -371,8 +378,15 @@ export function geminiProvider(
         );
         if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
         const json = (await res.json()) as {
-          candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[];
+          candidates?: {
+            content?: { parts?: { text?: string; thought?: boolean }[] };
+            groundingMetadata?: { webSearchQueries?: string[]; groundingChunks?: unknown[] };
+          }[];
         };
+        if (grounded) {
+          const g = json.candidates?.[0]?.groundingMetadata;
+          options?.onSearch?.(Boolean(g?.webSearchQueries?.length || g?.groundingChunks?.length));
+        }
         return (json.candidates?.[0]?.content?.parts ?? [])
           .filter((p) => !p.thought)
           .map((p) => p.text ?? '')
@@ -428,7 +442,11 @@ export function groqProvider(
             signal: AbortSignal.timeout(grounded || photo ? 40_000 : 25_000),
           });
           if (!res.ok) throw new Error(`Groq ${res.status}: ${(await res.text()).slice(0, 300)}`);
-          const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+          const json = (await res.json()) as {
+            choices?: { message?: { content?: string; executed_tools?: unknown[] } }[];
+          };
+          if (grounded)
+            options?.onSearch?.(Boolean(json.choices?.[0]?.message?.executed_tools?.length));
           // Reasoning models may write their thinking in <think> tags before the answer.
           return (json.choices?.[0]?.message?.content ?? '').replace(
             /<think>[\s\S]*?<\/think>/g,
@@ -476,9 +494,10 @@ export interface FoodItem {
   diet: 'veg' | 'egg' | 'nonveg';
   /**
    * "web" when a label or menu was found, "estimate" when worked out from a typical recipe,
-   * "photo" when read from a photo, "label" when a nutrition label in the photo was read.
+   * "photo" when read from a photo, "label" when a nutrition label in the photo was read,
+   * "yours" when the person typed the numbers themselves.
    */
-  basis: 'web' | 'estimate' | 'photo' | 'label';
+  basis: 'web' | 'estimate' | 'photo' | 'label' | 'yours';
   /** For photos: how sure the AI is about the food and the amount. */
   confidence?: 'high' | 'medium' | 'low';
   /** Where the numbers came from, as a short name ("Starbucks India menu"). */
@@ -493,7 +512,9 @@ Rules:
 3. When no amount is given, use one normal portion.
 4. Energy must agree with the macronutrients: about 4 kcal per g of protein and carbs and 9 per g of fat.
 5. Never invent a food they did not mention. If something is not a food, leave it out. If nothing is a food, reply [].
-6. Write the names in English even when the message is in Hindi or Hinglish.`;
+6. Write the names in English even when the message is in Hindi or Hinglish.
+7. When the person gives a weight, calories or grams of protein, carbs, fat or fibre for a food, use exactly their numbers for that food and work out only what they did not give.
+8. Set "basis" to "web" only when you actually found the values on the web in this answer.`;
 
 const num = (v: unknown): number | null =>
   typeof v === 'number' && Number.isFinite(v)
@@ -513,6 +534,163 @@ export function parseFoodJson(text: string): unknown[] | null {
   } catch {
     return null;
   }
+}
+
+const NOT_A_FOOD =
+  /^(?:\d+\s*)?(?:g|gm|grams?)?\s*(?:of\s+)?(?:protein|carbs?|carbohydrates?|fats?|fib(?:re|er)|calories|kcal|cals?)$/i;
+
+/** What the person typed about one food: its words and any numbers they gave. */
+export interface StatedFood {
+  words: string[];
+  grams?: number;
+  kcal?: number;
+  proteinG?: number;
+  carbsG?: number;
+  fatG?: number;
+  fibreG?: number;
+}
+
+const NUM = String.raw`(\d+(?:\.\d+)?)`;
+const NUTRIENT: [keyof StatedFood, string][] = [
+  ['proteinG', 'protein'],
+  ['carbsG', 'carbs?|carbohydrates?'],
+  ['fatG', 'fats?'],
+  ['fibreG', 'fib(?:re|er)'],
+];
+
+/**
+ * The numbers a person typed, food by food: "200 g paneer 36 g protein, whey 1 scoop 120 kcal
+ * 24g protein". Foods are split at commas, semicolons, new lines, "and" and "+". Grams, ml (as
+ * grams) and kg are the weight; "g protein", "protein 24 g" and the like are nutrients.
+ */
+export function parseStated(text: string): StatedFood[] {
+  return (
+    text
+      .split(/[,;\n+]|\band\b|\baur\b/i)
+      .map((part) => part.trim().toLowerCase())
+      .filter(Boolean)
+      .map((part) => {
+        const out: StatedFood = { words: [] };
+        let rest = part;
+        for (const [key, word] of NUTRIENT) {
+          const re = new RegExp(
+            String.raw`${NUM}\s*(?:g|gm|gms|grams?)?\s*(?:of\s+)?(?:${word})\b|(?:${word})\s*(?:of|:|-)?\s*${NUM}\s*(?:g|gm|gms|grams?)?`,
+          );
+          const m = re.exec(rest);
+          if (m) {
+            (out as unknown as Record<string, number>)[key] = Number(m[1] ?? m[2]);
+            rest = rest.replace(m[0], ' ');
+          }
+        }
+        const kcal = new RegExp(
+          String.raw`${NUM}\s*(?:kcal|cal|calories|cals)\b|(?:calories|kcal)\s*(?:of|:|-)?\s*${NUM}`,
+        ).exec(rest);
+        if (kcal) {
+          out.kcal = Number(kcal[1] ?? kcal[2]);
+          rest = rest.replace(kcal[0], ' ');
+        }
+        const weight = new RegExp(String.raw`${NUM}\s*(kg|g|gm|gms|grams?|ml)\b`).exec(rest);
+        if (weight) {
+          out.grams = Number(weight[1]) * (weight[2] === 'kg' ? 1000 : 1);
+          rest = rest.replace(weight[0], ' ');
+        }
+        out.words = rest
+          .replace(/[^a-z\s]/g, ' ')
+          .split(/\s+/)
+          .filter(
+            (w) =>
+              w.length > 2 && !['with', 'the', 'some', 'had', 'ate', 'scoop', 'scoops'].includes(w),
+          );
+        return out;
+      })
+      // Numbers after a comma with no food named ("200 g paneer, 36 g protein") belong to the
+      // food before them.
+      .reduce<StatedFood[]>((list, part) => {
+        const prev = list[list.length - 1];
+        if (part.words.length === 0 && prev) {
+          for (const [k, v] of Object.entries(part))
+            if (k !== 'words' && (prev as unknown as Record<string, unknown>)[k] === undefined)
+              (prev as unknown as Record<string, unknown>)[k] = v;
+        } else list.push(part);
+        return list;
+      }, [])
+  );
+}
+
+const hasNumbers = (s: StatedFood) =>
+  s.grams !== undefined ||
+  s.kcal !== undefined ||
+  s.proteinG !== undefined ||
+  s.carbsG !== undefined ||
+  s.fatG !== undefined ||
+  s.fibreG !== undefined;
+
+/**
+ * Puts the person's own numbers on the foods the AI found, matched by name: their weight scales
+ * the food, their calories and macros replace the AI's, and when their calories leave less
+ * room than the AI's carbs and fat need, those shrink to fit. Such foods are marked "yours".
+ */
+export function applyStated(items: FoodItem[], stated: StatedFood[]): FoodItem[] {
+  const withNumbers = stated.filter(hasNumbers);
+  if (withNumbers.length === 0) return items;
+  const used = new Set<number>();
+  const out = items.slice();
+  for (const st of withNumbers) {
+    let best = -1;
+    let bestScore = 0;
+    out.forEach((item, i) => {
+      if (used.has(i)) return;
+      const name = item.name.toLowerCase();
+      const score = st.words.filter(
+        (w) => name.includes(w) || name.includes(w.replace(/s$/, '')),
+      ).length;
+      if (score > bestScore) {
+        best = i;
+        bestScore = score;
+      }
+    });
+    // One food typed and one food found: they are the same, even without a shared word.
+    if (best === -1 && withNumbers.length === 1 && out.length === 1) best = 0;
+    if (best === -1) continue;
+    used.add(best);
+    const item = out[best]!;
+    const factor = st.grams !== undefined && item.grams > 0 ? st.grams / item.grams : 1;
+    const round = (v: number) => Math.round(v * 10) / 10;
+    let next: FoodItem = {
+      ...item,
+      grams: st.grams !== undefined ? Math.round(st.grams) : item.grams,
+      portion: st.grams !== undefined ? `${Math.round(st.grams)} g` : item.portion,
+      kcal: Math.round(st.kcal ?? item.kcal * factor),
+      proteinG: round(st.proteinG ?? item.proteinG * factor),
+      carbsG: round(st.carbsG ?? item.carbsG * factor),
+      fatG: round(st.fatG ?? item.fatG * factor),
+      fibreG: round(st.fibreG ?? item.fibreG * factor),
+    };
+    if (st.kcal !== undefined) {
+      // Their calories stand; macros they did not give shrink to fit what is left.
+      const fixed =
+        4 * (st.proteinG !== undefined ? next.proteinG : 0) +
+        4 * (st.carbsG !== undefined ? next.carbsG : 0) +
+        9 * (st.fatG !== undefined ? next.fatG : 0);
+      const free =
+        4 * (st.proteinG === undefined ? next.proteinG : 0) +
+        4 * (st.carbsG === undefined ? next.carbsG : 0) +
+        9 * (st.fatG === undefined ? next.fatG : 0);
+      const room = Math.max(0, next.kcal - fixed);
+      if (free > room && free > 0) {
+        const k = room / free;
+        next = {
+          ...next,
+          proteinG: st.proteinG === undefined ? round(next.proteinG * k) : next.proteinG,
+          carbsG: st.carbsG === undefined ? round(next.carbsG * k) : next.carbsG,
+          fatG: st.fatG === undefined ? round(next.fatG * k) : next.fatG,
+          fibreG: st.fibreG === undefined ? round(Math.min(next.fibreG, next.carbsG)) : next.fibreG,
+        };
+      }
+    }
+    out[best] = { ...next, basis: 'yours', ref: 'Your numbers' };
+  }
+  return out;
 }
 
 /**
@@ -551,7 +729,7 @@ export function checkFoodItem(raw: unknown): FoodItem | null {
     fibreG: round(fib),
     diet,
     basis:
-      r.basis === 'web' || r.basis === 'photo' || r.basis === 'label'
+      r.basis === 'web' || r.basis === 'photo' || r.basis === 'label' || r.basis === 'yours'
         ? (r.basis as FoodItem['basis'])
         : 'estimate',
     ...(r.confidence === 'high' || r.confidence === 'medium' || r.confidence === 'low'
@@ -579,10 +757,17 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
     },
   ];
   let empty = false;
+  const stated = parseStated(text);
   for (const provider of deps.providers) {
     let answer: string;
+    let searched = false;
     try {
-      answer = await provider.generate(FOOD_PROMPT, messages, { search: true });
+      answer = await provider.generate(FOOD_PROMPT, messages, {
+        search: true,
+        onSearch: (s) => {
+          searched = s;
+        },
+      });
     } catch (err) {
       console.error(`food: ${provider.name} failed`, err instanceof Error ? err.message : err);
       continue;
@@ -592,10 +777,17 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
       console.error(`food: ${provider.name} gave no JSON`);
       continue;
     }
-    const items = list
+    const checked = list
       .slice(0, FOOD_LIMITS.items)
       .map(checkFoodItem)
-      .filter((i): i is FoodItem => i !== null);
+      .filter((i): i is FoodItem => i !== null)
+      // A nutrient on its own ("30 g protein") is a number about a food, not a food.
+      .filter((i) => !NOT_A_FOOD.test(i.name))
+      // "From the web" only when a search really ran; otherwise it is the AI's own estimate.
+      .map((i) => (i.basis === 'web' && !searched ? { ...i, basis: 'estimate' as const } : i))
+      .map((i) => (i.basis === 'yours' ? { ...i, basis: 'estimate' as const } : i));
+    // The person's own numbers win over the AI's, food by food.
+    const items = applyStated(checked, stated);
     if (items.length === 0) {
       // A clear "nothing here is a food" is an answer; a list where every item failed is not.
       if (list.length === 0) empty = true;

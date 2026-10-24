@@ -107,9 +107,7 @@ test('free accounts see what Pro adds to food', async ({ page }) => {
   await expect(page.getByRole('dialog').locator('[data-type-meal]')).toContainText('Pro');
 });
 
-test('Pro tells OverloadGPT a meal and sees food on Progress', async ({
-  page,
-}) => {
+test('Pro tells OverloadGPT a meal and sees food on Progress', async ({ page }) => {
   await startWithDemo(page, { tag: 'food-pro' });
   await openFood(page);
 
@@ -262,4 +260,40 @@ test('Pro gets the day analysed against published ranges', async ({ page }) => {
   await expect(card).toContainText('Fibre');
   await card.getByRole('link', { name: 'About the day analysis' }).click();
   await expect(page).toHaveURL(/\/science#day-analysis$/);
+});
+
+test('typed numbers win, and every AI food can be corrected before logging', async ({ page }) => {
+  await startWithDemo(page, { tag: 'food-typed' });
+  await openFood(page);
+  await page.locator('[data-add-food]').click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByRole('radio', { name: 'Dinner' }).click();
+  await sheet.locator('[data-type-meal]').click();
+  await sheet.getByRole('button', { name: 'Turn on' }).click();
+  await sheet.getByRole('textbox').fill('200 g paneer bhurji, 30 g protein and 2 roti');
+  await sheet.getByRole('button', { name: 'Work it out' }).click();
+  const result = sheet.locator('[data-ai-result]');
+  // The paneer keeps the person's numbers (the stand-in AI says 150 g and 12 g protein).
+  const paneer = result.locator('li', { hasText: 'paneer bhurji' });
+  await expect(paneer).toContainText('Your numbers');
+  await expect(paneer).toContainText('30 g');
+  await expect(paneer).toContainText('320'); // 240 kcal for 150 g, scaled to 200 g
+
+  // Correct the other food by hand.
+  const roti = result.locator('li', { hasText: /roti/i }).first();
+  await roti.locator('[data-edit-ai-item]').click();
+  const editor = roti.locator('[data-ai-item-editor]');
+  await editor.getByLabel('Calories').fill('220');
+  await editor.getByLabel('Protein').fill('7');
+  await editor.locator('[data-save-ai-item]').click();
+  await expect(roti).toContainText('220');
+  await expect(roti).toContainText('Your numbers');
+
+  await sheet.getByRole('button', { name: 'Put on my plate' }).click();
+  await sheet.locator('[data-log-plate]').click();
+  await expect(
+    page.locator('[aria-live]').filter({ hasText: 'Logged 2 foods to dinner' }),
+  ).toHaveCount(1);
+  const dinner = page.locator('[data-meal="dinner"]');
+  await expect(dinner).toContainText('paneer bhurji', { ignoreCase: true, timeout: 10_000 });
 });

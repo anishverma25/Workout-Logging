@@ -124,3 +124,44 @@ export function foodFromItem(item: FoodItem): Food {
     },
   };
 }
+
+/** The numbers a person sets for one food on the AI screen, for the portion they ate. */
+export interface EditedNumbers {
+  grams: number;
+  kcal: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  fibreG: number;
+}
+
+/**
+ * A food with the person's own numbers for the amount they ate: logged as "1 serving" of that
+ * many grams, marked as theirs, and adjustable on the plate like any other food.
+ */
+export function editedPortion(
+  name: string,
+  diet: Food['diet'],
+  n: EditedNumbers,
+): {
+  food: Food;
+  unit: 'serving';
+  amount: number;
+  size: null;
+  oilLevel: null;
+} {
+  const food = foodFromItem({
+    name,
+    portion: `${Math.round(n.grams)} g`,
+    grams: Math.round(n.grams),
+    kcal: Math.round(n.kcal),
+    proteinG: n.proteinG,
+    carbsG: n.carbsG,
+    fatG: n.fatG,
+    fibreG: n.fibreG,
+    diet: diet === 'egg' || diet === 'nonveg' ? diet : 'veg',
+    basis: 'yours',
+    ref: 'Your numbers',
+  });
+  return { food, unit: 'serving', amount: 1, size: null, oilLevel: null };
+}

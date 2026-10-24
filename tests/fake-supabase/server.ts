@@ -470,9 +470,14 @@ async function handleBilling(req: IncomingMessage, res: ServerResponse, route: s
 function fakeCoachProvider(name: 'gemini' | 'groq'): CoachProvider {
   return {
     name,
-    async generate(system, messages) {
+    async generate(system, messages, options) {
       const last = messages[messages.length - 1]!.text;
-      if (system === FOOD_PROMPT) return fakeFoodAnswer(name, last);
+      if (system === FOOD_PROMPT) {
+        const answer = fakeFoodAnswer(name, last);
+        // A search "runs" when a brand is named, as it would with a key that can search.
+        if (options?.search) options.onSearch?.(/[A-Z]{2,}|Starbucks|Amul/.test(last));
+        return answer;
+      }
       if (system === FOOD_PHOTO_PROMPT) return fakePhotoAnswer(name, last);
       if (last.includes('#all-down') || (name === 'gemini' && last.includes('#gemini-down')))
         throw new Error(`${name} is over its limit`);

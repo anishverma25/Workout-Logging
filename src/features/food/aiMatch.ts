@@ -27,7 +27,8 @@ const countIn = (portion: string) => Number(/^\s*(\d+(?:\.\d+)?)/.exec(portion)?
 
 /** The portion for an item: pieces or katoris when the library food has them, else grams. */
 export function portionForItem(item: FoodItem, ctx: FoodContext): FoodPortion {
-  const food = libraryMatch(item, ctx);
+  // The person's own numbers are never swapped for the library's.
+  const food = item.basis === 'yours' ? null : libraryMatch(item, ctx);
   if (!food) return defaultPortion(foodFromItem(item));
   const count = countIn(item.portion);
   if (food.pieceG && food.units.includes('piece')) {

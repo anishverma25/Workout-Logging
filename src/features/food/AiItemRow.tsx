@@ -1,4 +1,16 @@
-import { AlertCircle, Camera, Check, Globe, ScanText, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import {
+  AlertCircle,
+  Camera,
+  Check,
+  Globe,
+  Pencil,
+  ScanText,
+  Sparkles,
+  UserRound,
+} from 'lucide-react';
+import { NumberField, PrimaryButton, TextLink } from '@/components/kit';
+import { editedPortion, type EditedNumbers } from '@/app/foodAi';
 import { measurePortion, type FoodPortion } from '@/data/repositories/food';
 import { portionText } from '@/domain/nutrition/calc';
 import { cn } from '@/lib/cn';
@@ -8,11 +20,15 @@ export function AiItemRow({
   portion,
   katoriMl,
   confidence,
+  onChange,
 }: {
   portion: FoodPortion;
   katoriMl: number | null;
   confidence?: 'high' | 'medium' | 'low';
+  /** When given, the numbers can be corrected before the food goes on the plate. */
+  onChange?: (next: FoodPortion) => void;
 }) {
+  const [editing, setEditing] = useState(false);
   const f = portion.food;
   const amount =
     f.ai && portion.unit === 'serving'
@@ -20,10 +36,12 @@ export function AiItemRow({
       : portionText(portion.amount, portion.unit, portion.size, f.pieceName);
   let kcal: number | null = null;
   let protein: number | null = null;
+  let current: EditedNumbers | null = null;
   try {
     const m = measurePortion(portion, katoriMl);
     kcal = Math.round(m.nutrients.kcal);
     protein = Math.round(m.nutrients.proteinG);
+    current = { grams: m.grams, ...m.nutrients };
   } catch {
     // Shown without numbers; the plate measures it again.
   }
@@ -31,7 +49,7 @@ export function AiItemRow({
   return (
     <li
       className={cn(
-        'flex items-start gap-3 rounded-nested bg-surface-2 p-3',
+        'flex flex-wrap items-start gap-3 rounded-nested bg-surface-2 p-3',
         check && 'ring-1 ring-divider',
       )}
       data-confidence={confidence}
@@ -58,7 +76,26 @@ export function AiItemRow({
           </span>
         ) : null}
       </span>
-      <Source portion={portion} />
+      <span className="flex shrink-0 flex-col items-end gap-2">
+        <Source portion={portion} />
+        {onChange && current && !editing ? (
+          <TextLink small onClick={() => setEditing(true)} data-edit-ai-item>
+            <Pencil className="mr-1 inline size-3.5" aria-hidden />
+            Edit
+          </TextLink>
+        ) : null}
+      </span>
+      {editing && current && onChange ? (
+        <ItemEditor
+          name={f.name}
+          start={current}
+          onDone={(n) => {
+            onChange(editedPortion(f.name, f.diet, n));
+            setEditing(false);
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      ) : null}
     </li>
   );
 }
@@ -67,17 +104,103 @@ function Source({ portion }: { portion: FoodPortion }) {
   const ai = portion.food.ai;
   const [icon, label] = !ai
     ? [<Check key="i" className="size-3.5" aria-hidden />, 'Library']
-    : ai.basis === 'web'
-      ? [<Globe key="i" className="size-3.5" aria-hidden />, 'From the web']
-      : ai.basis === 'label'
-        ? [<ScanText key="i" className="size-3.5" aria-hidden />, 'From the label']
-        : ai.basis === 'photo'
-          ? [<Camera key="i" className="size-3.5" aria-hidden />, 'From the photo']
-          : [<Sparkles key="i" className="size-3.5" aria-hidden />, 'Estimated'];
+    : ai.basis === 'yours'
+      ? [<UserRound key="i" className="size-3.5" aria-hidden />, 'Your numbers']
+      : ai.basis === 'web'
+        ? [<Globe key="i" className="size-3.5" aria-hidden />, 'From the web']
+        : ai.basis === 'label'
+          ? [<ScanText key="i" className="size-3.5" aria-hidden />, 'From the label']
+          : ai.basis === 'photo'
+            ? [<Camera key="i" className="size-3.5" aria-hidden />, 'From the photo']
+            : [<Sparkles key="i" className="size-3.5" aria-hidden />, 'Estimated'];
   return (
     <span className="type-caption inline-flex shrink-0 items-center gap-1 rounded-full bg-surface px-2 py-1 font-semibold text-text-2">
       {icon}
       {label}
     </span>
+  );
+}
+
+const FIELDS: { key: keyof EditedNumbers; label: string; unit: string; max: number }[] = [
+  { key: 'grams', label: 'Amount', unit: 'g', max: 5000 },
+  { key: 'kcal', label: 'Calories', unit: 'kcal', max: 9000 },
+  { key: 'proteinG', label: 'Protein', unit: 'g', max: 1000 },
+  { key: 'carbsG', label: 'Carbs', unit: 'g', max: 1000 },
+  { key: 'fatG', label: 'Fat', unit: 'g', max: 1000 },
+  { key: 'fibreG', label: 'Fibre', unit: 'g', max: 500 },
+];
+
+/**
+ * Correct a food's numbers for the amount eaten. Changing only the amount scales the rest;
+ * anything typed is kept exactly.
+ */
+function ItemEditor({
+  name,
+  start,
+  onDone,
+  onCancel,
+}: {
+  name: string;
+  start: EditedNumbers;
+  onDone: (n: EditedNumbers) => void;
+  onCancel: () => void;
+}) {
+  const round1 = (v: number) => Math.round(v * 10) / 10;
+  const [vals, setVals] = useState<Record<keyof EditedNumbers, number | null>>({
+    grams: Math.round(start.grams),
+    kcal: Math.round(start.kcal),
+    proteinG: round1(start.proteinG),
+    carbsG: round1(start.carbsG),
+    fatG: round1(start.fatG),
+    fibreG: round1(start.fibreG),
+  });
+  const [touched, setTouched] = useState<Set<keyof EditedNumbers>>(new Set());
+  const set = (k: keyof EditedNumbers) => (v: number | null) => {
+    setTouched((t) => new Set(t).add(k));
+    setVals((o) => {
+      // A new amount scales every number the person has not typed.
+      if (k === 'grams' && v && o.grams) {
+        const f = v / o.grams;
+        const scaled = { ...o, grams: v };
+        for (const key of ['kcal', 'proteinG', 'carbsG', 'fatG', 'fibreG'] as const)
+          if (!touched.has(key) && o[key] !== null)
+            scaled[key] = key === 'kcal' ? Math.round(o[key]! * f) : round1(o[key]! * f);
+        return scaled;
+      }
+      return { ...o, [k]: v };
+    });
+  };
+  const ready = FIELDS.every((fl) => vals[fl.key] !== null) && (vals.grams ?? 0) > 0;
+  return (
+    <div className="w-full border-t-[0.5px] border-divider pt-3" data-ai-item-editor>
+      <p className="type-meta mb-2 text-text-2">{name}: the numbers for what you ate.</p>
+      <div className="grid grid-cols-3 gap-2">
+        {FIELDS.map((fl) => (
+          <NumberField
+            key={fl.key}
+            label={fl.label}
+            value={vals[fl.key]}
+            onValueChange={set(fl.key)}
+            allowDecimal={fl.key !== 'grams' && fl.key !== 'kcal'}
+            min={fl.key === 'grams' ? 1 : 0}
+            max={fl.max}
+            unit={fl.unit}
+          />
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        <PrimaryButton
+          compact
+          disabled={!ready}
+          onClick={() => onDone(vals as unknown as EditedNumbers)}
+          data-save-ai-item
+        >
+          Use these numbers
+        </PrimaryButton>
+        <TextLink small onClick={onCancel}>
+          Cancel
+        </TextLink>
+      </div>
+    </div>
   );
 }
