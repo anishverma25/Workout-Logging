@@ -354,3 +354,139 @@ test('Pro photographs a label: only the printed numbers, then servings', async (
     ignoreCase: true,
   });
 });
+
+/** A real EAN-13 barcode drawn on a canvas, as a PNG, so the decoder on the phone is tested. */
+async function barcodePng(page: Page, code: string): Promise<Buffer> {
+  const dataUrl = await page.evaluate((digits) => {
+    const L = [
+      '0001101',
+      '0011001',
+      '0010011',
+      '0111101',
+      '0100011',
+      '0110001',
+      '0101111',
+      '0111011',
+      '0110111',
+      '0001011',
+    ];
+    const G = [
+      '0100111',
+      '0110011',
+      '0011011',
+      '0100001',
+      '0011101',
+      '0111001',
+      '0000101',
+      '0010001',
+      '0001001',
+      '0010111',
+    ];
+    const R = [
+      '1110010',
+      '1100110',
+      '1101100',
+      '1000010',
+      '1011100',
+      '1001110',
+      '1010000',
+      '1000100',
+      '1001000',
+      '1110100',
+    ];
+    const PARITY = [
+      'LLLLLL',
+      'LLGLGG',
+      'LLGGLG',
+      'LLGGGL',
+      'LGLLGG',
+      'LGGLLG',
+      'LGGGLL',
+      'LGLGLG',
+      'LGLGGL',
+      'LGGLGL',
+    ];
+    const d = digits.split('').map(Number);
+    const parity = PARITY[d[0]!]!;
+    let bits = '101';
+    for (let i = 1; i <= 6; i++) bits += (parity[i - 1] === 'L' ? L : G)[d[i]!];
+    bits += '01010';
+    for (let i = 7; i <= 12; i++) bits += R[d[i]!];
+    bits += '101';
+    const w = 4;
+    const canvas = document.createElement('canvas');
+    canvas.width = (bits.length + 20) * w;
+    canvas.height = 220;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#000';
+    [...bits].forEach((b, i) => {
+      if (b === '1') ctx.fillRect((i + 10) * w, 20, w, 180);
+    });
+    return canvas.toDataURL('image/png');
+  }, code);
+  return Buffer.from(dataUrl.split(',')[1]!, 'base64');
+}
+
+test('a pack by barcode: the photo is read on the phone and the product comes from Open Food Facts', async ({
+  page,
+}) => {
+  await startWithDemo(page, { tag: 'food-barcode' });
+  let asked = '';
+  await page.route('https://world.openfoodfacts.org/**', (route) => {
+    asked = route.request().url();
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 1,
+        product: {
+          product_name: 'High Protein Peanut Butter',
+          brands: 'Pintola',
+          serving_size: '32 g',
+          serving_quantity: 32,
+          nutriments: {
+            'energy-kcal_100g': 600,
+            proteins_100g: 30,
+            carbohydrates_100g: 20,
+            fat_100g: 45,
+          },
+        },
+      }),
+    });
+  });
+  await openFood(page);
+  await page.locator('[data-add-food]').click();
+  const sheet = page.getByRole('dialog');
+  await sheet.locator('[data-pack-food]').click();
+  // 4006381333931 is a valid EAN-13 test code.
+  await sheet.locator('[data-barcode-input]').setInputFiles({
+    name: 'barcode.png',
+    mimeType: 'image/png',
+    buffer: await barcodePng(page, '4006381333931'),
+  });
+  const form = sheet.locator('[data-label-form]');
+  await expect(form.locator('[data-label-read]')).toContainText('From Open Food Facts');
+  expect(asked).toContain('/product/4006381333931.json');
+  await expect(form.getByLabel('Product')).toHaveValue('Pintola High Protein Peanut Butter');
+  // The database has no fibre: left empty for the person, never guessed.
+  await expect(form.getByLabel('Fibre')).toHaveValue('');
+  await expect(form.locator('[data-label-result]')).toContainText('192 kcal · 9.6 g protein');
+  await form.locator('[data-label-add]').click();
+  await expect(sheet.locator('[data-plate]')).toContainText('peanut butter', { ignoreCase: true });
+});
+
+test('an unknown barcode says so and offers the label', async ({ page }) => {
+  await startWithDemo(page, { tag: 'food-barcode-unknown' });
+  await page.route('https://world.openfoodfacts.org/**', (route) =>
+    route.fulfill({ status: 404, contentType: 'application/json', body: '{"status":0}' }),
+  );
+  await openFood(page);
+  await page.locator('[data-add-food]').click();
+  const sheet = page.getByRole('dialog');
+  await sheet.locator('[data-pack-food]').click();
+  await sheet.getByLabel('Or type the barcode number').fill('8901234567890');
+  await sheet.locator('[data-lookup-barcode]').click();
+  await expect(sheet.locator('[data-label-error]')).toContainText('not in the database yet');
+  await expect(sheet.locator('[data-label-manual]')).toBeVisible();
+});

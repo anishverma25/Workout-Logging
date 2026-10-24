@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { AlertCircle, Camera, Crown, Image as ImageIcon, PenLine, ScanText } from 'lucide-react';
+import {
+  AlertCircle,
+  Barcode,
+  Camera,
+  Crown,
+  Image as ImageIcon,
+  PenLine,
+  ScanText,
+} from 'lucide-react';
 import {
   InlineNotice,
   NumberField,
@@ -10,6 +18,8 @@ import {
   TextField,
 } from '@/components/kit';
 import { askFoodLabel, editedPortion, FoodAiError, type LabelReading } from '@/app/foodAi';
+import { BarcodeError, lookupBarcode, readBarcode } from '@/app/barcode';
+import { isBarcode } from '@/domain/nutrition/off';
 import type { FoodPortion } from '@/data/repositories/food';
 import {
   dietFromName,
@@ -39,23 +49,76 @@ export function LabelLog({
   onFill: (items: FoodPortion[]) => void;
 }) {
   const [reading, setReading] = useState<LabelReading | null | 'manual'>(initial ?? null);
-  if (reading === null) return <Start pro={pro} onRead={setReading} />;
+  const [source, setSource] = useState<Source>(initial ? 'barcode' : 'label');
+  if (reading === null)
+    return (
+      <Start
+        pro={pro}
+        onRead={(r, from) => {
+          setSource(from);
+          setReading(r);
+        }}
+      />
+    );
   return (
     <LabelForm
       reading={reading === 'manual' ? null : reading}
+      source={source}
       onFill={onFill}
-      onRetake={pro ? () => setReading(null) : undefined}
+      onRetake={() => setReading(null)}
     />
   );
 }
 
-type StartState = { kind: 'idle' } | { kind: 'reading' } | { kind: 'error'; message: string };
+type Source = 'label' | 'barcode';
 
-function Start({ pro, onRead }: { pro: boolean; onRead: (r: LabelReading | 'manual') => void }) {
+type StartState =
+  | { kind: 'idle' }
+  | { kind: 'reading' }
+  | { kind: 'scanning' }
+  | { kind: 'error'; message: string };
+
+function Start({
+  pro,
+  onRead,
+}: {
+  pro: boolean;
+  onRead: (r: LabelReading | 'manual', from: Source) => void;
+}) {
   const store = useCoachStore();
   const [state, setState] = useState<StartState>({ kind: 'idle' });
+  const [code, setCode] = useState('');
   const camera = useRef<HTMLInputElement>(null);
   const gallery = useRef<HTMLInputElement>(null);
+  const barcodePhoto = useRef<HTMLInputElement>(null);
+
+  async function lookup(value: string) {
+    setState({ kind: 'scanning' });
+    try {
+      onRead(await lookupBarcode(value), 'barcode');
+    } catch (e) {
+      setState({
+        kind: 'error',
+        message: e instanceof BarcodeError ? e.message : 'That barcode could not be looked up.',
+      });
+    }
+  }
+
+  async function scan(file: File | undefined) {
+    if (!file) return;
+    setState({ kind: 'scanning' });
+    const found = await readBarcode(file).catch(() => null);
+    if (!found) {
+      setState({
+        kind: 'error',
+        message:
+          'No barcode found in that photo. Fill the frame with the barcode, or type its number.',
+      });
+      return;
+    }
+    setCode(found);
+    await lookup(found);
+  }
 
   async function read(file: File | undefined) {
     if (!file) return;
@@ -64,7 +127,7 @@ function Start({ pro, onRead }: { pro: boolean; onRead: (r: LabelReading | 'manu
       const photo = await preparePhoto(file, LABEL_MAX_SIDE, 0.9);
       URL.revokeObjectURL(photo.url);
       const { label } = await askFoodLabel({ image: photo.data, mime: photo.mime });
-      onRead(label);
+      onRead(label, 'label');
     } catch (e) {
       setState({
         kind: 'error',
@@ -94,49 +157,116 @@ function Start({ pro, onRead }: { pro: boolean; onRead: (r: LabelReading | 'manu
   );
 
   return (
-    <div className="flex flex-col gap-4" data-label-start>
-      <p className="type-body text-text-2">
-        Photograph only the nutrition table, flat and in good light, so every number is sharp. You
-        then say how much you had and the numbers are worked out from the pack.
-      </p>
-      {pro && store.consent ? (
-        <div className="grid grid-cols-2 gap-2">
-          {input(camera, true)}
-          {input(gallery, false)}
-          <PrimaryButton
-            icon={<Camera className="size-4" aria-hidden />}
-            onClick={() => camera.current?.click()}
-            loading={state.kind === 'reading'}
-            data-label-camera
-          >
-            Take photo
-          </PrimaryButton>
-          <SecondaryButton
-            icon={<ImageIcon className="size-4" aria-hidden />}
-            onClick={() => gallery.current?.click()}
-            disabled={state.kind === 'reading'}
-            data-label-gallery
-          >
-            Choose photo
-          </SecondaryButton>
-        </div>
-      ) : pro ? (
-        <CoachConsent />
-      ) : (
-        <Link
-          to="/pro"
-          className="pressable chrome flex items-center gap-3 rounded-nested bg-surface-2 p-4"
+    <div className="flex flex-col gap-5" data-label-start>
+      <section aria-labelledby="pack-barcode" className="flex flex-col gap-2">
+        <h3 id="pack-barcode" className="type-headline text-text-1">
+          Scan the barcode
+        </h3>
+        <p className="type-meta text-text-2">
+          Free. Looks the product up in Open Food Facts, an open database of food labels. Only the
+          barcode number is sent.
+        </p>
+        <input
+          ref={barcodePhoto}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden
+          data-barcode-input
+          onChange={(e) => {
+            void scan(e.target.files?.[0]);
+            e.target.value = '';
+          }}
+        />
+        <PrimaryButton
+          block
+          icon={<Barcode className="size-4" aria-hidden />}
+          onClick={() => barcodePhoto.current?.click()}
+          loading={state.kind === 'scanning'}
+          data-scan-barcode
         >
-          <ScanText className="size-5 shrink-0 text-text-2" aria-hidden />
-          <span className="type-meta min-w-0 flex-1 text-text-2">
-            Reading the label from a photo is part of Pro.
-          </span>
-          <Crown className="size-4 text-text-2" aria-hidden />
-        </Link>
-      )}
-      {state.kind === 'reading' ? (
+          Photograph the barcode
+        </PrimaryButton>
+        <form
+          className="grid grid-cols-[1fr_auto] items-end gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (isBarcode(code)) void lookup(code.trim());
+          }}
+        >
+          <TextField
+            label="Or type the barcode number"
+            inputMode="numeric"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 14))}
+            placeholder="8901234567890"
+          />
+          <SecondaryButton
+            type="submit"
+            disabled={!isBarcode(code) || state.kind === 'scanning'}
+            data-lookup-barcode
+          >
+            Look up
+          </SecondaryButton>
+        </form>
+      </section>
+
+      <section aria-labelledby="pack-label" className="flex flex-col gap-2">
+        <h3 id="pack-label" className="type-headline text-text-1">
+          Or read the label
+        </h3>
+        <p className="type-meta text-text-2">
+          Photograph only the nutrition table, flat and in good light, so every number is sharp.
+        </p>
+        {pro && store.consent ? (
+          <div className="grid grid-cols-2 gap-2">
+            {input(camera, true)}
+            {input(gallery, false)}
+            <SecondaryButton
+              icon={<Camera className="size-4" aria-hidden />}
+              onClick={() => camera.current?.click()}
+              loading={state.kind === 'reading'}
+              data-label-camera
+            >
+              Take photo
+            </SecondaryButton>
+            <SecondaryButton
+              icon={<ImageIcon className="size-4" aria-hidden />}
+              onClick={() => gallery.current?.click()}
+              disabled={state.kind === 'reading'}
+              data-label-gallery
+            >
+              Choose photo
+            </SecondaryButton>
+          </div>
+        ) : pro ? (
+          <CoachConsent />
+        ) : (
+          <Link
+            to="/pro"
+            className="pressable chrome flex items-center gap-3 rounded-nested bg-surface-2 p-4"
+          >
+            <ScanText className="size-5 shrink-0 text-text-2" aria-hidden />
+            <span className="type-meta min-w-0 flex-1 text-text-2">
+              Reading the label from a photo is part of Pro.
+            </span>
+            <Crown className="size-4 text-text-2" aria-hidden />
+          </Link>
+        )}
+        <SecondaryButton
+          block
+          icon={<PenLine className="size-4" aria-hidden />}
+          onClick={() => onRead('manual', 'label')}
+          data-label-manual
+        >
+          Type the numbers from the pack
+        </SecondaryButton>
+      </section>
+      {state.kind === 'reading' || state.kind === 'scanning' ? (
         <p className="type-meta text-text-2" aria-live="polite">
-          Reading the label…
+          {state.kind === 'reading' ? 'Reading the label…' : 'Looking up the barcode…'}
         </p>
       ) : null}
       {state.kind === 'error' ? (
@@ -144,14 +274,6 @@ function Start({ pro, onRead }: { pro: boolean; onRead: (r: LabelReading | 'manu
           <span data-label-error>{state.message}</span>
         </InlineNotice>
       ) : null}
-      <SecondaryButton
-        block
-        icon={<PenLine className="size-4" aria-hidden />}
-        onClick={() => onRead('manual')}
-        data-label-manual
-      >
-        Type the numbers from the pack
-      </SecondaryButton>
     </div>
   );
 }
@@ -164,10 +286,12 @@ const fromReading = (v: LabelReading['per100']): LabelNumbers =>
 
 function LabelForm({
   reading,
+  source,
   onFill,
   onRetake,
 }: {
   reading: LabelReading | null;
+  source: Source;
   onFill: (items: FoodPortion[]) => void;
   onRetake?: () => void;
 }) {
@@ -202,8 +326,14 @@ function LabelForm({
     <div className="flex flex-col gap-4" data-label-form>
       {reading ? (
         <p className="type-meta text-text-2" data-label-read>
-          Read from your photo. Check each number against the pack
-          {unread && unread.length ? '; empty ones could not be read, type them in' : ''}.
+          {source === 'barcode' ? 'From Open Food Facts.' : 'Read from your photo.'} Check each
+          number against the pack
+          {unread && unread.length
+            ? source === 'barcode'
+              ? '; the database does not have the empty ones, type them in'
+              : '; empty ones could not be read, type them in'
+            : ''}
+          .
           {onRetake ? (
             <>
               {' '}
@@ -212,7 +342,7 @@ function LabelForm({
                 className="font-semibold text-text-1 underline"
                 onClick={onRetake}
               >
-                Retake
+                Start again
               </button>
             </>
           ) : null}
@@ -343,7 +473,11 @@ function LabelForm({
               dietFromName(name),
               portion,
               'label',
-              reading ? 'Read from the label' : 'Typed from the label',
+              !reading
+                ? 'Typed from the label'
+                : source === 'barcode'
+                  ? 'From Open Food Facts'
+                  : 'Read from the label',
             ),
           ])
         }
