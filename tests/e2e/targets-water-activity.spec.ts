@@ -66,7 +66,14 @@ test('a person chooses worked-out targets, then types their own', async ({ page 
   const own = page.getByRole('dialog', { name: 'Your daily targets' });
   await own.getByRole('radio', { name: /I will set my own/ }).click();
   await own.getByLabel('Calories a day').fill('2400');
+  // The macros are recommended from the typed calories and the goal, and re-balance when the
+  // protein is typed.
+  await expect(own.getByLabel('Protein a day')).not.toHaveValue('');
+  const carbsBefore = await own.getByLabel('Carbs a day').inputValue();
+  await expect(own.locator('[data-macro-help]')).toContainText('recommended from your calories');
   await own.getByLabel('Protein a day').fill('150');
+  await own.getByLabel('Protein a day').blur();
+  await expect(own.getByLabel('Carbs a day')).not.toHaveValue(carbsBefore);
   await own.getByLabel('Carbs a day').fill('280');
   await own.getByLabel('Fat a day').fill('70');
   await own.getByLabel('Fibre a day').fill('35');

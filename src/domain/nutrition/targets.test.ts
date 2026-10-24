@@ -4,6 +4,7 @@ import {
   calculatedWaterMl,
   dailyTargets,
   macroKcal,
+  macrosForCalories,
   targetMode,
 } from './targets';
 
@@ -63,9 +64,15 @@ describe('daily targets and the mode choice', () => {
     expect(t.mode).toBe('calculated');
   });
 
-  it('uses typed numbers in own mode and falls back to calculated for the rest', () => {
+  it('uses typed numbers in own mode; the macros left empty follow the typed calories', () => {
     const t = dailyTargets(
-      { targetMode: 'own', calorieTarget: 3000, fibreTargetG: 40, waterTargetMl: 3500 },
+      {
+        targetMode: 'own',
+        goal: 'hypertrophy',
+        calorieTarget: 3000,
+        fibreTargetG: 40,
+        waterTargetMl: 3500,
+      },
       energy,
       80,
     );
@@ -74,10 +81,10 @@ describe('daily targets and the mode choice', () => {
       kcalSource: 'set',
       fibreG: 40,
       waterMl: 3500,
-      proteinG: 144,
-      proteinSource: 'calculated',
+      proteinG: 152, // 1.9 g/kg for hypertrophy
       mode: 'own',
     });
+    expect(Math.abs(macroKcal(t as never) - 3000)).toBeLessThanOrEqual(20);
   });
 
   it('still gives water from body weight when there is no energy plan', () => {
@@ -85,5 +92,64 @@ describe('daily targets and the mode choice', () => {
     expect(t.kcal).toBeNull();
     expect(t.waterMl).toBe(2500);
     expect(t.mode).toBeNull();
+  });
+});
+
+describe('macros for typed calories', () => {
+  it('recommends from the calories and the goal, adding up to the calories', () => {
+    const m = macrosForCalories({ kcal: 2400, weightKg: 75, goal: 'hypertrophy' });
+    expect(m.proteinG).toBe(143); // 1.9 g/kg
+    expect(m.fatG).toBe(65); // a quarter of the energy, to 5 g
+    expect(m.fibreG).toBe(34);
+    expect(Math.abs(macroKcal(m) - 2400)).toBeLessThanOrEqual(20);
+  });
+
+  it('a cut has more protein than a bulk at the same weight', () => {
+    const cut = macrosForCalories({ kcal: 2000, weightKg: 80, goal: 'fat_loss' });
+    const bulk = macrosForCalories({ kcal: 2000, weightKg: 80, goal: 'hypertrophy' });
+    expect(cut.proteinG).toBeGreaterThan(bulk.proteinG);
+    expect(cut.carbsG).toBeLessThan(bulk.carbsG);
+  });
+
+  it('typed protein is kept and carbohydrate takes up the difference', () => {
+    const base = macrosForCalories({ kcal: 2400, weightKg: 75, goal: 'hypertrophy' });
+    const more = macrosForCalories({
+      kcal: 2400,
+      weightKg: 75,
+      goal: 'hypertrophy',
+      fixed: { proteinG: 180 },
+    });
+    expect(more.proteinG).toBe(180);
+    expect(more.fatG).toBe(base.fatG);
+    expect(more.carbsG).toBeLessThan(base.carbsG);
+    expect(Math.abs(macroKcal(more) - 2400)).toBeLessThanOrEqual(20);
+  });
+
+  it('typed carbs move the fat instead', () => {
+    const m = macrosForCalories({
+      kcal: 2400,
+      weightKg: 75,
+      goal: 'hypertrophy',
+      fixed: { proteinG: 150, carbsG: 300 },
+    });
+    expect(m.carbsG).toBe(300);
+    expect(m.fatG).toBe(Math.round((2400 - 600 - 1200) / 9 / 5) * 5);
+  });
+
+  it('never goes below zero when the typed protein uses up the calories', () => {
+    const m = macrosForCalories({
+      kcal: 1200,
+      weightKg: 90,
+      goal: 'fat_loss',
+      fixed: { proteinG: 280 },
+    });
+    expect(m.carbsG).toBe(0);
+    expect(m.fatG).toBeGreaterThanOrEqual(0);
+  });
+
+  it('works without a body weight', () => {
+    const m = macrosForCalories({ kcal: 2000, weightKg: null, goal: 'recomposition' });
+    expect(m.proteinG).toBe(150); // 30% of the energy
+    expect(m.carbsG).toBeGreaterThan(0);
   });
 });
