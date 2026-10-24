@@ -5,6 +5,8 @@
  */
 
 export const PHOTO_MAX_SIDE = 1280;
+/** Labels keep more detail: the small print has to stay readable. */
+export const LABEL_MAX_SIDE = 2000;
 
 export interface PreparedPhoto {
   /** Base64 JPEG without the data: prefix. */
@@ -16,7 +18,11 @@ export interface PreparedPhoto {
   height: number;
 }
 
-export async function preparePhoto(file: Blob, maxSide = PHOTO_MAX_SIDE): Promise<PreparedPhoto> {
+export async function preparePhoto(
+  file: Blob,
+  maxSide = PHOTO_MAX_SIDE,
+  quality = 0.82,
+): Promise<PreparedPhoto> {
   // createImageBitmap applies the photo's EXIF rotation, so portrait shots stay upright.
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
   const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
@@ -33,7 +39,7 @@ export async function preparePhoto(file: Blob, maxSide = PHOTO_MAX_SIDE): Promis
     canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error('Could not read the photo.'))),
       'image/jpeg',
-      0.82,
+      quality,
     ),
   );
   const data = await new Promise<string>((resolve, reject) => {

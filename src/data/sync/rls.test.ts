@@ -472,6 +472,20 @@ describe('row level security', () => {
     expect(row.rows[0]!.name).toBe('New');
   });
 
+  it('food logs take plates, bowls and ml, and nothing else new', async () => {
+    const rows = rowsFor(userA);
+    for (const unit of ['plate', 'bowl', 'ml'])
+      await server.asUser(userA, (tx) =>
+        insertRow(tx, 'food_logs', { ...rows.food_logs, id: crypto.randomUUID(), unit }),
+      );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'food_logs', { ...rows.food_logs, id: crypto.randomUUID(), unit: 'handful' }),
+      ),
+      /check constraint/,
+    );
+  });
+
   it('rejects invalid values at the database, not only in the app', async () => {
     const rows = rowsFor(userA);
     await expectError(

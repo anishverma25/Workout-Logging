@@ -25,7 +25,9 @@ import {
   type BillingDeps,
 } from '../../supabase/functions/_shared/billing.ts';
 import {
+  FOOD_LABEL_PROMPT,
   FOOD_PHOTO_PROMPT,
+  LABEL_MODEL,
   FOOD_PROMPT,
   handleCoach,
   type CoachProvider,
@@ -470,10 +472,28 @@ async function handleBilling(req: IncomingMessage, res: ServerResponse, route: s
 function fakeCoachProvider(name: 'gemini' | 'groq'): CoachProvider {
   return {
     name,
-    async generate(system, messages) {
+    async generate(system, messages, options) {
       const last = messages[messages.length - 1]!.text;
-      if (system === FOOD_PROMPT) return fakeFoodAnswer(name, last);
+      if (system === FOOD_PROMPT) {
+        const answer = fakeFoodAnswer(name, last);
+        // A search "runs" when a brand is named, as it would with a key that can search.
+        if (options?.search) options.onSearch?.(/[A-Z]{2,}|Starbucks|Amul/.test(last));
+        return answer;
+      }
       if (system === FOOD_PHOTO_PROMPT) return fakePhotoAnswer(name, last);
+      if (system === FOOD_LABEL_PROMPT) {
+        // The stronger label model is "over its free allowance", so the usual one answers.
+        if (options?.model === LABEL_MODEL)
+          throw new Error(`${name} label model is over its limit`);
+        return JSON.stringify({
+          product: 'Whey protein',
+          brand: 'TestFit',
+          serving_g: 33,
+          serving_text: '1 scoop (33 g)',
+          per_100g: { kcal: 400, protein_g: 80, carbs_g: 8, fat_g: 6, fibre_g: null, sugar_g: 3 },
+          per_serving: { kcal: 132, protein_g: 26.4, carbs_g: 2.6, fat_g: 2, fibre_g: null },
+        });
+      }
       if (last.includes('#all-down') || (name === 'gemini' && last.includes('#gemini-down')))
         throw new Error(`${name} is over its limit`);
       if (last.includes('#invent')) return 'Your squat is 999 kg, so add more weight.';

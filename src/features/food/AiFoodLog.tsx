@@ -171,7 +171,18 @@ export function AiFoodLog({
           {portions.length ? (
             <ul className="flex flex-col gap-2">
               {portions.map((p, i) => (
-                <AiItemRow key={i} portion={p} katoriMl={ctx.katoriMl} />
+                <AiItemRow
+                  key={i}
+                  portion={p}
+                  katoriMl={ctx.katoriMl}
+                  onChange={(next) =>
+                    setState((st) =>
+                      st.kind === 'done' || st.kind === 'fallback'
+                        ? { ...st, portions: st.portions.map((x, j) => (j === i ? next : x)) }
+                        : st,
+                    )
+                  }
+                />
               ))}
             </ul>
           ) : (

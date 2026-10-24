@@ -420,3 +420,40 @@ test('the three-dot menu drops from its button, stays on screen and closes clean
   await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(page.getByRole('dialog')).toBeVisible();
 });
+
+test('an exercise of your own, made inside a workout, is logged, saved and still there after a reload', async ({
+  page,
+}) => {
+  await page.goto('/workout');
+  await page.getByRole('button', { name: 'Start empty workout' }).click();
+  await page.getByRole('button', { name: 'Add exercise' }).click();
+  await page.getByRole('searchbox', { name: 'Search exercises' }).fill('Zercher carry hold');
+  await page.getByRole('button', { name: 'Create “Zercher carry hold”' }).click();
+  const create = page
+    .getByRole('dialog')
+    .filter({ has: page.getByRole('radiogroup', { name: 'Primary muscle' }) });
+  await create
+    .getByRole('radiogroup', { name: 'Primary muscle' })
+    .getByRole('radio', { name: 'Abs' })
+    .click();
+  await create.getByRole('button', { name: 'Create exercise' }).click();
+
+  const card = firstCard(page);
+  await expect(card).toContainText('Zercher carry hold');
+  await card.getByRole('textbox', { name: 'Set 1 load in kg' }).fill('60');
+  await card.getByRole('textbox', { name: 'Set 1 reps' }).fill('8');
+  await card.getByRole('button', { name: 'Mark set 1 done' }).click();
+  await page.getByRole('button', { name: 'Finish' }).click();
+  await page.getByRole('button', { name: /Finish and save|Finish anyway/ }).click();
+
+  await page.reload();
+  await page.goto('/exercises');
+  await page.getByRole('searchbox', { name: 'Search exercises' }).fill('zercher carry');
+  await page
+    .getByRole('button', { name: /^Zercher carry hold/ })
+    .first()
+    .click();
+  await expect(page.getByText('Your exercise', { exact: true })).toBeVisible();
+  await page.goto('/history');
+  await expect(page.locator('a[href^="/history/"]').first()).toContainText('Zercher carry hold');
+});

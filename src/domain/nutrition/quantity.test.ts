@@ -57,3 +57,44 @@ describe('parseQuantity', () => {
     expect(parseQuantity('100 ml', { ...dal, units: ['katori'] }, 'katori')).toBeNull();
   });
 });
+
+describe('plates, bowls and ml', () => {
+  const biryani = { units: ['katori', 'plate', 'g'] as UnitId[], pieceName: null, density: 0.7 };
+  const dal = { units: ['katori', 'bowl', 'ladle', 'g'] as UnitId[], pieceName: null, density: 1 };
+  const milk = { units: ['glass', 'ml', 'g'] as UnitId[], pieceName: null, density: 1.03 };
+  const roti = {
+    units: ['piece', 'g'] as UnitId[],
+    pieceName: ['roti', 'rotis'] as [string, string],
+    density: 1,
+  };
+
+  it('reads plates for foods eaten by the plate', () => {
+    expect(parseQuantity('1.5 plates', biryani, 'katori')).toMatchObject({
+      amount: 1.5,
+      unit: 'plate',
+    });
+    expect(parseQuantity('half plate', biryani, 'katori')).toMatchObject({
+      amount: 0.5,
+      unit: 'plate',
+    });
+    expect(parseQuantity('two rotis', roti, 'piece')).toMatchObject({ amount: 2, unit: 'piece' });
+    expect(parseQuantity('1/2 plate', biryani, 'katori')).toMatchObject({
+      amount: 0.5,
+      unit: 'plate',
+    });
+  });
+
+  it('a bowl is the food’s own bowl when it has one, else a katori', () => {
+    expect(parseQuantity('1 bowl', dal, 'katori')).toMatchObject({ unit: 'bowl' });
+    expect(parseQuantity('1 bowl', biryani, 'katori')).toMatchObject({ unit: 'katori' });
+  });
+
+  it('keeps ml for drinks that offer it, and turns ml into grams for the rest', () => {
+    expect(parseQuantity('300 ml', milk, 'glass')).toMatchObject({ amount: 300, unit: 'ml' });
+    expect(parseQuantity('300 ml', dal, 'katori')).toMatchObject({ amount: 300, unit: 'g' });
+  });
+
+  it('never measures a food in a way it does not offer', () => {
+    expect(parseQuantity('2 plates', roti, 'piece')).toBeNull();
+  });
+});

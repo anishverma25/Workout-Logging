@@ -54,6 +54,9 @@ export interface Food {
   /** What one piece is called: ['roti', 'rotis']. */
   pieceName: [string, string] | null;
   servingG: number | null;
+  /** Grams in one plate or one bowl of this food, when it is eaten that way. */
+  plateG?: number | null;
+  bowlG?: number | null;
   /** Where the numbers come from, shown under the name. */
   source:
     | 'recipe'
@@ -70,7 +73,7 @@ export interface Food {
   recipe: { lines: { name: string; grams: number }[]; cookedG: number; makes: string } | null;
   /** For OverloadGPT estimates: whether a label or menu was found, and where. */
   ai?: {
-    basis: 'web' | 'estimate' | 'photo' | 'label';
+    basis: 'web' | 'estimate' | 'photo' | 'label' | 'yours';
     ref: string;
     portion: string;
     confidence?: 'high' | 'medium' | 'low';
@@ -149,7 +152,7 @@ export const atwaterKcal = (n: Nutrients) =>
 
 /** The grams in one of `unit`, or null when the food has no such unit. */
 export function unitGrams(
-  food: Pick<Food, 'density' | 'pieceG' | 'servingG'>,
+  food: Pick<Food, 'density' | 'pieceG' | 'servingG' | 'plateG' | 'bowlG'>,
   unit: UnitId,
   size: SizeId | null,
   katoriMl?: number | null,
@@ -178,6 +181,12 @@ export function unitGrams(
       return food.servingG;
     case 'g':
       return 1;
+    case 'ml':
+      return food.density;
+    case 'plate':
+      return food.plateG ?? null;
+    case 'bowl':
+      return food.bowlG ?? null;
   }
 }
 
@@ -203,6 +212,9 @@ export const UNIT_LABEL: Record<UnitId, [string, string]> = {
   serving: ['serving', 'servings'],
   share: ['share', 'shares'],
   g: ['g', 'g'],
+  plate: ['plate', 'plates'],
+  bowl: ['bowl', 'bowls'],
+  ml: ['ml', 'ml'],
 };
 
 const SIZE_LABEL: Record<SizeId, string> = { small: 'small', medium: '', large: 'large' };
@@ -230,6 +242,7 @@ export function portionText(
   pieceName?: [string, string] | null,
 ): string {
   if (unit === 'g') return `${Math.round(amount)} g`;
+  if (unit === 'ml') return `${Math.round(amount)} ml`;
   const [one, many] = unit === 'piece' && pieceName ? pieceName : UNIT_LABEL[unit];
   const sized = size && (unit === 'katori' || unit === 'cup') ? SIZE_LABEL[size] : '';
   const noun = amount > 1 ? many : one;

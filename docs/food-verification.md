@@ -164,3 +164,27 @@ pistachios, flax, pumpkin and sunflower seeds, popcorn, tender coconut water, so
 
 Not added (no checkable source): dragon fruit (not in USDA SR28), Starbucks, Electral and ORS
 sachets, PediaSure, Boost, pad thai, paella, seitan.
+
+## Round 2 check against the Indian Nutrient Databank (October 2026)
+
+Every one of the 255 recipe dishes was compared automatically with the closest-named dish in
+the Indian Nutrient Databank (INDB, bundled in `indbFoods.json`). 83 differed by more than 25% in
+calories or 35% in protein. Each was reviewed:
+
+- **Different dishes, matched by a shared word (about 45).** For example chaas against a
+  buttermilk biscuit, cafe latte against a pasta platter, onion pakora against pav bhaji. Not
+  errors.
+- **INDB's standard recipes are thinner or oilier than home cooking.** INDB dals are 44 to 53
+  kcal per 100 g (very thin), its plain dosa is 381 (oil-heavy), and its rasgulla, rabri and
+  kulfi count more syrup or less reduction. Our recipes sit inside the ranges of portion
+  references (HealthifyMe, FatSecret, brand pages) used in the earlier checks, so they stay.
+- **Same dish, checked by hand against portion references:** rasgulla 108 kcal and 4 g protein a
+  piece (references 106 to 125 kcal); rajma 139 kcal a katori; aloo matar 107 kcal a katori (a
+  little lean, within home-recipe range); khakhra 389 per 100 g (a dry cracker; INDB's 178 is
+  the outlier); paneer tikka 249 per 100 g (mostly paneer); shrikhand 206 and malai kulfi 191 per
+  100 g (references 200 to 250).
+
+No values were changed in this check: none had a second source showing ours was wrong. Search was
+fixed so staples come first ("milk" is full cream milk, "rice" is steamed rice), and foods gained
+the measures they are eaten in (plate, bowl, ml), which removes the biggest source of logging
+error in practice: the amount.

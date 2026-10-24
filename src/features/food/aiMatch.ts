@@ -27,7 +27,8 @@ const countIn = (portion: string) => Number(/^\s*(\d+(?:\.\d+)?)/.exec(portion)?
 
 /** The portion for an item: pieces or katoris when the library food has them, else grams. */
 export function portionForItem(item: FoodItem, ctx: FoodContext): FoodPortion {
-  const food = libraryMatch(item, ctx);
+  // The person's own numbers are never swapped for the library's.
+  const food = item.basis === 'yours' ? null : libraryMatch(item, ctx);
   if (!food) return defaultPortion(foodFromItem(item));
   const count = countIn(item.portion);
   if (food.pieceG && food.units.includes('piece')) {
@@ -35,6 +36,10 @@ export function portionForItem(item: FoodItem, ctx: FoodContext): FoodPortion {
     if (each > food.pieceG * 0.6 && each < food.pieceG * 1.6)
       return { ...defaultPortion(food), unit: 'piece', amount: count };
   }
+  if (/plate/i.test(item.portion) && food.units.includes('plate'))
+    return { ...defaultPortion(food), unit: 'plate', amount: count, size: null };
+  if (/bowl/i.test(item.portion) && food.units.includes('bowl'))
+    return { ...defaultPortion(food), unit: 'bowl', amount: count, size: null };
   if (/katori|bowl/i.test(item.portion) && food.units.includes('katori'))
     return { ...defaultPortion(food), unit: 'katori', amount: count, size: 'medium' };
   if (food.units.includes('g'))

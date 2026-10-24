@@ -16,6 +16,9 @@ export interface ParsedQuantity {
 
 type Measured = Pick<Food, 'units' | 'pieceName' | 'density'>;
 
+/** A bowl is the food's own bowl when it has one, else a katori. */
+const BOWL_WORDS = ['bowl', 'bowls', 'katora'];
+
 const FRACTIONS: Record<string, number> = {
   '½': 0.5,
   '¼': 0.25,
@@ -56,6 +59,7 @@ const WORDS: [UnitId | 'kg' | 'ml' | 'l', string[]][] = [
   ['ml', ['ml', 'mls', 'millilitre', 'millilitres', 'milliliter', 'milliliters']],
   ['l', ['l', 'lt', 'litre', 'litres', 'liter', 'liters']],
   ['katori', ['katori', 'katoris', 'katora', 'bowl', 'bowls', 'vati', 'vatti']],
+  ['plate', ['plate', 'plates', 'plt']],
   ['ladle', ['ladle', 'ladles', 'ladel', 'karchi']],
   ['glass', ['glass', 'glasses']],
   ['cup', ['cup', 'cups']],
@@ -75,6 +79,7 @@ function unitFor(word: string, food: Measured): UnitId | 'kg' | 'ml' | 'l' | nul
   // What the food's own pieces are called ("roti", "rotis", "egg", "scoop") counts as pieces
   // when the food has pieces, and as servings when it only has servings.
   if (names.includes(w)) return food.units.includes('piece') ? 'piece' : 'serving';
+  if (BOWL_WORDS.includes(w) && food.units.includes('bowl')) return 'bowl';
   for (const [unit, words] of WORDS) if (words.includes(w)) return unit;
   return null;
 }
@@ -84,7 +89,17 @@ export function parseQuantity(
   food: Measured,
   current: UnitId,
 ): ParsedQuantity | null {
-  const lead = leadingNumber(text);
+  // "half plate", "aadha katori", "two rotis": words for numbers, as people say them.
+  const spoken = text
+    .trim()
+    .toLowerCase()
+    .replace(/^(half|aadha|adha)\b/, '0.5')
+    .replace(/^(quarter|paav|pav)\b/, '0.25')
+    .replace(/^(one|ek)\b/, '1')
+    .replace(/^(two|do)\b/, '2')
+    .replace(/^(three|teen)\b/, '3')
+    .replace(/^(four|char|chaar)\b/, '4');
+  const lead = leadingNumber(spoken);
   if (!lead || !(lead.value > 0)) return null;
   const word = lead.rest.replace(/^of\s+/, '').split(/\s+/)[0] ?? '';
   let unit: UnitId | 'kg' | 'ml' | 'l' = current;
@@ -95,8 +110,11 @@ export function parseQuantity(
   }
   let amount = lead.value;
   let target: UnitId;
-  if (unit === 'kg' || unit === 'ml' || unit === 'l') {
-    // Everything by weight or volume is logged in grams.
+  if (unit === 'ml' && food.units.includes('ml')) {
+    // Drinks that offer ml keep it, as typed.
+    target = 'ml';
+  } else if (unit === 'kg' || unit === 'ml' || unit === 'l') {
+    // Everything else by weight or volume is logged in grams.
     if (!food.units.includes('g')) return null;
     if (unit === 'kg') amount *= 1000;
     else {
@@ -108,7 +126,7 @@ export function parseQuantity(
     if (!food.units.includes(unit)) return null;
     target = unit;
   }
-  amount = target === 'g' ? Math.round(amount) : Math.round(amount * 100) / 100;
+  amount = target === 'g' || target === 'ml' ? Math.round(amount) : Math.round(amount * 100) / 100;
   if (!(amount > 0)) return null;
   return { amount, unit: target, text: `${amount} ${target}` };
 }

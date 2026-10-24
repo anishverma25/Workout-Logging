@@ -15,10 +15,12 @@ import type { Profile } from '@/domain/models/schemas';
 import {
   calculatedTargets,
   macroKcal,
+  macrosForCalories,
   targetMode,
   type CalculatedTargets,
   type TargetMode,
 } from '@/domain/nutrition/targets';
+import { GOAL_LABEL } from '@/domain/models/labels';
 import { EvidenceLink } from '../science/EvidenceLink';
 
 const n = (v: number) => Math.round(v).toLocaleString('en-GB');
@@ -56,6 +58,7 @@ export function TargetsSheet({
 }
 
 type Field = 'kcal' | 'proteinG' | 'carbsG' | 'fatG' | 'fibreG' | 'waterMl';
+type MacroField = 'proteinG' | 'carbsG' | 'fatG' | 'fibreG';
 
 function TargetsBody({
   profile,
@@ -70,6 +73,8 @@ function TargetsBody({
 }) {
   const toast = useToast();
   const [mode, setMode] = useState<TargetMode | null>(targetMode(profile));
+  // Only the numbers the person typed are theirs; the macros they leave alone are recommended
+  // from their calories and goal, and move when the calories or another macro change.
   const [own, setOwn] = useState<Record<Field, number | null>>({
     kcal: profile.calorieTarget ?? null,
     proteinG: profile.proteinTargetG ?? null,
@@ -81,8 +86,29 @@ function TargetsBody({
   const [busy, setBusy] = useState(false);
   const set = (f: Field) => (v: number | null) => setOwn((o) => ({ ...o, [f]: v }));
 
-  // What the macros the person typed add up to, against the calories they typed or were given.
   const kcalNow = own.kcal ?? calc?.kcal ?? null;
+  const rec = kcalNow
+    ? macrosForCalories({
+        kcal: kcalNow,
+        weightKg,
+        goal: profile.goal,
+        fixed: {
+          proteinG: own.proteinG ?? undefined,
+          carbsG: own.carbsG ?? undefined,
+          fatG: own.fatG ?? undefined,
+          fibreG: own.fibreG ?? undefined,
+        },
+      })
+    : null;
+  const shown = (f: MacroField) => own[f] ?? rec?.[f] ?? null;
+  // Tapping into a recommended number and leaving it as it is does not make it the person's.
+  const setMacro = (f: MacroField) => (v: number | null) =>
+    setOwn((o) => (o[f] === null && v !== null && rec && v === rec[f] ? o : { ...o, [f]: v }));
+  const recommended = (['proteinG', 'carbsG', 'fatG', 'fibreG'] as MacroField[]).filter(
+    (f) => own[f] === null && rec,
+  );
+
+  // What the macros add up to, against the calories, when the person typed all three.
   const macros =
     own.proteinG !== null && own.carbsG !== null && own.fatG !== null
       ? macroKcal({ proteinG: own.proteinG, carbsG: own.carbsG, fatG: own.fatG })
@@ -185,43 +211,39 @@ function TargetsBody({
             />
             <NumberField
               label="Protein a day"
-              value={own.proteinG}
-              onValueChange={set('proteinG')}
+              value={shown('proteinG')}
+              onValueChange={setMacro('proteinG')}
               allowDecimal={false}
               min={20}
               max={500}
               unit="g"
-              placeholder={ph(calc?.proteinG)}
             />
             <NumberField
               label="Carbs a day"
-              value={own.carbsG}
-              onValueChange={set('carbsG')}
+              value={shown('carbsG')}
+              onValueChange={setMacro('carbsG')}
               allowDecimal={false}
               min={0}
               max={1500}
               unit="g"
-              placeholder={ph(calc?.carbsG)}
             />
             <NumberField
               label="Fat a day"
-              value={own.fatG}
-              onValueChange={set('fatG')}
+              value={shown('fatG')}
+              onValueChange={setMacro('fatG')}
               allowDecimal={false}
               min={10}
               max={500}
               unit="g"
-              placeholder={ph(calc?.fatG)}
             />
             <NumberField
               label="Fibre a day"
-              value={own.fibreG}
-              onValueChange={set('fibreG')}
+              value={shown('fibreG')}
+              onValueChange={setMacro('fibreG')}
               allowDecimal={false}
               min={0}
               max={150}
               unit="g"
-              placeholder={ph(calc?.fibreG)}
             />
             <NumberField
               label="Water a day"
@@ -240,23 +262,22 @@ function TargetsBody({
               {n(mismatch.kcal)}. You can keep both, they just will not match.
             </p>
           ) : null}
-          <div className="flex items-center justify-between gap-3">
-            <p className="type-caption text-text-2">Grey numbers are the worked-out ones.</p>
-            <TextLink
-              small
-              onClick={() =>
-                setOwn({
-                  kcal: calc?.kcal ?? null,
-                  proteinG: calc?.proteinG ?? null,
-                  carbsG: calc?.carbsG ?? null,
-                  fatG: calc?.fatG ?? null,
-                  fibreG: calc?.fibreG ?? null,
-                  waterMl: calc?.waterMl ?? null,
-                })
-              }
-            >
-              Start from these
-            </TextLink>
+          <div className="flex flex-col gap-2" data-macro-help>
+            <p className="type-caption text-text-2">
+              {recommended.length
+                ? `${recommended.length === 4 ? 'Protein, carbs, fat and fibre are' : 'The macros you have not typed are'} recommended from ${own.kcal ? 'your calories' : 'the worked-out calories'} and your goal (${GOAL_LABEL[profile.goal].toLowerCase()}). Change any of them and the rest adjust.`
+                : 'All your own numbers.'}
+            </p>
+            {recommended.length < 4 ? (
+              <TextLink
+                small
+                onClick={() =>
+                  setOwn((o) => ({ ...o, proteinG: null, carbsG: null, fatG: null, fibreG: null }))
+                }
+              >
+                Back to the recommended macros
+              </TextLink>
+            ) : null}
           </div>
         </div>
       ) : null}

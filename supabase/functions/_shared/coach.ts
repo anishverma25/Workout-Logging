@@ -58,6 +58,13 @@ export interface ProviderMessage {
 export interface GenerateOptions {
   /** Let the model look things up on the web (Gemini Google Search, Groq browser search). */
   search?: boolean;
+  /**
+   * Told whether a web search really ran for the answer: false when search was not available
+   * (free keys, over the allowance) and the request went again without it.
+   */
+  onSearch?: (searched: boolean) => void;
+  /** A different model of the same provider for this request (a stronger one for labels). */
+  model?: string;
 }
 
 export interface CoachProvider {
@@ -264,6 +271,8 @@ export async function handleCoach(deps: CoachDeps, body: unknown): Promise<Coach
     return handleFoodLog(deps, body);
   if (body && typeof body === 'object' && (body as { kind?: unknown }).kind === 'food_photo')
     return handleFoodPhoto(deps, body);
+  if (body && typeof body === 'object' && (body as { kind?: unknown }).kind === 'food_label')
+    return handleFoodLabel(deps, body);
   const req = parseRequest(body);
   if (!req) return fail(400, 'That request could not be read.', 'bad_request');
   if (!proFromSubscription(await deps.subscription()))
@@ -327,12 +336,14 @@ async function withSearch(
     try {
       return await run(true);
     } catch (err) {
+      options.onSearch?.(false);
       console.error(
         'search request failed, retrying without',
         err instanceof Error ? err.message : err,
       );
     }
   }
+  if (options?.search) options.onSearch?.(false);
   return run(false);
 }
 
@@ -347,7 +358,7 @@ export function geminiProvider(
     generate: (system, messages, options) =>
       withSearch(options, async (grounded) => {
         const res = await fetchFn(
-          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(options?.model ?? model)}:generateContent`,
           {
             method: 'POST',
             headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
@@ -371,8 +382,15 @@ export function geminiProvider(
         );
         if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
         const json = (await res.json()) as {
-          candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[];
+          candidates?: {
+            content?: { parts?: { text?: string; thought?: boolean }[] };
+            groundingMetadata?: { webSearchQueries?: string[]; groundingChunks?: unknown[] };
+          }[];
         };
+        if (grounded) {
+          const g = json.candidates?.[0]?.groundingMetadata;
+          options?.onSearch?.(Boolean(g?.webSearchQueries?.length || g?.groundingChunks?.length));
+        }
         return (json.candidates?.[0]?.content?.parts ?? [])
           .filter((p) => !p.thought)
           .map((p) => p.text ?? '')
@@ -428,7 +446,11 @@ export function groqProvider(
             signal: AbortSignal.timeout(grounded || photo ? 40_000 : 25_000),
           });
           if (!res.ok) throw new Error(`Groq ${res.status}: ${(await res.text()).slice(0, 300)}`);
-          const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+          const json = (await res.json()) as {
+            choices?: { message?: { content?: string; executed_tools?: unknown[] } }[];
+          };
+          if (grounded)
+            options?.onSearch?.(Boolean(json.choices?.[0]?.message?.executed_tools?.length));
           // Reasoning models may write their thinking in <think> tags before the answer.
           return (json.choices?.[0]?.message?.content ?? '').replace(
             /<think>[\s\S]*?<\/think>/g,
@@ -476,9 +498,10 @@ export interface FoodItem {
   diet: 'veg' | 'egg' | 'nonveg';
   /**
    * "web" when a label or menu was found, "estimate" when worked out from a typical recipe,
-   * "photo" when read from a photo, "label" when a nutrition label in the photo was read.
+   * "photo" when read from a photo, "label" when a nutrition label in the photo was read,
+   * "yours" when the person typed the numbers themselves.
    */
-  basis: 'web' | 'estimate' | 'photo' | 'label';
+  basis: 'web' | 'estimate' | 'photo' | 'label' | 'yours';
   /** For photos: how sure the AI is about the food and the amount. */
   confidence?: 'high' | 'medium' | 'low';
   /** Where the numbers came from, as a short name ("Starbucks India menu"). */
@@ -493,7 +516,9 @@ Rules:
 3. When no amount is given, use one normal portion.
 4. Energy must agree with the macronutrients: about 4 kcal per g of protein and carbs and 9 per g of fat.
 5. Never invent a food they did not mention. If something is not a food, leave it out. If nothing is a food, reply [].
-6. Write the names in English even when the message is in Hindi or Hinglish.`;
+6. Write the names in English even when the message is in Hindi or Hinglish.
+7. When the person gives a weight, calories or grams of protein, carbs, fat or fibre for a food, use exactly their numbers for that food and work out only what they did not give.
+8. Set "basis" to "web" only when you actually found the values on the web in this answer.`;
 
 const num = (v: unknown): number | null =>
   typeof v === 'number' && Number.isFinite(v)
@@ -513,6 +538,163 @@ export function parseFoodJson(text: string): unknown[] | null {
   } catch {
     return null;
   }
+}
+
+const NOT_A_FOOD =
+  /^(?:\d+\s*)?(?:g|gm|grams?)?\s*(?:of\s+)?(?:protein|carbs?|carbohydrates?|fats?|fib(?:re|er)|calories|kcal|cals?)$/i;
+
+/** What the person typed about one food: its words and any numbers they gave. */
+export interface StatedFood {
+  words: string[];
+  grams?: number;
+  kcal?: number;
+  proteinG?: number;
+  carbsG?: number;
+  fatG?: number;
+  fibreG?: number;
+}
+
+const NUM = String.raw`(\d+(?:\.\d+)?)`;
+const NUTRIENT: [keyof StatedFood, string][] = [
+  ['proteinG', 'protein'],
+  ['carbsG', 'carbs?|carbohydrates?'],
+  ['fatG', 'fats?'],
+  ['fibreG', 'fib(?:re|er)'],
+];
+
+/**
+ * The numbers a person typed, food by food: "200 g paneer 36 g protein, whey 1 scoop 120 kcal
+ * 24g protein". Foods are split at commas, semicolons, new lines, "and" and "+". Grams, ml (as
+ * grams) and kg are the weight; "g protein", "protein 24 g" and the like are nutrients.
+ */
+export function parseStated(text: string): StatedFood[] {
+  return (
+    text
+      .split(/[,;\n+]|\band\b|\baur\b/i)
+      .map((part) => part.trim().toLowerCase())
+      .filter(Boolean)
+      .map((part) => {
+        const out: StatedFood = { words: [] };
+        let rest = part;
+        for (const [key, word] of NUTRIENT) {
+          const re = new RegExp(
+            String.raw`${NUM}\s*(?:g|gm|gms|grams?)?\s*(?:of\s+)?(?:${word})\b|(?:${word})\s*(?:of|:|-)?\s*${NUM}\s*(?:g|gm|gms|grams?)?`,
+          );
+          const m = re.exec(rest);
+          if (m) {
+            (out as unknown as Record<string, number>)[key] = Number(m[1] ?? m[2]);
+            rest = rest.replace(m[0], ' ');
+          }
+        }
+        const kcal = new RegExp(
+          String.raw`${NUM}\s*(?:kcal|cal|calories|cals)\b|(?:calories|kcal)\s*(?:of|:|-)?\s*${NUM}`,
+        ).exec(rest);
+        if (kcal) {
+          out.kcal = Number(kcal[1] ?? kcal[2]);
+          rest = rest.replace(kcal[0], ' ');
+        }
+        const weight = new RegExp(String.raw`${NUM}\s*(kg|g|gm|gms|grams?|ml)\b`).exec(rest);
+        if (weight) {
+          out.grams = Number(weight[1]) * (weight[2] === 'kg' ? 1000 : 1);
+          rest = rest.replace(weight[0], ' ');
+        }
+        out.words = rest
+          .replace(/[^a-z\s]/g, ' ')
+          .split(/\s+/)
+          .filter(
+            (w) =>
+              w.length > 2 && !['with', 'the', 'some', 'had', 'ate', 'scoop', 'scoops'].includes(w),
+          );
+        return out;
+      })
+      // Numbers after a comma with no food named ("200 g paneer, 36 g protein") belong to the
+      // food before them.
+      .reduce<StatedFood[]>((list, part) => {
+        const prev = list[list.length - 1];
+        if (part.words.length === 0 && prev) {
+          for (const [k, v] of Object.entries(part))
+            if (k !== 'words' && (prev as unknown as Record<string, unknown>)[k] === undefined)
+              (prev as unknown as Record<string, unknown>)[k] = v;
+        } else list.push(part);
+        return list;
+      }, [])
+  );
+}
+
+const hasNumbers = (s: StatedFood) =>
+  s.grams !== undefined ||
+  s.kcal !== undefined ||
+  s.proteinG !== undefined ||
+  s.carbsG !== undefined ||
+  s.fatG !== undefined ||
+  s.fibreG !== undefined;
+
+/**
+ * Puts the person's own numbers on the foods the AI found, matched by name: their weight scales
+ * the food, their calories and macros replace the AI's, and when their calories leave less
+ * room than the AI's carbs and fat need, those shrink to fit. Such foods are marked "yours".
+ */
+export function applyStated(items: FoodItem[], stated: StatedFood[]): FoodItem[] {
+  const withNumbers = stated.filter(hasNumbers);
+  if (withNumbers.length === 0) return items;
+  const used = new Set<number>();
+  const out = items.slice();
+  for (const st of withNumbers) {
+    let best = -1;
+    let bestScore = 0;
+    out.forEach((item, i) => {
+      if (used.has(i)) return;
+      const name = item.name.toLowerCase();
+      const score = st.words.filter(
+        (w) => name.includes(w) || name.includes(w.replace(/s$/, '')),
+      ).length;
+      if (score > bestScore) {
+        best = i;
+        bestScore = score;
+      }
+    });
+    // One food typed and one food found: they are the same, even without a shared word.
+    if (best === -1 && withNumbers.length === 1 && out.length === 1) best = 0;
+    if (best === -1) continue;
+    used.add(best);
+    const item = out[best]!;
+    const factor = st.grams !== undefined && item.grams > 0 ? st.grams / item.grams : 1;
+    const round = (v: number) => Math.round(v * 10) / 10;
+    let next: FoodItem = {
+      ...item,
+      grams: st.grams !== undefined ? Math.round(st.grams) : item.grams,
+      portion: st.grams !== undefined ? `${Math.round(st.grams)} g` : item.portion,
+      kcal: Math.round(st.kcal ?? item.kcal * factor),
+      proteinG: round(st.proteinG ?? item.proteinG * factor),
+      carbsG: round(st.carbsG ?? item.carbsG * factor),
+      fatG: round(st.fatG ?? item.fatG * factor),
+      fibreG: round(st.fibreG ?? item.fibreG * factor),
+    };
+    if (st.kcal !== undefined) {
+      // Their calories stand; macros they did not give shrink to fit what is left.
+      const fixed =
+        4 * (st.proteinG !== undefined ? next.proteinG : 0) +
+        4 * (st.carbsG !== undefined ? next.carbsG : 0) +
+        9 * (st.fatG !== undefined ? next.fatG : 0);
+      const free =
+        4 * (st.proteinG === undefined ? next.proteinG : 0) +
+        4 * (st.carbsG === undefined ? next.carbsG : 0) +
+        9 * (st.fatG === undefined ? next.fatG : 0);
+      const room = Math.max(0, next.kcal - fixed);
+      if (free > room && free > 0) {
+        const k = room / free;
+        next = {
+          ...next,
+          proteinG: st.proteinG === undefined ? round(next.proteinG * k) : next.proteinG,
+          carbsG: st.carbsG === undefined ? round(next.carbsG * k) : next.carbsG,
+          fatG: st.fatG === undefined ? round(next.fatG * k) : next.fatG,
+          fibreG: st.fibreG === undefined ? round(Math.min(next.fibreG, next.carbsG)) : next.fibreG,
+        };
+      }
+    }
+    out[best] = { ...next, basis: 'yours', ref: 'Your numbers' };
+  }
+  return out;
 }
 
 /**
@@ -551,7 +733,7 @@ export function checkFoodItem(raw: unknown): FoodItem | null {
     fibreG: round(fib),
     diet,
     basis:
-      r.basis === 'web' || r.basis === 'photo' || r.basis === 'label'
+      r.basis === 'web' || r.basis === 'photo' || r.basis === 'label' || r.basis === 'yours'
         ? (r.basis as FoodItem['basis'])
         : 'estimate',
     ...(r.confidence === 'high' || r.confidence === 'medium' || r.confidence === 'low'
@@ -579,10 +761,17 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
     },
   ];
   let empty = false;
+  const stated = parseStated(text);
   for (const provider of deps.providers) {
     let answer: string;
+    let searched = false;
     try {
-      answer = await provider.generate(FOOD_PROMPT, messages, { search: true });
+      answer = await provider.generate(FOOD_PROMPT, messages, {
+        search: true,
+        onSearch: (s) => {
+          searched = s;
+        },
+      });
     } catch (err) {
       console.error(`food: ${provider.name} failed`, err instanceof Error ? err.message : err);
       continue;
@@ -592,10 +781,17 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
       console.error(`food: ${provider.name} gave no JSON`);
       continue;
     }
-    const items = list
+    const checked = list
       .slice(0, FOOD_LIMITS.items)
       .map(checkFoodItem)
-      .filter((i): i is FoodItem => i !== null);
+      .filter((i): i is FoodItem => i !== null)
+      // A nutrient on its own ("30 g protein") is a number about a food, not a food.
+      .filter((i) => !NOT_A_FOOD.test(i.name))
+      // "From the web" only when a search really ran; otherwise it is the AI's own estimate.
+      .map((i) => (i.basis === 'web' && !searched ? { ...i, basis: 'estimate' as const } : i))
+      .map((i) => (i.basis === 'yours' ? { ...i, basis: 'estimate' as const } : i));
+    // The person's own numbers win over the AI's, food by food.
+    const items = applyStated(checked, stated);
     if (items.length === 0) {
       // A clear "nothing here is a food" is an answer; a list where every item failed is not.
       if (list.length === 0) empty = true;
@@ -694,4 +890,176 @@ export async function handleFoodPhoto(deps: CoachDeps, body: unknown): Promise<C
   // Nothing usable came back, so the photo does not count against today's allowance.
   await deps.photoQuota?.release().catch(() => undefined);
   return fail(503, 'OverloadGPT is busy right now. Try again in a minute.', 'busy');
+}
+
+// ---------------------------------------------------------------------------------------------
+// Nutrition label reading (Pro)
+// ---------------------------------------------------------------------------------------------
+
+/** Labels are sent larger than plate photos so the small print stays sharp. */
+export const LABEL_LIMITS = { base64: 3_000_000 } as const;
+/**
+ * The stronger Gemini model is tried first for labels, where reading small print matters most;
+ * when it is not available or over its free allowance, the usual model and then Groq are used.
+ */
+export const LABEL_MODEL = 'gemini-3.5-flash';
+
+export const FOOD_LABEL_PROMPT = `You read nutrition labels on food packs for Overload, a food logging app used in India. You get one photo. Copy what is printed. Do not estimate, round or fill in anything you cannot read.
+
+Reply with JSON only, one object with these keys:
+"product": the product name as printed, or null.
+"brand": the brand, or null.
+"serving_g": the serving size in grams (or ml for drinks) as a number, or null if none is printed.
+"serving_text": the serving as printed, for example "1 scoop (33 g)" or "2 biscuits", or null.
+"per_100g": {"kcal", "protein_g", "carbs_g", "fat_g", "fibre_g", "sugar_g"} per 100 g or 100 ml as printed, or null if the label has no per 100 g column.
+"per_serving": the same keys per serving as printed, or null if there is no per serving column.
+Use null for any single value you cannot read with certainty. Energy printed only in kJ: give kcal = kJ / 4.184. If the photo is not a nutrition label, reply {"not_a_label": true}.`;
+
+export interface LabelValues {
+  kcal: number | null;
+  proteinG: number | null;
+  carbsG: number | null;
+  fatG: number | null;
+  fibreG: number | null;
+  sugarG: number | null;
+}
+
+export interface LabelReading {
+  product: string | null;
+  brand: string | null;
+  servingG: number | null;
+  servingText: string | null;
+  per100: LabelValues | null;
+  perServing: LabelValues | null;
+  /** Columns whose energy does not match their macros, to be checked against the pack. */
+  check: ('per100' | 'perServing')[];
+}
+
+/** The first JSON object in a model answer. */
+function parseObject(text: string): Record<string, unknown> | null {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start === -1 || end <= start) return null;
+  try {
+    const v = JSON.parse(text.slice(start, end + 1)) as unknown;
+    return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+function labelValues(raw: unknown, maxKcal: number): LabelValues | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const v = (key: string, max: number) => {
+    const n = num(r[key]);
+    return n === null || n < 0 || n > max ? null : Math.round(n * 10) / 10;
+  };
+  const out: LabelValues = {
+    kcal: v('kcal', maxKcal),
+    proteinG: v('protein_g', 100),
+    carbsG: v('carbs_g', 100),
+    fatG: v('fat_g', 100),
+    fibreG: v('fibre_g', 100) ?? v('fiber_g', 100),
+    sugarG: v('sugar_g', 100),
+  };
+  return Object.values(out).some((x) => x !== null) ? out : null;
+}
+
+/** Energy within 20% of what the macros add up to (labels round, and fibre counts less). */
+function labelAddsUp(v: LabelValues): boolean {
+  if (v.kcal === null || v.proteinG === null || v.carbsG === null || v.fatG === null) return true;
+  const macros = 4 * v.proteinG + 4 * v.carbsG + 9 * v.fatG;
+  if (v.kcal < 20) return macros < 40;
+  return Math.abs(macros - v.kcal) / v.kcal <= 0.2;
+}
+
+/** A label reading, checked: values in range, per 100 g never above 900 kcal. */
+export function checkLabel(raw: Record<string, unknown>): LabelReading | null {
+  if (raw.not_a_label === true) return null;
+  const text = (v: unknown, n: number) =>
+    typeof v === 'string' && v.trim() ? tidyAnswer(v).slice(0, n) : null;
+  const servingG = num(raw.serving_g);
+  const per100 = labelValues(raw.per_100g, 900);
+  // Per 100 g values that are larger than 100 g of anything can be: drop the column.
+  const per100ok =
+    per100 && (per100.proteinG ?? 0) + (per100.carbsG ?? 0) + (per100.fatG ?? 0) <= 105
+      ? per100
+      : null;
+  const perServing = labelValues(raw.per_serving, 3000);
+  if (!per100ok && !perServing) return null;
+  const check: LabelReading['check'] = [];
+  if (per100ok && !labelAddsUp(per100ok)) check.push('per100');
+  if (perServing && !labelAddsUp(perServing)) check.push('perServing');
+  return {
+    product: text(raw.product, 60),
+    brand: text(raw.brand, 40),
+    servingG: servingG !== null && servingG > 0 && servingG <= 2000 ? servingG : null,
+    servingText: text(raw.serving_text, 40),
+    per100: per100ok,
+    perServing,
+    check,
+  };
+}
+
+export async function handleFoodLabel(deps: CoachDeps, body: unknown): Promise<CoachResponse> {
+  const b = body as Record<string, unknown>;
+  const image = typeof b.image === 'string' ? b.image : '';
+  const mime = b.mime === 'image/png' || b.mime === 'image/webp' ? b.mime : 'image/jpeg';
+  if (!image || image.length > LABEL_LIMITS.base64 || !/^[A-Za-z0-9+/=]+$/.test(image))
+    return fail(400, 'That photo could not be read.', 'bad_request');
+  if (!proFromSubscription(await deps.subscription()))
+    return fail(403, 'Reading labels is part of Pro.', 'not_pro');
+  if (deps.providers.length === 0)
+    return fail(503, 'Reading labels is not set up yet.', 'not_configured');
+  const left = deps.photoQuota ? await deps.photoQuota.claim() : PHOTOS_PER_DAY;
+  if (left < 0)
+    return fail(
+      429,
+      `You have used today's ${PHOTOS_PER_DAY} photos. Type the numbers from the label instead.`,
+      'photo_limit',
+    );
+  const messages: ProviderMessage[] = [
+    { role: 'user', text: 'Read this nutrition label.', image: { mime, data: image } },
+  ];
+  // The stronger model first where there is one, then each provider as it is.
+  const attempts: [CoachProvider, GenerateOptions | undefined][] = [];
+  for (const p of deps.providers) {
+    if (p.name === 'gemini') attempts.push([p, { model: LABEL_MODEL }]);
+    attempts.push([p, undefined]);
+  }
+  let notLabel = false;
+  for (const [provider, options] of attempts) {
+    let answer: string;
+    try {
+      answer = await provider.generate(FOOD_LABEL_PROMPT, messages, options);
+    } catch (err) {
+      console.error(`label: ${provider.name} failed`, err instanceof Error ? err.message : err);
+      continue;
+    }
+    const raw = parseObject(answer);
+    if (!raw) {
+      console.error(`label: ${provider.name} gave no JSON`);
+      continue;
+    }
+    if (raw.not_a_label === true) {
+      notLabel = true;
+      break;
+    }
+    const label = checkLabel(raw);
+    if (!label) continue;
+    return { status: 200, body: { label, left: Math.max(0, left) } };
+  }
+  await deps.photoQuota?.release().catch(() => undefined);
+  if (notLabel)
+    return fail(
+      422,
+      'That does not look like a nutrition label. Photograph the table on the pack.',
+      'not_a_label',
+    );
+  return fail(
+    503,
+    'The label could not be read. Try a sharper photo of just the table, or type the numbers.',
+    'unreadable',
+  );
 }

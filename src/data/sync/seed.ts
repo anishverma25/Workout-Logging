@@ -14,6 +14,8 @@ export const FIRST_LIBRARY_SIZE = 91;
 export const PERSONAL_TRAINING_LIBRARY_SIZE = 101;
 /** Library size after migration 0005 (the adductor machine). */
 export const LIBRARY_ADDITIONS_SIZE = 102;
+/** Library size after migration 0007 (training details); round 2 additions go in 0014. */
+export const TRAINING_DETAILS_SIZE = 104;
 
 export function exerciseSeedSql(from = 0, to = FIRST_LIBRARY_SIZE): string {
   const rows = SYSTEM_EXERCISES.slice(from, to).map((e, j) => {

@@ -250,3 +250,23 @@ Read README.md for setup, architecture and calculation rules.
   keyboard only counts while a field has focus and only beyond what was missing when the sheet
   opened (`viewportBaseline`, `isEditing` in `kit/keyboard.ts`); the content area uses an auto
   flex basis, never 0. `tests/e2e/sheets-iphone.spec.ts` fakes a short viewport.
+- Clean UI release (October 2026): page headers keep the avatar and buttons top right and wrap
+  long titles; the header starts lower on phones (iOS Safari blurs the top edge). Food: Today,
+  Day analysis, meals, Water. Home: food and activity in one card, rings inside the week card
+  ("This week"), top three strength trends. Activity lives in More (and the desktop sidebar);
+  the phone bar is Home, Routines, Workout, Food, Progress, History. `devices.spec.ts` checks
+  every main page at iPhone 16 and Galaxy widths.
+- Round 2 (October 2026, migrations 0014 exercises and 0015 food units):
+  - Own targets: macros are recommended from the typed calories and the goal
+    (`macrosForCalories`), anything typed is kept and the rest re-balance.
+  - Five exercises at the end of the library (seeded by position; `TRAINING_DETAILS_SIZE`);
+    exercise search matches plurals and gym words; import treats seat or pin notes as machines.
+  - Typed AI food: `parseStated`/`applyStated` in `_shared/coach.ts` make the person's grams,
+    calories and macros win ("Your numbers", never swapped for library values); "web" only when
+    the provider reports a real search (`onSearch`); every AI row is editable before logging.
+  - From a pack (`LabelLog`): barcode from a photo (@zxing, free) looked up in Open Food Facts
+    (`app/barcode.ts`, CSP connect-src), the label read by the `food_label` mode (AI copies
+    printed values only, `gemini-3.5-flash` first) or typed; `labelPortion` does the maths.
+  - Units `plate`, `bowl`, `ml` (`data/library/measures.ts` by food type); the amount box reads
+    "half plate", "two rotis"; staples rank first in food search.
+  - Logging a plate saves its new foods in one transaction (several saves froze phones).

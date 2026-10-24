@@ -3,9 +3,11 @@ import type { Food } from '@/domain/nutrition/calc';
 import type { DietType } from '@/domain/nutrition/types';
 import {
   FOOD_LIMITS,
+  LABEL_LIMITS,
   PHOTO_LIMITS,
   PHOTOS_PER_DAY,
   type FoodItem,
+  type LabelReading,
 } from '../../supabase/functions/_shared/coach.ts';
 
 /**
@@ -14,7 +16,7 @@ import {
  * checks every item before it comes back. Nothing is stored on the server.
  */
 
-export type { FoodItem };
+export type { FoodItem, LabelReading };
 export { FOOD_LIMITS, PHOTO_LIMITS, PHOTOS_PER_DAY };
 
 export class FoodAiError extends Error {
@@ -80,6 +82,20 @@ export async function askFoodPhoto(input: {
   };
 }
 
+/** Sends a photo of a nutrition label; the server reads it (and only reads it). */
+export async function askFoodLabel(input: {
+  image: string;
+  mime: string;
+}): Promise<{ label: LabelReading; left: number | null }> {
+  if (input.image.length > LABEL_LIMITS.base64)
+    throw new FoodAiError('That photo is too large. Try again a little further away.', 'too_large');
+  const data = await invoke({ kind: 'food_label', image: input.image, mime: input.mime });
+  return {
+    label: data.label as LabelReading,
+    left: typeof data.left === 'number' ? data.left : null,
+  };
+}
+
 const newId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
@@ -123,4 +139,47 @@ export function foodFromItem(item: FoodItem): Food {
       ...(item.confidence ? { confidence: item.confidence } : {}),
     },
   };
+}
+
+/** The numbers a person sets for one food on the AI screen, for the portion they ate. */
+export interface EditedNumbers {
+  grams: number;
+  kcal: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  fibreG: number;
+}
+
+/**
+ * A food with the person's own numbers for the amount they ate: logged as "1 serving" of that
+ * many grams, marked as theirs, and adjustable on the plate like any other food.
+ */
+export function editedPortion(
+  name: string,
+  diet: Food['diet'],
+  n: EditedNumbers,
+  basis: 'yours' | 'label' = 'yours',
+  ref = 'Your numbers',
+): {
+  food: Food;
+  unit: 'serving';
+  amount: number;
+  size: null;
+  oilLevel: null;
+} {
+  const food = foodFromItem({
+    name,
+    portion: `${Math.round(n.grams)} g`,
+    grams: Math.round(n.grams),
+    kcal: Math.round(n.kcal),
+    proteinG: n.proteinG,
+    carbsG: n.carbsG,
+    fatG: n.fatG,
+    fibreG: n.fibreG,
+    diet: diet === 'egg' || diet === 'nonveg' ? diet : 'veg',
+    basis,
+    ref,
+  });
+  return { food, unit: 'serving', amount: 1, size: null, oilLevel: null };
 }

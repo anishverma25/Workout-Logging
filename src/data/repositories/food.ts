@@ -218,6 +218,12 @@ export async function keepPlateFoods(
   db: WorkoutDatabase,
   plate: FoodPortion[],
 ): Promise<FoodPortion[]> {
+  // One transaction for the whole plate: the food list updates once, not once per food, which
+  // kept a phone busy for seconds when OverloadGPT found several foods.
+  return db.transaction('rw', [db.customFoods, db.outbox], () => keepAll(db, plate));
+}
+
+async function keepAll(db: WorkoutDatabase, plate: FoodPortion[]): Promise<FoodPortion[]> {
   const saved = new Map<string, Food>();
   const out: FoodPortion[] = [];
   for (const p of plate) {

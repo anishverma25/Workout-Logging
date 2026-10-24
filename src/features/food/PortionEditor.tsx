@@ -60,7 +60,8 @@ export function PortionEditor({
   } catch {
     measured = null;
   }
-  const grams = portion.unit === 'g';
+  // Grams and ml are typed as whole numbers; everything else counts katoris, plates, pieces.
+  const grams = portion.unit === 'g' || portion.unit === 'ml';
   const set = (changes: Partial<FoodPortion>) => onChange({ ...portion, ...changes });
 
   return (
@@ -82,7 +83,12 @@ export function PortionEditor({
           onChange={(unit) =>
             set({
               unit,
-              amount: unit === 'g' ? Math.round(measured?.grams ?? 100) : 1,
+              amount:
+                unit === 'g'
+                  ? Math.round(measured?.grams ?? 100)
+                  : unit === 'ml'
+                    ? Math.round((measured?.grams ?? 100) / (food.density || 1))
+                    : 1,
               size: unit === 'katori' || unit === 'cup' ? (portion.size ?? 'medium') : null,
             })
           }
@@ -128,7 +134,7 @@ export function PortionEditor({
       <AmountInput
         portion={portion}
         grams={grams}
-        gramsText={measured && !grams ? `${Math.round(measured.grams)} g` : null}
+        gramsText={measured && portion.unit !== 'g' ? `${Math.round(measured.grams)} g` : null}
         onChange={set}
       />
 
@@ -216,7 +222,12 @@ function AmountInput({
   const max = grams ? 5000 : 100;
   const step = grams ? 10 : portion.unit === 'piece' ? 1 : 0.5;
   const shown = draft ?? String(portion.amount);
-  const label = grams ? 'grams' : unitName(food, portion.unit).toLowerCase();
+  const label =
+    portion.unit === 'g'
+      ? 'grams'
+      : portion.unit === 'ml'
+        ? 'ml'
+        : unitName(food, portion.unit).toLowerCase();
   const btn =
     'pressable chrome inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text-1 select-none disabled:text-text-3';
 
@@ -272,7 +283,7 @@ function AmountInput({
             className="type-headline tabular w-full min-w-0 rounded-nested bg-surface-2 px-3 py-2 text-center text-text-1 outline-none focus-visible:ring-2 focus-visible:ring-lime"
           />
           <span className="type-caption tabular mt-1 text-text-2">
-            {grams ? 'grams' : label}
+            {label}
             {gramsText ? ` · ${gramsText}` : ''}
           </span>
         </label>
