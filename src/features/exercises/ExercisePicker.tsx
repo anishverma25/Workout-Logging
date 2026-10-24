@@ -168,8 +168,9 @@ function PickerContent({
         initialName={filters.query.trim()}
         onSaved={(e) => {
           setCreating(false);
-          if (mode === 'single') void pick([e.id]);
-          else setSelected((s) => [...s, e.id]);
+          // A new exercise goes straight in, with anything already ticked, so it is never left
+          // waiting in a list that has just been cleared.
+          void pick(mode === 'single' ? [e.id] : [...selected, e.id]);
           setFilters(EMPTY_FILTERS);
         }}
       />
