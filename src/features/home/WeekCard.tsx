@@ -102,7 +102,7 @@ export function WeekCard({
         ) : null}
       </div>
 
-      <div className="mt-5 border-t-[0.5px] border-divider pt-4">
+      <div className="mt-5 border-t-[0.5px] border-divider pt-4" data-last-7-days>
         <h3 className="type-label text-text-2">Last 7 days</h3>
         <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-4">
           <Stat label="Sessions" value={String(w.sessions)} />

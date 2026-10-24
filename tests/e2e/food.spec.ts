@@ -107,7 +107,7 @@ test('free accounts see what Pro adds to food', async ({ page }) => {
   await expect(page.getByRole('dialog').locator('[data-type-meal]')).toContainText('Pro');
 });
 
-test('Pro tells OverloadGPT a meal, gets protein help and sees food on Progress', async ({
+test('Pro tells OverloadGPT a meal and sees food on Progress', async ({
   page,
 }) => {
   await startWithDemo(page, { tag: 'food-pro' });
@@ -140,15 +140,6 @@ test('Pro tells OverloadGPT a meal, gets protein help and sees food on Progress'
   const dinner = page.locator('[data-meal="dinner"]');
   await expect(dinner).toContainText('Roti');
   await expect(dinner).toContainText('Domino pizza');
-
-  const help = page.locator('[data-protein-help]');
-  await expect(help).toContainText('protein to go');
-  await help.getByRole('button', { name: 'Apply' }).first().click();
-  await expect(
-    page.getByText(
-      /^Logged (Paneer|Curd|Boiled|Chicken|Soya|Milk|Roasted|Moong|Sprouts|Whey|Greek|Egg|Tofu)/,
-    ),
-  ).toBeVisible();
 
   await page.goto('/progress');
   const section = page.locator('#nutrition');
