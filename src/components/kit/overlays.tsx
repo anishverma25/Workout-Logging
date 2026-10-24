@@ -167,13 +167,13 @@ export function BottomSheet({
             }
           : undefined
       }
+      data-tall={tall ? '' : undefined}
       className={cn(
         'kit-sheet hidden flex-col overflow-hidden rounded-panel bg-surface p-0 text-text-1 open:flex backdrop:bg-overlay',
-        // 80vh first for browsers without dvh (Chrome before 108, older Samsung Internet).
-        'm-auto max-h-[80vh] w-[calc(100vw-1.5rem)] supports-[height:1dvh]:max-h-[80dvh]',
+        // Height rules live in index.css (.kit-sheet): they keep clear of the status bar and
+        // the home indicator, which iOS Safari blurs.
+        'm-auto w-[calc(100vw-1.5rem)]',
         wide ? 'max-w-2xl' : 'max-w-[30rem]',
-        tall &&
-          'h-[88vh] max-h-[88vh] supports-[height:1dvh]:h-[88dvh] supports-[height:1dvh]:max-h-[88dvh]',
         className,
       )}
     >

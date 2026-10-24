@@ -157,15 +157,88 @@ function Start({
   );
 
   return (
-    <div className="flex flex-col gap-5" data-label-start>
-      <section aria-labelledby="pack-barcode" className="flex flex-col gap-2">
-        <h3 id="pack-barcode" className="type-headline text-text-1">
-          Scan the barcode
-        </h3>
-        <p className="type-meta text-text-2">
-          Free. Looks the product up in Open Food Facts, an open database of food labels. Only the
-          barcode number is sent.
+    <div className="flex flex-col gap-6" data-label-start>
+      <section aria-labelledby="pack-label" className="flex flex-col gap-3">
+        <div>
+          <h3 id="pack-label" className="type-headline text-text-1">
+            Read the nutrition label
+          </h3>
+          <p className="type-meta mt-1 text-text-2">
+            Photograph the nutrition table, flat and in good light. Every printed number is read and
+            nothing is guessed; you then say how much you had.
+          </p>
+        </div>
+        {pro && store.consent ? (
+          <div className="grid grid-cols-2 gap-2">
+            {input(camera, true)}
+            {input(gallery, false)}
+            <PrimaryButton
+              block
+              icon={<Camera className="size-4" aria-hidden />}
+              onClick={() => camera.current?.click()}
+              loading={state.kind === 'reading'}
+              data-label-camera
+            >
+              Take photo
+            </PrimaryButton>
+            <SecondaryButton
+              block
+              icon={<ImageIcon className="size-4" aria-hidden />}
+              onClick={() => gallery.current?.click()}
+              disabled={state.kind === 'reading'}
+              data-label-gallery
+            >
+              Choose photo
+            </SecondaryButton>
+          </div>
+        ) : pro ? (
+          <CoachConsent />
+        ) : (
+          <Link
+            to="/pro"
+            className="pressable chrome flex items-center gap-3 rounded-nested bg-surface-2 px-4 py-3"
+          >
+            <ScanText className="size-5 shrink-0 text-text-2" aria-hidden />
+            <span className="type-meta min-w-0 flex-1 text-text-2">
+              Reading the label from a photo is part of Pro.
+            </span>
+            <Crown className="size-4 shrink-0 text-text-2" aria-hidden />
+          </Link>
+        )}
+        <SecondaryButton
+          block
+          icon={<PenLine className="size-4" aria-hidden />}
+          onClick={() => onRead('manual', 'label')}
+          data-label-manual
+        >
+          Type the numbers from the label
+        </SecondaryButton>
+      </section>
+
+      {state.kind === 'reading' || state.kind === 'scanning' ? (
+        <p className="type-meta text-text-2" aria-live="polite">
+          {state.kind === 'reading' ? 'Reading the label…' : 'Looking up the barcode…'}
         </p>
+      ) : null}
+      {state.kind === 'error' ? (
+        <InlineNotice icon={<AlertCircle />}>
+          <span data-label-error>{state.message}</span>
+        </InlineNotice>
+      ) : null}
+
+      <section
+        aria-labelledby="pack-barcode"
+        className="flex flex-col gap-3 border-t-[0.5px] border-divider pt-5"
+      >
+        <div>
+          <h3 id="pack-barcode" className="type-headline text-text-1">
+            Or scan the barcode
+          </h3>
+          <p className="type-meta mt-1 text-text-2">
+            Free. Finds the product in Open Food Facts, an open database of labels; not every Indian
+            product is there yet. Only the barcode number is sent.
+          </p>
+        </div>
         <input
           ref={barcodePhoto}
           type="file"
@@ -180,7 +253,7 @@ function Start({
             e.target.value = '';
           }}
         />
-        <PrimaryButton
+        <SecondaryButton
           block
           icon={<Barcode className="size-4" aria-hidden />}
           onClick={() => barcodePhoto.current?.click()}
@@ -188,15 +261,16 @@ function Start({
           data-scan-barcode
         >
           Photograph the barcode
-        </PrimaryButton>
+        </SecondaryButton>
         <form
-          className="grid grid-cols-[1fr_auto] items-end gap-2"
+          className="flex items-end gap-2"
           onSubmit={(e) => {
             e.preventDefault();
             if (isBarcode(code)) void lookup(code.trim());
           }}
         >
           <TextField
+            className="min-w-0 flex-1"
             label="Or type the barcode number"
             inputMode="numeric"
             value={code}
@@ -212,68 +286,6 @@ function Start({
           </SecondaryButton>
         </form>
       </section>
-
-      <section aria-labelledby="pack-label" className="flex flex-col gap-2">
-        <h3 id="pack-label" className="type-headline text-text-1">
-          Or read the label
-        </h3>
-        <p className="type-meta text-text-2">
-          Photograph only the nutrition table, flat and in good light, so every number is sharp.
-        </p>
-        {pro && store.consent ? (
-          <div className="grid grid-cols-2 gap-2">
-            {input(camera, true)}
-            {input(gallery, false)}
-            <SecondaryButton
-              icon={<Camera className="size-4" aria-hidden />}
-              onClick={() => camera.current?.click()}
-              loading={state.kind === 'reading'}
-              data-label-camera
-            >
-              Take photo
-            </SecondaryButton>
-            <SecondaryButton
-              icon={<ImageIcon className="size-4" aria-hidden />}
-              onClick={() => gallery.current?.click()}
-              disabled={state.kind === 'reading'}
-              data-label-gallery
-            >
-              Choose photo
-            </SecondaryButton>
-          </div>
-        ) : pro ? (
-          <CoachConsent />
-        ) : (
-          <Link
-            to="/pro"
-            className="pressable chrome flex items-center gap-3 rounded-nested bg-surface-2 p-4"
-          >
-            <ScanText className="size-5 shrink-0 text-text-2" aria-hidden />
-            <span className="type-meta min-w-0 flex-1 text-text-2">
-              Reading the label from a photo is part of Pro.
-            </span>
-            <Crown className="size-4 text-text-2" aria-hidden />
-          </Link>
-        )}
-        <SecondaryButton
-          block
-          icon={<PenLine className="size-4" aria-hidden />}
-          onClick={() => onRead('manual', 'label')}
-          data-label-manual
-        >
-          Type the numbers from the pack
-        </SecondaryButton>
-      </section>
-      {state.kind === 'reading' || state.kind === 'scanning' ? (
-        <p className="type-meta text-text-2" aria-live="polite">
-          {state.kind === 'reading' ? 'Reading the label…' : 'Looking up the barcode…'}
-        </p>
-      ) : null}
-      {state.kind === 'error' ? (
-        <InlineNotice icon={<AlertCircle />}>
-          <span data-label-error>{state.message}</span>
-        </InlineNotice>
-      ) : null}
     </div>
   );
 }

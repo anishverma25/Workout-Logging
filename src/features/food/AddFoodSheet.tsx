@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Camera, ChevronLeft, Crown, Mic, Plus, ScanText, Sparkles, X } from 'lucide-react';
+import {
+  Camera,
+  ChevronLeft,
+  ChevronRight,
+  Crown,
+  Mic,
+  Plus,
+  ScanText,
+  Sparkles,
+  X,
+} from 'lucide-react';
 import { Link } from 'react-router';
 import {
   BottomSheet,
@@ -591,16 +601,19 @@ function Quick({
       <button
         type="button"
         onClick={onLabel}
-        className="pressable chrome flex min-h-13 w-full items-center gap-3 rounded-nested bg-surface-2 px-4 text-left"
+        className="pressable chrome flex w-full items-center gap-3 rounded-nested bg-surface-2 p-4 text-left"
         data-pack-food
       >
-        <ScanText className="size-5 shrink-0 text-text-2" aria-hidden />
+        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-surface text-text-1">
+          <ScanText className="size-5" aria-hidden />
+        </span>
         <span className="min-w-0 flex-1">
           <span className="type-headline block text-text-1">From a pack</span>
-          <span className="type-meta block text-text-2">
-            Read the nutrition label, then say how much you had
+          <span className="type-meta mt-0.5 block text-text-2">
+            Read the nutrition label, or scan the barcode
           </span>
         </span>
+        <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
       </button>
 
       {recent.length ? (
@@ -651,19 +664,21 @@ function AiHero({
   onPhoto: () => void;
 }) {
   const head = (
-    <span className="flex items-center gap-3">
+    <span className="flex items-start gap-3">
       <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime">
         <Sparkles className="size-5" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="type-headline block text-text-1">Let OverloadGPT log it</span>
-        <span className="type-meta block text-text-2">
-          Snap your plate or say what you ate. Any food, brand or restaurant, even nutrition labels.
+        <span className="flex items-center justify-between gap-2">
+          <span className="type-headline text-text-1">Let OverloadGPT log it</span>
+          <span className="type-caption inline-flex shrink-0 items-center gap-1 rounded-full bg-surface px-2 py-0.5 font-semibold text-text-2">
+            <Crown className="size-3.5" aria-hidden />
+            Pro
+          </span>
         </span>
-      </span>
-      <span className="type-caption inline-flex shrink-0 items-center gap-1 rounded-full bg-surface px-2 py-1 font-semibold text-text-2">
-        <Crown className="size-3.5" aria-hidden />
-        Pro
+        <span className="type-meta mt-0.5 block text-text-2">
+          Snap your plate or say what you ate: any food, brand or restaurant.
+        </span>
       </span>
     </span>
   );

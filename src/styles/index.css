@@ -603,3 +603,29 @@ html[data-landing] #landing {
     animation: none;
   }
 }
+
+/*
+ * Sheets: centred panels that never reach under the status bar or the home indicator. The room
+ * left is the screen less twice the larger safe area (so a centred panel clears both) and a
+ * small margin. vh first for browsers without dvh (Chrome before 108, older Samsung Internet).
+ */
+.kit-sheet {
+  --sheet-room: calc(
+    100vh - 2 * max(env(safe-area-inset-top), env(safe-area-inset-bottom), 0.75rem) - 1rem
+  );
+  max-height: min(80vh, var(--sheet-room));
+}
+.kit-sheet[data-tall] {
+  height: min(88vh, var(--sheet-room));
+}
+@supports (height: 1dvh) {
+  .kit-sheet {
+    --sheet-room: calc(
+      100dvh - 2 * max(env(safe-area-inset-top), env(safe-area-inset-bottom), 0.75rem) - 1rem
+    );
+    max-height: min(80dvh, var(--sheet-room));
+  }
+  .kit-sheet[data-tall] {
+    height: min(88dvh, var(--sheet-room));
+  }
+}
