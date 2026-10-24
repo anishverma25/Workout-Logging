@@ -63,6 +63,8 @@ export interface GenerateOptions {
    * (free keys, over the allowance) and the request went again without it.
    */
   onSearch?: (searched: boolean) => void;
+  /** A different model of the same provider for this request (a stronger one for labels). */
+  model?: string;
 }
 
 export interface CoachProvider {
@@ -269,6 +271,8 @@ export async function handleCoach(deps: CoachDeps, body: unknown): Promise<Coach
     return handleFoodLog(deps, body);
   if (body && typeof body === 'object' && (body as { kind?: unknown }).kind === 'food_photo')
     return handleFoodPhoto(deps, body);
+  if (body && typeof body === 'object' && (body as { kind?: unknown }).kind === 'food_label')
+    return handleFoodLabel(deps, body);
   const req = parseRequest(body);
   if (!req) return fail(400, 'That request could not be read.', 'bad_request');
   if (!proFromSubscription(await deps.subscription()))
@@ -354,7 +358,7 @@ export function geminiProvider(
     generate: (system, messages, options) =>
       withSearch(options, async (grounded) => {
         const res = await fetchFn(
-          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(options?.model ?? model)}:generateContent`,
           {
             method: 'POST',
             headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
@@ -886,4 +890,176 @@ export async function handleFoodPhoto(deps: CoachDeps, body: unknown): Promise<C
   // Nothing usable came back, so the photo does not count against today's allowance.
   await deps.photoQuota?.release().catch(() => undefined);
   return fail(503, 'OverloadGPT is busy right now. Try again in a minute.', 'busy');
+}
+
+// ---------------------------------------------------------------------------------------------
+// Nutrition label reading (Pro)
+// ---------------------------------------------------------------------------------------------
+
+/** Labels are sent larger than plate photos so the small print stays sharp. */
+export const LABEL_LIMITS = { base64: 3_000_000 } as const;
+/**
+ * The stronger Gemini model is tried first for labels, where reading small print matters most;
+ * when it is not available or over its free allowance, the usual model and then Groq are used.
+ */
+export const LABEL_MODEL = 'gemini-3.5-flash';
+
+export const FOOD_LABEL_PROMPT = `You read nutrition labels on food packs for Overload, a food logging app used in India. You get one photo. Copy what is printed. Do not estimate, round or fill in anything you cannot read.
+
+Reply with JSON only, one object with these keys:
+"product": the product name as printed, or null.
+"brand": the brand, or null.
+"serving_g": the serving size in grams (or ml for drinks) as a number, or null if none is printed.
+"serving_text": the serving as printed, for example "1 scoop (33 g)" or "2 biscuits", or null.
+"per_100g": {"kcal", "protein_g", "carbs_g", "fat_g", "fibre_g", "sugar_g"} per 100 g or 100 ml as printed, or null if the label has no per 100 g column.
+"per_serving": the same keys per serving as printed, or null if there is no per serving column.
+Use null for any single value you cannot read with certainty. Energy printed only in kJ: give kcal = kJ / 4.184. If the photo is not a nutrition label, reply {"not_a_label": true}.`;
+
+export interface LabelValues {
+  kcal: number | null;
+  proteinG: number | null;
+  carbsG: number | null;
+  fatG: number | null;
+  fibreG: number | null;
+  sugarG: number | null;
+}
+
+export interface LabelReading {
+  product: string | null;
+  brand: string | null;
+  servingG: number | null;
+  servingText: string | null;
+  per100: LabelValues | null;
+  perServing: LabelValues | null;
+  /** Columns whose energy does not match their macros, to be checked against the pack. */
+  check: ('per100' | 'perServing')[];
+}
+
+/** The first JSON object in a model answer. */
+function parseObject(text: string): Record<string, unknown> | null {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start === -1 || end <= start) return null;
+  try {
+    const v = JSON.parse(text.slice(start, end + 1)) as unknown;
+    return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+function labelValues(raw: unknown, maxKcal: number): LabelValues | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const v = (key: string, max: number) => {
+    const n = num(r[key]);
+    return n === null || n < 0 || n > max ? null : Math.round(n * 10) / 10;
+  };
+  const out: LabelValues = {
+    kcal: v('kcal', maxKcal),
+    proteinG: v('protein_g', 100),
+    carbsG: v('carbs_g', 100),
+    fatG: v('fat_g', 100),
+    fibreG: v('fibre_g', 100) ?? v('fiber_g', 100),
+    sugarG: v('sugar_g', 100),
+  };
+  return Object.values(out).some((x) => x !== null) ? out : null;
+}
+
+/** Energy within 20% of what the macros add up to (labels round, and fibre counts less). */
+function labelAddsUp(v: LabelValues): boolean {
+  if (v.kcal === null || v.proteinG === null || v.carbsG === null || v.fatG === null) return true;
+  const macros = 4 * v.proteinG + 4 * v.carbsG + 9 * v.fatG;
+  if (v.kcal < 20) return macros < 40;
+  return Math.abs(macros - v.kcal) / v.kcal <= 0.2;
+}
+
+/** A label reading, checked: values in range, per 100 g never above 900 kcal. */
+export function checkLabel(raw: Record<string, unknown>): LabelReading | null {
+  if (raw.not_a_label === true) return null;
+  const text = (v: unknown, n: number) =>
+    typeof v === 'string' && v.trim() ? tidyAnswer(v).slice(0, n) : null;
+  const servingG = num(raw.serving_g);
+  const per100 = labelValues(raw.per_100g, 900);
+  // Per 100 g values that are larger than 100 g of anything can be: drop the column.
+  const per100ok =
+    per100 && (per100.proteinG ?? 0) + (per100.carbsG ?? 0) + (per100.fatG ?? 0) <= 105
+      ? per100
+      : null;
+  const perServing = labelValues(raw.per_serving, 3000);
+  if (!per100ok && !perServing) return null;
+  const check: LabelReading['check'] = [];
+  if (per100ok && !labelAddsUp(per100ok)) check.push('per100');
+  if (perServing && !labelAddsUp(perServing)) check.push('perServing');
+  return {
+    product: text(raw.product, 60),
+    brand: text(raw.brand, 40),
+    servingG: servingG !== null && servingG > 0 && servingG <= 2000 ? servingG : null,
+    servingText: text(raw.serving_text, 40),
+    per100: per100ok,
+    perServing,
+    check,
+  };
+}
+
+export async function handleFoodLabel(deps: CoachDeps, body: unknown): Promise<CoachResponse> {
+  const b = body as Record<string, unknown>;
+  const image = typeof b.image === 'string' ? b.image : '';
+  const mime = b.mime === 'image/png' || b.mime === 'image/webp' ? b.mime : 'image/jpeg';
+  if (!image || image.length > LABEL_LIMITS.base64 || !/^[A-Za-z0-9+/=]+$/.test(image))
+    return fail(400, 'That photo could not be read.', 'bad_request');
+  if (!proFromSubscription(await deps.subscription()))
+    return fail(403, 'Reading labels is part of Pro.', 'not_pro');
+  if (deps.providers.length === 0)
+    return fail(503, 'Reading labels is not set up yet.', 'not_configured');
+  const left = deps.photoQuota ? await deps.photoQuota.claim() : PHOTOS_PER_DAY;
+  if (left < 0)
+    return fail(
+      429,
+      `You have used today's ${PHOTOS_PER_DAY} photos. Type the numbers from the label instead.`,
+      'photo_limit',
+    );
+  const messages: ProviderMessage[] = [
+    { role: 'user', text: 'Read this nutrition label.', image: { mime, data: image } },
+  ];
+  // The stronger model first where there is one, then each provider as it is.
+  const attempts: [CoachProvider, GenerateOptions | undefined][] = [];
+  for (const p of deps.providers) {
+    if (p.name === 'gemini') attempts.push([p, { model: LABEL_MODEL }]);
+    attempts.push([p, undefined]);
+  }
+  let notLabel = false;
+  for (const [provider, options] of attempts) {
+    let answer: string;
+    try {
+      answer = await provider.generate(FOOD_LABEL_PROMPT, messages, options);
+    } catch (err) {
+      console.error(`label: ${provider.name} failed`, err instanceof Error ? err.message : err);
+      continue;
+    }
+    const raw = parseObject(answer);
+    if (!raw) {
+      console.error(`label: ${provider.name} gave no JSON`);
+      continue;
+    }
+    if (raw.not_a_label === true) {
+      notLabel = true;
+      break;
+    }
+    const label = checkLabel(raw);
+    if (!label) continue;
+    return { status: 200, body: { label, left: Math.max(0, left) } };
+  }
+  await deps.photoQuota?.release().catch(() => undefined);
+  if (notLabel)
+    return fail(
+      422,
+      'That does not look like a nutrition label. Photograph the table on the pack.',
+      'not_a_label',
+    );
+  return fail(
+    503,
+    'The label could not be read. Try a sharper photo of just the table, or type the numbers.',
+    'unreadable',
+  );
 }

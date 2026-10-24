@@ -167,7 +167,7 @@ export function PhotoFoodLog({
           <ul className="type-meta mt-2 flex list-disc flex-col gap-1 pl-5 text-text-2">
             <li>Shoot from above, with the whole plate or thali in the frame.</li>
             <li>Good light and nothing covering the food give the best result.</li>
-            <li>Packaged food? Photograph the nutrition label and it reads the numbers.</li>
+            <li>Packaged food? Go back and use From a pack: it reads the label exactly.</li>
           </ul>
         </div>
       )}

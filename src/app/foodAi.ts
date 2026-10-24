@@ -3,9 +3,11 @@ import type { Food } from '@/domain/nutrition/calc';
 import type { DietType } from '@/domain/nutrition/types';
 import {
   FOOD_LIMITS,
+  LABEL_LIMITS,
   PHOTO_LIMITS,
   PHOTOS_PER_DAY,
   type FoodItem,
+  type LabelReading,
 } from '../../supabase/functions/_shared/coach.ts';
 
 /**
@@ -14,7 +16,7 @@ import {
  * checks every item before it comes back. Nothing is stored on the server.
  */
 
-export type { FoodItem };
+export type { FoodItem, LabelReading };
 export { FOOD_LIMITS, PHOTO_LIMITS, PHOTOS_PER_DAY };
 
 export class FoodAiError extends Error {
@@ -76,6 +78,20 @@ export async function askFoodPhoto(input: {
   });
   return {
     items: Array.isArray(data.items) ? (data.items as FoodItem[]) : [],
+    left: typeof data.left === 'number' ? data.left : null,
+  };
+}
+
+/** Sends a photo of a nutrition label; the server reads it (and only reads it). */
+export async function askFoodLabel(input: {
+  image: string;
+  mime: string;
+}): Promise<{ label: LabelReading; left: number | null }> {
+  if (input.image.length > LABEL_LIMITS.base64)
+    throw new FoodAiError('That photo is too large. Try again a little further away.', 'too_large');
+  const data = await invoke({ kind: 'food_label', image: input.image, mime: input.mime });
+  return {
+    label: data.label as LabelReading,
     left: typeof data.left === 'number' ? data.left : null,
   };
 }
@@ -143,6 +159,8 @@ export function editedPortion(
   name: string,
   diet: Food['diet'],
   n: EditedNumbers,
+  basis: 'yours' | 'label' = 'yours',
+  ref = 'Your numbers',
 ): {
   food: Food;
   unit: 'serving';
@@ -160,8 +178,8 @@ export function editedPortion(
     fatG: n.fatG,
     fibreG: n.fibreG,
     diet: diet === 'egg' || diet === 'nonveg' ? diet : 'veg',
-    basis: 'yours',
-    ref: 'Your numbers',
+    basis,
+    ref,
   });
   return { food, unit: 'serving', amount: 1, size: null, oilLevel: null };
 }

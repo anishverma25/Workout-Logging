@@ -297,3 +297,60 @@ test('typed numbers win, and every AI food can be corrected before logging', asy
   const dinner = page.locator('[data-meal="dinner"]');
   await expect(dinner).toContainText('paneer bhurji', { ignoreCase: true, timeout: 10_000 });
 });
+
+test('a pack: typed from the label, the amount in grams, the numbers worked out', async ({
+  page,
+}) => {
+  await startWithDemo(page, { tag: 'food-pack' });
+  await openFood(page);
+  await page.locator('[data-add-food]').click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByRole('radio', { name: 'Snacks' }).click();
+  await sheet.locator('[data-pack-food]').click();
+  await sheet.locator('[data-label-manual]').click();
+  const form = sheet.locator('[data-label-form]');
+  await form.getByLabel('Product').fill('Rolled oats');
+  await form.getByLabel('Calories').fill('389');
+  await form.getByLabel('Protein').fill('13');
+  await form.getByLabel('Carbs').fill('66');
+  await form.getByLabel('Fat').fill('7');
+  await form.getByLabel('Fibre').fill('10');
+  await form.getByLabel('Amount').fill('40');
+  await expect(form.locator('[data-label-result]')).toContainText('156 kcal · 5.2 g protein');
+  await form.locator('[data-label-add]').click();
+  await sheet.locator('[data-log-plate]').click();
+  await expect(page.locator('[data-meal="snacks"]')).toContainText('Rolled oats', {
+    timeout: 10_000,
+  });
+});
+
+test('Pro photographs a label: only the printed numbers, then servings', async ({ page }) => {
+  await signUpFresh(page, { tag: 'food-label' });
+  await page.goto('/food');
+  await page.locator('[data-add-food]').click();
+  const sheet = page.getByRole('dialog');
+  await sheet.locator('[data-pack-food]').click();
+  await sheet.getByRole('button', { name: 'Turn on' }).click();
+  await sheet.locator('[data-label-input]').setInputFiles({
+    name: 'label.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR4nGM4UaGBFTEMLQkAUtVaAV8W4QQAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  });
+  const form = sheet.locator('[data-label-form]');
+  await expect(form.locator('[data-label-read]')).toContainText('could not be read');
+  await expect(form.getByLabel('Product')).toHaveValue('TestFit Whey protein');
+  await expect(form.getByLabel('Protein')).toHaveValue('80');
+  // Fibre was not readable: left empty, never guessed.
+  await expect(form.getByLabel('Fibre')).toHaveValue('');
+  // One scoop by default, from the printed serving size.
+  await expect(form.locator('[data-label-result]')).toContainText('132 kcal · 26.4 g protein');
+  await form.getByLabel('Amount').fill('2');
+  await expect(form.locator('[data-label-result]')).toContainText('264 kcal');
+  await form.locator('[data-label-add]').click();
+  await expect(sheet.locator('[data-plate]')).toContainText('TestFit Whey protein', {
+    ignoreCase: true,
+  });
+});

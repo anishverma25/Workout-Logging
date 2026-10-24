@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Camera, ChevronLeft, Crown, Mic, Plus, Sparkles, X } from 'lucide-react';
+import { Camera, ChevronLeft, Crown, Mic, Plus, ScanText, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router';
 import {
   BottomSheet,
@@ -30,6 +30,7 @@ import { MEALS, ZERO, type Meal } from '@/domain/nutrition/types';
 import { haptic } from '@/lib/haptics';
 import { AiFoodLog } from './AiFoodLog';
 import { PhotoFoodLog } from './PhotoFoodLog';
+import { LabelLog } from './LabelLog';
 import { defaultPortion } from './foodText';
 import { FoodProfile } from './FoodProfile';
 import { NutrientLine } from './PortionEditor';
@@ -79,6 +80,7 @@ type View =
   | { kind: 'edit'; index: number }
   | { kind: 'type' }
   | { kind: 'photo' }
+  | { kind: 'label' }
   | { kind: 'food'; portion: FoodPortion };
 
 function AddFoodBody({
@@ -280,6 +282,20 @@ function AddFoodBody({
       </div>
     );
 
+  if (view.kind === 'label')
+    return (
+      <div className="flex flex-col gap-4 pt-5">
+        <BackRow label="From a pack" onBack={() => setView({ kind: 'pick' })} />
+        <LabelLog
+          pro={pro}
+          onFill={(items) => {
+            setPlate((p) => [...p, ...items]);
+            setView({ kind: 'pick' });
+          }}
+        />
+      </div>
+    );
+
   if (view.kind === 'type')
     return (
       <div className="flex flex-col gap-4 pt-5">
@@ -346,6 +362,7 @@ function AddFoodBody({
             onQuickAdd={add}
             onType={() => setView({ kind: 'type' })}
             onPhoto={() => setView({ kind: 'photo' })}
+            onLabel={() => setView({ kind: 'label' })}
             onCreate={() => onCreateFood('')}
           />
         )}
@@ -499,12 +516,14 @@ function Quick({
   onQuickAdd,
   onType,
   onPhoto,
+  onLabel,
   onCreate,
 }: {
   ctx: FoodContext;
   meal: Meal;
   date: string;
   pro: boolean;
+  onLabel: () => void;
   onTemplate: (t: MealTemplate) => void;
   onPick: (f: Food) => void;
   onQuickAdd: (f: Food) => void;
@@ -569,6 +588,20 @@ function Quick({
       ) : null}
 
       <AiHero pro={pro} onType={onType} onPhoto={onPhoto} />
+      <button
+        type="button"
+        onClick={onLabel}
+        className="pressable chrome flex min-h-13 w-full items-center gap-3 rounded-nested bg-surface-2 px-4 text-left"
+        data-pack-food
+      >
+        <ScanText className="size-5 shrink-0 text-text-2" aria-hidden />
+        <span className="min-w-0 flex-1">
+          <span className="type-headline block text-text-1">From a pack</span>
+          <span className="type-meta block text-text-2">
+            Read the nutrition label, then say how much you had
+          </span>
+        </span>
+      </button>
 
       {recent.length ? (
         <section aria-labelledby="recent-foods">
