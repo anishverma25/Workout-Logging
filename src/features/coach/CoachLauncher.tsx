@@ -1,12 +1,17 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useLocation } from 'react-router';
 import { Maximize2, Sparkles } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import { useFeature } from '@/app/entitlement';
-import { BottomSheet, TextLink } from '@/components/kit';
+import { BottomSheet, Skeleton, TextLink } from '@/components/kit';
 import { useActiveWorkout } from '@/data/hooks';
 import { cn } from '@/lib/cn';
-import { CoachBody } from './CoachPage';
+import { warmAi } from '@/app/aiWarm';
+
+// Loaded when first opened, so the coach and its long instructions are not part of every
+// app start.
+const CoachBody = lazy(() => import('./CoachPage').then((m) => ({ default: m.CoachBody })));
+const preload = () => void import('./CoachPage');
 
 /**
  * A small round button on every screen that opens the coach over the page, so a question is
@@ -28,7 +33,11 @@ export function CoachLauncher() {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+          if (pro) warmAi();
+        }}
+        onPointerDown={preload}
         aria-label={pro ? 'Ask OverloadGPT' : 'Ask OverloadGPT (Pro)'}
         title="Ask OverloadGPT"
         data-coach-launcher
@@ -50,7 +59,9 @@ export function CoachLauncher() {
       >
         {open ? (
           <div className="flex flex-col gap-4">
-            <CoachBody />
+            <Suspense fallback={<Skeleton height={240} radius="panel" />}>
+              <CoachBody />
+            </Suspense>
             <TextLink
               to="/coach"
               small

@@ -99,6 +99,67 @@ const fail = (status: number, error: string, code: string): CoachResponse => ({
   body: { error, code },
 });
 
+/**
+ * How long the first AI service gets before the next one is asked as well. Whichever gives the
+ * first answer that passes the checks wins, so a slow or stuck service no longer makes the
+ * person wait for its timeout. Food answers search the web and photos are heavier, so they get
+ * longer. Every answer still goes through the same checks.
+ */
+export const HEDGE_MS = { chat: 5_000, food: 9_000, photo: 12_000, label: 12_000 } as const;
+
+export interface Attempt<T> {
+  /** Passed every check: use it. */
+  ok: boolean;
+  /** An answer to fall back on when none passes (a general answer, for example). */
+  value?: T;
+}
+
+/**
+ * Runs `run(0)`, then `run(1)` as soon as the first fails or after `delayMs`, and so on. Resolves
+ * with the first attempt that is ok, or, when every attempt has finished without one, with the
+ * first fallback in provider order (or null).
+ */
+export function hedged<T>(
+  count: number,
+  run: (i: number) => Promise<Attempt<T>>,
+  delayMs: number,
+): Promise<T | null> {
+  return new Promise((resolve) => {
+    if (count === 0) return resolve(null);
+    const fallbacks: (T | undefined)[] = new Array(count);
+    let started = 0;
+    let settled = 0;
+    let done = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const finish = (value: T | null) => {
+      if (done) return;
+      done = true;
+      timers.forEach(clearTimeout);
+      resolve(value);
+    };
+    const settle = () => {
+      settled += 1;
+      if (started < count) start();
+      else if (settled === count) finish(fallbacks.find((f) => f !== undefined) ?? null);
+    };
+    const start = () => {
+      if (done || started >= count) return;
+      const i = started;
+      started += 1;
+      if (started < count) timers.push(setTimeout(start, delayMs));
+      run(i).then(
+        (r) => {
+          if (r.ok) return finish(r.value as T);
+          fallbacks[i] = r.value;
+          settle();
+        },
+        () => settle(),
+      );
+    };
+    start();
+  });
+}
+
 // ---------------------------------------------------------------------------------------------
 // Access
 // ---------------------------------------------------------------------------------------------
@@ -137,7 +198,7 @@ export const SYSTEM_PROMPT = `You are OverloadGPT, the assistant inside Overload
 Rules:
 1. Use only the numbers in the training data you are given. Never make up weights, reps, dates, calories, records or trends. If the data does not answer the question, say so plainly and say what they could log to find out.
 2. The app's methods, which you must not contradict: estimated one rep max (e1RM) uses the Epley formula, only from sets of 10 reps or fewer, and only for compound lifts. A hard set is a working set at 4 reps in reserve (RIR) or closer. The body weight trend is a 7-day average. 7,700 kcal is about 1 kg of body weight. Changes under 5% are treated as noise.
-3. Reply in the language the person writes in, including Hinglish (Hindi in Latin letters). When there is no typed question, reply in English.
+3. Reply only in the language named on the "Reply in" line. English question: plain English only, with no Hindi or Hinglish words. Hinglish question (Hindi written in Latin letters): Hinglish. Hindi in Devanagari: Hindi. Never choose a language yourself, and never switch because of earlier messages.
 4. Be short, practical and easy to read on a phone: one short opening sentence, then up to 5 bullet points that start with "- ", one idea or one exercise per bullet, each under 20 words. Write dates the way people say them, like "14th October" (add the year only if it is not this year), never as 2026-10-14. Write sets as "87.5 kg for 5 reps", not "87.5 kg x 5". Plain text only: no headings, tables, bold or emoji. Never use the long dash character.
 5. Make it personal, never generic. Name their actual exercises and quote their actual numbers (weights, reps, sets, dates, rest times, body weight) from the data. Connect the advice to their goal and experience. Give exact targets for their next sessions worked from their own numbers, for example their last load plus one small step (2.5 kg or 5 lb) or one more rep. If you would give the same answer to anyone, rewrite it. If the data is thin, say what you can see and exactly what to log next.
 6. End with one or two concrete things to do in the next sessions. Do not repeat the question back.
@@ -179,8 +240,64 @@ export function buildMessages(req: CoachRequest): ProviderMessage[] {
     `Task: ${TOPIC_TASK[req.topic]}`,
   ];
   if (req.question) parts.push(`Question: ${req.question}`);
+  parts.push(`Reply in: ${LANGUAGE_NAME[replyLanguage(req.question)]}`);
   messages.push({ role: 'user', text: parts.join('\n') });
   return messages;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Reply language
+// ---------------------------------------------------------------------------------------------
+
+export type ReplyLanguage = 'english' | 'hinglish' | 'hindi';
+
+const LANGUAGE_NAME: Record<ReplyLanguage, string> = {
+  english: 'English only.',
+  hinglish: 'Hinglish (Hindi in Latin letters), the way the person wrote.',
+  hindi: 'Hindi (Devanagari).',
+};
+
+/**
+ * Hindi words written in Latin letters that do not also read as English words, so one of them
+ * in a question says it is Hinglish. Words that are English too ("main", "me", "to", "do",
+ * "hi", "mat", "par", "din", "hum") are left out.
+ */
+const HINGLISH_WORDS = new Set(
+  (
+    'hai hain hu hoon hun tha thi' +
+    ' kya kyu kyun kyon kaise kaisa kaisi kese kaun kab kaha kahan kitna kitni kitne' +
+    ' mera meri mere mujhe muje mujhko mein humko hame hamara tum tumhara aap aapka apna apne apni' +
+    ' nahi nahin nhi ka ki ke ko se aur bhi toh abhi pehle baad' +
+    ' karu karun karoon karna karne karta karti karte karo kare kiya kiye hoga hogi hoge raha rahi rahe' +
+    ' sakta sakti sakte chahiye chaiye chahie lena lene lu loon khana khaana khau khaun khaya khata' +
+    ' bata batao bataiye batana samjhao kuch bahut zyada jyada kam accha acha achha theek thik' +
+    ' bhai yaar matlab sab liye lie wala wali wale roz rozana hafte badh badhe badha'
+  ).split(' '),
+);
+
+const wordsOf = (text: string) => text.toLowerCase().match(/[a-z]+/g) ?? [];
+
+/** Share and count of Hinglish words in a text. */
+export function hinglishWords(text: string): { count: number; share: number } {
+  const words = wordsOf(text);
+  const count = words.filter((w) => HINGLISH_WORDS.has(w)).length;
+  return { count, share: words.length ? count / words.length : 0 };
+}
+
+/** The language to answer in: the language of the question, English when there is none. */
+export function replyLanguage(question: string): ReplyLanguage {
+  if (/[\u0900-\u097F]/.test(question)) return 'hindi';
+  const { count, share } = hinglishWords(question);
+  return count >= 2 || (count >= 1 && share >= 0.2) ? 'hinglish' : 'english';
+}
+
+/** Whether an answer is in the language it should be. */
+export function answerLanguageOk(answer: string, lang: ReplyLanguage): boolean {
+  if (lang === 'hindi') return /[\u0900-\u097F]/.test(answer);
+  const { count, share } = hinglishWords(answer);
+  if (lang === 'english') return !(count >= 3 && share >= 0.06);
+  // A Hinglish answer has Hindi words in it, not only English.
+  return count >= 2;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -266,7 +383,12 @@ export function parseRequest(body: unknown): CoachRequest | null {
   return { topic: topic as CoachTopic, question, brief, history: turns };
 }
 
+/** A request with `{ kind: 'warm' }` only starts the function, so the real question is quicker. */
+export const isWarmUp = (body: unknown) =>
+  !!body && typeof body === 'object' && (body as { kind?: unknown }).kind === 'warm';
+
 export async function handleCoach(deps: CoachDeps, body: unknown): Promise<CoachResponse> {
+  if (isWarmUp(body)) return { status: 200, body: { ok: true } };
   if (body && typeof body === 'object' && (body as { kind?: unknown }).kind === 'food')
     return handleFoodLog(deps, body);
   if (body && typeof body === 'object' && (body as { kind?: unknown }).kind === 'food_photo')
@@ -282,32 +404,40 @@ export async function handleCoach(deps: CoachDeps, body: unknown): Promise<Coach
 
   const messages = buildMessages(req);
   const reference = [req.brief, req.question, ...req.history.map((t) => t.text)].join('\n');
+  const lang = replyLanguage(req.question);
   let unreliable = false;
-  let generic: string | null = null;
-  for (const provider of deps.providers) {
-    let text: string;
-    try {
-      text = tidyAnswer(await provider.generate(SYSTEM_PROMPT, messages));
-    } catch (err) {
-      console.error(`coach: ${provider.name} failed`, err instanceof Error ? err.message : err);
-      continue;
-    }
-    if (!text) continue;
-    const invented = inventedFigures(text, reference);
-    if (invented.length > 0) {
-      console.error(`coach: ${provider.name} quoted figures not in the data`, invented.join(', '));
-      unreliable = true;
-      continue;
-    }
-    if (!isSpecific(text, req.brief)) {
-      console.error(`coach: ${provider.name} gave a generic answer`);
-      generic ??= text;
-      continue;
-    }
-    return { status: 200, body: { answer: text } };
-  }
+  const answer = await hedged<string>(
+    deps.providers.length,
+    async (i) => {
+      const provider = deps.providers[i]!;
+      let text: string;
+      try {
+        text = tidyAnswer(await provider.generate(SYSTEM_PROMPT, messages));
+      } catch (err) {
+        console.error(`coach: ${provider.name} failed`, err instanceof Error ? err.message : err);
+        return { ok: false };
+      }
+      if (!text) return { ok: false };
+      const invented = inventedFigures(text, reference);
+      if (invented.length > 0) {
+        console.error(`coach: ${provider.name} quoted figures not in the data`, invented.join(', '));
+        unreliable = true;
+        return { ok: false };
+      }
+      if (!answerLanguageOk(text, lang)) {
+        console.error(`coach: ${provider.name} answered in the wrong language`);
+        return { ok: false, value: text };
+      }
+      if (!isSpecific(text, req.brief)) {
+        console.error(`coach: ${provider.name} gave a generic answer`);
+        return { ok: false, value: text };
+      }
+      return { ok: true, value: text };
+    },
+    HEDGE_MS.chat,
+  );
   // Every provider answered only in general terms: better a general answer than none.
-  if (generic) return { status: 200, body: { answer: generic } };
+  if (answer) return { status: 200, body: { answer } };
   return unreliable
     ? fail(
         502,
@@ -760,47 +890,53 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
       text: `${diet ? `The person eats ${diet} food.\n` : ''}What they ate: ${text}`,
     },
   ];
-  let empty = false;
   const stated = parseStated(text);
-  for (const provider of deps.providers) {
-    let answer: string;
-    let searched = false;
-    try {
-      answer = await provider.generate(FOOD_PROMPT, messages, {
-        search: true,
-        onSearch: (s) => {
-          searched = s;
-        },
-      });
-    } catch (err) {
-      console.error(`food: ${provider.name} failed`, err instanceof Error ? err.message : err);
-      continue;
-    }
-    const list = parseFoodJson(answer);
-    if (!list) {
-      console.error(`food: ${provider.name} gave no JSON`);
-      continue;
-    }
-    const checked = list
-      .slice(0, FOOD_LIMITS.items)
-      .map(checkFoodItem)
-      .filter((i): i is FoodItem => i !== null)
-      // A nutrient on its own ("30 g protein") is a number about a food, not a food.
-      .filter((i) => !NOT_A_FOOD.test(i.name))
-      // "From the web" only when a search really ran; otherwise it is the AI's own estimate.
-      .map((i) => (i.basis === 'web' && !searched ? { ...i, basis: 'estimate' as const } : i))
-      .map((i) => (i.basis === 'yours' ? { ...i, basis: 'estimate' as const } : i));
-    // The person's own numbers win over the AI's, food by food.
-    const items = applyStated(checked, stated);
-    if (items.length === 0) {
-      // A clear "nothing here is a food" is an answer; a list where every item failed is not.
-      if (list.length === 0) empty = true;
-      else console.error(`food: ${provider.name} items failed the checks`);
-      continue;
-    }
-    return { status: 200, body: { items } };
-  }
-  if (empty) return { status: 200, body: { items: [] } };
+  // A clear "nothing here is a food" is an answer; a list where every item failed is not.
+  const result = await hedged<FoodItem[]>(
+    deps.providers.length,
+    async (i) => {
+      const provider = deps.providers[i]!;
+      let answer: string;
+      let searched = false;
+      try {
+        answer = await provider.generate(FOOD_PROMPT, messages, {
+          search: true,
+          onSearch: (s) => {
+            searched = s;
+          },
+        });
+      } catch (err) {
+        console.error(`food: ${provider.name} failed`, err instanceof Error ? err.message : err);
+        return { ok: false };
+      }
+      const list = parseFoodJson(answer);
+      if (!list) {
+        console.error(`food: ${provider.name} gave no JSON`);
+        return { ok: false };
+      }
+      const checked = list
+        .slice(0, FOOD_LIMITS.items)
+        .map(checkFoodItem)
+        .filter((item): item is FoodItem => item !== null)
+        // A nutrient on its own ("30 g protein") is a number about a food, not a food.
+        .filter((item) => !NOT_A_FOOD.test(item.name))
+        // "From the web" only when a search really ran; otherwise it is the AI's own estimate.
+        .map((item) =>
+          item.basis === 'web' && !searched ? { ...item, basis: 'estimate' as const } : item,
+        )
+        .map((item) => (item.basis === 'yours' ? { ...item, basis: 'estimate' as const } : item));
+      // The person's own numbers win over the AI's, food by food.
+      const items = applyStated(checked, stated);
+      if (items.length === 0) {
+        if (list.length === 0) return { ok: false, value: [] };
+        console.error(`food: ${provider.name} items failed the checks`);
+        return { ok: false };
+      }
+      return { ok: true, value: items };
+    },
+    HEDGE_MS.food,
+  );
+  if (result) return { status: 200, body: { items: result } };
   return fail(503, 'OverloadGPT is busy right now. Try again in a minute.', 'busy');
 }
 
@@ -839,11 +975,18 @@ export async function handleFoodPhoto(deps: CoachDeps, body: unknown): Promise<C
         .map((k) => k.slice(0, PHOTO_LIMITS.knownName))
         .slice(0, PHOTO_LIMITS.known)
     : [];
-  if (!proFromSubscription(await deps.subscription()))
-    return fail(403, 'Photo food logging is part of Pro.', 'not_pro');
   if (deps.providers.length === 0)
     return fail(503, 'Photo food logging is not set up yet.', 'not_configured');
-  const left = deps.photoQuota ? await deps.photoQuota.claim() : PHOTOS_PER_DAY;
+  // The Pro check and today's allowance are read together; a claim made for someone without
+  // Pro is given back.
+  const [sub, left] = await Promise.all([
+    deps.subscription(),
+    deps.photoQuota ? deps.photoQuota.claim() : Promise.resolve(PHOTOS_PER_DAY),
+  ]);
+  if (!proFromSubscription(sub)) {
+    if (left >= 0) await deps.photoQuota?.release().catch(() => undefined);
+    return fail(403, 'Photo food logging is part of Pro.', 'not_pro');
+  }
   if (left < 0)
     return fail(
       429,
@@ -860,33 +1003,40 @@ export async function handleFoodPhoto(deps: CoachDeps, body: unknown): Promise<C
     .filter(Boolean)
     .join('\n');
   const messages: ProviderMessage[] = [{ role: 'user', text, image: { mime, data: image } }];
-  let empty = false;
-  for (const provider of deps.providers) {
-    let answer: string;
-    try {
-      answer = await provider.generate(FOOD_PHOTO_PROMPT, messages);
-    } catch (err) {
-      console.error(`photo: ${provider.name} failed`, err instanceof Error ? err.message : err);
-      continue;
-    }
-    const list = parseFoodJson(answer);
-    if (!list) {
-      console.error(`photo: ${provider.name} gave no JSON`);
-      continue;
-    }
-    const items = list
-      .slice(0, FOOD_LIMITS.items)
-      .map(checkFoodItem)
-      .filter((i): i is FoodItem => i !== null)
-      .map((i) => ({ ...i, basis: i.basis === 'label' ? ('label' as const) : ('photo' as const) }));
-    if (items.length === 0) {
-      if (list.length === 0) empty = true;
-      else console.error(`photo: ${provider.name} items failed the checks`);
-      continue;
-    }
-    return { status: 200, body: { items, left: Math.max(0, left) } };
-  }
-  if (empty) return { status: 200, body: { items: [], left: Math.max(0, left) } };
+  const result = await hedged<FoodItem[]>(
+    deps.providers.length,
+    async (i) => {
+      const provider = deps.providers[i]!;
+      let answer: string;
+      try {
+        answer = await provider.generate(FOOD_PHOTO_PROMPT, messages);
+      } catch (err) {
+        console.error(`photo: ${provider.name} failed`, err instanceof Error ? err.message : err);
+        return { ok: false };
+      }
+      const list = parseFoodJson(answer);
+      if (!list) {
+        console.error(`photo: ${provider.name} gave no JSON`);
+        return { ok: false };
+      }
+      const items = list
+        .slice(0, FOOD_LIMITS.items)
+        .map(checkFoodItem)
+        .filter((item): item is FoodItem => item !== null)
+        .map((item) => ({
+          ...item,
+          basis: item.basis === 'label' ? ('label' as const) : ('photo' as const),
+        }));
+      if (items.length === 0) {
+        if (list.length === 0) return { ok: false, value: [] };
+        console.error(`photo: ${provider.name} items failed the checks`);
+        return { ok: false };
+      }
+      return { ok: true, value: items };
+    },
+    HEDGE_MS.photo,
+  );
+  if (result) return { status: 200, body: { items: result, left: Math.max(0, left) } };
   // Nothing usable came back, so the photo does not count against today's allowance.
   await deps.photoQuota?.release().catch(() => undefined);
   return fail(503, 'OverloadGPT is busy right now. Try again in a minute.', 'busy');

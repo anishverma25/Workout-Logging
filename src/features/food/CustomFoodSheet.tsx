@@ -16,9 +16,20 @@ import { FoodError, saveCustomFood } from '@/data/repositories/food';
 import type { CustomFood } from '@/domain/models/schemas';
 import { normalize } from '@/domain/exercises/search';
 import { phonetic } from '@/domain/nutrition/search';
+import { fillMacros } from '@/domain/nutrition/fillMacros';
 import { NutrientLine } from './PortionEditor';
 
 type Mode = 'recipe' | 'label';
+type Basis = 'serving' | 'per100';
+type LabelKey = 'kcal' | 'proteinG' | 'carbsG' | 'fatG' | 'fibreG';
+
+const LABEL_FIELDS: [LabelKey, string, string][] = [
+  ['kcal', 'Calories', 'kcal'],
+  ['proteinG', 'Protein', 'g'],
+  ['carbsG', 'Carbs', 'g'],
+  ['fatG', 'Fat', 'g'],
+  ['fibreG', 'Fibre', 'g'],
+];
 
 /**
  * A food of their own: a family recipe made once for the whole pot (each person then logs a
@@ -77,15 +88,38 @@ function CustomFoodForm({
   const [cookedG, setCookedG] = useState<number | null>(editing?.cookedG ?? null);
   const [q, setQ] = useState('');
 
-  // Label
+  // Label: typed for one serving (the usual way people know a food) or per 100 g.
+  const [basis, setBasis] = useState<Basis>(editing?.kind === 'food' ? 'per100' : 'serving');
   const [label, setLabel] = useState({
     kcal: editing?.kind === 'food' ? editing.kcal : null,
     proteinG: editing?.kind === 'food' ? editing.proteinG : null,
     carbsG: editing?.kind === 'food' ? editing.carbsG : null,
     fatG: editing?.kind === 'food' ? editing.fatG : null,
     fibreG: editing?.kind === 'food' ? editing.fibreG : null,
-  } as Record<'kcal' | 'proteinG' | 'carbsG' | 'fatG' | 'fibreG', number | null>);
+  } as Record<LabelKey, number | null>);
   const [pieceG, setPieceG] = useState<number | null>(editing?.pieceG ?? null);
+  // Carbs and fat the person has typed themselves are never filled in for them.
+  const [typed, setTyped] = useState<Set<LabelKey>>(
+    () => new Set(editing?.kind === 'food' ? (['carbsG', 'fatG'] as LabelKey[]) : []),
+  );
+  const [filled, setFilled] = useState(false);
+  const setField = (key: LabelKey) => (v: number | null) => {
+    const now = new Set(typed).add(key);
+    setTyped(now);
+    setLabel((x) => {
+      const next = { ...x, [key]: v };
+      if ((key === 'kcal' || key === 'proteinG') && !(now.has('carbsG') && now.has('fatG'))) {
+        const m = fillMacros(next.kcal, next.proteinG);
+        if (m) {
+          if (!now.has('carbsG')) next.carbsG = m.carbsG;
+          if (!now.has('fatG')) next.fatG = m.fatG;
+          setFilled(true);
+        }
+      }
+      return next;
+    });
+  };
+  const servingMissing = mode === 'label' && basis === 'serving' && !(pieceG && pieceG > 0);
 
   const matches = useMemo(() => {
     const words = normalize(q).split(' ').filter(Boolean).map(phonetic);
@@ -101,8 +135,15 @@ function CustomFoodForm({
   const share = preview ? preview.cookedG / servings : null;
 
   async function save() {
-    setBusy(true);
     setError(null);
+    if (servingMissing) {
+      setError('Enter how many grams one serving weighs.');
+      return;
+    }
+    setBusy(true);
+    // Saved per 100 g, the way every food is kept.
+    const per100 = (v: number | null) =>
+      v === null ? null : basis === 'serving' && pieceG ? (v * 100) / pieceG : v;
     try {
       await saveCustomFood(
         db,
@@ -112,11 +153,11 @@ function CustomFoodForm({
               name,
               pieceG,
               per100: {
-                kcal: label.kcal ?? NaN,
-                proteinG: label.proteinG ?? 0,
-                carbsG: label.carbsG ?? 0,
-                fatG: label.fatG ?? 0,
-                fibreG: label.fibreG ?? 0,
+                kcal: per100(label.kcal) ?? NaN,
+                proteinG: per100(label.proteinG) ?? 0,
+                carbsG: per100(label.carbsG) ?? 0,
+                fatG: per100(label.fatG) ?? 0,
+                fibreG: per100(label.fibreG) ?? 0,
               },
             },
         editing?.id,
@@ -252,38 +293,45 @@ function CustomFoodForm({
         </>
       ) : (
         <>
-          <p className="type-meta text-text-2">Per 100 g, as printed on the pack.</p>
-          <div className="grid grid-cols-2 gap-3">
-            {(
-              [
-                ['kcal', 'Calories', 'kcal'],
-                ['proteinG', 'Protein', 'g'],
-                ['carbsG', 'Carbs', 'g'],
-                ['fatG', 'Fat', 'g'],
-                ['fibreG', 'Fibre', 'g'],
-              ] as const
-            ).map(([key, title, unit]) => (
-              <NumberField
-                key={key}
-                label={title}
-                value={label[key]}
-                onValueChange={(v) => setLabel((x) => ({ ...x, [key]: v }))}
-                allowDecimal
-                min={0}
-                max={key === 'kcal' ? 900 : 100}
-                unit={unit}
-              />
-            ))}
-          </div>
           <NumberField
-            label="Weight of one piece (optional)"
+            label={basis === 'serving' ? 'One serving' : 'One serving (optional)'}
             value={pieceG}
             onValueChange={setPieceG}
             allowDecimal
             min={1}
             max={2000}
             unit="g"
+            data-serving-g
           />
+          <SegmentedControl<Basis>
+            label="The numbers are for"
+            block
+            value={basis}
+            onChange={setBasis}
+            options={[
+              { value: 'serving', label: 'One serving' },
+              { value: 'per100', label: 'Per 100 g' },
+            ]}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            {LABEL_FIELDS.map(([key, title, unit]) => (
+              <NumberField
+                key={key}
+                label={title}
+                value={label[key]}
+                onValueChange={setField(key)}
+                allowDecimal
+                min={0}
+                max={basis === 'serving' ? (key === 'kcal' ? 9000 : 1000) : key === 'kcal' ? 900 : 100}
+                unit={unit}
+              />
+            ))}
+          </div>
+          <p className="type-caption -mt-1 text-text-2" data-macros-hint>
+            {filled
+              ? 'Carbs and fat follow your calories and protein. Change them if you know them.'
+              : 'Type the calories and protein; carbs and fat are filled in for you.'}
+          </p>
         </>
       )}
 

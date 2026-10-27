@@ -63,9 +63,13 @@ test('the chat answers, falls back when Gemini is down, and is kept on the phone
   await box.press('Enter');
   await expect(page.getByText('Here is what your numbers say (backup).')).toBeVisible();
 
-  // A suggested question from the data.
-  await page.getByRole('button', { name: 'What should I focus on this week?' }).click();
-  await expect(page.getByText('You asked: What should I focus on this week?')).toBeVisible();
+  // A suggested question: they change from visit to visit and after each answer, and never
+  // repeat one already asked.
+  const suggested = page.getByRole('group', { name: 'Suggested questions' }).getByRole('button');
+  const first = (await suggested.first().textContent())!.trim();
+  await suggested.first().click();
+  await expect(page.getByText(`You asked: ${first}`)).toBeVisible();
+  await expect(suggested.filter({ hasText: first })).toHaveCount(0);
 
   // Kept on this phone across a reload.
   await page.reload();

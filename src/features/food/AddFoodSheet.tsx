@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Camera,
   ChevronLeft,
   ChevronRight,
   Crown,
   Mic,
+  Minus,
   Plus,
   ScanText,
   Sparkles,
@@ -19,6 +20,7 @@ import {
   SegmentedControl,
 } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
+import { warmAi } from '@/app/aiWarm';
 import { useFeature } from '@/app/entitlement';
 import { db } from '@/data/db';
 import { STARTER_FOODS } from '@/data/library/foods';
@@ -33,10 +35,16 @@ import {
   type FoodPortion,
 } from '@/data/repositories/food';
 import type { FoodLog } from '@/domain/models/schemas';
-import { mealTemplates, recentFoods, type MealTemplate } from '@/domain/nutrition/analysis';
+import {
+  mealFoods,
+  mealTemplates,
+  recentFoods,
+  type MealTemplate,
+} from '@/domain/nutrition/analysis';
 import { portionText, roundNutrients, sumNutrients, type Food } from '@/domain/nutrition/calc';
 import { fitsDiet, searchFoods } from '@/domain/nutrition/search';
 import { MEALS, ZERO, type Meal } from '@/domain/nutrition/types';
+import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
 import { AiFoodLog } from './AiFoodLog';
 import { PhotoFoodLog } from './PhotoFoodLog';
@@ -113,6 +121,10 @@ function AddFoodBody({
   useEffect(() => {
     void loadMoreFoods();
   }, []);
+  // Pro may snap or type the meal: start the AI server while they choose.
+  useEffect(() => {
+    if (pro) warmAi();
+  }, [pro]);
   const [meal, setMeal] = useState<Meal>(initialMeal);
   const [query, setQuery] = useState('');
   const [plate, setPlate] = useState<FoodPortion[]>([]);
@@ -138,15 +150,80 @@ function AddFoodBody({
       };
     return defaultPortion(food);
   };
+  const hasHistory = (food: Food) => {
+    const prev = last.get(food.id);
+    return !!prev && food.units.includes(prev.unit);
+  };
+
+  /**
+   * Puts a portion on the plate. The same food in the same measure adds up ("2 rotis", then "4
+   * rotis") instead of becoming a second line. The screen stays where it is, search and all.
+   */
+  const putOnPlate = (portion: FoodPortion) =>
+    setPlate((list) => {
+      const i = list.findIndex(
+        (p) =>
+          p.food.id === portion.food.id && p.unit === portion.unit && p.size === portion.size,
+      );
+      if (i < 0) return [...list, portion];
+      return list.map((p, j) =>
+        j === i ? { ...p, amount: Math.round((p.amount + portion.amount) * 100) / 100 } : p,
+      );
+    });
 
   const add = (food: Food) => {
     haptic('light');
-    setPlate((p) => [...p, portionFor(food)]);
-    setQuery('');
+    putOnPlate(portionFor(food));
   };
 
+  /** One step less of a food on the plate (the amount one tap adds), off the plate at zero. */
+  const takeOne = (food: Food) => {
+    haptic('light');
+    const step = portionFor(food);
+    setPlate((list) => {
+      const i = list.findLastIndex((p) => p.food.id === food.id);
+      if (i < 0) return list;
+      const p = list[i]!;
+      const less = p.unit === step.unit ? p.amount - step.amount : 0;
+      return less > 0.001
+        ? list.map((x, j) => (j === i ? { ...x, amount: Math.round(less * 100) / 100 } : x))
+        : list.filter((_, j) => j !== i);
+    });
+  };
+
+  /** What of each food is on the plate now, for the rows. */
+  const onPlate = useMemo(() => {
+    const map = new Map<string, FoodPortion>();
+    for (const p of plate) if (!map.has(p.food.id)) map.set(p.food.id, p);
+    return map;
+  }, [plate]);
+
+  // Coming back from a food's profile or the plate keeps the list where it was.
+  const pickRef = useRef<HTMLDivElement>(null);
+  const scrollTop = useRef(0);
+  const leave = (next: View) => {
+    const scroller = pickRef.current?.closest('[data-sheet-body]');
+    if (scroller) scrollTop.current = scroller.scrollTop;
+    setView(next);
+  };
+  useLayoutEffect(() => {
+    if (view.kind !== 'pick') return;
+    const scroller = pickRef.current?.closest('[data-sheet-body]');
+    if (scroller && scrollTop.current) scroller.scrollTop = scrollTop.current;
+  }, [view.kind]);
+
   /** Opens the food's profile to see its nutrients and set the amount before adding it. */
-  const open = (food: Food) => setView({ kind: 'food', portion: portionFor(food) });
+  const open = (food: Food) => leave({ kind: 'food', portion: portionFor(food) });
+
+  const rows: RowProps = {
+    ctx,
+    stepFor: portionFor,
+    hasHistory,
+    onPlate,
+    onPick: open,
+    onAdd: add,
+    onRemove: takeOne,
+  };
 
   const totals = roundNutrients(
     sumNutrients(
@@ -209,11 +286,13 @@ function AddFoodBody({
             <li key={`${p.food.id}-${i}`} className="flex">
               <button
                 type="button"
-                onClick={() => setView({ kind: 'edit', index: i })}
+                onClick={() => leave({ kind: 'edit', index: i })}
                 className="pressable chrome type-meta inline-flex h-9 items-center gap-1 rounded-l-full bg-surface-2 pr-2 pl-3 font-semibold text-text-1"
               >
                 {portionText(p.amount, p.unit, p.size, p.food.pieceName)}{' '}
-                {p.unit === 'piece' && p.food.pieceName ? '' : p.food.name.toLowerCase()}
+                {p.unit === 'piece' && p.food.pieceName && p.food.pieceName[0] !== 'serving'
+                  ? ''
+                  : p.food.name.toLowerCase()}
               </button>
               <button
                 type="button"
@@ -268,8 +347,7 @@ function AddFoodBody({
           onChange={(next) => setView({ kind: 'food', portion: next })}
           onDone={() => {
             haptic('light');
-            setPlate((list) => [...list, view.portion]);
-            setQuery('');
+            putOnPlate(view.portion);
             setView({ kind: 'pick' });
           }}
         />
@@ -321,7 +399,7 @@ function AddFoodBody({
     );
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col" ref={pickRef}>
       <div className="sticky top-0 z-10 -mx-5 flex flex-col gap-3 bg-surface px-5 pt-5 pb-2">
         <div className="flex items-center justify-between gap-3">
           <h2 className="type-title text-text-1">
@@ -354,25 +432,17 @@ function AddFoodBody({
       </div>
       <div className="pt-2 pb-4">
         {query.trim() ? (
-          <Results
-            ctx={ctx}
-            query={query}
-            onPick={open}
-            onQuickAdd={add}
-            onCreate={() => onCreateFood(query.trim())}
-          />
+          <Results rows={rows} query={query} onCreate={() => onCreateFood(query.trim())} />
         ) : (
           <Quick
-            ctx={ctx}
+            rows={rows}
             meal={meal}
             date={date}
             pro={pro}
             onTemplate={(t) => void logTemplate(t)}
-            onPick={open}
-            onQuickAdd={add}
-            onType={() => setView({ kind: 'type' })}
-            onPhoto={() => setView({ kind: 'photo' })}
-            onLabel={() => setView({ kind: 'label' })}
+            onType={() => leave({ kind: 'type' })}
+            onPhoto={() => leave({ kind: 'photo' })}
+            onLabel={() => leave({ kind: 'label' })}
             onCreate={() => onCreateFood('')}
           />
         )}
@@ -402,23 +472,26 @@ function BackRow({ label, onBack }: { label: string; onBack: () => void }) {
   );
 }
 
-function FoodRow({
-  food,
-  ctx,
-  onPick,
-  onQuickAdd,
-}: {
-  food: Food;
+interface RowProps {
   ctx: FoodContext;
+  /** What one tap of + adds: the amount from last time, else the usual portion. */
+  stepFor: (f: Food) => FoodPortion;
+  hasHistory: (f: Food) => boolean;
+  onPlate: Map<string, FoodPortion>;
   onPick: (f: Food) => void;
-  onQuickAdd: (f: Food) => void;
-}) {
-  const detail = describe(food, ctx.katoriMl);
+  onAdd: (f: Food) => void;
+  onRemove: (f: Food) => void;
+}
+
+function FoodRow({ food, rows }: { food: Food; rows: RowProps }) {
+  const step = rows.stepFor(food);
+  const detail = describe(step, rows.ctx.katoriMl, rows.hasHistory(food));
+  const there = rows.onPlate.get(food.id);
   return (
     <li className="flex items-center gap-1">
       <button
         type="button"
-        onClick={() => onPick(food)}
+        onClick={() => rows.onPick(food)}
         className="pressable chrome flex min-h-14 min-w-0 flex-1 flex-col justify-center rounded-nested px-1 py-2 text-left"
         data-food-row={food.id}
       >
@@ -426,12 +499,31 @@ function FoodRow({
         {detail ? (
           <span className="type-meta tabular block truncate text-text-2">{detail}</span>
         ) : null}
+        {there ? (
+          <span className="type-caption tabular block truncate font-semibold text-lime" data-on-plate>
+            On your plate: {portionText(there.amount, there.unit, there.size, food.pieceName)}
+          </span>
+        ) : null}
       </button>
+      {there ? (
+        <button
+          type="button"
+          onClick={() => rows.onRemove(food)}
+          aria-label={`Less ${food.name}`}
+          className="pressable tap-target inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text-1"
+          data-quick-remove
+        >
+          <Minus className="size-5" aria-hidden />
+        </button>
+      ) : null}
       <button
         type="button"
-        onClick={() => onQuickAdd(food)}
-        aria-label={`Add ${food.name} to plate`}
-        className="pressable tap-target inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text-1"
+        onClick={() => rows.onAdd(food)}
+        aria-label={`Add ${portionText(step.amount, step.unit, step.size, food.pieceName)} of ${food.name} to plate`}
+        className={cn(
+          'pressable tap-target inline-flex size-10 shrink-0 items-center justify-center rounded-full',
+          there ? 'bg-lime text-on-lime' : 'bg-surface-2 text-text-1',
+        )}
         data-quick-add
       >
         <Plus className="size-5" aria-hidden />
@@ -440,14 +532,17 @@ function FoodRow({
   );
 }
 
-/** "1 katori · 139 kcal · 7 g protein" for a food at its usual portion, numbers in bold. */
-function describe(food: Food, katoriMl: number | null) {
+/**
+ * "Last time: 2 rotis · 204 kcal · 7 g protein" (or the usual portion for a food not eaten
+ * before): exactly what one tap of + adds, numbers in bold.
+ */
+function describe(p: FoodPortion, katoriMl: number | null, fromHistory: boolean) {
   try {
-    const p = defaultPortion(food);
     const m = measurePortion(p, katoriMl);
     return (
       <>
-        {portionText(p.amount, p.unit, p.size, food.pieceName)} ·{' '}
+        {fromHistory ? 'Last time: ' : ''}
+        {portionText(p.amount, p.unit, p.size, p.food.pieceName)} ·{' '}
         <strong className="font-semibold text-text-1">{m.nutrients.kcal} kcal</strong> ·{' '}
         <strong className="font-semibold text-text-1">{m.nutrients.proteinG.toFixed(0)} g</strong>{' '}
         protein
@@ -466,18 +561,15 @@ const DIET_WORD = {
 } as const;
 
 function Results({
-  ctx,
+  rows,
   query,
-  onPick,
-  onQuickAdd,
   onCreate,
 }: {
-  ctx: FoodContext;
+  rows: RowProps;
   query: string;
-  onPick: (f: Food) => void;
-  onQuickAdd: (f: Food) => void;
   onCreate: () => void;
 }) {
+  const { ctx } = rows;
   const results = useMemo(
     () => searchFoods(ctx.foods, query, ctx.diet),
     [ctx.foods, query, ctx.diet],
@@ -491,7 +583,7 @@ function Results({
       {results.length ? (
         <ul className="flex flex-col">
           {results.map((f) => (
-            <FoodRow key={f.id} food={f} ctx={ctx} onPick={onPick} onQuickAdd={onQuickAdd} />
+            <FoodRow key={f.id} food={f} rows={rows} />
           ))}
         </ul>
       ) : (
@@ -517,44 +609,54 @@ function Results({
 }
 
 function Quick({
-  ctx,
+  rows,
   meal,
   date,
   pro,
   onTemplate,
-  onPick,
-  onQuickAdd,
   onType,
   onPhoto,
   onLabel,
   onCreate,
 }: {
-  ctx: FoodContext;
+  rows: RowProps;
   meal: Meal;
   date: string;
   pro: boolean;
   onLabel: () => void;
   onTemplate: (t: MealTemplate) => void;
-  onPick: (f: Food) => void;
-  onQuickAdd: (f: Food) => void;
   onType: () => void;
   onPhoto: () => void;
   onCreate: () => void;
 }) {
+  const { ctx } = rows;
   const templates = useMemo(() => mealTemplates(ctx.logs, meal, date), [ctx.logs, meal, date]);
-  const recent = useMemo(
-    () =>
-      recentFoods(ctx.logs, 10)
-        .map((l) => ctx.foodById.get(l.foodId))
-        .filter((f): f is Food => Boolean(f)),
-    [ctx.logs, ctx.foodById],
-  );
+  const lists = useMemo(() => mealFoods(ctx.logs, meal, date), [ctx.logs, meal, date]);
+  const foodsOf = (logs: { foodId: string }[]) =>
+    logs.map((l) => ctx.foodById.get(l.foodId)).filter((f): f is Food => Boolean(f));
+  const recent = foodsOf(lists.recent);
+  const usual = foodsOf(lists.usual.map((u) => u.log));
   const starters = STARTER_FOODS[meal]
     .map((id) => ctx.foodById.get(id))
-    .filter((f): f is Food => Boolean(f) && fitsDiet(f!, ctx.diet) && !recent.includes(f!));
+    .filter(
+      (f): f is Food =>
+        Boolean(f) && fitsDiet(f!, ctx.diet) && !recent.includes(f!) && !usual.includes(f!),
+    );
 
   return (
     <div className="flex flex-col gap-5">
+      {recent.length ? (
+        <FoodList id="recent-foods" title="Recently eaten" foods={recent} rows={rows} />
+      ) : null}
+      {usual.length ? (
+        <FoodList
+          id="usual-foods"
+          title={`Usually at ${MEAL_LABEL[meal].toLowerCase()}`}
+          foods={usual}
+          rows={rows}
+        />
+      ) : null}
+
       {templates.length ? (
         <section aria-label="Log again">
           <ul className="flex flex-col gap-2">
@@ -616,36 +718,44 @@ function Quick({
         <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
       </button>
 
-      {recent.length ? (
-        <section aria-labelledby="recent-foods">
-          <h3 id="recent-foods" className="type-meta mb-1 font-semibold text-text-2">
-            Recent
-          </h3>
-          <ul className="flex flex-col">
-            {recent.map((f) => (
-              <FoodRow key={f.id} food={f} ctx={ctx} onPick={onPick} onQuickAdd={onQuickAdd} />
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
       {starters.length ? (
-        <section aria-labelledby="starter-foods">
-          <h3 id="starter-foods" className="type-meta mb-1 font-semibold text-text-2">
-            Often eaten at {MEAL_LABEL[meal].toLowerCase()}
-          </h3>
-          <ul className="flex flex-col">
-            {starters.map((f) => (
-              <FoodRow key={f.id} food={f} ctx={ctx} onPick={onPick} onQuickAdd={onQuickAdd} />
-            ))}
-          </ul>
-        </section>
+        <FoodList
+          id="starter-foods"
+          title={`Popular at ${MEAL_LABEL[meal].toLowerCase()}`}
+          foods={starters}
+          rows={rows}
+        />
       ) : null}
 
       <SecondaryButton compact onClick={onCreate} icon={<Plus className="size-4" aria-hidden />}>
         Add your own food or family recipe
       </SecondaryButton>
     </div>
+  );
+}
+
+function FoodList({
+  id,
+  title,
+  foods,
+  rows,
+}: {
+  id: string;
+  title: string;
+  foods: Food[];
+  rows: RowProps;
+}) {
+  return (
+    <section aria-labelledby={id} data-food-list={id}>
+      <h3 id={id} className="type-meta mb-1 font-semibold text-text-2">
+        {title}
+      </h3>
+      <ul className="flex flex-col">
+        {foods.map((f) => (
+          <FoodRow key={f.id} food={f} rows={rows} />
+        ))}
+      </ul>
+    </section>
   );
 }
 

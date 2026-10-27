@@ -539,31 +539,92 @@ const MAIN_MUSCLES = new Set<string>([
   'glutes',
 ]);
 
-/** Questions worth asking, from what the data actually shows. */
+/** Questions for anyone with training logged, mixed in so the list changes from visit to visit. */
+const GENERAL_QUESTIONS = [
+  'What should I focus on this week?',
+  'Which lift has improved the most lately?',
+  'Is my weekly volume right for my goal?',
+  'How can I beat my last workout next session?',
+  'Am I training often enough for my goal?',
+  'Which muscle group needs more work?',
+  'When should I take a lighter week?',
+  'How can I recover better between sessions?',
+  'How should I warm up for my heaviest lift?',
+  'What does my body weight trend say about my goal?',
+];
+
+const FOOD_QUESTIONS = [
+  'Am I eating enough protein for my goal?',
+  'What can I eat to hit my protein today?',
+  'Is my calorie intake right for my goal?',
+  'Which Indian foods would help my protein?',
+];
+
+const STARTER_QUESTIONS = [
+  'How should I start training with Overload?',
+  'How many days a week should I train?',
+  'What should my first routine look like?',
+  'How much protein do I need?',
+];
+
+/** How many suggestions show at once. */
+export const SUGGESTION_COUNT = 4;
+
+/** A small seeded random number generator (mulberry32), so a seed always gives the same list. */
+function seeded(seed: number) {
+  let a = Math.floor(seed * 2 ** 31) | 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let x = Math.imul(a ^ (a >>> 15), 1 | a);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffle<T>(items: T[], rand: () => number): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
+}
+
+/**
+ * Questions worth asking: up to two from what the data actually shows (a stalled lift, a lift
+ * ready for more weight, a muscle trained too little), the rest from a wider list. A new seed
+ * gives a new mix, and questions already asked are left out, so the list keeps changing.
+ */
 export function suggestedQuestions(
   m: ProgressModel | null,
   hasTargets: boolean,
   logsFood = false,
+  options: { seed?: number; asked?: string[] } = {},
 ): string[] {
+  const rand = seeded(options.seed ?? 0);
+  const asked = new Set((options.asked ?? []).map((q) => q.trim().toLowerCase()));
+  const fresh = (q: string) => !asked.has(q.toLowerCase());
+  const pick = (first: string[], rest: string[]) => {
+    const out: string[] = [];
+    for (const q of [...shuffle(first.filter(fresh), rand).slice(0, 2), ...shuffle(rest, rand)])
+      if (fresh(q) && !out.includes(q) && out.length < SUGGESTION_COUNT) out.push(q);
+    return out;
+  };
   if (!m || !m.hasAnyData)
-    return logsFood
-      ? ['Am I eating enough protein?', 'How should I start training with Overload?']
-      : ['How should I start training with Overload?'];
-  const out: string[] = [];
-  if (logsFood) out.push('Am I eating enough protein for my goal?');
+    return pick([], [...STARTER_QUESTIONS, ...(logsFood ? FOOD_QUESTIONS.slice(0, 2) : [])]);
+  const fromData: string[] = [];
   const names = exerciseNames(m);
   const stall = m.plateaus[0];
   if (stall)
-    out.push(`Why has my ${(names.get(stall.exerciseId) ?? 'lift').toLowerCase()} stalled?`);
-  if (m.progression.length) out.push('Which lifts should I add weight to next session?');
+    fromData.push(`Why has my ${(names.get(stall.exerciseId) ?? 'lift').toLowerCase()} stalled?`);
+  if (m.progression.length) fromData.push('Which lifts should I add weight to next session?');
   const low = [...m.muscles.workload]
     .filter((w) => MAIN_MUSCLES.has(w.muscle))
     .filter((w) => w.weighted / Math.max(1, m.muscles.weeks) < 8)
     .sort((a, b) => a.weighted - b.weighted)[0];
-  if (low) out.push(`Am I training ${MUSCLE_LABELS[low.muscle].toLowerCase()} enough?`);
+  if (low) fromData.push(`Am I training ${MUSCLE_LABELS[low.muscle].toLowerCase()} enough?`);
   if (m.rest.verdicts.some((v) => v !== 'on_target'))
-    out.push('Am I resting long enough between sets?');
-  if (hasTargets) out.push('Are my calorie and protein targets right for my goal?');
-  out.push('What should I focus on this week?');
-  return out.slice(0, 4);
+    fromData.push('Am I resting long enough between sets?');
+  if (hasTargets) fromData.push('Are my calorie and protein targets right for my goal?');
+  return pick(fromData, [...GENERAL_QUESTIONS, ...(logsFood ? FOOD_QUESTIONS : [])]);
 }

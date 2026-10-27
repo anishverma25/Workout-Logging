@@ -13,7 +13,9 @@ import { NumberField, PrimaryButton, TextLink } from '@/components/kit';
 import { editedPortion, type EditedNumbers } from '@/app/foodAi';
 import { measurePortion, type FoodPortion } from '@/data/repositories/food';
 import { portionText } from '@/domain/nutrition/calc';
+import { fillMacros } from '@/domain/nutrition/fillMacros';
 import { cn } from '@/lib/cn';
+import { MAX_SERVING_G, resizedPortion } from './resize';
 
 /** One food OverloadGPT found, with where its numbers come from and how sure it is. */
 export function AiItemRow({
@@ -32,7 +34,9 @@ export function AiItemRow({
   const f = portion.food;
   const amount =
     f.ai && portion.unit === 'serving'
-      ? `${f.ai.portion} (${f.servingG} g)`
+      ? f.ai.portion === `${f.servingG} g`
+        ? f.ai.portion
+        : `${f.ai.portion} (${f.servingG} g)`
       : portionText(portion.amount, portion.unit, portion.size, f.pieceName);
   let kcal: number | null = null;
   let protein: number | null = null;
@@ -69,6 +73,16 @@ export function AiItemRow({
             </span>
           </span>
         ) : null}
+        {onChange && current && !editing ? (
+          <ServingField
+            name={f.name}
+            grams={current.grams}
+            onGrams={(g) => {
+              const next = resizedPortion(portion, g, katoriMl);
+              if (next) onChange(next);
+            }}
+          />
+        ) : null}
         {check ? (
           <span className="type-caption mt-1 flex items-center gap-1 font-semibold text-text-1">
             <AlertCircle className="size-3.5" aria-hidden />
@@ -97,6 +111,42 @@ export function AiItemRow({
         />
       ) : null}
     </li>
+  );
+}
+
+/**
+ * The serving in grams, right on the card: change it and the calories and macros follow, so
+ * the amount is right before the food goes on the plate.
+ */
+function ServingField({
+  name,
+  grams,
+  onGrams,
+}: {
+  name: string;
+  grams: number;
+  onGrams: (g: number) => void;
+}) {
+  return (
+    <span className="mt-2 flex items-center gap-2" data-ai-serving>
+      <span className="type-meta text-text-2" aria-hidden>
+        Serving
+      </span>
+      <NumberField
+        label={`Serving of ${name} in grams`}
+        hideLabel
+        value={Math.round(grams)}
+        onValueChange={(v) => {
+          if (v !== null && v > 0 && v <= MAX_SERVING_G) onGrams(v);
+        }}
+        allowDecimal={false}
+        min={1}
+        max={MAX_SERVING_G}
+        unit="g"
+        // The card is the same grey as a field: a darker box shows where to type.
+        className="w-28 [&>div]:bg-surface"
+      />
+    </span>
   );
 }
 
@@ -155,8 +205,10 @@ function ItemEditor({
     fibreG: round1(start.fibreG),
   });
   const [touched, setTouched] = useState<Set<keyof EditedNumbers>>(new Set());
+  const [filled, setFilled] = useState(false);
   const set = (k: keyof EditedNumbers) => (v: number | null) => {
-    setTouched((t) => new Set(t).add(k));
+    const now = new Set(touched).add(k);
+    setTouched(now);
     setVals((o) => {
       // A new amount scales every number the person has not typed.
       if (k === 'grams' && v && o.grams) {
@@ -167,14 +219,25 @@ function ItemEditor({
             scaled[key] = key === 'kcal' ? Math.round(o[key]! * f) : round1(o[key]! * f);
         return scaled;
       }
-      return { ...o, [k]: v };
+      const next = { ...o, [k]: v };
+      // New calories or protein: carbs and fat the person has not typed follow them, split
+      // the way the suggested food splits them.
+      if ((k === 'kcal' || k === 'proteinG') && !(now.has('carbsG') && now.has('fatG'))) {
+        const m = fillMacros(next.kcal, next.proteinG, start);
+        if (m) {
+          if (!now.has('carbsG')) next.carbsG = m.carbsG;
+          if (!now.has('fatG')) next.fatG = m.fatG;
+          setFilled(true);
+        }
+      }
+      return next;
     });
   };
   const ready = FIELDS.every((fl) => vals[fl.key] !== null) && (vals.grams ?? 0) > 0;
   return (
     <div className="w-full border-t-[0.5px] border-divider pt-3" data-ai-item-editor>
       <p className="type-meta mb-2 text-text-2">{name}: the numbers for what you ate.</p>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 [&>div>div]:bg-surface">
         {FIELDS.map((fl) => (
           <NumberField
             key={fl.key}
@@ -188,6 +251,11 @@ function ItemEditor({
           />
         ))}
       </div>
+      {filled ? (
+        <p className="type-caption mt-2 text-text-2" data-macros-filled>
+          Carbs and fat follow your calories and protein. Change them if you know them.
+        </p>
+      ) : null}
       <div className="mt-3 flex items-center gap-3">
         <PrimaryButton
           compact

@@ -7250,7 +7250,8 @@ export function customToFood(c: CustomFood): Food {
     defaultAmount: servingG || c.pieceG ? 1 : 100,
     density: 1,
     pieceG: c.pieceG,
-    pieceName: null,
+    // A food of their own is counted in servings of the weight they gave, not "pieces".
+    pieceName: c.kind === 'food' && c.pieceG ? ['serving', 'servings'] : null,
     servingG,
     source: c.kind === 'recipe' ? 'custom_recipe' : 'custom',
     recipe:

@@ -414,11 +414,11 @@ test('the three-dot menu drops from its button, stays on screen and closes clean
   await button.click();
   await page.mouse.click(5, view.height / 2);
   await expect(page.getByRole('menu')).toHaveCount(0);
-  // An item does its job: notes open in their own sheet.
+  // An item does its job: the note on the card gets the keyboard.
   await button.click();
-  await page.getByRole('menuitem', { name: 'Add notes' }).click();
+  await page.getByRole('menuitem', { name: 'Add a note' }).click();
   await expect(page.getByRole('menu')).toHaveCount(0);
-  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(card.locator('[data-exercise-note] textarea')).toBeFocused();
 });
 
 test('an exercise of your own, made inside a workout, is logged, saved and still there after a reload', async ({

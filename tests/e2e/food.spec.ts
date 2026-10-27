@@ -121,12 +121,12 @@ test('Pro tells OverloadGPT a meal and sees food on Progress', async ({ page }) 
   await sheet.locator('[data-type-meal]').click();
   // Asked once per phone before anything is sent.
   await sheet.getByRole('button', { name: 'Turn on' }).click();
-  await sheet.getByRole('textbox').fill('3 roti, 1 katori rajma aur Domino pizza #food-down');
+  await sheet.locator('#ai-food').fill('3 roti, 1 katori rajma aur Domino pizza #food-down');
   await sheet.getByRole('button', { name: 'Work it out' }).click();
   // The AI is down: the library fills what it knows.
   await expect(sheet.locator('[data-ai-result]')).toContainText('could not be reached');
   await expect(sheet.locator('[data-ai-result]')).toContainText('Not in the library');
-  await sheet.getByRole('textbox').fill('3 roti, 1 katori rajma aur Domino pizza');
+  await sheet.locator('#ai-food').fill('3 roti, 1 katori rajma aur Domino pizza');
   await sheet.getByRole('button', { name: 'Ask again' }).click();
   const result = sheet.locator('[data-ai-result]');
   await expect(result).toContainText('Domino pizza');
@@ -270,7 +270,7 @@ test('typed numbers win, and every AI food can be corrected before logging', asy
   await sheet.getByRole('radio', { name: 'Dinner' }).click();
   await sheet.locator('[data-type-meal]').click();
   await sheet.getByRole('button', { name: 'Turn on' }).click();
-  await sheet.getByRole('textbox').fill('200 g paneer bhurji, 30 g protein and 2 roti');
+  await sheet.locator('#ai-food').fill('200 g paneer bhurji, 30 g protein and 2 roti');
   await sheet.getByRole('button', { name: 'Work it out' }).click();
   const result = sheet.locator('[data-ai-result]');
   // The paneer keeps the person's numbers (the stand-in AI says 150 g and 12 g protein).

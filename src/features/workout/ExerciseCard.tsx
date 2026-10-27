@@ -36,7 +36,6 @@ import {
   removeWorkoutExercise,
   updateSet,
   updateWorkoutExerciseAngle,
-  updateWorkoutExerciseNotes,
 } from '@/data/repositories/workouts';
 import {
   AnglePicker,
@@ -66,6 +65,7 @@ import { readableError } from '@/lib/errors';
 import { warmupSets } from '@/domain/workout/plates';
 import { ExercisePicker } from '@/features/exercises/ExercisePicker';
 import { PlateSheet } from './PlateSheet';
+import { ExerciseNote, type ExerciseNoteHandle } from './ExerciseNote';
 import { sharesFor, sharesSummary } from '@/data/library/shares';
 import { MuscleShares } from '@/features/exercises/MuscleShares';
 
@@ -113,7 +113,7 @@ function ExerciseCardImpl({
   const [plates, setPlates] = useState(false);
   const [swapping, setSwapping] = useState(false);
   const toast = useToast();
-  const [editingNotes, setEditingNotes] = useState(false);
+  const noteField = useRef<ExerciseNoteHandle>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [optionsFor, setOptionsFor] = useState<string | null>(null);
   const labels = useMemo(() => setLabels(sets), [sets]);
@@ -299,15 +299,13 @@ function ExerciseCardImpl({
             />
           </header>
 
-          {we.notes ? (
-            <button
-              type="button"
-              onClick={() => setEditingNotes(true)}
-              className="pressable type-meta mx-4 mt-2 block w-[calc(100%-2rem)] rounded-field bg-surface-2 px-3 py-2 text-left text-text-2"
-            >
-              {we.notes}
-            </button>
-          ) : null}
+          <ExerciseNote
+            ref={noteField}
+            workoutExerciseId={we.id}
+            exerciseName={we.exerciseName}
+            notes={we.notes}
+            lastNote={previous?.workoutExercise.notes ?? null}
+          />
 
           {readyToProgress ? (
             <div className="type-meta mx-4 mt-3 rounded-field bg-lime-dim px-3 py-2.5 text-text-1">
@@ -563,11 +561,12 @@ function ExerciseCardImpl({
             },
           },
           {
-            label: we.notes ? 'Edit notes' : 'Add notes',
+            label: we.notes ? 'Edit note' : 'Add a note',
             icon: <NotebookPen className="size-5" aria-hidden />,
             onSelect: () => {
               setMenu(false);
-              setEditingNotes(true);
+              // After the menu has closed, so the keyboard opens on the note.
+              requestAnimationFrame(() => noteField.current?.focus());
             },
           },
           {
@@ -625,14 +624,6 @@ function ExerciseCardImpl({
           setConfirmRemove(false);
         }}
       />
-      {editingNotes ? (
-        <NotesSheet
-          title={`Notes for ${we.exerciseName}`}
-          initial={we.notes ?? ''}
-          onSave={(notes) => updateWorkoutExerciseNotes(db, we.id, notes)}
-          onClose={() => setEditingNotes(false)}
-        />
-      ) : null}
     </section>
   );
 }

@@ -208,6 +208,7 @@ export function BottomSheet({
             )}
           </div>
           <div
+            data-sheet-body
             className={cn(
               // Auto basis, not 0: a zero basis collapsed the content in a sheet with no fixed height
               // on newer iPhone Safari, leaving only the header.
