@@ -6,6 +6,7 @@ import { autoloadDemoIfFirstRun } from '@/data/demo/service';
 import { ensureSystemExercises } from '@/data/repositories/training';
 import { syncController, type SyncState } from '@/data/sync/controller';
 import { cloudEnabled, supabase, SupabaseRemote } from '@/data/sync/supabase';
+import { markStage, startupFailed, withTimeout } from './startup';
 
 /**
  * Who is using the app, and which local database is open.
@@ -74,17 +75,29 @@ const userOf = (session: Session): AccountUser => ({
   email: session.user.email ?? null,
 });
 
+/**
+ * Opening the on-phone database normally takes milliseconds. Past this, something is wrong
+ * (storage blocked or full), and start-up says so instead of waiting on a black screen.
+ */
+export const DB_OPEN_LIMIT_MS = 10_000;
+
+async function openDatabase() {
+  markStage('opening your data on this phone');
+  await withTimeout(db.open(), DB_OPEN_LIMIT_MS, 'opening your data on this phone');
+  markStage('loading the exercise library');
+}
+
 async function openGuestSpace() {
   syncController.stop();
   syncingFor = null;
   switchDatabase(GUEST_DB_NAME);
-  await db.open();
+  await openDatabase();
   await ensureSystemExercises(db);
 }
 
 async function openAccountSpace(user: AccountUser, sync = true) {
   switchDatabase(accountDbName(user.id), { syncEnabled: true });
-  await db.open();
+  await openDatabase();
   // The built-in library is local reference data. Demo data is loaded only in development and
   // in end-to-end tests; it stays on the device either way, because only `origin: 'user'`
   // records are ever sent to the server.
@@ -114,14 +127,20 @@ function applySession(session: Session | null) {
  * still being confirmed, so nothing is sent or pulled before the server accepts it.
  */
 function applyUser(user: AccountUser | null, { sync = true } = {}) {
-  applying = applying.then(async () => {
-    if (user && state.user?.id !== user.id) await openAccountSpace(user, sync);
-    // The same person, now confirmed (a refresh that finished late, or came back online).
-    else if (user && sync) startSync(user);
-    if (!user && (state.user || db.name !== GUEST_DB_NAME)) await openGuestSpace();
-    setState({ status: user ? 'signedIn' : 'signedOut', user });
-  });
-  return applying;
+  // One failed change must never block every later one (the chain would stay rejected and the
+  // app would wait on its opening screen for good), so each change starts after the last one
+  // settles, whether it worked or not. The caller still gets this change's own error.
+  const next = applying
+    .catch(() => undefined)
+    .then(async () => {
+      if (user && state.user?.id !== user.id) await openAccountSpace(user, sync);
+      // The same person, now confirmed (a refresh that finished late, or came back online).
+      else if (user && sync) startSync(user);
+      if (!user && (state.user || db.name !== GUEST_DB_NAME)) await openGuestSpace();
+      setState({ status: user ? 'signedIn' : 'signedOut', user });
+    });
+  applying = next;
+  return next;
 }
 
 /**
@@ -129,6 +148,13 @@ function applyUser(user: AccountUser | null, { sync = true } = {}) {
  * refreshing it over the network, which on a slow connection took seconds of black screen.
  */
 export const SESSION_WAIT_MS = 800;
+
+/**
+ * With no saved session, restoring is a storage read and takes no time. If it still has not
+ * answered by now, the app opens signed out rather than waiting; a session that turns up later
+ * signs the person in through the auth listener.
+ */
+export const SESSION_LIMIT_MS = 5_000;
 
 /** The person whose session is saved on this device, read straight from storage. */
 export function storedUser(
@@ -157,6 +183,12 @@ export async function initAccount(): Promise<void> {
     await openGuestSpace();
     return;
   }
+  // Listening first, so sign-in changes are still followed if opening the data below fails.
+  supabase.auth.onAuthStateChange((event, next) => {
+    if (event === 'PASSWORD_RECOVERY') setState({ recovery: true });
+    // Supabase advises against awaiting its own calls inside this callback.
+    setTimeout(() => void applySession(next).catch(startupFailed), 0);
+  });
   const restored = supabase.auth.getSession().then(
     (r) => r.data.session,
     (err: unknown) => {
@@ -170,12 +202,13 @@ export async function initAccount(): Promise<void> {
   } catch {
     // No storage: wait for the session.
   }
-  const session = saved
-    ? await Promise.race([
-        restored,
-        new Promise<undefined>((r) => setTimeout(() => r(undefined), SESSION_WAIT_MS)),
-      ])
-    : await restored;
+  markStage('restoring your sign-in');
+  const session = await Promise.race([
+    restored,
+    new Promise<undefined | null>((r) =>
+      setTimeout(() => r(saved ? undefined : null), saved ? SESSION_WAIT_MS : SESSION_LIMIT_MS),
+    ),
+  ]);
   if (session === undefined && saved) {
     // Still confirming the saved session (a slow network): open this person's data now. The
     // refresh finishes in the background; if the session turns out to be gone, the sign-out
@@ -185,18 +218,13 @@ export async function initAccount(): Promise<void> {
       if (!s) return;
       if (s.user.id === saved.id) {
         // Confirmed: the data already open is theirs, so syncing can start.
-        void applying.then(() => startSync(userOf(s)));
-      } else void applySession(s);
+        void applying.catch(() => undefined).then(() => startSync(userOf(s)));
+      } else void applySession(s).catch(startupFailed);
     });
   } else {
     if (!session) await openGuestSpace();
     await applySession(session ?? null);
   }
-  supabase.auth.onAuthStateChange((event, next) => {
-    if (event === 'PASSWORD_RECOVERY') setState({ recovery: true });
-    // Supabase advises against awaiting its own calls inside this callback.
-    setTimeout(() => void applySession(next), 0);
-  });
 }
 
 export class AccountError extends Error {}
