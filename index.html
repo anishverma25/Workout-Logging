@@ -16,11 +16,20 @@
       /* Shown from the very first paint until the app has drawn its first screen (src/main.tsx),
          so an installed app never opens on a blank black screen. Same mark and place as the
          app's own opening screen, so the hand-over is invisible. */
-      #boot{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:#000;transition:opacity .2s ease-out}
+      #boot{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;transition:opacity .2s ease-out}
       #boot.out{opacity:0;pointer-events:none}
       #boot svg{width:48px;height:48px;opacity:.6}
       html[data-landing] #boot{display:none}
+      /* The start-up check (script above): shown only if the app has not opened in a few seconds. */
+      #boot-help{max-width:22rem;margin:28px 24px 0;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f5f5f7;text-align:center}
+      #boot-help p{margin:0 0 6px}
+      #boot-help .sub{color:#a1a1aa;font-size:14px}
+      #boot-help .why{color:#71717a;font-size:12px;word-break:break-word;margin-top:14px}
+      #boot-help button{display:block;width:100%;height:48px;margin-top:12px;border:0;border-radius:12px;font:600 16px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;cursor:pointer}
+      #boot-help .main{background:#c6f432;color:#000;margin-top:20px}
+      #boot-help .alt{background:#27272a;color:#f5f5f7}
     </style>
+    <script>(function(){var w=window,d=document,started=false,errs=[];var o=w.__overload={stage:"loading the app",errors:errs,started:function(){started=true;var p=d.getElementById("boot-help");if(p&&p.parentNode)p.parentNode.removeChild(p)}};function note(m){if(m&&errs.length<4)errs.push(String(m).slice(0,240))}w.addEventListener("error",function(e){var t=e.target;note(e.message||(t&&(t.src||t.href)?"Could not load "+(t.src||t.href):""))},true);w.addEventListener("unhandledrejection",function(e){var r=e.reason;note(r&&r.message||r)});o.repair=function(){var jobs=[];try{if(navigator.serviceWorker)jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister()}))}));if(w.caches)jobs.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}))}catch(e){}return Promise.all(jobs).catch(function(){}).then(function(){location.replace(location.pathname+location.search)})};o.help=function(){if(started||d.getElementById("boot-help"))return;var b=d.getElementById("boot");if(!b)return;b.classList.remove("out");var h=d.createElement("div");h.id="boot-help";h.setAttribute("role","alert");function line(text,cls){var p=d.createElement("p");p.textContent=text;if(cls)p.className=cls;h.appendChild(p)}function button(text,cls,fn){var x=d.createElement("button");x.type="button";x.className=cls;x.textContent=text;x.onclick=fn;h.appendChild(x)}line("Overload is taking longer than usual to open.");line("Everything you logged is safe, on this phone and in your account.","sub");button("Repair and open","main",function(){o.repair()});button("Try again","alt",function(){location.reload()});line("Stuck while "+o.stage+(errs.length?". "+errs.join(" | "):"."),"why");b.removeAttribute("aria-hidden");b.appendChild(h)};function arm(){setTimeout(function(){if(started||d.documentElement.hasAttribute("data-landing"))return;if(d.visibilityState==="hidden"){d.addEventListener("visibilitychange",arm,{once:true});return}var k="overload.autoRepairAt",last=0;try{last=+localStorage.getItem(k)||0}catch(e){}var sw=navigator.serviceWorker;if(sw&&sw.controller&&Date.now()-last>600000){try{localStorage.setItem(k,String(Date.now()))}catch(e){}o.repair();return}o.help()},6000)}arm()})();</script>
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />

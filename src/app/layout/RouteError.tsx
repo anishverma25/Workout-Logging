@@ -13,7 +13,12 @@ import { isChunkLoadError, reloadOnceForNewVersion } from './chunkReload';
 export function RouteError() {
   const error = useRouteError();
   const [reloading] = useState(() => isChunkLoadError(error) && reloadOnceForNewVersion());
-  if (reloading) return null;
+  if (reloading)
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-bg px-6 text-center" aria-busy>
+        <p className="type-body text-text-2">Opening the new version of Overload...</p>
+      </main>
+    );
   const message = isRouteErrorResponse(error)
     ? `${error.status} ${error.statusText}`
     : error instanceof Error

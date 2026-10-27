@@ -8,49 +8,48 @@ import { router } from './app/router';
 import { DatabaseScope } from './app/DatabaseScope';
 import { ToastProvider } from './components/ui/Toast';
 import { MoveToNewHome } from './app/layout/MoveToNewHome';
+import { AppCrash } from './app/layout/AppCrash';
+import { getAccountState, subscribeAccount } from './app/account';
+import { markStage, markStarted, startupFailed } from './app/startup';
 
-const root = createRoot(document.getElementById('root')!);
+markStage('starting the app');
+registerServiceWorker();
 
-function render() {
-  root.render(
-    <StrictMode>
+// Drawn at once, not after start-up: while the account opens, the app shows its own opening
+// mark, and a crash anywhere shows a way out instead of a blank screen.
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <AppCrash>
       <ToastProvider>
         <DatabaseScope>
           <MoveToNewHome />
           <RouterProvider router={router} />
         </DatabaseScope>
       </ToastProvider>
-    </StrictMode>,
-  );
-}
+    </AppCrash>
+  </StrictMode>,
+);
 
-registerServiceWorker();
-
-/** Fades out the opening mark in index.html once the app has drawn its first screen. */
-function hideBoot() {
-  const boot = document.getElementById('boot');
-  if (!boot || boot.classList.contains('out')) return;
-  boot.classList.add('out');
-  window.setTimeout(() => boot.remove(), 250);
-}
-
-function whenDrawn() {
-  const done = () => requestAnimationFrame(() => requestAnimationFrame(hideBoot));
-  if (router.state.initialized) return done();
-  const stop = router.subscribe((s) => {
-    if (!s.initialized) return;
-    stop();
+/**
+ * The app counts as open once the router has drawn and the account is known (signed in, signed
+ * out, or a build without accounts). Then the opening mark fades and the start-up check in
+ * index.html stands down.
+ */
+function whenOpen() {
+  const ready = () => router.state.initialized && getAccountState().status !== 'loading';
+  const done = markStarted;
+  if (ready()) return done();
+  const stops: (() => void)[] = [];
+  const check = () => {
+    if (!ready()) return;
+    stops.forEach((stop) => stop());
     done();
-  });
+  };
+  stops.push(router.subscribe(check), subscribeAccount(check));
 }
+whenOpen();
 
-// Whatever happens, the opening mark never stays up for long.
-window.setTimeout(hideBoot, 8000);
-
-// Render even if bootstrapping fails, so screens can show their own error states.
-bootstrap()
-  .catch((err) => console.error('Startup failed', err))
-  .finally(() => {
-    render();
-    whenDrawn();
-  });
+bootstrap().catch((err: unknown) => {
+  console.error('Startup failed', err);
+  startupFailed(err);
+});

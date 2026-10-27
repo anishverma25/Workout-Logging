@@ -3,20 +3,43 @@ const VERSION = '__VERSION__';
 const PRECACHE = __PRECACHE__;
 const CACHE = `overload-shell-${VERSION}`;
 const PRECACHED = new Set(PRECACHE);
+/** Remembers which cache the version before this one used, so its files outlive the update. */
+const META = 'overload-meta';
 
 // Only the app's own static files are cached. Requests to Supabase (accounts and training
 // data) and any other origin go straight to the network and are never stored here: private
 // data lives only in the per-account IndexedDB database.
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));
+  // A new version takes over as soon as it is downloaded: waiting for every window to close
+  // left installed apps on an old version for days (Android keeps them open in the background).
+  // Pages that are already open keep working, because the previous version's files stay cached.
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((cache) => cache.addAll(PRECACHE))
+      .then(() => self.skipWaiting()),
+  );
 });
+
+async function previousCache() {
+  const meta = await caches.open(META);
+  const res = await meta.match('/current');
+  return res ? res.text() : null;
+}
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      for (const key of await caches.keys()) {
-        if (key.startsWith('overload-') && key !== CACHE) await caches.delete(key);
+      const previous = await previousCache();
+      const keys = await caches.keys();
+      for (const key of keys) {
+        if (key.startsWith('overload-shell-') && key !== CACHE && key !== previous) {
+          await caches.delete(key);
+        }
+      }
+      if (previous !== CACHE) {
+        await (await caches.open(META)).put('/current', new Response(CACHE));
       }
       await self.clients.claim();
     })(),
@@ -26,6 +49,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data === 'skip-waiting') self.skipWaiting();
 });
+
+/** This version's copy first, then the previous version's (for pages opened before the update). */
+async function cached(path) {
+  return (await caches.match(path, { cacheName: CACHE })) || (await caches.match(path));
+}
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
@@ -38,15 +66,17 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches
         .match('/', { cacheName: CACHE })
-        .then((cached) => cached || fetch(request))
+        .then((hit) => hit || fetch(request))
         .catch(() => fetch(request)),
     );
     return;
   }
 
-  if (PRECACHED.has(url.pathname)) {
+  if (PRECACHED.has(url.pathname) || url.pathname.startsWith('/assets/')) {
     event.respondWith(
-      caches.match(url.pathname, { cacheName: CACHE }).then((cached) => cached || fetch(request)),
+      cached(url.pathname)
+        .then((hit) => hit || fetch(request))
+        .catch(() => fetch(request)),
     );
   }
 });
