@@ -66,8 +66,8 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   await page.keyboard.type('14031996');
   await expect(page.getByText('14 March 1996, age')).toBeVisible();
   await page.getByLabel('Height in centimetres').fill('163');
-  await page.getByLabel(/Weight/).fill('58');
-  await page.getByLabel(/Weight/).blur();
+  await page.getByLabel(/^Weight/).fill('58');
+  await page.getByLabel(/^Weight/).blur();
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: /Mostly sitting/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();

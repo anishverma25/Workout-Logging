@@ -18,6 +18,8 @@ export function usePageMeta(path: string) {
 
 function set(title: string, description: string, canonical: string) {
   document.title = title;
-  document.querySelector<HTMLMetaElement>('meta[name="description"]')?.setAttribute('content', description);
+  document
+    .querySelector<HTMLMetaElement>('meta[name="description"]')
+    ?.setAttribute('content', description);
   document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute('href', canonical);
 }

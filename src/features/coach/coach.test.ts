@@ -6,6 +6,7 @@ import type { TrainingData } from '@/domain/analytics/sessions';
 import { resolveEntitlement, SubscriptionSnapshot } from '@/domain/entitlement/entitlement';
 import {
   COACH_TOPICS,
+  answerLanguageOk,
   buildMessages,
   checkFoodItem,
   FOOD_PHOTO_PROMPT,
@@ -13,11 +14,13 @@ import {
   geminiProvider,
   groqProvider,
   handleCoach,
+  hedged,
   inventedFigures,
   isSpecific,
   parseFoodJson,
   parseRequest,
   proFromSubscription,
+  replyLanguage,
   tidyAnswer,
   type CoachDeps,
   type CoachProvider,
@@ -273,11 +276,25 @@ describe('the training brief', () => {
     if (model.plateaus.length) expect(brief).toContain('Likely cause:');
     else expect(brief).toContain('none, every trained lift is still moving');
   });
-  it('suggests questions from the data, at most four', () => {
-    const q = suggestedQuestions(model, false);
+  it('suggests four questions, a new mix for a new seed, never one already asked', () => {
+    const a = suggestedQuestions(model, true, true, { seed: 0.1 });
+    expect(a).toHaveLength(4);
+    expect(new Set(a).size).toBe(4);
+    // The same seed gives the same list; other seeds give other lists.
+    expect(suggestedQuestions(model, true, true, { seed: 0.1 })).toEqual(a);
+    const others = [0.2, 0.3, 0.4, 0.5].map((seed) =>
+      suggestedQuestions(model, true, true, { seed }).join('|'),
+    );
+    expect(others.some((o) => o !== a.join('|'))).toBe(true);
+    const next = suggestedQuestions(model, true, true, { seed: 0.1, asked: [a[0]!] });
+    expect(next).not.toContain(a[0]);
+    expect(next).toHaveLength(4);
+  });
+
+  it('suggests starter questions before anything is logged', () => {
+    const q = suggestedQuestions(null, false, false, { seed: 0.7 });
     expect(q.length).toBeGreaterThan(0);
     expect(q.length).toBeLessThanOrEqual(4);
-    expect(q).toContain('What should I focus on this week?');
   });
 });
 
@@ -496,5 +513,86 @@ describe('photo food logging on the server', () => {
     expect(groq.model).toBe('qwen/qwen3.8-27b');
     expect(JSON.stringify(groq.messages[1]!.content)).toContain('data:image/jpeg;base64,');
     expect(groqText).toBe('[]');
+  });
+});
+
+describe('reply language', () => {
+  it('answers in the language of the question', () => {
+    expect(replyLanguage('How much rest should I take between sets?')).toBe('english');
+    expect(replyLanguage('Is my bench progressing?')).toBe('english');
+    expect(replyLanguage('Which dal and roti should I eat for protein?')).toBe('english');
+    expect(replyLanguage('bench kyu nahi badh raha?')).toBe('hinglish');
+    expect(replyLanguage('protein kitna khau?')).toBe('hinglish');
+    expect(replyLanguage('mera squat stuck hai')).toBe('hinglish');
+    expect(replyLanguage('मेरा बेंच क्यों नहीं बढ़ रहा?')).toBe('hindi');
+    expect(replyLanguage('')).toBe('english');
+  });
+
+  it('tells the AI which language on its own line', () => {
+    const [msg] = buildMessages({
+      topic: 'chat',
+      question: 'bench kyu nahi badh raha?',
+      brief: 'Person: goal hypertrophy.',
+      history: [],
+    });
+    expect(msg!.text).toMatch(/^Question: bench kyu nahi badh raha\?$/m);
+    expect(msg!.text).toMatch(/^Reply in: Hinglish/m);
+  });
+
+  it('spots an answer in the wrong language', () => {
+    const english = 'Your bench went from 60 kg to 65 kg. Keep adding 2.5 kg each week.';
+    const hinglish =
+      'Aapka bench 60 kg se 65 kg hua hai. Har hafte 2.5 kg aur add karo, theek hai?';
+    expect(answerLanguageOk(english, 'english')).toBe(true);
+    expect(answerLanguageOk(hinglish, 'english')).toBe(false);
+    expect(answerLanguageOk(hinglish, 'hinglish')).toBe(true);
+    expect(answerLanguageOk(english, 'hinglish')).toBe(false);
+  });
+});
+
+describe('hedged requests', () => {
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  it('asks the next service when the first is slow, and takes the first good answer', async () => {
+    const started: number[] = [];
+    const value = await hedged<string>(
+      2,
+      async (i) => {
+        started.push(i);
+        await wait(i === 0 ? 200 : 10);
+        return { ok: true, value: `answer ${i}` };
+      },
+      30,
+    );
+    expect(value).toBe('answer 1');
+    expect(started).toEqual([0, 1]);
+  });
+
+  it('never asks the second when the first answers in time', async () => {
+    const started: number[] = [];
+    const value = await hedged<string>(
+      2,
+      async (i) => {
+        started.push(i);
+        return { ok: true, value: `answer ${i}` };
+      },
+      50,
+    );
+    expect(value).toBe('answer 0');
+    await wait(80);
+    expect(started).toEqual([0]);
+  });
+
+  it('moves on at once after a failure, and falls back in order when nothing passes', async () => {
+    const value = await hedged<string>(
+      2,
+      async (i) => {
+        if (i === 0) throw new Error('down');
+        return { ok: false, value: 'general answer' };
+      },
+      10_000,
+    );
+    expect(value).toBe('general answer');
+    expect(await hedged(0, async () => ({ ok: true, value: 1 }), 10)).toBeNull();
   });
 });

@@ -32,13 +32,16 @@ import { usePreferences, useTrainingData } from '@/data/hooks';
 import { activeRoutine } from '@/domain/analytics/schedule';
 import { recommendProgram, personalizeTemplate } from '@/data/library/programs';
 import { addBodyWeight } from '@/data/repositories/bodyweight';
-import { ProfileError, saveProfile } from '@/data/repositories/profile';
+import { ProfileError, saveProfile, saveTargetSettings } from '@/data/repositories/profile';
 import {
   createBlankRoutine,
   createRoutineFromTemplate,
   setActiveRoutine,
 } from '@/data/repositories/routines';
 import { energyPlan } from '@/domain/analytics/body';
+import { intakeOutcome, targetPlan, type TargetInput } from '@/domain/analytics/goalPlan';
+import { addGoal } from '@/data/repositories/goals';
+import { GoalTargets } from './GoalTargets';
 import { EXPERIENCE_LABEL, GOAL_DETAIL, GOAL_LABEL } from '@/domain/models/labels';
 import type {
   DailyActivity,
@@ -68,6 +71,8 @@ interface Draft {
   birthDate: string;
   heightCm: number | null;
   weight: number | null;
+  /** The body weight they want to reach, in their unit. */
+  targetWeight: number | null;
   dailyActivity: DailyActivity | null;
 }
 
@@ -207,8 +212,14 @@ function SetupFlow({
     birthDate: own?.birthDate ?? '',
     heightCm: own?.heightCm ?? null,
     weight: null,
+    targetWeight: null,
     dailyActivity: own?.dailyActivity ?? null,
   }));
+  // Their own calories and protein for the target, null while they keep the suggestion.
+  const [ownTargets, setOwnTargets] = useState<{ kcal: number | null; proteinG: number | null }>({
+    kcal: null,
+    proteinG: null,
+  });
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
@@ -249,6 +260,22 @@ function SetupFlow({
     sessionMinutes: draft.sessionMinutes,
   });
 
+  const targetKg =
+    draft.targetWeight !== null ? fromDisplayWeight(draft.targetWeight, prefs.weightUnit) : null;
+  const targetInput: TargetInput | null =
+    energy && weightKg && targetKg
+      ? {
+          weightKg,
+          targetKg,
+          goal,
+          experience,
+          maintenanceKcal: energy.tdee,
+          bmrKcal: energy.bmr,
+          today: toDateKey(new Date()),
+        }
+      : null;
+  const goalPlan = targetInput ? targetPlan(targetInput) : null;
+
   const canContinue = step !== 'name' || draft.name.trim().length > 0;
   const go = (delta: 1 | -1) => {
     setError(null);
@@ -271,6 +298,26 @@ function SetupFlow({
         equipment: draft.equipment,
         dailyActivity: draft.dailyActivity,
       });
+      if (targetInput && goalPlan) {
+        const kcal = ownTargets.kcal ?? goalPlan.kcal;
+        const proteinG = ownTargets.proteinG ?? goalPlan.proteinG;
+        // Their targets follow the plan for the target weight, not the general goal estimate.
+        await saveTargetSettings(db, {
+          targetMode: 'own',
+          calorieTarget: kcal,
+          proteinTargetG: proteinG,
+        });
+        if (goalPlan.direction !== 'hold') {
+          const outcome = intakeOutcome({ ...targetInput, kcal, proteinG });
+          await addGoal(db, {
+            kind: 'body_weight',
+            exerciseId: null,
+            targetValue: targetInput.targetKg,
+            startValue: targetInput.weightKg,
+            targetDate: outcome.date,
+          }).catch(() => undefined);
+        }
+      }
       if (draft.weight !== null) {
         await addBodyWeight(db, {
           weight: draft.weight,
@@ -512,6 +559,23 @@ function SetupFlow({
                   max={prefs.weightUnit === 'kg' ? 400 : 880}
                   onValueChange={(v) => set('weight', v)}
                 />
+                <div>
+                  <NumberField
+                    label="Target weight (optional)"
+                    unit={prefs.weightUnit}
+                    value={draft.targetWeight}
+                    min={prefs.weightUnit === 'kg' ? 30 : 66}
+                    max={prefs.weightUnit === 'kg' ? 300 : 660}
+                    onValueChange={(v) => {
+                      set('targetWeight', v);
+                      setOwnTargets({ kcal: null, proteinG: null });
+                    }}
+                    data-target-weight
+                  />
+                  <p className="type-caption mt-1.5 text-text-2">
+                    The weight you want to reach. You get daily calories, protein and a date for it.
+                  </p>
+                </div>
               </div>
             </Question>
           ) : null}
@@ -533,6 +597,18 @@ function SetupFlow({
               goal={goal}
               experience={experience}
               energy={energy}
+              targets={
+                targetInput && goalPlan ? (
+                  <GoalTargets
+                    input={targetInput}
+                    plan={goalPlan}
+                    kcal={ownTargets.kcal}
+                    proteinG={ownTargets.proteinG}
+                    unit={prefs.weightUnit}
+                    onChange={setOwnTargets}
+                  />
+                ) : null
+              }
               recommendation={recommendation}
               imported={imported}
               templateKey={templateKey}
@@ -708,6 +784,7 @@ function PlanSummary({
   goal,
   experience,
   energy,
+  targets,
   recommendation,
   imported,
   templateKey,
@@ -720,6 +797,8 @@ function PlanSummary({
   goal: Goal;
   experience: Experience;
   energy: ReturnType<typeof energyPlan>;
+  /** Calories, protein and a date for the target weight, when one was given. */
+  targets: ReactNode;
   recommendation: ReturnType<typeof recommendProgram>;
   imported: Routine | null;
   templateKey: string | null;
@@ -741,7 +820,9 @@ function PlanSummary({
         your profile.
       </p>
 
-      {energy ? (
+      {targets ? (
+        targets
+      ) : energy ? (
         <div className="mt-6 grid grid-cols-2 gap-3">
           <StatTile
             label="Daily calories"

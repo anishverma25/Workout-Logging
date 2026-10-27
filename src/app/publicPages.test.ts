@@ -29,7 +29,10 @@ describe('public pages', () => {
   });
 
   it('gives each page its own head and keeps the home page off other pages', () => {
-    const terms = pageHtml(INDEX, PUBLIC_PAGES.find((p) => p.path === '/terms')!);
+    const terms = pageHtml(
+      INDEX,
+      PUBLIC_PAGES.find((p) => p.path === '/terms')!,
+    );
     expect(terms).toContain('<title>Terms and conditions | Overload</title>');
     expect(terms).toContain(`<link rel="canonical" href="${SITE_ORIGIN}/terms" />`);
     expect(terms).toContain(`<meta property="og:url" content="${SITE_ORIGIN}/terms" />`);

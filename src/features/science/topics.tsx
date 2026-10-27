@@ -784,6 +784,14 @@ export const SCIENCE: TopicGroup[] = [
             (see Your water target). Numbers you type are used as they are, and anything you leave
             empty falls back to the worked-out one.
           </>,
+          <>
+            Give a target weight in setup and the plan aims for the middle of the evidence range in
+            the direction of that target: 0.75% of body weight a week to lose, your training
+            age&apos;s lean-gain rate to gain. Calories are maintenance plus that rate at about{' '}
+            {KCAL_PER_KG} kcal per kg, never under 1,200 kcal or your resting energy; protein is the
+            middle of your goal&apos;s range, the cutting range when losing. The date is the weight
+            to change divided by the weekly rate, worked out again whenever you change the calories.
+          </>,
         ],
         forYou:
           'Weigh in most mornings. After two weeks the trend tells you your real maintenance better than any formula.',

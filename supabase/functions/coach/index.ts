@@ -12,6 +12,7 @@ import {
   geminiProvider,
   groqProvider,
   handleCoach,
+  isWarmUp,
   type CoachProvider,
   type CoachResponse,
 } from '../_shared/coach.ts';
@@ -62,24 +63,31 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
   if (req.method !== 'POST') return reply({ status: 405, body: { error: 'POST only' } }, origin);
   try {
+    const body = await req.json().catch(() => null);
+    // Opening OverloadGPT or AI food logging starts the function early, so the real request
+    // does not wait for a cold start. Nothing is read or sent to an AI.
+    if (isWarmUp(body)) return reply({ status: 200, body: { ok: true } }, origin);
     const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
-    const { data, error } = await admin.auth.getUser(token);
-    if (error || !data.user)
-      return reply({ status: 401, body: { error: 'Sign in first.', code: 'signed_out' } }, origin);
     // Read the subscription as the person themselves, through the same function the app uses.
     const asUser = createClient(env('SUPABASE_URL'), env('SUPABASE_ANON_KEY'), {
       auth: { persistSession: false, autoRefreshToken: false },
       global: { headers: { authorization: `Bearer ${token}` } },
     });
-    const body = await req.json().catch(() => null);
+    // Asked at the same time as the user check, to save a round trip. Row level security
+    // means it returns nothing useful for a bad token, and it is only used after the check.
+    const subscription = (async () => {
+      const { data: sub, error: subError } = await asUser.rpc('get_my_subscription');
+      if (subError) throw new Error(subError.message);
+      return sub;
+    })();
+    subscription.catch(() => undefined);
+    const { data, error } = await admin.auth.getUser(token);
+    if (error || !data.user)
+      return reply({ status: 401, body: { error: 'Sign in first.', code: 'signed_out' } }, origin);
     const result = await handleCoach(
       {
         providers,
-        async subscription() {
-          const { data: sub, error: subError } = await asUser.rpc('get_my_subscription');
-          if (subError) throw new Error(subError.message);
-          return sub;
-        },
+        subscription: () => subscription,
         // Today's photo allowance for this person (migration 0012).
         photoQuota: {
           async claim() {

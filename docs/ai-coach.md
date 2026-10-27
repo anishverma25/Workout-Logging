@@ -27,7 +27,17 @@ accounts see the same buttons marked Pro, and tapping them shows what Pro adds.
    provider is tried too (`isSpecific`); a generic answer is shown only when no provider gives
    a personal one. The instructions require their exercises, numbers, goal and exact targets
    for the next session; the chat brief includes the last 6 workouts and the current routine.
-5. Nothing is stored on the server. The chat is kept on the phone, per account, for 7 days
+5. **Speed.** If Gemini has not answered within 5 seconds (9 for typed food, 12 for photos),
+   Groq is asked as well, and the first answer that passes every check wins; a failure moves on
+   at once (`hedged`, `HEDGE_MS`). Opening OverloadGPT or the food screen sends `{ kind: 'warm' }`
+   so the function is already running when the question comes (`src/app/aiWarm.ts`), and the
+   function reads the subscription while it checks the user. This can use a second request
+   when Gemini is slow; the free limits below allow for it.
+6. **Language.** The reply language follows the question: English in, English out; Hinglish
+   in, Hinglish out; Devanagari Hindi in, Hindi out (`replyLanguage`, a "Reply in" line in the
+   request). An answer in the wrong language is set aside and the next provider is tried
+   (`answerLanguageOk`).
+7. Nothing is stored on the server. The chat is kept on the phone, per account, for 7 days
    (`src/app/coach.ts`). Explain answers are reused for the rest of the day while the card's
    numbers are unchanged, which saves free quota.
 

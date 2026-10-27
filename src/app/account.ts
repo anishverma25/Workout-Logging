@@ -76,12 +76,13 @@ const userOf = (session: Session): AccountUser => ({
 
 async function openGuestSpace() {
   syncController.stop();
+  syncingFor = null;
   switchDatabase(GUEST_DB_NAME);
   await db.open();
   await ensureSystemExercises(db);
 }
 
-async function openAccountSpace(user: AccountUser) {
+async function openAccountSpace(user: AccountUser, sync = true) {
   switchDatabase(accountDbName(user.id), { syncEnabled: true });
   await db.open();
   // The built-in library is local reference data. Demo data is loaded only in development and
@@ -89,20 +90,65 @@ async function openAccountSpace(user: AccountUser) {
   // records are ever sent to the server.
   await autoloadDemoIfFirstRun(db, AUTOLOAD_ON_FIRST_OPEN);
   await ensureSystemExercises(db);
-  if (supabase) void syncController.start(db, new SupabaseRemote(supabase), user.id);
+  if (sync) startSync(user);
+}
+
+/** The account sync is running for, so a confirmed session never starts it twice. */
+let syncingFor: string | null = null;
+
+function startSync(user: AccountUser) {
+  if (!supabase || syncingFor === user.id) return;
+  syncingFor = user.id;
+  void syncController.start(db, new SupabaseRemote(supabase), user.id);
 }
 
 let applying: Promise<void> = Promise.resolve();
 
 /** Opens the right database for a session change. Changes are applied one at a time. */
 function applySession(session: Session | null) {
+  return applyUser(session ? userOf(session) : null);
+}
+
+/**
+ * `sync: false` opens the person's data without syncing yet: used while their saved session is
+ * still being confirmed, so nothing is sent or pulled before the server accepts it.
+ */
+function applyUser(user: AccountUser | null, { sync = true } = {}) {
   applying = applying.then(async () => {
-    const user = session ? userOf(session) : null;
-    if (user && state.user?.id !== user.id) await openAccountSpace(user);
+    if (user && state.user?.id !== user.id) await openAccountSpace(user, sync);
+    // The same person, now confirmed (a refresh that finished late, or came back online).
+    else if (user && sync) startSync(user);
     if (!user && (state.user || db.name !== GUEST_DB_NAME)) await openGuestSpace();
     setState({ status: user ? 'signedIn' : 'signedOut', user });
   });
   return applying;
+}
+
+/**
+ * How long opening the app waits for the saved session to be confirmed. Confirming can mean
+ * refreshing it over the network, which on a slow connection took seconds of black screen.
+ */
+export const SESSION_WAIT_MS = 800;
+
+/** The person whose session is saved on this device, read straight from storage. */
+export function storedUser(
+  storage: Pick<Storage, 'length' | 'key' | 'getItem'>,
+): AccountUser | null {
+  try {
+    for (let i = 0; i < storage.length; i += 1) {
+      const key = storage.key(i) ?? '';
+      if (!/^sb-.+-auth-token$/.test(key)) continue;
+      const saved = JSON.parse(storage.getItem(key) ?? 'null') as {
+        user?: { id?: unknown; email?: unknown };
+      } | null;
+      const id = saved?.user?.id;
+      if (typeof id === 'string' && id)
+        return { id, email: typeof saved?.user?.email === 'string' ? saved.user.email : null };
+    }
+  } catch {
+    // Storage blocked or unreadable: wait for the session as before.
+  }
+  return null;
 }
 
 /** Restores a saved session before the first render, so the right data shows immediately. */
@@ -111,14 +157,41 @@ export async function initAccount(): Promise<void> {
     await openGuestSpace();
     return;
   }
-  let session: Session | null = null;
+  const restored = supabase.auth.getSession().then(
+    (r) => r.data.session,
+    (err: unknown) => {
+      console.error('Could not restore the session', err);
+      return null;
+    },
+  );
+  let saved: AccountUser | null = null;
   try {
-    session = (await supabase.auth.getSession()).data.session;
-  } catch (err) {
-    console.error('Could not restore the session', err);
+    saved = storedUser(window.localStorage);
+  } catch {
+    // No storage: wait for the session.
   }
-  if (!session) await openGuestSpace();
-  await applySession(session);
+  const session = saved
+    ? await Promise.race([
+        restored,
+        new Promise<undefined>((r) => setTimeout(() => r(undefined), SESSION_WAIT_MS)),
+      ])
+    : await restored;
+  if (session === undefined && saved) {
+    // Still confirming the saved session (a slow network): open this person's data now. The
+    // refresh finishes in the background; if the session turns out to be gone, the sign-out
+    // event below takes them to sign in.
+    await applyUser(saved, { sync: false });
+    void restored.then((s) => {
+      if (!s) return;
+      if (s.user.id === saved.id) {
+        // Confirmed: the data already open is theirs, so syncing can start.
+        void applying.then(() => startSync(userOf(s)));
+      } else void applySession(s);
+    });
+  } else {
+    if (!session) await openGuestSpace();
+    await applySession(session ?? null);
+  }
   supabase.auth.onAuthStateChange((event, next) => {
     if (event === 'PASSWORD_RECOVERY') setState({ recovery: true });
     // Supabase advises against awaiting its own calls inside this callback.

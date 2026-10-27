@@ -270,3 +270,27 @@ Read README.md for setup, architecture and calculation rules.
   - Units `plate`, `bowl`, `ml` (`data/library/measures.ts` by food type); the amount box reads
     "half plate", "two rotis"; staples rank first in food search.
   - Logging a plate saves its new foods in one transaction (several saves froze phones).
+- Round 3 (October 2026, no migration, Dexie unchanged):
+  - Add food: + puts last time's amount on the plate and stays put (search and scroll kept);
+    tapping again adds up on one line, − takes a step off (`putOnPlate`, `takeOne`). Rows say
+    "Last time: 2 rotis · ..." so the amount + adds is visible. Lists from `mealFoods`
+    (`domain/nutrition/analysis.ts`): Recently eaten (this meal, else any), then Usually at this
+    meal (2+ days in 4 weeks), each food once. The sheet body has `data-sheet-body`.
+  - Servings in grams: the AI card has a Serving box (`resize.ts`); custom foods take one
+    serving's grams and numbers per serving or per 100 g, shown as "1 serving". Carbs and fat
+    the person has not typed follow calories and protein (`fillMacros`: the reference food's
+    split, else 60:40 of the non-protein energy).
+  - Setup takes a target weight: `domain/analytics/goalPlan.ts` gives calories, protein and a
+    date (mid evidence rate, floor 1,200 kcal or BMR), re-dated on every edit (`GoalTargets`);
+    saved as own targets plus a body weight goal. Science topic `targets` explains it.
+  - OverloadGPT: `replyLanguage` sets a "Reply in" line (English, Hinglish, Hindi) and
+    `answerLanguageOk` rejects the wrong language; suggestions rotate (`suggestedQuestions`
+    with a seed, asked ones left out). Speed: `hedged` asks the second provider after
+    `HEDGE_MS` or at once on a failure, first answer that passes the checks wins (chat, food,
+    photo); `{ kind: 'warm' }` starts the function early (`app/aiWarm.ts`); the edge function
+    reads the subscription alongside the user check; the launcher loads the coach lazily.
+  - Opening: `#boot` in index.html shows the mark from the first paint until the router has
+    drawn (`main.tsx`); `initAccount` opens the saved account after `SESSION_WAIT_MS` without
+    waiting for a slow refresh, and starts sync only once the session is confirmed.
+  - Exercise notes are typed on the card (`ExerciseNote`, 16 px so iOS does not zoom), saved
+    as typed, with last session's note and a Use button. More has a standing reload reminder.

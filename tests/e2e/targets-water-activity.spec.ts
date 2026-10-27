@@ -30,8 +30,8 @@ async function newPerson(page: Page, tag: string) {
   await page.getByRole('textbox', { name: 'Birth date, day' }).click();
   await page.keyboard.type('14031996');
   await page.getByLabel('Height in centimetres').fill('163');
-  await page.getByLabel(/Weight/).fill('58');
-  await page.getByLabel(/Weight/).blur();
+  await page.getByLabel(/^Weight/).fill('58');
+  await page.getByLabel(/^Weight/).blur();
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: /Mostly sitting/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();

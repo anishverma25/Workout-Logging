@@ -119,6 +119,50 @@ export function recentFoods(logs: FoodLog[], limit = 12): FoodLog[] {
   return out;
 }
 
+/** How many foods each list on the add-food screen shows. */
+export const MEAL_RECENT_LIMIT = 5;
+export const MEAL_USUAL_LIMIT = 6;
+/** A food counts as usual for a meal after this many days of eating it there, in the window. */
+export const MEAL_USUAL_MIN_DAYS = 2;
+
+export interface MealFoods {
+  /** The latest log of each food eaten most recently at this meal (any meal if none yet). */
+  recent: FoodLog[];
+  /** The latest log of each food eaten at this meal most often, not already in `recent`. */
+  usual: { log: FoodLog; days: number }[];
+}
+
+/**
+ * The two lists at the top of the add-food screen: what the person ate most recently, and what
+ * they eat at this meal most often (on the most days in the last 4 weeks). A food is in one
+ * list only. Each comes with its latest log, so the amount shown is the amount they had.
+ */
+export function mealFoods(logs: FoodLog[], meal: Meal, today: string): MealFoods {
+  const live = logs.filter((l) => l.deletedAt === null);
+  const atMeal = live.filter((l) => l.meal === meal);
+  const recent = recentFoods(atMeal.length ? atMeal : live, MEAL_RECENT_LIMIT);
+  const shown = new Set(recent.map((l) => l.foodId));
+  const from = toDateKey(addDays(new Date(`${today}T12:00:00`), -USUAL_WINDOW_DAYS));
+  const byFood = new Map<string, { days: Set<string>; latest: FoodLog }>();
+  for (const l of atMeal) {
+    if (l.date < from || l.date > today || shown.has(l.foodId)) continue;
+    const e = byFood.get(l.foodId);
+    if (!e) byFood.set(l.foodId, { days: new Set([l.date]), latest: l });
+    else {
+      e.days.add(l.date);
+      if (l.createdAt > e.latest.createdAt) e.latest = l;
+    }
+  }
+  const usual = [...byFood.values()]
+    .filter((e) => e.days.size >= MEAL_USUAL_MIN_DAYS)
+    .sort(
+      (a, b) => b.days.size - a.days.size || b.latest.createdAt.localeCompare(a.latest.createdAt),
+    )
+    .slice(0, MEAL_USUAL_LIMIT)
+    .map((e) => ({ log: e.latest, days: e.days.size }));
+  return { recent, usual };
+}
+
 // ---------------------------------------------------------------------------------------------
 // Real maintenance
 // ---------------------------------------------------------------------------------------------

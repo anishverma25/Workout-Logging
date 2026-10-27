@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { ArrowUp, Sparkles } from 'lucide-react';
+import { warmAi } from '@/app/aiWarm';
 import { ask, CoachError, HISTORY_DAYS, useCoachStore } from '@/app/coach';
 import { useFeature } from '@/app/entitlement';
 import { PageHeader } from '@/app/layout/PageHeader';
@@ -114,14 +115,26 @@ function Chat() {
   const [error, setError] = useState<{ question: string; message: string } | null>(null);
   const end = useRef<HTMLDivElement>(null);
   const messages = store.messages.filter((m) => !m.topic);
+  // A new mix on every visit and after every answer, leaving out what was already asked.
+  const [seed] = useState(() => Math.random());
+  const asked = store.messages.filter((m) => m.role === 'user').map((m) => m.text);
+  const askedKey = asked.join('\n');
   const suggestions = useMemo(
-    () => suggestedQuestions(input?.model ?? null, !!input?.targets, !!input?.nutrition),
-    [input],
+    () =>
+      suggestedQuestions(input?.model ?? null, !!input?.targets, !!input?.nutrition, {
+        seed: seed + asked.length,
+        asked,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- askedKey stands for asked
+    [input, seed, askedKey],
   );
 
   useEffect(() => {
     end.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
   }, [messages.length, pending, error]);
+
+  // Starts the server while the person is still typing.
+  useEffect(() => warmAi(), []);
 
   async function send(question: string) {
     const q = question.trim();
@@ -198,7 +211,7 @@ function Chat() {
       </ol>
 
       {!pending ? (
-        <div className="flex flex-wrap gap-2" aria-label="Suggested questions">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Suggested questions">
           {suggestions.map((s) => (
             <button
               key={s}

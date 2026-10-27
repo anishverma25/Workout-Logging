@@ -46,7 +46,9 @@ describe('profile', () => {
   });
 
   it('saves target settings on the profile, keeps typed numbers, and rejects bad ones', async () => {
-    await expect(saveTargetSettings(db, { targetMode: 'own' })).rejects.toBeInstanceOf(ProfileError);
+    await expect(saveTargetSettings(db, { targetMode: 'own' })).rejects.toBeInstanceOf(
+      ProfileError,
+    );
     const p = await saveProfile(db, input);
     await saveTargetSettings(db, {
       targetMode: 'own',

@@ -12,7 +12,10 @@ const INDEX_HTML = fileURLToPath(new URL('../index.html', import.meta.url));
  */
 export function inlineScriptHashes(html: string): string[] {
   return [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
-    (m) => `'sha256-${createHash('sha256').update(m[1] ?? '').digest('base64')}'`,
+    (m) =>
+      `'sha256-${createHash('sha256')
+        .update(m[1] ?? '')
+        .digest('base64')}'`,
   );
 }
 

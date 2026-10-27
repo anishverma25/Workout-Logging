@@ -2,6 +2,7 @@ import type { FoodLog } from '../models/schemas';
 import { FOOD_BY_ID } from '@/data/library/foods';
 import type { TrendPoint } from '../analytics/body';
 import {
+  mealFoods,
   mealTemplates,
   nutritionSummary,
   proteinSuggestions,
@@ -71,6 +72,35 @@ describe('food analysis', () => {
   it('lists recent foods once each', () => {
     const r = recentFoods([log(day(1), 'a', 1, 1), log(day(2), 'b', 1, 1), log(day(3), 'a', 1, 1)]);
     expect(r.map((l) => l.foodId)).toEqual(['a', 'b']);
+  });
+
+  it('splits the add-food lists into recent and usual, each food once, with its last amount', () => {
+    const logs = [
+      log(day(2), 'poha', 160, 4, 'breakfast'),
+      log(day(4), 'poha', 160, 4, 'breakfast'),
+      log(day(4), 'chai', 54, 1.5, 'breakfast'),
+      log(day(6), 'chai', 54, 1.5, 'breakfast'),
+      log(day(8), 'chai', 54, 1.5, 'breakfast'),
+      log(day(9), 'dal', 140, 7, 'lunch'),
+    ];
+    for (let i = 10; i <= 15; i += 1) logs.push(log(day(i), `snack${i}`, 100, 2, 'breakfast'));
+    const last = { ...log(day(16), 'poha', 320, 8, 'breakfast'), amount: 2 };
+    logs.push(last);
+    const { recent, usual } = mealFoods(logs, 'breakfast', day(17));
+    // Recent: this meal only, newest first, once each.
+    expect(recent.map((l) => l.foodId)).toEqual([
+      'poha',
+      'snack15',
+      'snack14',
+      'snack13',
+      'snack12',
+    ]);
+    expect(recent[0]!.amount).toBe(2);
+    // Usual: eaten here on 2 or more days, not already in recent.
+    expect(usual.map((u) => u.log.foodId)).toEqual(['chai']);
+    expect(usual[0]!.days).toBe(3);
+    // A meal never eaten yet shows recent foods from any meal.
+    expect(mealFoods(logs, 'dinner', day(17)).recent[0]!.foodId).toBe('poha');
   });
 
   it('works out real maintenance from intake and the weight trend', () => {

@@ -96,7 +96,6 @@ logs keep the numbers they were saved with.
 - The fake Supabase answers every photo with 2 rotis, a katori of dal tadka and a low-confidence
   mango pickle; "#photo-down" in the note makes it fail.
 
-
 ## Round 2 (October 2026)
 
 - **Your numbers win.** Typed grams, ml, kg, calories and macros are read food by food on the

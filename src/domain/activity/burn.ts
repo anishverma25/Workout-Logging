@@ -364,7 +364,11 @@ export function workoutKcalOn(
   let sessions = 0;
   let estimated = false;
   for (const w of data.workouts) {
-    if (w.deletedAt !== null || w.status !== 'completed' || toDateKey(new Date(w.startedAt)) !== date)
+    if (
+      w.deletedAt !== null ||
+      w.status !== 'completed' ||
+      toDateKey(new Date(w.startedAt)) !== date
+    )
       continue;
     sessions += 1;
     const burn = workoutBurn(w, data.sets, data.bodyWeights);

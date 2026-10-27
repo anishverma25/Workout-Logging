@@ -1,7 +1,8 @@
 import { Link } from 'react-router';
-import { ChevronRight, Crown, FileUp, Sparkles } from 'lucide-react';
+import { ChevronRight, Crown, FileUp, RefreshCw, Sparkles } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import { useEntitlement } from '@/app/entitlement';
+import { applyUpdate, usePwa } from '@/app/pwa';
 import { PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '@/app/navigation';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { ListGroup, ListRow } from '@/components/ui/List';
@@ -34,6 +35,7 @@ export function MorePage() {
       <PageHeader title="More" />
       <nav aria-label="More" className="flex max-w-2xl flex-col gap-6">
         <ProfileCard />
+        <ReloadNote />
         {GROUPS.map((g) => (
           <ListGroup key={g.key} title={g.title}>
             {MORE_NAV.filter((i) => i.group === g.key && i.to !== '/profile').map((i) => (
@@ -64,6 +66,31 @@ export function MorePage() {
         <LegalLinks className="px-4" />
       </nav>
     </>
+  );
+}
+
+/**
+ * New versions go out often, and an installed app can keep running the old one for a while.
+ * A small standing reminder, with the reload one tap away.
+ */
+function ReloadNote() {
+  const { updateReady } = usePwa();
+  return (
+    <div className="flex items-center gap-3 rounded-nested bg-surface-2 px-4 py-3" data-reload-note>
+      <RefreshCw className="size-4 shrink-0 text-text-2" aria-hidden />
+      <p className="type-meta min-w-0 flex-1 text-text-2">
+        {updateReady
+          ? 'A new version is ready. Reload to get it.'
+          : 'We add new features often. Reload the app now and then to get the latest.'}
+      </p>
+      <button
+        type="button"
+        onClick={() => (updateReady ? applyUpdate() : window.location.reload())}
+        className="pressable chrome type-meta inline-flex h-9 shrink-0 items-center rounded-full bg-surface px-3 font-semibold text-text-1"
+      >
+        Reload
+      </button>
+    </div>
   );
 }
 
