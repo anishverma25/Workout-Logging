@@ -88,7 +88,13 @@ describe('food analysis', () => {
     logs.push(last);
     const { recent, usual } = mealFoods(logs, 'breakfast', day(17));
     // Recent: this meal only, newest first, once each.
-    expect(recent.map((l) => l.foodId)).toEqual(['poha', 'snack15', 'snack14', 'snack13', 'snack12']);
+    expect(recent.map((l) => l.foodId)).toEqual([
+      'poha',
+      'snack15',
+      'snack14',
+      'snack13',
+      'snack12',
+    ]);
     expect(recent[0]!.amount).toBe(2);
     // Usual: eaten here on 2 or more days, not already in recent.
     expect(usual.map((u) => u.log.foodId)).toEqual(['chai']);

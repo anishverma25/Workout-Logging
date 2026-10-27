@@ -322,7 +322,9 @@ function CustomFoodForm({
                 onValueChange={setField(key)}
                 allowDecimal
                 min={0}
-                max={basis === 'serving' ? (key === 'kcal' ? 9000 : 1000) : key === 'kcal' ? 900 : 100}
+                max={
+                  basis === 'serving' ? (key === 'kcal' ? 9000 : 1000) : key === 'kcal' ? 900 : 100
+                }
                 unit={unit}
               />
             ))}

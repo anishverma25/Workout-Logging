@@ -790,8 +790,7 @@ export const SCIENCE: TopicGroup[] = [
             age&apos;s lean-gain rate to gain. Calories are maintenance plus that rate at about{' '}
             {KCAL_PER_KG} kcal per kg, never under 1,200 kcal or your resting energy; protein is the
             middle of your goal&apos;s range, the cutting range when losing. The date is the weight
-            to change divided by the weekly rate, worked out again whenever you change the
-            calories.
+            to change divided by the weekly rate, worked out again whenever you change the calories.
           </>,
         ],
         forYou:

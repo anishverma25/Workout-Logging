@@ -573,8 +573,7 @@ function SetupFlow({
                     data-target-weight
                   />
                   <p className="type-caption mt-1.5 text-text-2">
-                    The weight you want to reach. You get daily calories, protein and a date for
-                    it.
+                    The weight you want to reach. You get daily calories, protein and a date for it.
                   </p>
                 </div>
               </div>

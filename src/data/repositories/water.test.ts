@@ -26,6 +26,8 @@ describe('water repository', () => {
 
   it('refuses silly amounts', async () => {
     await expect(addWater(db, { date: '2026-10-22', ml: 10 })).rejects.toBeInstanceOf(WaterError);
-    await expect(addWater(db, { date: '2026-10-22', ml: 250, count: 50 })).rejects.toThrow(/drinks/);
+    await expect(addWater(db, { date: '2026-10-22', ml: 250, count: 50 })).rejects.toThrow(
+      /drinks/,
+    );
   });
 });

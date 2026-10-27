@@ -54,13 +54,7 @@ export interface TargetPlan {
 }
 
 export type IntakeStatus =
-  | 'at_target'
-  | 'on_track'
-  | 'too_fast'
-  | 'slow'
-  | 'no_change'
-  | 'wrong_way'
-  | 'too_low';
+  'at_target' | 'on_track' | 'too_fast' | 'slow' | 'no_change' | 'wrong_way' | 'too_low';
 
 export interface IntakeOutcome {
   status: IntakeStatus;
@@ -175,4 +169,3 @@ export function targetPlan(input: TargetInput): TargetPlan {
     outcome: intakeOutcome({ ...input, kcal, proteinG }),
   };
 }
-

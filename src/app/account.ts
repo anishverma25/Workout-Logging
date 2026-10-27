@@ -131,7 +131,9 @@ function applyUser(user: AccountUser | null, { sync = true } = {}) {
 export const SESSION_WAIT_MS = 800;
 
 /** The person whose session is saved on this device, read straight from storage. */
-export function storedUser(storage: Pick<Storage, 'length' | 'key' | 'getItem'>): AccountUser | null {
+export function storedUser(
+  storage: Pick<Storage, 'length' | 'key' | 'getItem'>,
+): AccountUser | null {
   try {
     for (let i = 0; i < storage.length; i += 1) {
       const key = storage.key(i) ?? '';

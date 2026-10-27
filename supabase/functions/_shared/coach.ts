@@ -420,7 +420,10 @@ export async function handleCoach(deps: CoachDeps, body: unknown): Promise<Coach
       if (!text) return { ok: false };
       const invented = inventedFigures(text, reference);
       if (invented.length > 0) {
-        console.error(`coach: ${provider.name} quoted figures not in the data`, invented.join(', '));
+        console.error(
+          `coach: ${provider.name} quoted figures not in the data`,
+          invented.join(', '),
+        );
         unreliable = true;
         return { ok: false };
       }

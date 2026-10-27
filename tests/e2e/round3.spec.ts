@@ -161,9 +161,7 @@ test('setup: a target weight gives calories, protein and a date that moves with 
   await expect(card.getByLabel('Calories a day')).toHaveValue(String(suggested));
   await page.getByRole('button', { name: /Save, I will pick a routine later/ }).click();
   await expect(page).toHaveURL(/\/food$/);
-  await expect(page.locator('[data-day-totals]')).toContainText(
-    suggested.toLocaleString('en-GB'),
-  );
+  await expect(page.locator('[data-day-totals]')).toContainText(suggested.toLocaleString('en-GB'));
 });
 
 test('a note on each exercise, typed on the card and kept', async ({ page }) => {
@@ -186,7 +184,10 @@ test('a note on each exercise, typed on the card and kept', async ({ page }) => 
   await page.waitForTimeout(800);
   await page.reload();
   await expect(
-    page.locator('section[aria-labelledby^="ex-"]').first().locator('[data-exercise-note] textarea'),
+    page
+      .locator('section[aria-labelledby^="ex-"]')
+      .first()
+      .locator('[data-exercise-note] textarea'),
   ).toHaveValue('Seat on 4, wide grip');
 });
 

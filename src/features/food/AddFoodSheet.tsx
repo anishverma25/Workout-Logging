@@ -162,8 +162,7 @@ function AddFoodBody({
   const putOnPlate = (portion: FoodPortion) =>
     setPlate((list) => {
       const i = list.findIndex(
-        (p) =>
-          p.food.id === portion.food.id && p.unit === portion.unit && p.size === portion.size,
+        (p) => p.food.id === portion.food.id && p.unit === portion.unit && p.size === portion.size,
       );
       if (i < 0) return [...list, portion];
       return list.map((p, j) =>
@@ -500,7 +499,10 @@ function FoodRow({ food, rows }: { food: Food; rows: RowProps }) {
           <span className="type-meta tabular block truncate text-text-2">{detail}</span>
         ) : null}
         {there ? (
-          <span className="type-caption tabular block truncate font-semibold text-lime" data-on-plate>
+          <span
+            className="type-caption tabular block truncate font-semibold text-lime"
+            data-on-plate
+          >
             On your plate: {portionText(there.amount, there.unit, there.size, food.pieceName)}
           </span>
         ) : null}

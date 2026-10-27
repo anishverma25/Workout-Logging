@@ -8,7 +8,10 @@ import { LANDING_ATTR, wantsLanding } from './landing';
 import { PUBLIC_PAGES } from './publicPages';
 
 const INDEX = readFileSync('index.html', 'utf8');
-const LANDING = INDEX.slice(INDEX.indexOf('<!-- landing:start -->'), INDEX.indexOf('<!-- landing:end -->'));
+const LANDING = INDEX.slice(
+  INDEX.indexOf('<!-- landing:start -->'),
+  INDEX.indexOf('<!-- landing:end -->'),
+);
 const BOOT = /<script>([\s\S]*?)<\/script>/.exec(INDEX)?.[1] ?? '';
 
 function fakeStorage(entries: Record<string, string>) {

@@ -37,11 +37,7 @@ const timeOf = (iso: string) =>
   new Date(iso).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true });
 
 /** A small button for the quick water amounts: fits four to a row on a 390px phone. */
-function QuickButton({
-  children,
-  className,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+function QuickButton({ children, className, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"
@@ -180,7 +176,9 @@ export function WaterCard({ ctx, date }: { ctx: FoodContext; date: string }) {
         ) : null}
       </BottomSheet>
       <BottomSheet open={details} onClose={() => setDetails(false)} title="Water" tall>
-        {details ? <WaterDetails logs={logs} date={date} glassMl={glassMl} target={target} /> : null}
+        {details ? (
+          <WaterDetails logs={logs} date={date} glassMl={glassMl} target={target} />
+        ) : null}
       </BottomSheet>
     </Card>
   );

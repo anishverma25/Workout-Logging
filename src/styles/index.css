@@ -206,9 +206,7 @@ html[data-landing] #landing {
 }
 /* A soft lime wash for surfaces that hold an AI answer. */
 @utility ai-surface {
-  background:
-    radial-gradient(120% 80% at 0% 0%, var(--ai-wash), transparent 60%),
-    var(--surface);
+  background: radial-gradient(120% 80% at 0% 0%, var(--ai-wash), transparent 60%), var(--surface);
   border: 1px solid var(--ai-edge);
 }
 /* Group labels: Meta 600, uppercase, 0.05em (Parts 5 and 6). */

@@ -541,7 +541,8 @@ describe('reply language', () => {
 
   it('spots an answer in the wrong language', () => {
     const english = 'Your bench went from 60 kg to 65 kg. Keep adding 2.5 kg each week.';
-    const hinglish = 'Aapka bench 60 kg se 65 kg hua hai. Har hafte 2.5 kg aur add karo, theek hai?';
+    const hinglish =
+      'Aapka bench 60 kg se 65 kg hua hai. Har hafte 2.5 kg aur add karo, theek hai?';
     expect(answerLanguageOk(english, 'english')).toBe(true);
     expect(answerLanguageOk(hinglish, 'english')).toBe(false);
     expect(answerLanguageOk(hinglish, 'hinglish')).toBe(true);

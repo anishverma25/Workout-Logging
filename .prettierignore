@@ -3,3 +3,5 @@ coverage
 pnpm-lock.yaml
 playwright-report
 test-results
+# The public home page is hand-laid HTML that tests read word for word (src/app/landing.test.ts).
+index.html

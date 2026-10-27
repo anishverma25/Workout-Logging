@@ -123,7 +123,8 @@ export async function saveTargetSettings(
   }
   for (const [key, lo, hi, message] of TARGET_LIMITS) {
     const v = changes[key];
-    if (v != null && !(typeof v === 'number' && v >= lo && v <= hi)) throw new ProfileError(message);
+    if (v != null && !(typeof v === 'number' && v >= lo && v <= hi))
+      throw new ProfileError(message);
   }
   await db.transaction('rw', [db.profiles, db.outbox], async () => {
     const current = await ownProfile(db);

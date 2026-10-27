@@ -42,8 +42,7 @@ export function GoalTargets({
   const shownProtein = proteinG ?? plan.proteinG;
   const outcome = intakeOutcome({ ...input, kcal: shownKcal, proteinG: shownProtein });
   const edited = kcal !== null || proteinG !== null;
-  const w = (kg: number) =>
-    `${Math.round(toDisplayWeight(kg, unit) * 10) / 10} ${unit}`;
+  const w = (kg: number) => `${Math.round(toDisplayWeight(kg, unit) * 10) / 10} ${unit}`;
   return (
     <div className="mt-6 rounded-panel border border-border bg-surface p-5" data-goal-targets>
       <h2 className="type-title text-text-1">Your daily targets</h2>
@@ -86,8 +85,8 @@ export function GoalTargets({
       ) : null}
       <p className="type-caption mt-3 text-text-3">
         From about 7,700 kcal per kg of body weight and your estimated maintenance of{' '}
-        {kcalText(input.maintenanceKcal)} kcal. The body adapts as weight changes, so treat the
-        date as a guide; Overload checks it against your weigh-ins.
+        {kcalText(input.maintenanceKcal)} kcal. The body adapts as weight changes, so treat the date
+        as a guide; Overload checks it against your weigh-ins.
       </p>
     </div>
   );
@@ -138,21 +137,19 @@ function Timeline({
   const reached = outcome.date !== null;
   return (
     <div
-      className={cn(
-        'mt-4 rounded-nested px-4 py-3',
-        reached ? 'bg-lime-dim' : 'bg-surface-2',
-      )}
+      className={cn('mt-4 rounded-nested px-4 py-3', reached ? 'bg-lime-dim' : 'bg-surface-2')}
       data-goal-timeline
       aria-live="polite"
     >
       <p className="type-headline flex items-start gap-2 text-text-1">
-        {reached ? <CalendarCheck className="mt-0.5 size-5 shrink-0 text-lime" aria-hidden /> : null}
+        {reached ? (
+          <CalendarCheck className="mt-0.5 size-5 shrink-0 text-lime" aria-hidden />
+        ) : null}
         <span>{main}</span>
       </p>
       {reached ? (
         <p className="type-meta mt-1 text-text-2">
-          {losing ? 'Losing' : 'Gaining'} about {rate.toFixed(2)} kg a week ({pct}% of your
-          weight).
+          {losing ? 'Losing' : 'Gaining'} about {rate.toFixed(2)} kg a week ({pct}% of your weight).
           {plan.goalOverridden
             ? ` Your target is ${losing ? 'below' : 'above'} your weight, so the plan ${losing ? 'loses' : 'gains'} at the rate that suits that.`
             : ''}

@@ -76,10 +76,7 @@ export function MorePage() {
 function ReloadNote() {
   const { updateReady } = usePwa();
   return (
-    <div
-      className="flex items-center gap-3 rounded-nested bg-surface-2 px-4 py-3"
-      data-reload-note
-    >
+    <div className="flex items-center gap-3 rounded-nested bg-surface-2 px-4 py-3" data-reload-note>
       <RefreshCw className="size-4 shrink-0 text-text-2" aria-hidden />
       <p className="type-meta min-w-0 flex-1 text-text-2">
         {updateReady

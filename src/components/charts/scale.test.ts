@@ -104,6 +104,9 @@ describe('date axis', () => {
 
   it('splits a series at long gaps', () => {
     const pts = [{ x: 0 }, { x: 5 }, { x: 100 }, { x: 103 }];
-    expect(splitAtGaps(pts, 10)).toEqual([[{ x: 0 }, { x: 5 }], [{ x: 100 }, { x: 103 }]]);
+    expect(splitAtGaps(pts, 10)).toEqual([
+      [{ x: 0 }, { x: 5 }],
+      [{ x: 100 }, { x: 103 }],
+    ]);
   });
 });

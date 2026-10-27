@@ -82,7 +82,20 @@ export function spacedIndices(length: number, count: number): number[] {
 }
 
 const DAY_MS = 86_400_000;
-const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_SHORT = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 /**
  * Axis labels for timestamps. A short range shows "5 Oct"; a range over about four months shows
