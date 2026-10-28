@@ -129,8 +129,11 @@ export function pwa(env: Record<string, string | undefined>): Plugin {
         ...files.filter((f) => f !== 'index.html').map((f) => `/${f}`),
         ...publicFiles,
       ];
+      const template = readFileSync(TEMPLATE, 'utf8');
+      // The worker's own code is part of the version: a change to it alone is a new version.
       const version = createHash('sha256')
         .update(CACHE_EPOCH)
+        .update(template)
         .update(JSON.stringify(precache))
         .update(
           Object.values(bundle)
@@ -139,7 +142,7 @@ export function pwa(env: Record<string, string | undefined>): Plugin {
         )
         .digest('hex')
         .slice(0, 12);
-      const source = readFileSync(TEMPLATE, 'utf8')
+      const source = template
         .replace('__VERSION__', `${CACHE_EPOCH}-${version}`)
         .replace('__PRECACHE__', JSON.stringify(precache));
       this.emitFile({ type: 'asset', fileName: 'sw.js', source });

@@ -47,7 +47,21 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data === 'skip-waiting') self.skipWaiting();
+  if (event.data !== 'skip-waiting') return;
+  // A page asks to switch to this version. Waiting: switch, and the page reloads itself when
+  // it sees the switch. Already switched (versions now switch by themselves, and pages from
+  // before October 28 only reload on a switch they see happen): reload that page from here,
+  // or its Reload button would do nothing.
+  const me = self.serviceWorker;
+  const active = me ? me.state === 'activated' : !self.registration.waiting;
+  if (!active) {
+    self.skipWaiting();
+    return;
+  }
+  const page = event.source;
+  if (page && 'navigate' in page) {
+    event.waitUntil(page.navigate(page.url).catch(() => null));
+  }
 });
 
 /** This version's copy first, then the previous version's (for pages opened before the update). */

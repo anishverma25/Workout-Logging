@@ -54,6 +54,17 @@ Read README.md for setup, architecture and calculation rules.
   `tests/e2e/session.ts` (`signUpFresh`, `startWithDemo`, `expireTrial`). The `pwa`
   project tests the production build via `vite preview` on port 4175.
 - The service worker must never cache cross-origin or API responses.
+- Updates (October 2026, after two broken releases): `pnpm test:update` builds the deployed
+  version (`origin/phase-2-wip`) and this code, signs in on the old one, ships the new one, taps
+  Reload and checks the new version opens, then the same to a later version. CI runs it on every
+  push. Any change to `build/sw-template.js`, `src/app/pwa.ts`, `index.html` or `src/main.tsx`
+  must pass it. Old pages keep their old code: the worker must keep working with every
+  `applyUpdate` already shipped (pages before Oct 28 send `skip-waiting` and wait for a
+  controller change). The worker's version includes its own code. Never ship a change that
+  needs people to reinstall.
+- Start-up check (index.html `window.__overload`, `src/app/startup.ts`): if the app has not
+  opened in 6 s it repairs the offline copy once, then shows Repair and open / Try again with the
+  stalled step. The app counts as open when the router has drawn and the account is known.
 - Full e2e takes about 10 minutes; in a sandbox with a 10 minute command limit, run it in the
   background and poll the log.
 - In a sandbox that cannot download Playwright's browser, point `PW_CHROMIUM_PATH` at a local

@@ -42,3 +42,22 @@ jobs:
           name: playwright-results
           path: test-results
           retention-days: 7
+
+  # People with the app already open must get each new version when they tap Reload. Builds
+  # the deployed version and this one, then updates from one to the other in a real browser.
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:update
+        env:
+          UPDATE_FROM_REF: origin/phase-2-wip
