@@ -149,7 +149,7 @@ export function DayAnalysisCard({ ctx, date, now }: { ctx: FoodContext; date: st
                           ? 'bg-lime-dim text-text-1'
                           : ate
                             ? 'bg-surface-2 text-text-2'
-                            : 'border border-dashed border-border text-text-3',
+                            : 'border border-dashed border-border-strong text-text-3',
                       )}
                     >
                       {MEAL_LABEL[m]}

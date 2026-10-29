@@ -65,3 +65,24 @@ export function spokenDuration(totalSec: number): string {
   if (m === 0) return `${s} seconds`;
   return s === 0 ? `${m} ${m === 1 ? 'minute' : 'minutes'}` : `${m} min ${s} sec`;
 }
+
+/** A range on one line, rounded for reading: "107 to 147 g" (UI v3, G3). */
+export function formatRange(min: number, max: number, unit?: string, maxDecimals = 0): string {
+  const a = formatNumberTo(min, maxDecimals);
+  const b = formatNumberTo(max, maxDecimals);
+  const text = a === b ? a : `${a} to ${b}`;
+  return unit ? `${text}\u00a0${unit}` : text;
+}
+
+function formatNumberTo(value: number, maxDecimals: number): string {
+  const factor = 10 ** maxDecimals;
+  return (Math.round(value * factor) / factor).toLocaleString('en-GB', {
+    maximumFractionDigits: maxDecimals,
+  });
+}
+
+/** A workout's length in words: "Under a minute", "8 min", "1 h 13 min" (never "<1 min"). */
+export function formatWorkoutLength(totalMinutes: number): string {
+  if (totalMinutes < 1) return 'Under a minute';
+  return formatDurationMinutes(Math.round(totalMinutes));
+}

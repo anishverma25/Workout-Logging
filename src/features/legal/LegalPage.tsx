@@ -49,7 +49,7 @@ function LegalLayout({ doc, children }: { doc: LegalDocument; children: React.Re
         <p className="type-meta tabular mt-2 text-text-2">Last updated {LAST_UPDATED}</p>
         {children}
       </main>
-      <footer className="mx-auto max-w-2xl border-t border-border px-4 pt-5 pb-10">
+      <footer className="mx-auto max-w-2xl border-t-[0.5px] border-divider px-4 pt-5 pb-10">
         <LegalLinks />
         <p className="type-caption mt-3 text-text-2">
           {APP_NAME} is run by {OWNER_NAME}, India.

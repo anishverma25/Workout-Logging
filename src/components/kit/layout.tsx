@@ -158,13 +158,13 @@ interface CardProps {
   id?: string;
 }
 
-/** Surface card: radius 24, 1px border, padding 20, no shadow. */
+/** Surface group: radius 22, no border (UI v3), padding 20, no shadow. */
 export function Card({ children, as: As = 'div', flush, emphasis, className, ...rest }: CardProps) {
   return (
     <As
       className={cn(
-        'rounded-panel border bg-surface',
-        emphasis ? 'border-border-strong' : 'border-border',
+        'rounded-card border bg-surface',
+        emphasis ? 'border-border-strong' : 'border-transparent',
         !flush && 'p-5',
         className,
       )}
