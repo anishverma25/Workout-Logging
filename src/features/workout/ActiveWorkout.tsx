@@ -1,15 +1,17 @@
 import { restIntervals } from '@/domain/analytics/rest';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Check, Dumbbell, Pause, Play, Plus, Timer, Trash2 } from 'lucide-react';
+import { Check, Dumbbell, Pause, Play, Plus, Timer, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import {
+  BottomSheet,
   DestructiveButton,
   IconButton as KitIconButton,
   InlineNotice,
   PrimaryButton,
   ProgressBar,
   SecondaryButton,
+  TextButton,
   TextLink,
 } from '@/components/kit';
 import { KeyboardToolbar } from './KeyboardToolbar';
@@ -19,8 +21,7 @@ import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { EmptyState } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
-import { useBestsBefore, useBodyWeights, useProfile } from '@/data/hooks';
-import { workoutBurn } from '@/domain/activity/burn';
+import { useBestsBefore, useProfile } from '@/data/hooks';
 import { medalsForSet } from '@/domain/analytics/medals';
 import { MedalAlert, type MedalNews } from './MedalAlert';
 import { useDeviceSettings } from '@/app/deviceSettings';
@@ -223,7 +224,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
   return (
     <div className="mx-auto max-w-[640px] pb-32">
       <MedalAlert news={medal} unit={prefs.weightUnit} onDone={clearMedal} />
-      <header className="chrome sticky top-0 z-20 -mx-4 border-b-[0.5px] border-divider bg-bg px-4 pt-[max(0.5rem,env(safe-area-inset-top))] lg:-mx-10 lg:px-10 lg:pt-5">
+      <header className="chrome material-bar sticky top-0 z-20 -mx-4 border-b-[0.5px] border-divider px-4 pt-[max(0.5rem,env(safe-area-inset-top))] lg:-mx-10 lg:px-10 lg:pt-5">
         <div className="flex min-h-14 items-center gap-2">
           <button
             type="button"
@@ -232,13 +233,17 @@ export function ActiveWorkout({ view, prefs }: Props) {
             aria-label={`${workout.name}. Rename workout`}
           >
             <span className="type-headline block truncate text-text-1">{workout.name}</span>
-            <span className="type-meta tabular flex items-center gap-1.5 text-text-2">
+            {/* One line that never wraps (UI v3, S6.1); calories are on the summary. */}
+            <span className="type-subhead tabular flex items-center gap-1.5 whitespace-nowrap text-text-2">
               <Clock workout={workout} />
-              <span aria-hidden>·</span>
-              <span>
-                {doneSets} of {allSets.length} sets
-              </span>
-              <LiveBurn workout={workout} sets={allSets} doneSets={doneSets} />
+              {allSets.length > 0 ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <span>
+                    {doneSets} of {allSets.length} sets
+                  </span>
+                </>
+              ) : null}
             </span>
           </button>
           <KitIconButton label="Rest timer" icon={<Timer />} onClick={() => setTimerOpen(true)} />
@@ -265,30 +270,52 @@ export function ActiveWorkout({ view, prefs }: Props) {
       </header>
 
       {doneSets === 0 && !readinessHidden ? (
-        <div className="mt-4">
-          {workout.readiness && !editingReadiness ? (
-            <div className="flex min-h-11 items-center justify-between gap-3 rounded-panel border border-border bg-surface px-4 py-2">
-              <span className="type-meta flex items-center gap-2 text-text-2">
-                <Check className="size-4" aria-hidden />
+        // The check-in waits in one slim row and opens in a sheet, so the first exercise is
+        // what the logger opens on (UI v3, B4).
+        <div
+          className="mt-4 flex min-h-12 items-center gap-3 rounded-card bg-surface py-2 pr-2 pl-4"
+          data-checkin-row
+        >
+          <span className="type-subhead flex min-w-0 flex-1 items-center gap-2 text-text-1">
+            {workout.readiness ? (
+              <>
+                <Check className="size-4 shrink-0 text-lime" aria-hidden />
                 Check-in saved
-              </span>
-              <TextLink small onClick={() => setEditingReadiness(true)}>
-                Edit
-              </TextLink>
-            </div>
-          ) : (
-            <ReadinessCard
-              workoutId={workout.id}
-              initial={workout.readiness ?? null}
-              onSaved={() => setEditingReadiness(false)}
-              onClose={() => {
-                setEditingReadiness(false);
-                if (!workout.readiness) setReadinessHidden(true);
-              }}
+              </>
+            ) : (
+              'How do you feel today?'
+            )}
+          </span>
+          <TextButton small onClick={() => setEditingReadiness(true)}>
+            {workout.readiness ? 'Edit' : 'Answer'}
+          </TextButton>
+          {workout.readiness ? null : (
+            <KitIconButton
+              label="Skip the check-in"
+              icon={<X />}
+              size={32}
+              className="bg-transparent text-text-3"
+              onClick={() => setReadinessHidden(true)}
             />
           )}
         </div>
       ) : null}
+      <BottomSheet
+        open={editingReadiness}
+        onClose={() => setEditingReadiness(false)}
+        title="How do you feel today?"
+        subtitle="Optional and self-reported."
+      >
+        {editingReadiness ? (
+          <ReadinessCard
+            bare
+            workoutId={workout.id}
+            initial={workout.readiness ?? null}
+            onSaved={() => setEditingReadiness(false)}
+            onClose={() => setEditingReadiness(false)}
+          />
+        ) : null}
+      </BottomSheet>
 
       {paused ? (
         <InlineNotice
@@ -411,34 +438,6 @@ export function ActiveWorkout({ view, prefs }: Props) {
         <RenameWorkoutSheet workout={workout} onClose={() => setRenaming(false)} />
       ) : null}
     </div>
-  );
-}
-
-/**
- * A rough running estimate of calories burned, once a few sets are done. It updates when the
- * minutes pass or a set is logged, and says it is an estimate.
- */
-function LiveBurn({
-  workout,
-  sets,
-  doneSets,
-}: {
-  workout: Workout;
-  sets: WorkoutSet[];
-  doneSets: number;
-}) {
-  const weights = useBodyWeights();
-  const now = useNow(30_000);
-  if (doneSets < 2 || weights.status !== 'success') return null;
-  const burn = workoutBurn(workout, sets, weights.data ?? [], now);
-  if (!burn) return null;
-  return (
-    <>
-      <span aria-hidden>·</span>
-      <span title="A rough estimate. It can be wrong." data-live-burn>
-        ~{burn.kcal} kcal
-      </span>
-    </>
   );
 }
 

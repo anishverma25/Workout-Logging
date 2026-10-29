@@ -150,7 +150,8 @@ function SetRowImpl({
       className={cn(
         cols.showEffort ? SET_GRID : SET_GRID_NO_EFFORT,
         'rounded-field px-1.5 py-1 transition-colors duration-200',
-        done && 'set-done bg-lime-dim',
+        // UI v3 (S6.4): the lime check says it; the row only takes a faint tint.
+        done && 'set-done bg-[var(--ai-wash)]',
       )}
     >
       <button
@@ -162,7 +163,7 @@ function SetRowImpl({
         <span
           className={cn(
             'type-caption tabular flex size-7 items-center justify-center rounded-full font-semibold transition-colors',
-            done ? 'bg-lime text-on-lime' : 'bg-surface-2 text-text-2',
+            done ? 'bg-fill text-text-1' : 'bg-surface-2 text-text-2',
           )}
         >
           {typeLabel}
