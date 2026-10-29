@@ -4,7 +4,9 @@ import {
   Camera,
   Check,
   Globe,
+  Minus,
   Pencil,
+  Plus,
   ScanText,
   Sparkles,
   UserRound,
@@ -15,7 +17,7 @@ import { measurePortion, type FoodPortion } from '@/data/repositories/food';
 import { portionText } from '@/domain/nutrition/calc';
 import { fillMacros } from '@/domain/nutrition/fillMacros';
 import { cn } from '@/lib/cn';
-import { MAX_SERVING_G, resizedPortion } from './resize';
+import { itemCount, MAX_COUNT, MAX_SERVING_G, resizedPortion, withCount } from './resize';
 
 /** One food OverloadGPT found, with where its numbers come from and how sure it is. */
 export function AiItemRow({
@@ -50,6 +52,7 @@ export function AiItemRow({
     // Shown without numbers; the plate measures it again.
   }
   const check = confidence === 'low';
+  const count = itemCount(portion);
   return (
     <li
       className={cn(
@@ -61,7 +64,19 @@ export function AiItemRow({
       <span className="min-w-0 flex-1">
         <span className="type-headline block text-[1.125rem] text-text-1">{f.name}</span>
         {f.ai?.ref ? <span className="type-caption block text-text-3">{f.ai.ref}</span> : null}
-        <span className="type-meta tabular block text-text-2">{amount}</span>
+        {onChange && count && !editing ? (
+          <CountStepper
+            name={f.name}
+            amount={amount}
+            count={count}
+            onCount={(c) => {
+              const next = withCount(portion, c);
+              if (next) onChange(next);
+            }}
+          />
+        ) : (
+          <span className="type-meta tabular block text-text-2">{amount}</span>
+        )}
         {kcal !== null ? (
           <span className="mt-1 flex items-baseline gap-3">
             <span className="type-title tabular font-bold text-text-1">
@@ -270,5 +285,53 @@ function ItemEditor({
         </TextLink>
       </div>
     </div>
+  );
+}
+
+/**
+ * How many of the item, with - and + right next to it: the photo saw 3 rotis and there were 4.
+ * One tap changes the count, and the calories and macros follow.
+ */
+function CountStepper({
+  name,
+  amount,
+  count,
+  onCount,
+}: {
+  name: string;
+  amount: string;
+  count: { count: number; step: number };
+  onCount: (c: number) => void;
+}) {
+  const less = count.count - count.step;
+  const more = count.count + count.step;
+  const btn =
+    'pressable tap-target inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-surface text-text-1 disabled:opacity-40';
+  return (
+    <span className="mt-1 flex items-center gap-2" data-ai-count>
+      <button
+        type="button"
+        className={btn}
+        onClick={() => onCount(less)}
+        disabled={less < count.step - 1e-9}
+        aria-label={`One less ${name}`}
+        data-ai-less
+      >
+        <Minus className="size-4" aria-hidden />
+      </button>
+      <span className="type-headline tabular min-w-0 text-text-1" aria-live="polite">
+        {amount}
+      </span>
+      <button
+        type="button"
+        className={btn}
+        onClick={() => onCount(more)}
+        disabled={more > MAX_COUNT}
+        aria-label={`One more ${name}`}
+        data-ai-more
+      >
+        <Plus className="size-4" aria-hidden />
+      </button>
+    </span>
   );
 }

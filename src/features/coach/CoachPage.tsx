@@ -129,9 +129,15 @@ function Chat() {
     [input, seed, askedKey],
   );
 
+  // Opens at the latest message, like any chat: straight there the first time the chat is
+  // drawn (it waits for the person's numbers), smoothly for each new message after that.
+  const placed = useRef(false);
+  const ready = !!input;
   useEffect(() => {
-    end.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
-  }, [messages.length, pending, error]);
+    if (!ready || !end.current) return;
+    end.current.scrollIntoView({ block: 'end', behavior: placed.current ? 'smooth' : 'auto' });
+    placed.current = true;
+  }, [ready, messages.length, pending, error]);
 
   // Starts the server while the person is still typing.
   useEffect(() => warmAi(), []);

@@ -74,9 +74,9 @@ export function ExercisesPage() {
             size="sm"
             icon={<Plus className="size-4" aria-hidden />}
             onClick={() => setCreating(true)}
-            className="max-sm:hidden"
+            aria-label="New exercise"
           >
-            New exercise
+            New
           </Button>
         }
       />
@@ -156,15 +156,6 @@ export function ExercisesPage() {
         </section>
       ) : null}
 
-      {/* Floating create button on phones, in thumb reach above the tab bar. */}
-      <Button
-        onClick={() => setCreating(true)}
-        icon={<Plus className="size-5" aria-hidden />}
-        className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-30 sm:hidden"
-      >
-        New
-      </Button>
-
       <ExerciseDetailSheet exercise={open} onClose={() => setOpenId(null)} />
       <CustomExerciseSheet
         open={creating}
@@ -172,17 +163,6 @@ export function ExercisesPage() {
         initialName={filters.query.trim()}
         onSaved={(e) => setOpenId(e.id)}
       />
-      {/* The primary action on phones: lime, above the tab bar and the safe area. */}
-      <Button
-        size="lg"
-        icon={<Plus className="size-5" aria-hidden />}
-        onClick={() => setCreating(true)}
-        className="fixed right-4 bottom-[calc(3.0625rem+1rem+env(safe-area-inset-bottom))] z-30 rounded-full sm:hidden"
-        aria-label="New exercise"
-      >
-        New
-      </Button>
-      <div className="h-22 sm:hidden" aria-hidden />
     </>
   );
 }

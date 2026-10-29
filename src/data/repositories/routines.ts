@@ -428,6 +428,11 @@ export async function updateSlotAngle(
 }
 
 /** Replaces the exercise in a slot and keeps its targets. */
+/** Reps for the left and right side apart for this exercise of the routine. */
+export async function setSlotBySide(db: WorkoutDatabase, slotId: string, on: boolean) {
+  await patchRecord<RoutineExercise>(db, 'routineExercises', slotId, { bySide: on });
+}
+
 export async function swapExercise(
   db: WorkoutDatabase,
   slotId: string,

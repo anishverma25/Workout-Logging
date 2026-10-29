@@ -1,7 +1,17 @@
 import { ActionMenu } from '@/components/kit/menu';
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { CalendarRange, ChevronRight, Copy, Ellipsis, Plus, Star, Trash2 } from 'lucide-react';
+import {
+  CalendarRange,
+  ChevronRight,
+  Copy,
+  Ellipsis,
+  Plus,
+  Share2,
+  Star,
+  Trash2,
+} from 'lucide-react';
+import { useShareRoutine } from './useShareRoutine';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -106,6 +116,7 @@ export function RoutinesPage() {
 function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }) {
   const prefs = usePreferences();
   const toast = useToast();
+  const sharing = useShareRoutine();
   const navigate = useNavigate();
   const today = useNow().getDay();
   const [menu, setMenu] = useState(false);
@@ -207,6 +218,14 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
             },
           },
           {
+            label: 'Share routine',
+            icon: <Share2 className="size-5" aria-hidden />,
+            onSelect: () => {
+              setMenu(false);
+              sharing.share(routine.id);
+            },
+          },
+          {
             label: 'Duplicate',
             icon: <Copy className="size-5" aria-hidden />,
             onSelect: async () => {
@@ -226,6 +245,7 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
           },
         ]}
       />
+      {sharing.sheet}
       <ConfirmSheet
         open={confirmDelete}
         title={`Delete ${routine.name}?`}

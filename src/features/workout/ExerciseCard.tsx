@@ -19,6 +19,7 @@ import {
   Trash2,
   TrendingUp,
   Timer,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { TextArea } from '@/components/ui/Fields';
@@ -36,7 +37,9 @@ import {
   removeWorkoutExercise,
   updateSet,
   updateWorkoutExerciseAngle,
+  setWorkoutExerciseBySide,
 } from '@/data/repositories/workouts';
+import { canLogBySide, logsBySide } from '@/data/library/sides';
 import {
   AnglePicker,
   IconButton as KitIconButton,
@@ -170,6 +173,9 @@ function ExerciseCardImpl({
   // Dumbbell and single-side moves: the weight typed is one dumbbell (or one side).
   const perHand = exercise?.loadMode === 'per_hand' && cols.load !== null && tracking !== 'cardio';
   const loadTracked = tracking === 'weight_reps';
+  // One arm or one leg at a time: reps for the left and right side apart.
+  const sideable = canLogBySide(exercise);
+  const bySide = logsBySide(we.bySide, exercise);
 
   async function addWarmups() {
     if (!workingKg) {
@@ -281,7 +287,11 @@ function ExerciseCardImpl({
                   {we.angleDeg != null ? `Bench ${formatAngle(we.angleDeg)}` : 'Set bench angle'}
                 </button>
               ) : null}
-              {perHand ? (
+              {bySide ? (
+                <p className="type-caption mt-1 text-text-2" data-by-side>
+                  Reps for each side: left, then right. Volume counts both sides.
+                </p>
+              ) : perHand ? (
                 <p className="type-caption mt-1 text-text-2">
                   Enter the weight of one dumbbell: 25 in each hand is 25, not 50. Volume counts
                   both hands.
@@ -364,7 +374,14 @@ function ExerciseCardImpl({
               <span className="text-center">
                 {perHand ? `${cols.load} each` : (cols.load ?? '')}
               </span>
-              <span className="text-center">{cols.amount}</span>
+              {bySide ? (
+                <span className="grid grid-cols-2 gap-1 text-center">
+                  <span>L</span>
+                  <span>R</span>
+                </span>
+              ) : (
+                <span className="text-center">{cols.amount}</span>
+              )}
               {cols.showEffort ? (
                 <span className="text-center">{prefs.effortMetric.toUpperCase()}</span>
               ) : null}
@@ -380,6 +397,7 @@ function ExerciseCardImpl({
                     label={labels.get(s.id) ?? ''}
                     tracking={tracking}
                     perHand={perHand}
+                    bySide={bySide}
                     prefs={prefs}
                     previous={matchingPreviousSet(prevSets, sets, s.id)}
                     suggestion={suggestFor(prevSets, sets, s.id)}
@@ -560,6 +578,18 @@ function ExerciseCardImpl({
               await toggleSupersetWithNext(db, we.id);
             },
           },
+          ...(sideable
+            ? [
+                {
+                  label: bySide ? 'Log both sides together' : 'Log left and right',
+                  icon: <ArrowLeftRight className="size-5" aria-hidden />,
+                  onSelect: async () => {
+                    setMenu(false);
+                    await setWorkoutExerciseBySide(db, we.id, !bySide);
+                  },
+                },
+              ]
+            : []),
           {
             label: we.notes ? 'Edit note' : 'Add a note',
             icon: <NotebookPen className="size-5" aria-hidden />,

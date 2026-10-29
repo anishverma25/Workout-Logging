@@ -4,12 +4,15 @@ import { useStartWorkout } from '@/features/workout/StartWorkout';
 import { ActionMenu } from '@/components/kit/menu';
 import { formatRest, restIntervals, type RestInterval } from '@/domain/analytics/rest';
 import { RestCard } from '@/features/shared/RestCard';
+import { MuscleMapCard } from '@/features/shared/MuscleMapCard';
+import { SaveAsRoutineSheet } from './SaveAsRoutineSheet';
 import { WorkoutBurnCard } from '@/features/shared/WorkoutBurnCard';
 import { useId, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router';
 import {
   ArrowDownRight,
   ArrowUpRight,
+  CalendarPlus,
   Ellipsis,
   Minus,
   NotebookPen,
@@ -47,7 +50,7 @@ import { formatLongDay } from '@/lib/dates';
 import { readableError } from '@/lib/errors';
 import { formatCompact, formatSignedPercent, pluralize } from '@/lib/format';
 import { formatWeight, formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
-import { columnsFor, formatSetValues, setLabels, trackingOf } from '../workout/format';
+import { columnsFor, formatSetValues, setLabels, sideText, trackingOf } from '../workout/format';
 import { EditLoggedSetSheet } from './EditLoggedSetSheet';
 import { DurationValue, StatItem } from './StatItem';
 
@@ -66,6 +69,7 @@ export function WorkoutDetailPage() {
   const [starting, setStarting] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [savingRoutine, setSavingRoutine] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editSet, setEditSet] = useState<string | null>(null);
@@ -212,6 +216,15 @@ export function WorkoutDetailPage() {
         </p>
       ) : null}
 
+      <MuscleMapCard
+        exercises={exercises.map((e) => ({
+          exerciseId: e.workoutExercise.exerciseId,
+          exercise: e.exercise,
+          sets: e.sets,
+        }))}
+        sex={training.data?.profile?.sex}
+        className="mt-4"
+      />
       <WorkoutBurnCard
         workout={workout}
         sets={allSets}
@@ -256,6 +269,14 @@ export function WorkoutDetailPage() {
             },
           },
           {
+            label: 'Save as a routine',
+            icon: <CalendarPlus aria-hidden />,
+            onSelect: () => {
+              setMenu(false);
+              setSavingRoutine(true);
+            },
+          },
+          {
             label: 'Delete workout',
             hint: 'Removes it from history, records and analytics.',
             icon: <Trash2 aria-hidden />,
@@ -266,6 +287,14 @@ export function WorkoutDetailPage() {
             },
           },
         ]}
+      />
+      <SaveAsRoutineSheet
+        open={savingRoutine}
+        workoutId={workout.id}
+        workoutName={workout.name}
+        routines={training.data?.routines ?? []}
+        routineDays={training.data?.routineDays ?? []}
+        onClose={() => setSavingRoutine(false)}
       />
       {editing ? (
         <EditWorkoutSheet
@@ -318,9 +347,11 @@ function cellValues(set: WorkoutSet, tracking: TrackingType, unit: WeightUnit) {
     };
   }
   const amount = set[cols.amountField];
+  // A set logged per side shows both sides: "6 / 7" (left, then right).
+  const sides = cols.amountField === 'reps' ? sideText(set, true) : null;
   return {
     load: set.weightKg === null ? null : formatWeightValue(set.weightKg, unit, 2),
-    amount: amount === null ? null : String(amount),
+    amount: sides ? sides.replace('/', ' / ') : amount === null ? null : String(amount),
   };
 }
 

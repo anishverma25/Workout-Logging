@@ -8,6 +8,8 @@ import type {
   WorkoutSet,
 } from '@/domain/models/schemas';
 import { previousPerformance, type SetSuggestion } from '@/domain/workout/previous';
+import { sideReps } from '@/domain/analytics/volume';
+import { logsBySide } from '../library/sides';
 import { toggleSupersetChanges } from '@/domain/workout/superset';
 import type { WorkoutDatabase } from '../db';
 import { newRecordMeta, nowIso, patchRecord, patchRecords, putRecords, softDelete } from './write';
@@ -167,6 +169,7 @@ export async function startWorkoutFromDay(
         target,
         supersetGroup: slot.supersetGroup ?? null,
         angleDeg: slot.angleDeg ?? null,
+        bySide: slot.bySide ?? null,
       };
       workoutExercises.push(we);
       for (let i = 0; i < slot.targetSets; i++) {
@@ -232,6 +235,7 @@ export async function startWorkoutFromPast(
         target: old.target,
         supersetGroup: old.supersetGroup ?? null,
         angleDeg: old.angleDeg ?? null,
+        bySide: old.bySide ?? null,
       };
       workoutExercises.push(we);
       for (let i = 0; i < count; i++) {
@@ -556,7 +560,16 @@ export async function restoreSet(db: WorkoutDatabase, setId: string): Promise<vo
 export type SetPatch = Partial<
   Pick<
     WorkoutSet,
-    'weightKg' | 'reps' | 'rir' | 'rpe' | 'durationSec' | 'distanceM' | 'setType' | 'notes'
+    | 'weightKg'
+    | 'reps'
+    | 'rir'
+    | 'rpe'
+    | 'durationSec'
+    | 'distanceM'
+    | 'setType'
+    | 'notes'
+    | 'repsLeft'
+    | 'repsRight'
   >
 >;
 
@@ -572,7 +585,50 @@ export async function updateSet(db: WorkoutDatabase, setId: string, patch: SetPa
   if (clean.distanceM !== undefined && clean.distanceM !== null)
     clean.distanceM = clamp(clean.distanceM, 0, 1_000_000);
   if (clean.notes !== undefined) clean.notes = clean.notes?.trim() || null;
-  await patchRecord<WorkoutSet>(db, 'sets', setId, clean);
+  const sided = clean.repsLeft !== undefined || clean.repsRight !== undefined;
+  if (!sided) {
+    await patchRecord<WorkoutSet>(db, 'sets', setId, clean);
+    return;
+  }
+  for (const k of ['repsLeft', 'repsRight'] as const)
+    if (clean[k] !== undefined && clean[k] !== null) clean[k] = clampInt(clean[k], 0, 1000);
+  // A side changed: `reps` follows as the weaker side, so strength numbers stay right.
+  await db.transaction('rw', [db.sets, db.outbox], async () => {
+    const current = await db.sets.get(setId);
+    if (!current) return;
+    const left = clean.repsLeft !== undefined ? clean.repsLeft : (current.repsLeft ?? null);
+    const right = clean.repsRight !== undefined ? clean.repsRight : (current.repsRight ?? null);
+    await patchRecord<WorkoutSet>(db, 'sets', setId, {
+      ...clean,
+      reps: sideReps(left ?? null, right ?? null),
+    });
+  });
+}
+
+/**
+ * Reps for the left and right side apart, for this exercise in this workout. Switching it off
+ * clears the sides of sets not done yet (done sets keep what was logged).
+ */
+export async function setWorkoutExerciseBySide(
+  db: WorkoutDatabase,
+  workoutExerciseId: string,
+  on: boolean,
+): Promise<void> {
+  await db.transaction('rw', WORKOUT_TABLES(db), async () => {
+    await patchRecord<WorkoutExercise>(db, 'workoutExercises', workoutExerciseId, {
+      bySide: on,
+    });
+    if (on) return;
+    const open = (await setsOf(db, workoutExerciseId)).filter(
+      (x) =>
+        x.completedAt === null && ((x.repsLeft ?? null) !== null || (x.repsRight ?? null) !== null),
+    );
+    await patchRecords<WorkoutSet>(
+      db,
+      'sets',
+      open.map((x) => ({ id: x.id, changes: { repsLeft: null, repsRight: null } })),
+    );
+  });
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -612,12 +668,25 @@ export async function completeSet(
     if (!set || set.deletedAt !== null) return { ok: false as const, reason: 'Set not found.' };
     if (set.completedAt !== null) return { ok: true as const, set, alreadyCompleted: true };
     const exercise = await db.exercises.get(set.exerciseId);
-    const filled = {
+    const we = await db.workoutExercises.get(set.workoutExerciseId);
+    const filled: Pick<
+      WorkoutSet,
+      'weightKg' | 'reps' | 'durationSec' | 'distanceM' | 'repsLeft' | 'repsRight'
+    > = {
       weightKg: set.weightKg ?? suggestion?.weightKg ?? null,
       reps: set.reps ?? suggestion?.reps ?? null,
       durationSec: set.durationSec ?? suggestion?.durationSec ?? null,
       distanceM: set.distanceM ?? suggestion?.distanceM ?? null,
     };
+    if (logsBySide(we?.bySide, exercise)) {
+      // Each side empty takes last time's reps for that side (or last time's reps, when that
+      // set was not logged per side); `reps` is the weaker side.
+      const left = set.repsLeft ?? suggestion?.repsLeft ?? suggestion?.reps ?? null;
+      const right = set.repsRight ?? suggestion?.repsRight ?? suggestion?.reps ?? null;
+      filled.repsLeft = left;
+      filled.repsRight = right;
+      filled.reps = sideReps(left, right);
+    }
     if (exercise?.trackingType === 'bodyweight_reps') filled.weightKg = set.weightKg;
     if (exercise?.trackingType === 'weighted_bodyweight' && filled.weightKg === null)
       filled.weightKg = 0;

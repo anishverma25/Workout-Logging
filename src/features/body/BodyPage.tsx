@@ -93,9 +93,9 @@ export function BodyPage() {
               compact
               icon={<Plus aria-hidden />}
               onClick={() => setAdding(true)}
-              className="max-sm:hidden"
+              aria-label="Add weigh-in"
             >
-              Add weigh-in
+              Weigh-in
             </PrimaryButton>
           ) : undefined
         }
@@ -285,14 +285,6 @@ export function BodyPage() {
               ))}
             </div>
           </section>
-
-          <PrimaryButton
-            onClick={() => setAdding(true)}
-            icon={<Plus aria-hidden />}
-            className="fixed right-4 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-30 sm:hidden"
-          >
-            Weigh-in
-          </PrimaryButton>
         </>
       ) : null}
 

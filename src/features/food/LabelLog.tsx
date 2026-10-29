@@ -1,14 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import {
-  AlertCircle,
-  Barcode,
-  Camera,
-  Crown,
-  Image as ImageIcon,
-  PenLine,
-  ScanText,
-} from 'lucide-react';
+import { AlertCircle, Camera, Crown, Image as ImageIcon, PenLine, ScanText } from 'lucide-react';
 import {
   InlineNotice,
   NumberField,
@@ -18,8 +10,6 @@ import {
   TextField,
 } from '@/components/kit';
 import { askFoodLabel, editedPortion, FoodAiError, type LabelReading } from '@/app/foodAi';
-import { BarcodeError, lookupBarcode, readBarcode } from '@/app/barcode';
-import { isBarcode } from '@/domain/nutrition/off';
 import type { FoodPortion } from '@/data/repositories/food';
 import {
   dietFromName,
@@ -72,11 +62,7 @@ export function LabelLog({
 
 type Source = 'label' | 'barcode';
 
-type StartState =
-  | { kind: 'idle' }
-  | { kind: 'reading' }
-  | { kind: 'scanning' }
-  | { kind: 'error'; message: string };
+type StartState = { kind: 'idle' } | { kind: 'reading' } | { kind: 'error'; message: string };
 
 function Start({
   pro,
@@ -87,38 +73,8 @@ function Start({
 }) {
   const store = useCoachStore();
   const [state, setState] = useState<StartState>({ kind: 'idle' });
-  const [code, setCode] = useState('');
   const camera = useRef<HTMLInputElement>(null);
   const gallery = useRef<HTMLInputElement>(null);
-  const barcodePhoto = useRef<HTMLInputElement>(null);
-
-  async function lookup(value: string) {
-    setState({ kind: 'scanning' });
-    try {
-      onRead(await lookupBarcode(value), 'barcode');
-    } catch (e) {
-      setState({
-        kind: 'error',
-        message: e instanceof BarcodeError ? e.message : 'That barcode could not be looked up.',
-      });
-    }
-  }
-
-  async function scan(file: File | undefined) {
-    if (!file) return;
-    setState({ kind: 'scanning' });
-    const found = await readBarcode(file).catch(() => null);
-    if (!found) {
-      setState({
-        kind: 'error',
-        message:
-          'No barcode found in that photo. Fill the frame with the barcode, or type its number.',
-      });
-      return;
-    }
-    setCode(found);
-    await lookup(found);
-  }
 
   async function read(file: File | undefined) {
     if (!file) return;
@@ -215,9 +171,9 @@ function Start({
         </SecondaryButton>
       </section>
 
-      {state.kind === 'reading' || state.kind === 'scanning' ? (
+      {state.kind === 'reading' ? (
         <p className="type-meta text-text-2" aria-live="polite">
-          {state.kind === 'reading' ? 'Reading the label…' : 'Looking up the barcode…'}
+          Reading the label…
         </p>
       ) : null}
       {state.kind === 'error' ? (
@@ -225,67 +181,6 @@ function Start({
           <span data-label-error>{state.message}</span>
         </InlineNotice>
       ) : null}
-
-      <section
-        aria-labelledby="pack-barcode"
-        className="flex flex-col gap-3 border-t-[0.5px] border-divider pt-5"
-      >
-        <div>
-          <h3 id="pack-barcode" className="type-headline text-text-1">
-            Or scan the barcode
-          </h3>
-          <p className="type-meta mt-1 text-text-2">
-            Free. Finds the product in Open Food Facts, an open database of labels; not every Indian
-            product is there yet. Only the barcode number is sent.
-          </p>
-        </div>
-        <input
-          ref={barcodePhoto}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="sr-only"
-          tabIndex={-1}
-          aria-hidden
-          data-barcode-input
-          onChange={(e) => {
-            void scan(e.target.files?.[0]);
-            e.target.value = '';
-          }}
-        />
-        <SecondaryButton
-          block
-          icon={<Barcode className="size-4" aria-hidden />}
-          onClick={() => barcodePhoto.current?.click()}
-          loading={state.kind === 'scanning'}
-          data-scan-barcode
-        >
-          Photograph the barcode
-        </SecondaryButton>
-        <form
-          className="flex items-end gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (isBarcode(code)) void lookup(code.trim());
-          }}
-        >
-          <TextField
-            className="min-w-0 flex-1"
-            label="Or type the barcode number"
-            inputMode="numeric"
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 14))}
-            placeholder="8901234567890"
-          />
-          <SecondaryButton
-            type="submit"
-            disabled={!isBarcode(code) || state.kind === 'scanning'}
-            data-lookup-barcode
-          >
-            Look up
-          </SecondaryButton>
-        </form>
-      </section>
     </div>
   );
 }

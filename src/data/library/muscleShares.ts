@@ -198,6 +198,15 @@ export const SHARE_SOURCES: Record<string, Citation> = {
     doi: '10.3389/fphys.2015.00215',
     openAccess: false,
   },
+  mcbride2010: {
+    id: 'mcbride2010',
+    authors: 'McBride JM, Skinner JW, Schafer PC, Haines TL, Kirby TJ',
+    year: 2010,
+    title: 'Comparison of kinetic variables and muscle activity during a squat vs. a box squat',
+    journal: 'Journal of Strength and Conditioning Research',
+    url: 'https://pubmed.ncbi.nlm.nih.gov/?term=Comparison+of+kinetic+variables+and+muscle+activity+during+a+squat+vs.+a+box+squat',
+    openAccess: false,
+  },
   kubo2019: {
     id: 'kubo2019',
     authors: 'Kubo K, Ikebukuro T, Yata H',
@@ -1583,5 +1592,117 @@ export const MUSCLE_SHARES: Record<string, ExerciseShares> = {
     confidence: 'moderate',
     sources: ['martinfuentes2020'],
     note: 'The same movement as the barbell stiff-leg deadlift with the load in the hands: hamstrings and spinal erectors work hardest, the glutes help.',
+  },
+  'box-squat': {
+    regions: [
+      { region: 'Quads', share: 45 },
+      { region: 'Glutes', share: 25 },
+      { region: 'Adductors', share: 20 },
+      { region: 'Lower back', share: 10 },
+    ],
+    confidence: 'moderate',
+    sources: ['mcbride2010', 'kubo2019'],
+    note: 'Sitting briefly on a box changed muscle activity very little compared with a back squat to the same depth, so the shares follow the squat.',
+  },
+  'one-arm-cable-triceps-extension': {
+    regions: [
+      { region: 'Triceps lateral and medial heads', share: 65 },
+      { region: 'Triceps long head', share: 35 },
+    ],
+    confidence: 'moderate',
+    sources: ['maeo2023'],
+    note: 'The same muscles as the two-arm pushdown, one arm at a time; taken overhead, the long head works at a longer length and grows more.',
+  },
+  'one-arm-machine-lateral-raise': {
+    regions: [
+      { region: 'Side delts', share: 55 },
+      { region: 'Upper back and traps', share: 20 },
+      { region: 'Front delts', share: 15 },
+      { region: 'Rear delts', share: 10 },
+    ],
+    confidence: 'low',
+    sources: ['coratella2020raise'],
+    note: 'The same muscles as the two-arm machine raise, one side at a time.',
+  },
+  'single-leg-extension': {
+    regions: [
+      { region: 'Vasti (outer and inner quads)', share: 70 },
+      { region: 'Rectus femoris', share: 30 },
+    ],
+    confidence: 'moderate',
+    sources: ['ema2013'],
+    note: 'The same muscles as the two-leg extension, one leg at a time.',
+  },
+  'one-arm-pec-deck': {
+    regions: [
+      { region: 'Mid chest', share: 55 },
+      { region: 'Upper chest', share: 15 },
+      { region: 'Lower chest', share: 15 },
+      { region: 'Front delts', share: 15 },
+    ],
+    confidence: 'low',
+    sources: ['solstad2020'],
+    note: 'The same muscles as the two-arm pec deck, one side at a time.',
+  },
+  'single-leg-press': {
+    regions: [
+      { region: 'Quads', share: 65 },
+      { region: 'Glutes', share: 20 },
+      { region: 'Adductors', share: 15 },
+    ],
+    confidence: 'low',
+    sources: ['escamilla2001', 'kubo2019'],
+    note: 'Estimated from the two-leg press; on one leg the glutes also work to keep the hip steady.',
+  },
+  'single-leg-curl': {
+    regions: [
+      { region: 'Hamstrings', share: 95 },
+      { region: 'Calves', share: 5 },
+    ],
+    confidence: 'moderate',
+    sources: ['maeo2021'],
+    note: 'The same muscles as the two-leg curl, one leg at a time.',
+  },
+  'one-arm-lat-pulldown': {
+    regions: [
+      { region: 'Lats', share: 50 },
+      { region: 'Mid back', share: 20 },
+      { region: 'Biceps', share: 20 },
+      { region: 'Rear delts', share: 10 },
+    ],
+    confidence: 'low',
+    sources: ['lusk2010', 'lehman2004'],
+    note: 'Estimated from the two-arm pulldown, one arm at a time.',
+  },
+  'one-arm-cable-row': {
+    regions: [
+      { region: 'Lats', share: 35 },
+      { region: 'Mid back', share: 30 },
+      { region: 'Biceps', share: 20 },
+      { region: 'Rear delts', share: 15 },
+    ],
+    confidence: 'low',
+    sources: ['vasconcelos2023', 'lehman2004'],
+    note: 'Estimated from the seated cable row, one arm at a time.',
+  },
+  'one-arm-cable-curl': {
+    regions: [
+      { region: 'Biceps', share: 55 },
+      { region: 'Brachialis', share: 30 },
+      { region: 'Forearms (brachioradialis)', share: 15 },
+    ],
+    confidence: 'moderate',
+    sources: ['coratella2023'],
+    note: 'The same muscles as the two-arm cable curl, one arm at a time.',
+  },
+  'single-leg-romanian-deadlift': {
+    regions: [
+      { region: 'Hamstrings', share: 45 },
+      { region: 'Glutes', share: 35 },
+      { region: 'Lower back', share: 20 },
+    ],
+    confidence: 'low',
+    sources: ['mcallister2014', 'martinfuentes2020'],
+    note: 'Estimated from the Romanian deadlift; balancing on one leg asks more of the glutes.',
   },
 };

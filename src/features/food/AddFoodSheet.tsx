@@ -1,16 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import {
-  Camera,
-  ChevronLeft,
-  ChevronRight,
-  Crown,
-  Mic,
-  Minus,
-  Plus,
-  ScanText,
-  Sparkles,
-  X,
-} from 'lucide-react';
+import { Camera, ChevronLeft, Crown, Minus, Plus, ScanText, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router';
 import {
   BottomSheet,
@@ -466,7 +455,8 @@ function BackRow({ label, onBack }: { label: string; onBack: () => void }) {
       >
         <ChevronLeft className="size-6" aria-hidden />
       </button>
-      <h2 className="type-title min-w-0 truncate text-text-1">{label}</h2>
+      {/* Food names can be long ("Paneer butter masala with butter naan"): wrapped, never cut. */}
+      <h2 className="type-title min-w-0 [overflow-wrap:anywhere] text-text-1">{label}</h2>
     </div>
   );
 }
@@ -494,15 +484,13 @@ function FoodRow({ food, rows }: { food: Food; rows: RowProps }) {
         className="pressable chrome flex min-h-14 min-w-0 flex-1 flex-col justify-center rounded-nested px-1 py-2 text-left"
         data-food-row={food.id}
       >
-        <span className="type-headline block truncate text-text-1">{food.name}</span>
-        {detail ? (
-          <span className="type-meta tabular block truncate text-text-2">{detail}</span>
-        ) : null}
+        {/* The whole name, wrapped: a cut-off name cannot be told apart from its neighbours. */}
+        <span className="type-headline block [overflow-wrap:anywhere] text-text-1">
+          {food.name}
+        </span>
+        {detail ? <span className="type-meta tabular block text-text-2">{detail}</span> : null}
         {there ? (
-          <span
-            className="type-caption tabular block truncate font-semibold text-lime"
-            data-on-plate
-          >
+          <span className="type-caption tabular block font-semibold text-lime" data-on-plate>
             On your plate: {portionText(there.amount, there.unit, there.size, food.pieceName)}
           </span>
         ) : null}
@@ -514,6 +502,7 @@ function FoodRow({ food, rows }: { food: Food; rows: RowProps }) {
           aria-label={`Less ${food.name}`}
           className="pressable tap-target inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text-1"
           data-quick-remove
+          data-keep-keyboard
         >
           <Minus className="size-5" aria-hidden />
         </button>
@@ -527,6 +516,7 @@ function FoodRow({ food, rows }: { food: Food; rows: RowProps }) {
           there ? 'bg-lime text-on-lime' : 'bg-surface-2 text-text-1',
         )}
         data-quick-add
+        data-keep-keyboard
       >
         <Plus className="size-5" aria-hidden />
       </button>
@@ -647,6 +637,7 @@ function Quick({
 
   return (
     <div className="flex flex-col gap-5">
+      <AiQuick pro={pro} onType={onType} onPhoto={onPhoto} onLabel={onLabel} />
       {recent.length ? (
         <FoodList id="recent-foods" title="Recently eaten" foods={recent} rows={rows} />
       ) : null}
@@ -701,25 +692,6 @@ function Quick({
         </section>
       ) : null}
 
-      <AiHero pro={pro} onType={onType} onPhoto={onPhoto} />
-      <button
-        type="button"
-        onClick={onLabel}
-        className="pressable chrome flex w-full items-center gap-3 rounded-nested bg-surface-2 p-4 text-left"
-        data-pack-food
-      >
-        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-surface text-text-1">
-          <ScanText className="size-5" aria-hidden />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="type-headline block text-text-1">From a pack</span>
-          <span className="type-meta mt-0.5 block text-text-2">
-            Read the nutrition label, or scan the barcode
-          </span>
-        </span>
-        <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
-      </button>
-
       {starters.length ? (
         <FoodList
           id="starter-foods"
@@ -762,76 +734,59 @@ function FoodList({
 }
 
 /**
- * The way in to AI food logging: a photo of the plate, or the meal typed or spoken. Pro opens
- * them; free accounts see what they do and where to get them, because this is the fastest and
- * most complete way to log.
+ * The ways to log with OverloadGPT, as one slim row above the lists: ask (type or say the
+ * meal), snap the plate, or read a pack's label. Small on purpose, so it says AI logging is
+ * here without pushing the foods down. Free accounts see the same row; asking and snapping
+ * lead to Pro, and typing a label's numbers stays free.
  */
-function AiHero({
+function AiQuick({
   pro,
   onType,
   onPhoto,
+  onLabel,
 }: {
   pro: boolean;
   onType: () => void;
   onPhoto: () => void;
+  onLabel: () => void;
 }) {
-  const head = (
-    <span className="flex items-start gap-3">
-      <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime">
-        <Sparkles className="size-5" aria-hidden />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center justify-between gap-2">
-          <span className="type-headline text-text-1">Let OverloadGPT log it</span>
-          <span className="type-caption inline-flex shrink-0 items-center gap-1 rounded-full bg-surface px-2 py-0.5 font-semibold text-text-2">
-            <Crown className="size-3.5" aria-hidden />
-            Pro
-          </span>
-        </span>
-        <span className="type-meta mt-0.5 block text-text-2">
-          Snap your plate or say what you ate: any food, brand or restaurant.
-        </span>
-      </span>
-    </span>
-  );
-  const action =
-    'pressable chrome type-meta inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-surface px-3 font-semibold text-text-1';
-  if (!pro)
-    return (
-      <Link
-        to="/pro"
-        className="pressable chrome block w-full rounded-nested border-[0.5px] border-divider bg-surface-2 p-4 text-left"
-        data-type-meal
-      >
-        {head}
-        <span className="mt-3 grid grid-cols-2 gap-2" aria-hidden>
-          <span className={action}>
-            <Camera className="size-4" />
-            Snap a photo
-          </span>
-          <span className={action}>
-            <Mic className="size-4" />
-            Type or say it
-          </span>
-        </span>
-        <span className="type-meta mt-3 block font-semibold text-text-1">
-          Get Pro for the quickest, most accurate logging
-        </span>
-      </Link>
-    );
+  const chip =
+    'pressable chrome type-meta inline-flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-full bg-surface-2 px-2 font-semibold text-text-1';
+  const icon = 'size-4 shrink-0 text-lime';
+  const lock = pro ? null : <Crown className="size-3.5 shrink-0 text-text-2" aria-label="Pro" />;
   return (
-    <div className="rounded-nested border-[0.5px] border-divider bg-surface-2 p-4" data-ai-hero>
-      {head}
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <button type="button" onClick={onPhoto} className={action} data-photo-meal>
-          <Camera className="size-4" aria-hidden />
-          Snap a photo
-        </button>
-        <button type="button" onClick={onType} className={action} data-type-meal>
-          <Mic className="size-4" aria-hidden />
-          Type or say it
+    <section aria-label="Log with OverloadGPT" data-ai-hero>
+      <div className="grid grid-cols-3 gap-2">
+        {pro ? (
+          <>
+            <button type="button" onClick={onType} className={chip} data-type-meal>
+              <Sparkles className={icon} aria-hidden />
+              <span className="truncate">Ask GPT</span>
+            </button>
+            <button type="button" onClick={onPhoto} className={chip} data-photo-meal>
+              <Camera className={icon} aria-hidden />
+              <span className="truncate">Snap</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <Link to="/pro" className={chip} data-type-meal>
+              <Sparkles className={icon} aria-hidden />
+              <span className="truncate">Ask GPT</span>
+              {lock}
+            </Link>
+            <Link to="/pro" className={chip} data-snap-locked>
+              <Camera className={icon} aria-hidden />
+              <span className="truncate">Snap</span>
+              {lock}
+            </Link>
+          </>
+        )}
+        <button type="button" onClick={onLabel} className={chip} data-pack-food>
+          <ScanText className={icon} aria-hidden />
+          <span className="truncate">Label</span>
         </button>
       </div>
-    </div>
+    </section>
   );
 }

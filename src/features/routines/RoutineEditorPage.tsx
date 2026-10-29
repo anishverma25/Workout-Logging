@@ -13,9 +13,11 @@ import {
   Pencil,
   Play,
   Plus,
+  Share2,
   Star,
   Trash2,
 } from 'lucide-react';
+import { useShareRoutine } from './useShareRoutine';
 import { Badge } from '@/components/ui/Badge';
 import { SwipeRow } from '@/components/ui/SwipeRow';
 import { useDragReorder } from '@/components/ui/useDragReorder';
@@ -90,6 +92,7 @@ export function RoutineEditorPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const prefs = usePreferences();
+  const sharing = useShareRoutine();
   const [renaming, setRenaming] = useState(false);
   const [menu, setMenu] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -237,6 +240,14 @@ export function RoutineEditorPage() {
             },
           },
           {
+            label: 'Share routine',
+            icon: <Share2 className="size-5" aria-hidden />,
+            onSelect: () => {
+              setMenu(false);
+              sharing.share(routine.id);
+            },
+          },
+          {
             label: 'Duplicate routine',
             icon: <Copy className="size-5" aria-hidden />,
             onSelect: async () => {
@@ -257,6 +268,7 @@ export function RoutineEditorPage() {
           },
         ]}
       />
+      {sharing.sheet}
       <ConfirmSheet
         open={confirmDelete}
         title={`Delete ${routine.name}?`}

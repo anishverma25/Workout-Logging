@@ -144,7 +144,9 @@ test('a past workout can be started again from its page', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Finish' })).toBeVisible();
   await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
   const logged = page.locator('section[aria-labelledby^="ex-"]');
-  const expected = exercises.filter((e) => e !== 'Rest' && e !== 'Calories burned');
+  const expected = exercises.filter(
+    (e) => e !== 'Rest' && e !== 'Calories burned' && e !== 'Muscles worked',
+  );
   await expect(logged).toHaveCount(expected.length);
   await expect(logged.first()).toContainText(expected[0]!);
   // Every set starts empty, ready to log.

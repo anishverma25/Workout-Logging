@@ -166,12 +166,13 @@ describe('matching exercises to the library', () => {
     expect(named('Pull Up')).toBe('Pull-up');
     expect(named('Plank')).toBe('Plank');
     expect(named('Hip Adduction (Machine)')).toBe('Hip adduction machine');
+    // One-leg and one-arm versions have their own entries since October 2026.
+    expect(named('Single Leg Extensions')).toBe('Single-leg extension');
   });
 
   it('never matches a different lift, even with a similar name', () => {
     expect(named('Incline Bench Press (Smith Machine)')).toBeNull();
     expect(named('Overhead Press (Smith Machine)')).toBeNull();
-    expect(named('Single Leg Extensions')).toBeNull();
     expect(named('KELSO SHRUGS (seat full down)')).toBeNull();
     expect(named('Pullover (Dumbbell)')).toBeNull();
   });

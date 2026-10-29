@@ -367,6 +367,7 @@ function MealCard({
                 <ListRow
                   title={l.foodName}
                   subtitle={`${portion}${oil}`}
+                  wrap
                   value={
                     <span className="flex flex-col items-end">
                       <span className="type-headline tabular text-text-1">{n(l.kcal)} kcal</span>

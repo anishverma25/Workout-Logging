@@ -37,6 +37,8 @@ export function setsCsv(data: TrainingData): string {
       'distance_m',
       'notes',
       'workout_id',
+      'reps_left',
+      'reps_right',
     ],
   ];
   for (const s of buildSessions(data)) {
@@ -58,6 +60,8 @@ export function setsCsv(data: TrainingData): string {
             x.distanceM,
             x.notes,
             s.workout.id,
+            x.repsLeft ?? null,
+            x.repsRight ?? null,
           ]),
         );
     }

@@ -52,6 +52,11 @@ interface TableSpec {
   schema: ZodType;
   /** Extra local fields that are implied for records coming from the server. */
   implied?: Record<string, unknown>;
+  /**
+   * Fields added after release. If the server does not have their columns yet (its migration
+   * has not been run), rows that leave them empty still sync without them (`SupabaseRemote`).
+   */
+  optional?: string[];
 }
 
 /** Parents before children, so foreign keys hold when pushing and pulling. */
@@ -126,7 +131,9 @@ export const TABLE_SPECS: TableSpec[] = [
       'notes',
       'supersetGroup',
       'angleDeg',
+      'bySide',
     ],
+    optional: ['bySide'],
     schema: RoutineExercise,
   },
   {
@@ -161,7 +168,9 @@ export const TABLE_SPECS: TableSpec[] = [
       'target',
       'supersetGroup',
       'angleDeg',
+      'bySide',
     ],
+    optional: ['bySide'],
     schema: WorkoutExercise,
   },
   {
@@ -181,7 +190,10 @@ export const TABLE_SPECS: TableSpec[] = [
       'distanceM',
       'completedAt',
       'notes',
+      'repsLeft',
+      'repsRight',
     ],
+    optional: ['repsLeft', 'repsRight'],
     schema: WorkoutSet,
   },
   {
@@ -282,6 +294,14 @@ export const TABLE_SPECS: TableSpec[] = [
 ];
 
 export const specFor = (table: DomainTable) => TABLE_SPECS.find((s) => s.local === table);
+
+/** Server columns added after release, by table (see `TableSpec.optional`). */
+export const LATE_COLUMNS: Partial<Record<ServerTable, string[]>> = Object.fromEntries(
+  TABLE_SPECS.filter((s) => s.optional?.length).map((s) => [
+    s.server,
+    s.optional!.map((f) => toSnake(f)),
+  ]),
+);
 
 const BASE_FIELDS = ['id', 'createdAt', 'updatedAt', 'deletedAt'];
 /** Postgres numeric comes back as a number or a string depending on the client. */

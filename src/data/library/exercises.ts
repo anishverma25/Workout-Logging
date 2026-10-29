@@ -17,6 +17,8 @@ interface ExerciseSeed {
   tracking?: TrackingType;
   /** per_hand: log one dumbbell or one side; volume counts both. */
   loadMode?: LoadMode;
+  /** Done one arm or one leg at a time: reps are logged for the left and right side apart. */
+  eachSide?: boolean;
   instructions: string;
 }
 
@@ -1150,6 +1152,124 @@ const SEEDS: ExerciseSeed[] = [
     instructions:
       'Stand with the dumbbells in front of the thighs and the knees only slightly bent. Push the hips back and lower the dumbbells along the legs with a flat back until the hamstrings stretch, then stand tall by driving the hips forward. Log one dumbbell.',
   },
+  // Round 4 (October 2026): the box squat and one-arm and one-leg versions, whose reps are
+  // logged for each side. New entries always go at the end: the server library is seeded by
+  // position.
+  {
+    key: 'box-squat',
+    name: 'Box squat',
+    primary: 'quads',
+    secondary: ['glutes', 'hamstrings', 'back'],
+    equipment: 'barbell',
+    category: 'compound',
+    instructions:
+      'Set a box or bench behind you at the depth you want, usually with the thighs about level with the floor when seated. With the bar on your upper back and the feet a little wider than for a back squat, push the hips back and sit down onto the box under control. Pause briefly with the back tight and the shins near vertical, without relaxing or rocking, then drive up through the whole foot to standing.',
+  },
+  {
+    key: 'one-arm-cable-triceps-extension',
+    name: 'One-arm cable triceps extension',
+    primary: 'triceps',
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Fit a cuff or a single handle to a high cable. Keep the upper arm still by your side, or by your head for the overhead version, and straighten the elbow fully, then let it bend back slowly. Do all the reps with one arm, then the other, and log each side.',
+  },
+  {
+    key: 'one-arm-machine-lateral-raise',
+    name: 'One-arm machine lateral raise',
+    primary: 'shoulders',
+    equipment: 'machine',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Sit or stand side-on in the lateral raise machine with the pad against the outside of one arm. Raise the arm out to the side to about shoulder height, leading with the elbow, then lower slowly. Finish one side, then switch, and log each side.',
+  },
+  {
+    key: 'single-leg-extension',
+    name: 'Single-leg extension',
+    primary: 'quads',
+    equipment: 'machine',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Sit in the leg extension machine with the pad on one shin, just above the ankle. Straighten the knee fully and squeeze the front of the thigh, then lower slowly. Do one leg, then the other, and log each side.',
+  },
+  {
+    key: 'one-arm-pec-deck',
+    name: 'One-arm pec deck',
+    primary: 'chest',
+    secondary: ['shoulders'],
+    equipment: 'machine',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Sit in the pec deck and use one handle or pad at a time, the other arm braced. Bring the arm across in an arc until the hand is in front of the chest, then open slowly until the chest stretches. Finish one side, then switch, and log each side.',
+  },
+  {
+    key: 'single-leg-press',
+    name: 'Single-leg press',
+    primary: 'quads',
+    secondary: ['glutes', 'hamstrings'],
+    equipment: 'machine',
+    category: 'compound',
+    eachSide: true,
+    instructions:
+      'Place one foot in the middle of the platform, the other off to the side. Lower the platform until the knee is well bent with the lower back still on the pad, then press up without locking the knee hard. Do one leg, then the other, and log each side.',
+  },
+  {
+    key: 'single-leg-curl',
+    name: 'Single-leg curl',
+    primary: 'hamstrings',
+    equipment: 'machine',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'In a seated or lying leg curl, set the pad behind one ankle. Curl the heel towards you as far as it goes, then let the leg straighten slowly. Do one leg, then the other, and log each side.',
+  },
+  {
+    key: 'one-arm-lat-pulldown',
+    name: 'One-arm lat pulldown',
+    primary: 'back',
+    secondary: ['biceps'],
+    equipment: 'cable',
+    category: 'compound',
+    eachSide: true,
+    instructions:
+      'Hold a single handle on a high cable, kneeling or seated with the arm overhead. Pull the elbow down to your side and slightly back, without twisting the torso, then let the arm rise fully. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'one-arm-cable-row',
+    name: 'One-arm cable row',
+    primary: 'back',
+    secondary: ['biceps'],
+    equipment: 'cable',
+    category: 'compound',
+    eachSide: true,
+    instructions:
+      'Hold a single handle on a cable at chest or waist height. Sit or stand tall and row the elbow back past the body, then reach forward again until the shoulder blade moves forward. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'one-arm-cable-curl',
+    name: 'One-arm cable curl',
+    primary: 'biceps',
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Hold a single handle on a low cable with the palm up. Keep the elbow by your side and curl the hand up to the shoulder, then lower slowly to a straight arm. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'single-leg-romanian-deadlift',
+    name: 'Single-leg Romanian deadlift',
+    primary: 'hamstrings',
+    secondary: ['glutes', 'back'],
+    equipment: 'dumbbell',
+    category: 'compound',
+    eachSide: true,
+    instructions:
+      'Stand on one leg with a slight knee bend, a dumbbell in the opposite hand. Hinge at the hip, letting the free leg reach back in line with the torso, until the standing hamstring stretches, then stand tall. Log the weight in your hand and the reps for each leg.',
+  },
 ];
 
 /** Fixed timestamp so system records are identical on every device and every load. */
@@ -1175,3 +1295,8 @@ export const SYSTEM_EXERCISES: Exercise[] = SEEDS.map((s) => ({
 }));
 
 export const SYSTEM_EXERCISE_KEYS = SEEDS.map((s) => s.key);
+
+/** Library exercises done one side at a time: their reps are logged for each side by default. */
+export const EACH_SIDE_EXERCISE_IDS: ReadonlySet<string> = new Set(
+  SEEDS.filter((s) => s.eachSide).map((s) => exerciseIdFor(s.key)),
+);

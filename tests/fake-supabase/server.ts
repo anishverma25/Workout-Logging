@@ -111,7 +111,7 @@ function userJson(u: UserRow) {
     updated_at: u.created_at.toISOString(),
     app_metadata: { provider: 'email', providers: ['email'] },
     user_metadata: {},
-    identities: [],
+    identities: [{ id: u.id, user_id: u.id, provider: 'email', identity_data: { email: u.email } }],
   };
 }
 
@@ -152,10 +152,23 @@ async function handleAuth(req: IncomingMessage, res: ServerResponse, path: strin
     if (!email.includes('@')) return authError(res, 400, 'validation_failed', 'Invalid email');
     if (String(body.password ?? '').length < 8)
       return authError(res, 422, 'weak_password', 'Password should be at least 8 characters.');
-    const exists = await pg.query('select 1 from auth.users where email = $1', [email]);
-    if (exists.rows.length)
-      return authError(res, 422, 'user_already_exists', 'User already registered');
     const confirm = email.includes('+confirm');
+    const exists = await pg.query('select 1 from auth.users where email = $1', [email]);
+    if (exists.rows.length) {
+      // As Supabase answers with email confirmation on: no error, a stand-in user with no
+      // identities and no session, so taken addresses cannot be probed.
+      if (confirm)
+        return send(res, 200, {
+          ...userJson({
+            id: randomUUID(),
+            email,
+            email_confirmed_at: null,
+            created_at: new Date(),
+          } as UserRow),
+          identities: [],
+        });
+      return authError(res, 422, 'user_already_exists', 'User already registered');
+    }
     const id = randomUUID();
     await pg.query(
       'insert into auth.users (id, email, encrypted_password, email_confirmed_at) values ($1, $2, $3, $4)',

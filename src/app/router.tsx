@@ -46,6 +46,12 @@ export const router = createBrowserRouter([
     errorElement: <RouteError />,
     lazy: page(() => import('@/features/legal/LegalPage'), 'ContactPage'),
   },
+  // A routine someone sent as a link: readable without an account, added with one.
+  {
+    path: 'r',
+    errorElement: <RouteError />,
+    lazy: page(() => import('@/features/routines/SharedRoutinePage'), 'SharedRoutinePage'),
+  },
   // Getting into an account, reachable without one.
   {
     element: <AuthScreen />,

@@ -1,4 +1,4 @@
-import { setVolumeLoad } from './volume';
+import { repsDone, setVolumeLoad } from './volume';
 import type { Exercise, WorkoutSet } from '../models/schemas';
 import { estimateOneRepMax, E1RM_PREFERRED_MAX_REPS, supportsE1rm } from './e1rm';
 import { isLoadEligible, isWorkingSet, type Session } from './sessions';
@@ -130,7 +130,9 @@ export function performanceFor(
       (set.reps ?? 0) > 0
     ) {
       const r = set.reps ?? 0;
-      perf.sessionReps = (perf.sessionReps ?? 0) + r;
+      // A session's reps are every rep done (both sides of a one-leg set); the best set is
+      // what both sides managed.
+      perf.sessionReps = (perf.sessionReps ?? 0) + repsDone(set);
       if (perf.mostReps === null || r > perf.mostReps) {
         perf.mostReps = r;
         perf.mostRepsSet = set;
