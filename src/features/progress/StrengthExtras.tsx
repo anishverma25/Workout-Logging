@@ -437,7 +437,7 @@ export function RestSection({ model }: { model: ProgressModel }) {
                       <>
                         <span className="h-1.5 overflow-hidden rounded-full bg-track">
                           <span
-                            className="block h-full rounded-full bg-lime"
+                            className="block h-full rounded-full bg-text-1/85"
                             style={{ width: `${Math.min(100, b.kept * 100)}%` }}
                           />
                         </span>

@@ -169,7 +169,7 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
 
   await test.step('22-25. analytics: ranges, exercise filter, insights', async () => {
     await page.goto('/progress');
-    await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'Overview' })).toBeChecked();
     const workouts = page
       .locator('dt', { hasText: 'Workouts' })
       .locator('xpath=following-sibling::dd[1]');

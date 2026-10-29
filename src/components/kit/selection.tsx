@@ -123,6 +123,8 @@ export function ChipGroup<T extends string>(props: ChipGroupProps<T>) {
 interface SegmentOption<T extends string> {
   value: T;
   label: string;
+  /** Spoken name when the visible label is short ("7D" reads "7 days"). */
+  ariaLabel?: string;
 }
 
 interface SegmentedControlProps<T extends string> {
@@ -187,13 +189,14 @@ export function SegmentedControl<T extends string>({
             type="button"
             role="radio"
             aria-checked={selected}
+            aria-label={o.ariaLabel}
             tabIndex={selected ? 0 : -1}
             onKeyDown={(e) => onKeyDown(e, i)}
             onClick={() => onChange(o.value)}
             className={cn(
-              'type-meta tabular rounded-[0.4375rem] px-4 font-semibold whitespace-nowrap transition-colors duration-[var(--dur-press)]',
+              'type-meta tabular rounded-[0.4375rem] font-semibold whitespace-nowrap transition-colors duration-[var(--dur-press)]',
               tall ? 'h-9' : 'h-7',
-              block && 'flex-1 px-2',
+              block ? 'min-w-0 flex-1 px-1' : 'px-4',
               // UI v3 (G7): the selected segment is a lighter grey with white text, as on iOS.
               selected
                 ? 'bg-seg-selected text-text-1 shadow-[0_1px_3px_rgb(0_0_0/0.3)]'

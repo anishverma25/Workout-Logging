@@ -2,7 +2,7 @@ import { useId, useMemo, useState } from 'react';
 import { cn } from '@/lib/cn';
 import { ChartTable, Tooltip } from './ChartParts';
 import { useWidth } from './useWidth';
-import { linearScale, niceDomain, spacedIndices } from './scale';
+import { bandLabelIndices, linearScale, niceDomain } from './scale';
 import { firstPlay } from './motion';
 
 export interface Bar {
@@ -86,7 +86,9 @@ function Columns({
   // 16px between bars where there is room, never more than 40% of the band.
   const barW = Math.min(BAR_MAX, Math.max(4, band - Math.min(16, band * 0.4)));
   const y = linearScale(domain, [top + plotH, top], ticks);
-  const labels = new Set(spacedIndices(bars.length, Math.max(2, Math.floor(plotW / 56))));
+  // About 7px a character at Meta size; labels never closer than 8px (UI v3, F2).
+  const labelWidth = Math.max(0, ...bars.map((b) => b.label.length)) * 7;
+  const labels = new Set(bandLabelIndices(bars.length, band, labelWidth));
   const anyHighlight = bars.some((b) => b.highlight);
   const emphasised = bars.findIndex((b) => b.highlight);
   const labelled = emphasised >= 0 ? emphasised : bars.length - 1;
@@ -212,7 +214,8 @@ function HorizontalBars({
   formatValue,
   valueName,
   categoryName = 'Category',
-  color = 'var(--chart-1)',
+  // Ranked lists are data, not goals: white bars on the track (UI v3, G8).
+  color = 'rgb(255 255 255 / 0.85)',
 }: Props) {
   const max = Math.max(0, ...bars.map((b) => b.value));
   return (
@@ -229,7 +232,7 @@ function HorizontalBars({
                   <span className="sr-only"> {valueName}</span>
                 </span>
               </span>
-              <span className="flex h-2 items-center rounded-full bg-surface-3" aria-hidden>
+              <span className="flex h-1.5 items-center rounded-full bg-fill" aria-hidden>
                 {pct > 0 ? (
                   <span
                     className="block h-full rounded-full"

@@ -81,6 +81,19 @@ export function spacedIndices(length: number, count: number): number[] {
   return [...out];
 }
 
+/**
+ * Which bars of a column chart get an axis label, so that labels never touch (UI v3, F2): a
+ * steady step wide enough for the longest label plus a gap, counted back from the newest bar,
+ * which is always labelled.
+ */
+export function bandLabelIndices(length: number, band: number, labelWidth: number, gap = 8) {
+  if (length <= 0) return [];
+  const step = band > 0 ? Math.max(1, Math.ceil((labelWidth + gap) / band)) : length;
+  const out: number[] = [];
+  for (let i = length - 1; i >= 0; i -= step) out.unshift(i);
+  return out;
+}
+
 const DAY_MS = 86_400_000;
 const MONTHS_SHORT = [
   'Jan',

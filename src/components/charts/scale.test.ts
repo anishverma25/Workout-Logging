@@ -110,3 +110,18 @@ describe('date axis', () => {
     ]);
   });
 });
+
+describe('column labels (UI v3, F2)', () => {
+  it('never puts two labels closer than their width plus a gap', async () => {
+    const { bandLabelIndices } = await import('./scale');
+    // 9 bars 30px apart, labels like "17 Oct" (about 42px): every second bar at most.
+    const picked = bandLabelIndices(9, 30, 42);
+    for (let i = 1; i < picked.length; i++) {
+      expect((picked[i]! - picked[i - 1]!) * 30).toBeGreaterThanOrEqual(42 + 8);
+    }
+    expect(picked.at(-1)).toBe(8);
+    // Wide bars: every bar is labelled.
+    expect(bandLabelIndices(4, 80, 42)).toEqual([0, 1, 2, 3]);
+    expect(bandLabelIndices(0, 30, 42)).toEqual([]);
+  });
+});

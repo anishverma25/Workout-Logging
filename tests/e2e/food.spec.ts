@@ -141,7 +141,7 @@ test('Pro tells OverloadGPT a meal and sees food on Progress', async ({ page }) 
   await expect(dinner).toContainText('Roti');
   await expect(dinner).toContainText('Domino pizza');
 
-  await page.goto('/progress');
+  await page.goto('/progress?view=food');
   const section = page.locator('#nutrition');
   await section.scrollIntoViewIfNeeded();
   await expect(section.locator('[data-nutrition-section]')).toBeVisible();

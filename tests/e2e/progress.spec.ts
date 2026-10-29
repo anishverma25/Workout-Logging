@@ -12,7 +12,8 @@ test('progress: ranges and exercise filter scope the whole page', async ({ page 
   // Long ranges are part of Pro; preview them with the development-only access state.
   await page.evaluate(() => sessionStorage.setItem('overload.dev.entitlement', 'pro'));
   await page.goto('/progress');
-  await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toBeVisible();
+  // One section at a time (UI v3, B5): the overview first.
+  await expect(page.getByRole('radio', { name: 'Overview' })).toBeChecked();
   const workouts = page
     .locator('dt', { hasText: 'Workouts' })
     .locator('xpath=following-sibling::dd[1]');
@@ -25,6 +26,9 @@ test('progress: ranges and exercise filter scope the whole page', async ({ page 
   await page.getByRole('radio', { name: 'All time' }).click();
   await expect.poll(async () => Number(await workouts.textContent())).toBeGreaterThanOrEqual(month);
 
+  await page.getByRole('radio', { name: 'Strength' }).click();
+  await expect(page).toHaveURL(/view=strength/);
+  await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toBeVisible();
   await page.getByRole('button', { name: /^Exercise/ }).click();
   await page
     .getByRole('dialog')
@@ -38,14 +42,19 @@ test('progress: ranges and exercise filter scope the whole page', async ({ page 
 });
 
 test('progress: every chart has a table view and insights state their basis', async ({ page }) => {
-  await page.goto('/progress?range=30d');
+  let tables = 0;
+  for (const view of ['overview', 'strength', 'volume', 'body', 'food']) {
+    await page.goto(`/progress?range=30d&view=${view}`);
+    await expect(page.locator('[data-progress-controls]')).toBeVisible();
+    tables += await page.getByText('Show as table').count();
+  }
+  expect(tables).toBeGreaterThanOrEqual(6);
+  await page.goto('/progress?range=30d&view=strength');
   await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toBeVisible();
-  const tables = page.getByText('Show as table');
-  await expect(tables.first()).toBeVisible();
-  expect(await tables.count()).toBeGreaterThanOrEqual(6);
   // The whole summary row is the control (its touch area covers the label text).
   await page.locator('summary', { hasText: 'Show as table' }).first().click();
   await expect(page.getByRole('table').first()).toBeVisible();
+  await page.goto('/progress?range=30d&view=overview');
   await expect(page.getByRole('heading', { name: 'Insights' })).toBeVisible();
   // Adherence is a stat, worded like Home's (D7): "4 of 5 planned, last 30 days".
   await expect(page.getByText(/\d+ of \d+ planned, last 30 days/)).toBeVisible();
@@ -78,7 +87,7 @@ test('the science page explains each number with typeset formulas and sources', 
   ).toBeVisible();
 
   // Each Progress section links straight to its explanation.
-  await page.goto('/progress');
+  await page.goto('/progress?view=strength');
   await page.getByRole('link', { name: 'About strength', exact: true }).click();
   await expect(page).toHaveURL(/\/science#e1rm$/);
   await expect(page.locator('#e1rm')).toBeInViewport();
@@ -100,7 +109,7 @@ test('progress shows an honest empty state without data', async ({ page }) => {
 });
 
 test('sheets open as a centred panel, fully on screen, even after scrolling', async ({ page }) => {
-  await page.goto('/progress');
+  await page.goto('/progress?view=strength');
   await page.evaluate(() => window.scrollTo(0, 400));
   await page.getByRole('button', { name: /^Exercise/ }).click();
   const dialog = page.getByRole('dialog');

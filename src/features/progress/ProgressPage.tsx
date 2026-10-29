@@ -1,11 +1,8 @@
 import { COPY } from '@/domain/analytics/thresholdCopy';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import {
   ChartNoAxesColumnIncreasing,
-  ChevronDown,
-  ArrowDownRight,
-  ArrowUpRight,
   ChevronRight,
   Dumbbell,
   FlaskConical,
@@ -15,25 +12,25 @@ import { EvidenceLink } from '@/features/science/EvidenceLink';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { BarChart } from '@/components/charts/BarChart';
 import { ChartEmpty, ChartTable } from '@/components/charts/ChartParts';
-import { TextLink } from '@/components/kit';
+import { Delta, Metric, SegmentedControl, TextLink } from '@/components/kit';
 import { LineChart } from '@/components/charts/LineChart';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { ActionList, Chips } from '@/components/ui/Fields';
+import { ActionList } from '@/components/ui/Fields';
 import { Sheet } from '@/components/ui/Sheet';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { useDismissedSuggestions, usePreferences, useTrainingData } from '@/data/hooks';
-import { ROLLING_WINDOW_DAYS } from '@/domain/analytics/bodyweight';
+import { ROLLING_MIN_ENTRIES, ROLLING_WINDOW_DAYS } from '@/domain/analytics/bodyweight';
 import { buildProgress, type ProgressModel, type ProgressRange } from '@/domain/analytics/progress';
 import { formatRecordValue, PR_LABELS } from '@/domain/analytics/prs';
 import { MUSCLE_LABELS } from '@/domain/models/labels';
-import { cn } from '@/lib/cn';
 import { formatDayMonth, formatShortDate } from '@/lib/dates';
 import { FREQUENCY_MIN_DAYS } from '@/domain/analytics/progress';
 import { MUSCLE_SCALE_MIN } from '@/domain/analytics/muscles';
 import {
   formatCompact,
   formatDate,
+  formatDateInSentence,
   formatDateRange,
   formatDurationSummary,
   formatNumber,
@@ -46,7 +43,11 @@ import { useStartWorkout } from '../workout/StartWorkout';
 import { InsightList, Suggestions } from './Insights';
 import { useFeature } from '@/app/entitlement';
 import type { CoachTopic } from '@/app/coach';
-import { AskCoachRow, CoachBriefProvider, ExplainButton } from '../coach/CoachParts';
+import { CoachBriefProvider, ExplainButton } from '../coach/CoachParts';
+import { buildBrief } from '../coach/brief';
+import { CheckinCard } from '../home/CheckinCard';
+import { buildDashboard } from '@/domain/analytics/dashboard';
+import { type BodyWeightSummary } from '@/domain/analytics/bodyweight';
 import { ProLock } from '../pro/ProLock';
 import { useFoodContextFrom } from '../food/useFoodContext';
 import { NutritionSection } from './NutritionSection';
@@ -58,12 +59,35 @@ import {
   RestSection,
 } from './StrengthExtras';
 
-const RANGES: { value: ProgressRange; label: string }[] = [
-  { value: '7d', label: '7 days' },
-  { value: '30d', label: '30 days' },
-  { value: '90d', label: '90 days' },
-  { value: 'all', label: 'All time' },
+const RANGES: { value: ProgressRange; label: string; ariaLabel: string }[] = [
+  { value: '7d', label: '7D', ariaLabel: '7 days' },
+  { value: '30d', label: '30D', ariaLabel: '30 days' },
+  { value: '90d', label: '90D', ariaLabel: '90 days' },
+  { value: 'all', label: 'All', ariaLabel: 'All time' },
 ];
+
+type View = 'overview' | 'strength' | 'volume' | 'body' | 'food';
+const VIEWS: { value: View; label: string }[] = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'strength', label: 'Strength' },
+  { value: 'volume', label: 'Volume' },
+  { value: 'body', label: 'Body' },
+  { value: 'food', label: 'Food' },
+];
+const VIEW_KEY = 'overload.progress.view';
+const isView = (v: string | null): v is View => VIEWS.some((x) => x.value === v);
+
+/** The section shown: the address first (links and reloads), then this visit's last choice. */
+function initialView(param: string | null): View {
+  if (isView(param)) return param;
+  try {
+    const saved = sessionStorage.getItem(VIEW_KEY);
+    if (isView(saved)) return saved;
+  } catch {
+    // No storage: start on the overview.
+  }
+  return 'overview';
+}
 
 const isRange = (v: string | null): v is ProgressRange => RANGES.some((r) => r.value === v);
 
@@ -84,6 +108,12 @@ export function ProgressPage() {
   const progressionIncluded = useFeature('progression');
   const food = useFoodContextFrom(now, training);
   const rangeLocked = (range === '90d' || range === 'all') && !longRangeIncluded;
+  const view = initialView(params.get('view'));
+  // Last week's check-in (moved here from Home, UI v3 B6) and the body weight summary.
+  const dashboard = useMemo(
+    () => (training.data ? buildDashboard(training.data, prefs, now) : null),
+    [training.data, prefs, now],
+  );
 
   const model = useMemo(
     () =>
@@ -109,25 +139,35 @@ export function ProgressPage() {
       },
       { replace: true },
     );
+  const setView = (v: View) => {
+    try {
+      sessionStorage.setItem(VIEW_KEY, v);
+    } catch {
+      // Remembered in the address only.
+    }
+    setParam('view', v);
+    window.scrollTo({ top: 0 });
+  };
+
+  const exercisePicker =
+    model && model.exerciseOptions.length > 0 ? (
+      <button
+        type="button"
+        onClick={() => setPickingExercise(true)}
+        className="pressable chrome flex min-h-11 w-full items-center gap-2 rounded-card bg-surface px-4 text-left"
+        aria-label={`Exercise: ${model.selected?.name ?? 'none'}. Change`}
+      >
+        <span className="type-subhead flex-1 text-text-2">Exercise</span>
+        <span className="text-[1.0625rem] max-w-52 truncate text-text-1">
+          {model.selected?.name}
+        </span>
+        <ChevronRight className="size-4 shrink-0 text-text-3" aria-hidden />
+      </button>
+    ) : null;
 
   return (
     <>
-      <PageHeader title="Progress" subtitle="Calculated from your logged sets" />
-      {model && model.hasAnyData && !rangeLocked ? <JumpBar /> : null}
-      <Link
-        to="/science"
-        className="pressable chrome mt-3 mb-4 flex min-h-14 items-center gap-3 rounded-panel border border-border bg-surface px-4 py-2.5"
-      >
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-tile bg-surface-2 text-text-2">
-          <FlaskConical className="size-5" aria-hidden />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="type-headline block text-text-1">How every number is calculated</span>
-          <span className="type-meta block text-text-2">Formulas and the research behind them</span>
-        </span>
-        <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
-      </Link>
-      <AskCoachRow className="mb-4" />
+      <PageHeader title="Progress" />
       {training.status === 'loading' ? <Skeleton className="h-96" /> : null}
       {training.status === 'error' ? <ErrorState error={training.error} /> : null}
 
@@ -154,33 +194,33 @@ export function ProgressPage() {
 
       {model && model.hasAnyData ? (
         <>
-          {/* One filter row, scoping everything below it. */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <Chips
+          {/* A real switcher (UI v3, B5): one section at a time, and the range for all of it. */}
+          <div
+            className="sticky top-[calc(2.75rem+env(safe-area-inset-top))] z-20 -mx-4 flex flex-col gap-2 bg-bg/90 px-4 pt-1 pb-2 backdrop-blur-xl tab:-mx-6 tab:px-6 lg:top-0 lg:-mx-8 lg:px-8"
+            data-progress-controls
+          >
+            <SegmentedControl
+              label="Progress section"
+              block
+              value={view}
+              options={VIEWS}
+              onChange={setView}
+            />
+            <SegmentedControl
               label="Date range"
+              block
+              value={range}
               options={
                 longRangeIncluded
                   ? RANGES
                   : RANGES.map((r) =>
                       r.value === '90d' || r.value === 'all'
-                        ? { ...r, label: `${r.label} · Pro` }
+                        ? { ...r, ariaLabel: `${r.ariaLabel} · Pro` }
                         : r,
                     )
               }
-              value={range}
               onChange={(r) => setParam('range', r === '30d' ? null : r)}
             />
-            {model.exerciseOptions.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => setPickingExercise(true)}
-                className="pressable chrome type-meta inline-flex h-9 w-fit items-center gap-1.5 rounded-full bg-surface-2 px-4 font-semibold text-text-1"
-              >
-                <span className="text-text-2">Exercise:</span>
-                <span className="max-w-44 truncate">{model.selected?.name}</span>
-                <ChevronDown className="size-4 text-text-2" aria-hidden />
-              </button>
-            ) : null}
           </div>
 
           {rangeLocked ? (
@@ -193,57 +233,104 @@ export function ProgressPage() {
             <CoachBriefProvider
               value={{ unit, now, profile: training.data!.profile ?? null, model }}
             >
-              <p className="type-meta mt-2 text-text-2">
+              <p className="type-meta mt-2 px-1 text-text-2">
                 {formatDateRange(model.window.start, new Date(model.window.end.getTime() - 1), now)}
                 {model.sessionsInWindow === 0 ? '. No workouts logged in this period.' : ''}
               </p>
 
-              <Summary model={model} unit={unit} />
+              {view === 'overview' ? (
+                <>
+                  <Summary model={model} unit={unit} />
+                  <Section
+                    id="insights"
+                    title="Insights"
+                    science="insights"
+                    detail="Rules applied to your records. Each one states what it is based on."
+                  >
+                    <InsightList insights={model.insights} />
+                  </Section>
+                  <ProgressionBlock
+                    model={model}
+                    dismissed={dismissed}
+                    unit={unit}
+                    included={progressionIncluded}
+                  />
+                  {dashboard?.checkin ? (
+                    <CheckinCard
+                      checkin={dashboard.checkin}
+                      unit={unit}
+                      className="mt-8"
+                      brief={() =>
+                        buildBrief('checkin', {
+                          unit,
+                          now,
+                          profile: training.data?.profile ?? null,
+                          data: training.data,
+                          model: null,
+                          checkin: dashboard.checkin,
+                        })
+                      }
+                    />
+                  ) : null}
+                  <ConsistencySection model={model} />
+                  <RecordsSection model={model} unit={unit} />
+                </>
+              ) : null}
 
-              <Section
-                id="insights"
-                title="Insights"
-                science="insights"
-                detail="Rules applied to your records. Each one states what it is based on."
+              {view === 'strength' ? (
+                <>
+                  <div className="mt-4">{exercisePicker}</div>
+                  <StrengthSection model={model} unit={unit} />
+                  <RatesSection
+                    model={model}
+                    unit={unit}
+                    names={new Map(training.data!.exercises.map((e) => [e.id, e.name]))}
+                  />
+                  <LevelsSection
+                    model={model}
+                    unit={unit}
+                    sexKnown={
+                      training.data!.profile?.sex === 'male' ||
+                      training.data!.profile?.sex === 'female'
+                    }
+                  />
+                  <PlateausSection model={model} unit={unit} exercises={training.data!.exercises} />
+                </>
+              ) : null}
+
+              {view === 'volume' ? (
+                <>
+                  <VolumeSection model={model} unit={unit} />
+                  <BalanceSection model={model} />
+                  {muscleBalanceIncluded ? (
+                    <MusclesSection model={model} />
+                  ) : (
+                    <Section id="muscles" title="Sets per muscle group" science="muscles">
+                      <ProLock feature="muscle_balance" />
+                    </Section>
+                  )}
+                  <RestSection model={model} />
+                </>
+              ) : null}
+
+              {view === 'body' ? (
+                <BodySection model={model} unit={unit} summary={dashboard?.bodyWeight ?? null} />
+              ) : null}
+
+              {view === 'food' ? (
+                <NutritionSection ctx={food} days={model.window.days} now={now} />
+              ) : null}
+
+              <Link
+                to="/science"
+                className="pressable chrome mt-10 flex min-h-12 items-center gap-3 rounded-card bg-surface px-4 py-2.5"
               >
-                <InsightList insights={model.insights} />
-              </Section>
-
-              <ProgressionBlock
-                model={model}
-                dismissed={dismissed}
-                unit={unit}
-                included={progressionIncluded}
-              />
-
-              <StrengthSection model={model} unit={unit} />
-              <RatesSection
-                model={model}
-                unit={unit}
-                names={new Map(training.data!.exercises.map((e) => [e.id, e.name]))}
-              />
-              <LevelsSection
-                model={model}
-                unit={unit}
-                sexKnown={
-                  training.data!.profile?.sex === 'male' || training.data!.profile?.sex === 'female'
-                }
-              />
-              <PlateausSection model={model} unit={unit} exercises={training.data!.exercises} />
-              <VolumeSection model={model} unit={unit} />
-              <BalanceSection model={model} />
-              {muscleBalanceIncluded ? (
-                <MusclesSection model={model} />
-              ) : (
-                <Section id="muscles" title="Sets per muscle group" science="muscles">
-                  <ProLock feature="muscle_balance" />
-                </Section>
-              )}
-              <ConsistencySection model={model} />
-              <RestSection model={model} />
-              <BodySection model={model} unit={unit} />
-              <NutritionSection ctx={food} days={model.window.days} now={now} />
-              <RecordsSection model={model} unit={unit} />
+                <FlaskConical className="size-5 shrink-0 text-text-2" aria-hidden />
+                <span className="type-headline min-w-0 flex-1 text-text-1">
+                  How every number is calculated
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-text-3" aria-hidden />
+              </Link>
             </CoachBriefProvider>
           )}
         </>
@@ -364,21 +451,17 @@ function Tile({
   tone?: 'up' | 'down';
 }) {
   return (
-    <div className="rounded-panel border border-border bg-surface p-4">
-      <dt className="type-meta text-text-2">{label}</dt>
+    <div className="rounded-card bg-surface p-4">
+      <dt className="type-meta font-semibold text-text-2">{label}</dt>
       {value === null ? (
         <dd className="type-headline mt-1.5 text-text-2">None yet</dd>
       ) : (
-        <dd className="type-stat mt-1 text-text-1">{value}</dd>
+        <dd className="type-metric mt-1 text-text-1">{value}</dd>
       )}
       {detail ? (
-        <dd className="type-meta tabular mt-1 flex items-center gap-1 text-text-2">
-          {tone === 'up' ? (
-            <ArrowUpRight className="size-4 shrink-0" aria-hidden />
-          ) : tone === 'down' ? (
-            <ArrowDownRight className="size-4 shrink-0" aria-hidden />
-          ) : null}
-          {detail}
+        <dd className="type-meta tabular mt-1 text-text-2">
+          {/* A change is a green or red capsule (UI v3, G3); other details stay plain. */}
+          {tone ? <Delta tone={tone}>{detail}</Delta> : detail}
         </dd>
       ) : null}
     </div>
@@ -692,7 +775,7 @@ function MusclesSection({ model }: { model: ProgressModel }) {
                         aria-hidden
                       >
                         <div
-                          className="h-full rounded-full bg-lime"
+                          className="h-full rounded-full bg-text-1/85"
                           style={{ width: `${Math.min(100, (v / scaleMax) * 100)}%` }}
                         />
                       </div>
@@ -838,10 +921,50 @@ function ConsistencySection({ model }: { model: ProgressModel }) {
   );
 }
 
-function BodySection({ model, unit }: { model: ProgressModel; unit: WeightUnit }) {
+function BodySection({
+  model,
+  unit,
+  summary,
+}: {
+  model: ProgressModel;
+  unit: WeightUnit;
+  /** The latest weigh-in and its 7-day average (moved here from Home, UI v3 B6). */
+  summary: BodyWeightSummary | null;
+}) {
   const { points, trend } = model.body;
   return (
     <Section id="body" title="Body weight" science="body-weight">
+      {summary ? (
+        <div className="mb-3 rounded-card bg-surface p-4" data-body-latest>
+          <div className="flex items-start justify-between gap-3">
+            <Metric
+              tier="hero"
+              accentLabel
+              label="Latest"
+              value={formatWeightValue(summary.latest.weightKg, unit)}
+              unit={unit}
+            />
+            {summary.weekChangeKg !== null ? (
+              <Delta
+                className="mt-6"
+                tone={summary.weekChangeKg > 0 ? 'up' : summary.weekChangeKg < 0 ? 'down' : 'flat'}
+              >
+                {summary.weekChangeKg >= 0 ? '+' : '−'}
+                {formatWeightValue(Math.abs(summary.weekChangeKg), unit)} {unit} in a week
+              </Delta>
+            ) : null}
+          </div>
+          <p className="type-meta mt-1 text-text-2">
+            {summary.rollingAverageKg !== null
+              ? `7-day average ${formatWeightValue(summary.rollingAverageKg, unit)} ${unit} from ${summary.rollingCount} entries. `
+              : `Average shows after ${ROLLING_MIN_ENTRIES} entries in a week. `}
+            Last logged {formatDateInSentence(new Date(summary.latest.measuredAt))}.
+          </p>
+          <TextLink to="/body" small chevron className="mt-2">
+            Body metrics
+          </TextLink>
+        </div>
+      ) : null}
       <Card className="p-4 sm:p-5">
         {points.length >= 2 ? (
           <>
@@ -899,7 +1022,7 @@ function RecordsSection({ model, unit }: { model: ProgressModel; unit: WeightUni
       ) : (
         <Card className="overflow-hidden">
           <ul className="divide-y-[0.5px] divide-divider">
-            {model.records.slice(0, 12).map((r) => (
+            {model.records.slice(0, 5).map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <span className="min-w-0">
                   <span className="type-headline block truncate text-text-1">{r.exerciseName}</span>
@@ -936,67 +1059,5 @@ function EmptyBox({ children }: { children: React.ReactNode }) {
     <p className="type-meta flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center text-text-2">
       {children}
     </p>
-  );
-}
-
-const JUMPS = [
-  { id: 'strength', label: 'Strength' },
-  { id: 'volume', label: 'Volume' },
-  { id: 'balance', label: 'Balance' },
-  { id: 'consistency', label: 'Consistency' },
-  { id: 'body', label: 'Body' },
-  { id: 'nutrition', label: 'Food' },
-] as const;
-
-/** Sticky section bar (Part 4): tap to jump, the section in view is selected. */
-function JumpBar() {
-  const [current, setCurrent] = useState<string>(JUMPS[0].id);
-  useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        if (visible) setCurrent(visible.target.id);
-      },
-      { rootMargin: '-120px 0px -55% 0px' },
-    );
-    const els = JUMPS.map((j) => document.getElementById(j.id)).filter(
-      (el): el is HTMLElement => el !== null,
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
-  return (
-    <nav
-      aria-label="Progress sections"
-      className="sticky top-[calc(2.75rem+env(safe-area-inset-top))] z-20 -mx-4 bg-bg px-4 py-2 tab:-mx-6 tab:px-6 lg:top-0 lg:-mx-8 lg:px-8"
-    >
-      <ul className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
-        {JUMPS.map((j) => (
-          <li key={j.id}>
-            <a
-              href={`#${j.id}`}
-              aria-current={current === j.id ? 'true' : undefined}
-              onClick={(e) => {
-                e.preventDefault();
-                setCurrent(j.id);
-                const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                document
-                  .getElementById(j.id)
-                  ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-              }}
-              className={cn(
-                'pressable chrome type-meta inline-flex h-9 items-center rounded-full px-4 font-semibold whitespace-nowrap',
-                current === j.id ? 'bg-text-1 text-bg' : 'bg-surface-2 text-text-1',
-              )}
-            >
-              {j.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
   );
 }
