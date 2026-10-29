@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import type { DashboardModel } from '@/domain/analytics/dashboard';
 import type { DayStatus } from '@/domain/analytics/schedule';
-import { Card } from '@/components/ui/Card';
+import { BottomSheet, InfoButton } from '@/components/kit';
 import { cn } from '@/lib/cn';
 import { StreakPill, WeekRings } from './RingsCard';
 import { formatLongDay } from '@/lib/dates';
@@ -28,8 +29,9 @@ const STATE_LABEL: Record<DayStatus['state'], string> = {
 };
 
 /**
- * The week on one card: rings against the person's targets, then the training days in the order
- * of the week-start setting (D9), then the last seven days' numbers.
+ * The week (UI v3, S3.4 and S3.5): rings against the person's targets and a strip of circles in
+ * the order of the week-start setting. The targets, the legend, the last seven days and the
+ * average live behind the (i) button.
  */
 export function WeekCard({
   days,
@@ -41,69 +43,125 @@ export function WeekCard({
   unit,
   className,
 }: WeekCardProps) {
-  const { planned, completed } = w.adherence;
-  const showsPlanned = days.some((d) => d.state === 'planned');
-  const first = days[0];
-  const last = days[days.length - 1];
+  const [about, setAbout] = useState(false);
   return (
-    <Card className={cn('p-5', className)} aria-labelledby="week-title">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 id="week-title" className="type-title text-text-1">
-            This week
-          </h2>
-          <p className="type-meta mt-0.5 text-text-2">
-            {first && last
-              ? `${shortDayName(first.date.getDay())} to ${shortDayName(last.date.getDay())}`
-              : null}
-            {planned > 0 ? ` · ${completed} of ${planned} planned, last 7 days` : null}
-          </p>
+    <section className={className} aria-labelledby="week-title">
+      <div className="mb-2 flex min-h-8 items-center justify-between gap-3">
+        <h2 id="week-title" className="type-section text-text-1">
+          This week
+        </h2>
+        <div className="flex items-center gap-2">
+          <StreakPill weeks={streak.weeks} />
+          <InfoButton label="this week" onClick={() => setAbout(true)} />
         </div>
-        <StreakPill weeks={streak.weeks} />
       </div>
-      <WeekRings week={week} routineName={routineName} />
+      <div className="rounded-card bg-surface p-4">
+        <WeekRings week={week} />
+        <WeekStrip days={days} />
+      </div>
+      <BottomSheet open={about} onClose={() => setAbout(false)} title="This week">
+        {about ? (
+          <WeekDetails
+            week={week}
+            routineName={routineName}
+            window={w}
+            consistency={consistency}
+            unit={unit}
+            showsPlanned={days.some((d) => d.state === 'planned')}
+          />
+        ) : null}
+      </BottomSheet>
+    </section>
+  );
+}
 
-      <ol className="grid grid-cols-7 gap-1.5" aria-label="This week, day by day">
-        {days.map((d) => (
-          <li key={d.date.toISOString()} className="flex flex-col items-center gap-2">
-            <span
-              aria-hidden
-              className={cn(
-                'type-caption',
-                d.isToday ? 'font-semibold text-text-1' : 'text-text-2',
-              )}
-            >
-              {shortDayName(d.date.getDay())}
-            </span>
-            <DayMark day={d} />
-            <span className="sr-only">
-              {formatLongDay(d.date)}: {d.sessions[0]?.workout.name ?? d.plannedDay?.name ?? 'rest'}
-              , {STATE_LABEL[d.state]}
-              {d.isToday ? ' (today)' : ''}
-            </span>
-          </li>
-        ))}
-      </ol>
+/** Where the week's targets come from, for the (i) sheet. */
+function weekTargetSources(week: DashboardModel['week'], routineName: string | null): string[] {
+  const sources: string[] = [];
+  if (week.sessions.source === 'profile' || week.minutes.source === 'profile')
+    sources.push('days and session length from your profile');
+  if (week.sessions.source === 'routine' && week.sessions.target)
+    sources.push(`days planned in ${routineName ?? 'your routine'}`);
+  if (week.sets.source === 'routine')
+    sources.push(`sets planned in ${routineName ?? 'your routine'}`);
+  return sources;
+}
 
-      <div className="type-meta mt-3 flex flex-wrap gap-x-4 gap-y-1 text-text-2" aria-hidden>
+/** The week as seven circles, in the order of the week-start setting (S3.5, S4.2). */
+export function WeekStrip({ days, className }: { days: DayStatus[]; className?: string }) {
+  return (
+    <ol
+      className={cn('grid grid-cols-7 gap-1', className)}
+      aria-label="This week, day by day"
+      data-week-strip
+    >
+      {days.map((d) => (
+        <li key={d.date.toISOString()} className="flex flex-col items-center gap-1.5">
+          <span
+            aria-hidden
+            className={cn('type-caption', d.isToday ? 'font-semibold text-text-1' : 'text-text-2')}
+          >
+            {shortDayName(d.date.getDay())}
+          </span>
+          <DayMark day={d} />
+          <span className="sr-only">
+            {formatLongDay(d.date)}: {d.sessions[0]?.workout.name ?? d.plannedDay?.name ?? 'rest'},{' '}
+            {STATE_LABEL[d.state]}
+            {d.isToday ? ' (today)' : ''}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** What used to sit on the card: where the targets come from, the legend, the last 7 days. */
+function WeekDetails({
+  week,
+  routineName,
+  window: w,
+  consistency,
+  unit,
+  showsPlanned,
+}: {
+  week: DashboardModel['week'];
+  routineName: string | null;
+  window: DashboardModel['recentWindow'];
+  consistency: DashboardModel['consistency'];
+  unit: WeightUnit;
+  showsPlanned: boolean;
+}) {
+  const sources = weekTargetSources(week, routineName);
+  const { planned, completed } = w.adherence;
+  return (
+    <div className="flex flex-col gap-5">
+      {sources.length > 0 ? (
+        <p className="type-body text-text-2">Targets: {sources.join(', ')}.</p>
+      ) : null}
+      <div className="type-meta flex flex-wrap gap-x-4 gap-y-2 text-text-2">
         <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[3px] bg-lime" />
+          <span className="size-3 rounded-full bg-lime" />
           Trained
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[3px] border border-dashed border-border-strong" />
+          <span className="size-3 rounded-full border-[1.5px] border-down/60" />
           Missed
         </span>
         {showsPlanned ? (
           <span className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-[3px] border border-border-strong" />
+            <span className="size-3 rounded-full border-[1.5px] border-text-3" />
             Planned
           </span>
         ) : null}
+        <span className="flex items-center gap-1.5">
+          <span className="size-3 rounded-full ring-2 ring-text-1" />
+          Today
+        </span>
       </div>
-
-      <div className="mt-5 border-t-[0.5px] border-divider pt-4" data-last-7-days>
-        <h3 className="type-label text-text-2">Last 7 days</h3>
+      <div data-last-7-days>
+        <h3 className="type-label text-text-2">
+          Last 7 days{planned > 0 ? ` · ${completed} of ${planned} planned` : ''}
+        </h3>
         <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-4">
           <Stat label="Sessions" value={String(w.sessions)} />
           <Stat label="Working sets" value={String(w.workingSets)} />
@@ -115,9 +173,8 @@ export function WeekCard({
           <Stat label="Time trained" value={formatDurationSummary(w.minutes)} />
         </dl>
       </div>
-
       {consistency.averagePerWeek !== null ? (
-        <p className="type-meta mt-4 border-t-[0.5px] border-divider pt-3.5 text-text-2">
+        <p className="type-meta text-text-2">
           <span className="tabular font-semibold text-text-1">
             {formatNumber(consistency.averagePerWeek)}
           </span>{' '}
@@ -125,48 +182,64 @@ export function WeekCard({
           {consistency.plannedPerWeek ? <> Your plan has {consistency.plannedPerWeek}.</> : null}
         </p>
       ) : null}
-    </Card>
+    </div>
   );
 }
 
-/** Trained: lime pill with a check. Missed: dashed outline with ×. Planned: outline. Else a dot. */
+/**
+ * Seven 32px circles (UI v3, S3.5). Trained: lime with a black check. Planned: a thin ring.
+ * Missed: a faint red ring. Rest: a small dot. Today: a white ring around it.
+ */
 function DayMark({ day }: { day: DayStatus }) {
-  const base = 'flex h-14 w-full max-w-9 items-center justify-center rounded-field';
   const label = day.sessions[0]?.workout.name ?? day.plannedDay?.name;
+  let inner: React.ReactNode;
   switch (day.state) {
     case 'completed':
     case 'extra':
-      return (
-        <div className={cn(base, 'bg-lime text-on-lime')} title={label}>
+      inner = (
+        <span
+          className="flex size-8 items-center justify-center rounded-full bg-lime text-on-lime"
+          title={label}
+        >
           <Check className="size-4" strokeWidth={3} aria-hidden />
-        </div>
+        </span>
       );
+      break;
     case 'missed':
-      return (
-        <div
-          className={cn(base, 'border border-dashed border-border-strong text-text-2')}
+      inner = (
+        <span
+          className="flex size-8 items-center justify-center rounded-full border-[1.5px] border-down/60 text-down/80"
           title={`${label} missed`}
         >
           <X className="size-3.5" strokeWidth={2.5} aria-hidden />
-        </div>
+        </span>
       );
+      break;
     case 'planned':
-      return (
-        <div
-          className={cn(
-            base,
-            day.isToday ? 'border-2 border-lime bg-lime-dim' : 'border border-border-strong',
-          )}
+      inner = (
+        <span
+          className="block size-8 rounded-full border-[1.5px] border-text-3"
           title={`${label} planned`}
         />
       );
+      break;
     default:
-      return (
-        <div className={base} title="Rest day">
-          <span className="size-1 rounded-full bg-text-3" />
-        </div>
+      inner = (
+        <span className="flex size-8 items-center justify-center" title="Rest day">
+          <span className="size-1.5 rounded-full bg-text-3" />
+        </span>
       );
   }
+  return (
+    <span
+      className={cn(
+        'flex size-9 items-center justify-center rounded-full',
+        day.isToday && 'ring-2 ring-text-1',
+      )}
+    >
+      {inner}
+    </span>
+  );
 }
 
 function Stat({ label, value, unit }: { label: string; value: string; unit?: string }) {

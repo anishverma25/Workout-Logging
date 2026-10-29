@@ -1,6 +1,5 @@
 import { Link } from 'react-router';
-import { UtensilsCrossed } from 'lucide-react';
-import { Card, ProgressBar, SecondaryButton } from '@/components/kit';
+import { CapsuleButton } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import type { QueryState } from '@/data/hooks';
 import { db } from '@/data/db';
@@ -18,8 +17,9 @@ import { MEAL_LABEL, mealForHour, useFoodContextFrom } from '../food/useFoodCont
 const n = (v: number) => Math.round(v).toLocaleString('en-GB');
 
 /**
- * Today's food on Home: calories and protein against the targets, and the meal due now, with
- * the usual one in a tap when the person has one.
+ * Today's numbers on Home (UI v3, S3.6): food, weight, water and activity as rows of one group,
+ * each one tap from being logged. The usual meal for the time of day is a capsule under the
+ * food row until that meal is logged.
  */
 export function FoodCard({
   training,
@@ -43,90 +43,120 @@ export function FoodCard({
     ? undefined
     : mealTemplates(ctx.logs, meal, today).find((t) => t.kind === 'usual');
   const { kcal, proteinG } = ctx.targets;
+  const left = kcal !== null ? kcal - totals.kcal : null;
+  const logUsual = () => {
+    if (!usual) return;
+    void copyFoodLogs(db, usual.items, { date: today, meal }).then((logs) => {
+      haptic('medium');
+      toast(`Logged your usual ${MEAL_LABEL[meal].toLowerCase()}`, {
+        label: 'Undo',
+        onSelect: () =>
+          void deleteFoodLogs(
+            db,
+            logs.map((l) => l.id),
+          ),
+      });
+    });
+  };
   return (
-    <Card
-      as="section"
-      aria-labelledby="food-card-title"
-      className={cn('p-5', className)}
-      data-food-card
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h2 id="food-card-title" className="type-headline flex items-center gap-2 text-text-1">
-          <UtensilsCrossed className="size-5 text-text-2" aria-hidden />
-          Food today
-        </h2>
-        <Link to="/food" className="type-meta font-semibold text-text-2">
-          Open
-        </Link>
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-4">
-        <div>
-          <p className="type-meta text-text-2">
-            <span className="type-headline tabular text-text-1">{n(totals.kcal)}</span>
-            {kcal !== null ? ` of ${n(kcal)} kcal` : ' kcal'}
-          </p>
-          {kcal !== null ? (
-            <ProgressBar value={totals.kcal} max={kcal} label="Calories today" className="mt-2" />
+    <section aria-labelledby="food-card-title" className={className} data-food-card>
+      <h2 id="food-card-title" className="type-section mb-2 text-text-1">
+        Today’s numbers
+      </h2>
+      <div className="divide-y-[0.5px] divide-divider rounded-card bg-surface px-4">
+        <div className="py-3">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/food"
+              className="pressable chrome flex min-w-0 flex-1 items-center gap-3"
+              aria-label={`Food today: ${left !== null ? `${n(Math.abs(left))} kcal ${left >= 0 ? 'left' : 'over'}` : `${n(totals.kcal)} kcal`}`}
+            >
+              <CalorieRing eaten={totals.kcal} target={kcal} />
+              <span className="min-w-0 flex-1">
+                <span className="type-headline block text-text-1">
+                  {left !== null ? (
+                    <>
+                      <span className="type-metric-sm">{n(Math.abs(left))}</span>{' '}
+                      <span className="font-normal text-text-2">
+                        kcal {left >= 0 ? 'left' : 'over'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="type-metric-sm">{n(totals.kcal)}</span>{' '}
+                      <span className="font-normal text-text-2">kcal today</span>
+                    </>
+                  )}
+                </span>
+                <span className="type-subhead block truncate text-text-2">
+                  Protein {totals.proteinG.toFixed(0)}
+                  {proteinG !== null ? ` of ${proteinG}` : ''} g
+                </span>
+              </span>
+            </Link>
+            <CapsuleButton to="/food?add=1" aria-label="Log food">
+              Log
+            </CapsuleButton>
+          </div>
+          {usual ? (
+            <button
+              type="button"
+              onClick={logUsual}
+              className="pressable chrome type-meta mt-2.5 inline-flex h-8 max-w-full items-center gap-1.5 rounded-full bg-fill px-3 text-text-1"
+              aria-label={`Log your usual ${MEAL_LABEL[meal].toLowerCase()}: ${usual.items.map((i) => i.foodName).join(', ')}`}
+              data-home-usual
+            >
+              <span className="truncate">
+                Usual {MEAL_LABEL[meal].toLowerCase()} ·{' '}
+                {usual.items.map((i) => i.foodName).join(', ')}
+              </span>
+              <span className="shrink-0 font-semibold text-lime">Log</span>
+            </button>
           ) : null}
         </div>
-        <div>
-          <p className="type-meta text-text-2">
-            <span className="type-headline tabular text-text-1">
-              {totals.proteinG.toFixed(0)} g
-            </span>
-            {proteinG !== null ? ` of ${proteinG} g protein` : ' protein'}
-          </p>
-          {proteinG !== null ? (
-            <ProgressBar
-              value={totals.proteinG}
-              max={proteinG}
-              label="Protein today"
-              className="mt-2"
-            />
-          ) : null}
-        </div>
+        <DailyRow
+          weights={training.data?.bodyWeights ?? []}
+          unit={unit}
+          glassMl={ctx.profile?.waterGlassMl ?? null}
+          waterTargetMl={ctx.targets.waterMl}
+          now={now}
+        />
+        <ActivitySection training={training} now={now} eatenKcal={totals.kcal} />
       </div>
-      {usual ? (
-        <div className="mt-4 flex items-center gap-3 rounded-nested bg-surface-2 p-3">
-          <p className="type-meta min-w-0 flex-1 truncate text-text-2">
-            Your usual {MEAL_LABEL[meal].toLowerCase()}:{' '}
-            {usual.items.map((i) => i.foodName).join(', ')}
-          </p>
-          <SecondaryButton
-            compact
-            onClick={() =>
-              void copyFoodLogs(db, usual.items, { date: today, meal }).then((logs) => {
-                haptic('medium');
-                toast(`Logged your usual ${MEAL_LABEL[meal].toLowerCase()}`, {
-                  label: 'Undo',
-                  onSelect: () =>
-                    void deleteFoodLogs(
-                      db,
-                      logs.map((l) => l.id),
-                    ),
-                });
-              })
-            }
-          >
-            Log
-          </SecondaryButton>
-        </div>
-      ) : !logged ? (
-        <Link
-          to="/food?add=1"
-          className="pressable chrome type-headline mt-4 flex h-11 items-center justify-center rounded-full bg-surface-2 text-text-1"
-        >
-          Log {MEAL_LABEL[meal].toLowerCase()}
-        </Link>
-      ) : null}
-      <DailyRow
-        weights={training.data?.bodyWeights ?? []}
-        unit={unit}
-        glassMl={ctx.profile?.waterGlassMl ?? null}
-        waterTargetMl={ctx.targets.waterMl}
-        now={now}
+    </section>
+  );
+}
+
+/** A 30px ring that fills as food is logged; the track stays visible on an empty day. */
+function CalorieRing({ eaten, target }: { eaten: number; target: number | null }) {
+  const r = 12;
+  const c = 2 * Math.PI * r;
+  const f = target ? Math.min(1, Math.max(0, eaten / target)) : 0;
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden className="shrink-0 -rotate-90">
+      <circle
+        cx="15"
+        cy="15"
+        r={r}
+        fill="none"
+        stroke="var(--lime)"
+        strokeOpacity={0.18}
+        strokeWidth="4"
       />
-      <ActivitySection training={training} now={now} eatenKcal={totals.kcal} />
-    </Card>
+      {f > 0 ? (
+        <circle
+          cx="15"
+          cy="15"
+          r={r}
+          fill="none"
+          stroke="var(--lime)"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - f)}
+          className={cn('ring-arc')}
+        />
+      ) : null}
+    </svg>
   );
 }

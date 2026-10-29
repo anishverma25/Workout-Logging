@@ -71,65 +71,71 @@ export function DailyRow({
     });
   }
 
-  const tile =
-    'flex min-h-16 min-w-0 items-center gap-2.5 rounded-nested bg-surface-2 py-2.5 pr-2 pl-3';
   return (
-    <div className="mt-4 grid grid-cols-2 gap-2" data-daily-row>
-      <button
-        type="button"
-        onClick={() => setWeighing(true)}
-        className={`pressable chrome ${tile} text-left`}
-        aria-label={
-          todays
-            ? `Weight today ${formatWeightValue(todays.weightKg, unit)} ${unit}. Change it`
-            : 'Log your weight today'
-        }
-        data-home-weight
-      >
-        <Scale className="size-4 shrink-0 text-text-2" aria-hidden />
-        <span className="min-w-0 flex-1">
-          <span className="type-caption block text-text-2">
-            {todays ? 'Weight today' : 'Weight'}
-          </span>
-          {todays ? (
-            <span className="type-headline tabular block truncate text-text-1">
-              {formatWeightValue(todays.weightKg, unit)}
-              <span className="type-caption ml-0.5 font-normal text-text-2">{unit}</span>
-            </span>
-          ) : (
-            <span className="type-headline block truncate text-text-1">Log today</span>
-          )}
-        </span>
-        {trend.length >= 2 ? (
-          // A small trend that never pushes the number out of the tile.
-          <span className="block h-7 w-12 shrink-0 overflow-hidden [&>svg]:h-full [&>svg]:w-full">
-            <Sparkline values={trend} label={`Body weight over the last ${TREND_DAYS} days`} />
-          </span>
-        ) : null}
-      </button>
-
-      <div className={tile} data-home-water>
-        <Droplets className="size-4 shrink-0 text-text-2" aria-hidden />
-        <span className="min-w-0 flex-1">
-          <span className="type-caption block text-text-2">Water, glasses</span>
-          <span className="type-headline tabular block text-text-1">
-            {glasses}
-            {targetGlasses ? (
-              <span className="type-caption ml-0.5 font-normal text-text-2">
-                {' '}
-                of {targetGlasses}
+    <div className="divide-y-[0.5px] divide-divider" data-daily-row>
+      <section aria-label="Body weight" className="flex items-center gap-3 py-3">
+        <button
+          type="button"
+          onClick={() => setWeighing(true)}
+          className="pressable chrome flex min-w-0 flex-1 items-center gap-3 text-left"
+          aria-label={
+            todays
+              ? `Weight today ${formatWeightValue(todays.weightKg, unit)} ${unit}. Change it`
+              : latest
+                ? `Weight ${formatWeightValue(latest.weightKg, unit)} ${unit}. Log today's weight`
+                : 'Log your weight today'
+          }
+          data-home-weight
+        >
+          <RowIcon>
+            <Scale className="size-4" aria-hidden />
+          </RowIcon>
+          <span className="min-w-0 flex-1">
+            {latest ? (
+              <span className="type-headline block whitespace-nowrap text-text-1">
+                <span className="type-metric-sm">
+                  {formatWeightValue((todays ?? latest).weightKg, unit)}
+                </span>
+                <span className="ml-1 text-[0.8125rem] font-medium text-text-2">{unit}</span>
               </span>
-            ) : null}
+            ) : (
+              <span className="type-headline block text-text-1">Weight</span>
+            )}
+            <span className="type-subhead block truncate text-text-2">
+              {todays ? 'Weight today' : latest ? 'Tap to log today' : 'Log today'}
+            </span>
           </span>
+          {trend.length >= 2 ? (
+            // A small trend that never pushes the number out of the row.
+            <span className="block h-7 w-14 shrink-0 overflow-hidden [&>svg]:h-full [&>svg]:w-full">
+              <Sparkline values={trend} label={`Body weight over the last ${TREND_DAYS} days`} />
+            </span>
+          ) : null}
+        </button>
+      </section>
+
+      <div className="flex items-center gap-3 py-3" data-home-water>
+        <RowIcon>
+          <Droplets className="size-4" aria-hidden />
+        </RowIcon>
+        <span className="min-w-0 flex-1">
+          <span className="type-headline block text-text-1">
+            <span className="type-metric-sm">{glasses}</span>{' '}
+            <span className="font-normal text-text-2">
+              {targetGlasses ? `of ${targetGlasses} glasses` : glasses === 1 ? 'glass' : 'glasses'}
+            </span>
+          </span>
+          <span className="type-subhead block text-text-2">Water today</span>
         </span>
         <button
           type="button"
           onClick={() => void addGlass()}
           aria-label={`Add a glass of water (${glass} ml)`}
-          className="pressable tap-target inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-lime text-on-lime"
+          className="pressable chrome tap-target type-subhead inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-fill px-3.5 font-semibold text-text-1"
           data-home-add-water
         >
-          <Plus className="size-5" aria-hidden />
+          <Plus className="size-4" aria-hidden />
+          {glass} ml
         </button>
       </div>
 
@@ -141,6 +147,15 @@ export function DailyRow({
         onClose={() => setWeighing(false)}
       />
     </div>
+  );
+}
+
+/** The 30px leading icon tile of a Home row. */
+function RowIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="flex size-[1.875rem] shrink-0 items-center justify-center rounded-[0.5rem] bg-fill text-text-1">
+      {children}
+    </span>
   );
 }
 
@@ -208,16 +223,34 @@ function WeighInForm({
         void save();
       }}
     >
-      <NumberField
-        label={`Weight in ${unit}`}
-        value={weight}
-        onValueChange={setWeight}
-        unit={unit}
-        min={unit === 'kg' ? 20 : 44}
-        max={unit === 'kg' ? 400 : 880}
-        data-autofocus
-        enterKeyHint="done"
-      />
+      <div className="flex items-end gap-2">
+        <NumberField
+          label={`Weight in ${unit}`}
+          value={weight}
+          onValueChange={setWeight}
+          unit={unit}
+          min={unit === 'kg' ? 20 : 44}
+          max={unit === 'kg' ? 400 : 880}
+          data-autofocus
+          enterKeyHint="done"
+          className="min-w-0 flex-1"
+        />
+        {/* A tenth up or down from the last weight, without the keyboard (UI v3, O2). */}
+        {[-0.1, 0.1].map((d) => (
+          <button
+            key={d}
+            type="button"
+            data-keep-keyboard
+            disabled={weight === null}
+            onClick={() => setWeight((w) => (w === null ? w : Math.round((w + d) * 10) / 10))}
+            aria-label={`${d < 0 ? 'Down' : 'Up'} 0.1 ${unit}`}
+            className="pressable chrome type-subhead tabular h-12 w-14 shrink-0 rounded-field bg-fill font-semibold text-text-1 disabled:text-text-3"
+            data-weight-step={d}
+          >
+            {d < 0 ? '−0.1' : '+0.1'}
+          </button>
+        ))}
+      </div>
       {error ? <InlineNotice tone="warning">{error}</InlineNotice> : null}
       <PrimaryButton type="submit" block disabled={busy || weight === null} data-save-weight>
         {today ? 'Update' : 'Save'}

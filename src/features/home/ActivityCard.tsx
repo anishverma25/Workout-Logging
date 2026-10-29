@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { Flame, Footprints, Plus } from 'lucide-react';
 import type { QueryState } from '@/data/hooks';
 import { useActivityData } from '@/data/hooks';
-import { dayBurn, ESTIMATE_WARNING, workoutKcalOn } from '@/domain/activity/burn';
+import { dayBurn, workoutKcalOn } from '@/domain/activity/burn';
 import type { TrainingData } from '@/domain/analytics/sessions';
 import { toDateKey } from '@/lib/dates';
 import { CardioSheet } from '../activity/CardioSheet';
@@ -47,73 +47,79 @@ export function ActivitySection({
   const weightKg = ctx.snapshot?.weightKg ?? null;
   const tilde = (kcal: number) => (kcal > 0 && burn.estimated ? '~' : '');
 
+  const any = burn.total > 0 || (steps?.steps ?? 0) > 0;
   return (
-    <section
-      aria-labelledby="activity-card-title"
-      className="mt-4 border-t-[0.5px] border-divider pt-4"
-      data-activity-card
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h3
-          id="activity-card-title"
-          className="type-body flex items-center gap-2 font-semibold text-text-1"
-        >
-          <Flame className="size-4 text-text-2" aria-hidden />
-          Activity
-        </h3>
-        <Link to="/activity" className="type-meta font-semibold text-text-2">
-          Open
+    <section aria-labelledby="activity-card-title" className="py-3" data-activity-card>
+      <div className="flex items-center gap-3">
+        <Link to="/activity" className="pressable chrome flex min-w-0 flex-1 items-center gap-3">
+          <span className="flex size-[1.875rem] shrink-0 items-center justify-center rounded-[0.5rem] bg-fill text-text-1">
+            <Flame className="size-4" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <h3 id="activity-card-title" className="type-headline text-text-1">
+              {any ? (
+                <>
+                  <span className="type-metric-sm" data-activity-burned>
+                    {tilde(burn.total)}
+                    {n(burn.total)}
+                  </span>{' '}
+                  <span className="font-normal text-text-2">kcal burned</span>
+                </>
+              ) : (
+                'Activity'
+              )}
+            </h3>
+            <span className="type-subhead block truncate text-text-2">
+              {any ? (
+                <>
+                  net{' '}
+                  <span className="tabular" data-activity-net>
+                    {eatenKcal - burn.total < 0 ? '−' : ''}
+                    {n(Math.abs(eatenKcal - burn.total))}
+                  </span>
+                  {steps?.steps ? (
+                    <>
+                      {' · '}
+                      <span className="tabular" data-activity-steps>
+                        {n(steps.steps)}
+                      </span>{' '}
+                      steps
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                'None today'
+              )}
+            </span>
+          </span>
         </Link>
-      </div>
-      <p className="type-meta mt-2 text-text-2">
-        <span className="type-headline tabular text-text-1" data-activity-burned>
-          {tilde(burn.total)}
-          {n(burn.total)}
-        </span>{' '}
-        kcal burned · net{' '}
-        <span className="tabular font-semibold text-text-1" data-activity-net>
-          {eatenKcal - burn.total < 0 ? '−' : ''}
-          {n(Math.abs(eatenKcal - burn.total))}
-        </span>
-        {steps?.steps ? (
-          <>
-            {' · '}
-            <span className="tabular font-semibold text-text-1" data-activity-steps>
-              {n(steps.steps)}
-            </span>{' '}
-            steps
-          </>
-        ) : null}
-      </p>
-      <p className="type-caption tabular mt-1 text-text-2">
-        Weights {tilde(weights.kcal)}
-        {n(weights.kcal)} · Cardio {tilde(burn.cardioKcal)}
-        {n(burn.cardioKcal)} · Steps {tilde(burn.stepsKcal)}
-        {n(burn.stepsKcal)}
-      </p>
-      <div className="mt-3 grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => setStepsOpen(true)}
-          className="pressable chrome type-meta inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-field bg-surface-2 px-2 font-semibold text-text-1"
+          className="pressable chrome tap-target type-subhead inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-fill px-3 font-semibold text-text-1"
+          aria-label={steps?.steps ? 'Edit steps' : 'Add steps'}
           data-home-add-steps
         >
-          <Footprints className="size-4 shrink-0" aria-hidden />
-          {steps?.steps ? 'Edit steps' : 'Add steps'}
+          <Footprints className="size-4" aria-hidden />
+          Steps
         </button>
         <button
           type="button"
           onClick={() => setCardio(true)}
-          className="pressable chrome type-meta inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-field bg-surface-2 px-2 font-semibold text-text-1"
+          className="pressable chrome tap-target type-subhead inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-fill px-3 font-semibold text-text-1"
+          aria-label="Add cardio"
           data-home-add-cardio
         >
-          <Plus className="size-4 shrink-0" aria-hidden />
-          Add cardio
+          <Plus className="size-4" aria-hidden />
+          Cardio
         </button>
       </div>
       {burn.total > 0 ? (
-        <p className="type-caption mt-2 text-text-3" data-estimate-note>
-          {ESTIMATE_WARNING}
+        <p className="type-caption mt-2 pl-[2.625rem] text-text-3" data-estimate-note>
+          Rough estimates, can be wrong. Weights {tilde(weights.kcal)}
+          {n(weights.kcal)} · Cardio {tilde(burn.cardioKcal)}
+          {n(burn.cardioKcal)} · Steps {tilde(burn.stepsKcal)}
+          {n(burn.stepsKcal)}
         </p>
       ) : null}
       <CardioSheet
