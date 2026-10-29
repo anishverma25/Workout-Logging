@@ -5,7 +5,14 @@ import { FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
 import { useActiveWorkout, useDemoStatus } from '@/data/hooks';
-import { APP_NAME, BOTTOM_NAV, PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '../navigation';
+import {
+  APP_NAME,
+  BOTTOM_NAV,
+  PRIMARY_NAV,
+  SECONDARY_NAV,
+  hidesTabBar,
+  type NavItem,
+} from '../navigation';
 import { BrandMark } from './BrandMark';
 import { AppNotices } from './AppNotices';
 import { StartWorkoutProvider } from '@/features/workout/StartWorkout';
@@ -156,15 +163,6 @@ function Sidebar() {
       </div>
     </aside>
   );
-}
-
-/**
- * The tab bar steps aside in the workout logger and on its summary, as Apple Fitness does, so
- * the screen belongs to the workout (UI v3, B3).
- */
-export function hidesTabBar(pathname: string, workoutOpen: boolean): boolean {
-  if (/^\/workouts\/[^/]+\/summary\/?$/.test(pathname)) return true;
-  return workoutOpen && (pathname === '/workout' || pathname === '/workout/');
 }
 
 function BottomNav() {

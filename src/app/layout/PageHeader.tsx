@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useDemoStatus, useProfile } from '@/data/hooks';
 import { CoachButton } from '@/features/coach/CoachLauncher';
+import { TAB_ROOTS } from '../navigation';
 
 interface PageHeaderProps {
   title: ReactNode;
@@ -20,9 +21,6 @@ interface PageHeaderProps {
   /** The OverloadGPT button; on by default on the five main tabs (UI v3, A1). */
   coach?: boolean;
 }
-
-/** The five main tabs: their headers carry OverloadGPT and the avatar (UI v3, A1 and B9). */
-export const TAB_ROOTS = ['/', '/workout', '/food', '/progress', '/history'];
 
 /**
  * One header for every page (UI v3, G5): a 44px row with the back button or the date on the

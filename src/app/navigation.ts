@@ -74,3 +74,15 @@ export const SECONDARY_NAV: NavItem[] = [
     group: 'app',
   },
 ];
+
+/** The five main tabs: their headers carry OverloadGPT and the avatar (UI v3, A1 and B9). */
+export const TAB_ROOTS = ['/', '/workout', '/food', '/progress', '/history'];
+
+/**
+ * The tab bar steps aside in the workout logger and on its summary, as Apple Fitness does, so
+ * the screen belongs to the workout (UI v3, B3).
+ */
+export function hidesTabBar(pathname: string, workoutOpen: boolean): boolean {
+  if (/^\/workouts\/[^/]+\/summary\/?$/.test(pathname)) return true;
+  return workoutOpen && (pathname === '/workout' || pathname === '/workout/');
+}
