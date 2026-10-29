@@ -41,21 +41,25 @@ export const trackingOf = (exercise: Exercise | undefined): TrackingType =>
  * `compact` drops the spaces ("80×8") for the narrow last-time column.
  */
 export function formatSetValues(
-  set: Pick<WorkoutSet, 'weightKg' | 'reps' | 'durationSec' | 'distanceM'> | SetSuggestion,
+  set:
+    | Pick<WorkoutSet, 'weightKg' | 'reps' | 'durationSec' | 'distanceM' | 'repsLeft' | 'repsRight'>
+    | SetSuggestion,
   tracking: TrackingType,
   unit: WeightUnit,
   compact = false,
 ): string {
   const w = set.weightKg !== null ? formatWeightValue(set.weightKg, unit, 2) : null;
   const x = compact ? '\u2009×\u2009' : ' × ';
-  const reps = compact ? `${set.reps ?? '?'}` : `${set.reps ?? '?'} reps`;
+  const sides = sideText(set, compact);
+  const n = sides ?? `${set.reps ?? '?'}`;
+  const reps = sides ?? (compact ? `${set.reps ?? '?'}` : `${set.reps ?? '?'} reps`);
   switch (tracking) {
     case 'weight_reps':
-      return `${w ?? '?'}${x}${set.reps ?? '?'}`;
+      return `${w ?? '?'}${x}${n}`;
     case 'weighted_bodyweight':
-      return set.weightKg ? `+${w}${x}${set.reps ?? '?'}` : reps;
+      return set.weightKg ? `+${w}${x}${n}` : reps;
     case 'assisted_bodyweight':
-      return set.weightKg ? `−${w}${x}${set.reps ?? '?'}` : reps;
+      return set.weightKg ? `−${w}${x}${n}` : reps;
     case 'bodyweight_reps':
       return reps;
     case 'duration':
@@ -68,6 +72,20 @@ export function formatSetValues(
       return compact ? `${min}′${km ? ` ${km}k` : ''}` : `${min} min${km ? `, ${km} km` : ''}`;
     }
   }
+}
+
+/**
+ * Reps of a set logged per side: "6/7" in the narrow last-time column, "L 6 · R 7" elsewhere.
+ * Null for a set logged as one number.
+ */
+export function sideText(
+  set: { repsLeft?: number | null; repsRight?: number | null },
+  compact = false,
+): string | null {
+  const l = set.repsLeft ?? null;
+  const r = set.repsRight ?? null;
+  if (l === null && r === null) return null;
+  return compact ? `${l ?? '–'}/${r ?? '–'}` : `L ${l ?? '–'} · R ${r ?? '–'}`;
 }
 
 export const effortField = (prefs: Preferences): 'rir' | 'rpe' => prefs.effortMetric;

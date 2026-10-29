@@ -18,6 +18,7 @@ import { useAccount, useSyncStatus } from '@/app/account';
 import { Card, PrimaryButton, TextLink } from '@/components/kit';
 import { ShareSheet } from '@/features/share/ShareSheet';
 import { RestCard } from '@/features/shared/RestCard';
+import { MuscleMapCard } from '@/features/shared/MuscleMapCard';
 import { WorkoutBurnCard } from '@/features/shared/WorkoutBurnCard';
 import { RefuelCard } from './RefuelCard';
 import { ButtonLink } from '@/components/ui/Button';
@@ -77,6 +78,11 @@ export function SummaryPage() {
     );
   }
   const { session } = summary;
+  const muscleLogs = session.exercises.map((e) => ({
+    exerciseId: e.workoutExercise.exerciseId,
+    exercise: e.exercise,
+    sets: e.sets,
+  }));
   const volumeChange = summary.volumeVsLast?.change ?? 0;
 
   return (
@@ -182,6 +188,7 @@ export function SummaryPage() {
         </p>
       </Card>
 
+      <MuscleMapCard exercises={muscleLogs} sex={training.data.profile?.sex} className="mt-4" />
       <WorkoutBurnCard
         workout={session.workout}
         sets={session.exercises.flatMap((e) => e.sets)}

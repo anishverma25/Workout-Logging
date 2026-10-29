@@ -239,8 +239,8 @@ function friendly(message: string): string {
   if (/invalid login credentials/i.test(message)) return 'That email and password do not match.';
   if (/email not confirmed/i.test(message))
     return 'Confirm your email first. Check your inbox for the link.';
-  if (/already registered|already been registered/i.test(message))
-    return 'There is already an account with that email. Try signing in.';
+  if (/already registered|already been registered|already exists/i.test(message))
+    return 'There is already an account with this email. Sign in instead.';
   if (/rate limit|too many/i.test(message))
     return 'Too many attempts. Wait a minute and try again.';
   if (/failed to fetch|network/i.test(message))
@@ -267,12 +267,31 @@ export async function signUp(email: string, password: string): Promise<'signedIn
     password,
     options: { emailRedirectTo: `${window.location.origin}/account` },
   });
+  if (error && /already registered|already been registered|already exists/i.test(error.message))
+    throw new AccountExistsError();
   if (error) throw new AccountError(friendly(error.message));
   if (data.session) {
     await applySession(data.session);
     return 'signedIn';
   }
+  if (isExistingAccount(data.user)) throw new AccountExistsError();
   return 'confirm';
+}
+
+/** Signing up with an email that already has an account. */
+export class AccountExistsError extends AccountError {
+  constructor() {
+    super('There is already an account with this email. Sign in instead.');
+  }
+}
+
+/**
+ * With email confirmation on, Supabase does not say an email is taken (so addresses cannot be
+ * probed by the error). It answers with a stand-in user that has no sign-in identities and no
+ * session. A real new account always has its email identity.
+ */
+export function isExistingAccount(user: { identities?: unknown[] | null } | null): boolean {
+  return !!user && Array.isArray(user.identities) && user.identities.length === 0;
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {

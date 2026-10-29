@@ -26,6 +26,8 @@ interface Props {
   tracking: TrackingType;
   /** The load is one dumbbell or one side. */
   perHand?: boolean;
+  /** Reps are logged for the left and right side apart. */
+  bySide?: boolean;
   prefs: Preferences;
   previous: WorkoutSet | null;
   suggestion: SetSuggestion | null;
@@ -44,6 +46,7 @@ function SetRowImpl({
   label,
   tracking,
   perHand = false,
+  bySide = false,
   prefs,
   previous,
   suggestion,
@@ -58,6 +61,8 @@ function SetRowImpl({
   const done = set.completedAt !== null;
   const loadRef = useRef<CellInputHandle>(null);
   const amountRef = useRef<CellInputHandle>(null);
+  const rightRef = useRef<CellInputHandle>(null);
+  const sides = bySide && cols.amountField === 'reps';
   const effortRef = useRef<CellInputHandle>(null);
   const [pending, setPending] = useState(false);
   const effortKey = prefs.effortMetric;
@@ -90,6 +95,7 @@ function SetRowImpl({
       await Promise.all([
         loadRef.current?.flush(),
         amountRef.current?.flush(),
+        rightRef.current?.flush(),
         effortRef.current?.flush(),
       ]);
       // A tap in the first moment after opening still uses last time's numbers.
@@ -115,6 +121,12 @@ function SetRowImpl({
       reps: previous.reps,
       durationSec: previous.durationSec,
       distanceM: previous.distanceM,
+      ...(sides
+        ? {
+            repsLeft: previous.repsLeft ?? previous.reps,
+            repsRight: previous.repsRight ?? previous.reps,
+          }
+        : {}),
     });
   }
 
@@ -202,27 +214,50 @@ function SetRowImpl({
         )}
       </div>
 
-      <div>
-        <CellInput
-          ref={amountRef}
-          label={`Set ${typeLabel} ${cols.amount === 'm' ? 'metres' : cols.amount === 'km' ? 'kilometres' : cols.amount.toLowerCase()}`}
-          value={amount}
-          placeholder={done ? undefined : ghostAmount}
-          allowDecimal={cols.amountField === 'distanceM'}
-          max={cardio ? 500 : cols.amountField === 'reps' ? 999 : 99_999}
-          step={cardio ? 0.5 : cols.amountField === 'durationSec' ? 5 : 1}
-          done={done}
-          onCommit={(v) =>
-            updateSet(
-              db,
-              set.id,
-              cardio
-                ? { distanceM: v === null ? null : Math.round(v * 1000) }
-                : { [cols.amountField]: v },
-            )
-          }
-        />
-      </div>
+      {sides ? (
+        <div className="grid grid-cols-2 gap-1" data-side-reps>
+          {(['left', 'right'] as const).map((side) => {
+            const field = side === 'left' ? 'repsLeft' : 'repsRight';
+            const ghost = suggestion?.[field] ?? suggestion?.reps ?? null;
+            return (
+              <CellInput
+                key={side}
+                ref={side === 'left' ? amountRef : rightRef}
+                label={`Set ${typeLabel} reps, ${side} side`}
+                value={set[field] ?? null}
+                placeholder={done || ghost === null ? undefined : String(ghost)}
+                allowDecimal={false}
+                max={999}
+                step={1}
+                done={done}
+                onCommit={(v) => updateSet(db, set.id, { [field]: v })}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <div>
+          <CellInput
+            ref={amountRef}
+            label={`Set ${typeLabel} ${cols.amount === 'm' ? 'metres' : cols.amount === 'km' ? 'kilometres' : cols.amount.toLowerCase()}`}
+            value={amount}
+            placeholder={done ? undefined : ghostAmount}
+            allowDecimal={cols.amountField === 'distanceM'}
+            max={cardio ? 500 : cols.amountField === 'reps' ? 999 : 99_999}
+            step={cardio ? 0.5 : cols.amountField === 'durationSec' ? 5 : 1}
+            done={done}
+            onCommit={(v) =>
+              updateSet(
+                db,
+                set.id,
+                cardio
+                  ? { distanceM: v === null ? null : Math.round(v * 1000) }
+                  : { [cols.amountField]: v },
+              )
+            }
+          />
+        </div>
+      )}
 
       {cols.showEffort ? (
         <div>

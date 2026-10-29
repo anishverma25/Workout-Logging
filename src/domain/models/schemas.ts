@@ -123,6 +123,8 @@ export const RoutineExercise = z.object({
   supersetGroup: z.number().int().min(1).max(50).nullish(),
   /** Bench angle in degrees: positive for incline, negative for decline. */
   angleDeg: z.number().int().min(-45).max(90).nullish(),
+  /** Reps logged for the left and right side apart. Null: the exercise's own default. */
+  bySide: z.boolean().nullish(),
 });
 export type RoutineExercise = z.infer<typeof RoutineExercise>;
 
@@ -183,6 +185,8 @@ export const WorkoutExercise = z.object({
   supersetGroup: z.number().int().min(1).max(50).nullish(),
   /** Bench angle in degrees: positive for incline, negative for decline. */
   angleDeg: z.number().int().min(-45).max(90).nullish(),
+  /** Reps logged for the left and right side apart. Null: the exercise's own default. */
+  bySide: z.boolean().nullish(),
 });
 export type WorkoutExercise = z.infer<typeof WorkoutExercise>;
 
@@ -194,7 +198,14 @@ export const WorkoutSet = z.object({
   order: z.number().int().min(0),
   setType: SetType,
   weightKg: z.number().min(0).max(1000).nullable(),
+  /**
+   * Reps. For a set logged per side, the weaker side: strength numbers (e1RM, records,
+   * suggestions) use what both sides managed.
+   */
   reps: z.number().int().min(0).max(1000).nullable(),
+  /** Reps with the left and right side, for one-arm and one-leg sets; volume counts both. */
+  repsLeft: z.number().int().min(0).max(1000).nullish(),
+  repsRight: z.number().int().min(0).max(1000).nullish(),
   rir: z.number().min(0).max(10).nullable(),
   rpe: z.number().min(1).max(10).nullable(),
   durationSec: z.number().int().min(0).nullable(),

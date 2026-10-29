@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Mic, MicOff, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/cn';
+import {
+  joinSaid,
+  speechProblem,
+  speechRecognition,
+  transcriptOf,
+  type SpeechRecognitionLike,
+} from './speech';
 import { PrimaryButton, SecondaryButton } from '@/components/kit';
 import { useCoachStore } from '@/app/coach';
 import { askFoodLog, FOOD_LIMITS, FoodAiError } from '@/app/foodAi';
@@ -18,24 +26,6 @@ import type { FoodContext } from './useFoodContext';
  * as found on the web or estimated. Without a connection the library parser fills what it can.
  */
 
-interface SpeechRecognitionLike {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
-  onend: (() => void) | null;
-  onerror: (() => void) | null;
-}
-
-function speechRecognition(): (new () => SpeechRecognitionLike) | null {
-  if (typeof window === 'undefined') return null;
-  const w = window as unknown as Record<string, unknown>;
-  return (w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null) as
-    (new () => SpeechRecognitionLike) | null;
-}
-
 type State =
   | { kind: 'idle' }
   | { kind: 'asking' }
@@ -53,10 +43,13 @@ export function AiFoodLog({
   const [text, setText] = useState('');
   const [state, setState] = useState<State>({ kind: 'idle' });
   const [listening, setListening] = useState(false);
+  /** Words still being heard, shown under the box while the person speaks. */
+  const [heard, setHeard] = useState('');
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const recognition = useRef<SpeechRecognitionLike | null>(null);
   const Speech = useMemo(() => speechRecognition(), []);
 
-  useEffect(() => () => recognition.current?.stop(), []);
+  useEffect(() => () => recognition.current?.abort(), []);
 
   if (!store.consent) return <CoachConsent />;
 
@@ -66,22 +59,49 @@ export function AiFoodLog({
       recognition.current?.stop();
       return;
     }
-    const r = new Speech();
+    setVoiceError(null);
+    setHeard('');
+    let r: SpeechRecognitionLike;
+    try {
+      r = new Speech();
+    } catch {
+      setVoiceError(speechProblem(undefined));
+      return;
+    }
+    // Indian English understands Hinglish best of the voices phones offer.
     r.lang = 'en-IN';
-    r.interimResults = false;
+    // Words show while they are spoken, and listening stops by itself after a pause (the
+    // continuous mode repeats words on Android).
+    r.interimResults = true;
     r.continuous = false;
+    r.maxAlternatives = 1;
+    let committed = '';
     r.onresult = (e) => {
-      const said = Array.from(e.results)
-        .map((res) => res[0]?.transcript ?? '')
-        .join(' ')
-        .trim();
-      if (said) setText((t) => (t.trim() ? `${t.trim()}, ${said}` : said));
+      const { final, interim } = transcriptOf(e.results);
+      if (final && final !== committed) {
+        const fresh = final.startsWith(committed) ? final.slice(committed.length).trim() : final;
+        committed = final;
+        if (fresh) setText((t) => joinSaid(t, fresh));
+      }
+      setHeard(interim);
     };
-    r.onend = () => setListening(false);
-    r.onerror = () => setListening(false);
+    r.onerror = (e) => {
+      // Stopping on purpose is not a problem.
+      if (e.error !== 'aborted') setVoiceError(speechProblem(e.error));
+    };
+    r.onend = () => {
+      setListening(false);
+      setHeard('');
+      recognition.current = null;
+    };
     recognition.current = r;
-    setListening(true);
-    r.start();
+    try {
+      r.start();
+      setListening(true);
+    } catch {
+      recognition.current = null;
+      setVoiceError(speechProblem(undefined));
+    }
   }
 
   async function ask() {
@@ -142,7 +162,11 @@ export function AiFoodLog({
             onClick={listen}
             aria-label={listening ? 'Stop listening' : 'Speak your meal'}
             aria-pressed={listening}
-            className="pressable tap-target absolute right-2 bottom-2 inline-flex size-9 items-center justify-center rounded-full bg-surface text-text-1"
+            data-voice
+            className={cn(
+              'pressable tap-target absolute right-2 bottom-2 inline-flex size-9 items-center justify-center rounded-full',
+              listening ? 'animate-pulse bg-lime text-on-lime' : 'bg-surface text-text-1',
+            )}
           >
             {listening ? (
               <MicOff className="size-5" aria-hidden />
@@ -152,6 +176,20 @@ export function AiFoodLog({
           </button>
         ) : null}
       </div>
+      {listening ? (
+        <p className="type-meta text-text-2" aria-live="polite" data-voice-live>
+          {heard ? (
+            <span className="text-text-1">{heard}</span>
+          ) : (
+            'Listening… say what you ate, then pause.'
+          )}
+        </p>
+      ) : null}
+      {voiceError ? (
+        <p className="type-meta text-text-2" role="status" data-voice-error>
+          {voiceError}
+        </p>
+      ) : null}
 
       {state.kind === 'asking' ? (
         <Thinking />

@@ -88,6 +88,9 @@ export interface SetSuggestion {
   reps: number | null;
   durationSec: number | null;
   distanceM: number | null;
+  /** Last time's reps for each side, when that set was logged per side. */
+  repsLeft?: number | null;
+  repsRight?: number | null;
 }
 
 export function suggestionFrom(set: WorkoutSet | null): SetSuggestion | null {
@@ -97,6 +100,8 @@ export function suggestionFrom(set: WorkoutSet | null): SetSuggestion | null {
     reps: set.reps,
     durationSec: set.durationSec,
     distanceM: set.distanceM,
+    repsLeft: set.repsLeft ?? null,
+    repsRight: set.repsRight ?? null,
   };
 }
 

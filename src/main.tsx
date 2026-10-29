@@ -11,9 +11,11 @@ import { MoveToNewHome } from './app/layout/MoveToNewHome';
 import { AppCrash } from './app/layout/AppCrash';
 import { getAccountState, subscribeAccount } from './app/account';
 import { markStage, markStarted, startupFailed } from './app/startup';
+import { keepTapsWhileTyping } from './lib/tapThrough';
 
 markStage('starting the app');
 registerServiceWorker();
+keepTapsWhileTyping();
 
 // Drawn at once, not after start-up: while the account opens, the app shows its own opening
 // mark, and a crash anywhere shows a way out instead of a blank screen.

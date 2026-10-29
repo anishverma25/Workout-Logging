@@ -305,3 +305,26 @@ Read README.md for setup, architecture and calculation rules.
     waiting for a slow refresh, and starts sync only once the session is confirmed.
   - Exercise notes are typed on the card (`ExerciseNote`, 16 px so iOS does not zoom), saved
     as typed, with last session's note and a Use button. More has a standing reload reminder.
+- Round 4 (October 2026, migration `20261029000016_each_side.sql`, Dexie unchanged):
+  - Left and right reps: `sets.repsLeft`/`repsRight`, `bySide` on workout and routine
+    exercises (null: the library default, `EACH_SIDE_EXERCISE_IDS`, rules in
+    `data/library/sides.ts`). `reps` is the weaker side (e1RM, records, suggestions); volume is
+    load × (left + right) (`setVolumeLoad`, `repsDone`). Switch in the card menu and the
+    routine slot sheet. New columns are late columns (`TableSpec.optional`): if the server lacks
+    them, rows leaving them empty still sync (`missingLateColumn`).
+  - Library: box squat plus ten one-arm and one-leg exercises (seeded by 0016, `ROUND_2_SIZE`).
+  - Home: weight and water tiles in the food card (`DailyRow`); one weigh-in a day (a second
+    corrects the first).
+  - Routines share as links: `/r#code` (`domain/routines/share.ts`, compressed JSON with fflate,
+    never sent to a server), public page `SharedRoutinePage`, the code waits in localStorage
+    through sign-up. A workout in history saves as a routine or a new day (`saveWorkoutAsRoutine`).
+  - AI foods: − and + on countable items (`itemCount`, `withCount` in `features/food/resize.ts`).
+    Add food: slim Ask GPT / Snap / Label row on top; no barcode. Long food names wrap
+    (`ListRow wrap`). Voice: live words and plain errors (`features/food/speech.ts`).
+  - One tap with the keyboard open (`lib/tapThrough.ts`): pressing a button keeps the field's
+    focus, then closes the keyboard unless `data-keep-keyboard`.
+  - Muscle map (`domain/analytics/bodyMap.ts`, `components/body`, drawings MIT from
+    @mjcdev/react-body-highlighter, loaded lazily): sets spread by muscle shares, on the summary
+    and workout detail. Tokens `--muscle-*`.
+  - Sign up with a taken email: `AccountExistsError` (Supabase answers with an identity-less
+    user when confirmation is on); the Exercises and Body actions moved into the page header.

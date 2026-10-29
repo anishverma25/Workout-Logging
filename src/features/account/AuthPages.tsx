@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { CloudOff, Crown, MailCheck } from 'lucide-react';
 import {
   AccountError,
+  AccountExistsError,
   MIN_PASSWORD_LENGTH,
   requestPasswordReset,
   signIn,
@@ -150,7 +151,7 @@ export function SignInPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const next = safeNext(params.get('next'), HOME);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => params.get('email') ?? '');
   const [password, setPassword] = useState('');
   const { busy, error, onSubmit } = useSubmit(async () => {
     await signIn(email.trim(), password);
@@ -213,8 +214,16 @@ export function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [exists, setExists] = useState(false);
   const { busy, error, onSubmit } = useSubmit(async () => {
-    const result = await signUp(email.trim(), password);
+    setExists(false);
+    let result: Awaited<ReturnType<typeof signUp>>;
+    try {
+      result = await signUp(email.trim(), password);
+    } catch (err) {
+      if (err instanceof AccountExistsError) setExists(true);
+      throw err;
+    }
     markTourSeen();
     if (result === 'confirm') setSentTo(email.trim());
     // Someone who was on their way to a particular screen keeps going there. Otherwise a new
@@ -279,6 +288,13 @@ export function SignUpPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
         <FormError error={error} />
+        {exists && error ? (
+          <BlockLink
+            to={`/sign-in?next=${encodeURIComponent(next)}&email=${encodeURIComponent(email.trim())}`}
+          >
+            Sign in with this email
+          </BlockLink>
+        ) : null}
         <PrimaryButton type="submit" block disabled={busy} className="mt-2">
           {busy ? 'Creating account...' : 'Create account'}
         </PrimaryButton>

@@ -11,6 +11,8 @@ import { cn } from '@/lib/cn';
 import { toDateKey } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { ActivitySection } from './ActivityCard';
+import { DailyRow } from './DailyRow';
+import type { WeightUnit } from '@/lib/units';
 import { MEAL_LABEL, mealForHour, useFoodContextFrom } from '../food/useFoodContext';
 
 const n = (v: number) => Math.round(v).toLocaleString('en-GB');
@@ -22,10 +24,12 @@ const n = (v: number) => Math.round(v).toLocaleString('en-GB');
 export function FoodCard({
   training,
   now,
+  unit,
   className,
 }: {
   training: QueryState<TrainingData>;
   now: Date;
+  unit: WeightUnit;
   className?: string;
 }) {
   const ctx = useFoodContextFrom(now, training);
@@ -115,6 +119,13 @@ export function FoodCard({
           Log {MEAL_LABEL[meal].toLowerCase()}
         </Link>
       ) : null}
+      <DailyRow
+        weights={training.data?.bodyWeights ?? []}
+        unit={unit}
+        glassMl={ctx.profile?.waterGlassMl ?? null}
+        waterTargetMl={ctx.targets.waterMl}
+        now={now}
+      />
       <ActivitySection training={training} now={now} eatenKcal={totals.kcal} />
     </Card>
   );

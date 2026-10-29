@@ -9,7 +9,9 @@ import {
   RirPicker,
   SavedFlash,
   Stepper as KitStepper,
+  Switch,
 } from '@/components/kit';
+import { canLogBySide, logsBySide } from '@/data/library/sides';
 import { usePreferences } from '@/data/hooks';
 import { angleKind, DEFAULT_ANGLE } from '@/domain/workout/angle';
 import { Sheet } from '@/components/ui/Sheet';
@@ -18,6 +20,7 @@ import { db } from '@/data/db';
 import {
   moveExercise,
   removeExercise,
+  setSlotBySide,
   swapExercise,
   toggleSlotSuperset,
   updateSlotAngle,
@@ -193,6 +196,27 @@ function SlotEditor({
                 setSavedTick((t) => t + 1);
                 void updateSlotAngle(db, slot.id, deg);
               }}
+            />
+          </section>
+        ) : null}
+
+        {canLogBySide(exercise) ? (
+          <section className="mt-6 flex items-center justify-between gap-4" data-slot-by-side>
+            <div className="min-w-0">
+              <h3 id="slot-by-side" className="type-headline text-text-1">
+                Reps for each side
+              </h3>
+              <p className="type-meta mt-0.5 text-text-2">
+                For one arm or one leg at a time: log left and right apart.
+              </p>
+            </div>
+            <Switch
+              checked={logsBySide(slot.bySide, exercise)}
+              onChange={(on) => {
+                setSavedTick((t) => t + 1);
+                void setSlotBySide(db, slot.id, on);
+              }}
+              aria-labelledby="slot-by-side"
             />
           </section>
         ) : null}

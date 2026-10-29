@@ -12,6 +12,7 @@ import { SetType, type Exercise, type WorkoutSet } from '@/domain/models/schemas
 import { cn } from '@/lib/cn';
 import { fromDisplayWeight, toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { columnsFor, trackingOf } from '../workout/format';
+import { isSideSet, sideReps } from '@/domain/analytics/volume';
 
 interface Props {
   set: WorkoutSet | null;
@@ -36,6 +37,10 @@ function EditForm({ set, exercise, exerciseName, unit, onClose }: Props & { set:
     set.weightKg === null ? null : round2(toDisplayWeight(set.weightKg, unit)),
   );
   const [amount, setAmount] = useState<number | null>(set[cols.amountField]);
+  // A set logged per side is corrected per side.
+  const sided = cols.amountField === 'reps' && isSideSet(set);
+  const [left, setLeft] = useState<number | null>(set.repsLeft ?? null);
+  const [right, setRight] = useState<number | null>(set.repsRight ?? null);
   const [rir, setRir] = useState(set.rir);
   const [rpe, setRpe] = useState(set.rpe);
   const [type, setType] = useState(set.setType);
@@ -46,7 +51,7 @@ function EditForm({ set, exercise, exerciseName, unit, onClose }: Props & { set:
   async function save() {
     const next = {
       weightKg: cols.load ? (load === null ? null : fromDisplayWeight(load, unit)) : set.weightKg,
-      reps: cols.amountField === 'reps' ? amount : set.reps,
+      reps: sided ? sideReps(left, right) : cols.amountField === 'reps' ? amount : set.reps,
       durationSec: cols.amountField === 'durationSec' ? amount : set.durationSec,
       distanceM: cols.amountField === 'distanceM' ? amount : set.distanceM,
     };
@@ -55,7 +60,14 @@ function EditForm({ set, exercise, exerciseName, unit, onClose }: Props & { set:
       setError(missing.replace(' first.', '.'));
       return;
     }
-    await updateSet(db, set.id, { ...next, rir, rpe, setType: type, notes });
+    await updateSet(db, set.id, {
+      ...next,
+      ...(sided ? { repsLeft: left, repsRight: right } : {}),
+      rir,
+      rpe,
+      setType: type,
+      notes,
+    });
     toast('Set updated');
     onClose();
   }
@@ -89,13 +101,32 @@ function EditForm({ set, exercise, exerciseName, unit, onClose }: Props & { set:
               max={2000}
             />
           ) : null}
-          <NumberField
-            label={cols.amount === 'Reps' ? 'Reps' : cols.amount === 'Sec' ? 'Seconds' : 'Metres'}
-            value={amount}
-            onValueChange={setAmount}
-            allowDecimal={cols.amountField === 'distanceM'}
-            max={99_999}
-          />
+          {sided ? (
+            <>
+              <NumberField
+                label="Reps, left"
+                value={left}
+                onValueChange={setLeft}
+                allowDecimal={false}
+                max={999}
+              />
+              <NumberField
+                label="Reps, right"
+                value={right}
+                onValueChange={setRight}
+                allowDecimal={false}
+                max={999}
+              />
+            </>
+          ) : (
+            <NumberField
+              label={cols.amount === 'Reps' ? 'Reps' : cols.amount === 'Sec' ? 'Seconds' : 'Metres'}
+              value={amount}
+              onValueChange={setAmount}
+              allowDecimal={cols.amountField === 'distanceM'}
+              max={99_999}
+            />
+          )}
           <NumberField label="RIR" value={rir} onValueChange={setRir} min={0} max={10} />
           <NumberField label="RPE" value={rpe} onValueChange={setRpe} min={1} max={10} />
         </div>

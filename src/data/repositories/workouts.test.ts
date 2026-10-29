@@ -29,8 +29,10 @@ import {
   uncompleteSet,
   updateSet,
   updateWorkoutDetails,
+  setWorkoutExerciseBySide,
   WorkoutError,
 } from './workouts';
+import { setVolumeLoad } from '@/domain/analytics/volume';
 
 let db: WorkoutDatabase;
 let n = 0;
@@ -316,6 +318,63 @@ describe('completing sets', () => {
     await completeSet(db, s!.id);
     await uncompleteSet(db, s!.id);
     expect(await db.sets.get(s!.id)).toMatchObject({ completedAt: null, reps: 10 });
+  });
+});
+
+describe('left and right reps', () => {
+  it('one-arm exercises log each side; reps is the weaker side, volume counts both', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [
+      exerciseIdFor('one-arm-cable-triceps-extension'),
+    ]);
+    const [first, second] = await liveSets(we!.id);
+    await updateSet(db, first!.id, { weightKg: 25, repsLeft: 6 });
+    await updateSet(db, first!.id, { repsRight: 7 });
+    let set = (await db.sets.get(first!.id))!;
+    expect([set.repsLeft, set.repsRight, set.reps]).toEqual([6, 7, 6]);
+    const done = await completeSet(db, first!.id, null, at(1));
+    expect(done.ok).toBe(true);
+    const exercise = await db.exercises.get(exerciseIdFor('one-arm-cable-triceps-extension'));
+    expect(setVolumeLoad((await db.sets.get(first!.id))!, exercise)).toBe(25 * 13);
+
+    // An empty set takes last time's sides when it is ticked.
+    const r = await completeSet(
+      db,
+      second!.id,
+      { weightKg: 25, reps: 6, durationSec: null, distanceM: null, repsLeft: 6, repsRight: 7 },
+      at(2),
+    );
+    expect(r.ok).toBe(true);
+    set = (await db.sets.get(second!.id))!;
+    expect([set.repsLeft, set.repsRight, set.reps]).toEqual([6, 7, 6]);
+  });
+
+  it('two-arm exercises stay one number unless switched on; switching off clears open sides', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('cable-lateral-raise')]);
+    const [first, second] = await liveSets(we!.id);
+    await updateSet(db, first!.id, { weightKg: 10, reps: 12 });
+    expect((await completeSet(db, first!.id, null, at(1))).ok).toBe(true);
+    expect((await db.sets.get(first!.id))!.repsLeft ?? null).toBeNull();
+
+    await setWorkoutExerciseBySide(db, we!.id, true);
+    // Last time's one number fills both sides.
+    await completeSet(
+      db,
+      second!.id,
+      { weightKg: 10, reps: 12, durationSec: null, distanceM: null },
+      at(2),
+    );
+    const s2 = (await db.sets.get(second!.id))!;
+    expect([s2.repsLeft, s2.repsRight, s2.reps]).toEqual([12, 12, 12]);
+
+    const [third] = (await liveSets(we!.id)).slice(2);
+    const extra = third ?? (await db.sets.get((await addSet(db, we!.id)).id))!;
+    await updateSet(db, extra.id, { repsLeft: 9 });
+    await setWorkoutExerciseBySide(db, we!.id, false);
+    expect((await db.sets.get(extra.id))!.repsLeft ?? null).toBeNull();
+    // Done sets keep what was logged.
+    expect((await db.sets.get(second!.id))!.repsLeft).toBe(12);
   });
 });
 

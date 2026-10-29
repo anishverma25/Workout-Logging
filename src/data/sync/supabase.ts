@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { ServerRow } from './mapping';
+import { LATE_COLUMNS, type ServerRow, type ServerTable } from './mapping';
 import {
   isPermanentCode,
   keyColumn,
@@ -52,6 +52,18 @@ interface PostgrestLikeError {
   message: string;
 }
 
+/**
+ * The late columns of `table` when the server says one of them does not exist (PostgREST
+ * PGRST204, "Could not find the 'reps_left' column"), else null.
+ */
+export function missingLateColumn(table: string, error: PostgrestLikeError): string[] | null {
+  const late = LATE_COLUMNS[table as ServerTable];
+  if (!late?.length) return null;
+  const text = `${error.code ?? ''} ${error.message}`;
+  if (!/PGRST204|column/i.test(text)) return null;
+  return late.some((c) => text.includes(c)) ? late : null;
+}
+
 function toRemoteError(error: PostgrestLikeError): RemoteError {
   const code = error.code || null;
   // PGRST1xx/2xx are request and schema errors: retrying the same request will not help.
@@ -74,7 +86,24 @@ export class SupabaseRemote implements RemoteStore {
       const { error } = await this.client
         .from(table)
         .upsert(rows, { onConflict: keyColumn(table), defaultToNull: false });
-      if (error) throw toRemoteError(error);
+      if (!error) return;
+      const late = missingLateColumn(table, error);
+      if (!late) throw toRemoteError(error);
+      // The server has not had the migration that adds these columns yet. Rows that leave them
+      // empty lose nothing by going without them; rows that use them wait (set aside, kept on
+      // the phone) until the migration has been run.
+      const plain = rows.filter((r) => late.every((c) => (r[c] ?? null) === null));
+      const waiting = rows.length - plain.length;
+      if (plain.length > 0) {
+        const stripped = plain.map((r) =>
+          Object.fromEntries(Object.entries(r).filter(([k]) => !late.includes(k))),
+        );
+        const retry = await this.client
+          .from(table)
+          .upsert(stripped, { onConflict: keyColumn(table), defaultToNull: false });
+        if (retry.error) throw toRemoteError(retry.error);
+      }
+      if (waiting > 0) throw toRemoteError(error);
     } catch (err) {
       if (err instanceof RemoteError) throw err;
       throw new RemoteError((err as Error).message, { transient: true });

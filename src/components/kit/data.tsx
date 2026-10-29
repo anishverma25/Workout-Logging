@@ -73,6 +73,8 @@ interface ListRowProps {
   onClick?: () => void;
   /** Headline weight 600 (default) or 500 for settings labels. */
   titleWeight?: 600 | 500;
+  /** Long titles (food names) wrap onto more lines instead of being cut off. */
+  wrap?: boolean;
   className?: string;
 }
 
@@ -90,6 +92,7 @@ export const ListRow = memo(function ListRow({
   to,
   onClick,
   titleWeight = 600,
+  wrap = false,
   className,
 }: ListRowProps) {
   const interactive = Boolean(to || onClick);
@@ -99,14 +102,17 @@ export const ListRow = memo(function ListRow({
       <span className="min-w-0 flex-1">
         <span
           className={cn(
-            'type-headline block truncate text-text-1',
+            'type-headline block text-text-1',
+            wrap ? '[overflow-wrap:anywhere]' : 'truncate',
             titleWeight === 500 && 'font-medium',
           )}
         >
           {title}
         </span>
         {subtitle ? (
-          <span className="type-meta mt-0.5 block truncate text-text-2">{subtitle}</span>
+          <span className={cn('type-meta mt-0.5 block text-text-2', !wrap && 'truncate')}>
+            {subtitle}
+          </span>
         ) : null}
       </span>
       {value !== undefined ? (

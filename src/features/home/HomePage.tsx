@@ -99,7 +99,7 @@ export function HomePage() {
           <div className="contents lg:flex lg:flex-col lg:gap-4">
             <TodayCard plan={model.today} unit={prefs.weightUnit} className="order-1" />
             {training.data?.profile ? (
-              <FoodCard training={training} now={now} className="order-2" />
+              <FoodCard training={training} now={now} unit={prefs.weightUnit} className="order-2" />
             ) : null}
             <StrengthCard
               trends={model.strength.slice(0, 3)}
