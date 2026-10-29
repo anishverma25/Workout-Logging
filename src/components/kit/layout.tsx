@@ -112,15 +112,15 @@ export function PushedHeader({
   trailing,
 }: PushedHeaderProps) {
   const backCls =
-    'pressable chrome tap-target -ml-2 inline-flex h-11 items-center gap-0.5 rounded-field pr-2 type-body font-medium text-text-1';
+    'pressable chrome tap-target -ml-2 inline-flex h-11 items-center gap-0.5 rounded-field pr-2 text-[1.0625rem] text-lime';
   const back = (
     <>
-      <ChevronLeft className="size-6" strokeWidth={1.75} aria-hidden />
+      <ChevronLeft className="size-6" strokeWidth={2} aria-hidden />
       {backLabel}
     </>
   );
   return (
-    <header className="chrome pt-[calc(0.25rem+env(safe-area-inset-top))] pb-6 lg:pt-6">
+    <header className="chrome pt-4 pb-5 lg:pt-6">
       <div className="flex h-11 items-center justify-between gap-3">
         {backTo ? (
           <Link to={backTo} className={backCls} aria-label={`Back to ${backLabel}`}>
@@ -138,9 +138,9 @@ export function PushedHeader({
         )}
         {trailing}
       </div>
-      {title ? <h1 className="type-display mt-2 text-text-1">{title}</h1> : null}
+      {title ? <h1 className="type-display mt-0.5 text-text-1">{title}</h1> : null}
       {subtitle ? (
-        <p className="type-body mt-1 text-text-2 [text-wrap:balance]">{subtitle}</p>
+        <p className="type-meta mt-1 text-text-2 [text-wrap:balance]">{subtitle}</p>
       ) : null}
     </header>
   );

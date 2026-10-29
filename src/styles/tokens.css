@@ -75,6 +75,9 @@
   --seg-selected: #636366;
   /* Translucent material for the tab bar and the collapsed header. */
   --material-bar: rgb(22 22 24 / 0.8);
+  /* Height of the phone tab bar; 0 while it is hidden (the workout logger and its summary).
+     Set by the shell, read by everything that floats above the bar. */
+  --tabbar-h: 3.0625rem;
 
   /* Text */
   --text-1: #ffffff;

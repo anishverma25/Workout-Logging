@@ -4,13 +4,12 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
-import { useDemoStatus } from '@/data/hooks';
+import { useActiveWorkout, useDemoStatus } from '@/data/hooks';
 import { APP_NAME, BOTTOM_NAV, PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '../navigation';
 import { BrandMark } from './BrandMark';
 import { AppNotices } from './AppNotices';
 import { StartWorkoutProvider } from '@/features/workout/StartWorkout';
 import { WorkoutDock } from '@/features/workout/WorkoutDock';
-import { CoachLauncher } from '@/features/coach/CoachLauncher';
 import { SyncBadge } from '@/features/account/SyncStatus';
 import { TAB_ICONS } from './TabIcons';
 
@@ -48,7 +47,6 @@ export function AppShell() {
               </div>
             </Suspense>
             <WorkoutDock />
-            <CoachLauncher />
           </StartWorkoutProvider>
         </main>
       </div>
@@ -160,16 +158,32 @@ function Sidebar() {
   );
 }
 
+/**
+ * The tab bar steps aside in the workout logger and on its summary, as Apple Fitness does, so
+ * the screen belongs to the workout (UI v3, B3).
+ */
+export function hidesTabBar(pathname: string, workoutOpen: boolean): boolean {
+  if (/^\/workouts\/[^/]+\/summary\/?$/.test(pathname)) return true;
+  return workoutOpen && (pathname === '/workout' || pathname === '/workout/');
+}
+
 function BottomNav() {
   const { pathname } = useLocation();
   const tap = useTabTap();
+  const workout = useActiveWorkout();
+  const hidden = hidesTabBar(pathname, !!workout.data);
+  // Everything that floats above the bar (toasts, the workout dock) reads its height.
+  useEffect(() => {
+    document.documentElement.style.setProperty('--tabbar-h', hidden ? '0px' : '3.0625rem');
+  }, [hidden]);
+  if (hidden) return null;
   return (
     <nav
       aria-label="Main navigation"
       data-bottom-bar
-      className="chrome fixed inset-x-0 bottom-0 z-40 border-t-[0.5px] border-white/10 bg-bar pb-safe lg:hidden"
+      className="chrome material-bar fixed inset-x-0 bottom-0 z-40 border-t-[0.5px] border-white/12 pb-safe lg:hidden"
     >
-      <ul className="mx-auto grid h-[3.0625rem] max-w-lg grid-cols-6 px-0.5">
+      <ul className="mx-auto grid h-[3.0625rem] max-w-lg grid-cols-5 px-0.5">
         {BOTTOM_NAV.map((item) => {
           const active = item.to === '/' ? pathname === '/' : pathname.startsWith(item.to);
           return (
@@ -184,7 +198,7 @@ function BottomNav() {
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'pressable type-caption flex flex-1 flex-col items-center justify-center gap-0.5',
-                  active ? 'font-semibold text-text-1' : 'text-white/55',
+                  active ? 'font-semibold text-lime' : 'text-text-2',
                 )}
               >
                 <span className={active ? 'text-lime' : undefined}>

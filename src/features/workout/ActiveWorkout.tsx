@@ -356,7 +356,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
         </Button>
       </div>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(49px+1rem+env(safe-area-inset-bottom))] z-30 px-4 lg:bottom-6 lg:left-60">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--tabbar-h)+1rem+env(safe-area-inset-bottom))] z-30 px-4 lg:bottom-6 lg:left-60">
         <RestTimerBar onOpen={() => setTimerOpen(true)} />
       </div>
       <KeyboardToolbar />

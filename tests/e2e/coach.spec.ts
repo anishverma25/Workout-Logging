@@ -105,14 +105,20 @@ test('when the AI is down or makes up numbers, the coach says so and can retry',
   await expect(page.getByText('999 kg')).toHaveCount(0);
 });
 
-test('the round coach button opens the coach from any screen', async ({ page }) => {
+test('the sparkle button in every main tab opens the coach', async ({ page }) => {
   await startWithDemo(page, { tag: 'coach-launcher' });
-  for (const path of ['/', '/history', '/body']) {
+  for (const path of ['/', '/workout', '/food', '/progress', '/history']) {
     await page.goto(path);
-    await expect(page.locator('[data-coach-launcher]')).toBeVisible();
+    const button = page.locator('main header [data-coach-launcher]');
+    await expect(button).toBeVisible();
+    // In the header, never floating over the page (UI v3, B2).
+    expect(await button.evaluate((el) => getComputedStyle(el).position)).not.toBe('fixed');
   }
-  await page.goto('/coach');
-  await expect(page.locator('[data-coach-launcher]')).toHaveCount(0);
+  // Pushed pages reach it from More; there is no floating button anywhere.
+  for (const path of ['/coach', '/body', '/records']) {
+    await page.goto(path);
+    await expect(page.locator('[data-coach-launcher]')).toHaveCount(0);
+  }
 
   await page.goto('/');
   await page.locator('[data-coach-launcher]').click();

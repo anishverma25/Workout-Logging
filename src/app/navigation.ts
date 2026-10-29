@@ -39,11 +39,12 @@ export interface NavItem {
 
 /**
  * The main areas: training on the left, food in the middle; activity is under More on a phone and on Home, then
- * results. The phone's bottom bar shows six of them (`BOTTOM_NAV`); the rest are under More.
+ * results. The phone's bottom bar shows five of them (`BOTTOM_NAV`); the rest are under More.
  */
 export const PRIMARY_NAV: NavItem[] = [
   { to: '/', label: 'Home', icon: House },
-  { to: '/routines', label: 'Routines', icon: CalendarRange },
+  // Routines live inside the Workout tab on phones (UI v3, B1); the sidebar keeps the link.
+  { to: '/routines', label: 'Routines', icon: CalendarRange, bottom: false },
   { to: '/workout', label: 'Workout', icon: Dumbbell },
   { to: '/food', label: 'Food', icon: UtensilsCrossed },
   { to: '/activity', label: 'Activity', icon: Flame, bottom: false },

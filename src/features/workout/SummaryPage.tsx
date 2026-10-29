@@ -230,7 +230,7 @@ export function SummaryPage() {
       <SummarySync className="mt-2 justify-center" />
 
       {/* Pinned above the tab bar on phones and at the bottom of the window on desktop. */}
-      <div className="sticky bottom-[calc(49px+env(safe-area-inset-bottom))] z-20 -mx-4 mt-4 bg-bg px-4 pt-3 pb-3 tab:-mx-6 tab:px-6 lg:bottom-0 lg:mx-0 lg:px-0 lg:pb-6">
+      <div className="sticky bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] z-20 -mx-4 mt-4 bg-bg px-4 pt-3 pb-3 tab:-mx-6 tab:px-6 lg:bottom-0 lg:mx-0 lg:px-0 lg:pb-6">
         <ButtonLink to="/" size="lg" block>
           Done
         </ButtonLink>

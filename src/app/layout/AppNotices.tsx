@@ -53,7 +53,7 @@ function UpdateNotice() {
         'pointer-events-none fixed inset-x-4 z-40 flex justify-center lg:left-64',
         dockShown
           ? 'bottom-[calc(9.5rem+env(safe-area-inset-bottom))] lg:bottom-24'
-          : 'bottom-[calc(3.0625rem+1rem+env(safe-area-inset-bottom))] lg:bottom-6',
+          : 'bottom-[calc(var(--tabbar-h)+1rem+env(safe-area-inset-bottom))] lg:bottom-6',
       )}
     >
       {card}
