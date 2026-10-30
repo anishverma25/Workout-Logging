@@ -161,7 +161,7 @@ function PlanChoice({
                 {monthly && p.months > 1 && monthly.priceInr * p.months > p.priceInr ? (
                   // Twelve months on the monthly plan, crossed out: a real price, not a made-up
                   // "was" price.
-                  <span className="type-meta tabular text-text-3 line-through" aria-hidden>
+                  <span className="type-meta tabular text-text-2 line-through" aria-hidden>
                     {formatRupees(monthly.priceInr * p.months)}
                   </span>
                 ) : null}
