@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Library, Plus } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -146,7 +146,7 @@ export function ExercisesPage() {
             <ul className={GROUP}>{results.map(row)}</ul>
           ) : results.length > 0 ? (
             // A to Z with sticky letters and an index down the side (UI v3, S13.3).
-            <div className="flex flex-col gap-4 pr-5 lg:pr-0">
+            <div className="flex flex-col gap-4 pr-5 lg:pr-0" data-a-to-z>
               {letters.map(([letter, list]) => (
                 <section key={letter} id={`letter-${letter}`} className="scroll-mt-28">
                   <h3 className="type-headline sticky top-[calc(2.75rem+env(safe-area-inset-top))] z-10 -mx-1 bg-bg/90 px-1 py-1 text-text-2 backdrop-blur lg:top-0">
@@ -155,24 +155,7 @@ export function ExercisesPage() {
                   <ul className={GROUP}>{list.map(row)}</ul>
                 </section>
               ))}
-              <nav
-                aria-label="Jump to a letter"
-                className="fixed top-1/2 right-0.5 z-20 flex -translate-y-1/2 flex-col items-center lg:hidden"
-              >
-                {letters.map(([letter]) => (
-                  <a
-                    key={letter}
-                    href={`#letter-${letter}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      document.getElementById(`letter-${letter}`)?.scrollIntoView();
-                    }}
-                    className="chrome type-caption flex h-[1.05rem] w-5 items-center justify-center font-semibold text-lime"
-                  >
-                    {letter}
-                  </a>
-                ))}
-              </nav>
+              <LetterIndex letters={letters.map(([l]) => l)} />
             </div>
           ) : (
             <div className="px-2 py-8">
@@ -198,5 +181,47 @@ export function ExercisesPage() {
         onSaved={(e) => setOpenId(e.id)}
       />
     </>
+  );
+}
+
+/**
+ * The A to Z index down the right edge. It shows only once the A to Z list reaches the top of
+ * the screen, so it never sits over the search field or the muscle chips above the list.
+ */
+function LetterIndex({ letters }: { letters: string[] }) {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const list = document.querySelector('[data-a-to-z]');
+      setShown(!!list && list.getBoundingClientRect().top < 160);
+    };
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    return () => {
+      window.removeEventListener('scroll', check);
+      window.removeEventListener('resize', check);
+    };
+  }, []);
+  if (!shown) return null;
+  return (
+    <nav
+      aria-label="Jump to a letter"
+      className="fixed top-1/2 right-0.5 z-20 flex -translate-y-1/2 flex-col items-center lg:hidden"
+    >
+      {letters.map((letter) => (
+        <a
+          key={letter}
+          href={`#letter-${letter}`}
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById(`letter-${letter}`)?.scrollIntoView();
+          }}
+          className="chrome type-caption flex h-[1.05rem] w-5 items-center justify-center font-semibold text-lime"
+        >
+          {letter}
+        </a>
+      ))}
+    </nav>
   );
 }
