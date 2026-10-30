@@ -25,7 +25,7 @@ export function ExerciseRow({ exercise, onSelect, selected, selectable, trailing
       className={cn(
         // No two-letter tile (UI v3, G9), and hover only where there is a mouse, so a tapped
         // row never looks stuck pressed on a phone (F7).
-        'pressable chrome flex min-h-14 w-full items-center gap-3 py-2.5 text-left [@media(hover:hover)]:hover:opacity-80',
+        'pressable chrome flex min-h-14 w-full items-center gap-3 py-2.5 text-left [@media(hover:hover)]:hover:bg-white/[0.04]',
         selectable && 'rounded-nested px-2',
         selected && 'bg-surface-2',
       )}
