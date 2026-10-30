@@ -150,7 +150,8 @@ test('setting up a profile greets you by name and keeps the demo profile separat
 test('tapping the tab you are on scrolls back to the top', async ({ page }) => {
   const scrollDown = async () => {
     await page.evaluate(() => window.scrollTo(0, 1200));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+    // Home is short on a large desktop screen since UI v3, so any real scroll will do.
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(150);
   };
   await mainNav(page).getByRole('link', { name: 'Progress' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Progress');
