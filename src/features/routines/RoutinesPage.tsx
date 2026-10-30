@@ -148,14 +148,14 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
               className={cn(
                 // UI v3 (S5.1): today gets a white ring, never a lime fill.
                 'flex min-h-13 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-field px-0.5 py-1.5 text-center',
-                name ? 'bg-surface-2 text-text-1' : 'text-text-3',
+                name ? 'bg-surface-2 text-text-1' : 'text-text-2',
                 isToday && 'ring-2 ring-text-1 ring-inset',
               )}
             >
               <span className={cn('type-caption', isToday ? 'text-text-1' : 'text-text-2')}>
                 {shortDayName(w)}
               </span>
-              <FitText className={cn('type-meta font-semibold', !name && 'text-text-3')}>
+              <FitText className={cn('type-meta font-semibold', !name && 'text-text-2')}>
                 {name ?? 'Rest'}
               </FitText>
             </li>

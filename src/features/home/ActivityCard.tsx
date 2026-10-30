@@ -115,7 +115,7 @@ export function ActivitySection({
         </button>
       </div>
       {burn.total > 0 ? (
-        <p className="type-caption mt-2 pl-[2.625rem] text-text-3" data-estimate-note>
+        <p className="type-caption mt-2 pl-[2.625rem] text-text-2" data-estimate-note>
           Rough estimates, can be wrong. Weights {tilde(weights.kcal)}
           {n(weights.kcal)} · Cardio {tilde(burn.cardioKcal)}
           {n(burn.cardioKcal)} · Steps {tilde(burn.stepsKcal)}

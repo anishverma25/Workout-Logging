@@ -1,12 +1,11 @@
 import { Link } from 'react-router';
 import { ChevronRight, Crown } from 'lucide-react';
-import { perMonth, usePlans } from '@/app/billing';
+import { formatRupees, perMonth, usePlans } from '@/app/billing';
 import { useEntitlement } from '@/app/entitlement';
 import { CapsuleButton } from '@/components/kit';
 import { cn } from '@/lib/cn';
 
 const DAY_MS = 86_400_000;
-const rupees = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
 /**
  * Pro near the top of More and Profile (owner request, UI v3 A2), so buying it is one tap from
@@ -19,11 +18,10 @@ export function ProRow({ className }: { className?: string }) {
   const plans = usePlans();
   if (e.loading || e.plan === 'guest') return null;
 
-  const buyable = (plans ?? []).filter((p) => p.available);
-  const cheapest = buyable.length
-    ? Math.min(...buyable.map((p) => perMonth(p)))
-    : (plans?.find((p) => p.id === 'monthly')?.priceInr ?? null);
-  const price = cheapest !== null ? `from ${rupees(cheapest)} a month` : null;
+  // The same "from" price as the Pro page: the lowest per-month price of any plan.
+  const cheapest =
+    plans && plans.length > 0 ? Math.round(Math.min(...plans.map(perMonth)) * 100) / 100 : null;
+  const price = cheapest !== null ? `from ${formatRupees(cheapest)} a month` : null;
 
   const member = e.pro && e.plan !== 'trial';
   const trialDays =

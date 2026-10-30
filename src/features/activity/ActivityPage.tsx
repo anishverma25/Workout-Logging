@@ -1,3 +1,4 @@
+import { cn } from '@/lib/cn';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Dumbbell, Footprints, Plus, Trash2 } from 'lucide-react';
@@ -100,7 +101,7 @@ export function ActivityPage() {
               </h2>
               <EvidenceLink topic="activity-energy" about="how calories burned are estimated" />
             </div>
-            <p className="mt-2 flex items-baseline gap-1">
+            <p className={cn('mt-2 items-baseline gap-1', burn.total > 0 ? 'flex' : 'hidden')}>
               <span className="type-stat tabular text-text-1" data-burn-total>
                 {burn.total > 0 && burn.estimated ? '~' : ''}
                 {n(burn.total)}

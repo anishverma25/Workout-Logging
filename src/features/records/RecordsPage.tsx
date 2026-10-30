@@ -185,6 +185,8 @@ const RecordRow = memo(function RecordRow({
         <span className="type-headline flex min-w-0 items-center text-text-1">
           <NewDot show={isNew} />
           <span className="min-w-0 truncate">{record.exerciseName}</span>
+          {/* After the name, so the row is still found and read by its exercise first. */}
+          {isNew ? <span className="sr-only">, new</span> : null}
         </span>
         <span className="type-subhead mt-0.5 block truncate text-text-2">
           {PR_LABELS[record.type]} · {formatRelativeDay(record.date)}
@@ -213,7 +215,6 @@ function NewDot({ show }: { show: boolean }) {
   return (
     <>
       <span aria-hidden className="mr-2 size-1.5 shrink-0 rounded-full bg-lime" />
-      <span className="sr-only">New: </span>
     </>
   );
 }
@@ -253,6 +254,7 @@ const BestRow = memo(function BestRow({
         <span className="type-headline flex min-w-0 items-center text-text-1">
           <NewDot show={isNew} />
           <span className="min-w-0 [overflow-wrap:break-word]">{r.name}</span>
+          {isNew ? <span className="sr-only">, new</span> : null}
         </span>
         <span className="type-meta mt-0.5 block truncate text-text-2">
           {MUSCLE_LABELS[r.primaryMuscle]} · {pluralize(r.sessions, 'session')}

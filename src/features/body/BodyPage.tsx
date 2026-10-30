@@ -4,15 +4,7 @@ import { Plus, Scale } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { LineChart } from '@/components/charts/LineChart';
 import { ChartEmpty } from '@/components/charts/ChartParts';
-import {
-  Card,
-  Delta,
-  ListRow,
-  Metric,
-  PrimaryButton,
-  SegmentedControl,
-  Skeleton,
-} from '@/components/kit';
+import { Card, ListRow, Metric, PrimaryButton, SegmentedControl, Skeleton } from '@/components/kit';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
 import {
@@ -121,18 +113,10 @@ export function BodyPage() {
                 unit={unit}
               />
               {summary.weekChangeKg !== null ? (
-                <Delta
-                  className="mt-6"
-                  tone={
-                    Math.abs(summary.weekChangeKg) < 0.05
-                      ? 'flat'
-                      : summary.weekChangeKg > 0
-                        ? 'up'
-                        : 'down'
-                  }
-                >
+                // Neutral, not green or red: whether a gain is good depends on the goal.
+                <span className="type-subhead tabular mt-6 shrink-0 text-text-2">
                   {signed(summary.weekChangeKg, unit)} in a week
-                </Delta>
+                </span>
               ) : null}
             </div>
             <dl className="type-meta mt-1 flex flex-wrap gap-x-4 gap-y-1 text-text-2">
