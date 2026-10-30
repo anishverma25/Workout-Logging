@@ -38,7 +38,7 @@ test('primary navigation reaches every main area', async ({ page }) => {
 
 test('secondary areas are reachable', async ({ page }) => {
   if (isMobile(page)) {
-    await page.getByRole('link', { name: 'More' }).click();
+    await page.getByRole('link', { name: /^More: profile/ }).click();
     // Wait for More to finish loading (its code is fetched on demand) before tapping a row.
     await expect(page.getByRole('heading', { level: 1, name: 'More' })).toBeVisible();
     await page.getByRole('link', { name: 'Settings' }).click();
