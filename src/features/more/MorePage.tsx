@@ -9,6 +9,7 @@ import { ListGroup, ListRow } from '@/components/ui/List';
 import { SyncBadge } from '@/features/account/SyncStatus';
 import { useProfile } from '@/data/hooks';
 import { LegalLinks } from '@/features/legal/LegalPage';
+import { ProRow } from '@/features/pro/ProRow';
 import { GOAL_LABEL, EXPERIENCE_LABEL } from '@/domain/models/labels';
 
 const GROUPS: { key: NonNullable<NavItem['group']>; title: string }[] = [
@@ -34,11 +35,17 @@ export function MorePage() {
     <>
       <PageHeader title="More" />
       <nav aria-label="More" className="flex max-w-2xl flex-col gap-6">
-        <ProfileCard />
+        <div className="flex flex-col gap-3">
+          <ProfileCard />
+          {/* Pro sits right under the person, with its price (owner request, UI v3 A2). */}
+          <ProRow />
+        </div>
         <ReloadNote />
         {GROUPS.map((g) => (
           <ListGroup key={g.key} title={g.title}>
-            {MORE_NAV.filter((i) => i.group === g.key && i.to !== '/profile').map((i) => (
+            {MORE_NAV.filter(
+              (i) => i.group === g.key && i.to !== '/profile' && i.to !== '/pro',
+            ).map((i) => (
               <ListRow
                 key={i.to}
                 to={i.to}
@@ -46,7 +53,6 @@ export function MorePage() {
                 tone={i.tone}
                 title={i.label}
                 detail={i.to === '/account' ? email : undefined}
-                pro={i.to === '/pro'}
               />
             ))}
             {g.key === 'app' ? (
@@ -76,7 +82,7 @@ export function MorePage() {
 function ReloadNote() {
   const { updateReady } = usePwa();
   return (
-    <div className="flex items-center gap-3 rounded-nested bg-surface-2 px-4 py-3" data-reload-note>
+    <div className="flex items-center gap-3 rounded-card bg-surface px-4 py-3" data-reload-note>
       <RefreshCw className="size-4 shrink-0 text-text-2" aria-hidden />
       <p className="type-meta min-w-0 flex-1 text-text-2">
         {updateReady
@@ -86,7 +92,7 @@ function ReloadNote() {
       <button
         type="button"
         onClick={() => (updateReady ? applyUpdate() : window.location.reload())}
-        className="pressable chrome type-meta inline-flex h-9 shrink-0 items-center rounded-full bg-surface px-3 font-semibold text-text-1"
+        className="pressable chrome type-subhead inline-flex h-8 shrink-0 items-center rounded-full bg-fill px-3 font-semibold text-text-1"
       >
         Reload
       </button>
@@ -114,11 +120,11 @@ function ProfileCard() {
   return (
     <Link
       to="/profile"
-      className="pressable chrome flex items-center gap-4 rounded-panel border border-border bg-surface p-4"
+      className="pressable chrome flex items-center gap-4 rounded-card bg-surface p-4"
     >
       <span
         aria-hidden
-        className="flex size-14 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 text-[1.0625rem] font-semibold text-text-1"
+        className="flex size-14 shrink-0 items-center justify-center rounded-full bg-fill text-[1.0625rem] font-semibold text-text-1"
       >
         {initials || '?'}
       </span>

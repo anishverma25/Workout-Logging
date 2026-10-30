@@ -1,4 +1,5 @@
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
 
@@ -122,6 +123,8 @@ export function ChipGroup<T extends string>(props: ChipGroupProps<T>) {
 interface SegmentOption<T extends string> {
   value: T;
   label: string;
+  /** Spoken name when the visible label is short ("7D" reads "7 days"). */
+  ariaLabel?: string;
 }
 
 interface SegmentedControlProps<T extends string> {
@@ -170,7 +173,7 @@ export function SegmentedControl<T extends string>({
       role="radiogroup"
       aria-label={label}
       className={cn(
-        'chrome gap-0.5 rounded-full bg-surface-2 p-0.5',
+        'chrome gap-0.5 rounded-[0.5625rem] bg-fill p-0.5',
         block ? 'flex w-full' : 'inline-flex',
         className,
       )}
@@ -186,14 +189,18 @@ export function SegmentedControl<T extends string>({
             type="button"
             role="radio"
             aria-checked={selected}
+            aria-label={o.ariaLabel}
             tabIndex={selected ? 0 : -1}
             onKeyDown={(e) => onKeyDown(e, i)}
             onClick={() => onChange(o.value)}
             className={cn(
-              'type-meta tabular rounded-full px-4 font-semibold whitespace-nowrap transition-colors duration-[var(--dur-press)]',
-              tall ? 'h-9' : 'h-8',
-              block && 'flex-1 px-2',
-              selected ? selectedCls : 'text-text-1',
+              'type-meta tabular rounded-[0.4375rem] font-semibold whitespace-nowrap transition-colors duration-[var(--dur-press)]',
+              tall ? 'h-9' : 'h-7',
+              block ? 'min-w-0 flex-1 px-1' : 'px-4',
+              // UI v3 (G7): the selected segment is a lighter grey with white text, as on iOS.
+              selected
+                ? 'bg-seg-selected text-text-1 shadow-[0_1px_3px_rgb(0_0_0/0.3)]'
+                : 'text-text-1',
             )}
           >
             {o.label}
@@ -269,27 +276,35 @@ export function OptionCard({
       aria-checked={selected}
       onClick={onSelect}
       className={cn(
-        'pressable chrome flex min-h-14 w-full items-center gap-3 rounded-nested px-4 py-3 text-left',
-        selected ? selectedCls : unselectedCls,
+        // UI v3 (G7): selected is a lime outline and a lime check, never an inverted card.
+        'pressable chrome flex min-h-14 w-full items-center gap-3 rounded-nested bg-surface-2 px-4 py-3 text-left text-text-1',
+        selected ? 'ring-2 ring-lime ring-inset' : '',
       )}
     >
       {icon ? (
         <span
           className={cn(
             'inline-flex size-5 shrink-0 [&>svg]:size-5',
-            selected ? 'text-bg' : 'text-text-2',
+            selected ? 'text-lime' : 'text-text-2',
           )}
         >
           {icon}
         </span>
       ) : null}
-      <span className="min-w-0">
+      <span className="min-w-0 flex-1">
         <span className="type-headline block">{title}</span>
         {description ? (
-          <span className={cn('type-meta mt-0.5 block', selected ? 'text-bg/75' : 'text-text-2')}>
-            {description}
-          </span>
+          <span className="type-meta mt-0.5 block text-text-2">{description}</span>
         ) : null}
+      </span>
+      <span
+        aria-hidden
+        className={cn(
+          'inline-flex size-[1.375rem] shrink-0 items-center justify-center rounded-full',
+          selected ? 'bg-lime text-on-lime' : 'border-[1.5px] border-text-3',
+        )}
+      >
+        {selected ? <Check className="size-3.5" strokeWidth={3} /> : null}
       </span>
     </button>
   );

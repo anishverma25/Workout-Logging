@@ -328,3 +328,12 @@ Read README.md for setup, architecture and calculation rules.
     and workout detail. Tokens `--muscle-*`.
   - Sign up with a taken email: `AccountExistsError` (Supabase answers with an identity-less
     user when confirmation is on); the Exercises and Body actions moved into the page header.
+- UI v3 (October 2026, branch `ui-v3`, `docs/UI_V3_BRIEF.md`, `docs/ui-v3-report.md`, no
+  migration): iOS grouped look (no card borders, `--fill`, `--divider`, SF Pro on Apple), kit
+  `Metric`, `Delta`, `Section`, `TextButton`, `CapsuleButton` (`kit/v3.tsx`). Five phone tabs;
+  `hidesTabBar` in `app/navigation.ts` hides the bar in the logger and on the summary
+  (`--tabbar-h`). OverloadGPT opens from the sparkle `CoachButton` in every tab header (no
+  floating button). Pro: `ProRow` on More and Profile with the real "from" price; the Pro page
+  leads with the plans; reminders in `domain/entitlement/nudge.ts` (2 quiet days, gaps 0, 3, 4,
+  5, 7 days, then every 10; "not now" a week; real facts only, rotating). `devices.spec.ts`
+  also fails on overlapping buttons. Release `2026-10-fresh-look`, `CACHE_EPOCH` `ui-12`.

@@ -27,12 +27,12 @@ test.describe('after early access ends', () => {
     await loadDemo(page);
     // The trial is over on the server, so this is the real free experience.
     await expireTrial(email, 2);
-    await page.goto('/progress');
-    await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toBeVisible();
+    await page.goto('/progress?view=volume');
+    await expect(page.getByRole('heading', { name: 'Volume', exact: true })).toBeVisible();
     await expect(lock(page, 'muscle_balance')).toBeVisible();
     await page.getByRole('radio', { name: 'All time · Pro' }).click();
     await expect(lock(page, 'long_range')).toContainText('Your history is all here');
-    await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Volume', exact: true })).toHaveCount(0);
 
     // History and records are never locked.
     await page.goto('/history');
@@ -179,7 +179,7 @@ test.describe('after early access ends', () => {
     await page.goto('/progress?range=all');
     await expect(lock(page, 'long_range')).toBeVisible();
     await choose('pro');
-    await page.goto('/progress?range=all');
+    await page.goto('/progress?range=all&view=strength');
     await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toBeVisible();
     await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
 

@@ -15,20 +15,23 @@ test('history filters narrow the timeline and clear again', async ({ page }) => 
   const total = await rows.count();
   expect(total).toBeGreaterThan(10);
 
+  // One Filter button opens range, workout, exercise and muscle (UI v3, S8.1).
+  await page.getByRole('button', { name: /^Filter/ }).click();
   await page.getByRole('radio', { name: '7 days' }).click();
+  await expect.poll(() => rows.count()).toBeLessThan(total);
   const week = await rows.count();
   expect(week).toBeGreaterThan(0);
-  expect(week).toBeLessThan(total);
 
   await page.getByRole('radio', { name: 'All time' }).click();
-  await page.getByRole('button', { name: 'Workout', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Workout', exact: true }).click();
   await page.getByRole('button', { name: /^Legs/ }).click();
   await expect(rows.first()).toContainText('Legs');
   const legs = await rows.count();
   for (let i = 0; i < legs; i++) await expect(rows.nth(i)).toContainText('Legs');
 
   await page.getByRole('button', { name: 'Clear workout filter' }).click();
-  await page.getByRole('button', { name: 'Muscle', exact: true }).click();
+  await page.getByRole('button', { name: /^Filter/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Muscle', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Biceps' }).click();
   // Pull days train biceps; leg days do not.
   await expect(rows.first()).toContainText('Pull');
@@ -40,8 +43,9 @@ test('workout detail: correcting a set saves it and recalculates', async ({ page
   // The most recent Push. Its numbers depend on the date the demo was generated, so the test
   // reads them from the screen rather than expecting fixed ones.
   await page.locator('a[href^="/history/"]', { hasText: 'Push' }).first().click();
+  // The records tile shows only when there are records (UI v3: no zero tiles).
   const records = page.locator('dt', { hasText: 'Records' }).locator('xpath=following-sibling::dd');
-  expect(Number(await records.textContent())).toBeGreaterThanOrEqual(0);
+  if ((await records.count()) > 0) expect(Number(await records.textContent())).toBeGreaterThan(0);
 
   const ohp = page.getByRole('region', { name: 'Overhead press' });
   const best = async () =>
@@ -161,7 +165,9 @@ test('a past workout can be started again from its page', async ({ page }) => {
 test('a workout makes story cards that save as 1080 × 1920 images', async ({ page }) => {
   await page.goto('/history');
   await page.locator('a[href^="/history/"]').first().click();
-  await page.getByRole('button', { name: 'Share', exact: true }).click();
+  // Share lives in the workout's menu (UI v3, S9.2).
+  await page.getByRole('button', { name: 'Workout options' }).click();
+  await page.getByRole('menuitem', { name: 'Share' }).click();
   const sheet = page.getByRole('dialog', { name: 'Share to your story' });
   await expect(sheet.getByRole('img')).toBeVisible();
   for (const name of ['Receipt', 'Total lifted']) {

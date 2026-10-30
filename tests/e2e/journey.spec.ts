@@ -169,7 +169,7 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
 
   await test.step('22-25. analytics: ranges, exercise filter, insights', async () => {
     await page.goto('/progress');
-    await expect(page.getByRole('heading', { name: 'Strength', exact: true })).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'Overview' })).toBeChecked();
     const workouts = page
       .locator('dt', { hasText: 'Workouts' })
       .locator('xpath=following-sibling::dd[1]');
@@ -179,6 +179,9 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     // A new account is on its 7-day trial, so long ranges are open.
     await page.getByRole('radio', { name: 'All time', exact: true }).click();
     await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
+    // Insights are on the overview; the exercise picker is in the Strength section (UI v3).
+    await expect(page.getByRole('heading', { name: 'Insights' })).toBeVisible();
+    await page.getByRole('radio', { name: 'Strength' }).click();
     await page.getByRole('button', { name: /^Exercise/ }).click();
     await page
       .getByRole('dialog')
@@ -187,7 +190,6 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     await expect(
       page.getByRole('img', { name: /Estimated 1RM for Barbell bench press/ }),
     ).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Insights' })).toBeVisible();
     await shot(page, '25-progress');
   });
 

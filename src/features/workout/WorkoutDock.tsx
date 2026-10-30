@@ -29,7 +29,7 @@ function Dock({
   const timer = useRestTimer().data ?? null;
   const resting = timer && timer.workoutId === workout.id && !isFinished(timer, now);
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(49px+1rem+env(safe-area-inset-bottom))] z-30 px-4 lg:bottom-6 lg:left-60">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--tabbar-h)+1rem+env(safe-area-inset-bottom))] z-30 px-4 lg:bottom-6 lg:left-60">
       <Link
         to="/workout"
         className="pressable chrome pointer-events-auto mx-auto flex h-14 max-w-md items-center gap-3 rounded-full bg-lime pr-4 pl-5 text-on-lime"

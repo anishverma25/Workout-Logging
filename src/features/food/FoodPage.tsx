@@ -5,13 +5,14 @@ import { PageHeader } from '@/app/layout/PageHeader';
 import {
   Card,
   ErrorState,
+  IconButton,
   ListGroup,
   ListRow,
+  Metric,
   PrimaryButton,
   ProgressBar,
-  RingChart,
-  SecondaryButton,
   Skeleton,
+  TextButton,
 } from '@/components/kit';
 import { loadMoreFoods } from '@/data/library/moreFoods';
 import { useToast } from '@/components/ui/Toast';
@@ -22,6 +23,8 @@ import { dayTotals, mealsOn, mealTemplates } from '@/domain/nutrition/analysis';
 import { portionText, roundNutrients, sumNutrients } from '@/domain/nutrition/calc';
 import { MEALS, type Meal } from '@/domain/nutrition/types';
 import { haptic } from '@/lib/haptics';
+import { cn } from '@/lib/cn';
+import { addDays, toDateKey } from '@/lib/dates';
 import { useNow } from '@/lib/useNow';
 import { AddFoodSheet } from './AddFoodSheet';
 import { CustomFoodSheet } from './CustomFoodSheet';
@@ -62,11 +65,11 @@ export function FoodPage() {
     <>
       <PageHeader
         title="Food"
-        subtitle="Indian meals, katori portions, your numbers"
         actions={
-          <PrimaryButton
-            compact
-            icon={<Plus className="size-4" aria-hidden />}
+          // A + in the header instead of a lime pill (UI v3, S10.1).
+          <IconButton
+            label="Add food"
+            icon={<Plus className="size-5" aria-hidden />}
             onClick={() =>
               setAdding({
                 meal: date === today ? mealForHour(now.getHours()) : 'lunch',
@@ -74,9 +77,7 @@ export function FoodPage() {
               })
             }
             data-add-food
-          >
-            Add food
-          </PrimaryButton>
+          />
         }
       />
       {ctx.status === 'loading' ? (
@@ -93,7 +94,7 @@ export function FoodPage() {
         />
       ) : null}
       {ctx.status === 'success' ? (
-        <div className="flex max-w-3xl flex-col gap-4" data-food-page>
+        <div className="flex max-w-3xl flex-col gap-6" data-food-page>
           <DayNav
             label={dayLabel}
             onPrev={() => go(-1)}
@@ -126,16 +127,24 @@ export function FoodPage() {
           ) : null}
           <DaySummary ctx={ctx} date={date} onTargets={() => setTargetsOpen(true)} />
           <DayAnalysisCard ctx={ctx} date={date} now={now} />
-          {MEALS.map((m) => (
-            <MealCard
-              key={m}
-              meal={m}
-              ctx={ctx}
-              date={date}
-              onAdd={() => setAdding({ meal: m, locked: true })}
-              onEdit={setEditing}
-            />
-          ))}
+          <section aria-labelledby="meals-title">
+            <h2 id="meals-title" className="type-section mb-2 text-text-1">
+              Meals
+            </h2>
+            {/* The four meals as rows of one group (UI v3, S10.4). */}
+            <div className="divide-y-[0.5px] divide-divider rounded-card bg-surface px-4">
+              {MEALS.map((m) => (
+                <MealCard
+                  key={m}
+                  meal={m}
+                  ctx={ctx}
+                  date={date}
+                  onAdd={() => setAdding({ meal: m, locked: true })}
+                  onEdit={setEditing}
+                />
+              ))}
+            </div>
+          </section>
           <WaterCard ctx={ctx} date={date} />
           <ListGroup label="Food settings">
             <li>
@@ -168,7 +177,7 @@ export function FoodPage() {
             </li>
             <li>
               <ListRow
-                title="How food numbers are worked out"
+                title="How the numbers work"
                 subtitle="Home recipes, USDA ingredient values, your own katori"
                 leading={<UtensilsCrossed className="size-5 text-text-2" aria-hidden />}
                 chevron
@@ -230,74 +239,129 @@ function DaySummary({
 }) {
   const totals = dayTotals(ctx.logs, date);
   const { kcal, proteinG } = ctx.targets;
-  const rings = [
-    { label: 'Calories', value: totals.kcal, max: kcal ?? 0 },
-    { label: 'Protein', value: totals.proteinG, max: proteinG ?? 0 },
-  ];
+  const left = kcal !== null ? kcal - totals.kcal : null;
   const bars = [
+    { label: 'Protein', value: totals.proteinG, target: proteinG },
     { label: 'Carbs', value: totals.carbsG, target: ctx.targets.carbsG },
     { label: 'Fat', value: totals.fatG, target: ctx.targets.fatG },
     { label: 'Fibre', value: totals.fibreG, target: ctx.targets.fibreG },
   ];
   return (
-    <Card as="section" aria-labelledby="day-totals" data-day-totals>
-      <div className="flex items-center gap-5">
-        {kcal !== null || proteinG !== null ? (
-          <RingChart rings={rings} size={112} label="Today against your targets" />
-        ) : null}
-        <div className="min-w-0 flex-1">
-          <h2 id="day-totals" className="sr-only">
-            Totals
-          </h2>
-          <p className="flex items-baseline gap-1">
-            <span className="type-stat tabular text-text-1">{n(totals.kcal)}</span>
-            <span className="type-meta text-text-2">
-              {kcal !== null ? `of ${n(kcal)} kcal` : 'kcal'}
-            </span>
-          </p>
-          <p className="mt-1 flex items-baseline gap-1">
-            <span className="type-title tabular font-bold text-text-1">
-              {totals.proteinG.toFixed(0)} g
-            </span>
-            <span className="type-meta text-text-2">
-              protein{proteinG !== null ? ` of ${n(proteinG)} g` : ''}
-            </span>
-          </p>
+    <section aria-labelledby="day-totals" data-day-totals>
+      <div className="rounded-card bg-surface p-4">
+        <h2 id="day-totals" className="sr-only">
+          Totals
+        </h2>
+        {/* What is left leads (UI v3, S10.3); the ring fills as food is logged. */}
+        <div className="flex items-center gap-4">
+          <CalorieRing eaten={totals.kcal} target={kcal} />
+          {left !== null ? (
+            <Metric
+              tier="hero"
+              accentLabel
+              label={left >= 0 ? 'Left today' : 'Over today'}
+              value={n(Math.abs(left))}
+              unit="kcal"
+              className="[&_[data-metric]]:text-[3rem] [&_[data-metric]]:leading-[3.25rem]"
+            >
+              <p className="type-meta tabular mt-0.5 text-text-2">
+                of {n(kcal!)} kcal · {n(totals.kcal)} eaten
+              </p>
+            </Metric>
+          ) : (
+            <Metric
+              tier="hero"
+              label="Eaten today"
+              value={n(totals.kcal)}
+              unit="kcal"
+              className="[&_[data-metric]]:text-[3rem] [&_[data-metric]]:leading-[3.25rem]"
+            />
+          )}
         </div>
+        <ul className="mt-4 grid grid-cols-4 gap-3" data-macro-bars>
+          {bars.map((b) => {
+            const met = b.label === 'Protein' && b.target !== null && b.value >= b.target;
+            return (
+              <li key={b.label} className="min-w-0">
+                <p className="type-meta font-semibold text-text-2">{b.label}</p>
+                <p className="type-headline tabular whitespace-nowrap text-text-1">
+                  {b.value.toFixed(0)} g
+                </p>
+                {b.target !== null ? (
+                  <p className="type-caption tabular text-text-2">of {n(b.target)} g</p>
+                ) : null}
+                {b.target ? (
+                  <ProgressBar
+                    value={Math.min(b.value, b.target)}
+                    max={b.target}
+                    label={b.label}
+                    thickness={4}
+                    className={cn('mt-1', !met && '[&>div]:bg-text-1/85')}
+                  />
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
       </div>
-      <ul className="mt-4 grid grid-cols-3 gap-3" data-macro-bars>
-        {bars.map((b) => (
-          <li key={b.label} className="min-w-0">
-            <p className="type-meta text-text-2">{b.label}</p>
-            <p className="type-headline tabular text-text-1">
-              {b.value.toFixed(0)} g
-              {b.target !== null ? (
-                <span className="type-meta font-normal text-text-2"> of {n(b.target)}</span>
-              ) : null}
-            </p>
-            {b.target ? (
-              <ProgressBar value={Math.min(b.value, b.target)} max={b.target} label={b.label} />
-            ) : null}
-          </li>
-        ))}
-      </ul>
       {kcal === null ? (
-        <button
-          type="button"
-          onClick={onTargets}
-          className="type-meta mt-3 inline-block font-semibold text-text-1 underline"
-        >
-          Set your targets
-        </button>
+        <p className="type-meta mt-2 px-4">
+          <TextButton small onClick={onTargets}>
+            Set your targets
+          </TextButton>
+        </p>
       ) : (
-        <p className="type-caption mt-3 text-text-2">
-          Targets: {ctx.targets.mode === 'own' ? 'your own' : 'worked out for you'}.{' '}
-          <button type="button" onClick={onTargets} className="font-semibold text-text-1 underline">
+        <p className="type-meta mt-2 flex flex-wrap items-center gap-x-1 px-4 text-text-2">
+          Targets {ctx.targets.mode === 'own' ? 'your own' : 'worked out for you'} ·
+          <TextButton small onClick={onTargets}>
             Change
-          </button>
+          </TextButton>
         </p>
       )}
-    </Card>
+    </section>
+  );
+}
+
+/** A ring that fills as food is logged; its track is always visible, never a grey disc. */
+function CalorieRing({ eaten, target }: { eaten: number; target: number | null }) {
+  const size = 84;
+  const stroke = 10;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const f = target ? Math.min(1, Math.max(0, eaten / target)) : 0;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      className="shrink-0 -rotate-90"
+      role="img"
+      aria-label={target ? `${Math.round(f * 100)}% of today's calories` : 'Calories today'}
+    >
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="var(--lime)"
+        strokeOpacity={0.16}
+        strokeWidth={stroke}
+      />
+      {f > 0 ? (
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="var(--lime)"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - f)}
+          className="ring-arc"
+        />
+      ) : null}
+    </svg>
   );
 }
 
@@ -327,37 +391,37 @@ function MealCard({
       })),
     ),
   );
-  const usual =
-    items.length === 0
-      ? mealTemplates(ctx.logs, meal, date).find((t) => t.kind === 'usual')
-      : undefined;
+  // An empty meal offers the usual one, or else the last time it was eaten (UI v3, O1).
+  const templates = items.length === 0 ? mealTemplates(ctx.logs, meal, date) : [];
+  const usual = templates.find((t) => t.kind === 'usual');
+  const previous = usual ? undefined : templates.find((t) => t.kind === 'previous');
+  const offer = usual ?? previous;
+  const yesterday = toDateKey(addDays(new Date(`${date}T12:00:00`), -1));
+  const offerLabel = usual ? 'Usual' : previous?.date === yesterday ? 'Yesterday' : 'Last time';
   const id = `meal-${meal}`;
   return (
-    <Card as="section" aria-labelledby={id} data-meal={meal}>
-      <div className="flex items-center justify-between gap-3">
-        <h2 id={id} className="type-title text-text-1">
+    <section aria-labelledby={id} data-meal={meal} className="py-3">
+      <div className="flex items-center gap-3">
+        <h3 id={id} className="type-headline min-w-0 flex-1 text-text-1">
           {MEAL_LABEL[meal]}
-        </h2>
-        <div className="flex items-center gap-3">
-          {items.length ? (
-            <span className="type-meta tabular text-text-2">
-              <strong className="font-semibold text-text-1">{n(total.kcal)} kcal</strong> ·{' '}
-              <strong className="font-semibold text-text-1">{total.proteinG.toFixed(0)} g</strong>{' '}
-              protein
-            </span>
-          ) : null}
-          <button
-            type="button"
-            onClick={onAdd}
-            aria-label={`Add food to ${MEAL_LABEL[meal].toLowerCase()}`}
-            className="pressable tap-target inline-flex size-9 items-center justify-center rounded-full bg-surface-2 text-text-1"
-          >
-            <Plus className="size-5" aria-hidden />
-          </button>
-        </div>
+        </h3>
+        {items.length ? (
+          <span className="type-subhead tabular shrink-0 text-text-2">
+            <strong className="type-metric-sm text-text-1">{n(total.kcal)}</strong> kcal ·{' '}
+            {total.proteinG.toFixed(0)} g protein
+          </span>
+        ) : null}
+        <button
+          type="button"
+          onClick={onAdd}
+          aria-label={`Add food to ${MEAL_LABEL[meal].toLowerCase()}`}
+          className="pressable tap-target inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-fill text-text-1"
+        >
+          <Plus className="size-4" aria-hidden />
+        </button>
       </div>
       {items.length ? (
-        <ul className="mt-2 flex flex-col">
+        <ul className="mt-1 flex flex-col">
           {items.map((l) => {
             const food = ctx.foodById.get(l.foodId);
             const portion = portionText(l.amount, l.unit, l.size, food?.pieceName);
@@ -365,54 +429,60 @@ function MealCard({
             return (
               <li key={l.id}>
                 <ListRow
-                  title={l.foodName}
+                  title={<span className="font-normal">{l.foodName}</span>}
                   subtitle={`${portion}${oil}`}
                   wrap
                   value={
                     <span className="flex flex-col items-end">
-                      <span className="type-headline tabular text-text-1">{n(l.kcal)} kcal</span>
+                      <span className="type-subhead tabular text-text-1">{n(l.kcal)} kcal</span>
                       <span className="type-caption tabular text-text-2">
                         {l.proteinG.toFixed(0)} g protein
                       </span>
                     </span>
                   }
                   onClick={() => onEdit(l)}
-                  className="px-1"
+                  className="pl-3"
                 />
               </li>
             );
           })}
         </ul>
-      ) : usual ? (
-        <div
-          className="mt-3 flex items-center gap-3 rounded-nested bg-surface-2 p-3"
+      ) : offer ? (
+        <button
+          type="button"
+          className="pressable chrome type-meta mt-2 inline-flex h-8 max-w-full items-center gap-1.5 rounded-full bg-fill px-3 text-text-1"
           data-usual={meal}
-        >
-          <p className="type-meta min-w-0 flex-1 truncate text-text-2">
-            Your usual: {usual.items.map((i) => i.foodName).join(', ')}
-          </p>
-          <SecondaryButton
-            compact
-            onClick={() =>
-              void copyFoodLogs(db, usual.items, { date, meal }).then((logs) => {
-                haptic('medium');
-                toast(`Logged your usual ${MEAL_LABEL[meal].toLowerCase()}`, {
+          aria-label={`Log ${offerLabel.toLowerCase()} ${MEAL_LABEL[meal].toLowerCase()}: ${offer.items.map((i) => i.foodName).join(', ')}`}
+          onClick={() =>
+            void copyFoodLogs(db, offer.items, { date, meal }).then((logs) => {
+              haptic('medium');
+              const what = MEAL_LABEL[meal].toLowerCase();
+              toast(
+                usual
+                  ? `Logged your usual ${what}`
+                  : offerLabel === 'Yesterday'
+                    ? `Logged yesterday's ${what} again`
+                    : `Logged your last ${what} again`,
+                {
                   label: 'Undo',
                   onSelect: () =>
                     void deleteFoodLogs(
                       db,
                       logs.map((x) => x.id),
                     ),
-                });
-              })
-            }
-          >
-            Log
-          </SecondaryButton>
-        </div>
+                },
+              );
+            })
+          }
+        >
+          <span className="truncate">
+            {offerLabel} · {offer.items.map((i) => i.foodName).join(', ')}
+          </span>
+          <span className="shrink-0 font-semibold text-lime">Log</span>
+        </button>
       ) : (
-        <p className="type-meta mt-2 text-text-2">Nothing logged yet.</p>
+        <p className="type-subhead mt-0.5 text-text-2">Nothing logged yet</p>
       )}
-    </Card>
+    </section>
   );
 }

@@ -21,7 +21,7 @@ export function StatItem({
   className?: string;
 }) {
   return (
-    <div className={cn('min-w-0 rounded-panel border border-border bg-surface p-4', className)}>
+    <div className={cn('min-w-0 rounded-card bg-surface p-4', className)}>
       <dt className="type-meta truncate text-text-2">{label}</dt>
       {empty ? (
         <dd className="type-headline mt-1.5 text-text-2">{empty}</dd>
@@ -37,10 +37,12 @@ export function StatItem({
 
 /** "52 min" or "1 h 5 min" with each unit in Meta beside its number. */
 export function DurationValue({ minutes }: { minutes: number }) {
-  if (minutes < 1) {
+  // UI v3 (G3): never "<1 min", never a lone "1" with a tiny "h".
+  if (minutes < 1) return <span className="type-headline">Under a minute</span>;
+  if (minutes >= 60 && minutes < 61) {
     return (
       <>
-        {'<1'}
+        60
         <Unit>min</Unit>
       </>
     );

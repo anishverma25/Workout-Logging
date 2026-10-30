@@ -40,3 +40,13 @@ export {
 } from './feedback';
 export { KitToastProvider, useKitToast, type KitToastOptions } from './toast';
 export { BottomSheet, ConfirmSheet, Dialog } from './overlays';
+export {
+  Metric,
+  Delta,
+  Section,
+  Group,
+  StatGrid,
+  EmptyLine,
+  TextButton,
+  CapsuleButton,
+} from './v3';

@@ -70,15 +70,15 @@ export function ExplainButton({
         type="button"
         onClick={() => setOpen(true)}
         aria-label={`Explain ${about} with OverloadGPT${pro ? '' : ' (Pro)'}`}
+        title="Explain with OverloadGPT"
         className={cn(
-          'pressable chrome tap-target type-caption inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-surface-2 px-2.5 font-semibold text-text-1',
+          // UI v3 (G5): a small round icon, no label, beside the section title.
+          'pressable chrome tap-target inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-fill text-text-2 hover:text-text-1',
           className,
         )}
         data-coach-explain={topic}
       >
-        <Sparkles className="size-3.5" aria-hidden />
-        Explain
-        {pro ? null : <span className="text-text-2">· Pro</span>}
+        <Sparkles className="size-4" aria-hidden />
       </button>
       <BottomSheet
         open={open}
@@ -351,7 +351,7 @@ export function AskCoachRow({ className }: { className?: string }) {
     <Link
       to="/coach"
       className={cn(
-        'pressable chrome flex min-h-14 items-center gap-3 rounded-panel border border-border bg-surface px-4 py-2.5',
+        'pressable chrome flex min-h-14 items-center gap-3 rounded-card bg-surface px-4 py-2.5',
         className,
       )}
     >

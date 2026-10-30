@@ -484,7 +484,7 @@ function ExerciseRow({
               });
             } else onChange({ kind: 'existing', exerciseId: v });
           }}
-          className="type-meta min-w-0 flex-1 truncate rounded-field border border-border bg-surface px-2 py-1.5 text-text-1"
+          className="type-meta min-w-0 flex-1 truncate rounded-field bg-surface-2 px-2 py-1.5 text-text-1"
         >
           <option value={CUSTOM}>Keep as my own exercise</option>
           {yours.length > 0 ? (
@@ -519,7 +519,7 @@ function ExerciseRow({
                 exercise: { ...choice.exercise, primaryMuscle: e.target.value as MuscleGroup },
               })
             }
-            className="type-meta rounded-field border border-border bg-surface px-2 py-1.5 text-text-1"
+            className="type-meta rounded-field bg-surface-2 px-2 py-1.5 text-text-1"
           >
             {MUSCLE_GROUPS.map((m) => (
               <option key={m} value={m}>

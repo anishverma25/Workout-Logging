@@ -92,7 +92,7 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   // Today is a planned day of the new routine, or its rest day (the plan has no Sunday session).
   await expect(
     page
-      .getByText('Today in Upper Lower Push Pull Legs')
+      .getByText('Today · Upper Lower Push Pull Legs')
       .or(page.getByRole('heading', { name: 'Rest day', level: 2 })),
   ).toBeVisible();
   // Days before the routine existed are not counted as missed.

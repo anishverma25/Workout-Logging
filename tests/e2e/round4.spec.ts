@@ -335,15 +335,8 @@ test('Exercises: one New button in the header, clear of OverloadGPT; box squat i
   await page.goto('/exercises');
   const add = page.getByRole('button', { name: 'New exercise' });
   await expect(add).toHaveCount(1);
-  const a = (await add.boundingBox())!;
-  const b = (await page.locator('[data-coach-launcher]').boundingBox())!;
-  const overlap = !(
-    a.x + a.width <= b.x ||
-    b.x + b.width <= a.x ||
-    a.y + a.height <= b.y ||
-    b.y + b.height <= a.y
-  );
-  expect(overlap).toBe(false);
+  // Nothing floats over it any more (UI v3, B2).
+  await expect(page.locator('[data-coach-launcher]')).toHaveCount(0);
   await page.getByRole('searchbox').fill('box squat');
   await page
     .getByRole('button', { name: /^Box squat/ })

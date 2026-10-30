@@ -1,5 +1,5 @@
 import { ActionMenu } from '@/components/kit/menu';
-import { useState, type ReactNode, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
   ArrowDown,
@@ -60,15 +60,6 @@ import { SlotSheet } from './SlotSheet';
 /** Older personalised routines stored this line as their description; it is no longer shown. */
 const LEGACY_PERSONALISED_NOTE = 'Fitted to your goal, experience and equipment.';
 
-/** A target on an exercise row: surface-2, radius 8, Meta --text-2, tabular. */
-function TargetChip({ children }: { children: ReactNode }) {
-  return (
-    <span className="type-meta tabular inline-flex h-6 items-center rounded-lg bg-surface-2 px-3 text-text-2">
-      {children}
-    </span>
-  );
-}
-
 /** Day cards in weekday order from the week start; days with no weekday set go last. */
 function byWeekday<T extends { weekdays: number[] }>(days: T[], weekStartsOn: WeekStartsOn): T[] {
   const rank = (w: number) => (w - weekStartsOn + 7) % 7;
@@ -127,9 +118,9 @@ export function RoutineEditorPage() {
         <Link
           to="/routines"
           aria-label="Back to Routines"
-          className="pressable tap-target type-body -ml-2 inline-flex h-11 items-center gap-0.5 rounded-field pr-2 font-medium text-text-1"
+          className="pressable tap-target -ml-2 inline-flex h-11 items-center gap-0.5 rounded-field pr-2 text-[1.0625rem] text-lime"
         >
-          <ChevronLeft className="size-6" strokeWidth={1.75} aria-hidden /> Routines
+          <ChevronLeft className="size-6" strokeWidth={2} aria-hidden /> Routines
         </Link>
       </div>
       <header className="flex items-start justify-between gap-3 pt-2 pb-6">
@@ -145,7 +136,6 @@ export function RoutineEditorPage() {
               className="group inline-flex items-center gap-2 text-left"
             >
               {routine.name}
-              <Pencil className="size-5 shrink-0 text-text-2" aria-label="Rename" />
             </button>
           </h1>
           {routine.description && routine.description !== LEGACY_PERSONALISED_NOTE ? (
@@ -504,15 +494,16 @@ function DayCard({ day, index, dayCount, allDays, slots, exerciseById }: DayCard
                       <span className="type-headline block truncate text-text-1">
                         {exercise?.name ?? 'Deleted exercise'}
                       </span>
-                      <span className="mt-1.5 flex flex-wrap gap-1.5">
-                        <TargetChip>
-                          {s.targetSets} × {formatRepRange(s.repMin, s.repMax)}
-                        </TargetChip>
-                        {s.targetRir !== null ? <TargetChip>RIR {s.targetRir}</TargetChip> : null}
-                        <TargetChip>{formatSeconds(s.restSeconds)} rest</TargetChip>
-                        {s.angleDeg != null ? (
-                          <TargetChip>{formatAngle(s.angleDeg)}</TargetChip>
-                        ) : null}
+                      {/* One line instead of a row of pills (UI v3, S5.2). */}
+                      <span className="type-subhead tabular mt-0.5 block truncate text-text-2">
+                        {[
+                          `${s.targetSets} × ${formatRepRange(s.repMin, s.repMax)}`,
+                          s.targetRir !== null ? `RIR ${s.targetRir}` : null,
+                          `${formatSeconds(s.restSeconds)} rest`,
+                          s.angleDeg != null ? formatAngle(s.angleDeg) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </span>
                       {s.notes ? (
                         <span className="type-meta mt-1 block truncate text-text-2">{s.notes}</span>

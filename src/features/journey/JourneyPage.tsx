@@ -96,7 +96,7 @@ function MilestonesSection({ list }: { list: Milestone[] }) {
   const recent = [...list].reverse();
   return (
     <section aria-labelledby="milestones-title" className="mt-9">
-      <h2 id="milestones-title" className="type-title mb-2.5 text-text-1">
+      <h2 id="milestones-title" className="type-section mb-2 text-text-1">
         Milestones
       </h2>
       {recent.length === 0 ? (
@@ -105,22 +105,20 @@ function MilestonesSection({ list }: { list: Milestone[] }) {
           lifts, streaks and totals, all from your own log.
         </p>
       ) : (
-        <ul className="grid gap-2.5 sm:grid-cols-2">
+        // One grouped list instead of a card per milestone (UI v3, S17).
+        <ul className="divide-y-[0.5px] divide-divider rounded-card bg-surface px-4">
           {recent.map((m) => {
             const Icon = ICON[m.kind];
             return (
-              <li
-                key={m.id}
-                className="flex items-center gap-3.5 rounded-panel border border-border bg-surface p-4"
-              >
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime">
-                  <Icon className="size-5" aria-hidden />
+              <li key={m.id} className="flex min-h-14 items-center gap-3 py-2.5">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime">
+                  <Icon className="size-4" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="type-headline block text-text-1">{m.title}</span>
-                  <span className="type-meta block text-text-2">{m.detail}</span>
+                  <span className="type-subhead block text-text-2">{m.detail}</span>
                 </span>
-                <span className="type-meta shrink-0 self-start text-text-2">
+                <span className="type-meta shrink-0 self-start pt-0.5 text-text-2">
                   {formatDate(m.achievedAt)}
                 </span>
               </li>
@@ -145,7 +143,7 @@ function RecapsSection({
   const recaps = [year, month].filter(Boolean) as Recap[];
   return (
     <section aria-labelledby="recaps-title" className="mt-9">
-      <h2 id="recaps-title" className="type-title mb-2.5 text-text-1">
+      <h2 id="recaps-title" className="type-section mb-2 text-text-1">
         Recaps
       </h2>
       {!included ? (

@@ -3,20 +3,26 @@
  *
  * The rules this follows, in plain words:
  * - Only after the trial has really ended, and never to someone who already has Pro.
- * - A quiet first week: nothing for the first few days after the trial ends.
- * - Widening gaps, not a drumbeat: each reminder waits longer than the last, and there are
- *   only ever four of them. A dismissal buys a long silence.
- * - Every line is one of their own numbers, or the price. No invented deadlines, no counters,
- *   no "only today", no borrowed urgency. If there is nothing true to say, nothing is said.
+ * - Two quiet days after the trial ends.
+ * - Then often at first while the trial is fresh in mind (days 0, 3, 7, 12 and 19 of the
+ *   schedule), then once every 10 days for as long as they stay free. "Not now" buys a week.
+ * - Every line is one of their own numbers, the price, or a feature they have not used. No
+ *   invented deadlines, no counters, no "only today", no borrowed urgency. If there is nothing
+ *   true to say, nothing is said.
+ * - Reminders rotate: each one is shown once before any comes back, and then the one seen
+ *   longest ago comes back first, with its numbers worked out again.
  */
 
 /** Days after the trial ends before the first reminder. */
-export const QUIET_DAYS = 3;
-/** Days to wait before reminder 1, 2, 3 and 4. The gap widens every time. */
-export const GAP_DAYS = [0, 10, 21, 35] as const;
-export const MAX_NUDGES = GAP_DAYS.length;
-/** Extra days of silence after "not now". */
-export const DISMISS_DAYS = 21;
+export const QUIET_DAYS = 2;
+/** Days to wait before reminder 1 to 5. Close together at first (owner request, UI v3 A3). */
+export const GAP_DAYS = [0, 3, 4, 5, 7] as const;
+/** After the schedule above, one reminder every this many days while they stay free. */
+export const STEADY_GAP_DAYS = 10;
+/** How many shown ids are kept: enough to know the rotation order. */
+export const MAX_NUDGES = 24;
+/** Days of silence after "not now". */
+export const DISMISS_DAYS = 7;
 
 const DAY_MS = 86_400_000;
 const days = (ms: number) => ms / DAY_MS;
@@ -47,6 +53,8 @@ export interface NudgeFacts {
   records: number;
   /** The monthly price, when the server has sent the plans. */
   monthlyInr: number | null;
+  /** The yearly price, when the server has sent it. */
+  yearlyInr?: number | null;
 }
 
 export interface Nudge {
@@ -95,25 +103,48 @@ function candidates(f: NudgeFacts): Nudge[] {
         perDay < 1
           ? `Pro is ₹${f.monthlyInr} a month, under ₹1 a day.`
           : `Pro is ₹${f.monthlyInr} a month.`,
-      body: 'Every analysis feature, your whole history open, and you can cancel any time. These are introductory prices while the app is new.',
+      body: 'Every analysis feature, OverloadGPT and your whole history open, and you can cancel any time.',
+    });
+  }
+  if (f.monthlyInr !== null && f.yearlyInr) {
+    const saved = Math.round(f.monthlyInr * 12 - f.yearlyInr);
+    if (saved > 0) {
+      out.push({
+        id: 'yearly',
+        title: `A year of Pro is ₹${f.yearlyInr}, ₹${saved} less than paying monthly.`,
+        body: 'One payment covers twelve months of progress analysis, food insights and OverloadGPT.',
+      });
+    }
+  }
+  if (f.historyDays > 0) {
+    out.push({
+      id: 'coach',
+      title: 'OverloadGPT can read your training and explain it.',
+      body: 'Ask why a lift has stalled, what to eat on a training day, or what to change next week. It uses the numbers the app has already worked out from your log.',
     });
   }
   return out;
 }
 
+/** Days to wait after the reminder that is number `shown` in the schedule (0 based). */
+export function gapAfter(shown: number): number {
+  return GAP_DAYS[shown] ?? STEADY_GAP_DAYS;
+}
+
 /** The reminder to show now, or null for silence. */
 export function chooseNudge(facts: NudgeFacts, state: NudgeState, now: Date): Nudge | null {
   if (facts.pro || !facts.endedAt) return null;
-  if (state.shownIds.length >= MAX_NUDGES) return null;
   const sinceEnd = days(now.getTime() - facts.endedAt.getTime());
   if (sinceEnd < QUIET_DAYS) return null;
-  const gap = GAP_DAYS[state.shownIds.length] ?? 0;
+  const gap = gapAfter(state.shownIds.length);
   if (state.lastShownAt && days(now.getTime() - state.lastShownAt.getTime()) < gap) return null;
-  if (
-    state.dismissedAt &&
-    days(now.getTime() - state.dismissedAt.getTime()) < Math.max(gap, DISMISS_DAYS)
-  ) {
+  if (state.dismissedAt && days(now.getTime() - state.dismissedAt.getTime()) < DISMISS_DAYS) {
     return null;
   }
-  return candidates(facts).find((c) => !state.shownIds.includes(c.id)) ?? null;
+  const list = candidates(facts);
+  const fresh = list.find((c) => !state.shownIds.includes(c.id));
+  if (fresh) return fresh;
+  // Everything has been shown once: the one seen longest ago comes back.
+  const lastSeen = (id: string) => state.shownIds.lastIndexOf(id);
+  return [...list].sort((x, y) => lastSeen(x.id) - lastSeen(y.id))[0] ?? null;
 }

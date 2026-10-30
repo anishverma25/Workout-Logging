@@ -22,7 +22,7 @@ export function SegmentedControl<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className="chrome inline-flex gap-0.5 rounded-full bg-surface-2 p-0.5"
+      className="chrome inline-flex gap-0.5 rounded-[0.5625rem] bg-fill p-0.5"
     >
       {options.map((opt) => {
         const selected = opt.value === value;
@@ -34,8 +34,11 @@ export function SegmentedControl<T extends string>({
             aria-checked={selected}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'type-meta tabular h-8 min-w-14 rounded-full px-4 font-semibold transition-colors duration-[var(--dur-press)]',
-              selected ? 'bg-text-1 text-bg' : 'text-text-1',
+              'type-meta tabular h-7 min-w-14 rounded-[0.4375rem] px-4 font-semibold transition-colors duration-[var(--dur-press)]',
+              // UI v3 (G7): the iOS segmented control.
+              selected
+                ? 'bg-seg-selected text-text-1 shadow-[0_1px_3px_rgb(0_0_0/0.3)]'
+                : 'text-text-1',
             )}
           >
             {opt.label}

@@ -1,7 +1,7 @@
 import { memo, useDeferredValue, useMemo, useState } from 'react';
 import { ChevronRight, Trophy } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
-import { Badge } from '@/components/kit';
+import { Delta } from '@/components/kit';
 import { Chips } from '@/components/ui/Fields';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
@@ -61,7 +61,7 @@ export function RecordsPage() {
       <PageHeader
         back={{ to: '/more', label: 'More' }}
         title="Personal records"
-        subtitle="Found in your logged sets, never entered by hand. Estimates are always labelled."
+        subtitle="From your logged sets · estimates labelled"
       />
       {training.status === 'loading' ? <Skeleton className="h-96" /> : null}
       {training.status === 'error' ? <ErrorState error={training.error} /> : null}
@@ -77,7 +77,7 @@ export function RecordsPage() {
       {records.length > 0 ? (
         <>
           <section aria-labelledby="recent-prs">
-            <h2 id="recent-prs" className="type-title mb-3 text-text-1">
+            <h2 id="recent-prs" className="type-section mb-2 text-text-1">
               Last {RECENT_DAYS} days
             </h2>
             {recent.length === 0 ? (
@@ -86,7 +86,7 @@ export function RecordsPage() {
                 best, so they arrive in bursts, not every week.
               </p>
             ) : (
-              <ul className="divide-y-[0.5px] divide-divider rounded-panel border border-border bg-surface px-4">
+              <ul className="divide-y-[0.5px] divide-divider rounded-card bg-surface px-4">
                 {recent.slice(0, 9).map((pr) => (
                   <li key={pr.id}>
                     <RecordRow
@@ -108,7 +108,7 @@ export function RecordsPage() {
           </section>
 
           <section aria-labelledby="all-bests" className="mt-8">
-            <h2 id="all-bests" className="type-title mb-3 text-text-1">
+            <h2 id="all-bests" className="type-section mb-2 text-text-1">
               Bests by exercise
             </h2>
             <div className="mb-3 flex flex-col gap-3">
@@ -131,7 +131,7 @@ export function RecordsPage() {
                 No exercises match.
               </p>
             ) : (
-              <ul className="divide-y-[0.5px] divide-divider rounded-panel border border-border bg-surface px-4">
+              <ul className="divide-y-[0.5px] divide-divider rounded-card bg-surface px-4">
                 {shown.map((r) => (
                   <li key={r.exerciseId}>
                     <BestRow
@@ -179,32 +179,50 @@ const RecordRow = memo(function RecordRow({
   onOpen: (exerciseId: string) => void;
 }) {
   return (
+    // Two lines (UI v3, S14.1): the exercise and what kind of record, the value and its gain.
     <button type="button" onClick={() => onOpen(record.exerciseId)} className={rowCls}>
       <span className="min-w-0 flex-1">
-        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="type-headline min-w-0 text-text-1 [overflow-wrap:break-word]">
-            {record.exerciseName}
-          </span>
-          {isNew ? <Badge tone="lime">New</Badge> : null}
+        <span className="type-headline flex min-w-0 items-center text-text-1">
+          <NewDot show={isNew} />
+          <span className="min-w-0 truncate">{record.exerciseName}</span>
+          {/* After the name, so the row is still found and read by its exercise first. */}
+          {isNew ? <span className="sr-only">, new</span> : null}
         </span>
-        <span className="type-meta tabular mt-0.5 block text-text-2">
-          {formatRelativeDay(record.date)} · {improvementText(record, unit)} over{' '}
-          {formatRecordValue(record.type, record.previousBest, unit)}
+        <span className="type-subhead mt-0.5 block truncate text-text-2">
+          {PR_LABELS[record.type]} · {formatRelativeDay(record.date)}
         </span>
-        {record.type === 'e1rm' && record.weightKg !== null && record.reps !== null ? (
-          <span className="type-meta tabular block text-text-2">
-            Estimated from {formatWeight(record.weightKg, unit)} × {record.reps}
-          </span>
-        ) : null}
       </span>
-      <Value
-        value={formatRecordValue(record.type, record.value, unit)}
-        label={PR_LABELS[record.type]}
-      />
-      <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
+      <span className="flex shrink-0 flex-col items-end gap-1">
+        <span className="type-metric-sm whitespace-nowrap text-text-1">
+          {formatRecordValue(record.type, record.value, unit)}
+        </span>
+        <Delta tone="up" arrow={false}>
+          {gainText(record, unit)}
+          <span className="sr-only">
+            {' '}
+            over {formatRecordValue(record.type, record.previousBest, unit)}
+          </span>
+        </Delta>
+      </span>
+      <ChevronRight className="size-4 shrink-0 text-text-3" aria-hidden />
     </button>
   );
 });
+
+/** A small lime dot before a record from the last 7 days, in place of a "New" badge (S14.2). */
+function NewDot({ show }: { show: boolean }) {
+  if (!show) return null;
+  return (
+    <>
+      <span aria-hidden className="mr-2 size-1.5 shrink-0 rounded-full bg-lime" />
+    </>
+  );
+}
+
+/** "+3.3 kg", "+1 rep": the gain alone; the percentage is in the record sheet. */
+function gainText(pr: PersonalRecord, unit: WeightUnit): string {
+  return improvementText(pr, unit).replace(/ \(.*\)$/, '');
+}
 
 const BestRow = memo(function BestRow({
   record: r,
@@ -233,11 +251,10 @@ const BestRow = memo(function BestRow({
   return (
     <button type="button" onClick={() => onOpen(r.exerciseId)} className={rowCls}>
       <span className="min-w-0 flex-1">
-        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="type-headline min-w-0 text-text-1 [overflow-wrap:break-word]">
-            {r.name}
-          </span>
-          {isNew ? <Badge tone="lime">New</Badge> : null}
+        <span className="type-headline flex min-w-0 items-center text-text-1">
+          <NewDot show={isNew} />
+          <span className="min-w-0 [overflow-wrap:break-word]">{r.name}</span>
+          {isNew ? <span className="sr-only">, new</span> : null}
         </span>
         <span className="type-meta mt-0.5 block truncate text-text-2">
           {MUSCLE_LABELS[r.primaryMuscle]} · {pluralize(r.sessions, 'session')}

@@ -4,7 +4,7 @@ import { Plus, Scale } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { LineChart } from '@/components/charts/LineChart';
 import { ChartEmpty } from '@/components/charts/ChartParts';
-import { Card, ListRow, PrimaryButton, SegmentedControl, Skeleton } from '@/components/kit';
+import { Card, ListRow, Metric, PrimaryButton, SegmentedControl, Skeleton } from '@/components/kit';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
 import {
@@ -83,41 +83,9 @@ export function BodyPage() {
 
   return (
     <>
-      <PageHeader
-        back={{ to: '/more', label: 'More' }}
-        title="Body metrics"
-        subtitle="Weight, measurements and the numbers worked out from them."
-        actions={
-          series.length > 0 ? (
-            <PrimaryButton
-              compact
-              icon={<Plus aria-hidden />}
-              onClick={() => setAdding(true)}
-              aria-label="Add weigh-in"
-            >
-              Weigh-in
-            </PrimaryButton>
-          ) : undefined
-        }
-      />
+      <PageHeader back={{ to: '/more', label: 'More' }} title="Body metrics" />
       {training.status === 'loading' ? <Skeleton height="24rem" radius="panel" /> : null}
       {training.status === 'error' ? <ErrorState error={training.error} /> : null}
-
-      {snapshot && data ? (
-        <div className="mb-8">
-          <BodyNumbers
-            snapshot={snapshot}
-            goal={profile?.goal ?? null}
-            sex={profile?.sex ?? null}
-            heightCm={profile?.heightCm ?? null}
-            unit={unit}
-            hasProfile={!!profile}
-          />
-          {profile ? (
-            <TargetsCard profile={profile} snapshot={snapshot} data={data} now={now} />
-          ) : null}
-        </div>
-      ) : null}
 
       {training.status === 'success' && !summary ? (
         <EmptyState
@@ -134,70 +102,54 @@ export function BodyPage() {
 
       {summary ? (
         <>
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
-            <Card>
-              <p className="type-meta text-text-2">
-                Latest · {formatRelativeDay(new Date(summary.latest.measuredAt), now)}
-              </p>
-              <p className="mt-1 flex items-baseline gap-1">
-                <span className="type-stat text-text-1">
-                  {formatWeightValue(summary.latest.weightKg, unit)}
+          {/* The number people open this page for comes first (UI v3, S15.1). */}
+          <section aria-label="Latest weight" className="rounded-card bg-surface p-4">
+            <div className="flex items-start justify-between gap-3">
+              <Metric
+                tier="hero"
+                accentLabel
+                label={`Latest · ${formatRelativeDay(new Date(summary.latest.measuredAt), now)}`}
+                value={formatWeightValue(summary.latest.weightKg, unit)}
+                unit={unit}
+              />
+              {summary.weekChangeKg !== null ? (
+                // Neutral, not green or red: whether a gain is good depends on the goal.
+                <span className="type-subhead tabular mt-6 shrink-0 text-text-2">
+                  {signed(summary.weekChangeKg, unit)} in a week
                 </span>
-                <span className="type-meta text-text-2">{unit}</span>
-              </p>
-              <dl className="type-meta mt-4 flex flex-col gap-2">
-                <div className="flex items-baseline justify-between gap-3">
-                  <dt className="text-text-2">Previous</dt>
-                  <dd className="tabular text-right text-text-1">
-                    {summary.previous ? (
-                      <>
-                        {formatWeightValue(summary.previous.weightKg, unit)} {unit}{' '}
-                        <span className="text-text-2">
-                          ({signed(summary.latest.weightKg - summary.previous.weightKg, unit)})
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-text-2">None yet</span>
-                    )}
+              ) : null}
+            </div>
+            <dl className="type-meta mt-1 flex flex-wrap gap-x-4 gap-y-1 text-text-2">
+              <div className="flex gap-1">
+                <dt>{ROLLING_WINDOW_DAYS}-day average</dt>
+                <dd className="tabular text-text-1">
+                  {summary.rollingAverageKg !== null
+                    ? `${formatWeightValue(summary.rollingAverageKg, unit)} ${unit}`
+                    : `needs ${ROLLING_MIN_ENTRIES} weigh-ins (${summary.rollingCount} so far)`}
+                </dd>
+              </div>
+              {summary.previous ? (
+                <div className="flex gap-1">
+                  <dt>Previous</dt>
+                  <dd className="tabular text-text-1">
+                    {formatWeightValue(summary.previous.weightKg, unit)} {unit}
                   </dd>
                 </div>
-                <div className="flex items-baseline justify-between gap-3">
-                  <dt className="shrink-0 text-text-2">{ROLLING_WINDOW_DAYS}-day average</dt>
-                  <dd className="tabular text-right text-text-1">
-                    {summary.rollingAverageKg !== null ? (
-                      `${formatWeightValue(summary.rollingAverageKg, unit)} ${unit}`
-                    ) : (
-                      <span className="text-text-2">
-                        Needs {ROLLING_MIN_ENTRIES} weigh-ins in {ROLLING_WINDOW_DAYS} days (
-                        {summary.rollingCount} so far)
-                      </span>
-                    )}
-                  </dd>
-                </div>
-                <div className="flex items-baseline justify-between gap-3">
-                  <dt className="shrink-0 text-text-2">Change vs a week earlier</dt>
-                  <dd className="tabular text-right text-text-1">
-                    {summary.weekChangeKg !== null ? (
-                      signed(summary.weekChangeKg, unit)
-                    ) : (
-                      <span className="text-text-2">
-                        Needs a weigh-in from at least a week before the latest
-                      </span>
-                    )}
-                  </dd>
-                </div>
-              </dl>
-            </Card>
+              ) : null}
+            </dl>
+          </section>
 
+          <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4">
             <Card>
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="type-title text-text-1">Trend</h2>
+              <div className="mb-3 flex flex-col gap-3">
+                <h2 className="type-section text-text-1">Trend</h2>
                 <SegmentedControl
                   label="Range"
+                  block
                   options={[
-                    { value: '30d', label: '30 days' },
-                    { value: '90d', label: '90 days' },
-                    { value: 'all', label: 'All' },
+                    { value: '30d', label: '30D', ariaLabel: '30 days' },
+                    { value: '90d', label: '90D', ariaLabel: '90 days' },
+                    { value: 'all', label: 'All', ariaLabel: 'All time' },
                   ]}
                   value={range}
                   onChange={setRange}
@@ -248,8 +200,33 @@ export function BodyPage() {
                 The line is a smoothed trend, so day to day swings of a kilogram or so (mostly
                 water) barely move it.
               </p>
+              {/* The one lime action on this page (UI v3, S15.1). */}
+              <PrimaryButton
+                block
+                className="mt-4"
+                icon={<Plus aria-hidden />}
+                onClick={() => setAdding(true)}
+                aria-label="Add weigh-in"
+              >
+                Weigh-in
+              </PrimaryButton>
             </Card>
           </div>
+          {snapshot && data ? (
+            <div className="mt-8">
+              <BodyNumbers
+                snapshot={snapshot}
+                goal={profile?.goal ?? null}
+                sex={profile?.sex ?? null}
+                heightCm={profile?.heightCm ?? null}
+                unit={unit}
+                hasProfile={!!profile}
+              />
+              {profile ? (
+                <TargetsCard profile={profile} snapshot={snapshot} data={data} now={now} />
+              ) : null}
+            </div>
+          ) : null}
 
           {data ? (
             <MeasurementsSection
@@ -260,7 +237,7 @@ export function BodyPage() {
           ) : null}
 
           <section aria-labelledby="weigh-ins" className="mt-8">
-            <h2 id="weigh-ins" className="type-title mb-3 text-text-1">
+            <h2 id="weigh-ins" className="type-section mb-2 text-text-1">
               All weigh-ins
             </h2>
             <div className="flex flex-col gap-6">

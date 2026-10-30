@@ -1,4 +1,11 @@
-# Overload UI rules
+# UI rules
+
+> **UI v3 (October 2026) supersedes anything below that conflicts with it.** Read
+> `docs/UI_V3_BRIEF.md` section 4 first: no card borders, Title 2 sentence-case section
+> headers (no ALL CAPS labels), lime only for the one primary action, selected state and goal
+> progress, the `Metric`, `Section`, `Group`, `StatGrid`, `EmptyLine`, `TextButton` and
+> `CapsuleButton` primitives in `src/components/kit/v3.tsx`, five tabs, header buttons above the
+> large title, no floating OverloadGPT button, SF Pro on Apple devices and Inter elsewhere.
 
 The standing visual rules for every screen, sheet and state. Copied from sections 3.1 to 3.6 of
 `docs/UI_REDESIGN_BRIEF.md` (Part 1). Read this file and the brief at the start of every

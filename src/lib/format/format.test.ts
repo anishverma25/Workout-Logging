@@ -125,3 +125,26 @@ describe('week start (D9)', () => {
     expect(orderedWeekdays(0).map(shortDayName)[0]).toBe('Sun');
   });
 });
+
+describe('UI v3 number rules', () => {
+  it('writes ranges on one line, rounded', async () => {
+    const { formatRange } = await import('@/lib/format');
+    expect(formatRange(107.1, 147.2, 'g')).toBe('107 to 147 g');
+    expect(formatRange(1.6, 2.2, 'g per kg', 1)).toBe('1.6 to 2.2 g per kg');
+    expect(formatRange(80, 80)).toBe('80');
+  });
+
+  it('never shows "<1 min" or a lone hour', async () => {
+    const { formatWorkoutLength } = await import('@/lib/format');
+    expect(formatWorkoutLength(0.3)).toBe('Under a minute');
+    expect(formatWorkoutLength(8)).toBe('8 min');
+    expect(formatWorkoutLength(60)).toBe('1 h');
+    expect(formatWorkoutLength(73)).toBe('1 h 13 min');
+  });
+
+  it('keeps full digits below 100,000 and goes compact from there', async () => {
+    const { formatCompact } = await import('@/lib/format');
+    expect(formatCompact(41208)).toBe('41,208');
+    expect(formatCompact(173900)).toBe('173.9k');
+  });
+});

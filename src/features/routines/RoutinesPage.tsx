@@ -1,16 +1,7 @@
 import { ActionMenu } from '@/components/kit/menu';
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
-import {
-  CalendarRange,
-  ChevronRight,
-  Copy,
-  Ellipsis,
-  Plus,
-  Share2,
-  Star,
-  Trash2,
-} from 'lucide-react';
+import { CalendarRange, Copy, Ellipsis, Plus, Share2, Star, Trash2 } from 'lucide-react';
 import { useShareRoutine } from './useShareRoutine';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
@@ -52,17 +43,14 @@ export function RoutinesPage() {
     <>
       <PageHeader
         title="Routines"
+        back={{ to: '/workout', label: 'Workout' }}
         actions={
           routines.length > 0 ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={<Plus className="size-4" aria-hidden />}
+            <IconButton
+              label="New routine"
+              icon={<Plus className="size-5" aria-hidden />}
               onClick={() => setCreating(true)}
-              className="max-sm:hidden"
-            >
-              New routine
-            </Button>
+            />
           ) : undefined
         }
       />
@@ -95,19 +83,6 @@ export function RoutinesPage() {
         </ul>
       ) : null}
 
-      {routines.length > 0 ? (
-        <Button
-          variant="secondary"
-          size="lg"
-          block
-          className="mt-4 sm:hidden"
-          icon={<Plus className="size-5" aria-hidden />}
-          onClick={() => setCreating(true)}
-        >
-          New routine
-        </Button>
-      ) : null}
-
       <NewRoutineSheet open={creating} onClose={() => setCreating(false)} />
     </>
   );
@@ -130,7 +105,7 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
   ).length;
 
   return (
-    <article className={cn('relative rounded-panel border border-border bg-surface p-5')}>
+    <article className="relative rounded-card bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -171,34 +146,22 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
               key={w}
               aria-current={isToday ? 'date' : undefined}
               className={cn(
+                // UI v3 (S5.1): today gets a white ring, never a lime fill.
                 'flex min-h-13 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-field px-0.5 py-1.5 text-center',
-                isToday
-                  ? 'bg-lime text-on-lime'
-                  : name
-                    ? 'bg-surface-2 text-text-1'
-                    : 'border border-dashed border-border-strong',
+                name ? 'bg-surface-2 text-text-1' : 'text-text-2',
+                isToday && 'ring-2 ring-text-1 ring-inset',
               )}
             >
-              <span className={cn('type-caption', isToday ? 'text-on-lime' : 'text-text-2')}>
+              <span className={cn('type-caption', isToday ? 'text-text-1' : 'text-text-2')}>
                 {shortDayName(w)}
               </span>
-              <FitText
-                className={cn(
-                  'type-meta font-semibold',
-                  !name && (isToday ? 'text-on-lime' : 'text-text-2'),
-                )}
-              >
+              <FitText className={cn('type-meta font-semibold', !name && 'text-text-2')}>
                 {name ?? 'Rest'}
               </FitText>
             </li>
           );
         })}
       </ol>
-
-      <div className="type-body mt-4 flex items-center justify-between font-medium text-text-1">
-        <span>Edit routine</span>
-        <ChevronRight className="size-4 text-text-2" aria-hidden />
-      </div>
 
       <ActionMenu
         open={menu}

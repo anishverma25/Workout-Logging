@@ -96,14 +96,12 @@ function ModeChoice({ value, onChange }: { value: PayMode; onChange: (m: PayMode
             aria-checked={selected}
             onClick={() => onChange(o.id)}
             className={cn(
-              'pressable chrome rounded-nested border px-3 py-2.5 text-left',
-              selected ? 'border-text-1 bg-text-1 text-bg' : 'border-transparent bg-surface-2',
+              'pressable chrome rounded-nested bg-surface-2 px-3 py-2.5 text-left text-text-1',
+              selected && 'ring-2 ring-lime ring-inset',
             )}
           >
             <span className="type-headline block">{o.title}</span>
-            <span className={cn('type-caption block', selected ? 'text-bg/75' : 'text-text-2')}>
-              {o.note}
-            </span>
+            <span className="type-caption block text-text-2">{o.note}</span>
           </button>
         );
       })}
@@ -123,6 +121,8 @@ function PlanChoice({
   periods: Record<BillingPlan['id'], string>;
 }) {
   const best = bestValue(plans);
+  // What the same months cost on the monthly plan: the honest anchor for longer plans.
+  const monthly = plans.find((p) => p.id === 'monthly');
   return (
     <div role="radiogroup" aria-label="Pro plans" className="flex flex-col gap-2">
       {plans.map((p) => {
@@ -136,30 +136,20 @@ function PlanChoice({
             aria-checked={selected}
             onClick={() => onChange(p.id)}
             className={cn(
-              'pressable chrome flex min-h-16 w-full items-center gap-3 rounded-nested border px-4 py-3 text-left',
-              selected ? 'border-text-1 bg-text-1 text-bg' : 'border-transparent bg-surface-2',
+              'pressable chrome flex min-h-16 w-full items-center gap-3 rounded-nested bg-surface-2 px-4 py-3 text-left text-text-1',
+              selected && 'ring-2 ring-lime ring-inset',
             )}
           >
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-2">
                 <span className="type-headline">{p.label}</span>
                 {p.id === best ? (
-                  <span
-                    className={cn(
-                      'type-caption rounded-full px-2 py-0.5 font-semibold',
-                      selected ? 'bg-bg text-text-1' : 'bg-lime-dim text-text-1',
-                    )}
-                  >
+                  <span className="type-caption rounded-full bg-lime px-2 py-0.5 font-semibold text-on-lime">
                     Best value
                   </span>
                 ) : null}
               </span>
-              <span
-                className={cn(
-                  'type-meta tabular mt-0.5 block',
-                  selected ? 'text-bg/75' : 'text-text-2',
-                )}
-              >
+              <span className="type-meta tabular mt-0.5 block text-text-2">
                 {p.months > 1
                   ? `${formatRupees(Math.round(perMonth(p) * 100) / 100)} a month`
                   : 'Billed monthly'}
@@ -167,10 +157,17 @@ function PlanChoice({
               </span>
             </span>
             <span className="text-right">
-              <span className="type-title tabular block">{formatRupees(p.priceInr)}</span>
-              <span className={cn('type-meta block', selected ? 'text-bg/75' : 'text-text-2')}>
-                {periods[p.id]}
+              <span className="flex items-baseline justify-end gap-1.5">
+                {monthly && p.months > 1 && monthly.priceInr * p.months > p.priceInr ? (
+                  // Twelve months on the monthly plan, crossed out: a real price, not a made-up
+                  // "was" price.
+                  <span className="type-meta tabular text-text-2 line-through" aria-hidden>
+                    {formatRupees(monthly.priceInr * p.months)}
+                  </span>
+                ) : null}
+                <span className="type-title tabular">{formatRupees(p.priceInr)}</span>
               </span>
+              <span className="type-meta block text-text-2">{periods[p.id]}</span>
             </span>
           </button>
         );

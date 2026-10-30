@@ -114,7 +114,7 @@ test('Pro tells OverloadGPT a meal and sees food on Progress', async ({ page }) 
   await openFood(page);
 
   // The demo athlete's usual breakfast is one tap.
-  await page.locator('[data-usual="breakfast"]').getByRole('button', { name: 'Log' }).click();
+  await page.locator('[data-usual="breakfast"]').click();
   await expect(page.locator('[data-meal="breakfast"]')).toContainText('Poha');
 
   await page.locator('[data-add-food]').click();
@@ -141,7 +141,7 @@ test('Pro tells OverloadGPT a meal and sees food on Progress', async ({ page }) 
   await expect(dinner).toContainText('Roti');
   await expect(dinner).toContainText('Domino pizza');
 
-  await page.goto('/progress');
+  await page.goto('/progress?view=food');
   const section = page.locator('#nutrition');
   await section.scrollIntoViewIfNeeded();
   await expect(section.locator('[data-nutrition-section]')).toBeVisible();
@@ -150,7 +150,7 @@ test('Pro tells OverloadGPT a meal and sees food on Progress', async ({ page }) 
 
 test('Home shows food today and the coach brief includes food', async ({ page }) => {
   await startWithDemo(page, { tag: 'food-home' });
-  await expect(page.locator('[data-food-card]')).toContainText('Food today');
+  await expect(page.locator('[data-food-card]')).toContainText(/kcal (left|over|today)/);
   await page.goto('/body');
   await expect(page.locator('[data-food-log-block]')).toContainText('From your food log');
 });
@@ -255,7 +255,7 @@ test("a meal's + logs to that meal only, in a steady sheet that holds the page s
 test('Pro gets the day analysed against published ranges', async ({ page }) => {
   await startWithDemo(page, { tag: 'food-analysis' });
   await openFood(page);
-  await page.locator('[data-usual="breakfast"]').getByRole('button', { name: 'Log' }).click();
+  await page.locator('[data-usual="breakfast"]').click();
   const card = page.locator('[data-day-analysis]');
   await expect(card).toContainText('Day analysis');
   await expect(card).toContainText('Today so far');

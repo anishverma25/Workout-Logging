@@ -44,7 +44,7 @@ import {
   AnglePicker,
   IconButton as KitIconButton,
   PrimaryButton,
-  SecondaryButton,
+  TextButton,
   TextLink,
 } from '@/components/kit';
 import { formatWeightValue, type WeightUnit } from '@/lib/units';
@@ -221,9 +221,9 @@ function ExerciseCardImpl({
       data-exercise-card={we.id}
       className={cn(
         // min-w-0: a grid item must not grow to fit the one-line muscle summary.
-        'relative min-w-0 scroll-mt-32 rounded-panel border bg-surface',
+        'relative min-w-0 scroll-mt-32 rounded-card border bg-surface',
         collapsed ? 'py-0' : 'py-4',
-        active && !collapsed ? 'border-border-strong' : 'border-border',
+        active && !collapsed ? 'border-border-strong' : 'border-transparent',
       )}
     >
       {superset?.linkedNext ? (
@@ -254,7 +254,7 @@ function ExerciseCardImpl({
               <h2
                 id={`ex-${we.id}`}
                 {...holdToReorder}
-                className="type-title select-none text-text-1 [-webkit-touch-callout:none]"
+                className="select-none text-[1.25rem] leading-[1.5625rem] font-semibold tracking-[-0.014em] text-text-1 [-webkit-touch-callout:none]"
               >
                 {we.exerciseName}
               </h2>
@@ -426,15 +426,17 @@ function ExerciseCardImpl({
           </div>
 
           <div className="mt-3 flex items-center justify-between gap-3 px-4">
-            <div className="flex items-center gap-2">
-              <SecondaryButton compact icon={<Plus />} onClick={() => void addSet(db, we.id)}>
+            <div className="flex items-center gap-5">
+              {/* Text buttons, not grey slabs (UI v3, S6.5). */}
+              <TextButton small icon={<Plus />} onClick={() => void addSet(db, we.id)}>
                 Add set
-              </SecondaryButton>
+              </TextButton>
               {/* Fewer sets than planned today: drops the last set not yet done. */}
               {doneCount < sets.length ? (
-                <SecondaryButton
-                  compact
+                <TextButton
+                  small
                   icon={<Minus />}
+                  className="text-text-2"
                   onClick={async () => {
                     const removed = await removeLastOpenSet(db, we.id);
                     if (removed) {
@@ -446,7 +448,7 @@ function ExerciseCardImpl({
                   }}
                 >
                   Remove set
-                </SecondaryButton>
+                </TextButton>
               ) : null}
             </div>
             {allDone && expanded ? (

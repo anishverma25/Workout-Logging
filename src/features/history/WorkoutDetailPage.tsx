@@ -26,6 +26,7 @@ import {
   BottomSheet,
   Card,
   ConfirmSheet,
+  Delta,
   IconButton,
   IconTile,
   PrimaryButton,
@@ -153,7 +154,7 @@ export function WorkoutDetailPage() {
         }
       />
 
-      <div className="mb-4 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+      <div className="mb-4">
         <PrimaryButton
           block
           icon={<Play className="fill-current" aria-hidden />}
@@ -169,9 +170,6 @@ export function WorkoutDetailPage() {
         >
           Start this workout
         </PrimaryButton>
-        <SecondaryButton icon={<Share aria-hidden />} onClick={() => setSharing(true)}>
-          Share
-        </SecondaryButton>
       </div>
       <ShareSheet workoutId={workout.id} open={sharing} onClose={() => setSharing(false)} />
 
@@ -189,31 +187,42 @@ export function WorkoutDetailPage() {
             unit={prefs.weightUnit}
             empty={summary.volumeKg > 0 ? undefined : 'None'}
           />
-          <StatItem
-            label="Records"
-            value={String(new Set(summary.prs.map((p) => p.exerciseId)).size)}
-          />
+          {/* No zero tiles (UI v3, G10). */}
+          {summary.prs.length > 0 ? (
+            <StatItem
+              label="Records"
+              value={String(new Set(summary.prs.map((p) => p.exerciseId)).size)}
+            />
+          ) : null}
         </dl>
       ) : null}
-      {workout.sessionRpe || workout.readiness ? (
-        <p className="type-meta tabular mt-3 text-text-2">
-          {workout.readiness
-            ? `Before: sleep ${workout.readiness.sleep}/5, energy ${workout.readiness.energy}/5, soreness ${workout.readiness.soreness}/5. `
-            : ''}
-          {workout.sessionRpe
-            ? `Session effort ${workout.sessionRpe}/10${
-                summary?.minutes
-                  ? `, training load ${sessionLoad(workout.sessionRpe, Math.round(summary.minutes))} (effort × minutes)`
-                  : ''
-              }.`
-            : ''}
-        </p>
-      ) : null}
-
-      {workout.notes ? (
-        <p className="type-body mt-4 rounded-nested bg-surface-2 px-4 py-3 whitespace-pre-line text-text-2">
-          {workout.notes}
-        </p>
+      {workout.sessionRpe || workout.readiness || workout.notes ? (
+        // Effort, the check-in and the note as rows of one group (UI v3, F14).
+        <ul className="mt-3 divide-y-[0.5px] divide-divider rounded-card bg-surface px-4">
+          {workout.sessionRpe ? (
+            <li className="flex min-h-11 items-center justify-between gap-3 py-2.5">
+              <span className="text-[1.0625rem] text-text-1">Session effort</span>
+              <span className="type-subhead tabular text-right text-text-2">
+                {workout.sessionRpe} of 10
+                {summary?.minutes
+                  ? ` · load ${sessionLoad(workout.sessionRpe, Math.round(summary.minutes))}`
+                  : ''}
+              </span>
+            </li>
+          ) : null}
+          {workout.readiness ? (
+            <li className="flex min-h-11 items-center justify-between gap-3 py-2.5">
+              <span className="text-[1.0625rem] text-text-1">Before</span>
+              <span className="type-subhead tabular text-right text-text-2">
+                Sleep {workout.readiness.sleep}/5 · energy {workout.readiness.energy}/5 · soreness{' '}
+                {workout.readiness.soreness}/5
+              </span>
+            </li>
+          ) : null}
+          {workout.notes ? (
+            <li className="type-subhead py-3 whitespace-pre-line text-text-1">{workout.notes}</li>
+          ) : null}
+        </ul>
       ) : null}
 
       <MuscleMapCard
@@ -260,6 +269,14 @@ export function WorkoutDetailPage() {
         anchor={menuButton}
         label={`Options for ${workout.name}`}
         items={[
+          {
+            label: 'Share',
+            icon: <Share aria-hidden />,
+            onSelect: () => {
+              setMenu(false);
+              setSharing(true);
+            },
+          },
           {
             label: 'Rename and edit notes',
             icon: <Pencil aria-hidden />,
@@ -400,12 +417,16 @@ function ExerciseBlock({
         : null;
   const showPercent = sets.some((s) => percentOf(s) !== null);
   const perHand = exercise?.loadMode === 'per_hand' && cols.load !== null && tracking !== 'cardio';
+  // Rest before each set sits in its own column, not as a line between sets (UI v3, S9.5).
+  const showRest = sets.some((s) => rests.get(s.id)?.kind === 'set');
+  const fromLast = sets.map((s) => rests.get(s.id)).find((r) => r?.kind === 'exercise') ?? null;
   const columns = [
     '28px',
     ...(cols.load !== null ? ['minmax(0,1fr)'] : []),
     'minmax(0,1fr)',
     ...(effortKey ? ['minmax(0,0.8fr)'] : []),
     ...(showPercent ? ['minmax(0,0.9fr)'] : []),
+    ...(showRest ? ['minmax(0,0.9fr)'] : []),
   ].join(' ');
   const same = change && change.kind !== 'first' && Math.abs(change.change) < 0.0005;
   const TrendIcon =
@@ -424,14 +445,14 @@ function ExerciseBlock({
           {we.exerciseName}
         </h2>
         {change && change.kind !== 'first' && TrendIcon ? (
-          <span
-            className="type-meta tabular flex shrink-0 items-center gap-1 text-text-2"
-            title="Best set compared with the previous session"
+          <Delta
+            tone={same ? 'flat' : change.change > 0 ? 'up' : 'down'}
+            arrow={!same}
+            className="shrink-0"
           >
-            <TrendIcon className="size-4" aria-hidden />
             {same ? 'Same as last time' : formatSignedPercent(change.change, 1)}
             <span className="sr-only"> compared with the previous session</span>
-          </span>
+          </Delta>
         ) : null}
       </div>
       {we.target ? (
@@ -441,6 +462,11 @@ function ExerciseBlock({
             ? we.target.repMin
             : `${we.target.repMin} to ${we.target.repMax}`}
           {we.target.rir !== null ? ` · RIR ${we.target.rir}` : ''}
+        </p>
+      ) : null}
+      {fromLast ? (
+        <p className="type-meta tabular mt-0.5 text-text-2">
+          {formatRest(fromLast.seconds)} since the last exercise
         </p>
       ) : null}
       {we.notes ? <p className="type-meta mt-1 text-text-2">{we.notes}</p> : null}
@@ -461,6 +487,7 @@ function ExerciseBlock({
             % 1RM
           </span>
         ) : null}
+        {showRest ? <span className="text-right">Rest</span> : null}
       </div>
       <ol className="flex flex-col gap-0.5">
         {sets.map((s) => (
@@ -477,7 +504,7 @@ function ExerciseBlock({
             unit={unit}
             onEdit={() => onEditSet(s.id)}
             percent={showPercent ? percentOf(s) : undefined}
-            rest={rests.get(s.id)}
+            rest={showRest ? (rests.get(s.id) ?? null) : undefined}
           />
         ))}
       </ol>
@@ -505,7 +532,8 @@ function SetLine({
   percent,
   rest,
 }: {
-  rest?: RestInterval;
+  /** Undefined: no rest column. Null: nothing measured before this set. */
+  rest?: RestInterval | null;
   set: WorkoutSet;
   label: string;
   text: string;
@@ -519,6 +547,7 @@ function SetLine({
   /** Load as a share of the best estimated 1RM; undefined when the column is not shown. */
   percent?: number | null;
 }) {
+  const restCell = rest === undefined ? undefined : rest?.kind === 'set' ? rest : null;
   const effort = set.rir !== null ? `RIR ${set.rir}` : set.rpe !== null ? `RPE ${set.rpe}` : null;
   // The column shows the bare number; a set logged in the other scale keeps its label.
   const effortCell =
@@ -533,13 +562,6 @@ function SetLine({
         : null;
   return (
     <li>
-      {rest ? (
-        <p className="type-caption tabular pl-[42px] text-text-2">
-          {rest.kind === 'set'
-            ? `Rested ${formatRest(rest.seconds)}`
-            : `${formatRest(rest.seconds)} since the last exercise`}
-        </p>
-      ) : null}
       <button
         type="button"
         onClick={onEdit}
@@ -566,6 +588,14 @@ function SetLine({
           {percent !== undefined ? (
             <span className="type-meta tabular truncate text-center text-text-2">
               {percent !== null ? `${percent}%` : ''}
+            </span>
+          ) : null}
+          {restCell !== undefined ? (
+            <span
+              className="type-meta tabular truncate text-right text-text-2"
+              aria-label={restCell ? `Rested ${formatRest(restCell.seconds)}` : undefined}
+            >
+              {restCell ? formatRest(restCell.seconds) : ''}
             </span>
           ) : null}
         </span>

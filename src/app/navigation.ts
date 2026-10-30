@@ -39,11 +39,12 @@ export interface NavItem {
 
 /**
  * The main areas: training on the left, food in the middle; activity is under More on a phone and on Home, then
- * results. The phone's bottom bar shows six of them (`BOTTOM_NAV`); the rest are under More.
+ * results. The phone's bottom bar shows five of them (`BOTTOM_NAV`); the rest are under More.
  */
 export const PRIMARY_NAV: NavItem[] = [
   { to: '/', label: 'Home', icon: House },
-  { to: '/routines', label: 'Routines', icon: CalendarRange },
+  // Routines live inside the Workout tab on phones (UI v3, B1); the sidebar keeps the link.
+  { to: '/routines', label: 'Routines', icon: CalendarRange, bottom: false },
   { to: '/workout', label: 'Workout', icon: Dumbbell },
   { to: '/food', label: 'Food', icon: UtensilsCrossed },
   { to: '/activity', label: 'Activity', icon: Flame, bottom: false },
@@ -73,3 +74,15 @@ export const SECONDARY_NAV: NavItem[] = [
     group: 'app',
   },
 ];
+
+/** The five main tabs: their headers carry OverloadGPT and the avatar (UI v3, A1 and B9). */
+export const TAB_ROOTS = ['/', '/workout', '/food', '/progress', '/history'];
+
+/**
+ * The tab bar steps aside in the workout logger and on its summary, as Apple Fitness does, so
+ * the screen belongs to the workout (UI v3, B3).
+ */
+export function hidesTabBar(pathname: string, workoutOpen: boolean): boolean {
+  if (/^\/workouts\/[^/]+\/summary\/?$/.test(pathname)) return true;
+  return workoutOpen && (pathname === '/workout' || pathname === '/workout/');
+}

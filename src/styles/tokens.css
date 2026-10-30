@@ -59,12 +59,25 @@
   --bar: #0a0a0a;
   --surface: #1c1c1e;
   --surface-2: #2c2c2e;
-  --border: rgb(255 255 255 / 0.08);
+  /* UI v3 (G1): groups and tiles are separated by fill alone, never by a 1px border. Kept as a
+     token so emphasis borders (--border-strong) and dashed outlines still work. */
+  --border: transparent;
   --border-strong: rgb(255 255 255 / 0.16);
-  --divider: rgb(255 255 255 / 0.08);
+  /* Hairlines between rows, inset to the text (iOS separator). */
+  --divider: rgb(84 84 88 / 0.55);
   --grid: rgb(255 255 255 / 0.06);
   --track: rgb(255 255 255 / 0.1);
   --overlay: rgb(0 0 0 / 0.6);
+  /* UI v3 surfaces (G1). */
+  --group: var(--surface);
+  --elevated: var(--surface-2);
+  --fill: rgb(118 118 128 / 0.24);
+  --seg-selected: #636366;
+  /* Translucent material for the tab bar and the collapsed header. */
+  --material-bar: rgb(22 22 24 / 0.8);
+  /* Height of the phone tab bar; 0 while it is hidden (the workout logger and its summary).
+     Set by the shell, read by everything that floats above the bar. */
+  --tabbar-h: 3.0625rem;
 
   /* Text */
   --text-1: #ffffff;
@@ -98,10 +111,24 @@
   --danger: #ff453a;
   /* Destructive text and field errors: --danger is 4.1:1 on --surface-2, this is 5.0:1. */
   --danger-text: #ff6b5e;
+  /* Change capsules (G3): green up, red down, on their own colour at 16%. */
+  --up: #30d158;
+  --up-dim: rgb(48 209 88 / 0.16);
+  --down: #ff453a;
+  --down-dim: rgb(255 69 58 / 0.16);
+  --warning-dim: rgb(255 179 64 / 0.16);
 
   /* Type */
-  --font-text: 'Inter', 'Inter Fallback', system-ui, sans-serif;
-  --font-heading: 'Inter Display', 'Inter', 'Inter Fallback', system-ui, sans-serif;
+  /* UI v3 (G2): Apple devices get SF Pro (-apple-system), everything else keeps self-hosted
+     Inter. system-ui stays after Inter, or Android would get Roboto. */
+  --font-text: -apple-system, BlinkMacSystemFont, 'Inter', 'Inter Fallback', system-ui, sans-serif;
+  --font-heading:
+    -apple-system, BlinkMacSystemFont, 'Inter Display', 'Inter', 'Inter Fallback', system-ui,
+    sans-serif;
+  /* Numbers that matter (G3): SF Pro Rounded on Apple devices, Inter Display elsewhere. */
+  --font-metric:
+    ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Inter Display', 'Inter',
+    'Inter Fallback', system-ui, sans-serif;
 
   /* Motion (UI rules 3.4 and Part 8) */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);

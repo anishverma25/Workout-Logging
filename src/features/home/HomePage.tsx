@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
-import { CalendarRange, Dumbbell, FileUp, Sparkles } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { CalendarRange, Dumbbell, FileUp, Sparkles, X } from 'lucide-react';
+import { CapsuleButton } from '@/components/kit';
 import { buildDashboard } from '@/domain/analytics/dashboard';
 import { usePreferences, useTrainingData } from '@/data/hooks';
 import { ButtonLink } from '@/components/ui/Button';
@@ -10,14 +11,11 @@ import { useNow } from '@/lib/useNow';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { ProNudgeCard } from '@/features/pro/ProNudgeCard';
 import { isAlive } from '@/domain/analytics/sessions';
-import { BodyWeightCard } from './BodyWeightCard';
-import { RecordCard } from './RecordCard';
+import { Highlights } from './Highlights';
 import { StrengthCard } from './StrengthCard';
 import { TodayCard } from './TodayCard';
 import { WeekCard } from './WeekCard';
-import { CheckinCard } from './CheckinCard';
 import { FoodCard } from './FoodCard';
-import { buildBrief } from '../coach/brief';
 import { activeRoutine } from '@/domain/analytics/schedule';
 
 export function HomePage() {
@@ -94,20 +92,11 @@ export function HomePage() {
       ) : null}
 
       {model && (model.hasTrainingData || model.today.kind !== 'no_routine') ? (
-        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:items-start lg:gap-4">
-          {/* Columns flatten on mobile so cards can be ordered by priority. */}
-          <div className="contents lg:flex lg:flex-col lg:gap-4">
-            <TodayCard plan={model.today} unit={prefs.weightUnit} className="order-1" />
-            {training.data?.profile ? (
-              <FoodCard training={training} now={now} unit={prefs.weightUnit} className="order-2" />
-            ) : null}
-            <StrengthCard
-              trends={model.strength.slice(0, 3)}
-              unit={prefs.weightUnit}
-              className="order-4"
-            />
-          </div>
-          <div className="contents lg:flex lg:flex-col lg:gap-4">
+        // UI v3 (S3): Today, This week, today's numbers, highlights, strength. Last week moved
+        // to Progress, the record and body weight cards became rows (nothing was removed).
+        <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start lg:gap-x-6">
+          <div className="flex flex-col gap-8">
+            <TodayCard plan={model.today} unit={prefs.weightUnit} />
             <WeekCard
               days={model.weekDays}
               week={model.week}
@@ -116,31 +105,19 @@ export function HomePage() {
               window={model.recentWindow}
               consistency={model.consistency}
               unit={prefs.weightUnit}
-              className="order-2"
             />
-            <CheckinCard
+          </div>
+          <div className="flex flex-col gap-8">
+            {training.data?.profile ? (
+              <FoodCard training={training} now={now} unit={prefs.weightUnit} />
+            ) : null}
+            <Highlights
+              record={model.featuredPr}
+              recentCount={model.recentPrCount}
               checkin={model.checkin}
               unit={prefs.weightUnit}
-              className="order-3"
-              brief={() =>
-                buildBrief('checkin', {
-                  unit: prefs.weightUnit,
-                  now,
-                  profile: training.data?.profile ?? null,
-                  data: training.data,
-                  model: null,
-                  checkin: model.checkin,
-                })
-              }
             />
-            <div className="order-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-              <RecordCard
-                record={model.featuredPr}
-                recentCount={model.recentPrCount}
-                unit={prefs.weightUnit}
-              />
-              <BodyWeightCard summary={model.bodyWeight} unit={prefs.weightUnit} />
-            </div>
+            <StrengthCard trends={model.strength.slice(0, 3)} unit={prefs.weightUnit} />
           </div>
         </div>
       ) : null}
@@ -148,32 +125,53 @@ export function HomePage() {
   );
 }
 
-/** Shown until the person has their own profile: setup fits the whole app to them. */
+/** Shown until the person has their own profile: setup fits the whole app to them (S3.2). */
 function SetupPrompt() {
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return localStorage.getItem(SETUP_HIDDEN_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  if (hidden) return null;
   return (
     <section
       aria-labelledby="setup-prompt-title"
-      className="mb-4 rounded-panel border border-border bg-surface p-5"
+      className="mb-4 flex items-center gap-3 rounded-card bg-surface py-3 pr-2 pl-4"
     >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-tile bg-surface-2 text-text-2">
-          <Sparkles className="size-5" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h2 id="setup-prompt-title" className="type-headline text-text-1">
-            Make it yours
-          </h2>
-          <p className="type-meta mt-0.5 text-text-2">
-            Seven quick questions for a routine, rep ranges and daily calories fitted to you.
-          </p>
-        </div>
-        <ButtonLink to="/setup?next=/" variant="secondary" className="shrink-0">
-          Set up my plan
-        </ButtonLink>
+      <span className="flex size-[1.875rem] shrink-0 items-center justify-center rounded-[0.5rem] bg-fill text-text-1">
+        <Sparkles className="size-4" aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1">
+        <h2 id="setup-prompt-title" className="type-headline text-text-1">
+          Make it yours
+        </h2>
+        <p className="type-subhead truncate text-text-2">7 quick questions</p>
       </div>
+      <CapsuleButton to="/setup?next=/" aria-label="Set up my plan">
+        Start
+      </CapsuleButton>
+      <button
+        type="button"
+        aria-label="Hide for now"
+        onClick={() => {
+          setHidden(true);
+          try {
+            localStorage.setItem(SETUP_HIDDEN_KEY, '1');
+          } catch {
+            // Hidden for this visit only.
+          }
+        }}
+        className="pressable chrome tap-target inline-flex size-8 shrink-0 items-center justify-center rounded-full text-text-3"
+      >
+        <X className="size-4" aria-hidden />
+      </button>
     </section>
   );
 }
+
+const SETUP_HIDDEN_KEY = 'overload.setupPromptHidden';
 
 function HomeSkeleton() {
   return (

@@ -19,7 +19,7 @@ interface StatTileProps {
 export function StatTile({ label, value, unit, caption, className }: StatTileProps) {
   const empty = value === null || value === undefined || value === '';
   return (
-    <div className={cn('rounded-panel border border-border bg-surface p-4', className)}>
+    <div className={cn('rounded-card bg-surface p-4', className)}>
       <p className="type-meta text-text-2">{label}</p>
       {empty ? (
         <p className="type-headline mt-1.5 text-text-2">None yet</p>
@@ -160,8 +160,8 @@ export function ListGroup({
 }) {
   return (
     <section className={className}>
-      {label ? <h2 className="type-label mb-2 px-1 text-text-2">{label}</h2> : null}
-      <As className="list-stagger divide-y-[0.5px] divide-divider rounded-panel border border-border bg-surface px-4 [&>li]:list-none">
+      {label ? <h2 className="type-section mb-2 text-text-1">{label}</h2> : null}
+      <As className="list-stagger divide-y-[0.5px] divide-divider rounded-card bg-surface px-4 [&>li]:list-none">
         {children}
       </As>
     </section>

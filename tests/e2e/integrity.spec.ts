@@ -91,8 +91,9 @@ test('Home: last 7 days match the records', async ({ page }) => {
   );
   const expected = stats(raw, new Set(recent.map((w) => w.id)));
 
-  // The week card; its "Last 7 days" block holds the rolling numbers.
-  const week = page.getByRole('region', { name: 'This week' }).locator('[data-last-7-days]');
+  // The week card's info sheet holds the rolling "Last 7 days" numbers (UI v3, S3.4).
+  await page.getByRole('button', { name: 'About this week' }).click();
+  const week = page.getByRole('dialog', { name: 'This week' }).locator('[data-last-7-days]');
   const value = (label: string) =>
     week.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]');
   await expect(value('Sessions')).toHaveText(String(recent.length));
@@ -159,6 +160,8 @@ test('Body weight: latest entry and 7-day average match the records', async ({ p
   const window = entries.filter((e) => end - new Date(e.measuredAt).getTime() < 7 * 86_400_000);
   const avg = window.reduce((s, e) => s + e.weightKg, 0) / window.length;
 
+  // On Progress, Body (moved from Home, UI v3 B6).
+  await page.goto('/progress?view=body');
   const card = page.getByRole('region', { name: 'Body weight' });
   await expect(card).toContainText(`${Math.round(latest.weightKg * 10) / 10}`);
   await expect(card).toContainText(

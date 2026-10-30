@@ -106,7 +106,7 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
           onOpen={s.energy ? () => setTopic('protein') : undefined}
           value={
             s.energy
-              ? `${s.energy.proteinG[0].toFixed(1)} to ${s.energy.proteinG[1].toFixed(1)}`
+              ? `${s.energy.proteinG[0].toFixed(0)} to ${s.energy.proteinG[1].toFixed(0)}`
               : null
           }
           unit="g"
@@ -207,7 +207,8 @@ function Tile({
         <span className="mt-1 flex flex-wrap items-baseline gap-x-1">
           <span
             className={cn(
-              'tabular text-text-1',
+              // A range stays on one line (UI v3, F3): never "107 to" over "147".
+              'tabular whitespace-nowrap text-text-1',
               value.includes(' to ') ? 'type-title' : 'type-stat',
             )}
           >

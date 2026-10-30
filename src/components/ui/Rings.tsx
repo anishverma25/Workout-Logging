@@ -60,7 +60,8 @@ export function Rings({
               r={radius}
               fill="none"
               strokeWidth={STROKE}
-              stroke="var(--grid)"
+              stroke={`var(--ring-${r.hue})`}
+              strokeOpacity={0.16}
             />
             <circle
               className="ring-arc"
@@ -93,7 +94,7 @@ export function RingLegend({
   className?: string;
 }) {
   return (
-    <dl className={cn('flex flex-col gap-3', className)}>
+    <dl className={cn('flex flex-col gap-2', className)}>
       {rings.map((r) => (
         <div key={r.hue} className="min-w-0">
           <dt className="type-meta flex items-center gap-1.5 text-text-2">
@@ -105,7 +106,7 @@ export function RingLegend({
             {r.label}
           </dt>
           <dd className="tabular flex items-baseline">
-            <span className="type-stat text-text-1">
+            <span className="type-metric text-[1.5rem] leading-7 text-text-1">
               <CountUp value={format(r.value)} playKey={`ring:${r.label}`} />
             </span>
             <span className="type-meta text-text-2">

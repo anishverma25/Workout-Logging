@@ -57,11 +57,9 @@ export function ListGroup({
 }) {
   return (
     <section className={className} aria-label={title ? undefined : label}>
-      {title ? <h2 className="type-label mb-2 px-1 text-text-2">{title}</h2> : null}
-      <ul className="list-group overflow-hidden rounded-panel border border-border bg-surface">
-        {children}
-      </ul>
-      {footer ? <p className="type-meta mt-2 px-1 text-text-2">{footer}</p> : null}
+      {title ? <h2 className="type-section mb-2 text-text-1">{title}</h2> : null}
+      <ul className="list-group overflow-hidden rounded-card bg-surface">{children}</ul>
+      {footer ? <p className="type-meta mt-2 px-4 text-text-2">{footer}</p> : null}
     </section>
   );
 }
@@ -201,11 +199,9 @@ export function Panel({
       className={className}
       aria-label={typeof title === 'string' ? title : undefined}
     >
-      {title ? <h2 className="type-label mb-2 px-1 text-text-2">{title}</h2> : null}
-      <div className="panel-body rounded-panel border border-border bg-surface px-4">
-        {children}
-      </div>
-      {footer ? <p className="type-meta mt-2 px-1 text-text-2">{footer}</p> : null}
+      {title ? <h2 className="type-section mb-2 text-text-1">{title}</h2> : null}
+      <div className="panel-body rounded-card bg-surface px-4">{children}</div>
+      {footer ? <p className="type-meta mt-2 px-4 text-text-2">{footer}</p> : null}
     </section>
   );
 }

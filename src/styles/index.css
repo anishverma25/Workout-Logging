@@ -52,16 +52,28 @@
   --color-focus: var(--focus);
   --color-warning: var(--warning);
   --color-danger-text: var(--danger-text);
+  /* UI v3 */
+  --color-group: var(--group);
+  --color-elevated: var(--elevated);
+  --color-fill: var(--fill);
+  --color-seg-selected: var(--seg-selected);
+  --color-material-bar: var(--material-bar);
+  --color-up: var(--up);
+  --color-up-dim: var(--up-dim);
+  --color-down: var(--down);
+  --color-down-dim: var(--down-dim);
+  --color-warning-dim: var(--warning-dim);
 
   --breakpoint-tab: 37.5rem;
 
   --radius-tile: 0.625rem;
   --radius-field: 0.75rem;
   --radius-nested: 1rem;
-  --radius-panel: 1.5rem;
+  --radius-panel: 1.375rem;
 
   --font-sans: var(--font-text);
   --font-display: var(--font-heading);
+  --font-metric: var(--font-metric);
 
   --radius-card: 1.375rem;
   --radius-control: 0.875rem;
@@ -145,18 +157,60 @@ html[data-landing] #landing {
   letter-spacing: -0.024em;
 }
 @utility type-stat {
-  font-family: var(--font-heading);
+  font-family: var(--font-metric);
   font-size: 2rem;
   line-height: 2.25rem;
   font-weight: 700;
   letter-spacing: -0.022em;
 }
+/* Title 2 (UI v3): section headers outside a group, cards' own titles. */
 @utility type-title {
-  font-family: var(--font-text);
+  font-family: var(--font-heading);
   font-size: 1.375rem;
   line-height: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.016em;
+}
+/* Title 1: the summary title ("Push done"). */
+@utility type-title-1 {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  line-height: 2.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+/* Subheadline: row subtitles. */
+@utility type-subhead {
+  font-family: var(--font-text);
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+  font-weight: 400;
+  letter-spacing: -0.006em;
+}
+/* The number system (UI v3, G3). Hero: one per screen. */
+@utility type-hero {
+  font-family: var(--font-metric);
+  font-size: 3.5rem;
+  line-height: 3.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+@utility type-metric {
+  font-family: var(--font-metric);
+  font-size: 2rem;
+  line-height: 2.375rem;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+@utility type-metric-sm {
+  font-family: var(--font-metric);
+  font-size: 1.25rem;
+  line-height: 1.5rem;
   font-weight: 600;
-  letter-spacing: -0.018em;
+  letter-spacing: -0.012em;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 @utility type-headline {
   font-family: var(--font-text);
@@ -209,28 +263,46 @@ html[data-landing] #landing {
   background: radial-gradient(120% 80% at 0% 0%, var(--ai-wash), transparent 60%), var(--surface);
   border: 1px solid var(--ai-edge);
 }
-/* Group labels: Meta 600, uppercase, 0.05em (Parts 5 and 6). */
+/* Small labels inside sheets and cards: footnote 600, sentence case (UI v3: no ALL CAPS). */
 @utility type-label {
   font-family: var(--font-text);
   font-size: 0.8125rem;
   line-height: 1.125rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+}
+/* Section headers outside a group (Title 2). */
+@utility type-section {
+  font-family: var(--font-heading);
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.016em;
+}
+/* Horizontal scrollers fade at the trailing edge so a cut chip reads as "scroll" (G7). */
+@utility edge-fade {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 1.5rem), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 1.5rem), transparent);
+}
+/* The tab bar and collapsed header material (G6). */
+@utility material-bar {
+  background-color: var(--material-bar);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
 }
 /* UI chrome is not text to select; inputs and readable content stay selectable. */
 @utility chrome {
   user-select: none;
   -webkit-user-select: none;
 }
-/* Press feedback (UI rules 3.4): opacity 0.7 and scale 0.98 over 150 ms. */
+/* Press feedback (UI v3, G4): scale 0.97 and a little dimming, 120 ms. */
 @utility pressable {
   transition-property: opacity, transform, background-color, color;
-  transition-duration: var(--dur-press);
+  transition-duration: 120ms;
   transition-timing-function: var(--ease-standard);
   &:active:not(:disabled):not([aria-disabled='true']) {
-    opacity: 0.7;
-    transform: scale(0.98);
+    opacity: 0.72;
+    transform: scale(0.97);
   }
 }
 

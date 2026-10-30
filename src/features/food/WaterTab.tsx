@@ -2,15 +2,13 @@ import { useState, type ButtonHTMLAttributes } from 'react';
 import { Droplets, Plus, Trash2 } from 'lucide-react';
 import {
   BottomSheet,
-  Card,
   ChipGroup,
   ListRow,
   NumberField,
   PrimaryButton,
-  RingChart,
   SegmentedControl,
   Skeleton,
-  TextLink,
+  TextButton,
 } from '@/components/kit';
 import type { WaterLog } from '@/domain/models/schemas';
 import { useToast } from '@/components/ui/Toast';
@@ -41,7 +39,7 @@ function QuickButton({ children, className, ...props }: ButtonHTMLAttributes<HTM
   return (
     <button
       type="button"
-      className={`pressable chrome type-meta inline-flex h-11 min-w-0 items-center justify-center gap-1 rounded-field bg-surface-2 px-2 font-semibold text-text-1 disabled:text-text-3 ${className ?? ''}`}
+      className={`pressable chrome tap-target type-meta inline-flex h-8 min-w-0 items-center justify-center gap-1 rounded-full bg-fill px-3.5 font-semibold text-text-1 disabled:text-text-3 ${className ?? ''}`}
       {...props}
     >
       {children}
@@ -94,70 +92,71 @@ export function WaterCard({ ctx, date }: { ctx: FoodContext; date: string }) {
   }
 
   return (
-    <Card as="section" id="water" aria-labelledby="water-title" data-water-tab data-water-summary>
-      <div className="flex items-center justify-between gap-3">
-        <h2 id="water-title" className="type-title text-text-1">
+    <section id="water" aria-labelledby="water-title" data-water-tab data-water-summary>
+      <div className="mb-2 flex min-h-8 items-center justify-between gap-3">
+        <h2 id="water-title" className="type-section text-text-1">
           Water
         </h2>
-        <TextLink small onClick={() => setDetails(true)} data-water-details>
+        <TextButton small onClick={() => setDetails(true)} data-water-details>
           Details
-        </TextLink>
+        </TextButton>
       </div>
-      <div className="mt-3 flex items-center gap-4">
-        {target ? (
-          <RingChart
-            rings={[{ label: 'Water', value: total, max: target }]}
-            size={64}
-            label="Water today against your target"
-          />
-        ) : (
-          <Droplets className="size-8 shrink-0 text-text-2" aria-hidden />
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-baseline gap-x-1">
-            <span className="type-stat tabular text-text-1" data-water-glasses>
-              {toGlasses(total, glassMl)}
+      <div className="divide-y-[0.5px] divide-divider rounded-card bg-surface px-4">
+        <div className="flex items-center gap-3 py-3">
+          {target ? (
+            <MiniRing value={total} max={target} label="Water today against your target" />
+          ) : (
+            <span className="flex size-[1.875rem] shrink-0 items-center justify-center rounded-[0.5rem] bg-fill text-text-1">
+              <Droplets className="size-4" aria-hidden />
             </span>
-            <span className="type-meta text-text-2">
-              {target ? `of ${toGlasses(target, glassMl)} glasses` : 'glasses'}
-            </span>
-          </p>
-          <p className="type-meta tabular text-text-2" data-water-ml>
-            {n(total)} ml{target ? ` of ${n(target)} ml` : ''}
-          </p>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="type-headline whitespace-nowrap text-text-1">
+              <span className="type-metric-sm" data-water-glasses>
+                {toGlasses(total, glassMl)}
+              </span>{' '}
+              <span className="font-normal text-text-2">
+                {target ? `of ${toGlasses(target, glassMl)} glasses` : 'glasses'}
+              </span>
+            </p>
+            <p className="type-subhead tabular text-text-2" data-water-ml>
+              {n(total)} ml{target ? ` of ${n(target)} ml` : ''}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void add(glassMl)}
+            aria-label={`Add a glass (${n(glassMl)} ml)`}
+            className="pressable chrome tap-target type-subhead inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-fill px-3.5 font-semibold text-text-1"
+            data-add-glass
+          >
+            <Plus className="size-4" aria-hidden />
+            {n(glassMl)} ml
+          </button>
+        </div>
+        {/* Other amounts in one small row (UI v3, S10.5): no second lime button. */}
+        <div className="flex flex-wrap gap-2 py-2.5">
+          <QuickButton onClick={() => void add(500)} aria-label="Add a 500 ml bottle">
+            500 ml
+          </QuickButton>
+          <QuickButton onClick={() => void add(1000)} aria-label="Add 1 litre">
+            1 L
+          </QuickButton>
+          <QuickButton onClick={() => setOther(true)} data-add-other-water>
+            Other
+          </QuickButton>
+          <QuickButton
+            aria-label="Remove the last drink"
+            disabled={entries.length === 0}
+            onClick={() => void removeLast()}
+          >
+            Undo
+          </QuickButton>
         </div>
       </div>
-      <PrimaryButton
-        block
-        compact
-        className="mt-4"
-        icon={<Plus className="size-4" aria-hidden />}
-        onClick={() => void add(glassMl)}
-        data-add-glass
-      >
-        Add a glass ({n(glassMl)} ml)
-      </PrimaryButton>
-      <div className="mt-2 grid grid-cols-4 gap-2">
-        <QuickButton onClick={() => void add(500)} aria-label="Add a 500 ml bottle">
-          500 ml
-        </QuickButton>
-        <QuickButton onClick={() => void add(1000)} aria-label="Add 1 litre">
-          1 L
-        </QuickButton>
-        <QuickButton onClick={() => setOther(true)} data-add-other-water>
-          Other
-        </QuickButton>
-        <QuickButton
-          aria-label="Remove the last drink"
-          disabled={entries.length === 0}
-          onClick={() => void removeLast()}
-        >
-          Undo
-        </QuickButton>
-      </div>
-      <p className="type-caption mt-3 flex flex-wrap items-center gap-x-2 text-text-2">
+      <p className="type-meta mt-2 flex flex-wrap items-center gap-x-2 px-4 text-text-2">
         {!target
-          ? 'Add a weigh-in on the Body page for a water target, or set your own under Daily targets.'
+          ? 'Weigh in on the Body page for a water target, or set your own under Daily targets.'
           : ctx.targets.mode === 'own' && ctx.profile?.waterTargetMl
             ? 'Your own target.'
             : 'Worked out from your weight, 35 ml per kg.'}
@@ -180,7 +179,48 @@ export function WaterCard({ ctx, date }: { ctx: FoodContext; date: string }) {
           <WaterDetails logs={logs} date={date} glassMl={glassMl} target={target} />
         ) : null}
       </BottomSheet>
-    </Card>
+    </section>
+  );
+}
+
+/** A 30px progress ring with its track always showing, for a row. */
+function MiniRing({ value, max, label }: { value: number; max: number; label: string }) {
+  const r = 12;
+  const c = 2 * Math.PI * r;
+  const f = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
+  return (
+    <svg
+      width="30"
+      height="30"
+      viewBox="0 0 30 30"
+      role="img"
+      aria-label={`${label}: ${Math.round(f * 100)}%`}
+      className="shrink-0 -rotate-90"
+    >
+      <circle
+        cx="15"
+        cy="15"
+        r={r}
+        fill="none"
+        stroke="var(--lime)"
+        strokeOpacity={0.16}
+        strokeWidth="4"
+      />
+      {f > 0 ? (
+        <circle
+          cx="15"
+          cy="15"
+          r={r}
+          fill="none"
+          stroke="var(--lime)"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - f)}
+          className="ring-arc"
+        />
+      ) : null}
+    </svg>
   );
 }
 

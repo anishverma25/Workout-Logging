@@ -53,7 +53,7 @@ export function KitToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-4 bottom-[calc(3.0625rem+1rem+env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 lg:bottom-6"
+        className="pointer-events-none fixed inset-x-4 bottom-[calc(var(--tabbar-h)+1rem+env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 lg:bottom-6"
       >
         {items.map((t) => (
           <ToastView

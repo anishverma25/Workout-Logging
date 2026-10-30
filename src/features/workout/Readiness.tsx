@@ -22,28 +22,36 @@ export function ReadinessCard({
   initial,
   onSaved,
   onClose,
+  bare,
 }: {
   workoutId: string;
   initial: Readiness | null;
   onSaved: () => void;
   onClose: () => void;
+  /** Inside a sheet, which brings its own title and close button (UI v3, B4). */
+  bare?: boolean;
 }) {
   const [values, setValues] = useState<Partial<Readiness>>(initial ?? {});
   const answered = ROWS.filter((r) => values[r.key] !== undefined).length;
   const complete = answered === ROWS.length;
   return (
     <section
-      aria-labelledby="readiness-title"
-      className="relative rounded-panel border border-border bg-surface p-4"
+      aria-labelledby={bare ? undefined : 'readiness-title'}
+      aria-label={bare ? 'Check-in' : undefined}
+      className={bare ? '' : 'relative rounded-card bg-surface p-4'}
     >
-      <div className="absolute right-3 top-3">
-        <IconButton label="Close the check-in" icon={<X />} size={32} onClick={onClose} />
-      </div>
-      <h2 id="readiness-title" className="type-headline pr-12 text-text-1">
-        How do you feel today?
-      </h2>
-      <p className="type-meta mt-0.5 pr-12 text-text-2">Optional and self-reported.</p>
-      <div className="mt-3 flex flex-col gap-3">
+      {bare ? null : (
+        <>
+          <div className="absolute right-3 top-3">
+            <IconButton label="Close the check-in" icon={<X />} size={32} onClick={onClose} />
+          </div>
+          <h2 id="readiness-title" className="type-headline pr-12 text-text-1">
+            How do you feel today?
+          </h2>
+          <p className="type-meta mt-0.5 pr-12 text-text-2">Optional and self-reported.</p>
+        </>
+      )}
+      <div className={bare ? 'flex flex-col gap-3' : 'mt-3 flex flex-col gap-3'}>
         {ROWS.map((row) => (
           <div key={row.key}>
             <div className="mb-1.5 flex items-baseline justify-between gap-3">

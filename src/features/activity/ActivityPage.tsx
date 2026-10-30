@@ -1,3 +1,4 @@
+import { cn } from '@/lib/cn';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Dumbbell, Footprints, Plus, Trash2 } from 'lucide-react';
@@ -95,23 +96,30 @@ export function ActivityPage() {
 
           <Card as="section" aria-labelledby="burn-title" data-burn-summary>
             <div className="flex items-center gap-2">
-              <h2 id="burn-title" className="type-title text-text-1">
+              <h2 id="burn-title" className="type-section text-text-1">
                 Burned
               </h2>
               <EvidenceLink topic="activity-energy" about="how calories burned are estimated" />
             </div>
-            <p className="mt-2 flex items-baseline gap-1">
+            <p className={cn('mt-2 items-baseline gap-1', burn.total > 0 ? 'flex' : 'hidden')}>
               <span className="type-stat tabular text-text-1" data-burn-total>
                 {burn.total > 0 && burn.estimated ? '~' : ''}
                 {n(burn.total)}
               </span>
               <span className="type-meta text-text-2">kcal active</span>
             </p>
-            <dl className="mt-3 grid grid-cols-3 gap-3">
-              <Part label="Weights" value={burn.workoutKcal} />
-              <Part label="Cardio" value={burn.cardioKcal} />
-              <Part label="Steps" value={burn.stepsKcal} />
-            </dl>
+            {/* Three zero tiles say nothing; one line says what adds to this (UI v3, F12). */}
+            {burn.total > 0 ? (
+              <dl className="mt-3 grid grid-cols-3 gap-3">
+                <Part label="Weights" value={burn.workoutKcal} />
+                <Part label="Cardio" value={burn.cardioKcal} />
+                <Part label="Steps" value={burn.stepsKcal} />
+              </dl>
+            ) : (
+              <p className="type-subhead mt-2 text-text-2" data-burn-empty>
+                Nothing yet for this day. Workouts, cardio and steps add up here.
+              </p>
+            )}
             <p className="type-caption mt-3 text-text-2">
               Active calories are the ones above what your body burns at rest, so they add to your
               daily target rather than replace it.

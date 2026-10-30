@@ -3,19 +3,18 @@ import { BadgeMedallion } from '@/features/medals/BadgeMedallion';
 import { MedalIcon } from '@/features/medals/Medal';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import {
-  AlertTriangle,
-  ArrowDownRight,
-  ArrowUpRight,
-  Check,
-  HardDrive,
-  Minus,
-  RefreshCw,
-  Share,
-  type LucideIcon,
-} from 'lucide-react';
+import { AlertTriangle, Check, HardDrive, RefreshCw, Share, type LucideIcon } from 'lucide-react';
 import { useAccount, useSyncStatus } from '@/app/account';
-import { Card, PrimaryButton, TextLink } from '@/components/kit';
+import {
+  BottomSheet,
+  Card,
+  Delta,
+  IconButton,
+  InfoButton,
+  Metric,
+  Section,
+  TextLink,
+} from '@/components/kit';
 import { ShareSheet } from '@/features/share/ShareSheet';
 import { RestCard } from '@/features/shared/RestCard';
 import { MuscleMapCard } from '@/features/shared/MuscleMapCard';
@@ -32,7 +31,7 @@ import { FeedbackPrompt } from '@/features/feedback/FeedbackPrompt';
 import { DurationValue, StatItem } from '@/features/history/StatItem';
 import { cn } from '@/lib/cn';
 import { formatDayMonth, formatLongDay, formatRelativeDayInline } from '@/lib/dates';
-import { formatCompact, formatDurationMinutes, formatSignedPercent, pluralize } from '@/lib/format';
+import { formatCompact, formatSignedPercent, formatWorkoutLength, pluralize } from '@/lib/format';
 import { haptic } from '@/lib/haptics';
 import { formatWeight, toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { useNow } from '@/lib/useNow';
@@ -64,6 +63,7 @@ export function SummaryPage() {
   }, [training.data, workoutId, prefs.weekStartsOn]);
 
   const [sharing, setSharing] = useState(false);
+  const [aboutChanges, setAboutChanges] = useState(false);
 
   if (training.status === 'loading') return <Skeleton className="mt-10 h-96" />;
   if (training.status === 'error') return <ErrorState error={training.error} />;
@@ -87,49 +87,73 @@ export function SummaryPage() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col">
-      <header className="chrome pt-[calc(1rem+env(safe-area-inset-top))] pb-6 lg:pt-8">
-        <p className="type-meta text-text-2">
-          {formatLongDay(session.date)}
-          {summary.minutes !== null
-            ? ` · ${summary.minutes < 1 ? '<1 min' : formatDurationMinutes(summary.minutes)}`
-            : ''}
-        </p>
-        <h1 className="type-display mt-1 text-text-1">{session.workout.name} done</h1>
+      <header className="chrome pt-4 pb-5 lg:pt-8">
+        <div className="flex h-11 items-center justify-between gap-3">
+          <p className="type-meta min-w-0 truncate font-medium text-text-2">
+            {formatLongDay(session.date)}
+            {summary.minutes !== null
+              ? ` · ${formatWorkoutLength(summary.minutes).toLowerCase()}`
+              : ''}
+          </p>
+          <IconButton
+            label={summary.prs.length > 0 ? 'Share your PR' : 'Share to your story'}
+            icon={<Share aria-hidden />}
+            onClick={() => setSharing(true)}
+          />
+        </div>
+        <h1 className="type-title-1 mt-0.5 text-text-1">{session.workout.name} done</h1>
       </header>
 
-      <dl className="grid grid-cols-2 gap-3">
-        <StatItem
-          label="Duration"
-          value={summary.minutes !== null ? <DurationValue minutes={summary.minutes} /> : null}
-          empty={summary.minutes === null ? 'Not recorded' : undefined}
-        />
-        <StatItem label="Working sets" value={String(summary.workingSets)} />
-        <StatItem
-          label="Volume load"
-          value={formatCompact(toDisplayWeight(summary.volumeKg, unit))}
-          unit={unit}
-          empty={summary.volumeKg > 0 ? undefined : 'None'}
-        />
+      {/* One hero number (UI v3, S7.2), then the rest as tiles; nothing that is zero. */}
+      <section aria-label="This workout" className="rounded-card bg-surface p-4">
+        {summary.volumeKg > 0 ? (
+          <Metric
+            tier="hero"
+            label="Volume load"
+            accentLabel
+            value={formatCompact(toDisplayWeight(summary.volumeKg, unit))}
+            unit={unit}
+          >
+            {summary.volumeVsLast ? (
+              <Delta
+                className="mt-2"
+                tone={volumeChange > 0.0005 ? 'up' : volumeChange < -0.0005 ? 'down' : 'flat'}
+              >
+                {formatSignedPercent(volumeChange)} vs last {session.workout.name},{' '}
+                {formatDayMonth(summary.volumeVsLast.previousDate)}
+              </Delta>
+            ) : null}
+          </Metric>
+        ) : (
+          <Metric
+            tier="hero"
+            label="Working sets"
+            accentLabel
+            value={String(summary.workingSets)}
+          />
+        )}
+      </section>
+      <dl className="mt-3 grid grid-cols-2 gap-3">
+        {summary.minutes !== null ? (
+          <StatItem
+            label="Duration"
+            value={<DurationValue minutes={summary.minutes} />}
+            // An odd number of tiles: the first spans the row, so none sits alone.
+            className={
+              [summary.volumeKg > 0, true, summary.prs.length > 0].filter(Boolean).length % 2 === 0
+                ? 'col-span-2'
+                : undefined
+            }
+          />
+        ) : null}
+        {summary.volumeKg > 0 ? (
+          <StatItem label="Working sets" value={String(summary.workingSets)} />
+        ) : null}
         <StatItem label="Exercises" value={String(summary.exercises.length)} />
+        {summary.prs.length > 0 ? (
+          <StatItem label="Records" value={String(summary.prs.length)} />
+        ) : null}
       </dl>
-      {summary.volumeVsLast ? (
-        <p className="type-meta mt-3 flex items-start gap-1.5 text-text-2">
-          <TrendIcon change={volumeChange} className="mt-px" />
-          <span>
-            Volume load <span className="tabular">{formatSignedPercent(volumeChange)}</span> vs your
-            last {session.workout.name} on {formatDayMonth(summary.volumeVsLast.previousDate)}.
-          </span>
-        </p>
-      ) : null}
-
-      <PrimaryButton
-        block
-        icon={<Share aria-hidden />}
-        onClick={() => setSharing(true)}
-        className="mt-5"
-      >
-        {summary.prs.length > 0 ? 'Share your PR' : 'Share to your story'}
-      </PrimaryButton>
       <ShareSheet workoutId={session.workout.id} open={sharing} onClose={() => setSharing(false)} />
 
       {summary.prs.length > 0 ? <RecordsCard prs={summary.prs} unit={unit} /> : null}
@@ -164,31 +188,42 @@ export function SummaryPage() {
         </section>
       ) : null}
 
-      <Card as="section" aria-labelledby="summary-exercises" className="mt-4">
-        <h2 id="summary-exercises" className="type-title text-text-1">
-          Exercises
-        </h2>
-        <ul className="mt-2 divide-y-[0.5px] divide-divider">
+      <Section
+        className="mt-8"
+        id="summary-exercises"
+        title="Exercises"
+        info={<InfoButton label="the changes" onClick={() => setAboutChanges(true)} />}
+      >
+        <ul className="divide-y-[0.5px] divide-divider rounded-card bg-surface px-4">
           {summary.exercises.map((e) => (
-            <li key={e.exerciseId} className="flex min-h-14 flex-col justify-center py-3">
-              <span className="type-headline truncate text-text-1">{e.name}</span>
-              <span className="type-meta tabular mt-0.5 text-text-2">
-                {pluralize(e.workingSets, 'working set')}
-                {e.volumeKg > 0
-                  ? ` · ${formatCompact(toDisplayWeight(e.volumeKg, unit))} ${unit}`
-                  : ''}
+            <li key={e.exerciseId} className="flex min-h-14 items-center gap-3 py-3">
+              <span className="min-w-0 flex-1">
+                <span className="type-headline block truncate text-text-1">{e.name}</span>
+                <span className="type-subhead tabular mt-0.5 block text-text-2">
+                  {pluralize(e.workingSets, 'set')}
+                  {e.volumeKg > 0
+                    ? ` · ${formatCompact(toDisplayWeight(e.volumeKg, unit))} ${unit}`
+                    : ''}
+                </span>
+                <ChangeLine change={e.change} unit={unit} />
               </span>
-              <ChangeLine change={e.change} unit={unit} />
+              <ChangeCapsule change={e.change} />
             </li>
           ))}
         </ul>
-        <p className="type-meta mt-2 text-text-2">
+      </Section>
+      <BottomSheet
+        open={aboutChanges}
+        onClose={() => setAboutChanges(false)}
+        title="How changes are compared"
+      >
+        <p className="type-body text-text-2">
           Changes compare your best set with the last time you did each exercise: estimated 1RM for
           compound lifts, top load for isolation lifts, most reps for bodyweight ones.
         </p>
-      </Card>
+      </BottomSheet>
 
-      <MuscleMapCard exercises={muscleLogs} sex={training.data.profile?.sex} className="mt-4" />
+      <MuscleMapCard exercises={muscleLogs} sex={training.data.profile?.sex} className="mt-8" />
       <WorkoutBurnCard
         workout={session.workout}
         sets={session.exercises.flatMap((e) => e.sets)}
@@ -229,8 +264,8 @@ export function SummaryPage() {
       </div>
       <SummarySync className="mt-2 justify-center" />
 
-      {/* Pinned above the tab bar on phones and at the bottom of the window on desktop. */}
-      <div className="sticky bottom-[calc(49px+env(safe-area-inset-bottom))] z-20 -mx-4 mt-4 bg-bg px-4 pt-3 pb-3 tab:-mx-6 tab:px-6 lg:bottom-0 lg:mx-0 lg:px-0 lg:pb-6">
+      {/* Pinned to the bottom (the tab bar steps aside here, UI v3 B3). */}
+      <div className="sticky bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] z-20 -mx-4 mt-4 bg-gradient-to-b from-transparent to-bg to-30% px-4 pt-6 pb-3 tab:-mx-6 tab:px-6 lg:bottom-0 lg:mx-0 lg:px-0 lg:pb-6">
         <ButtonLink to="/" size="lg" block>
           Done
         </ButtonLink>
@@ -319,12 +354,18 @@ function RecordsCard({ prs, unit }: { prs: PersonalRecord[]; unit: WeightUnit })
   );
 }
 
-function TrendIcon({ change, className }: { change: number; className?: string }) {
-  const Icon = change > 0.0005 ? ArrowUpRight : change < -0.0005 ? ArrowDownRight : Minus;
-  return <Icon className={cn('size-4 shrink-0 text-text-2', className)} aria-hidden />;
+/** The change as a green or red capsule at the end of the row (UI v3, G3). */
+function ChangeCapsule({ change }: { change: ExerciseChange | null }) {
+  if (!change || change.kind === 'first') return null;
+  const same = Math.abs(change.change) < 0.0005;
+  return (
+    <Delta tone={same ? 'flat' : change.change > 0 ? 'up' : 'down'} arrow={!same}>
+      {same ? 'Same' : formatSignedPercent(change.change, 1)}
+    </Delta>
+  );
 }
 
-/** "+3.1% · e1RM 82.5 kg, vs earlier today" in Meta --text-2 with a neutral trend icon. */
+/** "e1RM 82.5 kg, vs earlier today" in Meta --text-2; the percentage is the capsule. */
 function ChangeLine({ change, unit }: { change: ExerciseChange | null; unit: WeightUnit }) {
   if (!change) return null;
   if (change.kind === 'first') {
@@ -338,14 +379,12 @@ function ChangeLine({ change, unit }: { change: ExerciseChange | null; unit: Wei
         ? `top load ${formatWeight(change.today, unit)}`
         : `${change.today} reps`;
   return (
-    <span className="type-meta mt-0.5 flex items-start gap-1.5 text-text-2">
-      <TrendIcon change={change.change} className="mt-px" />
-      <span className="tabular">
-        {same ? 'Same as last time' : formatSignedPercent(change.change, 1)} · {detail}, vs{' '}
-        {formatRelativeDayInline(change.previousDate)
-          .replace(/^on /, '')
-          .replace(/^today$/, 'earlier today')}
-      </span>
+    <span className="type-meta tabular mt-0.5 block text-text-2">
+      {same ? 'Same as last time · ' : ''}
+      {detail}, vs{' '}
+      {formatRelativeDayInline(change.previousDate)
+        .replace(/^on /, '')
+        .replace(/^today$/, 'earlier today')}
     </span>
   );
 }
