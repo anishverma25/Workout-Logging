@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { CircleCheck, Pencil } from 'lucide-react';
-import { Card, TextLink } from '@/components/kit';
+import { CircleCheck } from 'lucide-react';
+import { Card, TextButton, TextLink } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { ProfileError, saveProfile } from '@/data/repositories/profile';
@@ -120,9 +120,10 @@ export function TargetsCard({
   const set = targets.kcal !== null || targets.proteinG !== null;
   return (
     <Card as="section" aria-labelledby="targets-title" className="mt-4 p-4 sm:p-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h2 id="targets-title" className="type-title text-text-1">
+      {/* Title and its icons on the left, one short word on the right (UI v3, F5). */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1">
+          <h2 id="targets-title" className="type-title truncate text-text-1">
             Your targets
           </h2>
           <EvidenceLink topic="targets" about="target checks" />
@@ -147,9 +148,13 @@ export function TargetsCard({
             }
           />
         </div>
-        <TextLink small icon={<Pencil />} onClick={() => setEditing(true)}>
-          {set || daily.mode ? 'Change' : 'Set targets'}
-        </TextLink>
+        <TextButton
+          small
+          onClick={() => setEditing(true)}
+          aria-label={set || daily.mode ? 'Change targets' : 'Set targets'}
+        >
+          {set || daily.mode ? 'Edit' : 'Set'}
+        </TextButton>
       </div>
       <dl className="mt-3 grid grid-cols-2 gap-3">
         <div className="min-w-0 rounded-nested bg-surface-2 px-3 py-2.5">

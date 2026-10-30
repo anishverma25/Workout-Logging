@@ -95,11 +95,9 @@ export function ProPage() {
           hasPro={hasPro}
           signedIn={signedIn}
           unavailable={unavailable}
-          entitlement={entitlement}
         />
       </div>
 
-      {signedIn ? <PlanCard entitlement={entitlement} /> : null}
       {unavailable ? (
         <InlineNotice icon={<Lock />}>
           Accounts are not set up in this version of the app, so Pro is not available yet. Every
@@ -107,14 +105,23 @@ export function ProPage() {
         </InlineNotice>
       ) : null}
 
+      {/* Price first, then what it buys (owner request, UI v3 A4): the plans, then where this
+          account stands, then their own numbers, then everything Pro includes. */}
+      {!unavailable ? <PlansSection entitlement={entitlement} /> : null}
+      {signedIn ? <PlanCard entitlement={entitlement} /> : null}
+
       <YourNumbers hasPro={hasPro} />
+      <InsightPreview />
       <Pillars />
       <Compare />
       <Evidence />
 
-      {!unavailable ? <PlansSection entitlement={entitlement} /> : null}
-
       <Faq plans={plans} />
+      {!unavailable && !entitlement.loading && signedIn ? (
+        <a href="#get-pro" className={buttonClasses({ size: 'lg', block: true }, 'tab:w-fit')}>
+          {entitlement.plan === 'trial' ? 'Keep Pro after your trial' : 'Choose a plan'}
+        </a>
+      ) : null}
       <LegalLinks className="justify-center" />
     </div>
   );
@@ -128,13 +135,11 @@ function Hero({
   hasPro,
   signedIn,
   unavailable,
-  entitlement: e,
 }: {
   fromMonthly: string | null;
   hasPro: boolean;
   signedIn: boolean;
   unavailable: boolean;
-  entitlement: EntitlementView;
 }) {
   return (
     <section aria-labelledby="pro-hero-title" className="flex flex-col gap-5">
@@ -147,12 +152,16 @@ function Hero({
         </h1>
         <p className="type-body mt-2 max-w-[56ch] text-text-2">
           Pro reads every set you log and tells you when to add weight, which lifts have stalled,
-          which muscles need more work and when you will reach your goals. Every number comes from
-          your own sets and a published formula.
+          and what to eat. Every number comes from your own sets and a published formula.
         </p>
+        {fromMonthly && !hasPro && !unavailable ? (
+          <p className="mt-3 flex flex-wrap items-baseline gap-x-2" data-pro-price>
+            <span className="type-meta text-text-2">From</span>
+            <span className="type-metric tabular text-text-1">{fromMonthly}</span>
+            <span className="type-subhead text-text-2">a month · cancel any time</span>
+          </p>
+        ) : null}
       </div>
-
-      <InsightPreview />
 
       {hasPro ? null : unavailable ? null : !signedIn ? (
         <div className="flex flex-col gap-3">
@@ -167,13 +176,7 @@ function Hero({
             </TextLink>
           </p>
         </div>
-      ) : e.loading ? null : (
-        <div className="flex flex-col gap-2">
-          <a href="#get-pro" className={buttonClasses({ size: 'lg', block: true }, 'tab:w-fit')}>
-            {e.plan === 'trial' ? 'Keep Pro after your trial' : 'See Pro plans'}
-          </a>
-        </div>
-      )}
+      ) : null}
     </section>
   );
 }
@@ -198,7 +201,7 @@ function InsightPreview() {
     },
   ];
   return (
-    <figure className="rounded-panel border border-border bg-surface p-2">
+    <figure className="rounded-card bg-surface p-2">
       <ul className="flex flex-col gap-1.5">
         {items.map((it, i) => (
           <li
@@ -338,7 +341,7 @@ function YourNumbers({ hasPro }: { hasPro: boolean }) {
 
   return (
     <section aria-labelledby="your-numbers-title">
-      <h2 id="your-numbers-title" className="type-title text-text-1">
+      <h2 id="your-numbers-title" className="type-section text-text-1">
         In your training right now
       </h2>
       <p className="type-meta mt-1 text-text-2">
@@ -346,7 +349,7 @@ function YourNumbers({ hasPro }: { hasPro: boolean }) {
       </p>
       <dl className="mt-4 grid grid-cols-2 gap-3">
         {tiles.map((t) => (
-          <div key={t.label} className="rounded-panel border border-border bg-surface p-4">
+          <div key={t.label} className="rounded-card bg-surface p-4">
             <dd className="type-stat tabular text-text-1">{t.n}</dd>
             <dt className="type-meta mt-1 text-text-2">{t.label}</dt>
           </div>
@@ -355,7 +358,7 @@ function YourNumbers({ hasPro }: { hasPro: boolean }) {
       <p className="type-meta mt-3 text-text-2">
         {hasPro
           ? 'Open Progress to see each one and what to do next.'
-          : 'Pro shows you which ones, and exactly what to do next.'}
+          : 'They are in your log already. Pro shows you which ones, and exactly what to do next.'}
       </p>
       {hasPro ? (
         <TextLink to="/progress" chevron small className="mt-1">
@@ -399,7 +402,7 @@ const PILLARS: { icon: ReactNode; title: string; line: string; features: ProFeat
 function Pillars() {
   return (
     <section aria-labelledby="pillars-title">
-      <h2 id="pillars-title" className="type-title text-text-1">
+      <h2 id="pillars-title" className="type-section text-text-1">
         Everything in Pro
       </h2>
       <div className="mt-4 grid gap-3 tab:grid-cols-2">
@@ -455,7 +458,7 @@ const COMPARE: { label: string; free: boolean }[] = [
 function Compare() {
   return (
     <section aria-labelledby="compare-title">
-      <h2 id="compare-title" className="type-title text-text-1">
+      <h2 id="compare-title" className="type-section text-text-1">
         Free and Pro
       </h2>
       <p className="type-meta mt-1 text-text-2">
@@ -568,10 +571,10 @@ function Faq({ plans }: { plans: BillingPlan[] | null }) {
   ];
   return (
     <section aria-labelledby="faq-title">
-      <h2 id="faq-title" className="type-title text-text-1">
+      <h2 id="faq-title" className="type-section text-text-1">
         Questions
       </h2>
-      <div className="mt-4 divide-y-[0.5px] divide-divider rounded-panel border border-border bg-surface px-4">
+      <div className="mt-4 divide-y-[0.5px] divide-divider rounded-card bg-surface px-4">
         {items.map(([q, a]) => (
           <details key={q} className="group">
             <summary className="pressable chrome flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 py-3 [&::-webkit-details-marker]:hidden">

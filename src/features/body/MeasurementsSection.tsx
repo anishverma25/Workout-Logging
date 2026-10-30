@@ -3,6 +3,7 @@ import { Plus, Ruler } from 'lucide-react';
 import { LineChart } from '@/components/charts/LineChart';
 import { ChartEmpty } from '@/components/charts/ChartParts';
 import { Card, IconTile, ListRow, SecondaryButton, SectionHeader } from '@/components/kit';
+import { IconButton } from '@/components/ui/Button';
 import { Chips } from '@/components/ui/Fields';
 import { MEASUREMENT_LABELS, type LengthUnit } from '@/data/repositories/measurements';
 import { isAlive } from '@/domain/analytics/sessions';
@@ -54,9 +55,12 @@ export function MeasurementsSection({
         className="items-center"
         action={
           sorted.length > 0 ? (
-            <SecondaryButton compact icon={<Plus aria-hidden />} onClick={() => setAdding(true)}>
-              Add measurements
-            </SecondaryButton>
+            // An icon, so the title never truncates to "Measuremen" (UI v3, F4).
+            <IconButton
+              label="Add measurements"
+              icon={<Plus className="size-5" aria-hidden />}
+              onClick={() => setAdding(true)}
+            />
           ) : null
         }
       />

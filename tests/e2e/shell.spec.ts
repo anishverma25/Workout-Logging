@@ -17,15 +17,16 @@ test.beforeEach(async ({ page }) => {
 test('home shows the demo athlete with real dashboard sections', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Arjun');
   await expect(page.locator('#today-title')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Last 7 days' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'This week' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Strength' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Demo data' }).first()).toBeVisible();
 });
 
 test('primary navigation reaches every main area', async ({ page }) => {
   // Activity sits under More on a phone (and on Home); the desktop sidebar lists it.
+  // Five tabs on a phone; Routines lives inside Workout there (UI v3, B1).
   const areas = isMobile(page)
-    ? ['Routines', 'Workout', 'Food', 'Progress', 'History']
+    ? ['Workout', 'Food', 'Progress', 'History']
     : ['Routines', 'Workout', 'Food', 'Activity', 'Progress', 'History'];
   for (const name of areas) {
     await mainNav(page).getByRole('link', { name }).click();
@@ -153,7 +154,7 @@ test('tapping the tab you are on scrolls back to the top', async ({ page }) => {
   };
   await mainNav(page).getByRole('link', { name: 'Progress' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Progress');
-  await expect(page.locator('#strength')).toBeVisible();
+  await expect(page.locator('#insights')).toBeVisible();
   await scrollDown();
   await mainNav(page).getByRole('link', { name: 'Progress' }).click();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);

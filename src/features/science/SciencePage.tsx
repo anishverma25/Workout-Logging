@@ -73,7 +73,7 @@ export function SciencePage() {
 
       {SCIENCE.map((g) => (
         <section key={g.id} aria-labelledby={`group-${g.id}`} className="mb-8">
-          <h2 id={`group-${g.id}`} className="type-title mb-3 px-1 text-text-1">
+          <h2 id={`group-${g.id}`} className="type-section mb-2 px-1 text-text-1">
             {g.title}
           </h2>
           <div className="flex flex-col gap-4">

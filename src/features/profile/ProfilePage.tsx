@@ -22,6 +22,7 @@ import { ListGroup, ListRow } from '@/components/ui/List';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { ProfileError, saveProfile } from '@/data/repositories/profile';
+import { ProRow } from '@/features/pro/ProRow';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
 import { bodyWeightSummary } from '@/domain/analytics/bodyweight';
@@ -106,7 +107,7 @@ export function ProfilePage() {
               {GOAL_LABEL[profile.goal]}, {EXPERIENCE_LABEL[profile.experience].toLowerCase()}
             </p>
             {profile.origin === 'demo' ? (
-              <p className="mt-1.5 text-sm text-warn">Fictional demo profile</p>
+              <p className="type-subhead mt-1.5 text-text-2">Fictional demo profile</p>
             ) : null}
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               <Button
@@ -127,6 +128,8 @@ export function ProfilePage() {
               </ButtonLink>
             </div>
           </section>
+
+          <ProRow />
 
           <ListGroup
             title="Training"

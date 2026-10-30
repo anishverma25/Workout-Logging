@@ -80,6 +80,7 @@ function StartScreen() {
             <FeaturedDay
               day={featured}
               title={doneToday && today?.id === featured.id ? 'Done today' : 'Next'}
+              isToday={today?.id === featured.id}
               completed={doneToday && today?.id === featured.id ? doneToday : null}
               slots={slotsOf(featured.id)}
               names={names}
@@ -174,9 +175,9 @@ function EmptyWorkoutRow({ onStart }: { onStart: () => void }) {
         <Dumbbell className="size-4" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span id="empty-workout" className="type-headline block text-text-1">
+        <h3 id="empty-workout" className="type-headline text-text-1">
           Empty workout
-        </span>
+        </h3>
         <span className="type-subhead block truncate text-text-2">Add exercises as you go</span>
       </span>
       <CapsuleButton
@@ -194,6 +195,7 @@ function EmptyWorkoutRow({ onStart }: { onStart: () => void }) {
 function FeaturedDay({
   day,
   title,
+  isToday,
   completed,
   slots,
   names,
@@ -204,6 +206,7 @@ function FeaturedDay({
 }: {
   day: RoutineDay;
   title: string;
+  isToday: boolean;
   completed: ReturnType<typeof buildSessions>[number] | null;
   slots: { id: string; exerciseId: string; targetSets: number; repMin: number; repMax: number }[];
   names: Map<string, string>;
@@ -227,6 +230,8 @@ function FeaturedDay({
                 <Check className="size-3.5 text-lime" aria-hidden />
                 Completed
               </Badge>
+            ) : isToday ? (
+              <Badge>Today</Badge>
             ) : null}
           </div>
           <p className="type-subhead text-text-2">{meta}</p>

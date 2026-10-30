@@ -104,7 +104,7 @@ export function ContactPage() {
   return (
     <LegalLayout doc={CONTACT}>
       <p className="type-body mt-3 text-text-2">{CONTACT.summary}</p>
-      <ul className="mt-6 flex flex-col gap-3 rounded-panel border border-border bg-surface p-4">
+      <ul className="mt-6 flex flex-col gap-3 rounded-card bg-surface p-4">
         <li className="flex items-start gap-3">
           <MapPin className="mt-0.5 size-5 shrink-0 text-text-2" aria-hidden />
           <span>

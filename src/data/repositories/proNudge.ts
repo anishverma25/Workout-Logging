@@ -4,7 +4,7 @@ import { getMeta, META_KEYS, setMeta } from './meta';
 
 /**
  * Which Pro reminders this account has already seen. Device state, not training data: it is
- * never synced and never leaves the device, so the worst a new device does is start the four
+ * never synced and never leaves the device, so the worst a new device does is start the
  * reminders over.
  */
 
@@ -24,7 +24,7 @@ export async function getNudgeState(db: WorkoutDatabase): Promise<NudgeState> {
   const stored = await getMeta<Stored>(db, META_KEYS.proNudge);
   if (!stored) return EMPTY_NUDGE_STATE;
   const ids = Array.isArray(stored.shownIds)
-    ? stored.shownIds.filter((id): id is string => typeof id === 'string').slice(0, MAX_NUDGES)
+    ? stored.shownIds.filter((id): id is string => typeof id === 'string').slice(-MAX_NUDGES)
     : [];
   return {
     shownIds: ids,
@@ -41,15 +41,25 @@ async function write(db: WorkoutDatabase, state: NudgeState): Promise<void> {
   });
 }
 
-/** Records that a reminder was shown, so the same one is never shown twice. */
+/**
+ * Records that a reminder was shown. Called once per Home visit that showed it; a reminder
+ * shown again within the hour (a re-render, a quick tab switch) is not counted twice.
+ */
 export async function recordNudgeShown(
   db: WorkoutDatabase,
   id: string,
   now = new Date(),
 ): Promise<void> {
   const state = await getNudgeState(db);
-  if (state.shownIds.includes(id)) return;
-  await write(db, { ...state, shownIds: [...state.shownIds, id], lastShownAt: now });
+  const last = state.shownIds[state.shownIds.length - 1];
+  if (last === id && state.lastShownAt && now.getTime() - state.lastShownAt.getTime() < 3_600_000) {
+    return;
+  }
+  await write(db, {
+    ...state,
+    shownIds: [...state.shownIds, id].slice(-MAX_NUDGES),
+    lastShownAt: now,
+  });
 }
 
 /** "Not now": the next reminder waits a good while longer. */

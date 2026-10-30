@@ -4,15 +4,16 @@ import {
   DISMISS_DAYS,
   EMPTY_NUDGE_STATE,
   GAP_DAYS,
-  MAX_NUDGES,
+  gapAfter,
   QUIET_DAYS,
+  STEADY_GAP_DAYS,
   type NudgeFacts,
   type NudgeState,
 } from './nudge';
 
 /**
- * The promise these rules make: a free member is reminded about Pro with their own numbers, a
- * few times, with widening gaps, and never while they have Pro or in the first quiet days
+ * The promise these rules make: a free member is reminded about Pro with their own numbers,
+ * often at first and then every ten days, never while they have Pro or in the first quiet days
  * after a trial. Nothing here invents a number or a deadline.
  */
 
@@ -57,7 +58,7 @@ describe('chooseNudge', () => {
   });
 
   it('only ever says things that are true of this person', () => {
-    const quiet = facts({ historyDays: 5, workoutsSince: 1, records: 0, monthlyInr: null });
+    const quiet = facts({ historyDays: 0, workoutsSince: 1, records: 0, monthlyInr: null });
     expect(chooseNudge(quiet, state(), NOW)).toBeNull();
     // The price is a fact too, once the server has sent it.
     const priced = chooseNudge(facts({ ...quiet, monthlyInr: 29 }), state(), NOW);
@@ -67,31 +68,41 @@ describe('chooseNudge', () => {
     expect(chooseNudge(facts({ ...quiet, monthlyInr: 99 }), state(), NOW)?.title).not.toContain(
       'a day',
     );
+    // The yearly saving is worked out from the real prices, and only offered when it is real.
+    const both = state({ shownIds: ['price'], lastShownAt: ago(30) });
+    const yearly = chooseNudge(facts({ ...quiet, monthlyInr: 99, yearlyInr: 899 }), both, NOW);
+    expect(yearly?.id).toBe('yearly');
+    expect(yearly?.title).toContain('₹289 less');
+    expect(
+      chooseNudge(facts({ ...quiet, monthlyInr: 99, yearlyInr: 1188 }), both, NOW)?.id,
+    ).not.toBe('yearly');
   });
 
-  it('never repeats a reminder and waits longer each time', () => {
+  it('shows each reminder once before any repeats, close together at first', () => {
     const shown = state({ shownIds: ['history'], lastShownAt: ago(1) });
     expect(chooseNudge(facts(), shown, NOW)).toBeNull();
-    const later = state({ shownIds: ['history'], lastShownAt: ago(GAP_DAYS[1] + 1) });
+    const later = state({ shownIds: ['history'], lastShownAt: ago(GAP_DAYS[1] + 0.1) });
     expect(chooseNudge(facts(), later, NOW)?.id).toBe('workouts');
-    // The third gap is longer than the second.
+    // The early gaps are a few days, never weeks.
+    expect(GAP_DAYS.every((g) => g <= 7)).toBe(true);
     const third = state({
       shownIds: ['history', 'workouts'],
-      lastShownAt: ago(GAP_DAYS[1] + 1),
+      lastShownAt: ago(GAP_DAYS[2] - 1),
     });
     expect(chooseNudge(facts(), third, NOW)).toBeNull();
-    expect(chooseNudge(facts(), { ...third, lastShownAt: ago(GAP_DAYS[2] + 1) }, NOW)?.id).toBe(
+    expect(chooseNudge(facts(), { ...third, lastShownAt: ago(GAP_DAYS[2] + 0.1) }, NOW)?.id).toBe(
       'records',
     );
   });
 
-  it('stops for good after four reminders', () => {
-    const done = state({
-      shownIds: ['history', 'workouts', 'records', 'price'],
-      lastShownAt: ago(400),
-    });
-    expect(done.shownIds).toHaveLength(MAX_NUDGES);
-    expect(chooseNudge(facts(), done, NOW)).toBeNull();
+  it('keeps reminding every ten days after the schedule, the oldest reminder first', () => {
+    const all = ['history', 'workouts', 'records', 'price', 'coach', 'history', 'workouts'];
+    expect(gapAfter(all.length)).toBe(STEADY_GAP_DAYS);
+    const soon = state({ shownIds: all, lastShownAt: ago(STEADY_GAP_DAYS - 1) });
+    expect(chooseNudge(facts(), soon, NOW)).toBeNull();
+    const due = state({ shownIds: all, lastShownAt: ago(STEADY_GAP_DAYS + 0.1) });
+    // records, price and coach were last seen before the second history and workouts.
+    expect(chooseNudge(facts(), due, NOW)?.id).toBe('records');
   });
 
   it('respects "not now" for a good while', () => {
@@ -104,5 +115,7 @@ describe('chooseNudge', () => {
     expect(
       chooseNudge(facts(), { ...dismissed, dismissedAt: ago(DISMISS_DAYS + 1) }, NOW)?.id,
     ).toBe('workouts');
+    // A week is the longest a "not now" holds; it never silences Pro for good.
+    expect(DISMISS_DAYS).toBe(7);
   });
 });
