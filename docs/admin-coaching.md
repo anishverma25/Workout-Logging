@@ -13,6 +13,16 @@ Run, in order, if they are not applied yet:
 
 Both are safe to run more than once.
 
+Then redeploy the billing function, which now accepts the coaching plan (until it is redeployed,
+joining coaching answers "Choose a plan."; Pro is unaffected):
+
+```bash
+npx supabase functions deploy billing --no-verify-jwt
+```
+
+The current app ignores the new plan and the new columns, so steps 1 and the deploy can be done
+before the app is merged.
+
 ## 2. Create the Razorpay plan
 
 In the Razorpay dashboard (test mode first, then live): Subscriptions, Plans, Create plan.
