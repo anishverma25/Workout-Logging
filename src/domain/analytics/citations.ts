@@ -484,6 +484,24 @@ export const CITATIONS: Record<string, Citation> = {
     url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11277795',
     openAccess: true,
   },
+  longvah2017: {
+    id: 'longvah2017',
+    authors: 'Longvah T, Ananthan R, Bhaskarachary K, Venkaiah K',
+    year: 2017,
+    title: 'Indian Food Composition Tables 2017',
+    journal: 'National Institute of Nutrition, Hyderabad',
+    url: 'https://www.nin.res.in/ebooks/IFCT2017.pdf',
+    openAccess: true,
+  },
+  fao2003: {
+    id: 'fao2003',
+    authors: 'Food and Agriculture Organization of the United Nations',
+    year: 2003,
+    title: 'Food energy: methods of analysis and conversion factors',
+    journal: 'FAO Food and Nutrition Paper 77',
+    url: 'https://www.fao.org/4/y5022e/y5022e00.htm',
+    openAccess: true,
+  },
   merrill1973: {
     id: 'merrill1973',
     authors: 'Merrill AL, Watt BK',
@@ -542,7 +560,7 @@ export const METRIC_EVIDENCE: Record<
   },
   foodValues: {
     kind: 'evidence',
-    citations: ['usdaSr28', 'vijayakumar2024', 'merrill1973', 'hall2008'],
+    citations: ['usdaSr28', 'longvah2017', 'vijayakumar2024', 'merrill1973', 'fao2003', 'hall2008'],
   },
   dayAnalysis: {
     kind: 'evidence',

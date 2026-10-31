@@ -25,9 +25,9 @@ import { withMeasures } from './measures';
  */
 export const FOOD_LIBRARY_VERSION = 1;
 
-type Line = [IngredientId, number];
+export type Line = [IngredientId, number];
 
-interface DishDef {
+export interface DishDef {
   id: string;
   name: string;
   aliases?: string[];
@@ -5735,7 +5735,7 @@ const BASICS: BasicDef[] = [
  * FatSecret India, Open Food Facts and the makers' sites, October 2026). `serving` is the
  * label's own serving; values are per 100 g unless `perServing` is set.
  */
-interface LabelDef {
+export interface LabelDef {
   id: string;
   name: string;
   aliases?: string[];
@@ -7035,7 +7035,7 @@ const LABELS: LabelDef[] = [
   },
 ];
 
-function fromLabel(l: LabelDef): Food {
+export function fromLabel(l: LabelDef): Food {
   const [kcal, proteinG, carbsG, fatG, fibreG] = l.values;
   const factor = l.perServing ? 100 / l.perServing : 1;
   const unit = l.serving ? 'piece' : 'g';
@@ -7069,6 +7069,49 @@ const NONVEG = new Set<IngredientId>([
   'prawns',
   'tuna-canned',
   'salmon',
+  'pork-belly',
+  'bacon',
+  'beef-mince',
+  'mutton-mince',
+  'chicken-drumstick',
+  'chicken-thigh',
+  'chicken-wing',
+  'mussels',
+  'bombay-duck',
+  'mackerel',
+  'sardine',
+  'pomfret',
+  'seer-fish',
+  'hilsa',
+  'catla',
+  'rohu',
+  'bhetki',
+  'karimeen',
+  'tuna-fresh',
+  'anchovy',
+  'basa',
+  'tilapia',
+  'catfish',
+  'mullet',
+  'red-snapper',
+  'crab',
+  'lobster',
+  'squid',
+  'clams',
+  'oyster',
+  'prawns-small',
+  'beef',
+  'pork',
+  'duck',
+  'quail',
+  'turkey',
+  'rabbit',
+  'goat-liver',
+  'goat-brain',
+  'goat-tripe',
+  'chicken-liver',
+  'chicken-gizzard',
+  'country-chicken',
 ]);
 /** Jain food also leaves out onion, garlic and root vegetables. */
 const NOT_JAIN = new Set<IngredientId>([
@@ -7084,6 +7127,12 @@ const NOT_JAIN = new Set<IngredientId>([
   'radish',
   'beetroot',
   'sweet-potato',
+  'colocasia',
+  'yam',
+  'turnip',
+  'lotus-stem',
+  'shallots',
+  'leek',
 ]);
 
 const lookup = (id: string): Ingredient => {
@@ -7098,7 +7147,7 @@ function dietOf(ids: IngredientId[]): Food['diet'] {
   return 'veg';
 }
 
-function fromDish(d: DishDef): Food {
+export function fromDish(d: DishDef): Food {
   const lines = d.lines.map(([id, grams]) => ({ id, grams }));
   const cookedG =
     typeof d.cooked === 'number' ? d.cooked : cookedFromMoisture(lines, lookup, d.cooked.moisture);
