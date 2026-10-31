@@ -6,6 +6,12 @@ const top = (q: string, diet: Parameters<typeof searchFoods>[2] = null) =>
   searchFoods(FOODS, q, diet)[0]?.id;
 
 describe('food search', () => {
+  it('a food named exactly what was typed comes first, before other names of other foods', () => {
+    const bar = FOODS.find((f) => f.aliases.includes('protein bar'))!;
+    const mine = { ...bar, id: 'mine', name: 'Protein bar', aliases: [] };
+    expect(searchFoods([...FOODS, mine], 'protein bar', null)[0]?.id).toBe('mine');
+  });
+
   it('understands Hinglish spellings', () => {
     expect(phonetic('daal')).toBe(phonetic('dal'));
     expect(phonetic('dhal')).toBe(phonetic('dal'));

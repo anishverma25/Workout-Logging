@@ -1,5 +1,11 @@
 import { FOOD_BY_ID, FOODS } from '../foods';
 import { searchFoods } from '@/domain/nutrition/search';
+
+const normalize = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 import { INGREDIENTS } from '../ingredients';
 import { atwaterKcal, portionNutrients, unitGrams, type Food } from '@/domain/nutrition/calc';
 import { REGIONAL_DISHES, REGIONAL_FOODS } from './index';
@@ -113,7 +119,10 @@ describe('people find the regional dishes by the name they use', () => {
       for (const q of queries) {
         const before = searchFoods(FOODS, q, null)[0]?.id;
         const after = searchFoods(all, q, null)[0]?.id;
-        if (before === f.id && after !== f.id) lost.push(`${q}: ${f.id} -> ${after}`);
+        // A regional dish named exactly what was typed may win ("naan" is plain naan).
+        const winner = all.find((x) => x.id === after);
+        const named = winner && normalize(winner.name.split(/[,(]/)[0]!) === normalize(q);
+        if (before === f.id && after !== f.id && !named) lost.push(`${q}: ${f.id} -> ${after}`);
       }
     }
     expect(lost).toEqual([]);
