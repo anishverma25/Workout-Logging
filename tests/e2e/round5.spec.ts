@@ -126,7 +126,9 @@ test('a profile photo is chosen, shown in the header and removed', async ({ page
   });
   await expect(page.locator('[data-photo-picker] [data-avatar="photo"]')).toBeVisible();
   await page.goto('/');
-  await expect(page.locator('[data-avatar="photo"]').first()).toBeVisible();
+  await expect(
+    page.locator('[data-avatar="photo"]').filter({ visible: true }).first(),
+  ).toBeVisible();
   await page.goto('/profile');
   await page.locator('[data-remove-photo]').click();
   await expect(page.locator('[data-photo-picker] [data-avatar="initials"]')).toBeVisible();
