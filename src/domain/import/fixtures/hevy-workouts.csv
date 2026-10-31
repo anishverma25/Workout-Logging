@@ -1,0 +1,15 @@
+"title","start_time","end_time","description","exercise_title","superset_id","exercise_notes","set_index","set_type","weight_kg","reps","distance_km","duration_seconds","rpe"
+"Upper A","12 Oct 2026, 19:07","12 Oct 2026, 20:56","Felt strong","Bench Press (Barbell)",,"",0,"warmup",40,10,,,
+"Upper A","12 Oct 2026, 19:07","12 Oct 2026, 20:56","Felt strong","Bench Press (Barbell)",,"Paused reps",1,"normal",80,8,,,8
+"Upper A","12 Oct 2026, 19:07","12 Oct 2026, 20:56","Felt strong","Bench Press (Barbell)",,"",2,"failure",80,7,,,10
+"Upper A","12 Oct 2026, 19:07","12 Oct 2026, 20:56","Felt strong","Lat Pulldown (Cable)",0,"",0,"normal",82.5,5,,,
+"Upper A","12 Oct 2026, 19:07","12 Oct 2026, 20:56","Felt strong","Single Arm Triceps Pushdown (Cable)",0,"",0,"normal",27.5,4,,,
+"Upper A","12 Oct 2026, 19:07","12 Oct 2026, 20:56","Felt strong","Single Arm Triceps Pushdown (Cable)",0,"",1,"dropset",20,6,,,
+"Upper A","12 Oct 2026, 19:07","12 Oct 2026, 20:56","Felt strong","Pullover (Dumbbell)",,"",0,"normal",25,5,,,
+"Upper A","12 Oct 2026, 19:07","12 Oct 2026, 20:56","Felt strong","Plank",,"",0,"normal",,,,60,
+"Lower B","3 Oct 2026, 19:40","3 Oct 2026, 21:01","","Leg Press (Machine)",,"Drop weight to 182.5kg:8 reps",0,"normal",185,3,,,
+"Lower B","3 Oct 2026, 19:40","3 Oct 2026, 21:01","","Hip Adduction (Machine)",,"leg adjustment @7",0,"normal",70,5,,,
+"Lower B","3 Oct 2026, 19:40","3 Oct 2026, 21:01","","Standing Calf Raise (Smith)",,"",0,"normal",40,6,,,
+"Lower B","3 Oct 2026, 19:40","3 Oct 2026, 21:01","","KELSO SHRUGS (seat full down)",,"",0,"normal",32.5,6,,,
+"Lower B","3 Oct 2026, 19:40","3 Oct 2026, 21:01","","Treadmill",,"",0,"normal",,,2.5,900,
+"Lower B","3 Oct 2026, 19:40","3 Oct 2026, 21:01","","Cable Crunch",,"",0,"normal",,,,,

@@ -48,6 +48,22 @@ describe('adherence', () => {
     });
   });
 
+  it('counts a planned day once when the session is repeated the same day (B1)', () => {
+    // Monday 7 Sep logged twice (a repeat), Tuesday 8 Sep once; Thursday 10 and Friday 11 missed.
+    const repeated = buildSessions(
+      buildData([
+        { at: at(7, 9), routineId: ROUTINE, exercises: [] },
+        { at: at(7, 19), routineId: ROUTINE, exercises: [] },
+        { at: at(8), routineId: ROUTINE, exercises: [] },
+      ]),
+    );
+    expect(adherence(repeated, DAYS, ROUTINE, start, end, new Date(2026, 8, 13, 12))).toEqual({
+      planned: 4,
+      completed: 2,
+      rate: 0.5,
+    });
+  });
+
   it('has no rate without a plan', () => {
     expect(
       adherence(sessionsOn(7), [], ROUTINE, start, end, new Date(2026, 8, 13)).rate,
@@ -76,6 +92,15 @@ describe('day statuses', () => {
     );
     // Mon done, Tue missed, Wed extra (unplanned), Thu missed, Fri planned today
     expect(states).toEqual(['completed', 'missed', 'extra', 'missed', 'planned']);
+  });
+
+  it('plans nothing before the routine existed', () => {
+    const now = new Date(2026, 8, 11, 9);
+    const created = new Date(2026, 8, 10, 18); // Thursday evening
+    const states = dayStatuses([], DAYS, new Date(2026, 8, 7), 5, now, created).map((d) => d.state);
+    expect(states).toEqual(['rest', 'rest', 'rest', 'missed', 'planned']);
+    const result = adherence([], DAYS, ROUTINE, new Date(2026, 8, 7), now, now, created);
+    expect(result.planned).toBe(1);
   });
 });
 

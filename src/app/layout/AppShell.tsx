@@ -1,23 +1,60 @@
-import { Suspense } from 'react';
+import { WhatsNew } from './WhatsNew';
+import { Suspense, useEffect, type MouseEvent } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { useDemoStatus } from '@/data/hooks';
-import { APP_NAME, PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '../navigation';
+import { haptic } from '@/lib/haptics';
+import { useActiveWorkout, useDemoStatus } from '@/data/hooks';
+import {
+  APP_NAME,
+  BOTTOM_NAV,
+  PRIMARY_NAV,
+  SECONDARY_NAV,
+  hidesTabBar,
+  type NavItem,
+} from '../navigation';
 import { BrandMark } from './BrandMark';
+import { AppNotices } from './AppNotices';
+import { StartWorkoutProvider } from '@/features/workout/StartWorkout';
+import { WorkoutDock } from '@/features/workout/WorkoutDock';
+import { SyncBadge } from '@/features/account/SyncStatus';
+import { TAB_ICONS } from './TabIcons';
 
 export function AppShell() {
+  const { pathname } = useLocation();
+  // index.html carries the home page's search title; inside the app the tab just says Overload.
+  useEffect(() => {
+    document.title = APP_NAME;
+  }, []);
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[17rem_1fr]">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[15rem_1fr]">
+      <a
+        href="#main"
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById('main')?.focus();
+        }}
+        className="type-headline sr-only z-50 rounded-field bg-lime px-4 py-3 text-on-lime focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
+      >
+        Skip to content
+      </a>
       <Sidebar />
       <div className="min-w-0">
         <main
           id="main"
-          className="mx-auto w-full max-w-[72rem] px-safe pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-safe lg:px-10 lg:pb-16"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-[calc(70rem+4rem)] px-[max(1rem,env(safe-area-inset-left))] pt-safe pb-[calc(6rem+env(safe-area-inset-bottom))] outline-none tab:px-6 lg:px-8 lg:pb-16"
         >
-          <Suspense fallback={null}>
-            <Outlet />
-          </Suspense>
+          <AppNotices />
+          <WhatsNew />
+          <StartWorkoutProvider>
+            <Suspense fallback={null}>
+              <div key={pathname} className="page-in">
+                <Outlet />
+              </div>
+            </Suspense>
+            <WorkoutDock />
+          </StartWorkoutProvider>
         </main>
       </div>
       <BottomNav />
@@ -32,7 +69,7 @@ export function DemoPill({ className }: { className?: string }) {
     <Link
       to="/settings#demo-data"
       className={cn(
-        'inline-flex h-7 items-center gap-1.5 rounded-full border border-warn/40 bg-warn-soft px-2.5 text-xs font-semibold text-warn',
+        'chrome tap-target type-caption inline-flex h-6 items-center gap-1 rounded-full bg-surface-2 px-2.5 font-semibold text-text-2',
         className,
       )}
       title="You are viewing fictional demo data. Manage it in Settings."
@@ -43,29 +80,52 @@ export function DemoPill({ className }: { className?: string }) {
   );
 }
 
-function SidebarLink({ item }: { item: NavItem }) {
+function NavIcon({ item, active }: { item: NavItem; active: boolean }) {
+  const Tab = TAB_ICONS[item.to as keyof typeof TAB_ICONS];
+  if (Tab) return <Tab filled={active} className="size-6 shrink-0" />;
   const Icon = item.icon;
+  return <Icon className="size-6 shrink-0" strokeWidth={1.75} aria-hidden />;
+}
+
+/**
+ * Tapping the tab you are on takes you back to its top, as in iOS apps: on the tab's own page
+ * it scrolls up; on a page inside it (a workout in History) it goes to the tab and starts at
+ * the top.
+ */
+function useTabTap() {
+  const { pathname } = useLocation();
+  return (to: string, e: MouseEvent) => {
+    const home = to === '/' ? pathname === '/' : pathname === to;
+    const inside = to !== '/' && pathname.startsWith(`${to}/`);
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (home) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    } else if (inside) {
+      requestAnimationFrame(() => window.scrollTo({ top: 0 }));
+    }
+  };
+}
+
+function SidebarLink({ item }: { item: NavItem }) {
+  const tap = useTabTap();
   return (
     <NavLink
       to={item.to}
       end={item.to === '/'}
+      onClick={(e) => tap(item.to, e)}
       className={({ isActive }) =>
         cn(
-          'group flex h-11 items-center gap-3 rounded-xl px-3 text-[0.95rem] font-medium transition-colors',
-          isActive ? 'bg-surface-2 text-text' : 'text-muted hover:bg-surface-2/60 hover:text-text',
+          'pressable chrome type-body flex h-11 items-center gap-3 rounded-field px-3 font-medium',
+          isActive ? 'bg-surface-2 text-text-1' : 'text-text-2 hover:text-text-1',
         )
       }
     >
       {({ isActive }) => (
         <>
-          <Icon
-            className={cn(
-              'size-[1.2rem]',
-              isActive ? 'text-accent-text' : 'text-faint group-hover:text-muted',
-            )}
-            aria-hidden
-            strokeWidth={isActive ? 2.25 : 1.9}
-          />
+          <span className={isActive ? 'text-lime' : undefined}>
+            <NavIcon item={item} active={isActive} />
+          </span>
           {item.label}
         </>
       )}
@@ -75,27 +135,31 @@ function SidebarLink({ item }: { item: NavItem }) {
 
 function Sidebar() {
   return (
-    <aside
-      className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-surface/40 px-4 py-6 lg:flex"
-      aria-label="Main navigation"
-    >
-      <Link to="/" className="mb-8 flex items-center gap-2.5 px-2" aria-label={`${APP_NAME} home`}>
+    <aside className="sticky top-0 hidden h-dvh flex-col overflow-y-auto border-r-[0.5px] border-divider bg-bar px-4 py-6 lg:flex">
+      <Link
+        to="/"
+        className="chrome mb-8 flex items-center gap-2.5 px-2"
+        aria-label={`${APP_NAME} home`}
+      >
         <BrandMark className="size-8" />
-        <span className="font-display text-2xl font-bold tracking-[0.01em]">{APP_NAME}</span>
+        <span className="type-title text-text-1">{APP_NAME}</span>
       </Link>
-      <nav className="flex flex-col gap-1">
-        {PRIMARY_NAV.map((item) => (
-          <SidebarLink key={item.to} item={item} />
-        ))}
+      <nav aria-label="Main navigation" className="flex flex-col">
+        <div className="flex flex-col gap-1">
+          {PRIMARY_NAV.map((item) => (
+            <SidebarLink key={item.to} item={item} />
+          ))}
+        </div>
+        <div className="mx-3 my-5 h-[0.5px] bg-divider" aria-hidden />
+        <div className="flex flex-col gap-1" role="group" aria-label="More">
+          {SECONDARY_NAV.map((item) => (
+            <SidebarLink key={item.to} item={item} />
+          ))}
+        </div>
       </nav>
-      <div className="mx-3 my-5 h-px bg-line" />
-      <nav className="flex flex-col gap-1" aria-label="More">
-        {SECONDARY_NAV.map((item) => (
-          <SidebarLink key={item.to} item={item} />
-        ))}
-      </nav>
-      <div className="mt-auto px-2">
+      <div className="mt-auto flex flex-col items-start gap-2 px-2 pt-6">
         <DemoPill />
+        <SyncBadge className="-mx-2 w-[calc(100%+1rem)]" />
       </div>
     </aside>
   );
@@ -103,43 +167,42 @@ function Sidebar() {
 
 function BottomNav() {
   const { pathname } = useLocation();
+  const tap = useTabTap();
+  const workout = useActiveWorkout();
+  const hidden = hidesTabBar(pathname, !!workout.data);
+  // Everything that floats above the bar (toasts, the workout dock) reads its height.
+  useEffect(() => {
+    document.documentElement.style.setProperty('--tabbar-h', hidden ? '0px' : '3.0625rem');
+  }, [hidden]);
+  if (hidden) return null;
   return (
     <nav
       aria-label="Main navigation"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-[var(--nav-bg)] pb-safe backdrop-blur-xl lg:hidden"
+      data-bottom-bar
+      className="chrome material-bar fixed inset-x-0 bottom-0 z-40 border-t-[0.5px] border-white/12 pb-safe lg:hidden"
     >
-      <ul className="mx-auto grid h-[4.25rem] max-w-md grid-cols-5 px-2">
-        {PRIMARY_NAV.map((item) => {
-          const Icon = item.icon;
+      <ul className="mx-auto grid h-[3.0625rem] max-w-lg grid-cols-5 px-0.5">
+        {BOTTOM_NAV.map((item) => {
           const active = item.to === '/' ? pathname === '/' : pathname.startsWith(item.to);
-          const isWorkout = item.to === '/workout';
           return (
             <li key={item.to} className="flex">
               <NavLink
                 to={item.to}
                 end={item.to === '/'}
+                onClick={(e) => {
+                  if (!active) haptic('light');
+                  tap(item.to, e);
+                }}
                 aria-current={active ? 'page' : undefined}
-                className="relative flex flex-1 flex-col items-center justify-center gap-1 rounded-xl text-[0.7rem] font-semibold tracking-[0.01em] transition-colors active:scale-95"
-              >
-                {isWorkout ? (
-                  <span
-                    className={cn(
-                      'flex size-11 items-center justify-center rounded-2xl transition-colors',
-                      active ? 'bg-accent text-accent-ink' : 'bg-surface-3 text-text',
-                    )}
-                  >
-                    <Icon className="size-[1.3rem]" aria-hidden strokeWidth={2.25} />
-                  </span>
-                ) : (
-                  <Icon
-                    className={cn('size-[1.35rem]', active ? 'text-accent-text' : 'text-faint')}
-                    aria-hidden
-                    strokeWidth={active ? 2.25 : 1.9}
-                  />
+                className={cn(
+                  'pressable type-caption flex flex-1 flex-col items-center justify-center gap-0.5',
+                  active ? 'font-semibold text-lime' : 'text-text-2',
                 )}
-                <span className={cn(isWorkout && 'sr-only', active ? 'text-text' : 'text-faint')}>
-                  {item.label}
+              >
+                <span className={active ? 'text-lime' : undefined}>
+                  <NavIcon item={item} active={active} />
                 </span>
+                <span>{item.label}</span>
               </NavLink>
             </li>
           );

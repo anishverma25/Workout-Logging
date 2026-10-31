@@ -1,0 +1,200 @@
+/*
+ * Design tokens. Dark only (UI rules 3.3, decision D3). This file is the only place colours,
+ * type sizes, radii and the font faces are defined; components use them through the Tailwind
+ * utilities declared in index.css (bg-surface, text-text-2, type-meta, rounded-panel...).
+ */
+
+/* Inter 4, Latin subset, self-hosted (public/fonts, SIL Open Font License). 400 and 600 are
+   preloaded in index.html; all five are precached by the service worker. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/inter-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/inter-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/inter-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/inter-display-700.woff2') format('woff2');
+}
+/* Metric-matched fallback so text does not jump when Inter arrives. */
+@font-face {
+  font-family: 'Inter Fallback';
+  src: local('Arial'), local('Helvetica'), local('Liberation Sans');
+  size-adjust: 107%;
+  ascent-override: 90%;
+  descent-override: 22.5%;
+  line-gap-override: 0%;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg: #000000;
+  --bar: #0a0a0a;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  /* UI v3 (G1): groups and tiles are separated by fill alone, never by a 1px border. Kept as a
+     token so emphasis borders (--border-strong) and dashed outlines still work. */
+  --border: transparent;
+  --border-strong: rgb(255 255 255 / 0.16);
+  /* Hairlines between rows, inset to the text (iOS separator). */
+  --divider: rgb(84 84 88 / 0.55);
+  --grid: rgb(255 255 255 / 0.06);
+  --track: rgb(255 255 255 / 0.1);
+  --overlay: rgb(0 0 0 / 0.6);
+  /* UI v3 surfaces (G1). */
+  --group: var(--surface);
+  --elevated: var(--surface-2);
+  --fill: rgb(118 118 128 / 0.24);
+  --seg-selected: #636366;
+  /* Translucent material for the tab bar and the collapsed header. */
+  --material-bar: rgb(22 22 24 / 0.8);
+  /* Height of the phone tab bar; 0 while it is hidden (the workout logger and its summary).
+     Set by the shell, read by everything that floats above the bar. */
+  --tabbar-h: 3.0625rem;
+
+  /* Text */
+  --text-1: #ffffff;
+  --text-2: rgb(235 235 245 / 0.6);
+  --text-3: rgb(235 235 245 / 0.38);
+
+  /* The one accent, sampled from the Start button. Dimmer lime is the same hue with opacity. */
+  --lime: #c6f432;
+  --lime-dim: rgb(198 244 50 / 0.14);
+  /* OverloadGPT answer surfaces: a faint lime wash and edge. */
+  --ai-wash: rgb(198 244 50 / 0.07);
+  --ai-edge: rgb(198 244 50 / 0.16);
+  --on-lime: #000000;
+
+  /* Medals: records only (UI rules: lime stays the one accent everywhere else). */
+  --gold: #f5c542;
+  --gold-dim: rgb(245 197 66 / 0.16);
+  --on-gold: #000000;
+  /* Badge tiers: two stops each for the medallion's gradient. */
+  --tier-bronze-1: #e3a06e;
+  --tier-bronze-2: #9a5a30;
+  --tier-silver-1: #eef1f5;
+  --tier-silver-2: #9aa3ad;
+  --tier-gold-1: #ffdd73;
+  --tier-gold-2: #c9971a;
+  --tier-legend-1: #d8ff5a;
+  --tier-legend-2: #78a300;
+
+  --focus: #ffffff;
+  --warning: #ffb340;
+  --danger: #ff453a;
+  /* Destructive text and field errors: --danger is 4.1:1 on --surface-2, this is 5.0:1. */
+  --danger-text: #ff6b5e;
+  /* Change capsules (G3): green up, red down, on their own colour at 16%. */
+  --up: #30d158;
+  --up-dim: rgb(48 209 88 / 0.16);
+  --down: #ff453a;
+  --down-dim: rgb(255 69 58 / 0.16);
+  --warning-dim: rgb(255 179 64 / 0.16);
+
+  /* Type */
+  /* UI v3 (G2): Apple devices get SF Pro (-apple-system), everything else keeps self-hosted
+     Inter. system-ui stays after Inter, or Android would get Roboto. */
+  --font-text: -apple-system, BlinkMacSystemFont, 'Inter', 'Inter Fallback', system-ui, sans-serif;
+  --font-heading:
+    -apple-system, BlinkMacSystemFont, 'Inter Display', 'Inter', 'Inter Fallback', system-ui,
+    sans-serif;
+  /* Numbers that matter (G3): SF Pro Rounded on Apple devices, Inter Display elsewhere. */
+  --font-metric:
+    ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Inter Display', 'Inter',
+    'Inter Fallback', system-ui, sans-serif;
+
+  /* Motion (UI rules 3.4 and Part 8) */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --dur-press: 150ms;
+  --dur-move: 250ms;
+
+  /*
+   * Legacy tokens. Screens not yet moved to the kit still read these names; since UI Part 2
+   * they all resolve to the monochrome-plus-lime palette above, so no screen shows the old
+   * colours. Parts 3 to 7 replace the names themselves. New code never uses them.
+   */
+  --surface-3: #3a3a3c;
+  --line: var(--divider);
+  --line-strong: var(--border-strong);
+  --text: var(--text-1);
+  --text-muted: var(--text-2);
+  --text-faint: var(--text-2);
+  --accent: var(--lime);
+  --accent-ink: var(--on-lime);
+  /* Links, borders and icons that used lime become neutral (lime rule, UI rules 3.3). */
+  --accent-text: var(--text-1);
+  --accent-soft: rgb(198 244 50 / 0.13);
+  --data-2: var(--text-2);
+  --warn: var(--warning);
+  --warn-soft: rgb(255 179 64 / 0.13);
+  --danger-soft: rgb(255 69 58 / 0.14);
+  --shadow-card: none;
+  --shadow-float: none;
+  --glow: transparent;
+  --nav-bg: rgb(0 0 0 / 0.8);
+  --ring-1: var(--lime);
+  --ring-2: rgb(198 244 50 / 0.6);
+  --ring-3: rgb(198 244 50 / 0.3);
+  --ring-1-to: var(--ring-1);
+  --ring-2-to: var(--ring-2);
+  --ring-3-to: var(--ring-3);
+  --ring-track: var(--grid);
+  --seg-track: var(--surface-2);
+  --seg-thumb: var(--text-1);
+  --switch-on: var(--lime);
+  --tile-lime: var(--surface-2);
+  --tile-ember: var(--surface-2);
+  --tile-iris: var(--surface-2);
+  --tile-sky: var(--surface-2);
+  --tile-amber: var(--surface-2);
+  --tile-rose: var(--surface-2);
+  --tile-graphite: var(--surface-2);
+  --tile-plum: var(--surface-2);
+  /* Charts (Part 4): current data lime, comparison series white 60%, no blue anywhere. */
+  --chart-1: var(--lime);
+  --chart-2: rgb(255 255 255 / 0.6);
+  --chart-grid: var(--grid);
+  /* Muscle map: untrained muscles in grey, trained ones in three strengths of the accent. */
+  --muscle-rest: var(--surface-3);
+  --muscle-1: rgb(198 244 50 / 0.32);
+  --muscle-2: rgb(198 244 50 / 0.62);
+  --muscle-3: var(--lime);
+  --body-detail: var(--surface-2);
+  --body-outline: rgb(255 255 255 / 0.22);
+
+  /* Plate colours in the plate calculator follow the real competition plates, so a plate can
+     be recognised at a glance. The one place colour carries meaning outside the accent. */
+  --plate-25: #d6453b;
+  --plate-20: #2f6fd6;
+  --plate-15: #d9a21b;
+  --plate-10: #3e9b4f;
+  --plate-5: #e8e8ea;
+  --plate-small: #8e8e93;
+}

@@ -1,83 +1,74 @@
-import { useEffect, useState } from 'react';
-import { FlaskConical, HardDrive, RotateCcw, Trash2 } from 'lucide-react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import {
+  DEV_STATES,
+  getDevEntitlement,
+  onDevEntitlementChange,
+  setDevEntitlement,
+  type DevEntitlementState,
+} from '@/app/devEntitlement';
+import { CalendarPlus, Download, FlaskConical, RotateCcw, Trash2 } from 'lucide-react';
+import { isIosSafari, promptInstall, usePwa } from '@/app/pwa';
 import { PageHeader } from '@/app/layout/PageHeader';
-import { useTheme, type ThemePreference } from '@/app/theme';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { Button, ButtonLink } from '@/components/ui/Button';
+import { DEMO_AUTOLOAD, useAccount } from '@/app/account';
+import { SyncSummary } from '@/features/account/SyncStatus';
+import { Panel, PanelRow, Switch } from '@/components/ui/List';
+import { setDeviceSetting, useDeviceSettings } from '@/app/deviceSettings';
+import { clearCoachHistory, setCoachConsent, useCoachStore } from '@/app/coach';
+import { useFeature } from '@/app/entitlement';
+import { bodyCsv, downloadText, foodCsv, setsCsv, waterActivityCsv } from '@/data/export';
+import { trainingCalendar } from '@/data/calendar';
+import { activeRoutine, daysForRoutine } from '@/domain/analytics/schedule';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { clearDemoData, loadDemoData, resetDemoData } from '@/data/demo/service';
 import { DEMO_FEATURED_DAYS, DEMO_HISTORY_DAYS } from '@/data/demo/generate';
-import { useDemoStatus, usePreferences } from '@/data/hooks';
+import {
+  useActivityData,
+  useDemoStatus,
+  useFoodData,
+  usePreferences,
+  useTrainingData,
+  useWaterData,
+} from '@/data/hooks';
 import { updatePreferences } from '@/data/repositories/meta';
 import { getStorageState, requestPersistentStorage, type StorageState } from '@/data/storage';
-import { formatShortDate } from '@/lib/dates';
+import { formatShortDate, toDateKey } from '@/lib/dates';
+import { formatClock, spokenDuration } from '@/lib/format';
+import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
+import { RestPicker } from '@/components/kit';
 
 export function SettingsPage() {
   return (
     <>
-      <PageHeader title="Settings" />
-      <div className="flex max-w-2xl flex-col gap-5">
-        <AppearanceSection />
+      <PageHeader back={{ to: '/more', label: 'More' }} title="Settings" />
+      <div className="flex max-w-2xl flex-col gap-7">
         <UnitsSection />
+        <RestSection />
+        <WorkoutSection />
+        <CoachSection />
+        <RemindersSection />
+        <ExportSection />
+        <InstallSection />
         <StorageSection />
         <DemoSection />
+        {import.meta.env.DEV ? <DeveloperSection /> : null}
       </div>
     </>
   );
 }
 
-function Row({
-  title,
-  detail,
-  children,
-}: {
-  title: string;
-  detail?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0">
-        <p className="font-medium">{title}</p>
-        {detail ? <p className="mt-0.5 text-sm text-faint">{detail}</p> : null}
-      </div>
-      <div className="shrink-0">{children}</div>
-    </div>
-  );
-}
-
-function AppearanceSection() {
-  const { preference, setPreference } = useTheme();
-  return (
-    <Card className="p-5">
-      <h2 className="mb-3 font-display text-xl font-semibold">Appearance</h2>
-      <Row title="Theme" detail="System follows your phone or computer setting.">
-        <SegmentedControl<ThemePreference>
-          label="Theme"
-          value={preference}
-          onChange={setPreference}
-          options={[
-            { value: 'system', label: 'System' },
-            { value: 'dark', label: 'Dark' },
-            { value: 'light', label: 'Light' },
-          ]}
-        />
-      </Row>
-    </Card>
-  );
-}
-
+/** The app is dark only (decision D3), so there is no theme setting. */
 function UnitsSection() {
   const prefs = usePreferences();
   const toast = useToast();
   return (
-    <Card className="p-5">
-      <h2 className="mb-3 font-display text-xl font-semibold">Units</h2>
-      <Row
+    <Panel title="Units">
+      <PanelRow
         title="Weight"
         detail="Changes how weights are shown. Your logged numbers are never altered."
+        stack
       >
         <SegmentedControl
           label="Weight unit"
@@ -91,12 +82,375 @@ function UnitsSection() {
             { value: 'lb', label: 'lb' },
           ]}
         />
-      </Row>
-    </Card>
+      </PanelRow>
+      <PanelRow title="Week starts" detail="Week strips, weekly rings and charts follow it." stack>
+        <SegmentedControl<'1' | '0'>
+          label="Week starts"
+          value={prefs.weekStartsOn === 0 ? '0' : '1'}
+          onChange={(v) => void updatePreferences(db, { weekStartsOn: v === '0' ? 0 : 1 })}
+          options={[
+            { value: '1', label: 'Mon' },
+            { value: '0', label: 'Sun' },
+          ]}
+        />
+      </PanelRow>
+    </Panel>
+  );
+}
+
+/** Rest lengths, to the second, saved to the account so they follow you between devices. */
+function RestSection() {
+  const prefs = usePreferences();
+  const [editing, setEditing] = useState<'default' | 'change' | null>(null);
+  const change = prefs.exerciseChangeRestSeconds;
+  return (
+    <Panel
+      title="Rest"
+      footer="Each exercise in a routine can have its own rest; the default is used where it has none."
+    >
+      <PanelRow title="Start rest automatically" detail="When you tick a set done.">
+        <Switch
+          label="Start rest automatically"
+          checked={prefs.autoStartRest}
+          onChange={(v) => void updatePreferences(db, { autoStartRest: v })}
+        />
+      </PanelRow>
+      <PanelRow
+        title="Default rest"
+        detail="Research supports 90 to 120 seconds between hard sets."
+      >
+        <button
+          type="button"
+          onClick={() => setEditing('default')}
+          aria-label={`Default rest, ${spokenDuration(prefs.defaultRestSeconds)}. Change`}
+          className="pressable type-headline tabular h-10 rounded-full bg-surface-2 px-4 text-text-1"
+        >
+          {formatClock(prefs.defaultRestSeconds)}
+        </button>
+      </PanelRow>
+      <PanelRow
+        title="Rest between exercises"
+        detail={
+          change === null
+            ? 'Off: the exercise you just finished decides.'
+            : 'Used after the last set of an exercise, before the next one.'
+        }
+      >
+        <div className="flex items-center gap-2">
+          {change !== null ? (
+            <button
+              type="button"
+              onClick={() => setEditing('change')}
+              aria-label={`Rest between exercises, ${spokenDuration(change)}. Change`}
+              className="pressable type-headline tabular h-10 rounded-full bg-surface-2 px-4 text-text-1"
+            >
+              {formatClock(change)}
+            </button>
+          ) : null}
+          <Switch
+            label="Rest between exercises"
+            checked={change !== null}
+            onChange={(on) =>
+              void updatePreferences(db, { exerciseChangeRestSeconds: on ? 180 : null })
+            }
+          />
+        </div>
+      </PanelRow>
+      {editing ? (
+        <RestLengthSheet
+          title={editing === 'default' ? 'Default rest' : 'Rest between exercises'}
+          initial={editing === 'default' ? prefs.defaultRestSeconds : (change ?? 180)}
+          min={editing === 'default' ? 15 : 0}
+          onSave={(sec) =>
+            void updatePreferences(
+              db,
+              editing === 'default'
+                ? { defaultRestSeconds: sec }
+                : { exerciseChangeRestSeconds: sec },
+            )
+          }
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
+    </Panel>
+  );
+}
+
+function RestLengthSheet({
+  title,
+  initial,
+  min,
+  onSave,
+  onClose,
+}: {
+  title: string;
+  initial: number;
+  min: number;
+  onSave: (seconds: number) => void;
+  onClose: () => void;
+}) {
+  const [sec, setSec] = useState(initial);
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      title={title}
+      footer={
+        <Button
+          block
+          onClick={() => {
+            onSave(sec);
+            onClose();
+          }}
+        >
+          Save {formatClock(sec)}
+        </Button>
+      }
+    >
+      <RestPicker label={title} value={sec} min={Math.max(15, min)} onChange={setSec} />
+    </Sheet>
+  );
+}
+
+function WorkoutSection() {
+  const device = useDeviceSettings();
+  return (
+    <Panel title="During a workout" footer="These apply to this device only.">
+      <PanelRow title="Sound when rest ends" detail="Two short tones while the app is open.">
+        <Switch
+          label="Sound when rest ends"
+          checked={device.restSound}
+          onChange={(v) => setDeviceSetting('restSound', v)}
+        />
+      </PanelRow>
+      <PanelRow title="Vibrate when rest ends" detail="On phones that support it.">
+        <Switch
+          label="Vibrate when rest ends"
+          checked={device.restVibrate}
+          onChange={(v) => setDeviceSetting('restVibrate', v)}
+        />
+      </PanelRow>
+      <PanelRow title="Keep the screen on" detail="While a workout is open and not paused.">
+        <Switch
+          label="Keep the screen on"
+          checked={device.keepAwake}
+          onChange={(v) => setDeviceSetting('keepAwake', v)}
+        />
+      </PanelRow>
+      <PanelRow title="Live record alerts" detail="A gold medal the moment a set beats your best.">
+        <Switch
+          label="Live record alerts"
+          checked={device.liveRecords}
+          onChange={(v) => setDeviceSetting('liveRecords', v)}
+        />
+      </PanelRow>
+    </Panel>
+  );
+}
+
+/** The AI coach: whether it may send training numbers, and the chat kept on this phone. */
+function CoachSection() {
+  const account = useAccount();
+  const pro = useFeature('ai_coach');
+  const coach = useCoachStore();
+  const toast = useToast();
+  if (account.status !== 'signedIn') return null;
+  const saved = coach.messages.length;
+  return (
+    <Panel
+      title="OverloadGPT"
+      footer={
+        pro
+          ? 'When on, questions and the numbers they need are sent to a third-party AI service to answer. The chat stays on this phone for 7 days.'
+          : 'OverloadGPT is part of Pro.'
+      }
+    >
+      <PanelRow
+        title="Use OverloadGPT"
+        detail={pro ? 'Ask about your training and explain cards.' : 'Available with Pro.'}
+      >
+        <Switch
+          label="Use OverloadGPT"
+          checked={coach.consent}
+          onChange={(v) => setCoachConsent(v)}
+        />
+      </PanelRow>
+      <PanelRow
+        title="Clear OverloadGPT chat"
+        detail={saved ? `${saved} messages on this phone.` : 'Nothing saved on this phone.'}
+      >
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={saved === 0 && Object.keys(coach.explained).length === 0}
+          onClick={() => {
+            clearCoachHistory();
+            toast('Coach chat cleared.');
+          }}
+        >
+          Clear
+        </Button>
+      </PanelRow>
+    </Panel>
+  );
+}
+
+function RemindersSection() {
+  const training = useTrainingData();
+  const toast = useToast();
+  const [time, setTime] = useState('18:00');
+  const data = training.data;
+  const routine = data ? activeRoutine(data.routines) : null;
+  const days = routine && data ? daysForRoutine(routine, data.routineDays) : [];
+  const planned = days.filter((d) => d.weekdays.length > 0);
+  return (
+    <Panel
+      title="Training reminders"
+      footer="Downloads a calendar file with your training days and a reminder before each. Open it to add them to your phone's calendar, which reminds you even when the app is closed."
+    >
+      {planned.length === 0 ? (
+        <p className="py-3.5 text-sm text-muted">
+          Set training days on your active routine first, and they can go in your calendar.
+        </p>
+      ) : (
+        <PanelRow
+          title={`${routine!.name} in your calendar`}
+          detail={`${planned.length} training ${planned.length === 1 ? 'day' : 'days'}, reminder 30 minutes before.`}
+          stack
+        >
+          <div className="flex items-center gap-2">
+            <input
+              type="time"
+              aria-label="Training time"
+              value={time}
+              onChange={(e) => setTime(e.target.value || '18:00')}
+              className="h-9 rounded-xl bg-surface-2 px-2.5 text-sm"
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<CalendarPlus className="size-4" aria-hidden />}
+              onClick={() => {
+                downloadText(
+                  trainingCalendar({
+                    routineName: routine!.name,
+                    days: planned,
+                    time,
+                    minutes: data?.profile?.sessionMinutes ?? 60,
+                    remindBefore: 30,
+                  }),
+                  'training-days.ics',
+                  'text/calendar',
+                );
+                toast('Calendar file downloaded');
+              }}
+            >
+              Add to calendar
+            </Button>
+          </div>
+        </PanelRow>
+      )}
+    </Panel>
+  );
+}
+
+function ExportSection() {
+  const training = useTrainingData();
+  const food = useFoodData();
+  const water = useWaterData();
+  const activity = useActivityData();
+  const data = training.data;
+  const date = toDateKey(new Date());
+  return (
+    <Panel
+      title="Your data"
+      footer="CSV files open in Excel, Google Sheets and Numbers. Weights are in kg."
+    >
+      <PanelRow title="Workouts" detail="Every completed set, one per row.">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!data}
+          icon={<Download className="size-4" aria-hidden />}
+          onClick={() => data && downloadText(setsCsv(data), `workouts-${date}.csv`)}
+        >
+          Export
+        </Button>
+      </PanelRow>
+      <PanelRow
+        title="Import from Hevy or Strong"
+        detail="Bring your workout history and body weight over from another app."
+      >
+        <ButtonLink to="/import?next=/settings" size="sm" variant="secondary">
+          Import
+        </ButtonLink>
+      </PanelRow>
+      <PanelRow title="Body" detail="Weigh-ins and measurements.">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!data}
+          icon={<Download className="size-4" aria-hidden />}
+          onClick={() => data && downloadText(bodyCsv(data), `body-${date}.csv`)}
+        >
+          Export
+        </Button>
+      </PanelRow>
+      <PanelRow title="Food" detail="Every food logged, with its calories and protein.">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!food.data}
+          icon={<Download className="size-4" aria-hidden />}
+          onClick={() => food.data && downloadText(foodCsv(food.data.logs), `food-${date}.csv`)}
+        >
+          Export
+        </Button>
+      </PanelRow>
+      <PanelRow title="Water and activity" detail="Water, steps and cardio, one day per row.">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!water.data || !activity.data}
+          icon={<Download className="size-4" aria-hidden />}
+          onClick={() =>
+            water.data &&
+            activity.data &&
+            downloadText(waterActivityCsv(water.data, activity.data), `water-activity-${date}.csv`)
+          }
+        >
+          Export
+        </Button>
+      </PanelRow>
+    </Panel>
+  );
+}
+
+function InstallSection() {
+  const { installPrompt, installed } = usePwa();
+  let detail: string;
+  if (installed)
+    detail = 'Installed. It opens from your home screen, works offline and updates itself.';
+  else if (installPrompt)
+    detail = 'Add it to your home screen. It opens like an app and works offline.';
+  else if (isIosSafari()) detail = 'In Safari, tap Share, then Add to Home Screen.';
+  else detail = "Use your browser's menu to install it or add it to your home screen.";
+  return (
+    <Panel title="Install the app">
+      <PanelRow title={installed ? 'Installed' : 'Home screen'} detail={detail}>
+        {installPrompt && !installed ? (
+          <Button size="sm" variant="secondary" onClick={() => void promptInstall()}>
+            Install
+          </Button>
+        ) : null}
+      </PanelRow>
+    </Panel>
   );
 }
 
 function StorageSection() {
+  const account = useAccount();
+  const signedIn = account.status === 'signedIn';
   const [state, setState] = useState<StorageState | null>(null);
   useEffect(() => {
     void getStorageState().then(setState);
@@ -110,15 +464,23 @@ function StorageSection() {
           ? 'This browser does not report storage protection.'
           : 'Checking...';
   return (
-    <Card className="p-5">
-      <h2 className="mb-1 flex items-center gap-2 font-display text-xl font-semibold">
-        <HardDrive className="size-5 text-faint" aria-hidden /> Data on this device
-      </h2>
-      <p className="mb-4 text-sm text-muted">
-        Workouts are saved on this device first. Account sync is not set up yet, so this device
-        holds your only copy.
-      </p>
-      <Row title="Storage protection" detail={label}>
+    <Panel
+      title="Data on this device"
+      footer={
+        signedIn
+          ? 'Everything is saved on this device first, so the app works offline, and then synced to your account.'
+          : 'Workouts are saved on this device. Without an account, this device holds your only copy.'
+      }
+    >
+      <div className="py-4">
+        <SyncSummary />
+        {account.status === 'signedOut' ? (
+          <ButtonLink to="/sign-in?next=/account" size="sm" className="mt-3">
+            Sign in to back up
+          </ButtonLink>
+        ) : null}
+      </div>
+      <PanelRow title="Storage protection" detail={label}>
         {state === 'best-effort' ? (
           <Button
             size="sm"
@@ -128,15 +490,35 @@ function StorageSection() {
             Protect my data
           </Button>
         ) : null}
-      </Row>
-    </Card>
+      </PanelRow>
+    </Panel>
   );
 }
 
+/**
+ * Demo data is a development and testing tool: it is only ever loaded in development and in
+ * end-to-end tests, and it never leaves the device because only `origin: 'user'` records sync.
+ * A real account has nothing to load, so a fictional athlete can never mix into real training.
+ */
 function DemoSection() {
+  const demo = useDemoStatus();
+  if (!DEMO_AUTOLOAD && !demo.data?.loaded) {
+    return (
+      <Panel title="Demo data" id="demo-data">
+        <p className="type-meta py-3.5 text-text-2">
+          Your account only ever holds your own training, so there is no demo data to show.
+        </p>
+      </Panel>
+    );
+  }
+  return <DemoControls />;
+}
+
+function DemoControls() {
   const demo = useDemoStatus();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const run = (fn: () => Promise<unknown>, message: string) => async () => {
     setBusy(true);
     try {
@@ -149,31 +531,27 @@ function DemoSection() {
   const loaded = demo.data?.loaded ?? false;
 
   return (
-    <Card className="p-5" id="demo-data" aria-labelledby="demo-title">
-      <h2
-        id="demo-title"
-        className="mb-1 flex items-center gap-2 font-display text-xl font-semibold"
-      >
-        <FlaskConical className="size-5 text-warn" aria-hidden /> Demo data
-      </h2>
-      <p className="mb-4 text-sm text-muted">
-        A fictional athlete, Arjun, with {DEMO_HISTORY_DAYS / 7} weeks of Push Pull Legs training.
-        The last {DEMO_FEATURED_DAYS} days are the featured week. Demo records are kept separate and
-        clearing them never touches your own workouts.
-      </p>
-      <div className="mb-4 rounded-xl bg-surface-2 px-4 py-3 text-sm" role="status">
+    <Panel
+      title="Demo data"
+      id="demo-data"
+      footer={`A fictional athlete, Arjun, with ${DEMO_HISTORY_DAYS / 7} weeks of Push Pull Legs training. The last ${DEMO_FEATURED_DAYS} days are the featured week. Demo records are kept separate and clearing them never touches your own workouts.`}
+    >
+      <div className="type-meta py-3.5 text-text-2" role="status">
         {demo.status === 'loading'
           ? 'Checking...'
           : loaded
             ? `Loaded: ${demo.data?.workouts ?? 0} workouts${demo.data?.loadedAt ? `, generated ${formatShortDate(new Date(demo.data.loadedAt))}` : ''}.`
             : 'Not loaded.'}
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 py-3.5">
         {!loaded ? (
           <Button
             disabled={busy}
             icon={<FlaskConical className="size-4" aria-hidden />}
-            onClick={run(() => loadDemoData(db), 'Demo data loaded')}
+            onClick={run(
+              () => loadDemoData(db, new Date(), { intoAccount: DEMO_AUTOLOAD }),
+              'Demo data loaded',
+            )}
           >
             Load demo data
           </Button>
@@ -183,7 +561,10 @@ function DemoSection() {
               variant="secondary"
               disabled={busy}
               icon={<RotateCcw className="size-4" aria-hidden />}
-              onClick={run(() => resetDemoData(db), 'Demo data reset to today')}
+              onClick={run(
+                () => resetDemoData(db, new Date(), { intoAccount: DEMO_AUTOLOAD }),
+                'Demo data reset to today',
+              )}
             >
               Reset to today
             </Button>
@@ -191,13 +572,52 @@ function DemoSection() {
               variant="danger"
               disabled={busy}
               icon={<Trash2 className="size-4" aria-hidden />}
-              onClick={run(() => clearDemoData(db), 'Demo data cleared')}
+              onClick={() => setConfirmClear(true)}
             >
               Clear demo data
             </Button>
           </>
         )}
       </div>
-    </Card>
+      <ConfirmSheet
+        open={confirmClear}
+        title="Clear demo data?"
+        body="Arjun's fictional workouts, routine and weigh-ins are removed from this device. Your own workouts are not touched. You can load the demo again later."
+        confirmLabel="Clear demo data"
+        danger
+        busy={busy}
+        onClose={() => setConfirmClear(false)}
+        onConfirm={async () => {
+          await run(() => clearDemoData(db), 'Demo data cleared')();
+          setConfirmClear(false);
+        }}
+      />
+    </Panel>
+  );
+}
+
+/** Development builds only: preview each access state. Removed from production builds. */
+function DeveloperSection() {
+  const value = useSyncExternalStore(onDevEntitlementChange, getDevEntitlement);
+  return (
+    <Panel
+      title="Developer"
+      footer="Only in development builds. Changes what this browser tab shows, never the account."
+    >
+      <PanelRow title="Access state" detail="Preview trial and Pro screens.">
+        <select
+          aria-label="Access state"
+          className="h-10 rounded-xl bg-surface-2 px-3"
+          value={value}
+          onChange={(e) => setDevEntitlement(e.target.value as DevEntitlementState)}
+        >
+          {DEV_STATES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </PanelRow>
+    </Panel>
   );
 }

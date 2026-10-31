@@ -1,19 +1,26 @@
-import { addDays, addMinutes, differenceInCalendarDays, startOfDay } from '@/lib/dates';
+import { addDays, addMinutes, differenceInCalendarDays, startOfDay, toDateKey } from '@/lib/dates';
 import { seededId } from '@/lib/ids';
 import { createRng, type Rng } from '@/lib/random';
 import { roundTo } from '@/lib/units';
+import { estimateOneRepMax } from '@/domain/analytics/e1rm';
 import type {
+  FoodLog,
+  BodyMeasurement,
   BodyWeightEntry,
   Profile,
   Routine,
   RoutineDay,
   RoutineExercise,
   SetType,
+  TrainingGoal,
   Workout,
   WorkoutExercise,
   WorkoutSet,
 } from '@/domain/models/schemas';
 import { exerciseIdFor, SYSTEM_EXERCISES } from '../library/exercises';
+import { FOOD_BY_ID, FOOD_LIBRARY_VERSION } from '../library/foods';
+import { portionNutrients, roundNutrients, unitGrams } from '@/domain/nutrition/calc';
+import { MEALS, type Meal, type UnitId } from '@/domain/nutrition/types';
 import { DEMO_PROFILE, DEMO_PROGRAM, DEMO_ROUTINE, type ProgramExercise } from './program';
 
 /** Total history generated. The last 7 days are the featured week; earlier weeks give PRs and trends a baseline. */
@@ -30,6 +37,9 @@ export interface DemoDataset {
   workoutExercises: WorkoutExercise[];
   sets: WorkoutSet[];
   bodyWeights: BodyWeightEntry[];
+  measurements: BodyMeasurement[];
+  goals: TrainingGoal[];
+  foodLogs: FoodLog[];
 }
 
 interface LiftState {
@@ -74,6 +84,13 @@ export function generateDemoDataset(now: Date, seed: number = DEMO_SEED): DemoDa
     birthDate: `${birthYear}-${DEMO_PROFILE.birthMonthDay}`,
     goal: DEMO_PROFILE.goal,
     experience: DEMO_PROFILE.experience,
+    sex: DEMO_PROFILE.sex,
+    heightCm: DEMO_PROFILE.heightCm,
+    trainingDays: DEMO_PROFILE.trainingDays,
+    sessionMinutes: DEMO_PROFILE.sessionMinutes,
+    equipment: DEMO_PROFILE.equipment,
+    dailyActivity: DEMO_PROFILE.dailyActivity,
+    dietType: 'egg',
   };
 
   // Routine
@@ -184,7 +201,13 @@ export function generateDemoDataset(now: Date, seed: number = DEMO_SEED): DemoDa
         exerciseName: exerciseNames.get(exerciseId) ?? ex.key,
         order,
         notes: null,
-        target: { sets: ex.sets, repMin: ex.repMin, repMax: ex.repMax, rir: ex.rir },
+        target: {
+          sets: ex.sets,
+          repMin: ex.repMin,
+          repMax: ex.repMax,
+          rir: ex.rir,
+          rest: ex.restSeconds,
+        },
       };
       workoutExercises.push(we);
 
@@ -244,6 +267,8 @@ export function generateDemoDataset(now: Date, seed: number = DEMO_SEED): DemoDa
       status: 'completed',
       startedAt: iso(startedAt),
       endedAt: iso(endedAt),
+      pausedAt: null,
+      pausedMs: 0,
       notes: note,
       timeZone,
     });
@@ -272,6 +297,75 @@ export function generateDemoDataset(now: Date, seed: number = DEMO_SEED): DemoDa
     });
   }
 
+  // Later additions draw from their own generator, so the original story stays identical.
+  const extra = createRng(seed ^ 0xbeef);
+
+  // Readiness before most sessions and effort after every one.
+  for (const w of workouts) {
+    w.sessionRpe = extra.int(6, 9);
+    w.readiness = extra.chance(0.7)
+      ? { sleep: extra.int(2, 5), energy: extra.int(2, 5), soreness: extra.int(1, 4) }
+      : null;
+  }
+
+  // Tape measurements once a week: a lean gain, waist steady, arms and chest slowly up.
+  const measurements: BodyMeasurement[] = [];
+  for (let d = addDays(firstDay, 2); d < today; d = addDays(d, 7)) {
+    const t = 1 - differenceInCalendarDays(today, d) / DEMO_HISTORY_DAYS;
+    const at = addMinutes(d, 7 * 60 + 20);
+    const cm = (from: number, to: number) => Math.round((from + (to - from) * t) * 10) / 10;
+    measurements.push({
+      id: id(),
+      ...meta(at),
+      measuredAt: iso(at),
+      waistCm: cm(79.5, 79.8),
+      neckCm: 37.5,
+      hipCm: null,
+      chestCm: cm(97.5, 98.6),
+      armCm: cm(34.4, 35.1),
+      thighCm: cm(55, 55.6),
+      calfCm: 36,
+      bodyFatPct: null,
+      note: null,
+    });
+  }
+
+  // Two goals: a bench press target and a slow bulk.
+  const bench = exerciseIdFor('barbell-bench-press');
+  const firstWeek = addDays(firstDay, 7);
+  const firstBench = sets
+    .filter(
+      (x) =>
+        x.exerciseId === bench &&
+        x.setType === 'working' &&
+        x.completedAt &&
+        new Date(x.completedAt) < firstWeek,
+    )
+    .map((x) => estimateOneRepMax(x.weightKg ?? 0, x.reps ?? 0) ?? 0);
+  const goalsCreated = addDays(firstDay, 1);
+  const goals: TrainingGoal[] = [
+    {
+      id: id(),
+      ...meta(goalsCreated),
+      kind: 'exercise_e1rm',
+      exerciseId: bench,
+      targetValue: 100,
+      startValue: firstBench.length ? Math.round(Math.max(...firstBench) * 10) / 10 : null,
+      targetDate: toDateKey(addDays(today, 70)),
+      achievedAt: null,
+    },
+    {
+      id: id(),
+      ...meta(goalsCreated),
+      kind: 'body_weight',
+      exerciseId: null,
+      targetValue: 70,
+      startValue: DEMO_PROFILE.bodyWeightStartKg,
+      targetDate: toDateKey(addDays(today, 120)),
+      achievedAt: null,
+    },
+  ];
+
   return {
     profile,
     routines: [routine],
@@ -281,7 +375,126 @@ export function generateDemoDataset(now: Date, seed: number = DEMO_SEED): DemoDa
     workoutExercises,
     sets,
     bodyWeights,
+    measurements,
+    goals,
+    foodLogs: demoFoodLogs(today, seed, meta),
   };
+}
+
+/**
+ * Three weeks of meals for the demo athlete, an eggetarian from Delhi: the same breakfast most
+ * days (so "your usual" shows), home lunches and dinners, chai in the evening. Numbers come
+ * from the food library exactly as the logger would save them.
+ */
+function demoFoodLogs(
+  today: Date,
+  seed: number,
+  meta: (at: Date) => { createdAt: string; updatedAt: string; deletedAt: null; origin: 'demo' },
+): FoodLog[] {
+  const rng = createRng(seed ^ 0xf00d);
+  const id = () => seededId(rng);
+  type Item = [string, number, UnitId];
+  const plans: Record<Meal, Item[][]> = {
+    breakfast: [
+      [
+        ['poha', 1, 'katori'],
+        ['chai', 1, 'cup'],
+      ],
+      [
+        ['poha', 1, 'katori'],
+        ['chai', 1, 'cup'],
+      ],
+      [
+        ['omelette', 1, 'piece'],
+        ['bread-slice', 2, 'piece'],
+        ['chai', 1, 'cup'],
+      ],
+      [
+        ['aloo-paratha', 2, 'piece'],
+        ['curd', 1, 'katori'],
+      ],
+    ],
+    lunch: [
+      [
+        ['roti', 3, 'piece'],
+        ['dal-tadka', 1, 'katori'],
+        ['aloo-gobhi', 1, 'katori'],
+        ['curd', 1, 'katori'],
+      ],
+      [
+        ['rajma', 1.5, 'katori'],
+        ['rice', 1.5, 'katori'],
+        ['green-salad', 1, 'katori'],
+      ],
+      [
+        ['roti', 3, 'piece'],
+        ['chole', 1, 'katori'],
+        ['chaas', 1, 'glass'],
+      ],
+    ],
+    snacks: [
+      [
+        ['chai', 1, 'cup'],
+        ['roasted-chana', 30, 'g'],
+      ],
+      [
+        ['banana', 2, 'piece'],
+        ['milk', 1, 'glass'],
+      ],
+      [['sprouts-chaat', 1, 'katori']],
+    ],
+    dinner: [
+      [
+        ['roti', 3, 'piece'],
+        ['paneer-bhurji', 1, 'katori'],
+        ['dal-tadka', 1, 'katori'],
+      ],
+      [
+        ['roti', 2, 'piece'],
+        ['egg-curry', 1.5, 'katori'],
+        ['rice', 1, 'katori'],
+      ],
+      [
+        ['moong-dal', 1, 'katori'],
+        ['rice', 1, 'katori'],
+        ['bhindi', 1, 'katori'],
+        ['roti', 2, 'piece'],
+      ],
+    ],
+  };
+  const hours: Record<Meal, number> = { breakfast: 8, lunch: 13, snacks: 17, dinner: 21 };
+  const logs: FoodLog[] = [];
+  for (let back = 21; back >= 1; back -= 1) {
+    const day = addDays(today, -back);
+    const date = toDateKey(day);
+    for (const meal of MEALS) {
+      if (meal === 'snacks' && rng.chance(0.3)) continue;
+      const options = plans[meal];
+      const plan = options[rng.int(0, options.length - 1)]!;
+      plan.forEach(([foodId, amount, unit], i) => {
+        const food = FOOD_BY_ID.get(foodId)!;
+        const grams = Math.round((unitGrams(food, unit, 'medium') ?? 0) * amount * 10) / 10;
+        const oilLevel = food.fatPer100 ? 'normal' : null;
+        const at = addMinutes(day, hours[meal] * 60 + i);
+        logs.push({
+          id: id(),
+          ...meta(at),
+          date,
+          meal,
+          foodId,
+          foodName: food.name,
+          amount,
+          unit,
+          size: unit === 'katori' || unit === 'cup' ? 'medium' : null,
+          grams,
+          oilLevel,
+          ...roundNutrients(portionNutrients(food, grams, oilLevel)),
+          libraryVersion: FOOD_LIBRARY_VERSION,
+        });
+      });
+    }
+  }
+  return logs;
 }
 
 type ProgramDayKey = (typeof DEMO_PROGRAM)[number]['key'];

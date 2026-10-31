@@ -1,0 +1,593 @@
+import { previousPerformance, suggestFor } from '@/domain/workout/previous';
+import { lbToKg } from '@/lib/units';
+import { WorkoutDatabase } from '../db';
+import { loadDemoData } from '../demo/service';
+import { exerciseIdFor } from '../library/exercises';
+import { createRoutineFromTemplate } from './routines';
+import { loadTrainingData, ensureSystemExercises } from './training';
+import {
+  ActiveWorkoutExistsError,
+  addExercisesToWorkout,
+  addSet,
+  cancelWorkout,
+  completeSet,
+  deleteSet,
+  duplicateSet,
+  elapsedMs,
+  finishCheck,
+  finishWorkout,
+  getActiveWorkout,
+  moveWorkoutExercise,
+  pauseWorkout,
+  removeLastOpenSet,
+  removeWorkoutExercise,
+  restoreSet,
+  resumeWorkout,
+  startEmptyWorkout,
+  startWorkoutFromDay,
+  startWorkoutFromPast,
+  uncompleteSet,
+  updateSet,
+  updateWorkoutDetails,
+  setWorkoutExerciseBySide,
+  WorkoutError,
+} from './workouts';
+import { setVolumeLoad } from '@/domain/analytics/volume';
+
+let db: WorkoutDatabase;
+let n = 0;
+beforeEach(async () => {
+  db = new WorkoutDatabase(`workouts-${++n}`);
+  await db.open();
+  await ensureSystemExercises(db);
+});
+afterEach(async () => {
+  await db.delete();
+});
+
+const liveSets = async (workoutExerciseId: string) =>
+  (await db.sets.where('workoutExerciseId').equals(workoutExerciseId).toArray())
+    .filter((s) => s.deletedAt === null)
+    .sort((a, b) => a.order - b.order);
+const liveExercises = async (workoutId: string) =>
+  (await db.workoutExercises.where('workoutId').equals(workoutId).toArray())
+    .filter((e) => e.deletedAt === null)
+    .sort((a, b) => a.order - b.order);
+
+const T0 = new Date(2026, 9, 5, 18, 0, 0);
+const at = (minutes: number) => new Date(T0.getTime() + minutes * 60_000);
+
+async function pushDay() {
+  const r = await createRoutineFromTemplate(db, 'ppl');
+  const days = (await db.routineDays.where('routineId').equals(r.id).toArray()).sort(
+    (a, b) => a.order - b.order,
+  );
+  return { routine: r, day: days[0]! };
+}
+
+describe('starting', () => {
+  it('starts from a routine day with exercises, targets and empty working sets', async () => {
+    const { routine, day } = await pushDay();
+    const w = await startWorkoutFromDay(db, day.id, T0);
+    expect(w).toMatchObject({
+      name: 'Push',
+      status: 'in_progress',
+      routineId: routine.id,
+      routineDayId: day.id,
+      startedAt: T0.toISOString(),
+    });
+    const wes = await liveExercises(w.id);
+    expect(wes.map((e) => e.exerciseName)).toEqual([
+      'Barbell bench press',
+      'Incline dumbbell press',
+      'Seated dumbbell shoulder press',
+      'Pec deck',
+      'Cable lateral raise',
+      'Triceps rope pushdown',
+      'Overhead triceps extension',
+    ]);
+    expect(wes[0]!.target).toEqual({ sets: 3, repMin: 5, repMax: 8, rir: 2, rest: 180 });
+    const sets = await liveSets(wes[0]!.id);
+    expect(sets).toHaveLength(3);
+    expect(
+      sets.every((s) => s.setType === 'working' && s.completedAt === null && s.weightKg === null),
+    ).toBe(true);
+  });
+
+  it('starts again from a past workout: same exercises, order, set types and targets', async () => {
+    const { routine, day } = await pushDay();
+    const w = await startWorkoutFromDay(db, day.id, T0);
+    const wes = await liveExercises(w.id);
+    // First exercise: a warm-up and two of three working sets done; the second skipped.
+    const warm = await addSet(db, wes[0]!.id, 'warmup');
+    await updateSet(db, warm.id, { weightKg: 40, reps: 8 });
+    await completeSet(db, warm.id, null, at(1));
+    const working = (await liveSets(wes[0]!.id)).filter((x) => x.setType === 'working');
+    for (const [i, x] of working.slice(0, 2).entries()) {
+      await updateSet(db, x.id, { weightKg: 80, reps: 6 });
+      await completeSet(db, x.id, null, at(3 + i * 3));
+    }
+    await finishWorkout(db, w.id, { now: at(20) });
+
+    const again = await startWorkoutFromPast(db, w.id, at(60 * 48));
+    expect(again).toMatchObject({
+      name: 'Push',
+      status: 'in_progress',
+      routineId: routine.id,
+      routineDayId: day.id,
+    });
+    const copy = await liveExercises(again.id);
+    // Finishing dropped the exercises with nothing done, so the copy has what was trained.
+    const kept = await liveExercises(w.id);
+    expect(copy.map((e) => e.exerciseName)).toEqual(kept.map((e) => e.exerciseName));
+    expect(copy[0]!.target).toEqual(wes[0]!.target);
+    const first = await liveSets(copy[0]!.id);
+    // What was done: the order sets were ticked off, warm-up included, all empty again.
+    expect(first.map((x) => x.setType).sort()).toEqual(['warmup', 'working', 'working'].sort());
+    expect(first.every((x) => x.completedAt === null && x.weightKg === null)).toBe(true);
+    // The past workout is untouched.
+    expect((await db.workouts.get(w.id))!.status).toBe('completed');
+  });
+
+  it('allows only one workout in progress', async () => {
+    const { day } = await pushDay();
+    const w = await startEmptyWorkout(db, T0);
+    await expect(startWorkoutFromDay(db, day.id)).rejects.toBeInstanceOf(ActiveWorkoutExistsError);
+    await expect(startEmptyWorkout(db)).rejects.toMatchObject({ workoutId: w.id });
+    expect((await getActiveWorkout(db))?.id).toBe(w.id);
+  });
+
+  it('names empty workouts by time of day', async () => {
+    expect((await startEmptyWorkout(db, new Date(2026, 9, 5, 7, 0))).name).toBe('Morning workout');
+  });
+});
+
+describe('editing a workout', () => {
+  it('adds, reorders and removes exercises; sets default to last time’s count', async () => {
+    await loadDemoData(db, T0);
+    const w = await startEmptyWorkout(db, T0);
+    const added = await addExercisesToWorkout(db, w.id, [
+      exerciseIdFor('barbell-bench-press'),
+      exerciseIdFor('pec-deck'),
+    ]);
+    // The demo athlete's last bench session had working, back-off and drop sets.
+    const benchPrev = previousPerformance(
+      await loadTrainingData(db),
+      exerciseIdFor('barbell-bench-press'),
+      w.startedAt,
+    );
+    const lastWorking = benchPrev!.sets.filter((s) => s.setType !== 'warmup').length;
+    expect((await liveSets(added[0]!.id)).length).toBe(Math.min(lastWorking, 6));
+    expect((await liveSets(added[1]!.id)).length).toBe(3); // never done before
+
+    await moveWorkoutExercise(db, added[1]!.id, -1);
+    expect((await liveExercises(w.id)).map((e) => e.exerciseName)).toEqual([
+      'Pec deck',
+      'Barbell bench press',
+    ]);
+    await removeWorkoutExercise(db, added[1]!.id);
+    expect((await liveExercises(w.id)).map((e) => [e.exerciseName, e.order])).toEqual([
+      ['Barbell bench press', 0],
+    ]);
+    expect(await liveSets(added[1]!.id)).toHaveLength(0);
+  });
+
+  it('adds, edits, duplicates and deletes sets, keeping order contiguous', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('back-squat')]);
+    const [s1] = await liveSets(we!.id);
+    await updateSet(db, s1!.id, {
+      weightKg: 100,
+      reps: 5,
+      rir: 2,
+      setType: 'working',
+      notes: ' belt ',
+    });
+    const copy = await duplicateSet(db, s1!.id);
+    expect(copy).toMatchObject({ weightKg: 100, reps: 5, rir: 2, completedAt: null, order: 1 });
+    const warm = await addSet(db, we!.id, 'warmup');
+    expect(warm.order).toBe(4);
+
+    let sets = await liveSets(we!.id);
+    expect(sets.map((s) => s.order)).toEqual([0, 1, 2, 3, 4]);
+    expect(sets[0]!.notes).toBe('belt');
+
+    await deleteSet(db, sets[1]!.id);
+    sets = await liveSets(we!.id);
+    expect(sets.map((s) => s.order)).toEqual([0, 1, 2, 3]);
+  });
+
+  it('removes the last set not yet done, never a done one, and can put it back', async () => {
+    const { day } = await pushDay();
+    const w = await startWorkoutFromDay(db, day.id, T0);
+    const [we] = await liveExercises(w.id);
+    const planned = await liveSets(we!.id);
+    expect(planned.length).toBeGreaterThanOrEqual(3);
+    await updateSet(db, planned[0]!.id, { weightKg: 60, reps: 8 });
+    await completeSet(db, planned[0]!.id);
+
+    // Fewer sets today: the last open set goes.
+    const removed = await removeLastOpenSet(db, we!.id);
+    expect(removed).toBe(planned[planned.length - 1]!.id);
+    let sets = await liveSets(we!.id);
+    expect(sets).toHaveLength(planned.length - 1);
+    expect(sets.map((s) => s.order)).toEqual(sets.map((_, i) => i));
+
+    // Undo puts it back where it was.
+    await restoreSet(db, removed!);
+    sets = await liveSets(we!.id);
+    expect(sets.map((s) => s.id)).toEqual(planned.map((s) => s.id));
+
+    // Only open sets are ever removed: the done one stays.
+    for (let i = 0; i < planned.length; i++) await removeLastOpenSet(db, we!.id);
+    sets = await liveSets(we!.id);
+    expect(sets.map((s) => s.id)).toEqual([planned[0]!.id]);
+    expect(await removeLastOpenSet(db, we!.id)).toBeNull();
+  });
+
+  it('clamps impossible values instead of storing them', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('back-squat')]);
+    const [s] = await liveSets(we!.id);
+    await updateSet(db, s!.id, { weightKg: -5, reps: 7.6, rir: 14, rpe: 0 });
+    expect(await db.sets.get(s!.id)).toMatchObject({ weightKg: 0, reps: 8, rir: 10, rpe: 1 });
+  });
+
+  it('stores lb input as kg at full precision and shows it back unchanged', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('back-squat')]);
+    const [s] = await liveSets(we!.id);
+    await updateSet(db, s!.id, { weightKg: lbToKg(225) });
+    const stored = (await db.sets.get(s!.id))!.weightKg!;
+    expect(stored).toBeCloseTo(102.0583, 4);
+    expect(Math.round((stored / 0.45359237) * 10) / 10).toBe(225);
+  });
+
+  it('updates workout name and notes', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    await updateWorkoutDetails(db, w.id, { name: ' Heavy day ', notes: '  felt strong ' });
+    expect(await db.workouts.get(w.id)).toMatchObject({ name: 'Heavy day', notes: 'felt strong' });
+    await expect(updateWorkoutDetails(db, w.id, { name: ' ' })).rejects.toBeInstanceOf(
+      WorkoutError,
+    );
+  });
+});
+
+describe('completing sets', () => {
+  it('fills empty fields from the suggestion and is idempotent', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('back-squat')]);
+    const [s] = await liveSets(we!.id);
+    const first = await completeSet(
+      db,
+      s!.id,
+      { weightKg: 100, reps: 5, durationSec: null, distanceM: null },
+      at(5),
+    );
+    expect(first).toMatchObject({ ok: true, alreadyCompleted: false });
+    const again = await completeSet(
+      db,
+      s!.id,
+      { weightKg: 120, reps: 1, durationSec: null, distanceM: null },
+      at(6),
+    );
+    expect(again).toMatchObject({ ok: true, alreadyCompleted: true });
+    expect(await db.sets.get(s!.id)).toMatchObject({
+      weightKg: 100,
+      reps: 5,
+      completedAt: at(5).toISOString(),
+    });
+  });
+
+  it('typed values win over the suggestion', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('back-squat')]);
+    const [s] = await liveSets(we!.id);
+    await updateSet(db, s!.id, { reps: 7 });
+    await completeSet(db, s!.id, { weightKg: 100, reps: 5, durationSec: null, distanceM: null });
+    expect(await db.sets.get(s!.id)).toMatchObject({ weightKg: 100, reps: 7 });
+  });
+
+  it('refuses to complete a set with missing values, per tracking type', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    const [squat, pullUp, plank] = await addExercisesToWorkout(db, w.id, [
+      exerciseIdFor('back-squat'),
+      exerciseIdFor('pull-up'),
+      exerciseIdFor('plank'),
+    ]);
+    const [sq] = await liveSets(squat!.id);
+    expect(await completeSet(db, sq!.id)).toEqual({ ok: false, reason: 'Enter the weight first.' });
+    await updateSet(db, sq!.id, { weightKg: 60 });
+    expect(await completeSet(db, sq!.id)).toEqual({ ok: false, reason: 'Enter the reps first.' });
+
+    const [pu] = await liveSets(pullUp!.id);
+    await updateSet(db, pu!.id, { reps: 8 });
+    expect((await completeSet(db, pu!.id)).ok).toBe(true); // no weight needed
+
+    const [pl] = await liveSets(plank!.id);
+    expect(await completeSet(db, pl!.id)).toEqual({ ok: false, reason: 'Enter the time first.' });
+    await updateSet(db, pl!.id, { durationSec: 45 });
+    expect((await completeSet(db, pl!.id)).ok).toBe(true);
+  });
+
+  it('undoes a completed set', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('pull-up')]);
+    const [s] = await liveSets(we!.id);
+    await updateSet(db, s!.id, { reps: 10 });
+    await completeSet(db, s!.id);
+    await uncompleteSet(db, s!.id);
+    expect(await db.sets.get(s!.id)).toMatchObject({ completedAt: null, reps: 10 });
+  });
+});
+
+describe('left and right reps', () => {
+  it('one-arm exercises log each side; reps is the weaker side, volume counts both', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [
+      exerciseIdFor('one-arm-cable-triceps-extension'),
+    ]);
+    const [first, second] = await liveSets(we!.id);
+    await updateSet(db, first!.id, { weightKg: 25, repsLeft: 6 });
+    await updateSet(db, first!.id, { repsRight: 7 });
+    let set = (await db.sets.get(first!.id))!;
+    expect([set.repsLeft, set.repsRight, set.reps]).toEqual([6, 7, 6]);
+    const done = await completeSet(db, first!.id, null, at(1));
+    expect(done.ok).toBe(true);
+    const exercise = await db.exercises.get(exerciseIdFor('one-arm-cable-triceps-extension'));
+    expect(setVolumeLoad((await db.sets.get(first!.id))!, exercise)).toBe(25 * 13);
+
+    // An empty set takes last time's sides when it is ticked.
+    const r = await completeSet(
+      db,
+      second!.id,
+      { weightKg: 25, reps: 6, durationSec: null, distanceM: null, repsLeft: 6, repsRight: 7 },
+      at(2),
+    );
+    expect(r.ok).toBe(true);
+    set = (await db.sets.get(second!.id))!;
+    expect([set.repsLeft, set.repsRight, set.reps]).toEqual([6, 7, 6]);
+  });
+
+  it('two-arm exercises stay one number unless switched on; switching off clears open sides', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('cable-lateral-raise')]);
+    const [first, second] = await liveSets(we!.id);
+    await updateSet(db, first!.id, { weightKg: 10, reps: 12 });
+    expect((await completeSet(db, first!.id, null, at(1))).ok).toBe(true);
+    expect((await db.sets.get(first!.id))!.repsLeft ?? null).toBeNull();
+
+    await setWorkoutExerciseBySide(db, we!.id, true);
+    // Last time's one number fills both sides.
+    await completeSet(
+      db,
+      second!.id,
+      { weightKg: 10, reps: 12, durationSec: null, distanceM: null },
+      at(2),
+    );
+    const s2 = (await db.sets.get(second!.id))!;
+    expect([s2.repsLeft, s2.repsRight, s2.reps]).toEqual([12, 12, 12]);
+
+    const [third] = (await liveSets(we!.id)).slice(2);
+    const extra = third ?? (await db.sets.get((await addSet(db, we!.id)).id))!;
+    await updateSet(db, extra.id, { repsLeft: 9 });
+    await setWorkoutExerciseBySide(db, we!.id, false);
+    expect((await db.sets.get(extra.id))!.repsLeft ?? null).toBeNull();
+    // Done sets keep what was logged.
+    expect((await db.sets.get(second!.id))!.repsLeft).toBe(12);
+  });
+});
+
+describe('pausing', () => {
+  it('excludes paused time from training time and from the final duration', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    await pauseWorkout(db, w.id, at(10));
+    await pauseWorkout(db, w.id, at(12)); // second pause is ignored
+    expect(elapsedMs((await db.workouts.get(w.id))!, at(15))).toBe(10 * 60_000);
+    await resumeWorkout(db, w.id, at(20));
+    expect(elapsedMs((await db.workouts.get(w.id))!, at(30))).toBe(20 * 60_000);
+
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('pull-up')]);
+    const [s] = await liveSets(we!.id);
+    await updateSet(db, s!.id, { reps: 10 });
+    await completeSet(db, s!.id);
+    await pauseWorkout(db, w.id, at(40));
+    const done = await finishWorkout(db, w.id, { now: at(45) }); // finished while paused
+    expect(done.pausedMs).toBe(15 * 60_000);
+    expect(done.pausedAt).toBeNull();
+    expect(elapsedMs(done)).toBe(30 * 60_000);
+  });
+});
+
+describe('finishing and cancelling', () => {
+  async function workoutWithMixedSets() {
+    const w = await startEmptyWorkout(db, T0);
+    const [squat, curl] = await addExercisesToWorkout(db, w.id, [
+      exerciseIdFor('back-squat'),
+      exerciseIdFor('barbell-curl'),
+    ]);
+    const [a, b, c] = await liveSets(squat!.id);
+    await updateSet(db, a!.id, { weightKg: 100, reps: 5 });
+    await completeSet(db, a!.id);
+    await updateSet(db, b!.id, { weightKg: 100, reps: 5 }); // typed, not confirmed
+    void c; // left empty
+    return { w, squat: squat!, curl: curl! };
+  }
+
+  it('reports what is unfinished', async () => {
+    const { w } = await workoutWithMixedSets();
+    expect(await finishCheck(db, w.id)).toEqual({
+      completedSets: 1,
+      unconfirmedSets: 1,
+      emptySets: 4,
+    });
+  });
+
+  it('drops unconfirmed and empty sets and empty exercises by default', async () => {
+    const { w, squat, curl } = await workoutWithMixedSets();
+    const done = await finishWorkout(db, w.id, { now: at(50) });
+    expect(done).toMatchObject({ status: 'completed', endedAt: at(50).toISOString() });
+    expect((await liveSets(squat.id)).map((s) => s.order)).toEqual([0]);
+    expect((await db.workoutExercises.get(curl.id))?.deletedAt).not.toBeNull();
+  });
+
+  it('can keep typed sets by marking them done', async () => {
+    const { w, squat } = await workoutWithMixedSets();
+    await finishWorkout(db, w.id, { keepUnconfirmed: true, now: at(50) });
+    const sets = await liveSets(squat.id);
+    expect(sets).toHaveLength(2);
+    expect(sets.every((s) => s.completedAt !== null)).toBe(true);
+  });
+
+  it('refuses to finish with nothing done, and finishing twice changes nothing', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    await addExercisesToWorkout(db, w.id, [exerciseIdFor('back-squat')]);
+    await expect(finishWorkout(db, w.id)).rejects.toThrow('No sets are marked done');
+    expect((await db.workouts.get(w.id))?.status).toBe('in_progress');
+
+    const { w: w2 } = await (async () => {
+      await cancelWorkout(db, w.id);
+      return workoutWithMixedSets();
+    })();
+    const first = await finishWorkout(db, w2.id, { now: at(50) });
+    const second = await finishWorkout(db, w2.id, { now: at(90) });
+    expect(second.endedAt).toBe(first.endedAt);
+  });
+
+  it('cancelling discards the workout everywhere', async () => {
+    const { w } = await workoutWithMixedSets();
+    await cancelWorkout(db, w.id);
+    expect(await getActiveWorkout(db)).toBeNull();
+    const data = await loadTrainingData(db);
+    expect(data.workouts.find((x) => x.id === w.id)).toBeUndefined();
+    expect(data.sets.some((s) => s.workoutId === w.id)).toBe(false);
+  });
+});
+
+describe('persistence', () => {
+  it('an in-progress workout survives closing and reopening the database', async () => {
+    const { day } = await pushDay();
+    const w = await startWorkoutFromDay(db, day.id, T0);
+    const [we] = await liveExercises(w.id);
+    const [s] = await liveSets(we!.id);
+    await updateSet(db, s!.id, { weightKg: 80, reps: 8 });
+    await completeSet(db, s!.id);
+    const name = db.name;
+    db.close();
+
+    db = new WorkoutDatabase(name);
+    await db.open();
+    const active = await getActiveWorkout(db);
+    expect(active?.id).toBe(w.id);
+    expect(await db.sets.get(s!.id)).toMatchObject({ weightKg: 80, reps: 8 });
+    expect((await db.sets.get(s!.id))?.completedAt).not.toBeNull();
+  });
+});
+
+describe('previous performance', () => {
+  it('shows the last completed session for the exercise, never the current workout', async () => {
+    await loadDemoData(db, T0);
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('barbell-bench-press')]);
+    const sets = await liveSets(we!.id);
+    await updateSet(db, sets[0]!.id, { weightKg: 999, reps: 1 });
+    await completeSet(db, sets[0]!.id);
+
+    const data = await loadTrainingData(db);
+    const prev = previousPerformance(data, exerciseIdFor('barbell-bench-press'), w.startedAt, w.id);
+    expect(prev).not.toBeNull();
+    expect(prev!.workout.id).not.toBe(w.id);
+    expect(prev!.workout.status).toBe('completed');
+    expect(prev!.sets.every((s) => s.completedAt !== null && s.weightKg !== 999)).toBe(true);
+    const lastBench = data.workouts
+      .filter((x) => x.status === 'completed' && x.name === 'Push')
+      .sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
+    expect(prev!.workout.id).toBe(lastBench!.id);
+  });
+
+  it('lines up today’s sets with last time’s by set type and position', async () => {
+    await loadDemoData(db, T0);
+    const data = await loadTrainingData(db);
+    const prev = previousPerformance(data, exerciseIdFor('barbell-bench-press'), T0.toISOString())!;
+    const prevWorking = prev.sets.filter((s) => s.setType === 'working');
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('barbell-bench-press')]);
+    const today = await liveSets(we!.id);
+    const s = suggestFor(prev.sets, today, today[1]!.id)!;
+    expect(s.weightKg).toBe(prevWorking[1]!.weightKg);
+    expect(s.reps).toBe(prevWorking[1]!.reps);
+  });
+
+  it('with no history, suggests the set completed just above', async () => {
+    const w = await startEmptyWorkout(db, T0);
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('pec-deck')]);
+    const [a, b] = await liveSets(we!.id);
+    expect(suggestFor([], await liveSets(we!.id), b!.id)).toBeNull();
+    await updateSet(db, a!.id, { weightKg: 50, reps: 12 });
+    await completeSet(db, a!.id);
+    expect(suggestFor([], await liveSets(we!.id), b!.id)).toMatchObject({ weightKg: 50, reps: 12 });
+  });
+});
+
+describe('gym-floor tools', () => {
+  it('adds warm-ups in front, swaps an untouched exercise and links supersets', async () => {
+    const { addWarmupSets, swapWorkoutExercise, toggleSupersetWithNext, restAfterSet } =
+      await import('./workouts');
+    const { startEmptyWorkout, addExercisesToWorkout, completeSet } = await import('./workouts');
+    const { exerciseIdFor } = await import('../library/exercises');
+    const w = await startEmptyWorkout(db);
+    await addExercisesToWorkout(db, w.id, [
+      exerciseIdFor('barbell-bench-press'),
+      exerciseIdFor('barbell-row'),
+      exerciseIdFor('dumbbell-curl'),
+    ]);
+    const wes = (await db.workoutExercises.where('workoutId').equals(w.id).toArray()).sort(
+      (a, b) => a.order - b.order,
+    );
+    const bench = wes[0]!;
+    await addWarmupSets(db, bench.id, [
+      { weightKg: 20, reps: 10 },
+      { weightKg: 40, reps: 5 },
+    ]);
+    const sets = (await db.sets.where('workoutExerciseId').equals(bench.id).toArray())
+      .filter((s) => s.deletedAt === null)
+      .sort((a, b) => a.order - b.order);
+    expect(sets.slice(0, 2).map((s) => [s.setType, s.weightKg, s.reps])).toEqual([
+      ['warmup', 20, 10],
+      ['warmup', 40, 5],
+    ]);
+    // Again: unfinished warm-ups are replaced, not stacked.
+    await addWarmupSets(db, bench.id, [{ weightKg: 30, reps: 5 }]);
+    const again = (await db.sets.where('workoutExerciseId').equals(bench.id).toArray()).filter(
+      (s) => s.deletedAt === null && s.setType === 'warmup',
+    );
+    expect(again.map((s) => s.weightKg)).toEqual([30]);
+
+    await swapWorkoutExercise(db, wes[2]!.id, exerciseIdFor('hammer-curl'));
+    expect((await db.workoutExercises.get(wes[2]!.id))?.exerciseName).toBe('Hammer curl');
+    const done = (await db.sets.where('workoutExerciseId').equals(bench.id).toArray()).find(
+      (s) => s.deletedAt === null && s.setType === 'warmup',
+    )!;
+    await completeSet(db, done.id);
+    await expect(
+      swapWorkoutExercise(db, bench.id, exerciseIdFor('dumbbell-bench-press')),
+    ).rejects.toThrow(/already done/);
+
+    await toggleSupersetWithNext(db, wes[1]!.id);
+    const linked = await Promise.all(wes.map((e) => db.workoutExercises.get(e.id)));
+    expect(linked[1]!.supersetGroup).toBe(linked[2]!.supersetGroup);
+    expect(linked[1]!.supersetGroup).not.toBeNull();
+    expect(linked[0]!.supersetGroup ?? null).toBeNull();
+    const view = linked.map((e, i) => ({
+      id: e!.id,
+      order: i,
+      supersetGroup: e!.supersetGroup,
+      pending: 3,
+    }));
+    expect(restAfterSet(linked[1]!.id, view)).toBe(false);
+    expect(restAfterSet(linked[2]!.id, view)).toBe(true);
+    expect(restAfterSet(linked[0]!.id, view)).toBe(true);
+    await toggleSupersetWithNext(db, wes[1]!.id);
+    expect((await db.workoutExercises.get(wes[1]!.id))?.supersetGroup).toBeNull();
+  });
+});

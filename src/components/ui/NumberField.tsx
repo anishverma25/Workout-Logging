@@ -53,7 +53,7 @@ export function NumberField({
       <div
         className={cn(
           'flex h-12 items-center rounded-[var(--radius-control)] border bg-surface-2 px-3 transition-colors focus-within:border-accent-text',
-          invalid ? 'border-danger' : 'border-line',
+          invalid ? 'border-danger' : 'border-transparent',
         )}
       >
         <input

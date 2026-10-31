@@ -60,7 +60,12 @@ describe('personal records', () => {
       bench('2026-09-01T18:00:00Z', [{ w: 80, r: 8 }]),
       bench('2026-09-04T18:00:00Z', [{ w: 85, r: 8 }]),
     ]);
-    expect(detectPersonalRecords(buildSessions(data), SYSTEM_EXERCISES).length).toBe(2);
+    // Heaviest load, estimated 1RM, best set volume and best session volume.
+    expect(
+      detectPersonalRecords(buildSessions(data), SYSTEM_EXERCISES)
+        .map((r) => r.type)
+        .sort(),
+    ).toEqual(['e1rm', 'load', 'session_volume', 'set_volume']);
     const edited = {
       ...data,
       sets: data.sets.map((s) =>
@@ -77,6 +82,40 @@ describe('personal records', () => {
     ]);
     expect(featuredRecord(detectPersonalRecords(buildSessions(data), SYSTEM_EXERCISES))?.type).toBe(
       'load',
+    );
+  });
+
+  it('gives each kind of exercise its own medals', () => {
+    const data = buildData([
+      {
+        at: '2026-09-01T18:00:00Z',
+        exercises: [
+          {
+            key: 'assisted-pull-up',
+            sets: [
+              { w: 30, r: 8 },
+              { w: 30, r: 6 },
+            ],
+          },
+          { key: 'plank', sets: [{ w: null, r: 0 }] },
+        ],
+      },
+      {
+        at: '2026-09-04T18:00:00Z',
+        exercises: [
+          {
+            key: 'assisted-pull-up',
+            sets: [
+              { w: 20, r: 8 },
+              { w: 20, r: 8 },
+            ],
+          },
+        ],
+      },
+    ]);
+    // Assisted: less assistance is not a record; more reps in the session is.
+    expect(detectPersonalRecords(buildSessions(data), SYSTEM_EXERCISES).map((r) => r.type)).toEqual(
+      ['session_reps'],
     );
   });
 });

@@ -1,9 +1,19 @@
 import type { TrainingData } from '@/domain/analytics/sessions';
+import type { Profile } from '@/domain/models/schemas';
 import { SYSTEM_EXERCISES } from '../library/exercises';
 import type { WorkoutDatabase } from '../db';
 
 const alive = <T extends { deletedAt: string | null }>(rows: T[]) =>
   rows.filter((r) => r.deletedAt === null);
+
+/** The profile to show: the person's own most recent one, else the demo athlete's. */
+export function pickProfile(profiles: Profile[]): Profile | null {
+  const live = alive(profiles);
+  const own = live
+    .filter((p) => p.origin === 'user')
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return own[0] ?? live[0] ?? null;
+}
 
 /**
  * Reads everything the dashboard and analytics need in one transaction.
@@ -23,6 +33,8 @@ export async function loadTrainingData(db: WorkoutDatabase): Promise<TrainingDat
       db.workoutExercises,
       db.sets,
       db.bodyWeights,
+      db.bodyMeasurements,
+      db.goals,
     ],
     async () => {
       const [
@@ -35,6 +47,8 @@ export async function loadTrainingData(db: WorkoutDatabase): Promise<TrainingDat
         workoutExercises,
         sets,
         bodyWeights,
+        measurements,
+        goals,
       ] = await Promise.all([
         db.profiles.toArray(),
         db.exercises.toArray(),
@@ -45,10 +59,10 @@ export async function loadTrainingData(db: WorkoutDatabase): Promise<TrainingDat
         db.workoutExercises.toArray(),
         db.sets.toArray(),
         db.bodyWeights.toArray(),
+        db.bodyMeasurements.toArray(),
+        db.goals.toArray(),
       ]);
-      // Prefer a real profile over the demo one if both exist.
-      const liveProfiles = alive(profiles);
-      const profile = liveProfiles.find((p) => p.origin === 'user') ?? liveProfiles[0] ?? null;
+      const profile = pickProfile(profiles);
       return {
         profile,
         exercises: alive(exercises),
@@ -59,6 +73,8 @@ export async function loadTrainingData(db: WorkoutDatabase): Promise<TrainingDat
         workoutExercises: alive(workoutExercises),
         sets: alive(sets),
         bodyWeights: alive(bodyWeights),
+        measurements: alive(measurements),
+        goals: alive(goals),
       };
     },
   );

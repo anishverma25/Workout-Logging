@@ -28,11 +28,18 @@ export const MUSCLE_GROUPS = [
   'quads',
   'hamstrings',
   'glutes',
+  'adductors',
   'calves',
   'abs',
+  'cardio',
 ] as const;
 export const MuscleGroup = z.enum(MUSCLE_GROUPS);
 export type MuscleGroup = z.infer<typeof MuscleGroup>;
+/** Muscle groups that strength analytics count (cardio is a category, not a muscle). */
+export const STRENGTH_MUSCLES = MUSCLE_GROUPS.filter((m) => m !== 'cardio') as Exclude<
+  MuscleGroup,
+  'cardio'
+>[];
 
 export const Equipment = z.enum([
   'barbell',
@@ -54,6 +61,8 @@ export const TrackingType = z.enum([
   'assisted_bodyweight',
   'duration',
   'distance',
+  /** Time and distance together (runs, rides, rows). */
+  'cardio',
 ]);
 export type TrackingType = z.infer<typeof TrackingType>;
 
@@ -110,6 +119,12 @@ export const RoutineExercise = z.object({
   targetRir: z.number().min(0).max(10).nullable(),
   restSeconds: z.number().int().min(0).max(900),
   notes: z.string().nullable(),
+  /** Exercises of one day that share a number are done as a superset (no rest between). */
+  supersetGroup: z.number().int().min(1).max(50).nullish(),
+  /** Bench angle in degrees: positive for incline, negative for decline. */
+  angleDeg: z.number().int().min(-45).max(90).nullish(),
+  /** Reps logged for the left and right side apart. Null: the exercise's own default. */
+  bySide: z.boolean().nullish(),
 });
 export type RoutineExercise = z.infer<typeof RoutineExercise>;
 
@@ -125,16 +140,35 @@ export const Workout = z.object({
   status: WorkoutStatus,
   startedAt: isoDateTime,
   endedAt: isoDateTime.nullable(),
+  /** Set while paused. Paused time is excluded from the workout duration. */
+  pausedAt: isoDateTime.nullable(),
+  /** Total paused milliseconds from completed pauses. */
+  pausedMs: z.number().int().min(0),
   notes: z.string().nullable(),
   timeZone: z.string(),
+  /** How the person felt before training (1 to 5 each). Optional. */
+  readiness: z
+    .object({
+      sleep: z.number().int().min(1).max(5),
+      energy: z.number().int().min(1).max(5),
+      soreness: z.number().int().min(1).max(5),
+    })
+    .nullish(),
+  /** Whole-session effort, 1 to 10 (Foster's session RPE), asked when finishing. */
+  sessionRpe: z.number().min(1).max(10).nullish(),
+  /** Active calories the person typed from a watch or tracker; null uses our estimate. */
+  kcalBurned: z.number().int().min(0).max(10000).nullish(),
 });
 export type Workout = z.infer<typeof Workout>;
+export type Readiness = NonNullable<Workout['readiness']>;
 
 export const TargetSnapshot = z.object({
   sets: z.number().int(),
   repMin: z.number().int(),
   repMax: z.number().int(),
   rir: z.number().nullable(),
+  /** Planned rest in seconds. Missing on workouts logged before it was recorded. */
+  rest: z.number().int().min(0).max(900).nullable().optional(),
 });
 export type TargetSnapshot = z.infer<typeof TargetSnapshot>;
 
@@ -148,6 +182,11 @@ export const WorkoutExercise = z.object({
   notes: z.string().nullable(),
   /** Snapshot of the routine targets at logging time. */
   target: TargetSnapshot.nullable(),
+  supersetGroup: z.number().int().min(1).max(50).nullish(),
+  /** Bench angle in degrees: positive for incline, negative for decline. */
+  angleDeg: z.number().int().min(-45).max(90).nullish(),
+  /** Reps logged for the left and right side apart. Null: the exercise's own default. */
+  bySide: z.boolean().nullish(),
 });
 export type WorkoutExercise = z.infer<typeof WorkoutExercise>;
 
@@ -159,7 +198,14 @@ export const WorkoutSet = z.object({
   order: z.number().int().min(0),
   setType: SetType,
   weightKg: z.number().min(0).max(1000).nullable(),
+  /**
+   * Reps. For a set logged per side, the weaker side: strength numbers (e1RM, records,
+   * suggestions) use what both sides managed.
+   */
   reps: z.number().int().min(0).max(1000).nullable(),
+  /** Reps with the left and right side, for one-arm and one-leg sets; volume counts both. */
+  repsLeft: z.number().int().min(0).max(1000).nullish(),
+  repsRight: z.number().int().min(0).max(1000).nullish(),
   rir: z.number().min(0).max(10).nullable(),
   rpe: z.number().min(1).max(10).nullable(),
   durationSec: z.number().int().min(0).nullable(),
@@ -179,29 +225,269 @@ export const BodyWeightEntry = z.object({
 });
 export type BodyWeightEntry = z.infer<typeof BodyWeightEntry>;
 
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+export const Goal = z.enum([
+  'hypertrophy',
+  'strength',
+  'strength_hypertrophy',
+  'fat_loss',
+  'recomposition',
+  'general_fitness',
+]);
+export type Goal = z.infer<typeof Goal>;
+export const Experience = z.enum(['beginner', 'intermediate', 'advanced']);
+export type Experience = z.infer<typeof Experience>;
+/** Sex as used by the energy and strength-standard formulas. Unspecified hides those numbers. */
+export const Sex = z.enum(['male', 'female', 'unspecified']);
+export type Sex = z.infer<typeof Sex>;
+export const GymAccess = z.enum(['full_gym', 'dumbbells', 'home']);
+export type GymAccess = z.infer<typeof GymAccess>;
+/** How active the day is outside training: sets the activity factor for daily energy. */
+export const DailyActivity = z.enum(['sitting', 'mixed', 'on_feet', 'physical']);
+export type DailyActivity = z.infer<typeof DailyActivity>;
+
 export const Profile = z.object({
   ...baseRecord,
   displayName: z.string().min(1).max(60),
-  birthDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .nullable(),
-  goal: z.enum(['strength', 'hypertrophy', 'strength_hypertrophy', 'general_fitness']),
-  experience: z.enum(['beginner', 'intermediate', 'advanced']),
+  birthDate: isoDate.nullable(),
+  goal: Goal,
+  experience: Experience,
+  sex: Sex.nullish(),
+  heightCm: z.number().min(100).max(250).nullish(),
+  /** Training days per week the person plans for. */
+  trainingDays: z.number().int().min(1).max(7).nullish(),
+  sessionMinutes: z.number().int().min(15).max(240).nullish(),
+  equipment: GymAccess.nullish(),
+  dailyActivity: DailyActivity.nullish(),
+  /** Daily targets the person set themselves; null uses the calculated ones. */
+  calorieTarget: z.number().int().min(800).max(8000).nullish(),
+  proteinTargetG: z.number().int().min(20).max(500).nullish(),
+  /** What the person eats, for food suggestions: Jain is vegetarian without onion, garlic, roots. */
+  dietType: z.enum(['veg', 'egg', 'nonveg', 'jain']).nullish(),
+  /** The size of their own katori in ml, set once; portions use it instead of the standard. */
+  katoriMl: z.number().int().min(80).max(500).nullish(),
+  /** How food targets are set: worked out from the body and goal, or the person's own numbers. */
+  targetMode: z.enum(['calculated', 'own']).nullish(),
+  carbsTargetG: z.number().int().min(0).max(1500).nullish(),
+  fatTargetG: z.number().int().min(10).max(500).nullish(),
+  fibreTargetG: z.number().int().min(0).max(150).nullish(),
+  /** Water in ml a day, and the size of the person's own glass in ml. */
+  waterTargetMl: z.number().int().min(500).max(8000).nullish(),
+  waterGlassMl: z.number().int().min(100).max(1000).nullish(),
 });
 export type Profile = z.infer<typeof Profile>;
+
+/** Tape measurements (cm) and an optional body-fat reading from a scale or scan. */
+export const BodyMeasurement = z.object({
+  ...baseRecord,
+  measuredAt: isoDateTime,
+  waistCm: z.number().min(30).max(250).nullable(),
+  neckCm: z.number().min(15).max(80).nullable(),
+  hipCm: z.number().min(40).max(250).nullable(),
+  chestCm: z.number().min(40).max(250).nullable(),
+  armCm: z.number().min(10).max(80).nullable(),
+  thighCm: z.number().min(20).max(120).nullable(),
+  calfCm: z.number().min(15).max(80).nullable(),
+  bodyFatPct: z.number().min(2).max(70).nullable(),
+  note: z.string().max(500).nullable(),
+});
+export type BodyMeasurement = z.infer<typeof BodyMeasurement>;
+export const MEASUREMENT_FIELDS = [
+  'waistCm',
+  'neckCm',
+  'hipCm',
+  'chestCm',
+  'armCm',
+  'thighCm',
+  'calfCm',
+] as const;
+export type MeasurementField = (typeof MEASUREMENT_FIELDS)[number];
+
+export const GoalKind = z.enum(['exercise_e1rm', 'exercise_load', 'body_weight']);
+export type GoalKind = z.infer<typeof GoalKind>;
+
+export const MealSlot = z.enum(['breakfast', 'lunch', 'snacks', 'dinner']);
+export const FoodUnit = z.enum([
+  'katori',
+  'ladle',
+  'glass',
+  'cup',
+  'tbsp',
+  'tsp',
+  'piece',
+  'serving',
+  'share',
+  'g',
+  'plate',
+  'bowl',
+  'ml',
+]);
+const grams = z.number().min(0).max(1000);
+
+/**
+ * One food eaten. The numbers are a snapshot taken when it was logged, the way workouts keep
+ * exercise names: improving the food library later never rewrites someone's history.
+ */
+export const FoodLog = z.object({
+  ...baseRecord,
+  /** Local calendar day it was eaten, yyyy-mm-dd. */
+  date: isoDate,
+  meal: MealSlot,
+  /** A built-in food id ("dal-tadka") or the id of the person's own food. */
+  foodId: z.string().min(1).max(80),
+  foodName: z.string().min(1).max(80),
+  amount: z.number().positive().max(5000),
+  unit: FoodUnit,
+  size: z.enum(['small', 'medium', 'large']).nullable(),
+  grams: z.number().positive().max(5000),
+  oilLevel: z.enum(['light', 'normal', 'rich']).nullable(),
+  kcal: z.number().min(0).max(10000),
+  proteinG: grams,
+  carbsG: grams,
+  fatG: grams,
+  fibreG: grams,
+  /** Library version the numbers came from; null for the person's own foods. */
+  libraryVersion: z.number().int().nullable(),
+});
+export type FoodLog = z.infer<typeof FoodLog>;
+
+/** One drink of water: the amount in ml, on the day it was drunk. */
+export const WaterLog = z.object({
+  ...baseRecord,
+  date: isoDate,
+  ml: z.number().int().min(50).max(5000),
+});
+export type WaterLog = z.infer<typeof WaterLog>;
+
+export const CARDIO_ACTIVITIES = [
+  'treadmill_walk',
+  'treadmill_run',
+  'stair_machine',
+  'cycle_indoor',
+  'elliptical',
+  'rowing_machine',
+  'walk_outdoor',
+  'run_outdoor',
+  'cycle_outdoor',
+  'swimming',
+  'hiit',
+  'other',
+] as const;
+export const CardioActivity = z.enum(CARDIO_ACTIVITIES);
+export type CardioActivity = z.infer<typeof CardioActivity>;
+
+/**
+ * Movement outside the weights: a cardio session, or a day's steps (one record a day). The
+ * calories are what the person counts: an estimate worked out when it was saved, or a number
+ * they typed from a watch or a machine. Estimates are kept so history never shifts.
+ */
+export const ActivityLog = z.object({
+  ...baseRecord,
+  date: isoDate,
+  kind: z.enum(['cardio', 'steps']),
+  activity: CardioActivity.nullable(),
+  minutes: z.number().int().min(1).max(1000).nullable(),
+  distanceKm: z.number().min(0).max(500).nullable(),
+  speedKmh: z.number().min(0.5).max(30).nullable(),
+  inclinePct: z.number().min(0).max(40).nullable(),
+  watts: z.number().int().min(10).max(1000).nullable(),
+  effort: z.enum(['light', 'moderate', 'hard']).nullable(),
+  steps: z.number().int().min(1).max(200000).nullable(),
+  /** Active calories: above what the body burns at rest. */
+  kcal: z.number().int().min(0).max(10000),
+  kcalSource: z.enum(['estimated', 'typed']),
+});
+export type ActivityLog = z.infer<typeof ActivityLog>;
+
+/**
+ * A food the person added: from a label (per 100 g) or their own recipe, such as the family
+ * pot. Recipes keep their ingredients so they can be edited; the per 100 g values are worked
+ * out from them when saved.
+ */
+export const CustomFood = z.object({
+  ...baseRecord,
+  name: z.string().trim().min(1).max(60),
+  kind: z.enum(['food', 'recipe']),
+  kcal: z.number().min(0).max(900),
+  proteinG: z.number().min(0).max(100),
+  carbsG: z.number().min(0).max(100),
+  fatG: z.number().min(0).max(100),
+  fibreG: z.number().min(0).max(100),
+  /** Weight of one piece, when it comes in pieces. */
+  pieceG: z.number().positive().max(2000).nullable(),
+  /** People a recipe feeds; one share is the pot divided by this. */
+  servings: z.number().int().min(1).max(50).nullable(),
+  cookedG: z.number().positive().max(20000).nullable(),
+  ingredients: z
+    .array(z.object({ id: z.string().min(1).max(40), grams: z.number().positive().max(10000) }))
+    .max(40)
+    .nullable(),
+  diet: z.enum(['veg', 'egg', 'nonveg']),
+});
+export type CustomFood = z.infer<typeof CustomFood>;
+
+/** A target the person set: a lift or a body weight, optionally by a date. */
+export const TrainingGoal = z.object({
+  ...baseRecord,
+  kind: GoalKind,
+  exerciseId: z.string().uuid().nullable(),
+  /** In kg. */
+  targetValue: z.number().min(1).max(1000),
+  /** The value when the goal was set, in kg. Null if there was none yet. */
+  startValue: z.number().min(0).max(1000).nullable(),
+  targetDate: isoDate.nullable(),
+  achievedAt: isoDateTime.nullable(),
+});
+export type TrainingGoal = z.infer<typeof TrainingGoal>;
 
 export const Preferences = z.object({
   weightUnit: z.enum(['kg', 'lb']),
   effortMetric: z.enum(['rir', 'rpe']),
   weekStartsOn: z.union([z.literal(0), z.literal(1)]),
   defaultRestSeconds: z.number().int().min(15).max(900),
+  /** Start the rest timer automatically when a set is marked done. */
+  autoStartRest: z.boolean(),
+  lengthUnit: z.enum(['cm', 'in']).default('cm'),
+  /** Rest when moving on to the next exercise; null uses each exercise's own rest. */
+  exerciseChangeRestSeconds: z.number().int().min(0).max(900).nullable().default(null),
 });
 export type Preferences = z.infer<typeof Preferences>;
+
+/** Routine targets for one exercise, as edited in the routine builder. */
+export const RoutineTargets = z
+  .object({
+    targetSets: z.number().int().min(1).max(20),
+    repMin: z.number().int().min(1).max(100),
+    repMax: z.number().int().min(1).max(100),
+    targetRir: z.number().min(0).max(10).nullable(),
+    restSeconds: z.number().int().min(0).max(900),
+    notes: z.string().max(500).nullable(),
+  })
+  .refine((t) => t.repMin <= t.repMax, {
+    message: 'Lowest reps must not be above highest reps',
+    path: ['repMax'],
+  });
+export type RoutineTargets = z.infer<typeof RoutineTargets>;
+
+export const CustomExerciseInput = z.object({
+  name: z.string().trim().min(2, 'Give it a name of at least 2 characters').max(80),
+  primaryMuscle: MuscleGroup,
+  secondaryMuscles: z.array(MuscleGroup),
+  equipment: Equipment,
+  category: z.enum(['compound', 'isolation']),
+  trackingType: TrackingType,
+  loadMode: LoadMode,
+  instructions: z.string().trim().max(1000).nullable(),
+});
+export type CustomExerciseInput = z.infer<typeof CustomExerciseInput>;
 
 export const DEFAULT_PREFERENCES: Preferences = {
   weightUnit: 'kg',
   effortMetric: 'rir',
   weekStartsOn: 1,
   defaultRestSeconds: 120,
+  autoStartRest: true,
+  lengthUnit: 'cm',
+  exerciseChangeRestSeconds: null,
 };

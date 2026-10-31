@@ -1,0 +1,246 @@
+import { z } from 'zod';
+
+/**
+ * Who gets what. The single place access is decided: every Pro gate in the app calls
+ * `hasFeature`, and nothing else reads plan data.
+ *
+ * Inputs come from the server (`get_my_subscription`): timestamps set by the database and the
+ * server's own clock, so changing the device clock, local storage or the URL changes nothing.
+ */
+
+export const TRIAL_HOURS = 168;
+
+const ts = z
+  .string()
+  .nullable()
+  .transform((v) => (v ? new Date(v) : null))
+  .refine((d) => d === null || !Number.isNaN(d.getTime()), 'Invalid timestamp');
+
+export const SubscriptionSnapshot = z.object({
+  status: z.enum(['trialing', 'payment_pending', 'active', 'expired', 'revoked']),
+  trial_started_at: ts,
+  trial_expires_at: ts,
+  pro_started_at: ts,
+  pro_expires_at: ts,
+  payment_reference: z.string().nullable(),
+  payment_submitted_at: ts,
+  updated_at: ts,
+  server_now: ts,
+  /** Early access is open: every account has every Pro feature, with no clock. */
+  early_access: z.boolean().optional().default(false),
+  /** Joined during early access. Stays true after it ends. */
+  founding_member: z.boolean().optional().default(false),
+  /** The Razorpay plan the account is on (monthly, quarterly, yearly), if any. */
+  billing_plan: z.string().nullable().optional().default(null),
+  /** How Pro was bought: a renewing subscription, or a single payment ('once'). */
+  billing_kind: z.string().nullable().optional().default(null),
+  /** Razorpay's state of that subscription: active, pending, halted, cancelled... */
+  billing_status: z.string().nullable().optional().default(null),
+  /** Renewal is off: Pro runs to the end of the paid period, then stops. */
+  cancel_at_period_end: z.boolean().optional().default(false),
+  /** A personal message from the team, shown on Home. Absent from older servers. */
+  banner_message: z.string().nullable().optional().default(null),
+  banner_expires_at: ts.optional().default(null),
+});
+export type SubscriptionSnapshot = z.infer<typeof SubscriptionSnapshot>;
+
+export type Plan = 'guest' | 'free' | 'trial' | 'pro' | 'founding';
+
+export interface Entitlement {
+  plan: Plan;
+  /** Pro features are available (during the trial or with Pro). */
+  pro: boolean;
+  trialEndsAt: Date | null;
+  trialEnded: boolean;
+  proEndsAt: Date | null;
+  /** Had Pro before, and it has run out. */
+  proEnded: boolean;
+  /** A UPI reference was submitted and is waiting for the administrator. */
+  paymentPending: boolean;
+  paymentReference: string | null;
+  /** Time left in the current trial or Pro period. */
+  remainingMs: number | null;
+  /** Joined during early access. */
+  foundingMember: boolean;
+  /** The paid plan, when Pro comes from a Razorpay subscription. */
+  billingPlan: string | null;
+  /** The subscription renews by itself at the end of the period. */
+  renews: boolean;
+  /** Pro was paid for once, with no renewal. */
+  paidOnce: boolean;
+  /** Razorpay could not take the last renewal (pending or halted). */
+  paymentIssue: boolean;
+  /** A personal message from the team for this account, or null. Not part of access. */
+  banner: string | null;
+}
+
+const GUEST: Entitlement = {
+  plan: 'guest',
+  pro: false,
+  trialEndsAt: null,
+  trialEnded: false,
+  proEndsAt: null,
+  proEnded: false,
+  paymentPending: false,
+  paymentReference: null,
+  remainingMs: null,
+  foundingMember: false,
+  billingPlan: null,
+  renews: false,
+  paidOnce: false,
+  paymentIssue: false,
+  banner: null,
+};
+
+/** `now` must already be on the server's clock (see `serverNow`). */
+export function resolveEntitlement(sub: SubscriptionSnapshot | null, now: Date): Entitlement {
+  if (!sub) return GUEST;
+  const t = now.getTime();
+  const revoked = sub.status === 'revoked';
+  const proStarted = !sub.pro_started_at || sub.pro_started_at.getTime() <= t;
+  const proActive =
+    !revoked && !!sub.pro_expires_at && proStarted && t < sub.pro_expires_at.getTime();
+  const trialActive = !!sub.trial_expires_at && t < sub.trial_expires_at.getTime();
+  // Early access comes from the server's setting; a revoked account does not get it.
+  const founding = sub.early_access && !revoked;
+  const plan: Plan = founding ? 'founding' : proActive ? 'pro' : trialActive ? 'trial' : 'free';
+  const endsAt =
+    plan === 'pro' ? sub.pro_expires_at : plan === 'trial' ? sub.trial_expires_at : null;
+  return {
+    plan,
+    pro: plan === 'pro' || plan === 'trial' || plan === 'founding',
+    trialEndsAt: sub.trial_expires_at,
+    trialEnded: !trialActive && !founding,
+    proEndsAt: sub.pro_expires_at,
+    proEnded: !proActive && !!sub.pro_expires_at && sub.pro_expires_at.getTime() <= t,
+    paymentPending: sub.status === 'payment_pending' && !proActive && !founding,
+    paymentReference: sub.payment_reference,
+    remainingMs: endsAt ? Math.max(0, endsAt.getTime() - t) : null,
+    foundingMember: sub.founding_member,
+    billingPlan: sub.billing_plan,
+    paidOnce: !!sub.billing_plan && sub.billing_kind === 'once',
+    renews:
+      !!sub.billing_plan &&
+      sub.billing_kind !== 'once' &&
+      (sub.billing_status === 'active' || sub.billing_status === 'authenticated') &&
+      !sub.cancel_at_period_end,
+    paymentIssue: sub.billing_status === 'pending' || sub.billing_status === 'halted',
+    banner: bannerFor(sub, t, revoked),
+  };
+}
+
+/** The message is shown until it expires on the server clock; never to a revoked account. */
+function bannerFor(sub: SubscriptionSnapshot, t: number, revoked: boolean): string | null {
+  const message = sub.banner_message?.trim();
+  if (!message || revoked) return null;
+  if (sub.banner_expires_at && t >= sub.banner_expires_at.getTime()) return null;
+  return message;
+}
+
+/**
+ * The server's current time, estimated from the last response: the device clock may be wrong
+ * or changed on purpose, but the time elapsed since that response is still measured locally.
+ */
+export function serverNow(clockOffsetMs: number, deviceNow: number = Date.now()): Date {
+  return new Date(deviceNow + clockOffsetMs);
+}
+
+export type ProFeature =
+  | 'long_range'
+  | 'muscle_balance'
+  | 'progression'
+  | 'strength_levels'
+  | 'training_balance'
+  | 'plateaus'
+  | 'weekly_checkin'
+  | 'goal_projection'
+  | 'recaps'
+  | 'ai_coach'
+  | 'ai_food'
+  | 'food_insights';
+
+export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
+  long_range: {
+    title: '90-day and all-time trends',
+    description: 'See strength, volume and consistency across months, not just weeks.',
+  },
+  muscle_balance: {
+    title: 'Sets per muscle group',
+    description: 'Weekly hard sets for every muscle, to spot what is under or over trained.',
+  },
+  progression: {
+    title: 'Progression suggestions',
+    description: 'When you hit the top of your rep range at the right effort, the app says so.',
+  },
+  strength_levels: {
+    title: 'Strength levels and DOTS',
+    description:
+      'See how your main lifts compare with standard levels for your body weight, and your DOTS score.',
+  },
+  training_balance: {
+    title: 'Balance ratios',
+    description: 'Push against pull, quads against hamstrings, upper against lower body.',
+  },
+  plateaus: {
+    title: 'Plateau detection',
+    description: 'Spots lifts that have stalled for 3 weeks and suggests what to change.',
+  },
+  weekly_checkin: {
+    title: 'Weekly check-in',
+    description: 'Every Monday: what improved, what stalled and one thing to focus on.',
+  },
+  goal_projection: {
+    title: 'Goal projections',
+    description: 'When you will reach each goal at your current rate of progress.',
+  },
+  recaps: {
+    title: 'Monthly and yearly recaps',
+    description: 'Your month and your year in numbers, as a card you can share.',
+  },
+  ai_coach: {
+    title: 'OverloadGPT',
+    description:
+      'Ask about your training and food in any language, or tap Explain on a card. Answers use your own logged numbers.',
+  },
+  ai_food: {
+    title: 'AI food logging',
+    description:
+      'Snap your plate or tell OverloadGPT what you ate, typed or spoken. It finds any food, brand or restaurant dish, reads nutrition labels and fills your plate.',
+  },
+  food_insights: {
+    title: 'Food insights',
+    description:
+      'A daily analysis of your food against published ranges, your real maintenance calories from what you eat and weigh, food trends and protein help with one tap.',
+  },
+};
+
+/** Always free, during and after the trial. History is never locked. */
+export const FREE_FEATURES = [
+  'Unlimited workout logging, routines and custom exercises',
+  'Your full workout history and every personal record',
+  'Profile setup, every routine template and personalised routines',
+  'Body weight, measurements, calories, protein, BMI and body fat',
+  'Food logging for Indian meals: thalis, katori portions, your usual meals and daily totals',
+  'Goals, milestones and progress photos',
+  'Progress for the last 7 and 30 days, with insights',
+  'Backup and sync across your devices',
+];
+
+export function hasFeature(entitlement: Entitlement, _feature: ProFeature): boolean {
+  // Every Pro feature is included in both the trial and Pro.
+  return entitlement.pro;
+}
+
+/** "3 days 4 hours", "5 hours 10 minutes", "12 minutes". */
+export function formatRemaining(ms: number): string {
+  const minutes = Math.floor(ms / 60_000);
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const mins = minutes % 60;
+  const unit = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  if (days > 0)
+    return hours > 0 ? `${unit(days, 'day')} ${unit(hours, 'hour')}` : unit(days, 'day');
+  if (hours > 0)
+    return mins > 0 ? `${unit(hours, 'hour')} ${unit(mins, 'minute')}` : unit(hours, 'hour');
+  return unit(Math.max(1, mins), 'minute');
+}

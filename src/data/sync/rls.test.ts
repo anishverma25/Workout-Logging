@@ -1,0 +1,621 @@
+import type { Transaction } from '@electric-sql/pglite';
+import { exerciseIdFor } from '@/data/library/exercises';
+import { createTestServer, type TestServer } from '@/test/server';
+
+/**
+ * Row level security, tested against real Postgres with the project's migrations.
+ * The frontend is never trusted: every check here runs SQL directly as a signed-in user.
+ */
+
+const BENCH = exerciseIdFor('barbell-bench-press');
+const T0 = '2026-09-01T10:00:00.000Z';
+const T1 = '2026-09-02T10:00:00.000Z';
+const meta = { created_at: T0, updated_at: T0, deleted_at: null };
+
+/** One row in every user-owned table, linked the way the app links them. */
+function rowsFor(userId: string) {
+  const id = () => crypto.randomUUID();
+  const routine = id();
+  const day = id();
+  const workout = id();
+  const we = id();
+  const custom = id();
+  return {
+    profiles: {
+      id: id(),
+      user_id: userId,
+      display_name: 'A',
+      goal: 'strength',
+      experience: 'beginner',
+      ...meta,
+    },
+    user_exercises: {
+      id: custom,
+      user_id: userId,
+      name: 'Custom press',
+      primary_muscle: 'chest',
+      secondary_muscles: [],
+      equipment: 'machine',
+      category: 'compound',
+      tracking_type: 'weight_reps',
+      load_mode: 'total',
+      ...meta,
+    },
+    routines: { id: routine, user_id: userId, name: 'Plan', is_active: true, ...meta },
+    routine_days: {
+      id: day,
+      user_id: userId,
+      routine_id: routine,
+      name: 'Push',
+      order_index: 0,
+      weekdays: [1],
+      ...meta,
+    },
+    routine_exercises: {
+      id: id(),
+      user_id: userId,
+      routine_day_id: day,
+      exercise_id: custom,
+      order_index: 0,
+      target_sets: 3,
+      rep_min: 6,
+      rep_max: 10,
+      rest_seconds: 120,
+      ...meta,
+    },
+    workouts: {
+      id: workout,
+      user_id: userId,
+      name: 'Push',
+      status: 'completed',
+      started_at: T0,
+      ended_at: T0,
+      paused_ms: 0,
+      time_zone: 'UTC',
+      ...meta,
+    },
+    workout_exercises: {
+      id: we,
+      user_id: userId,
+      workout_id: workout,
+      exercise_id: BENCH,
+      exercise_name: 'Barbell bench press',
+      order_index: 0,
+      ...meta,
+    },
+    sets: {
+      id: id(),
+      user_id: userId,
+      workout_id: workout,
+      workout_exercise_id: we,
+      exercise_id: BENCH,
+      order_index: 0,
+      set_type: 'working',
+      weight_kg: 100,
+      reps: 5,
+      completed_at: T0,
+      ...meta,
+    },
+    body_weight: {
+      id: id(),
+      user_id: userId,
+      measured_at: T0,
+      weight_kg: 80,
+      entered_unit: 'kg',
+      ...meta,
+    },
+    body_measurements: {
+      id: id(),
+      user_id: userId,
+      measured_at: T0,
+      waist_cm: 82,
+      neck_cm: 38,
+      ...meta,
+    },
+    goals: {
+      id: id(),
+      user_id: userId,
+      kind: 'exercise_e1rm',
+      exercise_id: custom,
+      target_value: 100,
+      start_value: 80,
+      target_date: '2027-03-01',
+      ...meta,
+    },
+    custom_foods: {
+      id: id(),
+      user_id: userId,
+      name: 'Mum rajma',
+      kind: 'recipe',
+      kcal: 110,
+      protein_g: 5,
+      carbs_g: 15,
+      fat_g: 3,
+      fibre_g: 4,
+      servings: 4,
+      cooked_g: 900,
+      ingredients: [{ id: 'rajma', grams: 150 }],
+      diet: 'veg',
+      ...meta,
+    },
+    food_logs: {
+      id: id(),
+      user_id: userId,
+      date: '2026-09-01',
+      meal: 'lunch',
+      food_id: 'dal-tadka',
+      food_name: 'Dal tadka',
+      amount: 1,
+      unit: 'katori',
+      size: 'medium',
+      grams: 160,
+      oil_level: 'normal',
+      kcal: 139,
+      protein_g: 6.9,
+      carbs_g: 18,
+      fat_g: 3.5,
+      fibre_g: 4,
+      library_version: 1,
+      ...meta,
+    },
+    water_logs: { id: id(), user_id: userId, date: '2026-09-01', ml: 250, ...meta },
+    activity_logs: {
+      id: id(),
+      user_id: userId,
+      date: '2026-09-01',
+      kind: 'cardio',
+      activity: 'treadmill_walk',
+      minutes: 30,
+      distance_km: 3,
+      speed_kmh: 6,
+      incline_pct: 2,
+      kcal: 140,
+      kcal_source: 'estimated',
+      ...meta,
+    },
+    user_preferences: {
+      user_id: userId,
+      weight_unit: 'kg',
+      effort_metric: 'rir',
+      week_starts_on: 1,
+      default_rest_seconds: 120,
+      auto_start_rest: true,
+      updated_at: T0,
+    },
+  };
+}
+
+type Rows = ReturnType<typeof rowsFor>;
+type TableName = keyof Rows;
+const TABLES = Object.keys(rowsFor('x')) as TableName[];
+const keyOf = (t: TableName) => (t === 'user_preferences' ? 'user_id' : 'id');
+const idOf = (rows: Rows, t: TableName) =>
+  (rows[t] as unknown as Record<string, string>)[keyOf(t)]!;
+
+async function insertRow(tx: Transaction, table: string, row: object) {
+  const cols = Object.keys(row);
+  await tx.query(
+    `insert into public.${table} (${cols.join(', ')})
+     select ${cols.join(', ')} from jsonb_populate_record(null::public.${table}, $1::jsonb)`,
+    [JSON.stringify(row)],
+  );
+}
+
+async function insertAll(server: TestServer, userId: string, rows: Rows) {
+  await server.asUser(userId, async (tx) => {
+    for (const t of TABLES) await insertRow(tx, t, rows[t]);
+  });
+}
+
+async function expectError(promise: Promise<unknown>, pattern: RegExp) {
+  await expect(promise).rejects.toThrow(pattern);
+}
+
+describe('row level security', () => {
+  let server: TestServer;
+  let userA: string;
+  let userB: string;
+  let rowsA: Rows;
+
+  beforeAll(async () => {
+    server = await createTestServer();
+    userA = await server.createUser('a@example.com');
+    userB = await server.createUser('b@example.com');
+    rowsA = rowsFor(userA);
+    await insertAll(server, userA, rowsA);
+  }, 30_000);
+
+  afterAll(() => server.close());
+
+  it('lets a user read their own rows in every table', async () => {
+    for (const t of TABLES) {
+      const result = await server.asUser(userA, (tx) =>
+        tx.query(`select 1 from public.${t} where ${keyOf(t)} = $1`, [idOf(rowsA, t)]),
+      );
+      expect(result.rows, t).toHaveLength(1);
+    }
+  });
+
+  it('User A data is invisible to User B in every table', async () => {
+    for (const t of TABLES) {
+      const result = await server.asUser(userB, (tx) => tx.query(`select * from public.${t}`));
+      expect(result.rows, t).toHaveLength(0);
+    }
+  });
+
+  it('User B cannot modify User A data in any table', async () => {
+    for (const t of TABLES) {
+      const result = await server.asUser(userB, (tx) =>
+        tx.query(`update public.${t} set updated_at = $2 where ${keyOf(t)} = $1`, [
+          idOf(rowsA, t),
+          T1,
+        ]),
+      );
+      expect(result.affectedRows, t).toBe(0);
+      const check = await server.asUser(userA, (tx) =>
+        tx.query<{ updated_at: Date }>(
+          `select updated_at from public.${t} where ${keyOf(t)} = $1`,
+          [idOf(rowsA, t)],
+        ),
+      );
+      expect(check.rows[0]!.updated_at.toISOString(), t).toBe(T0);
+    }
+  });
+
+  it('User B cannot delete User A data in any table', async () => {
+    for (const t of TABLES) {
+      const result = await server.asUser(userB, (tx) =>
+        tx.query(`delete from public.${t} where ${keyOf(t)} = $1`, [idOf(rowsA, t)]),
+      );
+      expect(result.affectedRows, t).toBe(0);
+    }
+    for (const t of TABLES) {
+      const check = await server.asUser(userA, (tx) =>
+        tx.query(`select 1 from public.${t} where ${keyOf(t)} = $1`, [idOf(rowsA, t)]),
+      );
+      expect(check.rows, t).toHaveLength(1);
+    }
+  });
+
+  it('User B cannot overwrite User A rows by upserting their ids', async () => {
+    const workout = { ...rowsA.workouts, user_id: userB, name: 'Hijacked', updated_at: T1 };
+    await expectError(
+      server.asUser(userB, (tx) =>
+        tx.query(
+          `insert into public.workouts select * from jsonb_populate_record(null::public.workouts, $1::jsonb)
+           on conflict (id) do update set name = excluded.name, updated_at = excluded.updated_at`,
+          [JSON.stringify({ ...workout, server_updated_at: T1 })],
+        ),
+      ),
+      /row-level security/,
+    );
+    const check = await server.asUser(userA, (tx) =>
+      tx.query<{ name: string }>('select name from public.workouts where id = $1', [
+        rowsA.workouts.id,
+      ]),
+    );
+    expect(check.rows[0]!.name).toBe('Push');
+  });
+
+  it('a user cannot insert rows owned by someone else', async () => {
+    const rowsForA = rowsFor(userA);
+    await expectError(
+      server.asUser(userB, (tx) => insertRow(tx, 'routines', rowsForA.routines)),
+      /row-level security/,
+    );
+  });
+
+  it('a user cannot hand their row over to someone else', async () => {
+    const rowsB = rowsFor(userB);
+    await server.asUser(userB, (tx) => insertRow(tx, 'routines', rowsB.routines));
+    await server.asUser(userB, (tx) =>
+      tx.query('update public.routines set user_id = $2, updated_at = $3 where id = $1', [
+        rowsB.routines.id,
+        userA,
+        T1,
+      ]),
+    );
+    // The stamp trigger pins ownership, so the row still belongs to B.
+    const owner = await server.pg.query<{ user_id: string }>(
+      'select user_id from public.routines where id = $1',
+      [rowsB.routines.id],
+    );
+    expect(owner.rows[0]!.user_id).toBe(userB);
+  });
+
+  it('User B cannot attach children to User A parents', async () => {
+    const rowsB = rowsFor(userB);
+    await expectError(
+      server.asUser(userB, (tx) =>
+        insertRow(tx, 'routine_days', { ...rowsB.routine_days, routine_id: rowsA.routines.id }),
+      ),
+      /foreign key/,
+    );
+    await expectError(
+      server.asUser(userB, (tx) =>
+        insertRow(tx, 'workout_exercises', {
+          ...rowsB.workout_exercises,
+          workout_id: rowsA.workouts.id,
+        }),
+      ),
+      /foreign key/,
+    );
+  });
+
+  it('User B cannot use User A custom exercises', async () => {
+    const rowsB = rowsFor(userB);
+    await server.asUser(userB, async (tx) => {
+      await insertRow(tx, 'workouts', rowsB.workouts);
+    });
+    await expectError(
+      server.asUser(userB, (tx) =>
+        insertRow(tx, 'workout_exercises', {
+          ...rowsB.workout_exercises,
+          exercise_id: rowsA.user_exercises.id,
+        }),
+      ),
+      /Unknown exercise/,
+    );
+  });
+
+  it('User B cannot set a goal on User A custom exercise', async () => {
+    const rowsB = rowsFor(userB);
+    await expectError(
+      server.asUser(userB, (tx) =>
+        insertRow(tx, 'goals', { ...rowsB.goals, exercise_id: rowsA.user_exercises.id }),
+      ),
+      /Unknown exercise/,
+    );
+    // A body weight goal has no exercise; an exercise goal must have one.
+    await server.asUser(userB, (tx) =>
+      insertRow(tx, 'goals', {
+        ...rowsB.goals,
+        id: crypto.randomUUID(),
+        kind: 'body_weight',
+        exercise_id: null,
+      }),
+    );
+    await expectError(
+      server.asUser(userB, (tx) =>
+        insertRow(tx, 'goals', { ...rowsB.goals, id: crypto.randomUUID(), exercise_id: null }),
+      ),
+      /check constraint/,
+    );
+  });
+
+  it('delete_my_account removes only the caller and everything they own', async () => {
+    const userC = await server.createUser('c@example.com');
+    const rowsC = rowsFor(userC);
+    await insertAll(server, userC, rowsC);
+    await expectError(
+      server.asAnon((tx) => tx.query('select public.delete_my_account()')),
+      /permission denied/,
+    );
+    await server.asUser(userC, (tx) => tx.query('select public.delete_my_account()'));
+    const gone = await server.pg.query('select 1 from auth.users where id = $1', [userC]);
+    expect(gone.rows).toHaveLength(0);
+    for (const t of TABLES) {
+      const left = await server.pg.query(`select 1 from public.${t} where user_id = $1`, [userC]);
+      expect(left.rows, t).toHaveLength(0);
+    }
+    // Everyone else is untouched.
+    const a = await server.pg.query('select 1 from public.workouts where user_id = $1', [userA]);
+    expect(a.rows.length).toBeGreaterThan(0);
+  });
+
+  it('signed-out visitors cannot read or write anything', async () => {
+    for (const t of [...TABLES, 'exercises']) {
+      await expectError(
+        server.asAnon((tx) => tx.query(`select * from public.${t}`)),
+        /permission denied/,
+      );
+    }
+    await expectError(
+      server.asAnon((tx) => insertRow(tx, 'routines', rowsFor(userA).routines)),
+      /permission denied/,
+    );
+  });
+
+  it('the built-in library is readable but not writable', async () => {
+    const count = await server.asUser(userA, (tx) =>
+      tx.query<{ n: number }>('select count(*)::int as n from public.exercises'),
+    );
+    expect(count.rows[0]!.n).toBeGreaterThan(80);
+    await expectError(
+      server.asUser(userA, (tx) =>
+        tx.query(`update public.exercises set name = 'x' where id = $1`, [BENCH]),
+      ),
+      /permission denied/,
+    );
+  });
+
+  it('sets server_updated_at itself and keeps created_at', async () => {
+    const rows = rowsFor(userA);
+    await server.asUser(userA, (tx) =>
+      insertRow(tx, 'body_weight', {
+        ...rows.body_weight,
+        server_updated_at: '2000-01-01T00:00:00Z',
+      }),
+    );
+    await server.asUser(userA, (tx) =>
+      tx.query('update public.body_weight set created_at = $2, updated_at = $3 where id = $1', [
+        rows.body_weight.id,
+        '2001-01-01T00:00:00Z',
+        T1,
+      ]),
+    );
+    const row = await server.pg.query<{ server_updated_at: Date; created_at: Date }>(
+      'select server_updated_at, created_at from public.body_weight where id = $1',
+      [rows.body_weight.id],
+    );
+    expect(row.rows[0]!.server_updated_at.getFullYear()).toBeGreaterThan(2020);
+    expect(row.rows[0]!.created_at.toISOString()).toBe(T0);
+  });
+
+  it('ignores an update older than the stored row (newer change wins)', async () => {
+    const rows = rowsFor(userA);
+    await server.asUser(userA, (tx) =>
+      insertRow(tx, 'routines', { ...rows.routines, name: 'New', updated_at: T1 }),
+    );
+    const result = await server.asUser(userA, (tx) =>
+      tx.query('update public.routines set name = $2, updated_at = $3 where id = $1', [
+        rows.routines.id,
+        'Stale',
+        T0,
+      ]),
+    );
+    expect(result.affectedRows).toBe(0);
+    const row = await server.pg.query<{ name: string }>(
+      'select name from public.routines where id = $1',
+      [rows.routines.id],
+    );
+    expect(row.rows[0]!.name).toBe('New');
+  });
+
+  it('food logs take plates, bowls and ml, and nothing else new', async () => {
+    const rows = rowsFor(userA);
+    for (const unit of ['plate', 'bowl', 'ml'])
+      await server.asUser(userA, (tx) =>
+        insertRow(tx, 'food_logs', { ...rows.food_logs, id: crypto.randomUUID(), unit }),
+      );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'food_logs', { ...rows.food_logs, id: crypto.randomUUID(), unit: 'handful' }),
+      ),
+      /check constraint/,
+    );
+  });
+
+  it('rejects invalid values at the database, not only in the app', async () => {
+    const rows = rowsFor(userA);
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'routine_exercises', {
+          ...rowsA.routine_exercises,
+          id: crypto.randomUUID(),
+          rep_min: 12,
+          rep_max: 6,
+        }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'body_weight', { ...rows.body_weight, weight_kg: 5 }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) => insertRow(tx, 'profiles', { ...rows.profiles, height_cm: 20 })),
+      /check constraint/,
+    );
+    // Nutrition targets: 800 to 8,000 kcal and 20 to 500 g of protein.
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'profiles', { ...rows.profiles, calorie_target: 300 }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'profiles', { ...rows.profiles, protein_target_g: 900 }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'profiles', { ...rows.profiles, water_target_ml: 100 }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'profiles', { ...rows.profiles, target_mode: 'other' }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'activity_logs', { ...rows.activity_logs, kcal_source: 'guess' }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) => insertRow(tx, 'water_logs', { ...rows.water_logs, ml: 20 })),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'workouts', {
+          ...rows.workouts,
+          readiness: { sleep: 9, energy: 3, soreness: 2 },
+        }),
+      ),
+      /check constraint/,
+    );
+    // Bench angle: 45 degrees of decline to 90 of incline.
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'routine_exercises', {
+          ...rowsA.routine_exercises,
+          id: crypto.randomUUID(),
+          angle_deg: 120,
+        }),
+      ),
+      /check constraint/,
+    );
+    await server.asUser(userA, (tx) =>
+      insertRow(tx, 'routine_exercises', {
+        ...rowsA.routine_exercises,
+        id: crypto.randomUUID(),
+        angle_deg: -15,
+      }),
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        tx.query(
+          'update public.user_preferences set exercise_change_rest_seconds = 5000 where user_id = $1',
+          [userA],
+        ),
+      ),
+      /check constraint/,
+    );
+  });
+
+  it('photo allowance: 15 a day per person, counted only through the functions', async () => {
+    const claim = (user: string) =>
+      server.asUser(user, (tx) =>
+        tx.query<{ left: number }>(`select public.claim_ai_use('photo') as left`),
+      );
+    const first = await claim(userA);
+    expect(first.rows[0]!.left).toBe(14);
+    for (let i = 0; i < 14; i++) await claim(userA);
+    expect((await claim(userA)).rows[0]!.left).toBe(-1);
+    // Giving one back after a failure lets one more through.
+    await server.asUser(userA, (tx) => tx.query(`select public.release_ai_use('photo')`));
+    expect((await claim(userA)).rows[0]!.left).toBe(0);
+    // Each person has their own allowance.
+    expect((await claim(userB)).rows[0]!.left).toBe(14);
+    // Nobody reads or changes the counts directly, and visitors cannot claim.
+    await expectError(
+      server.asUser(userA, (tx) => tx.query('select * from public.ai_usage')),
+      /permission denied/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        tx.query(`update public.ai_usage set used = 0 where user_id = $1`, [userA]),
+      ),
+      /permission denied/,
+    );
+    await expectError(
+      server.asAnon((tx) => tx.query(`select public.claim_ai_use('photo')`)),
+      /permission denied/,
+    );
+    await expectError(
+      claim(userA).then(() =>
+        server.asUser(userA, (tx) => tx.query(`select public.claim_ai_use('chat')`)),
+      ),
+      /Unknown kind/,
+    );
+  });
+});

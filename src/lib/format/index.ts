@@ -1,0 +1,88 @@
+/*
+ * The app's formatters (UI Part 2, item 8). Every number, date and duration on screen goes
+ * through these, so they read the same everywhere: en-GB grouping (10,413), at most one
+ * decimal and no trailing ".0", "to" for ranges, "×" for sets by reps.
+ */
+export * from './dates';
+export * from './numbers';
+
+export function formatInteger(value: number): string {
+  return Math.round(value).toLocaleString('en-GB');
+}
+
+/** Signed percentage, e.g. +6% / -3%. Values are fractions (0.06). */
+export function formatSignedPercent(fraction: number, decimals = 0): string {
+  const pct = fraction * 100;
+  const factor = 10 ** decimals;
+  const rounded = Math.round(pct * factor) / factor;
+  if (rounded === 0) return '0%';
+  const sign = rounded > 0 ? '+' : '−';
+  return `${sign}${Math.abs(rounded).toLocaleString('en-GB', { maximumFractionDigits: decimals })}%`;
+}
+
+export function formatDurationMinutes(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
+/** Thousands separators up to 100,000, then compact: 12,480 stays "12,480"; 248,000 -> "248k". */
+export function formatCompact(value: number): string {
+  if (Math.abs(value) < 100_000) return formatInteger(value);
+  return `${(value / 1000).toLocaleString('en-GB', { maximumFractionDigits: 1 })}k`;
+}
+
+export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+/** "8 to 12", or "8" when the range is a single number (UI rules 3.6). */
+export function formatRepRange(min: number, max: number): string {
+  return min === max ? String(min) : `${min} to ${max}`;
+}
+
+/** Rest or timer length, always minutes and seconds: 0:45, 1:30, 3:00. */
+export function formatSeconds(totalSeconds: number): string {
+  const s = Math.max(0, Math.round(totalSeconds));
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/** Clock style for running timers: 0:45, 2:05, 1:02:10. */
+export function formatClock(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = String(s % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+}
+
+/** "2 min 05 sec", for screen readers and summaries. */
+export function spokenDuration(totalSec: number): string {
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  if (m === 0) return `${s} seconds`;
+  return s === 0 ? `${m} ${m === 1 ? 'minute' : 'minutes'}` : `${m} min ${s} sec`;
+}
+
+/** A range on one line, rounded for reading: "107 to 147 g" (UI v3, G3). */
+export function formatRange(min: number, max: number, unit?: string, maxDecimals = 0): string {
+  const a = formatNumberTo(min, maxDecimals);
+  const b = formatNumberTo(max, maxDecimals);
+  const text = a === b ? a : `${a} to ${b}`;
+  return unit ? `${text}\u00a0${unit}` : text;
+}
+
+function formatNumberTo(value: number, maxDecimals: number): string {
+  const factor = 10 ** maxDecimals;
+  return (Math.round(value * factor) / factor).toLocaleString('en-GB', {
+    maximumFractionDigits: maxDecimals,
+  });
+}
+
+/** A workout's length in words: "Under a minute", "8 min", "1 h 13 min" (never "<1 min"). */
+export function formatWorkoutLength(totalMinutes: number): string {
+  if (totalMinutes < 1) return 'Under a minute';
+  return formatDurationMinutes(Math.round(totalMinutes));
+}

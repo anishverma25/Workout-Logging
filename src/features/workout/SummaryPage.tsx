@@ -1,0 +1,437 @@
+import { badgesEarnedIn, computeBadges } from '@/domain/achievements/badges';
+import { BadgeMedallion } from '@/features/medals/BadgeMedallion';
+import { MedalIcon } from '@/features/medals/Medal';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useParams } from 'react-router';
+import { AlertTriangle, Check, HardDrive, RefreshCw, Share, type LucideIcon } from 'lucide-react';
+import { useAccount, useSyncStatus } from '@/app/account';
+import {
+  BottomSheet,
+  Card,
+  Delta,
+  IconButton,
+  InfoButton,
+  Metric,
+  Section,
+  TextLink,
+} from '@/components/kit';
+import { ShareSheet } from '@/features/share/ShareSheet';
+import { RestCard } from '@/features/shared/RestCard';
+import { MuscleMapCard } from '@/features/shared/MuscleMapCard';
+import { WorkoutBurnCard } from '@/features/shared/WorkoutBurnCard';
+import { RefuelCard } from './RefuelCard';
+import { ButtonLink } from '@/components/ui/Button';
+import { ErrorState, Skeleton } from '@/components/ui/States';
+import { usePreferences, useTrainingData } from '@/data/hooks';
+import { describeSync, type SyncTone } from '@/data/sync/describe';
+import { formatRecordValue, PR_LABELS, type PersonalRecord } from '@/domain/analytics/prs';
+import { buildSessions } from '@/domain/analytics/sessions';
+import { summarizeWorkout, type ExerciseChange } from '@/domain/workout/summary';
+import { FeedbackPrompt } from '@/features/feedback/FeedbackPrompt';
+import { DurationValue, StatItem } from '@/features/history/StatItem';
+import { cn } from '@/lib/cn';
+import { formatDayMonth, formatLongDay, formatRelativeDayInline } from '@/lib/dates';
+import { formatCompact, formatSignedPercent, formatWorkoutLength, pluralize } from '@/lib/format';
+import { haptic } from '@/lib/haptics';
+import { formatWeight, toDisplayWeight, type WeightUnit } from '@/lib/units';
+import { useNow } from '@/lib/useNow';
+
+/** Shown right after finishing. Only metrics with real meaning; nothing padded in. */
+export function SummaryPage() {
+  const { workoutId } = useParams();
+  const training = useTrainingData();
+  const prefs = usePreferences();
+  const unit = prefs.weightUnit;
+  const summary = useMemo(
+    () => (training.data && workoutId ? summarizeWorkout(training.data, workoutId) : null),
+    [training.data, workoutId],
+  );
+  // Milestones this workout reached: counted over all history up to and including it.
+  // Badges this workout unlocked: counted over all history up to and including it.
+  const unlocked = useMemo(() => {
+    if (!training.data || !workoutId) return [];
+    return badgesEarnedIn(
+      computeBadges({
+        sessions: buildSessions(training.data),
+        exercises: training.data.exercises,
+        bodyWeights: training.data.bodyWeights,
+        now: new Date(),
+        weekStartsOn: prefs.weekStartsOn,
+      }),
+      workoutId,
+    );
+  }, [training.data, workoutId, prefs.weekStartsOn]);
+
+  const [sharing, setSharing] = useState(false);
+  const [aboutChanges, setAboutChanges] = useState(false);
+
+  if (training.status === 'loading') return <Skeleton className="mt-10 h-96" />;
+  if (training.status === 'error') return <ErrorState error={training.error} />;
+  if (!summary) {
+    return (
+      <div className="mx-auto flex max-w-2xl flex-col gap-4 pt-10">
+        <ErrorState title="That workout was not found" />
+        <ButtonLink to="/history" size="lg" variant="secondary">
+          Go to history
+        </ButtonLink>
+      </div>
+    );
+  }
+  const { session } = summary;
+  const muscleLogs = session.exercises.map((e) => ({
+    exerciseId: e.workoutExercise.exerciseId,
+    exercise: e.exercise,
+    sets: e.sets,
+  }));
+  const volumeChange = summary.volumeVsLast?.change ?? 0;
+
+  return (
+    <div className="mx-auto flex max-w-2xl flex-col">
+      <header className="chrome pt-4 pb-5 lg:pt-8">
+        <div className="flex h-11 items-center justify-between gap-3">
+          <p className="type-meta min-w-0 truncate font-medium text-text-2">
+            {formatLongDay(session.date)}
+            {summary.minutes !== null
+              ? ` · ${formatWorkoutLength(summary.minutes).toLowerCase()}`
+              : ''}
+          </p>
+          <IconButton
+            label={summary.prs.length > 0 ? 'Share your PR' : 'Share to your story'}
+            icon={<Share aria-hidden />}
+            onClick={() => setSharing(true)}
+          />
+        </div>
+        <h1 className="type-title-1 mt-0.5 text-text-1">{session.workout.name} done</h1>
+      </header>
+
+      {/* One hero number (UI v3, S7.2), then the rest as tiles; nothing that is zero. */}
+      <section aria-label="This workout" className="rounded-card bg-surface p-4">
+        {summary.volumeKg > 0 ? (
+          <Metric
+            tier="hero"
+            label="Volume load"
+            accentLabel
+            value={formatCompact(toDisplayWeight(summary.volumeKg, unit))}
+            unit={unit}
+          >
+            {summary.volumeVsLast ? (
+              <Delta
+                className="mt-2"
+                tone={volumeChange > 0.0005 ? 'up' : volumeChange < -0.0005 ? 'down' : 'flat'}
+              >
+                {formatSignedPercent(volumeChange)} vs last {session.workout.name},{' '}
+                {formatDayMonth(summary.volumeVsLast.previousDate)}
+              </Delta>
+            ) : null}
+          </Metric>
+        ) : (
+          <Metric
+            tier="hero"
+            label="Working sets"
+            accentLabel
+            value={String(summary.workingSets)}
+          />
+        )}
+      </section>
+      <dl className="mt-3 grid grid-cols-2 gap-3">
+        {summary.minutes !== null ? (
+          <StatItem
+            label="Duration"
+            value={<DurationValue minutes={summary.minutes} />}
+            // An odd number of tiles: the first spans the row, so none sits alone.
+            className={
+              [summary.volumeKg > 0, true, summary.prs.length > 0].filter(Boolean).length % 2 === 0
+                ? 'col-span-2'
+                : undefined
+            }
+          />
+        ) : null}
+        {summary.volumeKg > 0 ? (
+          <StatItem label="Working sets" value={String(summary.workingSets)} />
+        ) : null}
+        <StatItem label="Exercises" value={String(summary.exercises.length)} />
+        {summary.prs.length > 0 ? (
+          <StatItem label="Records" value={String(summary.prs.length)} />
+        ) : null}
+      </dl>
+      <ShareSheet workoutId={session.workout.id} open={sharing} onClose={() => setSharing(false)} />
+
+      {summary.prs.length > 0 ? <RecordsCard prs={summary.prs} unit={unit} /> : null}
+
+      {unlocked.length > 0 ? (
+        <section
+          aria-labelledby="summary-badges"
+          className="mt-4 rounded-panel border border-border bg-surface p-5"
+        >
+          <h2 id="summary-badges" className="type-title text-text-1">
+            {unlocked.length === 1 ? 'Badge unlocked' : `${unlocked.length} badges unlocked`}
+          </h2>
+          <ul className="mt-3 flex flex-col gap-3">
+            {unlocked.map((b) => (
+              <li key={b.id} className="flex items-center gap-3">
+                <BadgeMedallion badge={b} className="size-16" />
+                <span className="min-w-0">
+                  <span className="type-headline block text-text-1">{b.title}</span>
+                  <span className="type-meta block text-text-2">{b.goal}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <TextLink small onClick={() => setSharing(true)}>
+              Share a badge
+            </TextLink>
+            <TextLink small to="/badges" chevron>
+              All badges
+            </TextLink>
+          </div>
+        </section>
+      ) : null}
+
+      <Section
+        className="mt-8"
+        id="summary-exercises"
+        title="Exercises"
+        info={<InfoButton label="the changes" onClick={() => setAboutChanges(true)} />}
+      >
+        <ul className="divide-y-[0.5px] divide-divider rounded-card bg-surface px-4">
+          {summary.exercises.map((e) => (
+            <li key={e.exerciseId} className="flex min-h-14 items-center gap-3 py-3">
+              <span className="min-w-0 flex-1">
+                <span className="type-headline block truncate text-text-1">{e.name}</span>
+                <span className="type-subhead tabular mt-0.5 block text-text-2">
+                  {pluralize(e.workingSets, 'set')}
+                  {e.volumeKg > 0
+                    ? ` · ${formatCompact(toDisplayWeight(e.volumeKg, unit))} ${unit}`
+                    : ''}
+                </span>
+                <ChangeLine change={e.change} unit={unit} />
+              </span>
+              <ChangeCapsule change={e.change} />
+            </li>
+          ))}
+        </ul>
+      </Section>
+      <BottomSheet
+        open={aboutChanges}
+        onClose={() => setAboutChanges(false)}
+        title="How changes are compared"
+      >
+        <p className="type-body text-text-2">
+          Changes compare your best set with the last time you did each exercise: estimated 1RM for
+          compound lifts, top load for isolation lifts, most reps for bodyweight ones.
+        </p>
+      </BottomSheet>
+
+      <MuscleMapCard exercises={muscleLogs} sex={training.data.profile?.sex} className="mt-8" />
+      <WorkoutBurnCard
+        workout={session.workout}
+        sets={session.exercises.flatMap((e) => e.sets)}
+        bodyWeights={training.data.bodyWeights}
+        className="mt-4"
+      />
+      <RestCard exercises={session.exercises} minutes={summary.minutes} className="mt-4" />
+      <RefuelCard
+        training={training}
+        workoutDate={session.date}
+        now={new Date()}
+        className="mt-4"
+      />
+
+      {session.workout.notes ? (
+        <Card as="section" aria-labelledby="summary-notes" className="mt-4">
+          <h2 id="summary-notes" className="type-title text-text-1">
+            Notes
+          </h2>
+          <p className="type-body mt-3 rounded-nested bg-surface-2 px-4 py-3 whitespace-pre-line text-text-2">
+            {session.workout.notes}
+          </p>
+        </Card>
+      ) : null}
+
+      <FeedbackPrompt
+        finishedWorkouts={
+          training.data.workouts.filter(
+            (w) => w.deletedAt === null && w.origin === 'user' && w.status === 'completed',
+          ).length
+        }
+      />
+
+      <div className="mt-4 flex justify-center">
+        <TextLink to={`/history/${session.workout.id}`} chevron>
+          View workout details
+        </TextLink>
+      </div>
+      <SummarySync className="mt-2 justify-center" />
+
+      {/* Pinned to the bottom (the tab bar steps aside here, UI v3 B3). */}
+      <div className="sticky bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom))] z-20 -mx-4 mt-4 bg-gradient-to-b from-transparent to-bg to-30% px-4 pt-6 pb-3 tab:-mx-6 tab:px-6 lg:bottom-0 lg:mx-0 lg:px-0 lg:pb-6">
+        <ButtonLink to="/" size="lg" block>
+          Done
+        </ButtonLink>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * New records: lime-dim card, lime trophy tile. Fades and scales in from 0.96 over 400 ms, then
+ * a success haptic once. Reduced motion: shown at once, the haptic still fires.
+ */
+function RecordsCard({ prs, unit }: { prs: PersonalRecord[]; unit: WeightUnit }) {
+  const ref = useRef<HTMLElement>(null);
+  const buzzed = useRef(false);
+
+  useEffect(() => {
+    const buzz = () => {
+      if (buzzed.current) return;
+      buzzed.current = true;
+      haptic('success');
+    };
+    const el = ref.current;
+    const reduced =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!el || reduced || typeof el.animate !== 'function') {
+      buzz();
+      return;
+    }
+    const animation = el.animate(
+      [
+        { opacity: 0, transform: 'scale(0.96)' },
+        { opacity: 1, transform: 'scale(1)' },
+      ],
+      { duration: 400, easing: 'cubic-bezier(0.2, 0, 0, 1)', fill: 'backwards' },
+    );
+    animation.finished.then(buzz).catch(() => {
+      // Cancelled on unmount: no haptic for a card nobody saw.
+    });
+    return () => animation.cancel();
+  }, []);
+
+  return (
+    <section
+      ref={ref}
+      aria-labelledby="summary-records"
+      className="mt-4 rounded-panel border border-gold/30 bg-gold-dim p-5"
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex size-11 items-center justify-center rounded-full bg-black/30">
+          <MedalIcon className="size-7" />
+        </span>
+        <h2 id="summary-records" className="type-title text-text-1">
+          {pluralize(prs.length, 'medal')} this workout
+        </h2>
+      </div>
+      <ul className="mt-3 divide-y-[0.5px] divide-divider">
+        {prs.map((pr) => (
+          <li key={pr.id} className="flex items-start justify-between gap-3 py-3">
+            <span className="flex min-w-0 items-start gap-2.5">
+              <MedalIcon className="mt-0.5 size-5" />
+              <span className="min-w-0">
+                <span className="type-headline block truncate text-text-1">{pr.exerciseName}</span>
+                <span className="type-meta mt-0.5 block text-text-2">{PR_LABELS[pr.type]}</span>
+              </span>
+            </span>
+            <span className="shrink-0 text-right">
+              <span className="type-headline tabular block text-text-1">
+                {formatRecordValue(pr.type, pr.value, unit)}
+              </span>
+              <span className="type-meta tabular mt-0.5 block text-text-2">
+                was {formatRecordValue(pr.type, pr.previousBest, unit)}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {prs.some((p) => p.type === 'e1rm') ? (
+        <p className="type-meta mt-2 text-text-2">
+          Estimated 1RM is the most you could likely lift once, worked out from the weight and reps
+          of your sets. It is an estimate, not a lift you did.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+/** The change as a green or red capsule at the end of the row (UI v3, G3). */
+function ChangeCapsule({ change }: { change: ExerciseChange | null }) {
+  if (!change || change.kind === 'first') return null;
+  const same = Math.abs(change.change) < 0.0005;
+  return (
+    <Delta tone={same ? 'flat' : change.change > 0 ? 'up' : 'down'} arrow={!same}>
+      {same ? 'Same' : formatSignedPercent(change.change, 1)}
+    </Delta>
+  );
+}
+
+/** "e1RM 82.5 kg, vs earlier today" in Meta --text-2; the percentage is the capsule. */
+function ChangeLine({ change, unit }: { change: ExerciseChange | null; unit: WeightUnit }) {
+  if (!change) return null;
+  if (change.kind === 'first') {
+    return <span className="type-meta mt-0.5 text-text-2">First time</span>;
+  }
+  const same = Math.abs(change.change) < 0.0005;
+  const detail =
+    change.kind === 'e1rm'
+      ? `e1RM ${formatWeight(change.today, unit)}`
+      : change.kind === 'load'
+        ? `top load ${formatWeight(change.today, unit)}`
+        : `${change.today} reps`;
+  return (
+    <span className="type-meta tabular mt-0.5 block text-text-2">
+      {same ? 'Same as last time · ' : ''}
+      {detail}, vs{' '}
+      {formatRelativeDayInline(change.previousDate)
+        .replace(/^on /, '')
+        .replace(/^today$/, 'earlier today')}
+    </span>
+  );
+}
+
+const SYNC_ICON: Record<SyncTone, LucideIcon> = {
+  local: HardDrive,
+  pending: RefreshCw,
+  synced: Check,
+  problem: AlertTriangle,
+};
+
+/**
+ * Where this workout is now, in the words of describeSync. The kit SyncStatus look (neutral
+ * icon, Meta --text-2, warning icon only for a problem), with the "Sync status" name the
+ * account page and tests use.
+ */
+function SummarySync({ className }: { className?: string }) {
+  const account = useAccount();
+  const sync = useSyncStatus();
+  const now = useNow(30_000);
+  const signedIn = account.status === 'signedIn';
+  const description = describeSync(sync, signedIn, now);
+  const Icon = SYNC_ICON[description.tone];
+  return (
+    <div
+      role="status"
+      aria-label="Sync status"
+      className={cn('flex flex-wrap items-center gap-x-2', className)}
+    >
+      <Icon
+        className={cn(
+          'size-4 shrink-0',
+          description.tone === 'problem' ? 'text-warning' : 'text-text-2',
+        )}
+        aria-hidden
+      />
+      <span className="type-meta text-text-2">
+        {signedIn ? description.title : 'Saved on this device only.'}
+      </span>
+      {account.status === 'unavailable' || account.status === 'loading' ? null : (
+        <Link
+          to={signedIn ? '/account' : '/sign-in?next=/account'}
+          className="pressable tap-target type-meta rounded-tile font-medium text-text-1 underline-offset-4 hover:underline"
+        >
+          {signedIn ? 'Details' : 'Back it up'}
+        </Link>
+      )}
+    </div>
+  );
+}

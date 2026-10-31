@@ -1,0 +1,464 @@
+import { useState, type ReactNode } from 'react';
+import { Link } from 'react-router';
+import { ChevronRight } from 'lucide-react';
+import { BottomSheet, SectionHeader, TextLink } from '@/components/kit';
+import {
+  LIFESTYLE_PAL,
+  TRAINING_MET,
+  GOAL_ENERGY,
+  GOAL_PROTEIN,
+  type BodySnapshot,
+  type BmiBand,
+  type RateVerdict,
+} from '@/domain/analytics/body';
+import { ACTIVITY_LABEL, GOAL_LABEL } from '@/domain/models/labels';
+import type { Goal, Sex } from '@/domain/models/schemas';
+import { cn } from '@/lib/cn';
+import { formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
+
+const BMI_LABEL: Record<BmiBand, string> = {
+  under: 'Underweight',
+  healthy: 'Healthy range',
+  over: 'Overweight',
+  obese: 'Obese',
+};
+
+const RATE_LABEL: Record<RateVerdict, string> = {
+  on_track: 'On track for your goal',
+  too_fast: 'Faster than your goal suggests',
+  too_slow: 'Slower than your goal suggests',
+  wrong_way: 'Moving away from your goal',
+};
+
+type Topic = 'energy' | 'protein' | 'bmi' | 'fat' | 'ffmi' | 'rate';
+
+const fmt = (v: number, digits = 1) =>
+  v.toLocaleString('en-GB', { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+
+interface Props {
+  snapshot: BodySnapshot;
+  goal: Goal | null;
+  sex: Sex | null;
+  heightCm: number | null;
+  unit: WeightUnit;
+  hasProfile: boolean;
+}
+
+/**
+ * Personal numbers from published formulas. Each tile opens the formula with the person's own
+ * values plugged in; a tile whose inputs are missing says exactly what to add.
+ */
+export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile }: Props) {
+  const [topic, setTopic] = useState<Topic | null>(null);
+  const kg = (v: number) => `${formatWeightValue(v, unit)} ${unit}`;
+  const needs = (items: string[]) => `Add your ${items.join(', ')}`;
+  const missingFor = {
+    energy: [
+      s.missing.weight && 'weight',
+      s.bodyFat === null && s.missing.sex && 'sex',
+      s.bodyFat === null && s.missing.age && 'birth date',
+      s.bodyFat === null && s.missing.height && 'height',
+      s.missing.trainingDays && 'training days',
+    ].filter(Boolean) as string[],
+    bmi: [s.missing.weight && 'weight', s.missing.height && 'height'].filter(Boolean) as string[],
+  };
+
+  return (
+    <section aria-labelledby="numbers-title">
+      <SectionHeader
+        id="numbers-title"
+        title="Your numbers"
+        className="items-center"
+        action={
+          <TextLink to="/science#maintenance" small chevron>
+            How they are worked out
+          </TextLink>
+        }
+      />
+      {!hasProfile ? (
+        <p className="type-meta mb-3 rounded-nested bg-surface-2 px-4 py-3 text-text-2">
+          These use your profile.{' '}
+          <Link
+            to="/setup?next=/body"
+            className="font-medium text-text-1 underline underline-offset-4"
+          >
+            Set up your profile
+          </Link>{' '}
+          to see daily calories, protein, BMI and more.
+        </p>
+      ) : null}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <Tile
+          label="Daily calories"
+          onOpen={s.energy ? () => setTopic('energy') : undefined}
+          value={s.energy ? s.energy.targetKcal.toLocaleString('en-GB') : null}
+          unit="kcal"
+          detail={
+            s.energy
+              ? `Maintenance about ${s.energy.tdee.toLocaleString('en-GB')}`
+              : missingFor.energy.length
+                ? needs(missingFor.energy)
+                : 'Needs your profile'
+          }
+        />
+        <Tile
+          label="Protein a day"
+          onOpen={s.energy ? () => setTopic('protein') : undefined}
+          value={
+            s.energy
+              ? `${s.energy.proteinG[0].toFixed(0)} to ${s.energy.proteinG[1].toFixed(0)}`
+              : null
+          }
+          unit="g"
+          detail={
+            s.energy && goal
+              ? `${GOAL_PROTEIN[goal][0]} to ${GOAL_PROTEIN[goal][1]} g per kg`
+              : 'Needs your weight and goal'
+          }
+        />
+        <Tile
+          label="BMI"
+          onOpen={s.bmi ? () => setTopic('bmi') : undefined}
+          value={s.bmi ? fmt(s.bmi.value) : null}
+          detail={s.bmi ? BMI_LABEL[s.bmi.band] : needs(missingFor.bmi)}
+        />
+        <Tile
+          label="Body fat"
+          onOpen={s.bodyFat ? () => setTopic('fat') : undefined}
+          value={s.bodyFat ? fmt(s.bodyFat.pct) : null}
+          unit="%"
+          detail={
+            s.bodyFat
+              ? s.bodyFat.source === 'navy'
+                ? 'Tape estimate (US Navy)'
+                : 'From your scale or scan'
+              : sex === 'unspecified'
+                ? 'Add a reading from a scale or scan'
+                : 'Add waist and neck measurements'
+          }
+        />
+        <Tile
+          label="Lean mass index"
+          onOpen={s.ffmi ? () => setTopic('ffmi') : undefined}
+          value={s.ffmi ? fmt(s.ffmi.normalized) : null}
+          detail={s.ffmi ? `Lean mass ${kg(s.leanKg!)}` : 'Needs body fat and height'}
+        />
+        <Tile
+          label="Weekly change"
+          onOpen={s.rate ? () => setTopic('rate') : undefined}
+          value={
+            s.rate
+              ? `${s.rate.kgPerWeek >= 0 ? '+' : '−'}${fmt(Math.abs(toDisplayWeight(s.rate.kgPerWeek, unit)), 2)}`
+              : null
+          }
+          unit={unit}
+          detail={
+            !s.rate
+              ? 'Needs 2 weeks of weigh-ins'
+              : s.rate.verdict
+                ? RATE_LABEL[s.rate.verdict]
+                : 'Over the last 4 weeks'
+          }
+        />
+      </div>
+
+      <BottomSheet
+        open={topic !== null}
+        onClose={() => setTopic(null)}
+        title={topic ? TITLES[topic] : ''}
+      >
+        {topic ? (
+          <Explanation topic={topic} s={s} goal={goal} sex={sex} heightCm={heightCm} unit={unit} />
+        ) : null}
+      </BottomSheet>
+    </section>
+  );
+}
+
+const TITLES: Record<Topic, string> = {
+  energy: 'Daily calories',
+  protein: 'Protein',
+  bmi: 'Body mass index',
+  fat: 'Body fat',
+  ffmi: 'Lean mass index',
+  rate: 'Weekly change',
+};
+
+function Tile({
+  label,
+  value,
+  unit,
+  detail,
+  onOpen,
+}: {
+  label: string;
+  value: string | null;
+  unit?: string;
+  detail: string;
+  onOpen?: () => void;
+}) {
+  const body = (
+    <>
+      <span className="type-meta flex items-center gap-1 text-text-2">
+        {label}
+        {onOpen ? <ChevronRight className="ml-auto size-4 text-text-3" aria-hidden /> : null}
+      </span>
+      {value ? (
+        <span className="mt-1 flex flex-wrap items-baseline gap-x-1">
+          <span
+            className={cn(
+              // A range stays on one line (UI v3, F3): never "107 to" over "147".
+              'tabular whitespace-nowrap text-text-1',
+              value.includes(' to ') ? 'type-title' : 'type-stat',
+            )}
+          >
+            {value}
+          </span>
+          {unit ? <span className="type-meta text-text-2">{unit}</span> : null}
+        </span>
+      ) : (
+        <span className="type-headline mt-1.5 block text-text-2">None yet</span>
+      )}
+      <span className="type-meta mt-1 block text-text-2">{detail}</span>
+    </>
+  );
+  const cls = 'block w-full rounded-panel border border-border bg-surface p-4 text-left';
+  return onOpen ? (
+    <button type="button" onClick={onOpen} className={cn(cls, 'pressable chrome')}>
+      {body}
+    </button>
+  ) : (
+    <div className={cls}>{body}</div>
+  );
+}
+
+function Formula({ children }: { children: ReactNode }) {
+  return (
+    <p className="type-body tabular my-3 rounded-nested bg-surface-2 px-4 py-3 text-text-1">
+      {children}
+    </p>
+  );
+}
+
+function Step({ children }: { children: ReactNode }) {
+  return <p className="type-headline mt-4 text-text-1">{children}</p>;
+}
+
+function Note({ children }: { children: ReactNode }) {
+  return <p className="type-meta mt-3 text-text-2">{children}</p>;
+}
+
+function Explanation({
+  topic,
+  s,
+  goal,
+  sex,
+  heightCm,
+  unit,
+}: {
+  topic: Topic;
+  s: BodySnapshot;
+  goal: Goal | null;
+  sex: Sex | null;
+  heightCm: number | null;
+  unit: WeightUnit;
+}) {
+  const w = s.weightKg !== null ? fmt(s.weightKg) : '?';
+  const text = 'type-body pb-2 text-text-2';
+  switch (topic) {
+    case 'energy': {
+      const e = s.energy!;
+      const days = `${fmt(e.trainingDays, 1)} sessions a week (${
+        e.trainingDaysSource === 'logged'
+          ? 'your average over the last 4 weeks'
+          : 'from your profile'
+      })`;
+      return (
+        <div className={text}>
+          <p>
+            Maintenance is worked out in three parts, the way energy-requirement research does it.
+          </p>
+          <Step>1. At rest</Step>
+          <Formula>
+            {e.method === 'mifflin' ? (
+              <>
+                Mifflin-St Jeor: 10 × {w} kg + 6.25 × {fmt(heightCm ?? 0)} cm − 5 × {s.age} years{' '}
+                {sex === 'female' ? '− 161' : '+ 5'} = {e.bmr.toLocaleString('en-GB')} kcal
+              </>
+            ) : (
+              <>
+                Katch-McArdle, from lean mass: 370 + 21.6 × {fmt(s.leanKg ?? 0)} kg ={' '}
+                {e.bmr.toLocaleString('en-GB')} kcal
+              </>
+            )}
+          </Formula>
+          <Step>2. Your day, without the gym</Step>
+          <Formula>
+            {e.bmr.toLocaleString('en-GB')} × {e.pal} (
+            {ACTIVITY_LABEL[e.dailyActivity].toLowerCase()}) ≈ {e.dailyKcal.toLocaleString('en-GB')}{' '}
+            kcal
+          </Formula>
+          <Step>3. Training</Step>
+          <Formula>
+            {fmt(e.trainingDays, 1)} × {fmt(e.sessionMinutes / 60, 2)} h × ({TRAINING_MET} − 1) MET
+            × {w} kg ÷ 7 days ≈ {e.trainingKcal.toLocaleString('en-GB')} kcal a day
+          </Formula>
+          <p className="type-meta text-text-2">
+            {days}, {e.sessionMinutes} minutes each.
+          </p>
+          <p className="mt-3">Maintenance, the calories that keep your weight steady:</p>
+          <Formula>
+            {e.dailyKcal.toLocaleString('en-GB')} + {e.trainingKcal.toLocaleString('en-GB')} ={' '}
+            <strong className="text-text-1">{e.tdee.toLocaleString('en-GB')} kcal</strong>
+          </Formula>
+          <p>
+            For {goal ? GOAL_LABEL[goal].toLowerCase() : 'your goal'} the target is{' '}
+            {e.adjustment === 0
+              ? 'maintenance'
+              : `${e.adjustment > 0 ? '+' : '−'}${Math.round(Math.abs(e.adjustment) * 100)}%`}
+            : <strong className="text-text-1">{e.targetKcal.toLocaleString('en-GB')} kcal</strong> a
+            day. With protein in the middle of its range and at least {e.fatMinG} g of fat, about{' '}
+            {e.carbsG} g of carbohydrate fills the rest.
+          </p>
+          <Note>
+            Day levels are from the FAO/WHO/UNU report on human energy requirements: mostly sitting{' '}
+            {LIFESTYLE_PAL.sitting}, some walking {LIFESTYLE_PAL.mixed}, on your feet{' '}
+            {LIFESTYLE_PAL.on_feet}, physical work {LIFESTYLE_PAL.physical}. Training uses{' '}
+            {TRAINING_MET} MET for weight training with rests, from the Compendium of Physical
+            Activities. Equations like these land within about 10% for most people. Your weight
+            trend is the final word: if it moves differently from your goal for 2 to 3 weeks, change
+            your intake by 100 to 200 kcal.
+          </Note>
+        </div>
+      );
+    }
+    case 'protein': {
+      const e = s.energy!;
+      const [lo, hi] = goal ? GOAL_PROTEIN[goal] : [1.6, 2.2];
+      return (
+        <div className={text}>
+          <Formula>
+            {lo} to {hi} g × {w} kg = {e.proteinG[0].toFixed(1)} to {e.proteinG[1].toFixed(1)} g a
+            day
+          </Formula>
+          <p>
+            1.6 g per kg is where extra protein stops adding muscle on average, and 2.2 g the upper
+            end of the range in the largest meta-analysis (Morton and colleagues, 2018). When eating
+            less, more protein helps keep muscle, so fat loss goals use 2.0 to 2.4 g per kg. Spread
+            it over 3 to 5 meals.
+          </p>
+          {goal ? (
+            <Note>
+              Calories for {GOAL_LABEL[goal].toLowerCase()}:{' '}
+              {GOAL_ENERGY[goal] === 0
+                ? 'maintenance'
+                : `${GOAL_ENERGY[goal] > 0 ? '+' : '−'}${Math.abs(GOAL_ENERGY[goal]) * 100}% of maintenance`}
+              .
+            </Note>
+          ) : null}
+        </div>
+      );
+    }
+    case 'bmi': {
+      const b = s.bmi!;
+      return (
+        <div className={text}>
+          <Formula>
+            {w} kg ÷ ({fmt((heightCm ?? 0) / 100, 2)} m)² = {fmt(b.value)}
+          </Formula>
+          <p>
+            WHO bands: under 18.5 underweight, 18.5 to 24.9 healthy, 25 to 29.9 overweight, 30 and
+            over obese. For South Asian adults the WHO suggests acting from 23 and 27.5, because
+            health risk starts at a lower BMI. On those cut-offs you are in the{' '}
+            {BMI_LABEL[b.asianBand].toLowerCase()} band.
+          </p>
+          <Note>
+            BMI cannot tell muscle from fat, so it reads many lifters as overweight. Body fat and
+            the lean mass index describe a lifter better.
+          </Note>
+        </div>
+      );
+    }
+    case 'fat': {
+      const f = s.bodyFat!;
+      return (
+        <div className={text}>
+          {f.source === 'navy' ? (
+            <>
+              <p>Estimated from your waist, neck{sex === 'female' ? ', hips' : ''} and height:</p>
+              <Formula>
+                {sex === 'female'
+                  ? '495 ÷ (1.29579 − 0.35004 log₁₀(waist + hip − neck) + 0.22100 log₁₀(height)) − 450'
+                  : '495 ÷ (1.0324 − 0.19077 log₁₀(waist − neck) + 0.15456 log₁₀(height)) − 450'}{' '}
+                = {fmt(f.pct)}%
+              </Formula>
+              <p>
+                The US Navy tape method (Hodgdon and Beckett, 1984) is usually within 3 to 4
+                percentage points of lab tests. Measure the same way each time: waist at the navel
+                {sex === 'female' ? ' (narrowest point for women)' : ''}, relaxed, in the morning.
+              </p>
+            </>
+          ) : (
+            <p>
+              {fmt(f.pct)}%, from the reading you entered. A reading from a scale or scan is used
+              for {60} days; after that the tape estimate takes over if you have one.
+            </p>
+          )}
+          {s.leanKg !== null ? (
+            <p className="mt-3">
+              That puts lean mass (everything except fat) at {formatWeightValue(s.leanKg, unit)}{' '}
+              {unit}.
+            </p>
+          ) : null}
+        </div>
+      );
+    }
+    case 'ffmi': {
+      const f = s.ffmi!;
+      return (
+        <div className={text}>
+          <Formula>
+            {fmt(s.leanKg ?? 0)} kg ÷ ({fmt((heightCm ?? 0) / 100, 2)} m)² = {fmt(f.value)},
+            adjusted to 1.8 m: {fmt(f.normalized)}
+          </Formula>
+          <p>
+            The fat-free mass index (Kouri and colleagues, 1995) is BMI for muscle. For men, about
+            18 to 20 is typical, 20 to 22 shows years of training, and above 25 is rare without
+            drugs. Women typically sit about 3 to 4 points lower.
+          </p>
+        </div>
+      );
+    }
+    case 'rate': {
+      const r = s.rate!;
+      const pct = (v: number) => `${v >= 0 ? '+' : '−'}${fmt(Math.abs(v * 100), 2)}%`;
+      return (
+        <div className={text}>
+          <p>
+            The slope of your 7-day average weight over the last 4 weeks:{' '}
+            <strong className="text-text-1">
+              {r.kgPerWeek >= 0 ? '+' : '−'}
+              {fmt(Math.abs(toDisplayWeight(r.kgPerWeek, unit)), 2)} {unit} a week
+            </strong>
+            .
+          </p>
+          {r.target ? (
+            <p className="mt-3">
+              While cutting, losing about {pct(r.target[1])} to {pct(r.target[0])} of body weight a
+              week protects muscle (Helms, Aragon and Fitschen, 2014). Faster is not better here.
+            </p>
+          ) : (
+            <p className="mt-3">
+              A target pace is shown for the fat loss goal, the one with research behind a specific
+              rate. For other goals this is your measured rate.
+            </p>
+          )}
+          <Note>
+            Weight swings across the week, higher after the weekend and lowest near Friday, so a
+            7-day average shows the real direction (Orsama et al., 2014).
+          </Note>
+        </div>
+      );
+    }
+  }
+}

@@ -4,6 +4,14 @@
  * "today" and "yesterday" are local concepts. Stored timestamps are ISO strings (UTC).
  */
 
+import {
+  formatCalendarDate,
+  formatDate,
+  formatDayMonthFixed,
+  longDayName,
+  shortDayName,
+} from '@/lib/format/dates';
+
 export type WeekStartsOn = 0 | 1;
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
@@ -57,35 +65,30 @@ export function minutesBetween(startIso: string, endIso: string): number {
   return Math.max(0, Math.round((Date.parse(endIso) - Date.parse(startIso)) / 60_000));
 }
 
-const longDay = new Intl.DateTimeFormat(undefined, {
+/*
+ * Display formats are fixed (en-GB order, English names) so every screen reads the same,
+ * whatever the phone's language: the formatters live in `@/lib/format/dates`.
+ */
+const longDay = new Intl.DateTimeFormat('en-GB', {
   weekday: 'long',
   day: 'numeric',
   month: 'long',
 });
-const shortDate = new Intl.DateTimeFormat(undefined, {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-});
-const dayMonth = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' });
-const weekdayLong = new Intl.DateTimeFormat(undefined, { weekday: 'long' });
-const weekdayNarrow = new Intl.DateTimeFormat(undefined, { weekday: 'narrow' });
-const weekdayShort = new Intl.DateTimeFormat(undefined, { weekday: 'short' });
+const weekdayNarrow = new Intl.DateTimeFormat('en-GB', { weekday: 'narrow' });
 
+/** "Saturday 10 October". */
 export const formatLongDay = (d: Date) => longDay.format(d);
-export const formatShortDate = (d: Date) => shortDate.format(d);
-export const formatDayMonth = (d: Date) => dayMonth.format(d);
-export const formatWeekday = (d: Date) => weekdayLong.format(d);
-export const formatWeekdayShort = (d: Date) => weekdayShort.format(d);
+/** "Sat, 10 Oct", with the year when it is not this year. */
+export const formatShortDate = (d: Date) => formatCalendarDate(d);
+/** "10 Oct". */
+export const formatDayMonth = (d: Date) => formatDayMonthFixed(d);
+export const formatWeekday = (d: Date) => longDayName(d.getDay());
+export const formatWeekdayShort = (d: Date) => shortDayName(d.getDay());
 export const formatWeekdayNarrow = (d: Date) => weekdayNarrow.format(d);
 
-/** "Today", "Yesterday", a weekday within the last week, otherwise a short date. */
+/** "Today", "Yesterday", a weekday within the last week, otherwise "Sat, 10 Oct". */
 export function formatRelativeDay(date: Date, now: Date = new Date()): string {
-  const diff = differenceInCalendarDays(now, date);
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Yesterday';
-  if (diff > 1 && diff < 7) return formatWeekday(date);
-  return formatShortDate(date);
+  return formatDate(date, now);
 }
 
 export function greetingFor(date: Date): string {
@@ -104,4 +107,25 @@ export function ageFromBirthDate(birthDate: string, now: Date = new Date()): num
   const hadBirthday = now.getMonth() + 1 > m || (now.getMonth() + 1 === m && now.getDate() >= d);
   if (!hadBirthday) age -= 1;
   return age;
+}
+
+/** A known Sunday, used to name weekday numbers (0 = Sunday) in the user's locale. */
+const REFERENCE_SUNDAY = new Date(2026, 0, 4);
+
+export const weekdayShortName = (weekday: number) =>
+  formatWeekdayShort(addDays(REFERENCE_SUNDAY, weekday));
+export const weekdayLongName = (weekday: number) =>
+  formatWeekday(addDays(REFERENCE_SUNDAY, weekday));
+
+/** Weekday numbers in display order for the user's week start. */
+export function orderedWeekdays(weekStartsOn: WeekStartsOn): number[] {
+  return Array.from({ length: 7 }, (_, i) => (i + weekStartsOn) % 7);
+}
+
+/** For use inside a sentence: "today", "yesterday", "on Thursday", "on Thu, 2 Oct". */
+export function formatRelativeDayInline(date: Date, now: Date = new Date()): string {
+  const diff = differenceInCalendarDays(now, date);
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'yesterday';
+  return `on ${formatRelativeDay(date, now)}`;
 }

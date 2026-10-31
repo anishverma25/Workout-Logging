@@ -1,0 +1,1082 @@
+import type { ReactNode } from 'react';
+import { E1RM_MAX_REPS, E1RM_PREFERRED_MAX_REPS } from '@/domain/analytics/e1rm';
+import {
+  BELOW_BEST_THRESHOLD,
+  SIZE_EXPONENT,
+  STRENGTH_CHANGE_THRESHOLD,
+  VOLUME_CHANGE_THRESHOLD,
+} from '@/domain/analytics/insights';
+import {
+  HARD_SET_MAX_RIR,
+  PRIMARY_SET_WEIGHT,
+  SECONDARY_SET_WEIGHT,
+} from '@/domain/analytics/muscles';
+import {
+  DEFAULT_SESSION_MINUTES,
+  GOAL_ENERGY,
+  GOAL_PROTEIN,
+  LIFESTYLE_PAL,
+  MEASURED_FAT_DAYS,
+  RATE_MIN_DAYS,
+  RATE_MIN_ENTRIES,
+  TRAINING_MET,
+  TREND_DAYS,
+} from '@/domain/analytics/body';
+import { KCAL_PER_KG, RATE_MISMATCH } from '@/domain/analytics/targets';
+import { STRENGTH_MET, STRIDE_PER_HEIGHT, WALK_KCAL_PER_KG_KM } from '@/domain/activity/burn';
+import {
+  CALC_FAT_SHARE,
+  FAT_MIN_G_PER_KG,
+  FIBRE_G_PER_1000_KCAL_TARGET,
+  WATER_ML_PER_KG,
+} from '@/domain/nutrition/targets';
+import {
+  COMPOUND_SHORT,
+  ISOLATION_SHORT,
+  MAX_REST,
+  MIN_REST,
+  SECONDS_PER_REP,
+} from '@/domain/analytics/rest';
+import {
+  BREAK_DAYS,
+  EFFORT_RIR,
+  MIN_PER_WEEK,
+  STALL_MIN_SESSIONS,
+  STALL_WEEKS,
+  VOLUME_DROP,
+} from '@/domain/analytics/stalls';
+import { REST_PRESETS } from '@/domain/workout/restTimer';
+import { FOODS } from '@/data/library/foods';
+import {
+  AMDR,
+  ENERGY_TOLERANCE,
+  FIBRE_G_PER_1000_KCAL,
+  PROTEIN_PER_MEAL_G_PER_KG,
+  TRAINING_CARBS_G_PER_KG,
+} from '@/domain/nutrition/dayAnalysis';
+import { FILL, KATORI_ML } from '@/domain/nutrition/calc';
+import { OIL_FACTOR } from '@/domain/nutrition/types';
+import {
+  LOGGED_DAY_MIN_KCAL,
+  MAINTENANCE_MIN_DAYS,
+  MAINTENANCE_WINDOW_DAYS,
+} from '@/domain/nutrition/analysis';
+import { GOAL_LABEL } from '@/domain/models/labels';
+
+/**
+ * Every number in the app, the formula behind it and the research it rests on. Thresholds are
+ * imported from the code that applies them, so this page cannot drift from the calculations.
+ * Content follows the Evidence Corner (Project doc claude/evidence-corner.md).
+ */
+
+export interface Formula {
+  tex: string;
+  /** What a screen reader says. */
+  spoken: string;
+  /** Optional line under the formula naming the symbols. */
+  where?: string;
+}
+
+export interface Topic {
+  id: string;
+  title: string;
+  /** Key in METRIC_EVIDENCE; topics without one are app rules. */
+  evidence?: string;
+  shows: ReactNode;
+  formulas?: Formula[];
+  why?: ReactNode[];
+  forYou?: ReactNode;
+  limits?: ReactNode;
+}
+
+export interface TopicGroup {
+  id: string;
+  title: string;
+  topics: Topic[];
+}
+
+const pct = (x: number) => `${Math.round(x * 1000) / 10}%`;
+
+export const SCIENCE: TopicGroup[] = [
+  {
+    id: 'strength',
+    title: 'Strength',
+    topics: [
+      {
+        id: 'e1rm',
+        title: 'Estimated 1RM',
+        evidence: 'estimated1RM',
+        shows:
+          'An estimate of the most you could lift once, worked out from a set you actually did. It drives the strength charts and records.',
+        formulas: [
+          {
+            tex: String.raw`\text{e1RM} = W \times \left(1 + \dfrac{r}{30}\right)`,
+            spoken: 'e1RM equals W times, 1 plus r over 30',
+            where: 'W is the load lifted and r the reps completed (Epley).',
+          },
+          {
+            tex: String.raw`\begin{gathered} \text{e1RM} = W \times \left(1 + \dfrac{r + \text{RIR}}{30}\right) \\ \text{when } r + \text{RIR} \le ${E1RM_MAX_REPS} \end{gathered}`,
+            spoken: `With reps in reserve logged: W times, 1 plus r plus RIR over 30, when r plus RIR is at most ${E1RM_MAX_REPS}`,
+            where:
+              'RIR is the reps you had left. A single rep with nothing left counts as its own load.',
+          },
+        ],
+        why: [
+          <>
+            Reynolds and colleagues tested 1RM prediction in 70 people plus a 20 person validation
+            group. The 5RM predicted the true max best (R² of 0.974 on leg press and 0.993 on chest
+            press), and they concluded that no more than 10 reps should go into a linear equation.
+            That is why sets above {E1RM_MAX_REPS} reps are not estimated.
+          </>,
+          <>
+            In the same comparison Epley was among the most accurate linear equations, with the
+            smallest average error and only a slight tendency to overestimate. The app uses it
+            rather than an invented formula.
+          </>,
+          <>
+            Nuzzo and colleagues pooled 898 reps to failure tests from about 7,000 people. At 80% of
+            1RM the average was 9.75 reps with a standard deviation of 2.51, and leg press allowed
+            more reps than bench press at every load. One formula cannot be exact for everyone, so
+            the charts prefer your best set of 1 to {E1RM_PREFERRED_MAX_REPS} reps when there is
+            one.
+          </>,
+        ],
+        forYou:
+          'You can watch strength rise without testing a max. Heavy sets of about 5 reps or fewer give the most trustworthy estimate.',
+        limits:
+          'Accuracy falls as reps rise and differs between exercises. It is always labelled an estimate and only used on weight and reps exercises.',
+      },
+      {
+        id: 'effort',
+        title: 'Effort (RIR and RPE)',
+        evidence: 'effortInput',
+        shows: 'How many reps you had left at the end of a set (RIR), or the matching RPE.',
+        formulas: [
+          {
+            tex: String.raw`\text{RPE} = 10 - \text{RIR}`,
+            spoken: 'RPE equals 10 minus RIR',
+            where:
+              'RPE 10 is no reps left, 9 is one left, 8 is two left, 7 is three left, 5 to 6 is four to six left.',
+          },
+        ],
+        why: [
+          <>
+            Zourdos and colleagues validated this reps in reserve scale in 29 lifters. Bar speed
+            tracked the ratings closely (r = −0.88 in experienced lifters, −0.77 in novices), so the
+            number reflects how close you really were to failure.
+          </>,
+          <>
+            Halperin and colleagues pooled 262 estimates: lifters under predicted their reps to
+            failure by about 0.95 reps on average, and were more accurate on sets of 12 reps or
+            fewer and closer to failure.
+          </>,
+        ],
+        forYou:
+          'Logging RIR sharpens your estimated 1RM and tells the app how hard you trained. Expect your guess to be off by about one rep.',
+        limits:
+          'It is a self report, so an estimate built from a set far from failure is less certain.',
+      },
+      {
+        id: 'relative',
+        title: 'Relative strength',
+        evidence: 'relativeStrength',
+        shows:
+          'Strength per unit of body weight, so progress is not hidden when your weight changes.',
+        formulas: [
+          {
+            tex: String.raw`R = \dfrac{\text{e1RM}}{m}`,
+            spoken: 'R equals e1RM over body mass',
+            where: 'Shown on screen. m is your body weight on the day.',
+          },
+          {
+            tex: String.raw`S_n = \dfrac{\text{e1RM}}{m^{${SIZE_EXPONENT}}}`,
+            spoken: `S n equals e1RM over body mass to the power ${SIZE_EXPONENT}`,
+            where: 'Size adjusted index used behind the scenes for trend insights.',
+          },
+        ],
+        why: [
+          <>
+            Jaric&apos;s review recommends dividing force measures by body mass to the power 0.67:
+            muscle force scales with cross sectional area, which scales with mass to the two thirds
+            power. A 1RM is a force measure, so 0.67 applies.
+          </>,
+        ],
+        forYou:
+          'The plain ratio is easy to read. The adjusted index stops a heavier body from making you look weaker when you are actually stronger.',
+        limits:
+          'The exponent is a population average. Body weight is your latest weigh-in on or before the day, so without one this is not shown.',
+      },
+      {
+        id: 'insights',
+        title: 'What counts as real progress',
+        evidence: 'insightThreshold',
+        shows: 'Insights only appear when a change is bigger than normal day to day noise.',
+        formulas: [
+          {
+            tex: String.raw`\dfrac{\lvert E_{\text{now}} - E_{\text{before}} \rvert}{E_{\text{before}}} \ge ${STRENGTH_CHANGE_THRESHOLD * 100}\%`,
+            spoken: `The relative change in e1RM is at least ${STRENGTH_CHANGE_THRESHOLD * 100} percent`,
+          },
+        ],
+        why: [
+          <>
+            Grgic and colleagues reviewed 32 studies of 1RM test reliability (1,595 people). The
+            typical test to test noise, the coefficient of variation, was about 4.2%. An estimate
+            from a rep set is noisier than a tested max, so the app sets its line slightly above, at{' '}
+            {STRENGTH_CHANGE_THRESHOLD * 100}%.
+          </>,
+          <>
+            The same {pct(BELOW_BEST_THRESHOLD)} applies to a session below your best, and{' '}
+            {pct(VOLUME_CHANGE_THRESHOLD)} to volume changes. A strength trend needs at least 3
+            sessions. When the plain change is under the line but the size adjusted index above
+            clears it, the insight says your strength for your size went up.
+          </>,
+        ],
+        forYou: 'A 1 or 2% wobble is noise. When the app flags a change, it is a real one.',
+        limits: 'The 4.2% comes from tested maxes, which is why the threshold is rounded up.',
+      },
+      {
+        id: 'progression',
+        title: 'Progression suggestions',
+        evidence: 'progression',
+        shows:
+          'A nudge to add load once every working set reached the top of your rep range at the effort you planned.',
+        formulas: [
+          {
+            tex: String.raw`\begin{gathered} W_{\text{next}} = W_{\max} + \Delta W \\ \Delta W \in \{2.5,\ 5\}\ \text{kg} \end{gathered}`,
+            spoken: 'Next load equals your heaviest working set plus 2.5 or 5 kilograms',
+            where:
+              '5 kg (10 lb) on lower body barbell lifts for beginners, otherwise 2.5 kg (5 lb). Reps go back to the bottom of the range.',
+          },
+        ],
+        why: [
+          <>
+            Plotkin and colleagues randomised 43 trained lifters for 8 weeks to add either load or
+            reps. Muscle growth was similar, and strength slightly favoured adding load (about 2
+            kg). Both work, so the app uses double progression: fill the rep range, then add load.
+          </>,
+          <>
+            Beginners progress as soon as every set reaches the bottom of the range. Logged RIR has
+            to stay at or above the target, with half a rep of slack because RIR is a guess.
+          </>,
+        ],
+        forYou:
+          'When a weight feels easy across all sets, add a rep or nudge the load. Both build muscle.',
+        limits: 'The app suggests. It never changes your routine, and you can dismiss it.',
+      },
+      {
+        id: 'levels',
+        title: 'Strength levels and DOTS',
+        evidence: 'strengthLevels',
+        shows:
+          'Where your squat, bench, deadlift, overhead press and row sit from beginner to elite, and a DOTS score for your total.',
+        formulas: [
+          {
+            tex: String.raw`\text{level} = \dfrac{\max \text{e1RM}_{\,12\ \text{weeks}}}{m}`,
+            spoken: 'Level is your best e1RM of the last 12 weeks over body weight',
+            where: 'Compared with standard multiples of body weight for men and women.',
+          },
+          {
+            tex: String.raw`\text{DOTS} = \dfrac{500\,T}{a + bm + cm^2 + dm^3 + em^4}`,
+            spoken: 'DOTS equals total times 500 over a fourth degree polynomial in body mass',
+            where:
+              'T is your estimated squat, bench and deadlift added up; a to e are the published coefficients.',
+          },
+        ],
+        why: [
+          <>
+            Levels follow the body weight multiples popularised by Kilgore, Rippetoe and Pendlay.
+            For example, a men&apos;s bench press reaches intermediate at 1.25 times body weight.
+          </>,
+          <>
+            DOTS was adopted by German powerlifting (BVDK) to compare lifters of different sizes.
+          </>,
+        ],
+        limits:
+          'Rules of thumb, not adjusted for age. A guide for yourself, not a ranking. Needs your sex and a weigh-in.',
+      },
+      {
+        id: 'plateaus',
+        title: 'Rate of progress',
+        shows: 'How fast a compound lift is moving.',
+        formulas: [
+          {
+            tex: String.raw`\text{rate} = 7 \cdot \dfrac{\sum_i (x_i - \bar{x})(y_i - \bar{y})}{\sum_i (x_i - \bar{x})^2}`,
+            spoken: 'Rate is 7 times the least squares slope of best e1RM against days',
+            where:
+              'x is the day and y the session best e1RM, over the last 8 weeks (at least 4 sessions across 3 weeks).',
+          },
+        ],
+        why: [<>The rate is fitted to every session, so one good or bad day barely moves it.</>],
+        limits: 'Only compound lifts, which have an estimated 1RM.',
+      },
+      {
+        id: 'stalls',
+        title: 'Stalled lifts and why',
+        evidence: 'stalls',
+        shows:
+          'Lifts that have stopped moving, the most likely reason read from your own sets, and what to do about that lift.',
+        why: [
+          <>
+            Progress is judged on what you lifted, not an estimate: a session counts when a set
+            beats every earlier set with more weight for the same reps or more, or more reps at the
+            same weight or more. Only sets within 80% of your heaviest weight count, so a light pump
+            set cannot hide a stall. A lift has stalled when nothing has moved for {STALL_WEEKS}{' '}
+            weeks or more, across at least {STALL_MIN_SESSIONS} sessions of it, and you trained it
+            in the last 2 weeks.
+          </>,
+          <>
+            The reason is the first of these that fits. A break of {BREAK_DAYS / 7} weeks or more:
+            strength starts to fade after about 3 weeks off (Bosquet 2013), so being below your best
+            is expected. Under {MIN_PER_WEEK} sessions a week: progress follows weekly hard sets
+            (Schoenfeld 2019, Pelland 2026). A median of {EFFORT_RIR} or more reps left in the tank,
+            when you log it: sets far from failure give less (Robinson 2024). A quarter fewer sets
+            than in the 6 weeks before your best (below {VOLUME_DROP * 100}%). The same top weight
+            every session: adding reps first works as well as adding weight (Plotkin 2022).
+          </>,
+          <>
+            When none of those fits, it is a real plateau: a new rep range under 4 weeks, one
+            lighter week from 4 weeks (sooner for advanced lifters; Bell 2023), and from 6 weeks a
+            close variation of the lift, named for you (Kassiano 2022).
+          </>,
+        ],
+        forYou:
+          'Fix the reason shown first. Most stalls are about frequency, effort or sets, not the exercise.',
+        limits:
+          'The order of the checks and the cut-offs are app rules built on the research, not thresholds from it. Effort needs reps in reserve logged on at least half your sets.',
+      },
+      {
+        id: 'records',
+        title: 'Personal records, medals and set records',
+        evidence: 'personalRecords',
+        shows:
+          'A gold medal each time you beat your best, with the measures that fit the exercise, and set records for every rep count.',
+        why: [
+          <>
+            Found by going through your sessions in order and noting each time a best is beaten.
+            Your first session with an exercise is the baseline, not a record. Editing a past set
+            recalculates every record.
+          </>,
+          <>
+            Medals by kind of exercise. Weight and reps: heaviest weight, best estimated 1RM
+            (compound lifts), best set volume (weight × reps) and best session volume. Bodyweight
+            and assisted moves: most reps in a set and most reps in a session (less assistance is
+            not a record). Weighted bodyweight: heaviest added weight. Timed and distance work:
+            longest time and longest distance. During a workout, a set that beats your best is
+            announced right away (Settings, Live record alerts).
+          </>,
+          <>
+            Set records are the heaviest weight for each number of reps. They win no medal: they are
+            the number to beat when you train in that rep range.
+          </>,
+        ],
+      },
+    ],
+  },
+  {
+    id: 'training',
+    title: 'Training',
+    topics: [
+      {
+        id: 'muscles',
+        title: 'Hard sets per muscle',
+        evidence: 'muscleHardSets',
+        shows:
+          'Weekly sets for each muscle. A muscle worked directly counts as a full set, one that helps counts as half.',
+        formulas: [
+          {
+            tex: String.raw`\begin{aligned} S_{\text{muscle}} &= ${PRIMARY_SET_WEIGHT} \times N_{\text{direct}} \\ &\quad + ${SECONDARY_SET_WEIGHT} \times N_{\text{indirect}} \end{aligned}`,
+            spoken: `Muscle sets equal ${PRIMARY_SET_WEIGHT} times direct sets plus ${SECONDARY_SET_WEIGHT} times indirect sets`,
+            where: `Only completed working sets with ${HARD_SET_MAX_RIR} or fewer reps in reserve (or no effort logged) count.`,
+          },
+        ],
+        why: [
+          <>
+            Pelland and colleagues (2026) analysed 67 studies and 2,058 people. Counting an indirect
+            set as half best predicted both growth and strength. Their own example: 5 sets of curls
+            plus 5 sets of rows give the biceps 7.5 sets. That is exactly this rule.
+          </>,
+          <>
+            More volume kept producing more growth across the range studied, with strength
+            flattening sooner than size. So the app shows your count and its change against the
+            previous period, on one shared scale for every muscle, with no target range and no ideal
+            number.
+          </>,
+          <>
+            Baz-Valle and colleagues found counting sets near failure is a valid volume measure for
+            6 to 20+ reps, which is why sets far from failure are left out.
+          </>,
+        ],
+        forYou:
+          'More quality sets generally means more growth, with returns flattening as the total climbs.',
+        limits: 'A volume proxy, not a direct measure of growth.',
+      },
+      {
+        id: 'shares',
+        title: 'What each exercise works',
+        evidence: 'muscleShares',
+        shows:
+          'Under each library exercise, the approximate share of the work done by each muscle region, for example upper chest 40%.',
+        why: [
+          <>
+            Each breakdown was built from electromyography (EMG) and muscle growth studies of that
+            exercise, or the closest one studied, then rounded to 5% so the shares add up to 100%.
+            The sources sit under every exercise.
+          </>,
+          <>
+            For example, the López-Vivancos meta-analysis of bench press variants shows decline
+            pressing shifts work toward the lower chest and incline toward the upper chest.
+          </>,
+        ],
+        forYou:
+          'Pick exercises for the region you want to bring up, and see why they feel the way they do.',
+        limits:
+          'Muscle activity is not the same as the load each muscle carries, and form changes it. Treat the numbers as a guide. Exercises marked as estimated borrow from a similar movement.',
+      },
+      {
+        id: 'volume',
+        title: 'Volume load',
+        evidence: 'volumeLoad',
+        shows: 'Total weight moved on an exercise.',
+        formulas: [
+          {
+            tex: String.raw`V = \sum_{i} w_i \times r_i`,
+            spoken: 'Volume equals the sum of load times reps over completed sets',
+            where:
+              'Dumbbell and single side exercises count both sides: 20 kg × 10 each hand is 400 kg.',
+          },
+        ],
+        why: [
+          <>
+            Bookkeeping, not a scientific claim. Baz-Valle and colleagues note it always comes out
+            higher on a leg press than a squat at the same effort, so it suits tracking one exercise
+            over time, not comparing exercises. Hard sets are better for that.
+          </>,
+        ],
+        limits: 'Not a growth score, and bodyweight exercises are left out.',
+      },
+      {
+        id: 'effort-target',
+        title: 'Effort targets in routines',
+        evidence: 'effortTarget',
+        shows:
+          'The reps in reserve your routine aims for: closer to failure for size, heavier and less close for pure strength.',
+        why: [
+          <>
+            Robinson and colleagues (2024) found that for muscle growth, finishing closer to failure
+            helped. For strength, closeness to failure barely mattered and load mattered more. So
+            size and strength goals get different cues.
+          </>,
+        ],
+        forYou: 'For size, end most sets within a few reps of failure. For strength, lift heavy.',
+        limits:
+          'RIR in those studies was estimated afterwards, so the exact best value is uncertain.',
+      },
+      {
+        id: 'rest',
+        title: 'Rest times',
+        evidence: 'restTimer',
+        shows: `Rest presets of ${REST_PRESETS.join(', ')} seconds, with 90 to 120 a sensible default. You can set any length to the second, and a separate rest when you move to the next exercise.`,
+        why: [
+          <>
+            Singer and colleagues (2024) pooled 9 studies: resting more than 60 seconds gave a small
+            growth benefit, likely because short rests cut the reps you manage on later sets. Beyond
+            about 90 seconds there was no further gain, and no loss either.
+          </>,
+        ],
+        forYou: 'Rest at least a minute between hard sets. Longer does not cost you growth.',
+        limits: 'The effect is small and mostly studied in untrained people.',
+      },
+      {
+        id: 'rest-analysis',
+        title: 'Rest you actually take',
+        evidence: 'restAnalysis',
+        shows:
+          'How long you rest between sets and between exercises, how that compares with the research, and how many reps you keep after each length of rest.',
+        formulas: [
+          {
+            tex: String.raw`\text{rest} = (t_{n} - t_{n-1}) - \text{set time}_n`,
+            spoken:
+              'Rest is the time between finishing two sets, less the time the second set took',
+            where: `t is when you ticked a set off. Set time is the logged duration, or ${SECONDS_PER_REP} seconds a rep. Gaps under ${MIN_REST} seconds (sets ticked off together) and over ${MAX_REST / 60} minutes (a pause) are left out.`,
+          },
+          {
+            tex: String.raw`\text{reps kept} = \dfrac{\text{reps}_n}{\text{reps}_{n-1}}`,
+            spoken: 'Reps kept is the reps of a set divided by the reps of the set before',
+            where:
+              'Two working sets of the same exercise at the same weight, averaged within each band of rest. A band needs 8 pairs.',
+          },
+        ],
+        why: [
+          <>
+            Schoenfeld and colleagues (2016) had trained men rest 1 or 3 minutes for 8 weeks: the
+            3-minute group gained more strength and more muscle, because they kept more reps on
+            later sets. Grgic and colleagues (2018) reviewed 23 studies: in trained people, rests of
+            2 minutes or more help strength on compound lifts. Singer and colleagues (2024) found
+            rests over 60 seconds grow slightly more muscle, with no further gain past about 90
+            seconds and no loss either.
+          </>,
+          <>
+            So compound lifts under {COMPOUND_SHORT} seconds and isolation lifts under{' '}
+            {ISOLATION_SHORT} seconds are called short. Your own bands show the same thing on your
+            sets: the shortest rest that keeps within 5 points of your best band is the one
+            suggested.
+          </>,
+        ],
+        forYou:
+          'Two to three minutes on squats, presses, rows and deadlifts; one to two on curls, raises and extensions.',
+        limits:
+          'Rest is measured from when you tick sets off, so ticking late or early moves it. Reps kept also depends on how close to failure each set was.',
+      },
+      {
+        id: 'frequency',
+        title: 'Training frequency',
+        evidence: 'frequency',
+        shows: 'Workouts per week and per month, framed as consistency.',
+        formulas: [
+          {
+            tex: String.raw`f = \dfrac{\text{workouts}}{\text{days} \,/\, 7}`,
+            spoken: 'Frequency equals workouts over days divided by 7',
+            where:
+              'Days before your first workout are not counted. A weekly rate needs 7 days of history.',
+          },
+        ],
+        why: [
+          <>
+            Schoenfeld, Grgic and Krieger (25 studies) found that with weekly volume matched,
+            training a muscle 1, 2, 3 or 4 to 6 days a week produced similar growth.
+          </>,
+          <>
+            The 2026 ACSM Position Stand, built from 137 systematic reviews, advises each major
+            muscle at least twice a week and stresses that consistency is the biggest win.
+          </>,
+        ],
+        forYou:
+          'Hit your weekly sets and keep showing up. Twice a week per muscle is a solid floor.',
+      },
+      {
+        id: 'adherence',
+        title: 'Adherence',
+        evidence: 'adherence',
+        shows: 'How many of your planned sessions you completed.',
+        formulas: [
+          {
+            tex: String.raw`A = \dfrac{\text{planned, completed}}{\text{planned}} \times 100\%`,
+            spoken:
+              'Adherence equals completed planned sessions over planned sessions times 100 percent',
+          },
+        ],
+        why: [
+          <>
+            A ratio of your plan to your log. Only days that have passed count, and today counts
+            once you log it.
+          </>,
+        ],
+        limits: 'Shown only when your routine has planned days.',
+      },
+      {
+        id: 'load',
+        title: 'Balance and training load',
+        evidence: 'trainingLoad',
+        shows: 'Push to pull balance, sudden jumps in weekly sets, and the load of each session.',
+        formulas: [
+          {
+            tex: String.raw`\text{load ratio} = \dfrac{N_{\text{last 7 days}}}{\tfrac{1}{4}\, N_{\text{4 weeks before}}}`,
+            spoken:
+              'Load ratio equals sets in the last 7 days over the weekly average of the 4 weeks before',
+          },
+          {
+            tex: String.raw`L = \text{RPE}_{\text{session}} \times t_{\text{minutes}}`,
+            spoken: 'Session load equals session effort times minutes',
+          },
+        ],
+        why: [
+          <>
+            Gabbett (2016) linked sudden spikes in training, a ratio above about 1.5, with more
+            injuries, so the app flags that. It needs 5 weeks of history.
+          </>,
+          <>
+            Session load is Foster&apos;s session RPE method, shown when you rate a finished
+            workout. The Balance cards show each pair&apos;s sets and their ratio, with no verdict:
+            no study sets a right ratio for everyone. Only the weekly check-in suggests extra work,
+            when push to pull is outside 0.67 to 1.5 once a pair has 20 sets.
+          </>,
+        ],
+        limits: 'A prompt to look at your training, not an injury prediction.',
+      },
+    ],
+  },
+  {
+    id: 'body',
+    title: 'Body',
+    topics: [
+      {
+        id: 'body-weight',
+        title: 'Body weight trend',
+        evidence: 'bodyWeightTrend',
+        shows: `Your weigh-ins and a ${TREND_DAYS} day average line.`,
+        formulas: [
+          {
+            tex: String.raw`\bar{m}_t = \dfrac{1}{n} \sum_{d = t - ${TREND_DAYS - 1}}^{t} m_d`,
+            spoken: `The trend is the mean of the weigh-ins in the ${TREND_DAYS} days ending today`,
+            where: 'n is the number of weigh-ins in that window.',
+          },
+        ],
+        why: [
+          <>
+            Orsama and colleagues tracked 4,657 daily weigh-ins from 80 adults. Weight rises after
+            the weekend and falls across the week, often lowest on Friday. Those swings are normal,
+            and the study itself used a 7 day moving average to find the real trend.
+          </>,
+        ],
+        forYou:
+          'One day means little. Judge progress from the average, weighing under the same conditions.',
+        limits: 'Needs about a week of weigh-ins. The app never calls a weight good or ideal.',
+      },
+      {
+        id: 'rate',
+        title: 'Weekly rate of change',
+        evidence: 'weightChangeRate',
+        shows: `How fast the trend is moving, with a target only for the ${GOAL_LABEL.fat_loss} goal.`,
+        formulas: [
+          {
+            tex: String.raw`-1\% \;\le\; \dfrac{\Delta m_{\text{week}}}{m} \;\le\; -0.5\%`,
+            spoken: 'Losing between 0.5 and 1 percent of body weight per week',
+            where: `The weekly change is the least squares slope of the trend over 4 weeks, shown after ${RATE_MIN_ENTRIES} weigh-ins over ${RATE_MIN_DAYS} days.`,
+          },
+        ],
+        why: [
+          <>
+            Helms, Aragon and Fitschen (2014) recommend losing about 0.5 to 1% of body weight a week
+            to keep muscle. In the studies they cite, losing 0.7% a week raised lean mass by 2.1%
+            while 1.4% a week did not, and a 1 kg weekly loss cost about 5% of bench strength.
+          </>,
+        ],
+        forYou: 'When cutting, slower protects the muscle you built.',
+        limits: 'Context, not a prescription. Other goals see their rate without a verdict.',
+      },
+      {
+        id: 'bmr',
+        title: 'Resting energy (BMR)',
+        evidence: 'bmr',
+        shows: 'The calories your body uses at rest, the base of your maintenance number.',
+        formulas: [
+          {
+            tex: String.raw`\begin{aligned} \text{BMR} &= 10m + 6.25h - 5a + s \\ s &= \begin{cases} +5 & \text{men} \\ -161 & \text{women} \end{cases} \end{aligned}`,
+            spoken:
+              'BMR equals 10 times kilograms plus 6.25 times centimetres minus 5 times age, plus 5 for men or minus 161 for women',
+            where: 'Mifflin-St Jeor. m in kg (your trend weight), h in cm, a in years.',
+          },
+          {
+            tex: String.raw`\text{BMR} = 370 + 21.6\, m_{\text{lean}}`,
+            spoken: 'BMR equals 370 plus 21.6 times lean mass',
+            where: 'Katch-McArdle, used only when sex is not set but body fat is known.',
+          },
+        ],
+        why: [
+          <>
+            Frankenfield and colleagues (2005) compared the common equations and found Mifflin-St
+            Jeor the most accurate in healthy adults, within 10% of measured values for most people.
+          </>,
+        ],
+        limits:
+          'Any equation is a starting point. Without age, height and weight no number is shown.',
+      },
+      {
+        id: 'maintenance',
+        title: 'Maintenance calories',
+        evidence: 'maintenance',
+        shows: 'Calories to hold your weight, and a daily target for your goal.',
+        formulas: [
+          {
+            tex: String.raw`\begin{aligned} \text{TDEE} &= \text{BMR} \times \text{PAL} \\ &\quad + \dfrac{n\,t\,(\text{MET} - 1)\,m}{7} \end{aligned}`,
+            spoken:
+              'Maintenance equals BMR times activity level, plus sessions a week times hours times MET minus 1 times kilograms, over 7',
+            where: `PAL is your day outside training: ${LIFESTYLE_PAL.sitting} mostly sitting, ${LIFESTYLE_PAL.mixed} some walking, ${LIFESTYLE_PAL.on_feet} on your feet, ${LIFESTYLE_PAL.physical} physical work. MET = ${TRAINING_MET}, n sessions a week, t hours a session (${DEFAULT_SESSION_MINUTES} minutes if not set).`,
+          },
+          {
+            tex: String.raw`\text{target} = \text{TDEE} \times (1 + g)`,
+            spoken: 'Target equals maintenance times 1 plus the goal adjustment',
+            where: `g is ${Object.entries(GOAL_ENERGY)
+              .map(
+                ([k, v]) =>
+                  `${v > 0 ? '+' : ''}${Math.round(v * 100)}% for ${GOAL_LABEL[k as keyof typeof GOAL_LABEL]}`,
+              )
+              .join(', ')}. Rounded to 50 kcal.`,
+          },
+        ],
+        why: [
+          <>
+            The factorial method from the FAO/WHO/UNU report on human energy requirements (2004): a
+            level for your day, plus training added separately, rather than one multiplier for
+            everything.
+          </>,
+          <>
+            Weight training averages {TRAINING_MET} MET in the 2024 Compendium of Physical
+            Activities. One MET is about 1 kcal per kg per hour, and the resting MET is taken off
+            because the day level already covers that time.
+          </>,
+        ],
+        forYou:
+          'If your trend moves the wrong way for 2 to 3 weeks, change intake by 100 to 200 kcal.',
+        limits: 'An estimate. Your trend weight is the real test.',
+      },
+      {
+        id: 'protein',
+        title: 'Protein',
+        evidence: 'protein',
+        shows: 'A daily protein range, exact to one decimal.',
+        formulas: [
+          {
+            tex: String.raw`\begin{gathered} P = m \times p \\ p \in [${GOAL_PROTEIN.hypertrophy[0]},\ ${GOAL_PROTEIN.hypertrophy[1]}]\ \text{g/kg} \end{gathered}`,
+            spoken: `Protein equals body weight times ${GOAL_PROTEIN.hypertrophy[0]} to ${GOAL_PROTEIN.hypertrophy[1]} grams per kilogram`,
+            where: `${GOAL_PROTEIN.fat_loss[0]} to ${GOAL_PROTEIN.fat_loss[1]} g/kg when losing fat or recomposing, ${GOAL_PROTEIN.general_fitness[0]} to ${GOAL_PROTEIN.general_fitness[1]} g/kg for general fitness.`,
+          },
+        ],
+        why: [
+          <>
+            Morton and colleagues (49 studies, 1,863 people) found the benefit for muscle and
+            strength levelled off at about 1.6 g per kg a day, with 2.2 a sensible upper bound.
+          </>,
+          <>Helms and colleagues recommend more in a calorie deficit to protect lean mass.</>,
+        ],
+        limits:
+          'Total daily protein matters most. Not medical advice for kidney or other conditions.',
+      },
+      {
+        id: 'targets',
+        title: 'Checking your own targets',
+        evidence: 'nutritionTargets',
+        shows:
+          'What the calories and protein you set mean for your weight, your goal and your lifts, using your own weigh-ins.',
+        formulas: [
+          {
+            tex: String.raw`\Delta m_{\text{week}} = \dfrac{7\,(E_{\text{target}} - E_{\text{maint}})}{${KCAL_PER_KG}}`,
+            spoken: `Weekly change in kilograms is 7 times target calories minus maintenance, divided by ${KCAL_PER_KG}`,
+            where: `About ${KCAL_PER_KG} kcal per kg of body weight. A guide for the first weeks: as weight changes, the body adapts and the rate slows.`,
+          },
+          {
+            tex: String.raw`E_{\text{maint, real}} = E_{\text{target}} - \dfrac{r \times ${KCAL_PER_KG}}{7}`,
+            spoken: 'Real maintenance is the target minus the weekly rate times 7,700 divided by 7',
+            where:
+              'r is the weekly change of your 7-day average weight, from at least 6 weigh-ins over 2 weeks. It assumes you ate close to your target.',
+          },
+        ],
+        why: [
+          <>
+            The rate your calories predict is compared with the evidence for your goal: losing 0.5
+            to 1% of body weight a week keeps muscle while cutting (Helms 2014), and small surpluses
+            gain muscle with the least fat (Iraki 2019). Outside that range you get a target that
+            would land in the middle of it.
+          </>,
+          <>
+            When your weight trend differs from the prediction by more than {RATE_MISMATCH} kg a
+            week, your real maintenance is worked out from the trend, since the formulas are
+            averages and people differ by a few hundred calories. In a deficit, estimated 1RM
+            falling on most of your lifts over 8 weeks suggests the deficit is too big. Protein is
+            checked in g per kg against your goal's range (Morton 2018).
+          </>,
+          <>
+            You can have every target worked out for you or type your own. Worked out: calories from
+            your body, goal and training; protein from your goal&apos;s range; fat the larger of{' '}
+            {FAT_MIN_G_PER_KG} g per kg and {Math.round(CALC_FAT_SHARE * 100)}% of energy (inside
+            the 20 to 35% range of the Institute of Medicine); carbohydrate what is left at 4 kcal
+            per g; fibre {FIBRE_G_PER_1000_KCAL_TARGET} g per 1,000 kcal; water from your weight
+            (see Your water target). Numbers you type are used as they are, and anything you leave
+            empty falls back to the worked-out one.
+          </>,
+          <>
+            Give a target weight in setup and the plan aims for the middle of the evidence range in
+            the direction of that target: 0.75% of body weight a week to lose, your training
+            age&apos;s lean-gain rate to gain. Calories are maintenance plus that rate at about{' '}
+            {KCAL_PER_KG} kcal per kg, never under 1,200 kcal or your resting energy; protein is the
+            middle of your goal&apos;s range, the cutting range when losing. The date is the weight
+            to change divided by the weekly rate, worked out again whenever you change the calories.
+          </>,
+        ],
+        forYou:
+          'Weigh in most mornings. After two weeks the trend tells you your real maintenance better than any formula.',
+        limits:
+          'Without a food log this assumes you eat close to your target; when you log food, real maintenance uses what you actually ate (see Food values). Water and food in the gut move daily weight by a kilo or more, which is why only the 7-day average is used.',
+      },
+      {
+        id: 'water',
+        title: 'Your water target',
+        evidence: 'water',
+        shows:
+          'How many glasses of water a day Overload suggests, and why it is a guide and not a rule.',
+        formulas: [
+          {
+            tex: String.raw`W = ${WATER_ML_PER_KG} \times m`,
+            spoken: `Water in millilitres is ${WATER_ML_PER_KG} times body weight in kilograms`,
+            where:
+              'm is your trend weight. Rounded to the nearest 250 ml and kept between 1.5 and 4.5 litres.',
+          },
+        ],
+        why: [
+          <>
+            Adequate intakes of total water are about 2.5 L a day for men and 2.0 L for women in
+            Europe (EFSA 2010) and 3.7 L and 2.7 L in the US and Canada (Institute of Medicine
+            2005). About a fifth comes from food. For a 60 to 80 kg person, {WATER_ML_PER_KG} ml per
+            kg gives 2.1 to 2.8 L of drinks, between the two.
+          </>,
+        ],
+        forYou:
+          'Drink to thirst and keep your urine pale. Heat, long sessions and sweating raise what you need, so add a glass or two on those days.',
+        limits:
+          "These are adequate intakes for healthy adults, not requirements. Tea, milk and other drinks count, and so do soups and fruit. People with kidney, heart or other conditions should follow their doctor's advice. You can set your own target under Daily targets.",
+      },
+      {
+        id: 'activity-energy',
+        title: 'Calories burned in training, cardio and steps',
+        evidence: 'activityEnergy',
+        shows:
+          'Rough estimates of the active calories burned in a workout, a cardio session or a day of steps. They can be wrong, so a number from a trusted watch or tracker always replaces them.',
+        formulas: [
+          {
+            tex: String.raw`E = (\text{MET} - 1) \times m \times t`,
+            spoken:
+              'Active calories are the activity MET minus one, times body weight in kilograms, times hours',
+            where:
+              'One MET is 1 kcal per kg per hour. Subtracting one removes what you burn at rest anyway, which your daily target already counts. MET values are from the Compendium of Physical Activities.',
+          },
+          {
+            tex: String.raw`\text{MET}_{\text{walk}} = \dfrac{0.1\,S + 1.8\,S\,G + 3.5}{3.5}`,
+            spoken:
+              'Walking MET is 0.1 times speed plus 1.8 times speed times grade, plus 3.5, all divided by 3.5',
+            where:
+              'S is speed in metres per minute and G the incline as a fraction (the ACSM walking equation). Running uses 0.2 and 0.9 in place of 0.1 and 1.8.',
+          },
+          {
+            tex: String.raw`\text{MET}_{\text{lift}} = ${STRENGTH_MET.easy} + (${STRENGTH_MET.hard} - ${STRENGTH_MET.easy}) \times h`,
+            spoken: `Weight training is ${STRENGTH_MET.easy} METs plus ${STRENGTH_MET.hard - STRENGTH_MET.easy} times the share of hard sets`,
+            where:
+              'h is the share of your working sets taken within 2 reps of failure. 3.5 and 6.0 are the Compendium values for moderate and vigorous weight training. With no effort logged, h is one half.',
+          },
+          {
+            tex: String.raw`E_{\text{steps}} = ${WALK_KCAL_PER_KG_KM} \times m \times n \times ${STRIDE_PER_HEIGHT}\,H / 100000`,
+            spoken: `Step calories are ${WALK_KCAL_PER_KG_KM} times body weight times steps times ${STRIDE_PER_HEIGHT} times height in centimetres, divided by 100,000`,
+            where:
+              'n is steps and H your height in cm: a step is about 0.414 of your height. Without a height, 0.7 m is used. Walking costs about 0.5 kcal per kg per km above rest.',
+          },
+        ],
+        why: [
+          <>
+            The Compendium (Ainsworth 2011, Herrmann 2024) lists the energy cost of hundreds of
+            activities as METs. The ACSM equations turn speed, incline and power into oxygen use for
+            walking, running and cycling, which is more exact than a single MET value.
+          </>,
+          <>
+            Weights burn less than their reputation: most of a session is rest between sets, so the
+            average MET over the whole session sits between 3.5 and 6. Harder sets, closer to
+            failure, push it up.
+          </>,
+        ],
+        forYou:
+          'Treat these as a guide to the size of the number, not the exact number. If your watch or tracker is one you trust, type its number in and Overload uses that.',
+        limits:
+          'Estimates can be 10 to 25% out for most people and further for some, because fitness, body size, technique and the machine all change the true cost. Gym machines often overstate. Calories burned after a session are not counted. Not medical advice.',
+      },
+      {
+        id: 'food-values',
+        title: 'Food values and real maintenance',
+        evidence: 'foodValues',
+        shows: `Calories, protein, carbs, fat and fibre for the ${FOODS.length} foods in our own library and about 9,000 more, your daily totals, and your real maintenance from what you eat and weigh.`,
+        formulas: [
+          {
+            tex: String.raw`N_{100} = \dfrac{\sum_i m_i\, n_i / 100}{W_{\text{cooked}}} \times 100`,
+            spoken:
+              'Nutrients per 100 grams cooked equal the sum of each raw ingredient weight times its nutrients per 100 grams, divided by the cooked weight of the pot, times 100',
+            where:
+              'm is each raw ingredient in grams in a standard home recipe, n its value per 100 g from USDA lab data, W the weight of the pot after cooking.',
+          },
+          {
+            tex: String.raw`W_{\text{cooked}} = \dfrac{\text{dry matter}}{1 - \text{moisture}}`,
+            spoken:
+              'For breads and batters, cooked weight equals dry matter over one minus moisture',
+            where:
+              'Breads use 34% moisture, as in USDA chapati and naan. A roti from 30 g of atta is about 100 kcal whatever it weighs.',
+          },
+          {
+            tex: String.raw`g = V \times f \times \rho`,
+            spoken: 'Portion grams equal volume times how full it is served times density',
+            where: `Katori ${KATORI_ML.small}, ${KATORI_ML.medium} or ${KATORI_ML.large} ml (or your own), served ${Math.round((FILL.katori ?? 1) * 100)}% full; ρ is the dish's density in g per ml.`,
+          },
+          {
+            tex: String.raw`E_{\text{oil}} = 8.84 \times o \times (k - 1)`,
+            spoken:
+              'Extra energy from oil equals 8.84 times the standard oil in the portion times k minus 1',
+            where: `k is ${OIL_FACTOR.light} for light, ${OIL_FACTOR.normal} for normal and ${OIL_FACTOR.rich} for rich. Only the cooking fat changes.`,
+          },
+          {
+            tex: String.raw`\text{maintenance} = \bar{I} - ${KCAL_PER_KG} \times \dfrac{\Delta W}{d}`,
+            spoken: `Real maintenance equals average daily intake minus ${KCAL_PER_KG} times the change in trend weight over the days`,
+            where: `Needs ${MAINTENANCE_MIN_DAYS} fully logged days (over ${LOGGED_DAY_MIN_KCAL} kcal) in the last ${MAINTENANCE_WINDOW_DAYS}, and weigh-ins at both ends.`,
+          },
+        ],
+        why: [
+          <>
+            Ingredient values are USDA lab data (public domain). Each dish is built from its
+            ingredients, the same recipe method the Indian Nutrient Databank uses, so every number
+            can be traced to its source.
+          </>,
+          <>
+            Where each food comes from is shown under its name. Our own dishes are built as above.
+            Packaged products use the values printed on their pack. About 8,000 more foods (fruit,
+            dairy, fast food, packaged and restaurant items from around the world) are USDA lab
+            values, and about 860 more Indian dishes come from the Indian Nutrient Databank
+            (Vijayakumar et al. 2024). Search shows our own dishes first.
+          </>,
+          <>
+            With Pro, OverloadGPT can log a meal you describe. It looks up brands and restaurant
+            items on the web, or estimates from a typical recipe, and each food is marked as from
+            the web or estimated. Its numbers are checked before you see them: no more than 9.5 kcal
+            a gram, protein, carbs and fat that fit in the weight, and energy within 30% of 4, 4 and
+            9 kcal a gram. A food the library already has by that name uses the library's values.
+          </>,
+          <>
+            Photos work the same way. OverloadGPT judges amounts from things of known size in the
+            picture (the plate, a katori, a roti, a glass), counts visible oil, reads nutrition
+            labels, and says how sure it is about each food. Unsure foods are marked, and nothing is
+            logged until you check your plate.
+          </>,
+          <>
+            Every food is tested: its calories must match its protein, carbs and fat (4, 4, 9 and 2
+            for fibre) within 12%, portions must be realistic, and light oil must be below normal
+            and rich.
+          </>,
+          <>
+            Real maintenance uses what you logged, so if you always miss a little, the number
+            absorbs it and targets set from it still work.
+          </>,
+        ],
+        forYou:
+          'Set your own katori size in Food settings, and pick light or rich oil when a dish was cooked that way.',
+        limits:
+          'Home cooking varies, so a dish is an estimate, usually within 10 to 20%. A few Indian ingredients use the closest USDA food: paneer uses queso blanco (made the same way), poha uses white rice. Brands change recipes, so a pack in your hand beats the value here. OverloadGPT estimates can be wrong; check the portion before logging.',
+      },
+      {
+        id: 'day-analysis',
+        title: 'Your day of food, analysed',
+        evidence: 'dayAnalysis',
+        shows:
+          "Pro: the day's energy, how it splits between protein, carbs and fat, protein per kg and per meal, fibre, and carbs on training days, each against a published range.",
+        formulas: [
+          {
+            tex: String.raw`\%E_x = \dfrac{k_x\, m_x}{4P + 4C + 9F} \times 100`,
+            spoken:
+              'The share of energy from a macronutrient equals its kilocalories per gram times its grams, divided by four times protein plus four times carbs plus nine times fat, times 100',
+            where: `k is 4 kcal per g for protein and carbs, 9 for fat. Judged against the Acceptable Macronutrient Distribution Ranges: protein ${AMDR.protein[0]} to ${AMDR.protein[1]}%, carbohydrate ${AMDR.carbs[0]} to ${AMDR.carbs[1]}%, fat ${AMDR.fat[0]} to ${AMDR.fat[1]}%.`,
+          },
+          {
+            tex: String.raw`\text{dose} = ${PROTEIN_PER_MEAL_G_PER_KG} \times m`,
+            spoken: `The protein dose per meal equals ${PROTEIN_PER_MEAL_G_PER_KG} grams times body weight in kilograms`,
+            where: 'm is your trend weight. Each meal that reaches the dose counts.',
+          },
+          {
+            tex: String.raw`\text{fibre} \geq ${FIBRE_G_PER_1000_KCAL} \times \dfrac{E}{1000}\ \text{g}`,
+            spoken: `Fibre should be at least ${FIBRE_G_PER_1000_KCAL} grams for every 1,000 kilocalories eaten`,
+            where: 'E is the energy you logged for the day.',
+          },
+        ],
+        why: [
+          <>
+            The macronutrient ranges are the Institute of Medicine&apos;s: intakes inside them meet
+            needs with the lowest risk of chronic disease. Fibre is their Adequate Intake, 14 g per
+            1,000 kcal.
+          </>,
+          <>
+            Protein per kg uses your goal&apos;s range (Morton 2018, Helms 2014). Schoenfeld and
+            Aragon suggest about 0.4 g/kg a meal across at least four meals to make the most of
+            each.
+          </>,
+          <>
+            On days you train, Slater and Phillips advise {TRAINING_CARBS_G_PER_KG[0]} to{' '}
+            {TRAINING_CARBS_G_PER_KG[1]} g of carbohydrate per kg for strength sports. Energy is on
+            target within {Math.round(ENERGY_TOLERANCE * 100)}% of your daily target.
+          </>,
+        ],
+        forYou:
+          'Look at the whole day, not one meal. If protein per kg is low, spread it: a dose at each meal is easier than one large one.',
+        limits:
+          'Ranges are for healthy adults. While today is still being logged, everything is judged as it stands. Not medical advice for kidney, heart or other conditions.',
+      },
+      {
+        id: 'composition',
+        title: 'BMI, body fat and lean mass',
+        evidence: 'bodyFat',
+        shows: 'BMI, an estimated body fat from tape measurements, and a lean mass index.',
+        formulas: [
+          {
+            tex: String.raw`\text{BMI} = \dfrac{m}{h^2}`,
+            spoken: 'BMI equals kilograms over height in metres squared',
+          },
+          {
+            tex: String.raw`\begin{aligned} \%\text{BF} &= \dfrac{495}{D} - 450 \\ D_{\text{men}} &= 1.0324 - 0.19077 \log_{10}(w - n) \\ &\quad + 0.15456 \log_{10} h \end{aligned}`,
+            spoken:
+              'Body fat equals 495 over D, minus 450. For men, D is 1.0324 minus 0.19077 log of waist minus neck, plus 0.15456 log of height',
+          },
+          {
+            tex: String.raw`\begin{aligned} D_{\text{women}} &= 1.29579 \\ &\quad - 0.35004 \log_{10}(w + p - n) \\ &\quad + 0.22100 \log_{10} h \end{aligned}`,
+            spoken:
+              'For women, D is 1.29579 minus 0.35004 log of waist plus hip minus neck, plus 0.22100 log of height',
+            where: 'w waist, n neck, p hip, h height, all in cm.',
+          },
+          {
+            tex: String.raw`\begin{aligned} \text{FFMI} &= \dfrac{m\,(1 - \text{BF})}{h^2} \\ \text{normalised} &= \text{FFMI} + 6.1\,(1.8 - h) \end{aligned}`,
+            spoken:
+              'Lean mass index equals lean mass over height squared, normalised to 1.8 metres',
+          },
+        ],
+        why: [
+          <>
+            The tape method (Hodgdon and Beckett, 1984) is usually within 3 to 4 points of lab
+            tests. A reading you enter from a scale or scan replaces it for {MEASURED_FAT_DAYS}{' '}
+            days.
+          </>,
+          <>
+            BMI bands are the WHO&apos;s (18.5, 25, 30), with 23 and 27.5 shown for South Asian
+            adults. FFMI (Kouri and colleagues, 1995) is BMI for muscle.
+          </>,
+        ],
+        limits: 'BMI cannot tell muscle from fat, so it misreads many lifters.',
+      },
+    ],
+  },
+  {
+    id: 'app',
+    title: 'App rules',
+    topics: [
+      {
+        id: 'which-sets',
+        title: 'Which sets count',
+        shows:
+          'Only sets you marked done. Warm-ups stay in your history but are left out of volume, estimated 1RM, records and muscle sets.',
+      },
+      {
+        id: 'rings',
+        title: 'Weekly rings and streak',
+        evidence: 'workoutsPerWeek',
+        shows:
+          'Sessions, working sets and minutes this week against your plan. The streak counts weeks in a row that met the session target.',
+      },
+      {
+        id: 'plan',
+        title: 'Your plan',
+        shows:
+          'The recommended split follows your days a week, your goal sets reps, effort and rest, and long days are trimmed to your session length. Every result is a normal routine you can edit.',
+      },
+      {
+        id: 'recovery',
+        title: 'Recovery',
+        shows:
+          'The app does not guess how recovered a muscle is, because a workout log cannot tell you that. It only shows days since each muscle was last trained.',
+      },
+      {
+        id: 'trial',
+        title: 'Trial length',
+        evidence: 'trialLength',
+        shows: 'The Pro trial is exactly 168 hours, counted on the server.',
+      },
+    ],
+  },
+];

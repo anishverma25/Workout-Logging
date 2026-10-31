@@ -1,3 +1,4 @@
+import { bodyWeightAt } from './progress';
 import { addDays, isSameDay, startOfDay, startOfWeek } from '@/lib/dates';
 import type { Preferences, RoutineDay, RoutineExercise } from '../models/schemas';
 import { bodyWeightSummary, type BodyWeightSummary } from './bodyweight';
@@ -26,6 +27,8 @@ import {
   type TrainingData,
 } from './sessions';
 import { strengthTrends, type StrengthTrend } from './strength';
+import { cycleNext, weekRings, weeklyStreak, type WeekRings } from './week';
+import { weeklyCheckin, type WeeklyCheckin } from './checkin';
 import { sessionVolumeLoad, totalVolumeLoad } from './volume';
 
 export const RECENT_DAYS = 7;
@@ -48,9 +51,16 @@ export type TodayPlan =
       exercises: PlannedExercise[];
       lastSession: Session | null;
       estimatedMinutes: number | null;
+      /** What comes next in the routine's order, when that is not today's planned day. */
+      cycleNext: RoutineDay | null;
     }
   | { kind: 'done'; session: Session; volumeKg: number; workingSets: number }
-  | { kind: 'rest'; next: { day: RoutineDay; date: Date } | null; routineName: string }
+  | {
+      kind: 'rest';
+      next: { day: RoutineDay; date: Date } | null;
+      routineName: string;
+      cycleNext: RoutineDay | null;
+    }
   | { kind: 'no_routine' };
 
 export interface RecentWorkout {
@@ -63,7 +73,12 @@ export interface RecentWorkout {
 
 export interface DashboardModel {
   hasTrainingData: boolean;
+  week: WeekRings;
+  streak: { weeks: number; currentWeekMet: boolean };
+  checkin: WeeklyCheckin | null;
   today: TodayPlan;
+  /** The current calendar week, following the week-start setting (D9). */
+  weekDays: DayStatus[];
   recentWindow: {
     days: DayStatus[];
     sessions: number;
@@ -108,6 +123,7 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
   const names = new Map(data.exercises.map((e) => [e.id, e.name]));
   const routine = activeRoutine(data.routines);
   const days = daysForRoutine(routine, data.routineDays);
+  const since = routine ? new Date(routine.createdAt) : null;
   const today = startOfDay(now);
   const tomorrow = addDays(today, 1);
 
@@ -125,6 +141,7 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
   } else if (!routine) {
     todayPlan = { kind: 'no_routine' };
   } else if (plannedToday) {
+    const next = cycleNext(sessions, days);
     const lastSession =
       [...sessions].reverse().find((s) => s.workout.routineDayId === plannedToday.id) ?? null;
     todayPlan = {
@@ -134,10 +151,24 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
       exercises: plannedExercises(plannedToday, data.routineExercises, names),
       lastSession,
       estimatedMinutes: lastSession ? sessionDurationMinutes(lastSession) : null,
+      cycleNext: next && next.id !== plannedToday.id ? next : null,
     };
   } else {
-    todayPlan = { kind: 'rest', next: nextPlannedDay(now, days), routineName: routine.name };
+    todayPlan = {
+      kind: 'rest',
+      next: nextPlannedDay(now, days),
+      routineName: routine.name,
+      cycleNext: cycleNext(sessions, days),
+    };
   }
+  const week = weekRings(
+    sessions,
+    data.profile,
+    days,
+    data.routineExercises,
+    now,
+    prefs.weekStartsOn,
+  );
 
   // Rolling recent window: the last 7 days including today.
   const recentStart = addDays(today, -(RECENT_DAYS - 1));
@@ -154,6 +185,7 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
     recentStart,
     tomorrow,
     now,
+    since,
   );
 
   // Consistency over complete calendar weeks before the current one.
@@ -183,10 +215,15 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
     compoundIds: new Set(data.exercises.filter((e) => e.category === 'compound').map((e) => e.id)),
     recentAdherence,
     volumeThisPeriod: recentVolume,
-    volumePreviousPeriod: totalVolumeLoad(previousSessions),
+    // Only compare with a previous week the history fully covers.
+    volumePreviousPeriod:
+      sessions[0] && startOfDay(sessions[0].date) <= addDays(recentStart, -RECENT_DAYS)
+        ? totalVolumeLoad(previousSessions)
+        : 0,
     periodDays: RECENT_DAYS,
     unit: prefs.weightUnit,
     recentSince: recentStart,
+    bodyKgAt: (d) => bodyWeightAt(data.bodyWeights, d),
   });
 
   // Count exercises with a record, not record types: one great set is one PR, not three.
@@ -199,9 +236,20 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
 
   return {
     hasTrainingData: sessions.length > 0,
+    week,
+    streak: weeklyStreak(sessions, week.sessions.target, now, prefs.weekStartsOn),
+    checkin: weeklyCheckin({
+      sessions,
+      exercises: data.exercises,
+      target: week.sessions.target,
+      experience: data.profile?.experience,
+      now,
+      weekStartsOn: prefs.weekStartsOn,
+    }),
     today: todayPlan,
+    weekDays: dayStatuses(sessions, days, weekStart, 7, now, since),
     recentWindow: {
-      days: dayStatuses(sessions, days, recentStart, RECENT_DAYS, now),
+      days: dayStatuses(sessions, days, recentStart, RECENT_DAYS, now, since),
       sessions: recentSessions.length,
       workingSets: recentSessions.reduce((n, s) => n + workingSetCount(s), 0),
       volumeKg: recentVolume,
@@ -222,6 +270,7 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
         coveredWeeks[0]?.weekStart ?? weekStart,
         weekStart,
         now,
+        since,
       ),
     },
     featuredPr: featuredRecord(records.filter((r) => r.date >= addDays(today, -(TREND_DAYS - 1)))),

@@ -1,0 +1,1063 @@
+import { COPY } from '@/domain/analytics/thresholdCopy';
+import { useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
+import {
+  ChartNoAxesColumnIncreasing,
+  ChevronRight,
+  Dumbbell,
+  FlaskConical,
+  Trophy,
+} from 'lucide-react';
+import { EvidenceLink } from '@/features/science/EvidenceLink';
+import { PageHeader } from '@/app/layout/PageHeader';
+import { BarChart } from '@/components/charts/BarChart';
+import { ChartEmpty, ChartTable } from '@/components/charts/ChartParts';
+import { Delta, Metric, SegmentedControl, TextLink } from '@/components/kit';
+import { LineChart } from '@/components/charts/LineChart';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { ActionList } from '@/components/ui/Fields';
+import { Sheet } from '@/components/ui/Sheet';
+import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
+import { useDismissedSuggestions, usePreferences, useTrainingData } from '@/data/hooks';
+import { ROLLING_MIN_ENTRIES, ROLLING_WINDOW_DAYS } from '@/domain/analytics/bodyweight';
+import { buildProgress, type ProgressModel, type ProgressRange } from '@/domain/analytics/progress';
+import { formatRecordValue, PR_LABELS } from '@/domain/analytics/prs';
+import { MUSCLE_LABELS } from '@/domain/models/labels';
+import { formatDayMonth, formatShortDate } from '@/lib/dates';
+import { FREQUENCY_MIN_DAYS } from '@/domain/analytics/progress';
+import { MUSCLE_SCALE_MIN } from '@/domain/analytics/muscles';
+import {
+  formatCompact,
+  formatDate,
+  formatDateInSentence,
+  formatDateRange,
+  formatDurationSummary,
+  formatNumber,
+  formatSignedPercent,
+  pluralize,
+} from '@/lib/format';
+import { formatWeight, formatWeightValue, toDisplayWeight, type WeightUnit } from '@/lib/units';
+import { useNow } from '@/lib/useNow';
+import { useStartWorkout } from '../workout/StartWorkout';
+import { InsightList, Suggestions } from './Insights';
+import { useFeature } from '@/app/entitlement';
+import type { CoachTopic } from '@/app/coach';
+import { CoachBriefProvider, ExplainButton } from '../coach/CoachParts';
+import { buildBrief } from '../coach/brief';
+import { CheckinCard } from '../home/CheckinCard';
+import { buildDashboard } from '@/domain/analytics/dashboard';
+import { type BodyWeightSummary } from '@/domain/analytics/bodyweight';
+import { ProLock } from '../pro/ProLock';
+import { useFoodContextFrom } from '../food/useFoodContext';
+import { NutritionSection } from './NutritionSection';
+import {
+  BalanceSection,
+  LevelsSection,
+  PlateausSection,
+  RatesSection,
+  RestSection,
+} from './StrengthExtras';
+
+const RANGES: { value: ProgressRange; label: string; ariaLabel: string }[] = [
+  { value: '7d', label: '7D', ariaLabel: '7 days' },
+  { value: '30d', label: '30D', ariaLabel: '30 days' },
+  { value: '90d', label: '90D', ariaLabel: '90 days' },
+  { value: 'all', label: 'All', ariaLabel: 'All time' },
+];
+
+type View = 'overview' | 'strength' | 'volume' | 'body' | 'food';
+const VIEWS: { value: View; label: string }[] = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'strength', label: 'Strength' },
+  { value: 'volume', label: 'Volume' },
+  { value: 'body', label: 'Body' },
+  { value: 'food', label: 'Food' },
+];
+const VIEW_KEY = 'overload.progress.view';
+const isView = (v: string | null): v is View => VIEWS.some((x) => x.value === v);
+
+/** The section shown: the address first (links and reloads), then this visit's last choice. */
+function initialView(param: string | null): View {
+  if (isView(param)) return param;
+  try {
+    const saved = sessionStorage.getItem(VIEW_KEY);
+    if (isView(saved)) return saved;
+  } catch {
+    // No storage: start on the overview.
+  }
+  return 'overview';
+}
+
+const isRange = (v: string | null): v is ProgressRange => RANGES.some((r) => r.value === v);
+
+export function ProgressPage() {
+  const training = useTrainingData();
+  const prefs = usePreferences();
+  const now = useNow();
+  const start = useStartWorkout();
+  const dismissed = useDismissedSuggestions();
+  const [params, setParams] = useSearchParams();
+  const [pickingExercise, setPickingExercise] = useState(false);
+  const rangeParam = params.get('range');
+  const range: ProgressRange = isRange(rangeParam) ? rangeParam : '30d';
+  const exerciseId = params.get('exercise');
+  const unit = prefs.weightUnit;
+  const longRangeIncluded = useFeature('long_range');
+  const muscleBalanceIncluded = useFeature('muscle_balance');
+  const progressionIncluded = useFeature('progression');
+  const food = useFoodContextFrom(now, training);
+  const rangeLocked = (range === '90d' || range === 'all') && !longRangeIncluded;
+  const view = initialView(params.get('view'));
+  // Last week's check-in (moved here from Home, UI v3 B6) and the body weight summary.
+  const dashboard = useMemo(
+    () => (training.data ? buildDashboard(training.data, prefs, now) : null),
+    [training.data, prefs, now],
+  );
+
+  const model = useMemo(
+    () =>
+      training.data
+        ? buildProgress(training.data, {
+            range,
+            exerciseId,
+            now,
+            weekStartsOn: prefs.weekStartsOn,
+            unit,
+          })
+        : null,
+    [training.data, range, exerciseId, now, prefs.weekStartsOn, unit],
+  );
+
+  const setParam = (key: string, value: string | null) =>
+    setParams(
+      (p) => {
+        const next = new URLSearchParams(p);
+        if (value === null) next.delete(key);
+        else next.set(key, value);
+        return next;
+      },
+      { replace: true },
+    );
+  const setView = (v: View) => {
+    try {
+      sessionStorage.setItem(VIEW_KEY, v);
+    } catch {
+      // Remembered in the address only.
+    }
+    setParam('view', v);
+    window.scrollTo({ top: 0 });
+  };
+
+  const exercisePicker =
+    model && model.exerciseOptions.length > 0 ? (
+      <button
+        type="button"
+        onClick={() => setPickingExercise(true)}
+        className="pressable chrome flex min-h-11 w-full items-center gap-2 rounded-card bg-surface px-4 text-left"
+        aria-label={`Exercise: ${model.selected?.name ?? 'none'}. Change`}
+      >
+        <span className="type-subhead flex-1 text-text-2">Exercise</span>
+        <span className="text-[1.0625rem] max-w-52 truncate text-text-1">
+          {model.selected?.name}
+        </span>
+        <ChevronRight className="size-4 shrink-0 text-text-3" aria-hidden />
+      </button>
+    ) : null;
+
+  return (
+    <>
+      <PageHeader title="Progress" />
+      {training.status === 'loading' ? <Skeleton className="h-96" /> : null}
+      {training.status === 'error' ? <ErrorState error={training.error} /> : null}
+
+      {model && !model.hasAnyData ? (
+        <EmptyState
+          icon={<ChartNoAxesColumnIncreasing className="size-5" aria-hidden />}
+          title="Your progress starts with your first workout"
+          body="Once you log workouts, this page shows your estimated 1RM over time, weekly volume, sets per muscle group, how consistently you train and your records. Every number is calculated from your own sets, and the science page explains how."
+          actions={
+            <>
+              <Button
+                icon={<Dumbbell className="size-4" aria-hidden />}
+                onClick={() => start(null)}
+              >
+                Start a workout
+              </Button>
+              <TextLink to="/science" chevron>
+                How it is calculated
+              </TextLink>
+            </>
+          }
+        />
+      ) : null}
+
+      {model && model.hasAnyData ? (
+        <>
+          {/* A real switcher (UI v3, B5): one section at a time, and the range for all of it. */}
+          <div
+            className="sticky top-[calc(2.75rem+env(safe-area-inset-top))] z-20 -mx-4 flex flex-col gap-2 bg-bg/90 px-4 pt-1 pb-2 backdrop-blur-xl tab:-mx-6 tab:px-6 lg:top-0 lg:-mx-8 lg:px-8"
+            data-progress-controls
+          >
+            <SegmentedControl
+              label="Progress section"
+              block
+              value={view}
+              options={VIEWS}
+              onChange={setView}
+            />
+            <SegmentedControl
+              label="Date range"
+              block
+              value={range}
+              options={
+                longRangeIncluded
+                  ? RANGES
+                  : RANGES.map((r) =>
+                      r.value === '90d' || r.value === 'all'
+                        ? { ...r, ariaLabel: `${r.ariaLabel} · Pro` }
+                        : r,
+                    )
+              }
+              onChange={(r) => setParam('range', r === '30d' ? null : r)}
+            />
+          </div>
+
+          {rangeLocked ? (
+            <ProLock
+              feature="long_range"
+              className="mt-6"
+              lead="Your history is all here. Trends over 90 days and all time are part of Pro."
+            />
+          ) : (
+            <CoachBriefProvider
+              value={{ unit, now, profile: training.data!.profile ?? null, model }}
+            >
+              <p className="type-meta mt-2 px-1 text-text-2">
+                {formatDateRange(model.window.start, new Date(model.window.end.getTime() - 1), now)}
+                {model.sessionsInWindow === 0 ? '. No workouts logged in this period.' : ''}
+              </p>
+
+              {view === 'overview' ? (
+                <>
+                  <Summary model={model} unit={unit} />
+                  <Section
+                    id="insights"
+                    title="Insights"
+                    science="insights"
+                    detail="Rules applied to your records. Each one states what it is based on."
+                  >
+                    <InsightList insights={model.insights} />
+                  </Section>
+                  <ProgressionBlock
+                    model={model}
+                    dismissed={dismissed}
+                    unit={unit}
+                    included={progressionIncluded}
+                  />
+                  {dashboard?.checkin ? (
+                    <CheckinCard
+                      checkin={dashboard.checkin}
+                      unit={unit}
+                      className="mt-8"
+                      brief={() =>
+                        buildBrief('checkin', {
+                          unit,
+                          now,
+                          profile: training.data?.profile ?? null,
+                          data: training.data,
+                          model: null,
+                          checkin: dashboard.checkin,
+                        })
+                      }
+                    />
+                  ) : null}
+                  <ConsistencySection model={model} />
+                  <RecordsSection model={model} unit={unit} />
+                </>
+              ) : null}
+
+              {view === 'strength' ? (
+                <>
+                  <div className="mt-4">{exercisePicker}</div>
+                  <StrengthSection model={model} unit={unit} />
+                  <RatesSection
+                    model={model}
+                    unit={unit}
+                    names={new Map(training.data!.exercises.map((e) => [e.id, e.name]))}
+                  />
+                  <LevelsSection
+                    model={model}
+                    unit={unit}
+                    sexKnown={
+                      training.data!.profile?.sex === 'male' ||
+                      training.data!.profile?.sex === 'female'
+                    }
+                  />
+                  <PlateausSection model={model} unit={unit} exercises={training.data!.exercises} />
+                </>
+              ) : null}
+
+              {view === 'volume' ? (
+                <>
+                  <VolumeSection model={model} unit={unit} />
+                  <BalanceSection model={model} />
+                  {muscleBalanceIncluded ? (
+                    <MusclesSection model={model} />
+                  ) : (
+                    <Section id="muscles" title="Sets per muscle group" science="muscles">
+                      <ProLock feature="muscle_balance" />
+                    </Section>
+                  )}
+                  <RestSection model={model} />
+                </>
+              ) : null}
+
+              {view === 'body' ? (
+                <BodySection model={model} unit={unit} summary={dashboard?.bodyWeight ?? null} />
+              ) : null}
+
+              {view === 'food' ? (
+                <NutritionSection ctx={food} days={model.window.days} now={now} />
+              ) : null}
+
+              <Link
+                to="/science"
+                className="pressable chrome mt-10 flex min-h-12 items-center gap-3 rounded-card bg-surface px-4 py-2.5"
+              >
+                <FlaskConical className="size-5 shrink-0 text-text-2" aria-hidden />
+                <span className="type-headline min-w-0 flex-1 text-text-1">
+                  How every number is calculated
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-text-3" aria-hidden />
+              </Link>
+            </CoachBriefProvider>
+          )}
+        </>
+      ) : null}
+
+      <Sheet
+        open={pickingExercise}
+        onClose={() => setPickingExercise(false)}
+        title="Choose an exercise"
+        description="Weighted exercises you logged in this period."
+      >
+        <ActionList
+          items={(model?.exerciseOptions ?? []).map((o) => ({
+            label: o.name,
+            hint: pluralize(o.sessions, 'session'),
+            icon: <Dumbbell className="size-5" aria-hidden />,
+            onSelect: () => {
+              setParam('exercise', o.id);
+              setPickingExercise(false);
+            },
+          }))}
+        />
+      </Sheet>
+    </>
+  );
+}
+
+function ProgressionBlock({
+  model,
+  dismissed,
+  unit,
+  included,
+}: {
+  model: ProgressModel;
+  dismissed: Set<string>;
+  unit: WeightUnit;
+  included: boolean;
+}) {
+  const open = model.progression.filter((s) => !dismissed.has(s.id));
+  if (open.length === 0) return null;
+  return (
+    <Section
+      id="progression"
+      title="Ready to progress"
+      science="progression"
+      detail="Based on your last session of each exercise and its routine target."
+    >
+      {included ? (
+        <Suggestions suggestions={model.progression} dismissed={dismissed} unit={unit} />
+      ) : (
+        <ProLock
+          feature="progression"
+          lead={`${pluralize(open.length, 'exercise')} ${open.length === 1 ? 'is' : 'are'} ready for more weight or reps.`}
+        />
+      )}
+    </Section>
+  );
+}
+
+/** The AI coach topic for each Progress section. */
+const SECTION_COACH: Record<string, CoachTopic> = {
+  insights: 'insights',
+  progression: 'progression',
+  strength: 'strength',
+  volume: 'volume',
+  muscles: 'muscles',
+  consistency: 'consistency',
+  body: 'body',
+  records: 'records',
+};
+
+function Section({
+  id,
+  title,
+  detail,
+  science,
+  children,
+}: {
+  id: string;
+  title: string;
+  detail?: string;
+  /** Section of the science page that explains these numbers. */
+  science?: string;
+  children: React.ReactNode;
+}) {
+  const coach = SECTION_COACH[id];
+  return (
+    <section id={id} aria-labelledby={`sec-${id}`} className="mt-8 scroll-mt-28">
+      <div className="flex items-center gap-2">
+        <h2 id={`sec-${id}`} className="type-title text-text-1">
+          {title}
+        </h2>
+        {science ? <EvidenceLink topic={science} about={title.toLowerCase()} /> : null}
+        {coach ? (
+          <ExplainButton topic={coach} about={title.toLowerCase()} className="ml-auto" />
+        ) : null}
+      </div>
+      {detail ? (
+        <p className="type-meta mt-0.5 mb-3 line-clamp-2 text-text-2">{detail}</p>
+      ) : (
+        <div className="mb-3" />
+      )}
+      {children}
+    </section>
+  );
+}
+
+function Tile({
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  label: string;
+  /** Null (or zero where zero means nothing yet) shows "None yet". */
+  value: string | null;
+  detail?: string;
+  tone?: 'up' | 'down';
+}) {
+  return (
+    <div className="rounded-card bg-surface p-4">
+      <dt className="type-meta font-semibold text-text-2">{label}</dt>
+      {value === null ? (
+        <dd className="type-headline mt-1.5 text-text-2">None yet</dd>
+      ) : (
+        <dd className="type-metric mt-1 text-text-1">{value}</dd>
+      )}
+      {detail ? (
+        <dd className="type-meta tabular mt-1 text-text-2">
+          {/* A change is a green or red capsule (UI v3, G3); other details stay plain. */}
+          {tone ? <Delta tone={tone}>{detail}</Delta> : detail}
+        </dd>
+      ) : null}
+    </div>
+  );
+}
+
+function Summary({ model, unit }: { model: ProgressModel; unit: WeightUnit }) {
+  const { volume, consistency } = model;
+  const volChange =
+    volume.previousTotalKg && volume.previousTotalKg > 0
+      ? (volume.totalKg - volume.previousTotalKg) / volume.previousTotalKg
+      : null;
+  const working = volume.periods.reduce((n, p) => n + p.workingSets, 0);
+  return (
+    <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <Tile
+        label="Workouts"
+        value={String(consistency.total)}
+        detail={
+          consistency.perWeek !== null
+            ? `${formatNumber(consistency.perWeek)} per week`
+            : `Needs ${FREQUENCY_MIN_DAYS} days`
+        }
+      />
+      <Tile
+        label="Working sets"
+        value={working > 0 ? String(working) : null}
+        detail="Warm-ups excluded"
+      />
+      <Tile
+        label={`Volume load (${unit})`}
+        value={volume.totalKg > 0 ? formatCompact(toDisplayWeight(volume.totalKg, unit)) : null}
+        detail={
+          volChange !== null
+            ? `${formatSignedPercent(volChange)} vs previous ${model.window.days} days`
+            : model.range === 'all'
+              ? 'All logged weighted sets'
+              : 'No earlier period to compare'
+        }
+        tone={
+          volChange === null ? undefined : volChange > 0 ? 'up' : volChange < 0 ? 'down' : undefined
+        }
+      />
+      <Tile
+        label="Records"
+        value={model.records.length > 0 ? String(model.records.length) : null}
+        detail={
+          model.records.length > 0
+            ? pluralize(new Set(model.records.map((r) => r.exerciseId)).size, 'exercise')
+            : undefined
+        }
+      />
+    </dl>
+  );
+}
+
+function StrengthSection({ model, unit }: { model: ProgressModel; unit: WeightUnit }) {
+  const s = model.selected;
+  const fmt = (v: number) => formatWeightValue(v, 'kg', 1);
+  const xLong = (x: number) => formatShortDate(new Date(x));
+  return (
+    <Section id="strength" title="Strength" science="e1rm" detail={undefined}>
+      {!s ? (
+        <ChartEmpty height={160}>
+          No weighted exercises in this period. Strength charts need sets logged with a load.
+        </ChartEmpty>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+          <Card className="min-w-0 p-4 sm:p-5">
+            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="type-headline text-text-1">Estimated 1RM ({unit})</h3>
+              {s.e1rmChange ? (
+                <span className="type-meta tabular font-semibold text-text-2">
+                  {Math.abs(s.e1rmChange.fraction) < 0.0005
+                    ? 'No change in this period'
+                    : `${formatSignedPercent(s.e1rmChange.fraction, 1)} in this period`}
+                </span>
+              ) : null}
+            </div>
+            {s.points.filter((p) => p.bestE1rm !== null).length >= 2 ? (
+              <LineChart
+                label={`Estimated 1RM for ${s.name} per session, and the best so far, in ${unit}`}
+                height={220}
+                series={[
+                  {
+                    id: 'e1rm',
+                    label: 'Session best',
+                    color: 'var(--chart-1)',
+                    style: 'both',
+                    points: s.points
+                      .filter((p) => p.bestE1rm !== null)
+                      .map((p) => ({ x: p.date.getTime(), y: toDisplayWeight(p.bestE1rm!, unit) })),
+                  },
+                  {
+                    id: 'record',
+                    label: 'Best so far',
+                    color: 'var(--chart-2)',
+                    style: 'line',
+                    points: s.points
+                      .filter((p) => p.runningBestE1rm !== null)
+                      .map((p) => ({
+                        x: p.date.getTime(),
+                        y: toDisplayWeight(p.runningBestE1rm!, unit),
+                      })),
+                  },
+                ]}
+                formatY={fmt}
+                formatXLong={xLong}
+              />
+            ) : (
+              <ChartEmpty height={220}>
+                {s.points.length === 1
+                  ? 'One session in this period. A trend needs at least two; try a longer range.'
+                  : s.points.every((p) => p.bestE1rm === null) && s.points.length > 1
+                    ? 'Estimated 1RM is worked out for compound lifts from sets of 10 reps or fewer. Top set load and reps below still track this exercise.'
+                    : 'Not enough sets of 10 reps or fewer in this period for a trend.'}
+              </ChartEmpty>
+            )}
+            <p className="type-meta mt-2 text-text-2">
+              The most you could likely lift once, worked out from your best set each session: the
+              weight, the reps, and any reps you had left. Sets of 10 reps or fewer. An estimate,
+              not a lift you did.
+            </p>
+          </Card>
+
+          <div className="grid min-w-0 gap-4">
+            <Card className="min-w-0 p-4 sm:p-5">
+              <h3 className="type-headline mb-2 text-text-1">Top set load ({unit})</h3>
+              {s.points.length >= 2 ? (
+                <LineChart
+                  label={`Heaviest working load for ${s.name} per session, in ${unit}`}
+                  height={130}
+                  series={[
+                    {
+                      id: 'load',
+                      label: 'Top set load',
+                      color: 'var(--chart-1)',
+                      style: 'both',
+                      points: s.points
+                        .filter((p) => p.topLoad !== null)
+                        .map((p) => ({
+                          x: p.date.getTime(),
+                          y: toDisplayWeight(p.topLoad!, unit),
+                        })),
+                    },
+                  ]}
+                  formatY={fmt}
+                  formatXLong={xLong}
+                />
+              ) : (
+                <ChartEmpty height={130}>Needs two sessions in this period.</ChartEmpty>
+              )}
+            </Card>
+            <Card className="min-w-0 p-4 sm:p-5">
+              <h3 className="type-headline mb-2 text-text-1">Reps at the top load</h3>
+              {s.points.length >= 2 ? (
+                <BarChart
+                  label={`Reps done at the heaviest load each session for ${s.name}`}
+                  height={130}
+                  valueName="Reps"
+                  formatValue={(v) => String(Math.round(v))}
+                  bars={s.points.map((p) => ({
+                    key: p.workoutId,
+                    label: formatDayMonth(p.date),
+                    longLabel: `${formatShortDate(p.date)}: ${p.topLoad !== null ? formatWeight(p.topLoad, unit) : ''}`,
+                    value: p.topLoadReps ?? 0,
+                  }))}
+                />
+              ) : (
+                <ChartEmpty height={130}>Needs two sessions in this period.</ChartEmpty>
+              )}
+            </Card>
+          </div>
+
+          <Card className="p-4 sm:p-5 lg:col-span-2">
+            <h3 className="type-headline text-text-1">Relative strength</h3>
+            {s.relativeStrength ? (
+              <p className="mt-1">
+                <span className="type-stat tabular text-text-1">
+                  {s.relativeStrength.ratio.toFixed(2)}
+                </span>{' '}
+                <span className="type-meta text-text-2">× body weight</span>
+                <span className="type-meta mt-1 block text-text-2">
+                  Estimated 1RM {formatWeight(s.relativeStrength.e1rm, unit)} ÷ body weight{' '}
+                  {formatWeight(s.relativeStrength.bodyKg, unit)} on{' '}
+                  {formatShortDate(s.relativeStrength.date)}. Useful for tracking yourself over
+                  time, not for comparing with others.
+                </span>
+              </p>
+            ) : (
+              <p className="type-meta mt-1 flex flex-wrap items-center gap-x-2 text-text-2">
+                Needs a weigh-in on or before your latest {s.name} session.
+                <TextLink to="/body" small chevron>
+                  Add one
+                </TextLink>
+              </p>
+            )}
+          </Card>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+function VolumeSection({ model, unit }: { model: ProgressModel; unit: WeightUnit }) {
+  const per = model.bucket === 'day' ? 'day' : model.bucket === 'week' ? 'week' : 'month';
+  const top = model.volume.byExercise.filter((e) => e.volumeKg > 0).slice(0, 8);
+  return (
+    <Section
+      id="volume"
+      title="Volume"
+      science="volume"
+      detail={`Load × reps on completed working sets, per ${per}. A measure of work done, not of muscle growth.`}
+    >
+      <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
+        <Card className="p-4 sm:p-5">
+          <h3 className="type-headline mb-2 text-text-1">
+            Volume load per {per} ({unit})
+          </h3>
+          {model.volume.totalKg > 0 ? (
+            <BarChart
+              label={`Volume load per ${per} in ${unit}`}
+              valueName={`Volume (${unit})`}
+              formatValue={(v) => formatCompact(v)}
+              bars={model.volume.periods.map((p) => ({
+                key: p.period.start.toISOString(),
+                label: p.period.label,
+                longLabel: `${p.period.longLabel}${p.period.current ? ' (so far)' : p.period.partial ? ' (only partly in range)' : ''}`,
+                value: toDisplayWeight(p.volumeKg, unit),
+                highlight: p.period.current,
+                note: `${p.workingSets} working sets`,
+              }))}
+              baseColor="var(--border-strong)"
+              color="var(--lime)"
+            />
+          ) : (
+            <ChartEmpty height={200}>No weighted working sets in this period.</ChartEmpty>
+          )}
+        </Card>
+        <Card className="p-4 sm:p-5">
+          <h3 className="type-headline mb-3 text-text-1">By exercise ({unit})</h3>
+          {top.length > 0 ? (
+            <BarChart
+              orientation="horizontal"
+              categoryName="Exercise"
+              label={`Volume load by exercise in ${unit}`}
+              valueName={`Volume (${unit})`}
+              formatValue={(v) => formatCompact(v)}
+              bars={top.map((e) => ({
+                key: e.id,
+                label: e.name,
+                value: toDisplayWeight(e.volumeKg, unit),
+                note: `${e.workingSets} sets`,
+              }))}
+            />
+          ) : (
+            <EmptyBox>No weighted working sets in this period.</EmptyBox>
+          )}
+        </Card>
+      </div>
+    </Section>
+  );
+}
+
+function MusclesSection({ model }: { model: ProgressModel }) {
+  const { workload, previous, weeks, recency } = model.muscles;
+  const perWeek = weeks >= 2;
+  const value = (w: { weighted: number }) => (perWeek ? w.weighted / weeks : w.weighted);
+  const previousBy = new Map((previous ?? []).map((w) => [w.muscle, value(w)]));
+  const trained = [...workload]
+    .filter((w) => w.weighted > 0)
+    .sort((x, y) => y.weighted - x.weighted);
+  const untrained = workload.filter((w) => w.weighted === 0);
+  // One fixed scale for every muscle so bars compare honestly (D4).
+  const scaleMax = Math.max(MUSCLE_SCALE_MIN, ...trained.map(value));
+  const versus = model.range === '7d' ? 'last week' : `previous ${model.window.days} days`;
+  return (
+    <Section
+      id="muscles"
+      title="Sets per muscle group"
+      science="muscles"
+      detail={`Hard working sets${perWeek ? ' per week' : ''}. Direct sets count 1, supporting sets count 0.5.`}
+    >
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] [&>*]:min-w-0">
+        <Card className="p-4 sm:p-5">
+          {trained.length > 0 ? (
+            <>
+              <ul className="flex flex-col gap-3" aria-label="Sets per muscle group">
+                {trained.map((w) => {
+                  const v = value(w);
+                  const before = previousBy.get(w.muscle);
+                  const change = before === undefined ? null : v - before;
+                  return (
+                    <li key={w.muscle}>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="type-body font-medium text-text-1">
+                          {MUSCLE_LABELS[w.muscle]}
+                        </span>
+                        <span className="tabular flex items-baseline gap-2">
+                          {change !== null && Math.abs(change) >= 0.05 ? (
+                            <span className="type-meta text-text-2">
+                              {change > 0 ? '+' : '−'}
+                              {formatNumber(Math.abs(change))} vs {versus}
+                            </span>
+                          ) : null}
+                          <span className="type-headline text-text-1">{formatNumber(v)}</span>
+                        </span>
+                      </div>
+                      <div
+                        className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-track"
+                        aria-hidden
+                      >
+                        <div
+                          className="h-full rounded-full bg-text-1/85"
+                          style={{ width: `${Math.min(100, (v / scaleMax) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="sr-only">
+                        {w.direct} direct, {w.indirect} as a supporting muscle
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {untrained.length > 0 ? (
+                <div className="mt-4">
+                  <p className="type-meta mb-2 text-text-2">Not trained yet</p>
+                  <ul className="flex flex-wrap gap-1.5">
+                    {untrained.map((w) => (
+                      <li
+                        key={w.muscle}
+                        className="type-meta inline-flex h-7 items-center rounded-full bg-surface-2 px-3 text-text-2"
+                      >
+                        {MUSCLE_LABELS[w.muscle]}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              <p className="type-meta mt-4 text-text-2">
+                Bars share one scale, full at {formatNumber(scaleMax)} sets
+                {perWeek ? ' a week' : ''}. More hard sets tend to bring more growth, with smaller
+                returns as the total climbs; no single number is right.
+              </p>
+              <ChartTable
+                caption="Sets per muscle group"
+                columns={[
+                  'Muscle group',
+                  perWeek ? 'Sets per week' : 'Sets',
+                  'Direct',
+                  'Supporting',
+                ]}
+                rows={trained.map((w) => [
+                  MUSCLE_LABELS[w.muscle],
+                  formatNumber(value(w)),
+                  String(w.direct),
+                  String(w.indirect),
+                ])}
+              />
+            </>
+          ) : (
+            <EmptyBox>No working sets in this period.</EmptyBox>
+          )}
+        </Card>
+        <Card className="p-4 sm:p-5">
+          <h3 className="type-headline text-text-1">Last trained directly</h3>
+          <p className="type-meta mb-2 text-text-2">
+            Days since a working set where it was the primary muscle. A record of time passed, not a
+            recovery score.
+          </p>
+          <ul className="divide-y-[0.5px] divide-divider">
+            {[...recency]
+              .sort((a, b) => (a.daysSince ?? 9999) - (b.daysSince ?? 9999))
+              .map((r) => (
+                <li key={r.muscle} className="flex min-h-11 items-center justify-between gap-3">
+                  <span className="type-body text-text-1">{MUSCLE_LABELS[r.muscle]}</span>
+                  <span className="type-meta tabular text-text-2">
+                    {r.daysSince === null
+                      ? 'Not yet'
+                      : r.daysSince === 0
+                        ? 'Today'
+                        : r.daysSince === 1
+                          ? '1 day ago'
+                          : `${r.daysSince} days ago`}
+                  </span>
+                </li>
+              ))}
+          </ul>
+        </Card>
+      </div>
+    </Section>
+  );
+}
+
+function ConsistencySection({ model }: { model: ProgressModel }) {
+  const { consistency } = model;
+  const per = model.bucket === 'day' ? 'day' : model.bucket === 'week' ? 'week' : 'month';
+  const a = consistency.adherence;
+  return (
+    <Section id="consistency" title="Consistency" science="frequency">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] [&>*]:min-w-0">
+        <Card className="p-4 sm:p-5">
+          <h3 className="type-headline mb-2 text-text-1">Workouts per {per}</h3>
+          <BarChart
+            label={`Workouts per ${per}`}
+            valueName="Workouts"
+            formatValue={(v) => String(Math.round(v))}
+            bars={consistency.periods.map((p) => ({
+              key: p.period.start.toISOString(),
+              label: p.period.label,
+              longLabel: `${p.period.longLabel}${p.period.current ? ' (so far)' : p.period.partial ? ' (only partly in range)' : ''}`,
+              value: p.workouts,
+              highlight: p.period.current,
+            }))}
+            baseColor="var(--border-strong)"
+            color="var(--lime)"
+          />
+        </Card>
+        <Card className="flex flex-col gap-4 p-4 sm:p-5">
+          <div>
+            <h3 className="type-headline text-text-1">Adherence</h3>
+            {a.rate !== null ? (
+              <>
+                <p className="type-stat mt-1 text-text-1">{Math.round(a.rate * 100)}%</p>
+                <p className="type-meta mt-1 text-text-2">
+                  {a.completed} of {a.planned} planned, last {model.window.days} days. Planned days
+                  come from your active routine.
+                </p>
+              </>
+            ) : (
+              <p className="type-meta mt-1 flex flex-wrap items-center gap-x-2 text-text-2">
+                Shown when your active routine has planned weekdays in this period.
+                <TextLink to="/routines" small chevron>
+                  Set weekdays
+                </TextLink>
+              </p>
+            )}
+          </div>
+          <div>
+            <h3 className="type-headline text-text-1">Frequency</h3>
+            <p className="type-meta mt-1 text-text-2">
+              {consistency.perWeek !== null
+                ? `${formatNumber(consistency.perWeek)} workouts per week${
+                    consistency.perMonth !== null
+                      ? `, ${formatNumber(consistency.perMonth)} per month`
+                      : ''
+                  }.`
+                : COPY.frequencyEmpty}{' '}
+              {consistency.minutes > 0
+                ? `${formatDurationSummary(consistency.minutes)} trained so far.`
+                : ''}
+            </p>
+          </div>
+        </Card>
+      </div>
+    </Section>
+  );
+}
+
+function BodySection({
+  model,
+  unit,
+  summary,
+}: {
+  model: ProgressModel;
+  unit: WeightUnit;
+  /** The latest weigh-in and its 7-day average (moved here from Home, UI v3 B6). */
+  summary: BodyWeightSummary | null;
+}) {
+  const { points, trend } = model.body;
+  return (
+    <Section id="body" title="Body weight" science="body-weight">
+      {summary ? (
+        <div className="mb-3 rounded-card bg-surface p-4" data-body-latest>
+          <div className="flex items-start justify-between gap-3">
+            <Metric
+              tier="hero"
+              accentLabel
+              label="Latest"
+              value={formatWeightValue(summary.latest.weightKg, unit)}
+              unit={unit}
+            />
+            {summary.weekChangeKg !== null ? (
+              <Delta
+                className="mt-6"
+                tone={summary.weekChangeKg > 0 ? 'up' : summary.weekChangeKg < 0 ? 'down' : 'flat'}
+              >
+                {summary.weekChangeKg >= 0 ? '+' : '−'}
+                {formatWeightValue(Math.abs(summary.weekChangeKg), unit)} {unit} in a week
+              </Delta>
+            ) : null}
+          </div>
+          <p className="type-meta mt-1 text-text-2">
+            {summary.rollingAverageKg !== null
+              ? `7-day average ${formatWeightValue(summary.rollingAverageKg, unit)} ${unit} from ${summary.rollingCount} entries. `
+              : `Average shows after ${ROLLING_MIN_ENTRIES} entries in a week. `}
+            Last logged {formatDateInSentence(new Date(summary.latest.measuredAt))}.
+          </p>
+          <TextLink to="/body" small chevron className="mt-2">
+            Body metrics
+          </TextLink>
+        </div>
+      ) : null}
+      <Card className="p-4 sm:p-5">
+        {points.length >= 2 ? (
+          <>
+            <LineChart
+              label={`Body weight in ${unit} with the ${ROLLING_WINDOW_DAYS}-day average`}
+              height={200}
+              series={[
+                {
+                  id: 'raw',
+                  label: 'Weigh-in',
+                  color: 'var(--chart-1)',
+                  style: 'dots',
+                  points: points.map((p) => ({
+                    x: p.date.getTime(),
+                    y: toDisplayWeight(p.kg, unit),
+                  })),
+                },
+                {
+                  id: 'avg',
+                  label: `${ROLLING_WINDOW_DAYS}-day average`,
+                  color: 'var(--chart-2)',
+                  style: 'line',
+                  points: points
+                    .filter((p) => p.averageKg !== null)
+                    .map((p) => ({ x: p.date.getTime(), y: toDisplayWeight(p.averageKg!, unit) })),
+                },
+              ]}
+              formatY={(v) => v.toLocaleString('en-GB', { maximumFractionDigits: 1 })}
+              formatXLong={(x) => formatShortDate(new Date(x))}
+            />
+            <p className="type-meta mt-2 text-text-2">
+              {trend
+                ? `The ${ROLLING_WINDOW_DAYS}-day average moved ${trend.averageChangeKg >= 0 ? '+' : '−'}${formatWeight(Math.abs(trend.averageChangeKg), unit)} over ${pluralize(trend.days, 'day')}.`
+                : 'Not enough weigh-ins for a trend in this period.'}
+            </p>
+          </>
+        ) : (
+          <EmptyBox>
+            {points.length === 0
+              ? 'No weigh-ins in this period.'
+              : `One weigh-in in this period: ${formatWeight(points[0]!.kg, unit)}.`}
+          </EmptyBox>
+        )}
+      </Card>
+    </Section>
+  );
+}
+
+function RecordsSection({ model, unit }: { model: ProgressModel; unit: WeightUnit }) {
+  const now = new Date();
+  return (
+    <Section id="records" title="Records in this period" science="records">
+      {model.records.length === 0 ? (
+        <EmptyBox>No records in this period.</EmptyBox>
+      ) : (
+        <Card className="overflow-hidden">
+          <ul className="divide-y-[0.5px] divide-divider">
+            {model.records.slice(0, 5).map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                <span className="min-w-0">
+                  <span className="type-headline block truncate text-text-1">{r.exerciseName}</span>
+                  <span className="type-meta flex items-center gap-1.5 text-text-2">
+                    <Trophy className="size-3.5" aria-hidden />
+                    {PR_LABELS[r.type]} · {formatDate(r.date, now)}
+                  </span>
+                </span>
+                <span className="tabular shrink-0 text-right">
+                  <span className="type-headline block text-text-1">
+                    {formatRecordValue(r.type, r.value, unit)}
+                  </span>
+                  <span className="type-meta text-text-2">
+                    was {formatRecordValue(r.type, r.previousBest, unit)}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="border-t-[0.5px] border-divider px-4 py-2">
+            <TextLink to="/records" chevron>
+              All records
+            </TextLink>
+          </div>
+        </Card>
+      )}
+    </Section>
+  );
+}
+
+/** Empty chart or list: 88 high, surface-2, one centred line in Meta --text-2. */
+function EmptyBox({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="type-meta flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center text-text-2">
+      {children}
+    </p>
+  );
+}

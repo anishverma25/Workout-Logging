@@ -4,6 +4,7 @@ import {
   isSameDay,
   startOfDay,
   startOfWeek,
+  toDateKey,
   type WeekStartsOn,
 } from '@/lib/dates';
 import type { Routine, RoutineDay } from '../models/schemas';
@@ -52,6 +53,8 @@ export interface DayStatus {
  * Status of each calendar day in [start, start + count).
  * completed: a workout was logged on a planned day. extra: logged on an unplanned day.
  * missed: planned, in the past, nothing logged. planned: today or later, not yet done.
+ * Nothing is planned before `since` (when the routine was created), so a routine set up today
+ * does not show the days before it as missed.
  */
 export function dayStatuses(
   sessions: Session[],
@@ -59,11 +62,13 @@ export function dayStatuses(
   start: Date,
   count: number,
   now: Date,
+  since: Date | null = null,
 ): DayStatus[] {
+  const from = since ? startOfDay(since) : null;
   return Array.from({ length: count }, (_, i) => {
     const date = addDays(startOfDay(start), i);
     const daySessions = sessions.filter((s) => isSameDay(s.date, date));
-    const plannedDay = plannedDayOn(date, days);
+    const plannedDay = from && date < from ? null : plannedDayOn(date, days);
     const offset = differenceInCalendarDays(date, now);
     let state: DayState;
     if (daySessions.length > 0) state = plannedDay ? 'completed' : 'extra';
@@ -84,7 +89,7 @@ export interface Adherence {
  * Adherence = completed planned sessions / planned sessions, over days that have already happened.
  * Today counts only once it has a logged workout, so an evening session is not "missed" at noon.
  * A routine workout logged on a different day than planned still counts toward completion,
- * capped at the number planned.
+ * capped at the number planned. Days before `since` (the routine's creation) are not planned.
  */
 export function adherence(
   sessions: Session[],
@@ -93,11 +98,13 @@ export function adherence(
   start: Date,
   end: Date,
   now: Date,
+  since: Date | null = null,
 ): Adherence {
   if (!routineId || days.length === 0) return { planned: 0, completed: 0, rate: null };
   const today = startOfDay(now);
   let planned = 0;
-  for (let d = startOfDay(start); d < end; d = addDays(d, 1)) {
+  const from = since ? startOfDay(since) : null;
+  for (let d = startOfDay(from && from > start ? from : start); d < end; d = addDays(d, 1)) {
     if (!plannedDayOn(d, days)) continue;
     if (d < today) planned++;
     else if (
@@ -106,9 +113,13 @@ export function adherence(
     )
       planned++;
   }
-  const done = sessions.filter(
-    (s) => s.date >= start && s.date < end && s.workout.routineId === routineId,
-  ).length;
+  // One per calendar day: repeating a session the same day (B1) is an extra workout in History,
+  // never a second completed planned session.
+  const done = new Set(
+    sessions
+      .filter((s) => s.date >= start && s.date < end && s.workout.routineId === routineId)
+      .map((s) => toDateKey(s.date)),
+  ).size;
   const completed = Math.min(done, planned);
   return { planned, completed, rate: planned > 0 ? completed / planned : null };
 }

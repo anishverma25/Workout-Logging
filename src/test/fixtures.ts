@@ -19,13 +19,17 @@ export interface SetSpec {
   r: number;
   type?: SetType;
   done?: boolean;
+  rir?: number;
 }
 
 export interface SessionSpec {
   at: string;
   exercises: { key: string; sets: SetSpec[] }[];
   routineId?: string | null;
+  routineDayId?: string | null;
+  name?: string;
   minutes?: number;
+  pausedMinutes?: number;
 }
 
 /** Builds TrainingData from compact session descriptions. */
@@ -35,16 +39,20 @@ export function buildData(specs: SessionSpec[]): TrainingData {
   const sets: WorkoutSet[] = [];
   for (const spec of specs) {
     const workoutId = uuid();
-    const end = new Date(Date.parse(spec.at) + (spec.minutes ?? 60) * 60_000).toISOString();
+    const end = new Date(
+      Date.parse(spec.at) + ((spec.minutes ?? 60) + (spec.pausedMinutes ?? 0)) * 60_000,
+    ).toISOString();
     workouts.push({
       id: workoutId,
       ...meta(spec.at),
-      name: 'Session',
+      name: spec.name ?? 'Session',
       routineId: spec.routineId ?? null,
-      routineDayId: null,
+      routineDayId: spec.routineDayId ?? null,
       status: 'completed',
       startedAt: spec.at,
       endedAt: end,
+      pausedAt: null,
+      pausedMs: (spec.pausedMinutes ?? 0) * 60_000,
       notes: null,
       timeZone: 'UTC',
     });
@@ -72,7 +80,7 @@ export function buildData(specs: SessionSpec[]): TrainingData {
           setType: s.type ?? 'working',
           weightKg: s.w,
           reps: s.r,
-          rir: null,
+          rir: s.rir ?? null,
           rpe: null,
           durationSec: null,
           distanceM: null,
@@ -92,6 +100,8 @@ export function buildData(specs: SessionSpec[]): TrainingData {
     workoutExercises,
     sets,
     bodyWeights: [],
+    measurements: [],
+    goals: [],
   };
 }
 

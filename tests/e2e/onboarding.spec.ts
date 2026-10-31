@@ -1,0 +1,159 @@
+import { expect, test } from '@playwright/test';
+import { loadDemo, PASSWORD, signUpFresh, uniqueEmail } from './session';
+
+/**
+ * First run, in the order a new person meets it: the welcome tour (sample data, in memory
+ * only), then an account, then setup, which builds a personalised routine. Then the newer
+ * tracking screens: measurements and goals.
+ */
+
+test.beforeEach(({ page }) => {
+  page.on('pageerror', (e) => {
+    throw e;
+  });
+});
+
+test('the tour comes first, then an account, then setup builds a personalised plan', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  // Opening the app without an account lands on the public home page, then the tour, never on
+  // anyone's data.
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Take the tour' }).first().click();
+  await expect(page).toHaveURL(/\/welcome$/);
+
+  // The tour: clearly labelled sample data, and the logger can be tried.
+  await expect(page.getByText('Sample data', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Take the tour' }).click();
+  await page.getByRole('button', { name: 'Mark sample set 1 done' }).click();
+  await expect(page.getByRole('button', { name: 'Set 1 done' })).toBeVisible();
+  // Five feature slides and the Pro slide.
+  for (let i = 0; i < 6; i++) await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Create my account' }).click();
+
+  // The account.
+  await expect(page).toHaveURL(/\/sign-up/);
+  await page.getByRole('textbox', { name: 'Email' }).fill(uniqueEmail('tour'));
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+  await page.getByRole('button', { name: 'Create account' }).click();
+
+  // A new account is asked whether it comes from another app, then setup follows.
+  await expect(page).toHaveURL(/\/import\?welcome=1/);
+  await expect(page.getByRole('heading', { name: 'Coming from another app?' })).toBeVisible();
+  await page.getByRole('button', { name: 'I am new, start fresh' }).click();
+  await expect(page).toHaveURL(/\/setup/);
+  await page.getByRole('textbox', { name: 'Your name' }).fill('Meera Shah');
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: /^Hypertrophy/ }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: /^Beginner/ }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: '5', exact: true }).click();
+  // Session length is a scroll wheel; it starts at 60 and the arrow keys move it by 5.
+  const wheel = page.getByRole('spinbutton', { name: 'Minutes per session' });
+  await expect(wheel).toHaveAttribute('aria-valuenow', '60');
+  await wheel.focus();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await expect(wheel).toHaveAttribute('aria-valuetext', '70 min');
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: /Full gym/ }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: 'Female', exact: true }).click();
+  // Birth date: three number boxes, focus moves on by itself as each fills.
+  await page.getByRole('textbox', { name: 'Birth date, day' }).click();
+  await page.keyboard.type('14031996');
+  await expect(page.getByText('14 March 1996, age')).toBeVisible();
+  await page.getByLabel('Height in centimetres').fill('163');
+  await page.getByLabel(/^Weight/).fill('58');
+  await page.getByLabel(/^Weight/).blur();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: /Mostly sitting/ }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  // The plan: numbers worked out from what was entered, and a recommended routine.
+  await expect(page.getByText('Daily calories')).toBeVisible();
+  await expect(page.getByText(/^Maintenance [\d,]+, \+10% for your goal$/)).toBeVisible();
+  // Beginners get the recommendation only: five days is upper, lower, push, pull and legs.
+  await expect(page.getByText('Upper Lower Push Pull Legs', { exact: true })).toBeVisible();
+  await expect(page.getByRole('radio', { name: /Build my own/ })).toHaveCount(0);
+  await expect(
+    page.getByRole('list', { name: 'Days in this routine' }).getByRole('listitem'),
+  ).toHaveCount(5);
+  await page.getByRole('button', { name: 'Create my routine' }).click();
+  await expect(page).toHaveURL(/\/routines\/[\w-]+$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Upper Lower Push Pull Legs');
+
+  // Home is theirs: their name, no sample lifter.
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Meera');
+  await expect(page.getByText(/Arjun/)).toHaveCount(0);
+  // Today is a planned day of the new routine, or its rest day (the plan has no Sunday session).
+  await expect(
+    page
+      .getByText('Today · Upper Lower Push Pull Legs')
+      .or(page.getByRole('heading', { name: 'Rest day', level: 2 })),
+  ).toBeVisible();
+  // Days before the routine existed are not counted as missed.
+  await expect(page.getByRole('listitem').filter({ hasText: 'missed' })).toHaveCount(0);
+});
+
+test('intermediate and advanced lifters choose the recommendation or their own routine', async ({
+  page,
+}) => {
+  await signUpFresh(page, { at: '/setup?next=/', tag: 'adv' });
+  await page.getByRole('textbox', { name: 'Your name' }).fill('Ravi');
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: /^Strength \+ Hypertrophy/ }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: /^Advanced/ }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('radio', { name: '4', exact: true }).click();
+  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Continue' }).click();
+  // Four days: full body every other day is recommended, and they can build their own instead.
+  await expect(page.getByRole('radio', { name: /Use the recommended routine/ })).toBeChecked();
+  await expect(page.getByRole('radio', { name: /Full Body, every other day/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Create my routine' })).toBeVisible();
+  await page.getByRole('radio', { name: /Build my own/ }).click();
+  await page.getByRole('button', { name: 'Build my routine' }).click();
+  await expect(page).toHaveURL(/\/routines\/[\w-]+$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('My routine');
+  for (const day of ['Day 1', 'Day 2', 'Day 3', 'Day 4'])
+    await expect(page.getByRole('heading', { name: day, exact: true })).toBeVisible();
+});
+
+test('the tour can be replayed from More and skipped', async ({ page }) => {
+  await signUpFresh(page, { at: '/more', tag: 'replay' });
+  await page.getByRole('link', { name: 'Take the tour' }).click();
+  await expect(page).toHaveURL(/\/welcome$/);
+  await page.getByRole('button', { name: 'Skip' }).click();
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test('measurements and goals are saved and shown', async ({ page }) => {
+  await signUpFresh(page, { at: '/settings', tag: 'body' });
+  await loadDemo(page);
+  await page.goto('/body');
+  await page
+    .getByRole('button', { name: 'Add measurements' })
+    .filter({ visible: true })
+    .first()
+    .click();
+  await page.getByRole('textbox', { name: 'Waist' }).fill('81.5');
+  await page.getByRole('button', { name: 'Save measurements' }).click();
+  await expect(page.getByText('Measurements saved')).toBeVisible();
+  await expect(page.getByText(/Waist 81\.5 cm/).first()).toBeVisible();
+
+  await page.goto('/journey');
+  await page
+    .getByRole('button', { name: /^Add (a )?goal$/ })
+    .filter({ visible: true })
+    .first()
+    .click();
+  await page.getByRole('radio', { name: 'Body weight' }).click();
+  await page.getByRole('textbox', { name: 'Target' }).fill('68');
+  await page.getByRole('button', { name: 'Add goal' }).last().click();
+  await expect(page.getByText('Goal added')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Weigh 68 kg/ })).toBeVisible();
+});

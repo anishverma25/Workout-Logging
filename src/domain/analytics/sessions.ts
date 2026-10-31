@@ -1,10 +1,12 @@
 import type {
+  BodyMeasurement,
   BodyWeightEntry,
   Exercise,
   Profile,
   Routine,
   RoutineDay,
   RoutineExercise,
+  TrainingGoal,
   Workout,
   WorkoutExercise,
   WorkoutSet,
@@ -21,6 +23,8 @@ export interface TrainingData {
   workoutExercises: WorkoutExercise[];
   sets: WorkoutSet[];
   bodyWeights: BodyWeightEntry[];
+  measurements: BodyMeasurement[];
+  goals: TrainingGoal[];
 }
 
 export interface SessionExercise {
@@ -98,9 +102,13 @@ export function sessionsBetween(sessions: Session[], start: Date, end: Date): Se
 }
 
 export function sessionDurationMinutes(session: Session): number | null {
-  const { startedAt, endedAt } = session.workout;
+  const { startedAt, endedAt, pausedMs } = session.workout;
   if (!endedAt) return null;
-  return Math.max(0, Math.round((Date.parse(endedAt) - Date.parse(startedAt)) / 60_000));
+  // Paused time is not training time.
+  return Math.max(
+    0,
+    Math.round((Date.parse(endedAt) - Date.parse(startedAt) - (pausedMs ?? 0)) / 60_000),
+  );
 }
 
 export function workingSetCount(session: Session): number {

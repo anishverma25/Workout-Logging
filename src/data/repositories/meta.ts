@@ -1,4 +1,5 @@
 import { DEFAULT_PREFERENCES, Preferences } from '@/domain/models/schemas';
+import type { RestTimerState } from '@/domain/workout/restTimer';
 import type { WorkoutDatabase } from '../db';
 
 export const META_KEYS = {
@@ -6,6 +7,15 @@ export const META_KEYS = {
   demoLoadedAt: 'demo.loadedAt',
   /** Set once the app has decided whether to auto-load demo data, so clearing it sticks. */
   demoAutoloadHandled: 'demo.autoloadHandled',
+  restTimer: 'workout.restTimer',
+  dismissedSuggestions: 'progress.dismissedSuggestions',
+  /** Which Pro reminders a free member has already seen, and when (see domain/entitlement/nudge). */
+  proNudge: 'pro.nudge',
+  /** The personal message on Home the person has dismissed, so it stays dismissed. */
+  dismissedBanner: 'home.dismissedBanner',
+  /** Sync bookkeeping: `${syncCursor}${table}` and the last confirmed sync time. */
+  syncCursor: 'sync.cursor.',
+  lastSyncedAt: 'sync.lastSyncedAt',
 } as const;
 
 export async function getMeta<T>(db: WorkoutDatabase, key: string): Promise<T | undefined> {
@@ -31,6 +41,42 @@ export async function updatePreferences(
   patch: Partial<Preferences>,
 ): Promise<Preferences> {
   const next = Preferences.parse({ ...(await getPreferences(db)), ...patch });
-  await setMeta(db, META_KEYS.preferences, next);
+  await db.transaction('rw', [db.meta, db.outbox], async () => {
+    const at = new Date().toISOString();
+    await db.meta.put({ key: META_KEYS.preferences, value: next, updatedAt: at });
+    if (db.syncEnabled) {
+      await db.outbox.put({
+        id: 'preferences:preferences',
+        table: 'preferences',
+        recordId: 'preferences',
+        recordUpdatedAt: at,
+        queuedAt: at,
+        attempts: 0,
+        lastError: null,
+      });
+    }
+  });
   return next;
+}
+
+/** The rest timer is device state, not training data: it is never synced. */
+export async function getRestTimer(db: WorkoutDatabase): Promise<RestTimerState | null> {
+  return (await getMeta<RestTimerState>(db, META_KEYS.restTimer)) ?? null;
+}
+
+export async function saveRestTimer(db: WorkoutDatabase, state: RestTimerState | null) {
+  if (state === null) await db.meta.delete(META_KEYS.restTimer);
+  else await setMeta(db, META_KEYS.restTimer, state);
+}
+
+/** Ids of progression suggestions the person dismissed (exerciseId:workoutId). */
+export async function getDismissedSuggestions(db: WorkoutDatabase): Promise<string[]> {
+  return (await getMeta<string[]>(db, META_KEYS.dismissedSuggestions)) ?? [];
+}
+
+export async function dismissSuggestion(db: WorkoutDatabase, id: string): Promise<void> {
+  const current = await getDismissedSuggestions(db);
+  if (current.includes(id)) return;
+  // Keep the list short: old sessions never come back as suggestions anyway.
+  await setMeta(db, META_KEYS.dismissedSuggestions, [...current, id].slice(-200));
 }

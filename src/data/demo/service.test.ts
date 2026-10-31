@@ -77,3 +77,18 @@ describe('demo data service', () => {
     expect(await db.exercises.count()).toBe(SYSTEM_EXERCISES.length);
   });
 });
+
+describe('demo data and accounts', () => {
+  it('is refused for an account database unless the caller allows it (development only)', async () => {
+    const account = new WorkoutDatabase(`demo-account-${Math.random()}`, { syncEnabled: true });
+    await account.open();
+    await expect(loadDemoData(account)).rejects.toThrow('only available without an account');
+    expect(await account.workouts.count()).toBe(0);
+    // Development and end-to-end builds load it on purpose; the records stay on the device
+    // either way, because only `origin: 'user'` records are ever sent to the server.
+    await loadDemoData(account, new Date(), { intoAccount: true });
+    expect(await account.workouts.count()).toBeGreaterThan(0);
+    expect(await account.workouts.where('origin').equals('user').count()).toBe(0);
+    await account.delete();
+  });
+});

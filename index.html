@@ -1,32 +1,236 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <meta name="theme-color" content="#0E0F0D" />
-    <meta name="color-scheme" content="dark light" />
-    <meta name="description" content="Fast workout logging and transparent strength analytics." />
+    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="preload" href="/fonts/inter-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/inter-600.woff2" as="font" type="font/woff2" crossorigin />
+    <meta name="description" content="Log every set and every meal, Indian food by the katori. Watch strength, volume and records grow with research-based routines. Works offline. Free to start." />
+    <script>(function(){var h=document.documentElement;try{if(location.pathname!=="/")return;if(localStorage.getItem("overload.seenTour")==="1")return;for(var i=0;i<localStorage.length;i++){if(/^sb-.+-auth-token$/.test(localStorage.key(i)||""))return}}catch(e){}h.setAttribute("data-landing","")})();</script>
+    <style>
+      /* Shown from the very first paint until the app has drawn its first screen (src/main.tsx),
+         so an installed app never opens on a blank black screen. Same mark and place as the
+         app's own opening screen, so the hand-over is invisible. */
+      #boot{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;transition:opacity .2s ease-out}
+      #boot.out{opacity:0;pointer-events:none}
+      #boot svg{width:48px;height:48px;opacity:.6}
+      html[data-landing] #boot{display:none}
+      /* The start-up check (script above): shown only if the app has not opened in a few seconds. */
+      #boot-help{max-width:22rem;margin:28px 24px 0;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#f5f5f7;text-align:center}
+      #boot-help p{margin:0 0 6px}
+      #boot-help .sub{color:#a1a1aa;font-size:14px}
+      #boot-help .why{color:#71717a;font-size:12px;word-break:break-word;margin-top:14px}
+      #boot-help button{display:block;width:100%;height:48px;margin-top:12px;border:0;border-radius:12px;font:600 16px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;cursor:pointer}
+      #boot-help .main{background:#c6f432;color:#000;margin-top:20px}
+      #boot-help .alt{background:#27272a;color:#f5f5f7}
+    </style>
+    <script>(function(){var w=window,d=document,started=false,errs=[];var o=w.__overload={stage:"loading the app",errors:errs,started:function(){started=true;var p=d.getElementById("boot-help");if(p&&p.parentNode)p.parentNode.removeChild(p)}};function note(m){if(m&&errs.length<4)errs.push(String(m).slice(0,240))}w.addEventListener("error",function(e){var t=e.target;note(e.message||(t&&(t.src||t.href)?"Could not load "+(t.src||t.href):""))},true);w.addEventListener("unhandledrejection",function(e){var r=e.reason;note(r&&r.message||r)});o.repair=function(){var jobs=[];try{if(navigator.serviceWorker)jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister()}))}));if(w.caches)jobs.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}))}catch(e){}return Promise.all(jobs).catch(function(){}).then(function(){location.replace(location.pathname+location.search)})};o.help=function(){if(started||d.getElementById("boot-help"))return;var b=d.getElementById("boot");if(!b)return;b.classList.remove("out");var h=d.createElement("div");h.id="boot-help";h.setAttribute("role","alert");function line(text,cls){var p=d.createElement("p");p.textContent=text;if(cls)p.className=cls;h.appendChild(p)}function button(text,cls,fn){var x=d.createElement("button");x.type="button";x.className=cls;x.textContent=text;x.onclick=fn;h.appendChild(x)}line("Overload is taking longer than usual to open.");line("Everything you logged is safe, on this phone and in your account.","sub");button("Repair and open","main",function(){o.repair()});button("Try again","alt",function(){location.reload()});line("Stuck while "+o.stage+(errs.length?". "+errs.join(" | "):"."),"why");b.removeAttribute("aria-hidden");b.appendChild(h)};function arm(){setTimeout(function(){if(started||d.documentElement.hasAttribute("data-landing"))return;if(d.visibilityState==="hidden"){d.addEventListener("visibilitychange",arm,{once:true});return}var k="overload.autoRepairAt",last=0;try{last=+localStorage.getItem(k)||0}catch(e){}var sw=navigator.serviceWorker;if(sw&&sw.controller&&Date.now()-last>600000){try{localStorage.setItem(k,String(Date.now()))}catch(e){}o.repair();return}o.help()},6000)}arm()})();</script>
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <title>Overload</title>
-    <script>
-      // Apply the saved theme before first paint to avoid a flash.
-      (function () {
-        try {
-          var pref = localStorage.getItem('overload.theme') || 'system';
-          var dark =
-            pref === 'dark' ||
-            (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-        } catch (e) {
-          document.documentElement.dataset.theme = 'dark';
-        }
-      })();
-    </script>
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Overload" />
+    <link rel="canonical" href="https://overloadgym.in/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Overload" />
+    <meta property="og:title" content="Overload: workout log and strength progress tracker" />
+    <meta property="og:description" content="Log every set and every meal, Indian food by the katori. Watch strength, volume and records grow with research-based routines. Works offline. Free to start." />
+    <meta property="og:url" content="https://overloadgym.in/" />
+    <meta property="og:image" content="https://overloadgym.in/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Overload: log every set, see real progress." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Overload: workout log and strength progress tracker" />
+    <meta name="twitter:description" content="Log every set and every meal, Indian food by the katori. Watch strength, volume and records grow with research-based routines. Works offline. Free to start." />
+    <meta name="twitter:image" content="https://overloadgym.in/og-image.png" />
+    <title>Overload: workout log and strength progress tracker</title>
   </head>
   <body>
+    <!-- landing:start -->
+    <!--
+      The public home page: what search engines, shared links and first-time visitors see at /.
+      Plain HTML so it is readable before any script runs. Shown only when the inline script in
+      the head finds no signed-in account and no finished tour on this device (src/app/landing.ts
+      keeps the same rule). Links are plain links: each one opens a fresh page. Every count and
+      feature here is checked against the app by src/app/landing.test.ts.
+    -->
+    <div id="landing" class="min-h-dvh bg-bg text-text-1">
+      <header class="mx-auto flex max-w-5xl items-center justify-between px-safe pt-safe">
+        <a href="/" class="chrome flex h-16 items-center gap-2 rounded-field" aria-label="Overload home">
+          <svg viewBox="0 0 32 32" class="size-8" aria-hidden="true">
+            <rect width="32" height="32" rx="9" fill="var(--lime)" />
+            <rect x="7.5" y="17" width="4" height="8" rx="1.2" fill="var(--on-lime)" opacity="0.45" />
+            <rect x="14" y="12" width="4" height="13" rx="1.2" fill="var(--on-lime)" opacity="0.7" />
+            <rect x="20.5" y="7" width="4" height="18" rx="1.2" fill="var(--on-lime)" />
+          </svg>
+          <span class="type-headline">Overload</span>
+        </a>
+        <a href="/sign-in" class="pressable chrome inline-flex h-9 items-center rounded-full bg-surface-2 px-4 type-meta font-semibold text-text-1">Sign in</a>
+      </header>
+
+      <main>
+        <section class="mx-auto grid max-w-5xl gap-12 px-safe pt-8 pb-16 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-16 lg:pt-16 lg:pb-24">
+          <div>
+            <p class="type-meta font-semibold text-text-2">Workout log and progress tracker</p>
+            <h1 class="mt-3 font-display text-[2.5rem] leading-[1.05] font-bold tracking-[-0.03em] lg:text-[3.75rem]">Log every set. See real progress.</h1>
+            <p class="type-body mt-5 max-w-[46ch] text-[1.0625rem] leading-relaxed text-text-2">
+              Overload is a fast gym log for your phone. It shows what you lifted last time, times
+              your rest, and turns your sets into clear charts of strength, volume and records, with
+              every number explained.
+            </p>
+            <div class="mt-8 flex flex-col gap-3 tab:flex-row">
+              <a href="/sign-up" class="pressable chrome inline-flex h-13 items-center justify-center rounded-nested bg-lime px-6 type-headline text-on-lime">Create free account</a>
+              <a href="/welcome" class="pressable chrome inline-flex h-13 items-center justify-center rounded-nested bg-surface-2 px-6 type-headline text-text-1">Take the tour</a>
+            </div>
+            <p class="type-meta mt-4 text-text-2">Free to start. Every new account gets 7 days of Pro.</p>
+          </div>
+          <div class="flex justify-center gap-4 lg:gap-6">
+            <img src="/landing/logger-360.webp" srcset="/landing/logger-360.webp 360w, /landing/logger-720.webp 720w" sizes="(min-width: 1024px) 240px, 44vw" width="360" height="779" alt="The workout logger: last time's weights beside each set, ticked sets and a rest timer counting down." class="h-auto w-[44%] max-w-[240px] rounded-[1.75rem] border border-border-strong" fetchpriority="high" />
+            <img src="/landing/progress-360.webp" srcset="/landing/progress-360.webp 360w, /landing/progress-720.webp 720w" sizes="(min-width: 1024px) 240px, 44vw" width="360" height="779" alt="The progress screen: workouts, working sets, volume load and records for the last 30 days." class="mt-12 h-auto w-[44%] max-w-[240px] rounded-[1.75rem] border border-border-strong" loading="lazy" decoding="async" />
+          </div>
+        </section>
+
+        <section class="mx-auto max-w-5xl px-safe pb-16 lg:pb-24" aria-labelledby="landing-features">
+          <h2 id="landing-features" class="type-title lg:text-[1.75rem] lg:leading-9">Everything you need between sets</h2>
+          <ul class="mt-6 grid gap-3 tab:grid-cols-2 lg:grid-cols-3">
+            <li class="rounded-card border border-border bg-surface p-5">
+              <h3 class="type-headline">Fast set logging</h3>
+              <p class="type-body mt-2 text-text-2">Last time's weight and reps sit beside every set, so you know what to beat. Tick a set and the rest timer starts.</p>
+            </li>
+            <li class="rounded-card border border-border bg-surface p-5">
+              <h3 class="type-headline">Routines that fit your week</h3>
+              <p class="type-body mt-2 text-text-2">Start from <span data-count="templates">16</span> routine templates, or let setup build one from your training days, session length and equipment.</p>
+            </li>
+            <li class="rounded-card border border-border bg-surface p-5">
+              <h3 class="type-headline">Progress you can trust</h3>
+              <p class="type-body mt-2 text-text-2">Estimated one rep max, top sets, volume, hard sets per muscle and consistency, all calculated from the sets you log.</p>
+            </li>
+            <li class="rounded-card border border-border bg-surface p-5">
+              <h3 class="type-headline">Records and medals</h3>
+              <p class="type-body mt-2 text-text-2">Personal records are spotted the moment you lift them, with medals, badges and story cards to share.</p>
+            </li>
+            <li class="rounded-card border border-border bg-surface p-5">
+              <h3 class="type-headline">Food, made for Indian meals</h3>
+              <p class="type-body mt-2 text-text-2">Log roti, dal, sabzi and rice the way you eat them: by the katori, with light or rich oil, your usual breakfast in one tap. Calories and protein against your targets, next to your body weight trend.</p>
+            </li>
+            <li class="rounded-card border border-border bg-surface p-5">
+              <h3 class="type-headline">Works without signal</h3>
+              <p class="type-body mt-2 text-text-2">Log in a basement gym with no internet. Everything saves on your phone first and syncs to your account when you are back online.</p>
+            </li>
+            <li class="rounded-card border border-border bg-surface p-5">
+              <h3 class="type-headline">Bring your history</h3>
+              <p class="type-body mt-2 text-text-2">Coming from Hevy or Strong? Import the export file and your workouts, records and routine come with you.</p>
+            </li>
+            <li class="rounded-card border border-border bg-surface p-5">
+              <h3 class="type-headline">An exercise library</h3>
+              <p class="type-body mt-2 text-text-2"><span data-count="exercises">120</span> exercises with instructions and the muscles each one works, plus any custom exercises you add.</p>
+            </li>
+            <li class="rounded-card border border-border bg-surface p-5">
+              <h3 class="type-headline">Every number explained</h3>
+              <p class="type-body mt-2 text-text-2">Each figure follows a published method, from the Epley formula for one rep max to counting hard sets by reps in reserve. The science page shows the formula and the research.</p>
+            </li>
+          </ul>
+        </section>
+
+        <section class="mx-auto max-w-5xl px-safe pb-16 lg:pb-24" aria-labelledby="landing-plans">
+          <h2 id="landing-plans" class="type-title lg:text-[1.75rem] lg:leading-9">Free to start</h2>
+          <p class="type-body mt-2 max-w-[60ch] text-text-2">Logging and your history are never locked. Pro adds longer trends and coaching tools, and every new account gets 7 days of Pro to try them.</p>
+          <div class="mt-6 grid gap-3 tab:grid-cols-2">
+            <div class="rounded-card border border-border bg-surface p-5">
+              <h3 class="type-headline">Free</h3>
+              <ul class="type-body mt-3 list-disc space-y-2 pl-5 text-text-2" data-plan="free">
+                <li>Unlimited workout logging, routines and custom exercises</li>
+                <li>Your full workout history and every personal record</li>
+                <li>Body weight, measurements, calories, protein, BMI and body fat</li>
+                <li>Food logging for Indian meals: thalis, katori portions, your usual meals and daily totals</li>
+                <li>Progress for the last 7 and 30 days, with insights</li>
+                <li>Backup and sync across your devices</li>
+              </ul>
+            </div>
+            <div class="rounded-card border border-border-strong bg-surface p-5">
+              <h3 class="type-headline">Pro</h3>
+              <ul class="type-body mt-3 list-disc space-y-2 pl-5 text-text-2" data-plan="pro">
+                <li>90-day and all-time trends</li>
+                <li>Sets per muscle group</li>
+                <li>Progression suggestions</li>
+                <li>Strength levels and DOTS</li>
+                <li>Plateau detection</li>
+                <li>Weekly check-in</li>
+                <li>AI food logging</li>
+                <li>Food insights</li>
+                <li>OverloadGPT</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="mx-auto max-w-5xl px-safe pb-16 lg:pb-24" aria-labelledby="landing-faq">
+          <h2 id="landing-faq" class="type-title lg:text-[1.75rem] lg:leading-9">Questions</h2>
+          <dl class="mt-6 grid gap-x-10 gap-y-6 lg:grid-cols-2">
+            <div>
+              <dt class="type-headline">Is Overload free?</dt>
+              <dd class="type-body mt-2 text-text-2">Yes. Logging, routines, your full history and every record are free with no limit. Pro is a paid upgrade for longer trends and coaching tools.</dd>
+            </div>
+            <div>
+              <dt class="type-headline">Do I need to install anything?</dt>
+              <dd class="type-body mt-2 text-text-2">No. Overload runs in your phone's browser. Add it to your home screen and it opens full screen like any other app, even offline.</dd>
+            </div>
+            <div>
+              <dt class="type-headline">Can I move my data from Hevy or Strong?</dt>
+              <dd class="type-body mt-2 text-text-2">Yes. Export your workouts from Hevy or Strong and import the file in Overload. Importing the same file twice adds nothing new.</dd>
+            </div>
+            <div>
+              <dt class="type-headline">Does it use kg or lb?</dt>
+              <dd class="type-body mt-2 text-text-2">Either. Choose your unit in settings. Dumbbell weights are entered per dumbbell, and volume counts both hands.</dd>
+            </div>
+            <div>
+              <dt class="type-headline">What happens to my data?</dt>
+              <dd class="type-body mt-2 text-text-2">It is kept on your phone and in your account so it is never lost. We do not sell your data or show ads. You can export it as CSV or delete your account at any time.</dd>
+            </div>
+            <div>
+              <dt class="type-headline">How are the numbers calculated?</dt>
+              <dd class="type-body mt-2 text-text-2">From your logged sets only, with published methods. Estimates such as one rep max are labelled as estimates, and nothing is made up to fill a chart.</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="mx-auto max-w-5xl px-safe pb-20" aria-labelledby="landing-start">
+          <div class="rounded-panel border border-border bg-surface px-6 py-10 text-center">
+            <h2 id="landing-start" class="type-title lg:text-[1.75rem] lg:leading-9">Start your next workout with Overload</h2>
+            <div class="mt-6 flex flex-col justify-center gap-3 tab:flex-row">
+              <a href="/sign-up" class="pressable chrome inline-flex h-13 items-center justify-center rounded-nested bg-lime px-6 type-headline text-on-lime">Create free account</a>
+              <a href="/welcome" class="pressable chrome inline-flex h-13 items-center justify-center rounded-nested bg-surface-2 px-6 type-headline text-text-1">Take the tour</a>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="mx-auto max-w-5xl border-t border-border px-safe pt-6 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+        <nav aria-label="Legal" class="type-meta flex flex-wrap gap-x-4 gap-y-2">
+          <a href="/terms" class="text-text-2 underline">Terms</a>
+          <a href="/privacy" class="text-text-2 underline">Privacy</a>
+          <a href="/refunds" class="text-text-2 underline">Refunds</a>
+          <a href="/contact" class="text-text-2 underline">Contact</a>
+        </nav>
+        <p class="type-caption mt-3 text-text-2">Overload is run by Anish Verma, India.</p>
+      </footer>
+    </div>
+    <!-- landing:end -->
+    <div id="boot" aria-hidden="true">
+      <svg viewBox="0 0 32 32">
+        <rect width="32" height="32" rx="9" fill="#c6f432" />
+        <rect x="7.5" y="17" width="4" height="8" rx="1.2" fill="#000" opacity="0.45" />
+        <rect x="14" y="12" width="4" height="13" rx="1.2" fill="#000" opacity="0.7" />
+        <rect x="20.5" y="7" width="4" height="18" rx="1.2" fill="#000" />
+      </svg>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

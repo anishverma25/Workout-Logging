@@ -28,14 +28,21 @@ export function roundTo(value: number, increment: number): number {
   return Math.round(value / increment) * increment;
 }
 
-/** Trims trailing zeros: 80 -> "80", 77.5 -> "77.5", 102.06 -> "102.1" (1 decimal max by default). */
-export function formatWeightValue(kg: number, unit: WeightUnit, maxDecimals = 1): string {
+/**
+ * Trims trailing zeros. By default kilograms keep up to two decimals when the stored value
+ * needs them (41.25 stays 41.25, 70.0 shows 70) and converted pounds show at most one.
+ */
+export function formatWeightValue(kg: number, unit: WeightUnit, maxDecimals?: number): string {
   const v = toDisplayWeight(kg, unit);
-  const factor = 10 ** maxDecimals;
+  // Loaded weights move in 0.25 kg steps, so a logged 41.25 keeps both decimals; calculated
+  // values (estimates, averages) show one.
+  const quarterStep = Math.abs(v * 4 - Math.round(v * 4)) < 1e-6;
+  const decimals = maxDecimals ?? (unit === 'kg' && quarterStep ? 2 : 1);
+  const factor = 10 ** decimals;
   const rounded = Math.round(v * factor) / factor;
-  return rounded.toLocaleString(undefined, { maximumFractionDigits: maxDecimals });
+  return rounded.toLocaleString('en-GB', { maximumFractionDigits: decimals });
 }
 
-export function formatWeight(kg: number, unit: WeightUnit, maxDecimals = 1): string {
+export function formatWeight(kg: number, unit: WeightUnit, maxDecimals?: number): string {
   return `${formatWeightValue(kg, unit, maxDecimals)} ${unit}`;
 }
