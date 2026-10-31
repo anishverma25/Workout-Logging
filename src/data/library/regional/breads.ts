@@ -14,7 +14,7 @@ bread.add('Butter roti', 'n', 'atta 30, butter 5', 'm34', {
   n: 2,
   a: 'butter chapati; tandoori butter roti',
 });
-bread.add('Tawa roti', 'a', 'atta 35', 'm34', { p: ROTI, n: 2, a: 'tawa chapati; thick roti' });
+bread.add('Tawa roti', 'a', 'atta 35', 'm34', { p: ROTI, n: 2, a: 'tawa chapati' });
 bread.add('Multigrain roti', 'a', 'atta 20, jowar 5, bajra 5, ragi 5', 'm34', {
   p: ROTI,
   n: 2,
@@ -43,7 +43,7 @@ bread.add('Rice roti', 's', 'rice-flour 35', 'm38', {
 });
 bread.add('Bajri na rotla', 'w', 'bajra 60, ghee 5', 'm36', {
   p: PCS(1, 'rotla', 'rotlas'),
-  a: 'bajra rotla; bajre ki roti',
+  a: 'bajra rotla',
 });
 bread.add('Sev roti', 'w', 'atta 30, ghee 4, besan 8, oil 3', 'm30', {
   p: ROTI,
@@ -122,13 +122,6 @@ bread.add('Paratha roll', 'a', 'maida 60, potato 60, onion 15, oil 12', 'm45', {
   m: 'bs',
   a: 'veg paratha roll; aloo roll',
 });
-bread.add('Puri', 'n', 'atta 20, oil 6', 'm15', {
-  p: PCS(1, 'puri', 'puris'),
-  n: 3,
-  id: 'plain-puri',
-  m: 'bm',
-  a: 'poori; plain puri',
-});
 bread.add('Methi puri', 'w', 'atta 20, besan 3, oil 6', 'm10', {
   p: PCS(1, 'puri', 'puris'),
   n: 4,
@@ -151,12 +144,6 @@ bread.add('Dal puri', 'e', 'atta 30, chana-dal 15, oil 8', 'm20', {
   p: PCS(1, 'puri', 'puris'),
   n: 2,
   a: 'dal poori; daal puri bihari',
-});
-bread.add('Kachori', 'n', 'maida 35, moong-dal 12, oil 15', 'm8', {
-  p: PCS(1, 'kachori', 'kachoris'),
-  id: 'khasta-kachori',
-  m: 'bs',
-  a: 'khasta kachori; moong dal kachori',
 });
 bread.add('Dudhi thepla', 'w', 'atta 30, besan 5, lauki 20, oil 5', 'm32', {
   p: PCS(1, 'thepla', 'theplas'),
@@ -223,12 +210,12 @@ bread.add('Pao bhaji pav', 'w', 'bread 40, butter 8', 46, {
   p: PCS(1, 'pav', 'pavs'),
   n: 2,
   m: 'bs',
-  a: 'butter pav; buttered pav',
+  a: 'buttered pav',
 });
 bread.add('Irani chai bun', 'w', 'maida 60, sugar 10, butter 8, milk 15, raisins 5', 'm25', {
   p: PCS(1, 'bun', 'buns'),
   m: 'bs',
-  a: 'bun; irani bun; sweet bun',
+  a: 'irani bun; sweet bun',
 });
 bread.add('Milk bread', 'a', 'maida 100, milk 40, sugar 8, butter 8', 'm35', {
   p: PCS(5, 'slice', 'slices'),

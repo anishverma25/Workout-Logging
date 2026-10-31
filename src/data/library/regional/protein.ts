@@ -136,10 +136,6 @@ paneer.add('Grilled tofu', 'a', 'tofu 300, oil 10, soy-sauce 10', 270, {
   u: ['serving', 'g'],
   a: 'tofu steak',
 });
-paneer.add('Soya nuggets curry', 'a', 'soya-chunks 100, onion 100, tomato 150, oil 20', 700, {
-  s: 4,
-  a: 'soya chunks curry; soya bean curry; meal maker curry',
-});
 paneer.add('Soya chaap', 'n', 'soya-chunks 80, maida 60, atta 20, oil 25, curd 40', 'm52', {
   p: PCS(4, 'stick', 'sticks'),
   m: 'sd',

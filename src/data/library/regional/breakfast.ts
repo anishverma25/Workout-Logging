@@ -432,7 +432,7 @@ add('Oats porridge', 'a', 'oats 40, milk-toned 200, sugar 6', 230, {
   s: 1,
   u: ['katori', 'g'],
   m: 'b',
-  a: 'oats with milk; oatmeal; oats kheer',
+  a: 'oats kheer',
 });
 add('Bun parotta', 's', 'maida 120, oil 25, sugar 3', 'm28', {
   p: [3, 'bun parotta', 'bun parottas'],

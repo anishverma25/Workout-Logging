@@ -37,7 +37,7 @@ curry.add('Aloo tamatar', 'n', 'potato 400, tomato 250, oil 25, ginger 5', 800, 
 });
 curry.add('Rasedar aloo', 'n', 'potato 400, tomato 120, oil 20, water 300', 850, {
   s: 4,
-  a: 'aloo ka jhol; aloo rassa; aloo ki sabzi gravy',
+  a: 'aloo ka jhol; aloo ki sabzi gravy',
 });
 dry.add('Kurkuri bhindi', 'n', 'okra 300, besan 30, cornflour 10, oil 40', 260, {
   s: 3,
@@ -81,7 +81,7 @@ curry.add('Tinda masala', 'n', 'tinda 450, onion 60, tomato 100, oil 25', 560, {
 dry.add('Karela fry', 'n', 'karela 300, onion 80, oil 30', 280, {
   s: 3,
   d: L,
-  a: 'karela sabzi; bitter gourd fry',
+  a: 'bitter gourd fry',
 });
 dry.add('Bharwa karela', 'n', 'karela 300, onion 80, besan 15, oil 35', 320, {
   s: 3,

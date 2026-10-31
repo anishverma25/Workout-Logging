@@ -93,5 +93,29 @@ describe('people find the regional dishes by the name they use', () => {
     // "Dal tadka" stays the answer to "dal".
     expect(searchFoods(all, 'dal', null)[0]?.id).toBe('dal-tadka');
     expect(searchFoods(all, 'roti', null)[0]?.id).toBe('roti');
+    expect(searchFoods(all, 'chapati', null)[0]?.id).toBe('roti');
+    expect(searchFoods(all, 'daal', null)[0]?.id).toBe('dal-tadka');
   });
+
+  it('the curated library keeps its names and aliases after the regional dishes are added', () => {
+    // Every curated food's own name, and every alias only it uses, still finds it first.
+    const owners = new Map<string, number>();
+    for (const f of FOODS)
+      for (const a of f.aliases)
+        owners.set(a.toLowerCase(), (owners.get(a.toLowerCase()) ?? 0) + 1);
+    const lost: string[] = [];
+    for (const f of FOODS) {
+      // The name as typed: "Pav bhaji (bhaji)" is searched as "pav bhaji".
+      const queries = [
+        f.name.split(/[,(]/)[0]!.trim(),
+        ...f.aliases.filter((a) => owners.get(a.toLowerCase()) === 1),
+      ];
+      for (const q of queries) {
+        const before = searchFoods(FOODS, q, null)[0]?.id;
+        const after = searchFoods(all, q, null)[0]?.id;
+        if (before === f.id && after !== f.id) lost.push(`${q}: ${f.id} -> ${after}`);
+      }
+    }
+    expect(lost).toEqual([]);
+  }, 60_000);
 });

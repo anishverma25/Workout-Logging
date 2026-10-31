@@ -22,7 +22,7 @@ veg.add(
   's',
   'rice 200, tamarind 25, oil 30, peanuts 20, chana-dal 10, jaggery 8, sesame 5',
   640,
-  { s: 3, d: D, a: 'puliyodarai; pulihora; puli sadam; chitranna; huli anna' },
+  { s: 3, d: D, a: 'puliyodarai; pulihora; puli sadam; huli anna' },
 );
 veg.add('Tomato rice', 's', 'rice 200, tomato 200, onion 60, oil 25, peas 20', 760, {
   s: 3,
@@ -222,13 +222,6 @@ fish.add(
 
 // Indo Chinese
 veg.add(
-  'Fried rice',
-  'a',
-  'rice 200, carrot 40, beans 40, cabbage 40, spring-onion 20, oil 30, soy-sauce 10',
-  720,
-  { s: 3, d: D, a: 'veg fried rice; vegetable fried rice; chinese fried rice' },
-);
-veg.add(
   'Schezwan fried rice',
   'a',
   'rice 200, carrot 40, capsicum 40, cabbage 40, oil 35, garlic 10, chilli-powder 4, soy-sauce 10',
@@ -262,13 +255,6 @@ veg.add(
   'rice 200, paneer 100, carrot 30, capsicum 30, oil 30, soy-sauce 10',
   740,
   { s: 3, d: D, a: 'paneer rice chinese' },
-);
-veg.add(
-  'Hakka noodles',
-  'a',
-  'egg-noodles 150, cabbage 60, carrot 40, capsicum 40, spring-onion 20, oil 30, soy-sauce 10',
-  600,
-  { s: 3, d: 0.6, a: 'veg hakka noodles; veg noodles; chowmein; chow mein' },
 );
 veg.add(
   'Schezwan noodles',

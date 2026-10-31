@@ -250,7 +250,7 @@ snack.add('Gur til ladoo', 'w', 'sesame 100, jaggery 90, peanuts 20, ghee 5', 'm
 snack.add('Bhujia sev', 'w', 'besan 100, oil 35', 'm3', {
   u: ['g'],
   n: 30,
-  a: 'bikaneri bhujia; bhujia',
+  a: 'bikaneri bhujia',
 });
 snack.add('Ratlami sev', 'w', 'besan 100, oil 35', 'm3', {
   u: ['g'],
@@ -526,7 +526,7 @@ snack.add('Butter bread', 'a', 'bread 50, butter 8', 58, {
 });
 snack.add('Peanut butter sandwich', 'a', 'bread 75, peanut-butter 30', 105, {
   p: PCS(1, 'sandwich', 'sandwiches'),
-  a: 'pb sandwich; peanut butter toast',
+  a: 'pb sandwich',
 });
 snack.add('Egg chaat', 'n', 'egg 100, onion 20, tomato 20, lemon 5', 140, {
   s: 1,
@@ -659,7 +659,7 @@ plate.add(
   'a',
   'egg-noodles 150, cabbage 80, carrot 40, capsicum 40, oil 25, soy-sauce 10',
   600,
-  { s: 3, a: 'veg chow mein; chowmein; street chowmein' },
+  { s: 3, a: 'veg chow mein; street chowmein' },
 );
 plate.add(
   'Egg noodles',
@@ -881,11 +881,6 @@ plate.add('Oats banana pancake', 'a', 'oats 50, banana 100, egg 50, milk 40, oil
   n: 3,
   m: 'bs',
   a: 'banana oats pancake',
-});
-plate.add('Maple pancake', 'a', 'pancake 120, maple-syrup 30, butter 8', 158, {
-  s: 1,
-  m: 'bs',
-  a: 'pancakes with maple syrup',
 });
 
 export const SNACKS = [...snack.out, ...plate.out];

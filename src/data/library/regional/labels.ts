@@ -77,7 +77,7 @@ export const REGIONAL_LABELS: LabelDef[] = [
   {
     id: 'amul-whey-protein',
     name: 'Amul Whey Protein',
-    aliases: ['amul whey', 'amul whey plain', 'whey protein'],
+    aliases: ['amul whey', 'amul whey plain'],
     category: 'drink',
     values: [400, 78, 10.8, 5, 0],
     serving: { g: 32, name: ['sachet', 'sachets'] },
@@ -85,7 +85,7 @@ export const REGIONAL_LABELS: LabelDef[] = [
   {
     id: 'amul-whey-protein-chocolate',
     name: 'Amul Chocolate Whey Protein',
-    aliases: ['amul whey chocolate', 'amul chocolate whey', 'whey protein'],
+    aliases: ['amul whey chocolate', 'amul chocolate whey'],
     category: 'drink',
     values: [383, 74, 10.6, 5, 0],
     serving: { g: 34, name: ['sachet', 'sachets'] },
@@ -148,7 +148,7 @@ export const REGIONAL_LABELS: LabelDef[] = [
   {
     id: 'amul-cow-milk',
     name: 'Amul Cow Milk',
-    aliases: ['amul cow', 'cow milk'],
+    aliases: ['amul cow'],
     category: 'dairy',
     values: [62, 3.1, 4.7, 3.5, 0],
     serving: { g: 200, name: ['glass', 'glasses'] },

@@ -360,7 +360,7 @@ sweet.add('Paal kozhukattai', 's', 'rice-flour 100, milk 400, jaggery 80, coconu
 sweet.add('Kozhukatta', 's', 'rice-flour 100, coconut 60, jaggery 60', 'm42', {
   ...ONE,
   p: PCS(10, 'kozhukatta', 'kozhukattas'),
-  a: 'kozhukattai; modak south',
+  a: 'modak south',
 });
 sweet.add('Adhirasam', 's', 'rice-flour 150, jaggery 120, ghee 10, oil 40', 'm8', {
   ...ONE,
@@ -504,7 +504,7 @@ bowl.add(
 bowl.add('Nolen gurer payesh', 'e', 'rice 60, milk 900, jaggery 100', 750, {
   ...ONE,
   s: 6,
-  a: 'nolen gur payesh; payesh; payesh bhog',
+  a: 'nolen gur payesh; payesh bhog',
 });
 bowl.add('Chhanar payesh', 'e', 'paneer 150, milk 600, sugar 80', 650, {
   ...ONE,

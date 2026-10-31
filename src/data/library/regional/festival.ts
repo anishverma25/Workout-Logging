@@ -50,7 +50,7 @@ vrat.add('Samak khichdi', 'n', 'little-millet 100, potato 80, peanuts 20, ghee 1
   s: 2,
   u: ['katori', 'g'],
   d: 0.8,
-  a: 'samvat khichdi; bhagar khichdi; vrat khichdi',
+  a: 'samvat khichdi; bhagar khichdi',
 });
 vrat.add('Shakarkandi chaat', 'n', 'sweet-potato 250, lemon 10', 240, {
   s: 2,
@@ -237,7 +237,6 @@ fest.add('Jonna rotte', 's', 'jowar 50', 'm34', {
   ...ONE,
   p: PCS(1, 'rotte', 'rottes'),
   m: 'm',
-  a: 'jowar roti; jolada rotti',
 });
 fest.add('Sajja rotte', 's', 'bajra 50', 'm34', {
   ...ONE,

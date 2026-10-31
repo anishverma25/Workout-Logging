@@ -5,12 +5,6 @@ const glass = group({ category: 'drink', meals: 'a', units: GLASS });
 const cup = group({ category: 'drink', meals: 'a', units: CUP });
 const D = { nofat: true, s: 1 } as const;
 
-cup.add('Masala chai', 'a', 'milk 60, tea 90, sugar 6, ginger 1, black-pepper 0.2', 140, {
-  ...D,
-  d: 1.02,
-  id: 'masala-chai-spiced',
-  a: 'chai masala; masala tea',
-});
 cup.add('Elaichi chai', 'a', 'milk 60, tea 90, sugar 6', 140, { ...D, d: 1.02, a: 'cardamom tea' });
 cup.add('Kadak chai', 'a', 'milk 50, tea 80, sugar 8', 120, {
   ...D,

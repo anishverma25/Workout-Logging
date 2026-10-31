@@ -10,7 +10,7 @@ dal.add('Moong dal sabut', 'a', 'moong-whole 150, onion 40, tomato 60, oil 12, g
 });
 dal.add('Urad dal', 'n', 'urad-whole 150, onion 40, tomato 60, ghee 15, ginger 5', 850, {
   s: 4,
-  a: 'sabut urad; kali dal; maah di dal',
+  a: 'sabut urad; maah di dal',
 });
 dal.add('Chilka moong dal', 'n', 'moong-dal 150, onion 30, tomato 50, ghee 12', 800, {
   s: 4,
