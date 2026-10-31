@@ -1,4 +1,4 @@
-import { Profile } from '@/domain/models/schemas';
+import { AVATAR_MAX_CHARS, Profile } from '@/domain/models/schemas';
 import type { WorkoutDatabase } from '../db';
 import { newRecordMeta, patchRecord, putRecords } from './write';
 
@@ -65,6 +65,21 @@ export async function saveProfile(
     const profile = Profile.parse({ ...newRecordMeta('user', now.toISOString()), ...fields });
     await putRecords(db, 'profiles', [profile]);
     return profile;
+  });
+}
+
+/** Sets or removes the photo on the person's own profile (a data URL made by `lib/avatar`). */
+export async function saveAvatar(db: WorkoutDatabase, avatar: string | null): Promise<void> {
+  if (avatar !== null && !Profile.shape.avatar.safeParse(avatar).success)
+    throw new ProfileError(
+      avatar.length > AVATAR_MAX_CHARS
+        ? 'That photo is too large. Try another one.'
+        : 'That file is not a photo we can use.',
+    );
+  await db.transaction('rw', [db.profiles, db.outbox], async () => {
+    const current = await ownProfile(db);
+    if (!current) throw new ProfileError('Set up your profile first.');
+    await patchRecord<Profile>(db, 'profiles', current.id, { avatar });
   });
 }
 

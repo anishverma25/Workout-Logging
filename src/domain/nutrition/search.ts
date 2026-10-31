@@ -119,7 +119,14 @@ export function foodScore(food: Food, query: string): number {
   const q = normalize(query);
   // "Milk, full cream" is milk: the name before a comma or bracket counts as the food itself.
   const base = normalize(food.name.split(/[,(]/)[0] ?? food.name);
-  const exact = (food.aliases.some((a) => normalize(a) === q) ? 3 : 0) + (base === q ? 2 : 0);
+  // An alias that is the whole query counts like the name (an alias word scores 6 against 10 for
+  // a name word), so "chapati" is roti, not chapati roll; a food named exactly the query still
+  // comes first.
+  const aliasExact = food.aliases.some((a) => normalize(a) === q) ? 4 * words.length + 1 : 0;
+  // Larger than any alias can add, so a name that is the query always wins ("Protein bar" of
+  // your own over a brand's bar that lists "protein bar" as another name).
+  const nameExact = base === q ? 4 * words.length + 3 : 0;
+  const exact = aliasExact + nameExact;
   // The curated library first, then Indian Nutrient Databank dishes, then USDA foods.
   const tail = food.source === 'usda' ? 4 : food.source === 'indb' ? 2 : 0;
   return total + exact - tail - normalize(food.name).length * 0.01;

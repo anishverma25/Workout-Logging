@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Camera, ChevronLeft, Crown, Minus, Plus, ScanText, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router';
 import {
@@ -13,7 +13,7 @@ import { warmAi } from '@/app/aiWarm';
 import { useFeature } from '@/app/entitlement';
 import { db } from '@/data/db';
 import { STARTER_FOODS } from '@/data/library/foods';
-import { loadMoreFoods } from '@/data/library/moreFoods';
+import { loadMoreFoods, moreFoodsStore } from '@/data/library/moreFoods';
 import {
   copyFoodLogs,
   deleteFoodLogs,
@@ -85,7 +85,7 @@ export function AddFoodSheet({
 type View =
   | { kind: 'pick' }
   | { kind: 'edit'; index: number }
-  | { kind: 'type' }
+  | { kind: 'type'; text?: string }
   | { kind: 'photo' }
   | { kind: 'label' }
   | { kind: 'food'; portion: FoodPortion };
@@ -378,6 +378,7 @@ function AddFoodBody({
         <BackRow label="Tell OverloadGPT" onBack={() => setView({ kind: 'pick' })} />
         <AiFoodLog
           ctx={ctx}
+          initialText={view.text}
           onFill={(items) => {
             setPlate((p) => [...p, ...items]);
             setView({ kind: 'pick' });
@@ -420,7 +421,13 @@ function AddFoodBody({
       </div>
       <div className="pt-2 pb-4">
         {query.trim() ? (
-          <Results rows={rows} query={query} onCreate={() => onCreateFood(query.trim())} />
+          <Results
+            rows={rows}
+            query={query}
+            pro={pro}
+            onCreate={() => onCreateFood(query.trim())}
+            onAsk={() => leave({ kind: 'type', text: query.trim() })}
+          />
         ) : (
           <Quick
             rows={rows}
@@ -555,13 +562,22 @@ const DIET_WORD = {
 function Results({
   rows,
   query,
+  pro,
   onCreate,
+  onAsk,
 }: {
   rows: RowProps;
   query: string;
+  pro: boolean;
   onCreate: () => void;
+  /** Opens OverloadGPT with the search already typed in. */
+  onAsk: () => void;
 }) {
   const { ctx } = rows;
+  // The long tail (regional dishes, USDA, INDB) loads when the sheet opens: until it is here,
+  // an empty result is "still looking", not "we do not have it".
+  const longTail = useSyncExternalStore(moreFoodsStore.subscribe, moreFoodsStore.get);
+  const stillLoading = longTail.length === 0;
   const results = useMemo(
     () => searchFoods(ctx.foods, query, ctx.diet),
     [ctx.foods, query, ctx.diet],
@@ -578,12 +594,49 @@ function Results({
             <FoodRow key={f.id} food={f} rows={rows} />
           ))}
         </ul>
-      ) : (
-        <p className="type-meta rounded-nested bg-surface-2 p-4 text-center text-text-2">
-          {hidden
-            ? `“${query.trim()}” does not fit your ${DIET_WORD[ctx.diet!]} diet. You can change your diet in food settings.`
-            : `No food called “${query.trim()}” yet. Tell OverloadGPT and it will find it.`}
+      ) : stillLoading ? (
+        <p
+          className="type-meta rounded-nested bg-surface-2 p-4 text-center text-text-2"
+          aria-live="polite"
+          data-food-search-loading
+        >
+          Looking through every food…
         </p>
+      ) : hidden ? (
+        <p className="type-meta rounded-nested bg-surface-2 p-4 text-center text-text-2">
+          “{query.trim()}” does not fit your {DIET_WORD[ctx.diet!]} diet. You can change your diet
+          in food settings.
+        </p>
+      ) : (
+        <div className="rounded-nested bg-surface-2 p-4 text-center" data-food-not-found>
+          <p className="type-headline text-text-1">“{query.trim()}” is not in our foods yet</p>
+          <p className="type-meta mt-1 text-text-2">
+            {pro
+              ? 'OverloadGPT can look it up and work out its numbers for you to check.'
+              : 'With Pro, OverloadGPT looks it up and works out its numbers for you to check.'}
+          </p>
+          <div className="mt-3 flex justify-center">
+            {pro ? (
+              <PrimaryButton
+                compact
+                onClick={onAsk}
+                icon={<Sparkles className="size-4" aria-hidden />}
+                data-ask-gpt-food
+              >
+                Ask OverloadGPT
+              </PrimaryButton>
+            ) : (
+              <Link
+                to="/pro"
+                className="pressable chrome type-headline inline-flex h-11 items-center gap-1.5 rounded-field bg-lime px-4 text-on-lime"
+                data-ask-gpt-food
+              >
+                <Crown className="size-4" aria-hidden />
+                Ask OverloadGPT with Pro
+              </Link>
+            )}
+          </div>
+        </div>
       )}
       <div className="mt-3 flex flex-wrap gap-2">
         <SecondaryButton compact onClick={onCreate} icon={<Plus className="size-4" aria-hidden />}>

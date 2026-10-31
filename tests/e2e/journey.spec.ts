@@ -58,7 +58,10 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     // No account yet: the app opens on the public home page.
     await page.goto('/');
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Log every set. See real progress.' }),
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Log every set and every meal. See real progress.',
+      }),
     ).toBeVisible();
     await page.goto('/sign-up?next=/');
     await page.getByRole('textbox', { name: 'Email' }).fill(email);

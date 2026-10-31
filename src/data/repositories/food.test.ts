@@ -6,6 +6,7 @@ import {
   FoodError,
   keepPlateFoods,
   logFoods,
+  renameOwnFood,
   restoreFoodLogs,
   saveCustomFood,
   updateFoodLog,
@@ -159,5 +160,54 @@ describe('OverloadGPT foods on the plate', () => {
     expect(logs[0]!.kcal).toBeCloseTo(200, 0);
     expect(logs[0]!.foodId).toBe(kept[0]!.food.id);
     expect(await db.customFoods.count()).toBe(1);
+  });
+
+  it('a found food renamed on its card is saved and logged under the new name', async () => {
+    const found = foodFromItem({
+      name: 'Chicken curry',
+      portion: '1 katori',
+      grams: 160,
+      kcal: 250,
+      proteinG: 20,
+      carbsG: 6,
+      fatG: 16,
+      fibreG: 1,
+      diet: 'nonveg',
+      basis: 'photo',
+      ref: 'From the photo',
+    });
+    const renamed = { ...found, name: 'Kadai chicken' };
+    const kept = await keepPlateFoods(db, [
+      { food: renamed, amount: 1, unit: 'serving' as const, size: null, oilLevel: null },
+    ]);
+    const [log] = await logFoods(db, kept, { date: '2026-10-31', meal: 'dinner' });
+    expect(log!.foodName).toBe('Kadai chicken');
+    expect((await db.customFoods.toArray())[0]!.name).toBe('Kadai chicken');
+  });
+
+  it('renaming a logged own food renames the food and that entry, and queues both', async () => {
+    const found = foodFromItem({
+      name: 'Protein bar',
+      portion: '1 bar',
+      grams: 60,
+      kcal: 220,
+      proteinG: 20,
+      carbsG: 22,
+      fatG: 7,
+      fibreG: 3,
+      diet: 'veg',
+      basis: 'label',
+      ref: 'From the label',
+    });
+    const kept = await keepPlateFoods(db, [
+      { food: found, amount: 1, unit: 'serving' as const, size: null, oilLevel: null },
+    ]);
+    const [log] = await logFoods(db, kept, { date: '2026-10-31', meal: 'snacks' });
+    await db.outbox.clear();
+    await renameOwnFood(db, kept[0]!.food.id, log!.id, '  Yoga Bar   chocolate ');
+    expect((await db.foodLogs.get(log!.id))!.foodName).toBe('Yoga Bar chocolate');
+    expect((await db.customFoods.get(kept[0]!.food.id))!.name).toBe('Yoga Bar chocolate');
+    expect(await db.outbox.count()).toBe(2);
+    await expect(renameOwnFood(db, kept[0]!.food.id, log!.id, '   ')).rejects.toThrow(FoodError);
   });
 });

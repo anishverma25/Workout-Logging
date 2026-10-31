@@ -337,3 +337,22 @@ Read README.md for setup, architecture and calculation rules.
   leads with the plans; reminders in `domain/entitlement/nudge.ts` (2 quiet days, gaps 0, 3, 4,
   5, 7 days, then every 10; "not now" a week; real facts only, rotating). `devices.spec.ts`
   also fails on overlapping buttons. Release `2026-10-fresh-look`, `CACHE_EPOCH` `ui-12`.
+- Round 5 (November 2026, migrations `20261031000017_profile_photo.sql` and
+  `20261031000018_coaching.sql`, Dexie unchanged):
+  - Foods: about 1,100 regional dishes (`data/library/regional/`, `group().add()` recipes,
+    loaded with the long tail but ranked as recipes), IFCT 2017 ingredients (`IFCT_PICK` in
+    `scripts/usda-ingredients.mjs`), Amul and 5 Star labels; sources in
+    `docs/food-verification.md`. A search with no match says so and offers Ask OverloadGPT
+    with the words typed (Pro), or the Pro page.
+  - Smith machine presses take a bench angle (`SMITH_BENCH` in `domain/workout/angle.ts`).
+  - AI foods are renamed before logging (`data-rename-ai-item`); own foods after
+    (`renameOwnFood`, Name in `EditFoodSheet`).
+  - Profile photo: `profiles.avatar`, a 256 px JPEG data URL (`lib/avatar.ts`), a late column
+    dropped when the server lacks it (`dropWhenMissing`), `ProfileAvatar` in the header, More
+    and Profile.
+  - 1:1 coaching at ₹999 a month (`/coaching`, `features/coaching`, `app/coaching.ts`): plan
+    `coach_monthly` (kind `coaching`), its own end date `coaching_expires_at` that also extends
+    Pro, the coach's name and WhatsApp only for members (`get_my_coaching`), the intake
+    (`submit_coaching_intake`). Admin steps in `docs/admin-coaching.md`.
+  - Tour and landing show food logging and OverloadGPT. Release `2026-11-coaching` announces
+    coaching only; `CACHE_EPOCH` `ui-13`.

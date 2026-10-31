@@ -6,6 +6,12 @@ describe('bench angle', () => {
     expect(angleKind({ name: 'Decline barbell bench press' })).toBe('decline');
     expect(angleKind({ name: 'Incline dumbbell curl' })).toBe('incline');
     expect(angleKind({ name: 'Barbell bench press' })).toBeNull();
+    // Smith machine presses sit on an adjustable bench, flat to upright.
+    expect(angleKind({ name: 'Smith machine bench press' })).toBe('incline');
+    expect(angleKind({ name: 'Smith machine shoulder press' })).toBe('incline');
+    expect(angleKind({ name: 'Smith machine decline press' })).toBe('decline');
+    expect(angleKind({ name: 'Smith machine squat' })).toBeNull();
+    expect(angleKind({ name: 'Smith machine row' })).toBeNull();
     expect(angleKind({ name: 'Incline treadmill walk', trackingType: 'cardio' })).toBeNull();
   });
 

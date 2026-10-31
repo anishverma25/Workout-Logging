@@ -382,11 +382,15 @@ function ManagePlan({ entitlement: e }: { entitlement: EntitlementView }) {
         Your plan
       </h2>
       <p className="type-body mt-1 text-text-1">
-        {e.paidOnce
-          ? `${plan ? plan.label : 'Pro'}, paid once`
-          : plan
-            ? `${plan.label}, ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]}`
-            : 'Pro plan'}
+        {e.billingPlan === 'coach_monthly'
+          ? e.paidOnce
+            ? '1:1 coaching with Pro, paid once'
+            : '1:1 coaching with Pro, every month'
+          : e.paidOnce
+            ? `${plan ? plan.label : 'Pro'}, paid once`
+            : plan
+              ? `${plan.label}, ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]}`
+              : 'Pro plan'}
       </p>
       <p className="type-meta mt-1 text-text-2">
         {e.renews && until

@@ -7,7 +7,13 @@ import type { SubscriptionSnapshot } from '@/domain/entitlement/entitlement';
  */
 
 export type DevEntitlementState =
-  'real' | 'founding' | 'trial' | 'trial_expired' | 'pro' | 'pro_expired';
+  | 'real'
+  | 'founding'
+  | 'trial'
+  | 'trial_expired'
+  | 'pro'
+  | 'pro_expired'
+  | 'coaching';
 
 export const DEV_STATES: { value: DevEntitlementState; label: string }[] = [
   { value: 'real', label: 'Real' },
@@ -16,6 +22,7 @@ export const DEV_STATES: { value: DevEntitlementState; label: string }[] = [
   { value: 'trial_expired', label: 'Expired trial' },
   { value: 'pro', label: 'Active Pro' },
   { value: 'pro_expired', label: 'Expired Pro' },
+  { value: 'coaching', label: '1:1 coaching' },
 ];
 
 const listeners = new Set<() => void>();
@@ -68,6 +75,7 @@ export function devSnapshot(state: DevEntitlementState, now: Date): Subscription
     billing_kind: null,
     billing_status: null,
     cancel_at_period_end: false,
+    coaching_expires_at: null,
   };
   if (state === 'founding') return { ...base, early_access: true, founding_member: true };
   if (state === 'trial') return base;
@@ -79,6 +87,16 @@ export function devSnapshot(state: DevEntitlementState, now: Date): Subscription
       pro_started_at: h(-48),
       pro_expires_at: h(24 * 28),
       billing_plan: 'monthly',
+      billing_status: 'active',
+    };
+  if (state === 'coaching')
+    return {
+      ...base,
+      status: 'active',
+      pro_started_at: h(-48),
+      pro_expires_at: h(24 * 28),
+      coaching_expires_at: h(24 * 28),
+      billing_plan: 'coach_monthly',
       billing_status: 'active',
     };
   return { ...base, status: 'expired', pro_started_at: h(-24 * 40), pro_expires_at: h(-24 * 10) };

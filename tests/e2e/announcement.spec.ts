@@ -1,33 +1,30 @@
 import { expect, test } from '@playwright/test';
-import { expireTrial, signUpFresh } from './session';
+import { signUpFresh } from './session';
 
-/** The release announcement: the fresh look, shown once, selling Pro to free accounts. */
+/** The release announcement: 1:1 coaching only, shown once, leading to the coaching page. */
 
-test('the announcement shows once and sells Pro to free accounts', async ({ page }) => {
-  const email = await signUpFresh(page, { tag: 'announce' });
-  await expireTrial(email);
+test('the announcement shows once and leads to 1:1 coaching', async ({ page }) => {
+  await signUpFresh(page, { tag: 'announce' });
   await page.evaluate(() => localStorage.removeItem('overload.whatsNew'));
   await page.goto('/');
   const dialog = page.getByRole('dialog', { name: 'New in Overload' });
-  await expect(dialog.getByText('Cleaner, calmer, quicker.')).toBeVisible();
-  await expect(dialog.getByText('OverloadGPT on every tab.')).toBeVisible();
-  await expect(
-    dialog.getByText(
-      /OverloadGPT and the full Progress analysis are part of Pro, from ₹\d+ a month/,
-    ),
-  ).toBeVisible();
-  await dialog.getByRole('button', { name: 'See Pro' }).click();
-  await expect(page).toHaveURL(/\/pro$/);
-  await page.reload();
+  await expect(dialog.getByText('Your own coach, inside Overload')).toBeVisible();
+  await expect(dialog.getByText('Calls and WhatsApp.')).toBeVisible();
+  await expect(dialog.getByText('Pro included.')).toBeVisible();
+  await dialog.getByRole('button', { name: 'See 1:1 coaching' }).click();
+  await expect(page).toHaveURL(/\/coaching$/);
+  await page.goto('/');
   await expect(page.getByRole('dialog', { name: 'New in Overload' })).toHaveCount(0);
 });
 
-test('the announcement leads Pro straight to Progress', async ({ page }) => {
-  await signUpFresh(page, { tag: 'announce-pro' });
+test('Later closes the announcement for good', async ({ page }) => {
+  await signUpFresh(page, { tag: 'announce-later' });
   await page.evaluate(() => localStorage.removeItem('overload.whatsNew'));
   await page.goto('/');
   const dialog = page.getByRole('dialog', { name: 'New in Overload' });
-  await expect(dialog.getByText('Cleaner, calmer, quicker.')).toBeVisible();
-  await dialog.getByRole('button', { name: 'Open Progress' }).click();
-  await expect(page).toHaveURL(/\/progress$/);
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Later' }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('dialog', { name: 'New in Overload' })).toHaveCount(0);
 });

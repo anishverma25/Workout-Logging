@@ -85,6 +85,7 @@ async function connectPlans() {
     update public.billing_plans set razorpay_plan_id = 'plan_M' where id = 'monthly';
     update public.billing_plans set razorpay_plan_id = 'plan_Q' where id = 'quarterly';
     update public.billing_plans set razorpay_plan_id = 'plan_Y' where id = 'yearly';
+    update public.billing_plans set razorpay_plan_id = 'plan_C' where id = 'coach_monthly';
   `);
 }
 
@@ -111,6 +112,7 @@ describe('billing', () => {
       ['monthly', 29, 1],
       ['quarterly', 69, 3],
       ['yearly', 249, 12],
+      ['coach_monthly', 999, 1],
     ]);
     expect(plans.every((p) => p.available === false)).toBe(true);
   });
@@ -345,8 +347,100 @@ describe('billing', () => {
       ['monthly', 29],
       ['quarterly', 79],
       ['yearly', 249],
+      ['coach_monthly', 999],
     ]);
     await server.pg.exec(`update public.billing_plans set once_price_inr = null`);
+  });
+
+  const coaching = async (userId: string) =>
+    (
+      await server.asUser(userId, (tx) =>
+        tx.query<{ c: Record<string, unknown> }>('select public.get_my_coaching() as c'),
+      )
+    ).rows[0]!.c;
+  const intake = (userId: string, phone = '+91 98765 43210') =>
+    server.asUser(userId, (tx) =>
+      tx.query(
+        `select public.submit_coaching_intake($1, 'Lose 8 kg and bench 80', 'Evenings', '')`,
+        [phone],
+      ),
+    );
+
+  it('coaching: a renewing plan turns on Pro and coaching for the month, and shows the coach', async () => {
+    await server.pg.exec(
+      `update public.app_settings set coach_name = 'Coach Rahul', coach_whatsapp = '919876543210'`,
+    );
+    const user = await server.createUser('coached@example.com');
+    // Nothing to see before paying: no coach details, and the form is refused.
+    expect(await coaching(user)).toMatchObject({ active: false, coach_whatsapp: null });
+    await expect(intake(user)).rejects.toThrow();
+
+    const res = await handleSubscribe(deps(), user, { plan: 'coach_monthly' });
+    expect(res.status).toBe(200);
+    const subId = res.body.subscription_id as string;
+    expect(subs.get(subId)!.plan_id).toBe('plan_C');
+    const end = Date.now() + 30 * DAY;
+    Object.assign(subs.get(subId)!, { status: 'active', current_end: Math.floor(end / 1000) });
+    const paymentId = 'pay_coach1';
+    const signature = await hmacSha256Hex(config.keySecret, `${paymentId}|${subId}`);
+    expect(
+      (
+        await handleVerify(deps(), user, {
+          razorpay_payment_id: paymentId,
+          razorpay_subscription_id: subId,
+          razorpay_signature: signature,
+        })
+      ).status,
+    ).toBe(200);
+    const s = await mine(user);
+    expect(s.billing_plan).toBe('coach_monthly');
+    expect(new Date(s.pro_expires_at as string).getTime()).toBeGreaterThan(Date.now() + 29 * DAY);
+    expect(new Date(s.coaching_expires_at as string).getTime()).toBeGreaterThan(
+      Date.now() + 29 * DAY,
+    );
+    expect(await coaching(user)).toMatchObject({
+      active: true,
+      coach_name: 'Coach Rahul',
+      coach_whatsapp: '919876543210',
+      intake: null,
+    });
+    await intake(user);
+    expect(((await coaching(user)).intake as Record<string, string>).goal).toBe(
+      'Lose 8 kg and bench 80',
+    );
+    // Another member never sees this intake, and cannot read the table directly.
+    const other = await server.createUser('nosy-coach@example.com');
+    expect((await coaching(other)).intake).toBeNull();
+    await expect(
+      server.asUser(other, (tx) => tx.query('select * from public.coaching_intake')),
+    ).rejects.toThrow();
+    // A bad phone number is refused by the database.
+    await expect(intake(user, 'call me')).rejects.toThrow();
+  });
+
+  it('coaching paid once adds one month of coaching, not the length of a Pro plan', async () => {
+    const user = await server.createUser('yearly-then-coach@example.com');
+    // A year of Pro paid once, then a month of coaching paid once.
+    for (const plan of ['yearly', 'coach_monthly']) {
+      const started = await handleOrder(deps(), user, { plan });
+      expect(started.status).toBe(200);
+      const orderId = started.body.order_id as string;
+      const paymentId = `pay_${orderId}`;
+      const signature = await hmacSha256Hex(config.keySecret, `${orderId}|${paymentId}`);
+      await handleVerify(deps(), user, {
+        razorpay_order_id: orderId,
+        razorpay_payment_id: paymentId,
+        razorpay_signature: signature,
+      });
+    }
+    expect(orders.at(-1)!.amount).toBe(99_900);
+    const s = await mine(user);
+    const pro = new Date(s.pro_expires_at as string).getTime();
+    const coach = new Date(s.coaching_expires_at as string).getTime();
+    // Thirteen months of Pro, one month of coaching.
+    expect(pro).toBeGreaterThan(Date.now() + 390 * DAY);
+    expect(coach).toBeGreaterThan(Date.now() + 27 * DAY);
+    expect(coach).toBeLessThan(Date.now() + 32 * DAY);
   });
 
   it('keeps the billing functions and tables closed to the app', async () => {
@@ -360,6 +454,9 @@ describe('billing', () => {
       `select public.billing_order_paid('order_x', 'pay_x')`,
       `select public.billing_order_create('${user}', 'monthly', 'order_x', 29)`,
       `update public.billing_plans set price_inr = 1`,
+      `select * from public.app_settings`,
+      `update public.subscriptions set coaching_expires_at = now() + interval '1 year'`,
+      `insert into public.coaching_intake (user_id, phone, goal) values ('${user}', '9876543210', 'x')`,
     ]) {
       await expect(
         server.asUser(user, (tx) => tx.query(sql)),

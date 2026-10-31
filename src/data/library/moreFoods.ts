@@ -3,9 +3,10 @@ import type { DietType, Meal, UnitId } from '../../domain/nutrition/types';
 
 /**
  * The long tail of the food library, loaded only when someone opens the food logger:
- * about 8,000 foods from USDA SR28 (public domain, lab values, with household measures) and
- * about 860 Indian dishes from the Indian Nutrient Databank (Vijayakumar et al. 2024,
- * standard recipes). The curated library in foods.ts always ranks above these.
+ * about 1,100 regional recipes and pack labels (`regional/`, calculated like the curated
+ * library, so they rank with it), about 8,000 foods from USDA SR28 (public domain, lab values,
+ * with household measures) and about 860 Indian dishes from the Indian Nutrient Databank
+ * (Vijayakumar et al. 2024, standard recipes), which rank below the curated library.
  */
 
 type UsdaRow = [
@@ -123,16 +124,20 @@ const listeners = new Set<() => void>();
 
 /** Starts loading the long tail once; later calls return the same promise. */
 export function loadMoreFoods(): Promise<Food[]> {
-  loading ??= Promise.all([import('./usdaFoods.json'), import('./indbFoods.json')]).then(
-    ([usda, indb]) => {
-      loaded = [
-        ...(indb.default as unknown as IndbRow[]).map(fromIndb),
-        ...(usda.default as unknown as UsdaRow[]).map(fromUsda),
-      ];
-      listeners.forEach((l) => l());
-      return loaded;
-    },
-  );
+  loading ??= Promise.all([
+    import('./usdaFoods.json'),
+    import('./indbFoods.json'),
+    import('./regional/index'),
+  ]).then(([usda, indb, regional]) => {
+    loaded = [
+      // Calculated regional recipes and labels first: they rank with the curated library.
+      ...regional.REGIONAL_FOODS,
+      ...(indb.default as unknown as IndbRow[]).map(fromIndb),
+      ...(usda.default as unknown as UsdaRow[]).map(fromUsda),
+    ];
+    listeners.forEach((l) => l());
+    return loaded;
+  });
   return loading;
 }
 

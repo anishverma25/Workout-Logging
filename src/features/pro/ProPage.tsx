@@ -1,3 +1,4 @@
+import { CoachingRow } from '@/features/coaching/CoachingRow';
 import { useMemo, type ReactNode } from 'react';
 import {
   CalendarCheck,
@@ -74,6 +75,7 @@ export function ProPage() {
         <PushedHeader backLabel="More" backTo="/more" />
         <ProMemberSection entitlement={entitlement} />
         <ProNextSteps />
+        <CoachingRow />
         <YourNumbers hasPro />
         <PlansSection entitlement={entitlement} />
         <Evidence />
@@ -108,6 +110,8 @@ export function ProPage() {
       {/* Price first, then what it buys (owner request, UI v3 A4): the plans, then where this
           account stands, then their own numbers, then everything Pro includes. */}
       {!unavailable ? <PlansSection entitlement={entitlement} /> : null}
+      {/* Want more than an app? The coaching plan, which includes Pro. */}
+      {signedIn ? <CoachingRow /> : null}
       {signedIn ? <PlanCard entitlement={entitlement} /> : null}
 
       <YourNumbers hasPro={hasPro} />

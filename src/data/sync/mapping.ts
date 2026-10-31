@@ -57,6 +57,11 @@ interface TableSpec {
    * has not been run), rows that leave them empty still sync without them (`SupabaseRemote`).
    */
   optional?: string[];
+  /**
+   * Late fields a row can go without while the server lacks their column: the profile photo
+   * must not hold back a new calorie target. They reach the server with the row's next change.
+   */
+  dropWhenMissing?: string[];
 }
 
 /** Parents before children, so foreign keys hold when pushing and pulling. */
@@ -85,8 +90,11 @@ export const TABLE_SPECS: TableSpec[] = [
       'fibreTargetG',
       'waterTargetMl',
       'waterGlassMl',
+      'avatar',
     ],
     schema: Profile,
+    optional: ['avatar'],
+    dropWhenMissing: ['avatar'],
   },
   {
     local: 'exercises',
@@ -300,6 +308,14 @@ export const LATE_COLUMNS: Partial<Record<ServerTable, string[]>> = Object.fromE
   TABLE_SPECS.filter((s) => s.optional?.length).map((s) => [
     s.server,
     s.optional!.map((f) => toSnake(f)),
+  ]),
+);
+
+/** Late columns a row may be sent without (see `TableSpec.dropWhenMissing`). */
+export const DROPPABLE_COLUMNS: Partial<Record<ServerTable, string[]>> = Object.fromEntries(
+  TABLE_SPECS.filter((s) => s.dropWhenMissing?.length).map((s) => [
+    s.server,
+    s.dropWhenMissing!.map((f) => toSnake(f)),
   ]),
 );
 

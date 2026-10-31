@@ -47,7 +47,9 @@ await pg.exec('grant all on all tables in schema public to service_role;');
 // The launch state: early access has ended, so new accounts get the 7-day trial and then the
 // free plan. Early access itself is covered against real Postgres in subscriptions.test.ts.
 // Keeping one fixed state here also means no test flips a setting every other test shares.
-await pg.exec('update public.app_settings set early_access_ended_at = now()');
+await pg.exec(
+  "update public.app_settings set early_access_ended_at = now(), coach_name = 'Coach Arjun', coach_whatsapp = '919876543210'",
+);
 
 // ---------------------------------------------------------------------------------------------
 // JWT (HS256)
@@ -707,7 +709,7 @@ const server = createServer(async (req, res) => {
         connected
           ? `update public.billing_plans set razorpay_plan_id = case id
                when 'monthly' then 'plan_e2eM' when 'quarterly' then 'plan_e2eQ'
-               else 'plan_e2eY' end`
+               when 'coach_monthly' then 'plan_e2eC' else 'plan_e2eY' end`
           : 'update public.billing_plans set razorpay_plan_id = null',
       );
       return send(res, 200, { connected });

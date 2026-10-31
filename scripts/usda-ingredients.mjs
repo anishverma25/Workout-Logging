@@ -1,5 +1,5 @@
 // Builds src/data/library/ingredients.ts from USDA SR28 (public domain).
-// Usage: node scripts/usda-ingredients.mjs path/to/ABBREV.txt
+// Usage: node scripts/usda-ingredients.mjs path/to/ABBREV.txt path/to/ifct/index.csv
 // ABBREV.txt is the abbreviated file of the USDA National Nutrient Database for Standard
 // Reference, Release 28 (also published in the npm package fda-nutrient-database@1.0.2).
 // Values are copied as they are, per 100 g of the food as purchased (raw unless named).
@@ -192,6 +192,39 @@ const PICK = [
   ['pumpkin-seeds', 'Pumpkin seeds', '12014'],
   ['sunflower-seeds', 'Sunflower seeds', '12036'],
   ['popcorn', 'Popcorn, air-popped', '19034'],
+  // Round 5 (October 2026): cuts, seafood and vegetables for the regional dishes.
+  ['pork-belly', 'Pork belly', '10005'],
+  ['bacon', 'Bacon', '10123'],
+  ['beef-mince', 'Beef mince', '23572', '80% lean ground beef values.'],
+  ['mutton-mince', 'Mutton mince (keema)', '17224', 'Ground lamb values.'],
+  ['chicken-drumstick', 'Chicken drumstick, with skin', '05066'],
+  ['chicken-thigh', 'Chicken thigh, with skin', '05091'],
+  ['chicken-wing', 'Chicken wing, with skin', '05100'],
+  ['mussels', 'Mussels (kallummakkaya)', '15164'],
+  ['ash-gourd', 'Ash gourd (petha)', '11593', 'Wax gourd values.'],
+  ['ridge-gourd', 'Ridge gourd (turai)', '11220', 'Towel gourd values.'],
+  ['turnip', 'Turnip (shalgam)', '11564'],
+  ['lotus-stem', 'Lotus stem (kamal kakdi)', '11254'],
+  ['amaranth-leaves', 'Amaranth leaves (chaulai)', '11003'],
+  ['dill', 'Dill leaves (suva)', '02045'],
+  ['broad-beans', 'Broad beans (sem)', '11088'],
+  ['bamboo-shoot', 'Bamboo shoot', '11026'],
+  ['amaranth-grain', 'Amaranth grain (rajgira)', '20001'],
+  ['milk-powder-whole', 'Whole milk powder', '01090'],
+  ['egg-noodles', 'Noodles, dry', '20109', 'Dry egg noodle values; Hakka noodles.'],
+  ['rice-noodles', 'Rice noodles, dry', '20133'],
+  ['arrowroot', 'Arrowroot flour', '20003'],
+  ['figs-dried', 'Dried figs (anjeer)', '09094'],
+  ['apricots-dried', 'Dried apricots (khubani)', '09032'],
+  ['lime', 'Lime juice', '09160'],
+  ['celery', 'Celery', '11143'],
+  ['broccoli', 'Broccoli', '11090'],
+  ['zucchini', 'Zucchini', '11477'],
+  ['leek', 'Leek', '11246'],
+  ['shallots', 'Shallots (sambar onion)', '11677'],
+  ['plantain-ripe', 'Plantain, ripe (nendran)', '09277'],
+  ['saffron', 'Saffron (kesar)', '02037'],
+  ['mustard-sauce', 'Mustard, prepared', '02046'],
 ];
 
 const rows = new Map();
@@ -212,13 +245,143 @@ for (const [id, name, ndb, note] of PICK) {
       ' },',
   );
 }
+
+/**
+ * Indian ingredients USDA does not have, from the Indian Food Composition Tables 2017 (National
+ * Institute of Nutrition, Hyderabad; lab values from six regions), as published in the npm package
+ * @ifct2017/compositions@2.0.9 (index.csv). Energy is given in kJ and carbohydrate as available
+ * carbohydrate, so carbs here add the fibre back to match USDA's total carbohydrate. IFCT's
+ * energy leaves fibre out; it is added at 2 kcal per g (FAO 2003), as the app counts fibre.
+ */
+const IFCT_PICK = [
+  ['ragi', 'Finger millet (ragi)', 'A010'],
+  ['little-millet', 'Little millet (samai, samak)', 'A016', 'Little millet values; barnyard millet (samak) is close.'],
+  ['kodo-millet', 'Kodo millet (varagu)', 'A017'],
+  ['rice-flakes', 'Rice flakes (poha), IFCT', 'A011'],
+  ['dalia', 'Broken wheat (dalia)', 'A021', 'Bulgur values.'],
+  ['soybean', 'Soybeans', 'B025'],
+  ['horse-gram', 'Horse gram (kulthi)', 'B012'],
+  ['moth-bean', 'Moth beans (matki)', 'B016'],
+  ['lobia', 'Cowpea (lobia)', 'B005'],
+  ['val', 'Field beans (val, avarekalu)', 'B008'],
+  ['dry-peas', 'Dried peas (vatana)', 'B017'],
+  ['moong-whole', 'Whole moong', 'B011'],
+  ['urad-whole', 'Whole urad', 'B004'],
+  ['kala-chana', 'Black chickpeas (kala chana)', 'B002'],
+  ['masoor-whole', 'Whole masoor', 'B014'],
+  ['khoya', 'Khoya (mawa)', 'L004'],
+  ['water-chestnut', 'Water chestnut (singhara)', 'F016'],
+  ['tindora', 'Ivy gourd (tindora, kundru)', 'D054'],
+  ['parwal', 'Pointed gourd (parwal)', 'D060'],
+  ['gawar', 'Cluster beans (gawar)', 'D039'],
+  ['raw-jackfruit', 'Raw jackfruit (kathal)', 'D051'],
+  ['jackfruit-seed', 'Jackfruit seeds', 'D052'],
+  ['banana-flower', 'Banana flower', 'D062'],
+  ['raw-banana', 'Raw banana', 'D063'],
+  ['banana-stem', 'Banana stem', 'D064'],
+  ['bathua', 'Bathua leaves', 'C008'],
+  ['methi-leaves', 'Fenugreek leaves (methi)', 'C020'],
+  ['gongura', 'Gongura (gogu) leaves', 'C022'],
+  ['tapioca-root', 'Tapioca root (kappa)', 'F015'],
+  ['tinda', 'Tinda (apple gourd)', 'D073'],
+  ['chow-chow', 'Chow chow (chayote)', 'D038'],
+  ['colocasia', 'Colocasia (arbi)', 'F004'],
+  ['colocasia-leaves', 'Colocasia leaves (arbi patta)', 'C018'],
+  ['drumstick', 'Drumstick (sahjan)', 'D046'],
+  ['drumstick-leaves', 'Drumstick leaves (moringa)', 'C019'],
+  ['yam', 'Elephant foot yam (suran)', 'F017'],
+  ['snake-gourd', 'Snake gourd (chichinda)', 'D070'],
+  ['raw-mango', 'Raw mango (kairi)', 'D057'],
+  ['raw-papaya', 'Raw papaya', 'D059'],
+  ['amla', 'Amla (Indian gooseberry)', 'E021'],
+  ['bael', 'Bael fruit', 'E008'],
+  ['jamun', 'Jamun', 'E031'],
+  ['phalsa', 'Phalsa', 'E052'],
+  ['betel-leaf', 'Betel leaf (paan)', 'C010'],
+  ['mint', 'Mint leaves (pudina)', 'G016'],
+  ['coconut-water-ifct', 'Tender coconut water, IFCT', 'K002'],
+  ['sugarcane-juice', 'Sugarcane juice', 'I002'],
+  ['toddy', 'Toddy (kallu)', 'K001'],
+  ['bombay-duck', 'Bombay duck (bombil)', 'P007'],
+  ['mackerel', 'Indian mackerel (bangda, ayala)', 'P034'],
+  ['sardine', 'Sardine (mathi, tarli)', 'P071'],
+  ['pomfret', 'Pomfret, white (paplet)', 'P057'],
+  ['seer-fish', 'Seer fish (surmai, vanjaram)', 'P087'],
+  ['hilsa', 'Hilsa (ilish)', 'P017'],
+  ['catla', 'Catla (katla)', 'S002'],
+  ['rohu', 'Rohu', 'S006'],
+  ['bhetki', 'Bhetki (barramundi)', 'P005'],
+  ['karimeen', 'Pearl spot (karimeen)', 'P026'],
+  ['tuna-fresh', 'Tuna, fresh', 'P084'],
+  ['anchovy', 'Anchovy (netholi, kozhuva)', 'P003'],
+  ['basa', 'Basa (pangas)', 'S005'],
+  ['tilapia', 'Tilapia', 'P083'],
+  ['catfish', 'Catfish (magur)', 'S001'],
+  ['mullet', 'Mullet', 'P039'],
+  ['red-snapper', 'Red snapper (rane)', 'P065'],
+  ['crab', 'Crab', 'Q002'],
+  ['lobster', 'Lobster', 'Q004'],
+  ['squid', 'Squid (calamari)', 'R007'],
+  ['clams', 'Clams (tisryo, kakka)', 'R002'],
+  ['oyster', 'Oyster', 'Q006'],
+  ['prawns-small', 'Prawns, small (river)', 'S009'],
+  ['beef', 'Beef', 'O025', 'Shoulder, the usual curry cut.'],
+  ['pork', 'Pork', 'O048', 'Shoulder, the usual curry cut.'],
+  ['duck', 'Duck', 'N011'],
+  ['quail', 'Quail', 'N015'],
+  ['turkey', 'Turkey', 'N018'],
+  ['rabbit', 'Rabbit', 'O063'],
+  ['goat-liver', 'Mutton liver (kaleji)', 'O008'],
+  ['goat-brain', 'Mutton brain (bheja)', 'O004'],
+  ['goat-tripe', 'Mutton tripe (boti)', 'O009'],
+  ['chicken-liver', 'Chicken liver', 'N005'],
+  ['chicken-gizzard', 'Chicken gizzard', 'N006'],
+  ['country-chicken', 'Country chicken (desi murgi)', 'N009', 'Country hen breast with skin.'],
+];
+const ifctOut = [];
+if (process.argv[3]) {
+  const text = readFileSync(process.argv[3], 'utf8');
+  const parse = (line) => {
+    const out = [];
+    let cur = '';
+    let q = false;
+    for (const ch of line) {
+      if (ch === '"') q = !q;
+      else if (ch === ',' && !q) {
+        out.push(cur);
+        cur = '';
+      } else cur += ch;
+    }
+    out.push(cur);
+    return out;
+  };
+  const [head, ...lines] = text.split(/\r?\n/).filter(Boolean);
+  const cols = parse(head);
+  const col = (key) => cols.findIndex((c) => c.endsWith(`; ${key}`));
+  const byCode = new Map(lines.map((l) => parse(l)).map((f) => [f[0], f]));
+  const r2 = (v) => Math.round(v * 100) / 100;
+  for (const [id, name, code, note] of IFCT_PICK) {
+    const f = byCode.get(code);
+    if (!f) throw new Error(`Missing IFCT ${code}`);
+    const n = (key) => Number(f[col(key)] || 0);
+    const fibre = n('fibtg');
+    ifctOut.push(
+      `  ${JSON.stringify(id)}: { name: ${JSON.stringify(name)}, ndb: '', usda: '', ifct: ${JSON.stringify(`${code} ${f[1]}`)}, ` +
+        `water: ${r2(n('water'))}, kcal: ${Math.round(n('enerc') / 4.184 + 2 * fibre)}, proteinG: ${r2(n('protcnt'))}, fatG: ${r2(n('fatce'))}, carbsG: ${r2(n('choavldf') + fibre)}, fibreG: ${r2(fibre)}` +
+        (note ? `, note: ${JSON.stringify(note)}` : '') +
+        ' },',
+    );
+  }
+}
 const ts = `// Generated by scripts/usda-ingredients.mjs from USDA SR28 (public domain). Do not edit by hand.
 // U.S. Department of Agriculture, Agricultural Research Service. USDA National Nutrient Database
 // for Standard Reference, Release 28. Values per 100 g, raw unless the USDA name says otherwise.
+// Entries with \`ifct\` come from the Indian Food Composition Tables 2017 (NIN), raw, per 100 g.
 import type { Ingredient } from '@/domain/nutrition/types';
 
 export const INGREDIENTS = {
 ${out.join('\n')}
+${ifctOut.join('\n')}
   water: { name: 'Water', ndb: '', usda: 'Water', water: 100, kcal: 0, proteinG: 0, fatG: 0, carbsG: 0, fibreG: 0 },
 } as const satisfies Record<string, Ingredient>;
 

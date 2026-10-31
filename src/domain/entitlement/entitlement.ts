@@ -38,6 +38,8 @@ export const SubscriptionSnapshot = z.object({
   billing_status: z.string().nullable().optional().default(null),
   /** Renewal is off: Pro runs to the end of the paid period, then stops. */
   cancel_at_period_end: z.boolean().optional().default(false),
+  /** 1:1 coaching runs until this time (November 2026). Absent on older servers. */
+  coaching_expires_at: ts.optional().default(null),
 });
 export type SubscriptionSnapshot = z.infer<typeof SubscriptionSnapshot>;
 
@@ -67,6 +69,9 @@ export interface Entitlement {
   paidOnce: boolean;
   /** Razorpay could not take the last renewal (pending or halted). */
   paymentIssue: boolean;
+  /** 1:1 coaching is on (it includes Pro), and when it ends. */
+  coaching: boolean;
+  coachingEndsAt: Date | null;
 }
 
 const GUEST: Entitlement = {
@@ -84,6 +89,8 @@ const GUEST: Entitlement = {
   renews: false,
   paidOnce: false,
   paymentIssue: false,
+  coaching: false,
+  coachingEndsAt: null,
 };
 
 /** `now` must already be on the server's clock (see `serverNow`). */
@@ -119,6 +126,9 @@ export function resolveEntitlement(sub: SubscriptionSnapshot | null, now: Date):
       (sub.billing_status === 'active' || sub.billing_status === 'authenticated') &&
       !sub.cancel_at_period_end,
     paymentIssue: sub.billing_status === 'pending' || sub.billing_status === 'halted',
+    coaching:
+      !revoked && !!sub.coaching_expires_at && t < sub.coaching_expires_at.getTime(),
+    coachingEndsAt: sub.coaching_expires_at,
   };
 }
 

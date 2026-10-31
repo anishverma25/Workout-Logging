@@ -22,6 +22,8 @@ export interface Ingredient extends Nutrients {
   usda: string;
   /** Water in g per 100 g, used for cooking yields. */
   water: number;
+  /** Indian Food Composition Tables 2017 code and name, for ingredients USDA does not have. */
+  ifct?: string;
   note?: string;
 }
 

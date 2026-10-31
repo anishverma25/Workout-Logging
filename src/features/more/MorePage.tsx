@@ -1,3 +1,4 @@
+import { ProfileAvatar } from '@/features/profile/ProfileAvatar';
 import { Link } from 'react-router';
 import { ChevronRight, Crown, FileUp, RefreshCw, Sparkles } from 'lucide-react';
 import { useAccount } from '@/app/account';
@@ -10,6 +11,7 @@ import { SyncBadge } from '@/features/account/SyncStatus';
 import { useProfile } from '@/data/hooks';
 import { LegalLinks } from '@/features/legal/LegalPage';
 import { ProRow } from '@/features/pro/ProRow';
+import { CoachingRow } from '@/features/coaching/CoachingRow';
 import { GOAL_LABEL, EXPERIENCE_LABEL } from '@/domain/models/labels';
 
 const GROUPS: { key: NonNullable<NavItem['group']>; title: string }[] = [
@@ -39,12 +41,14 @@ export function MorePage() {
           <ProfileCard />
           {/* Pro sits right under the person, with its price (owner request, UI v3 A2). */}
           <ProRow />
+          <CoachingRow />
         </div>
         <ReloadNote />
         {GROUPS.map((g) => (
           <ListGroup key={g.key} title={g.title}>
             {MORE_NAV.filter(
-              (i) => i.group === g.key && i.to !== '/profile' && i.to !== '/pro',
+              (i) =>
+                i.group === g.key && i.to !== '/profile' && i.to !== '/pro' && i.to !== '/coaching',
             ).map((i) => (
               <ListRow
                 key={i.to}
@@ -111,23 +115,12 @@ function ProfileCard() {
       : entitlement.pro
         ? 'Pro'
         : null;
-  const initials = profile?.displayName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join('');
   return (
     <Link
       to="/profile"
       className="pressable chrome flex items-center gap-4 rounded-card bg-surface p-4"
     >
-      <span
-        aria-hidden
-        className="flex size-14 shrink-0 items-center justify-center rounded-full bg-fill text-[1.0625rem] font-semibold text-text-1"
-      >
-        {initials || '?'}
-      </span>
+      <ProfileAvatar name={profile?.displayName} avatar={profile?.avatar} size={56} />
       <span className="min-w-0 flex-1">
         <span className="type-headline block truncate text-text-1">
           {profile?.displayName ?? 'Set up your profile'}

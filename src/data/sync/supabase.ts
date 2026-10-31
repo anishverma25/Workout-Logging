@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { LATE_COLUMNS, type ServerRow, type ServerTable } from './mapping';
+import { DROPPABLE_COLUMNS, LATE_COLUMNS, type ServerRow, type ServerTable } from './mapping';
 import {
   isPermanentCode,
   keyColumn,
@@ -90,9 +90,13 @@ export class SupabaseRemote implements RemoteStore {
       const late = missingLateColumn(table, error);
       if (!late) throw toRemoteError(error);
       // The server has not had the migration that adds these columns yet. Rows that leave them
-      // empty lose nothing by going without them; rows that use them wait (set aside, kept on
-      // the phone) until the migration has been run.
-      const plain = rows.filter((r) => late.every((c) => (r[c] ?? null) === null));
+      // empty lose nothing by going without them, and droppable ones (the profile photo) go
+      // without them too; rows that use the others wait (set aside, kept on the phone) until
+      // the migration has been run.
+      const droppable = DROPPABLE_COLUMNS[table as ServerTable] ?? [];
+      const plain = rows.filter((r) =>
+        late.every((c) => droppable.includes(c) || (r[c] ?? null) === null),
+      );
       const waiting = rows.length - plain.length;
       if (plain.length > 0) {
         const stripped = plain.map((r) =>

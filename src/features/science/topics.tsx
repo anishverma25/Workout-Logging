@@ -880,14 +880,14 @@ export const SCIENCE: TopicGroup[] = [
         id: 'food-values',
         title: 'Food values and real maintenance',
         evidence: 'foodValues',
-        shows: `Calories, protein, carbs, fat and fibre for the ${FOODS.length} foods in our own library and about 9,000 more, your daily totals, and your real maintenance from what you eat and weigh.`,
+        shows: `Calories, protein, carbs, fat and fibre for the ${FOODS.length} foods in our own library and about 10,000 more, your daily totals, and your real maintenance from what you eat and weigh.`,
         formulas: [
           {
             tex: String.raw`N_{100} = \dfrac{\sum_i m_i\, n_i / 100}{W_{\text{cooked}}} \times 100`,
             spoken:
               'Nutrients per 100 grams cooked equal the sum of each raw ingredient weight times its nutrients per 100 grams, divided by the cooked weight of the pot, times 100',
             where:
-              'm is each raw ingredient in grams in a standard home recipe, n its value per 100 g from USDA lab data, W the weight of the pot after cooking.',
+              'm is each raw ingredient in grams in a standard home recipe, n its value per 100 g from USDA lab data, or the Indian Food Composition Tables for Indian ingredients USDA lacks, W the weight of the pot after cooking.',
           },
           {
             tex: String.raw`W_{\text{cooked}} = \dfrac{\text{dry matter}}{1 - \text{moisture}}`,
@@ -915,13 +915,18 @@ export const SCIENCE: TopicGroup[] = [
         ],
         why: [
           <>
-            Ingredient values are USDA lab data (public domain). Each dish is built from its
+            Ingredient values are USDA lab data (public domain). Indian ingredients USDA does not
+            have (ragi, horse gram, tindora, hilsa, surmai, bombil and about 80 more) come from the
+            Indian Food Composition Tables 2017 by the National Institute of Nutrition, which
+            measured them across six regions; their energy counts fibre at 2 kcal a gram, as FAO
+            recommends and as the rest of the library does. Each dish is built from its
             ingredients, the same recipe method the Indian Nutrient Databank uses, so every number
             can be traced to its source.
           </>,
           <>
-            Where each food comes from is shown under its name. Our own dishes are built as above.
-            Packaged products use the values printed on their pack. About 8,000 more foods (fruit,
+            Where each food comes from is shown under its name. Our own dishes are built as above,
+            including about 1,100 regional dishes from every state. Packaged products use the
+            values printed on their pack. About 8,000 more foods (fruit,
             dairy, fast food, packaged and restaurant items from around the world) are USDA lab
             values, and about 860 more Indian dishes come from the Indian Nutrient Databank
             (Vijayakumar et al. 2024). Search shows our own dishes first.

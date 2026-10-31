@@ -34,13 +34,16 @@ type State =
 
 export function AiFoodLog({
   ctx,
+  initialText,
   onFill,
 }: {
   ctx: FoodContext;
+  /** What the person searched for and did not find, typed in for them. */
+  initialText?: string;
   onFill: (items: FoodPortion[]) => void;
 }) {
   const store = useCoachStore();
-  const [text, setText] = useState('');
+  const [text, setText] = useState(initialText ?? '');
   const [state, setState] = useState<State>({ kind: 'idle' });
   const [listening, setListening] = useState(false);
   /** Words still being heard, shown under the box while the person speaks. */

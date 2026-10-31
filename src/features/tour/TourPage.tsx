@@ -2,8 +2,12 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
   ArrowRight,
+  Camera,
   Check,
   ChartNoAxesColumnIncreasing,
+  MessageCircle,
+  ScanText,
+  Utensils,
   Crown,
   Scale,
   Zap,
@@ -29,6 +33,8 @@ import { safeNext } from '@/features/account/next';
 import { generateDemoDataset } from '@/data/demo/generate';
 import { SYSTEM_EXERCISES } from '@/data/library/exercises';
 import { usePreferences } from '@/data/hooks';
+import { FOOD_BY_ID } from '@/data/library/foods';
+import { portionNutrients, unitGrams } from '@/domain/nutrition/calc';
 import { bodySnapshot } from '@/domain/analytics/body';
 import { buildDashboard } from '@/domain/analytics/dashboard';
 import { goalProgress } from '@/domain/analytics/goals';
@@ -583,6 +589,181 @@ function Body({ sample, unit }: SlideProps) {
   );
 }
 
+/** A sample day of Indian food from the real library, against the sample lifter's targets. */
+const SAMPLE_DAY: {
+  meal: string;
+  items: [id: string, unit: 'piece' | 'katori', amount: number][];
+}[] = [
+  {
+    meal: 'Breakfast',
+    items: [
+      ['aloo-paratha', 'piece', 2],
+      ['curd', 'katori', 1],
+    ],
+  },
+  {
+    meal: 'Lunch',
+    items: [
+      ['roti', 'piece', 3],
+      ['dal-tadka', 'katori', 1],
+      ['rice', 'katori', 1],
+    ],
+  },
+  {
+    meal: 'Dinner',
+    items: [
+      ['roti', 'piece', 2],
+      ['chicken-curry', 'katori', 1],
+    ],
+  },
+];
+
+function sampleMeals() {
+  return SAMPLE_DAY.map(({ meal, items }) => {
+    let kcal = 0;
+    let protein = 0;
+    const names: string[] = [];
+    for (const [id, unit, amount] of items) {
+      const food = FOOD_BY_ID.get(id);
+      const grams = food ? unitGrams(food, unit, 'medium') : null;
+      if (!food || !grams) continue;
+      const n = portionNutrients(food, grams * amount);
+      kcal += n.kcal;
+      protein += n.proteinG;
+      const piece = food.pieceName?.[amount === 1 ? 0 : 1];
+      names.push(
+        unit === 'piece' && piece
+          ? `${amount} ${piece}`
+          : `${amount === 1 ? 'a' : amount} katori ${food.name.toLowerCase()}`,
+      );
+    }
+    return { meal, kcal: Math.round(kcal), protein: Math.round(protein), names };
+  });
+}
+
+/** Food logging: the way Indian meals are eaten, with photo and label logging on top. */
+function Food({ sample }: SlideProps) {
+  const meals = useMemo(() => sampleMeals(), []);
+  const kcal = meals.reduce((s, m) => s + m.kcal, 0);
+  const protein = meals.reduce((s, m) => s + m.protein, 0);
+  const target = sample.body.energy?.targetKcal ?? null;
+  const proteinTarget = sample.body.energy ? Math.round(sample.body.energy.proteinG[0]) : null;
+  return (
+    <>
+      <Title
+        icon={<Utensils className="size-4" aria-hidden />}
+        kicker="Food"
+        title="Log food the way you eat it"
+        body="Roti by the piece, dal by the katori, light or rich oil. Thousands of Indian dishes from every state, each worked out from its ingredients."
+      />
+      <div className="rounded-[var(--radius-card)] bg-surface p-4" data-tour-food>
+        <ul className="divide-y divide-line">
+          {meals.map((m) => (
+            <li key={m.meal} className="flex items-baseline justify-between gap-3 py-2.5">
+              <span className="min-w-0">
+                <span className="type-headline block text-text-1">{m.meal}</span>
+                <span className="type-meta block text-text-2">{m.names.join(', ')}</span>
+              </span>
+              <span className="type-headline tabular shrink-0 text-text-1">{m.kcal} kcal</span>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <div className="rounded-[1.1rem] bg-surface-2 p-3">
+            <p className="text-[0.8125rem] font-medium text-text-2">Calories</p>
+            <p className="tabular font-display text-[1.4rem] font-semibold">
+              {kcal.toLocaleString('en-GB')}
+              {target ? (
+                <span className="ml-1 text-base text-text-2">
+                  of {target.toLocaleString('en-GB')}
+                </span>
+              ) : null}
+            </p>
+          </div>
+          <div className="rounded-[1.1rem] bg-surface-2 p-3">
+            <p className="text-[0.8125rem] font-medium text-text-2">Protein</p>
+            <p className="tabular font-display text-[1.4rem] font-semibold">
+              {protein} g
+              {proteinTarget ? (
+                <span className="ml-1 text-base text-text-2">of {proteinTarget}</span>
+              ) : null}
+            </p>
+          </div>
+        </div>
+      </div>
+      <ul className="mt-3 grid grid-cols-3 gap-2 text-center">
+        {(
+          [
+            [Camera, 'Snap your plate'],
+            [ScanText, 'Read a label'],
+            [Sparkles, 'Type it, any language'],
+          ] as const
+        ).map(([Icon, label]) => (
+          <li key={label} className="rounded-[1.1rem] bg-surface p-3">
+            <Icon className="mx-auto size-5 text-lime" aria-hidden />
+            <span className="type-meta mt-1.5 block text-text-1">{label}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="type-meta mt-auto pt-4 text-text-2">
+        The sample day uses the real library numbers. Photo, label and typed logging are part of
+        Pro.
+      </p>
+    </>
+  );
+}
+
+/** OverloadGPT: what it can do, said plainly, without a made-up conversation. */
+function Coach({ sample }: SlideProps) {
+  const plateau = sample.progress.plateaus[0];
+  const plateauName = plateau
+    ? (SYSTEM_EXERCISES.find((e) => e.id === plateau.exerciseId)?.name ?? null)
+    : null;
+  const questions = [
+    plateauName ? `Why has my ${plateauName.toLowerCase()} stalled?` : 'Why has my lift stalled?',
+    'How much protein should I eat to build muscle?',
+    'Mera weight kyon nahi ghat raha?',
+  ];
+  return (
+    <>
+      <Title
+        icon={<MessageCircle className="size-4" aria-hidden />}
+        kicker="OverloadGPT"
+        title="An AI coach that knows your numbers"
+        body="Ask about your training and food in English, Hinglish or Hindi. It answers from your own logs and the numbers the app has already worked out, never guesses of its own."
+      />
+      <ul className="flex flex-col gap-2" data-tour-coach>
+        {questions.map((q, i) => (
+          <li
+            key={q}
+            className={cn(
+              'type-body max-w-[85%] rounded-[1.1rem] px-4 py-3 text-text-1',
+              i % 2 === 0 ? 'self-end bg-surface-2' : 'self-start bg-surface',
+            )}
+          >
+            {q}
+          </li>
+        ))}
+      </ul>
+      <ul className="mt-4 flex flex-col gap-2">
+        {[
+          'Explain buttons on every Progress section, the check-in and your targets',
+          'Snap a meal or a nutrition label and it fills in the foods',
+          'Chats stay on your phone for 7 days',
+        ].map((t) => (
+          <li key={t} className="type-meta flex gap-2.5 text-text-1">
+            <Check className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
+            {t}
+          </li>
+        ))}
+      </ul>
+      <p className="type-meta mt-auto pt-4 text-text-2">
+        OverloadGPT is part of Pro, and in your {TRIAL_DAYS}-day trial.
+      </p>
+    </>
+  );
+}
+
 function Journey({ sample, unit }: SlideProps) {
   return (
     <>
@@ -743,4 +924,4 @@ function YourTurn() {
   );
 }
 
-const SLIDES = [Welcome, Logger, Records, Progress, Body, Journey, ProSlide, YourTurn];
+const SLIDES = [Welcome, Logger, Records, Progress, Food, Coach, Body, Journey, ProSlide, YourTurn];
