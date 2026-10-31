@@ -72,3 +72,27 @@ A revoked account keeps every free feature and all of its data.
   `trial_started_at` and `trial_expires_at` fixed, even for the owner.
 - Users cannot read the table directly, cannot write to it at all, and never see `admin_note`.
   They can only call `get_my_subscription()` and `submit_payment_reference()`.
+
+## Milestone gift: Pro for a month with a thank you on Home
+
+For a promised gift (for example the 100th and 101st users): Pro until one month after sign-up,
+which includes the 7-day trial rather than adding to it, and a personal message on that person's
+Home screen until the month ends. Run `docs/admin/milestone-grant.sql` in the SQL editor after
+applying migration `20261031000017_user_banner.sql`. It must say "2 rows affected".
+
+Check it:
+
+```sql
+select u.email, s.status, s.trial_started_at, s.pro_expires_at, s.banner_message
+from public.subscriptions s join auth.users u on u.id = s.user_id
+where u.email in ('gotanks619@gmail.com', 'aritrabanerjee841@gmail.com');
+```
+
+`pro_expires_at` must be exactly 30 days after `trial_started_at`. The message is plain text,
+at most 280 characters, shown only to that account, dismissible, and removed by the server when
+`banner_expires_at` passes. To remove one early:
+
+```sql
+update public.subscriptions set banner_message = null, banner_expires_at = null
+where user_id = (select id from auth.users where email = 'person@example.com');
+```

@@ -129,8 +129,10 @@ describe('subscriptions', () => {
   it('the queries in the administrator guide work as written', async () => {
     const guide = readFileSync(join(process.cwd(), 'docs', 'admin-pro-payments.md'), 'utf8');
     const blocks = [...guide.matchAll(/```sql\n([\s\S]*?)```/g)].map((m) => m[1]!);
+    // The last two blocks are the milestone gift check and banner removal, tested in
+    // userBanner.test.ts.
     const [endEarlyAccess, founders, grant, revoke] = blocks;
-    expect(blocks).toHaveLength(4);
+    expect(blocks).toHaveLength(6);
     // Early access: list early accounts, end it, then reopen it for the rest of the tests.
     const listed = await server.pg.query<{ email: string }>(founders!);
     expect(listed.rows.map((r) => r.email)).toContain('a@example.com');

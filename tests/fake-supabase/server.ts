@@ -700,6 +700,27 @@ const server = createServer(async (req, res) => {
       ]);
       return send(res, 200, { open });
     }
+    // Test control, standing in for the administrator's SQL: a personal message on Home.
+    if (url.pathname === '/__test/banner' && req.method === 'POST') {
+      const {
+        email,
+        message,
+        hours = 24,
+      } = (await readJson(req)) as {
+        email: string;
+        message: string | null;
+        hours?: number;
+      };
+      const changed = await pg.query(
+        `update public.subscriptions set
+           banner_message = $2,
+           banner_expires_at = case when $2::text is null then null
+                                    else now() + make_interval(hours => $3::int) end
+         where user_id = (select id from auth.users where email = $1)`,
+        [email, message, Math.round(hours)],
+      );
+      return send(res, 200, { changed: changed.affectedRows ?? 0 });
+    }
     // Test control, standing in for the administrator connecting Razorpay plans.
     if (url.pathname === '/__test/billing-plans' && req.method === 'POST') {
       const { connected } = (await readJson(req)) as { connected: boolean };

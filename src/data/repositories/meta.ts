@@ -11,6 +11,8 @@ export const META_KEYS = {
   dismissedSuggestions: 'progress.dismissedSuggestions',
   /** Which Pro reminders a free member has already seen, and when (see domain/entitlement/nudge). */
   proNudge: 'pro.nudge',
+  /** The personal message on Home the person has dismissed, so it stays dismissed. */
+  dismissedBanner: 'home.dismissedBanner',
   /** Sync bookkeeping: `${syncCursor}${table}` and the last confirmed sync time. */
   syncCursor: 'sync.cursor.',
   lastSyncedAt: 'sync.lastSyncedAt',

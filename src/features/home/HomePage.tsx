@@ -9,6 +9,7 @@ import { greetingFor } from '@/lib/dates';
 import { formatCalendarDate } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { PageHeader } from '@/app/layout/PageHeader';
+import { MessageBanner } from '@/features/pro/MessageBanner';
 import { ProNudgeCard } from '@/features/pro/ProNudgeCard';
 import { isAlive } from '@/domain/analytics/sessions';
 import { Highlights } from './Highlights';
@@ -46,6 +47,7 @@ export function HomePage() {
     <>
       <PageHeader title={title} eyebrow={formatCalendarDate(now)} compactTitle="Home" />
       {training.status === 'success' && !ownProfile ? <SetupPrompt /> : null}
+      <MessageBanner />
       {model ? <ProNudgeCard workoutDates={workoutDates} records={model.recentPrCount} /> : null}
 
       {training.status === 'loading' ? <HomeSkeleton /> : null}

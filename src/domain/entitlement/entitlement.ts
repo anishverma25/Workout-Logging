@@ -38,6 +38,9 @@ export const SubscriptionSnapshot = z.object({
   billing_status: z.string().nullable().optional().default(null),
   /** Renewal is off: Pro runs to the end of the paid period, then stops. */
   cancel_at_period_end: z.boolean().optional().default(false),
+  /** A personal message from the team, shown on Home. Absent from older servers. */
+  banner_message: z.string().nullable().optional().default(null),
+  banner_expires_at: ts.optional().default(null),
 });
 export type SubscriptionSnapshot = z.infer<typeof SubscriptionSnapshot>;
 
@@ -67,6 +70,8 @@ export interface Entitlement {
   paidOnce: boolean;
   /** Razorpay could not take the last renewal (pending or halted). */
   paymentIssue: boolean;
+  /** A personal message from the team for this account, or null. Not part of access. */
+  banner: string | null;
 }
 
 const GUEST: Entitlement = {
@@ -84,6 +89,7 @@ const GUEST: Entitlement = {
   renews: false,
   paidOnce: false,
   paymentIssue: false,
+  banner: null,
 };
 
 /** `now` must already be on the server's clock (see `serverNow`). */
@@ -119,7 +125,16 @@ export function resolveEntitlement(sub: SubscriptionSnapshot | null, now: Date):
       (sub.billing_status === 'active' || sub.billing_status === 'authenticated') &&
       !sub.cancel_at_period_end,
     paymentIssue: sub.billing_status === 'pending' || sub.billing_status === 'halted',
+    banner: bannerFor(sub, t, revoked),
   };
+}
+
+/** The message is shown until it expires on the server clock; never to a revoked account. */
+function bannerFor(sub: SubscriptionSnapshot, t: number, revoked: boolean): string | null {
+  const message = sub.banner_message?.trim();
+  if (!message || revoked) return null;
+  if (sub.banner_expires_at && t >= sub.banner_expires_at.getTime()) return null;
+  return message;
 }
 
 /**

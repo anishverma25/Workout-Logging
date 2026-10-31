@@ -68,6 +68,8 @@ export function devSnapshot(state: DevEntitlementState, now: Date): Subscription
     billing_kind: null,
     billing_status: null,
     cancel_at_period_end: false,
+    banner_message: null,
+    banner_expires_at: null,
   };
   if (state === 'founding') return { ...base, early_access: true, founding_member: true };
   if (state === 'trial') return base;

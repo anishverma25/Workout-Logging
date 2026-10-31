@@ -122,3 +122,34 @@ describe('formatRemaining', () => {
     expect(formatRemaining(30_000)).toBe('1 minute');
   });
 });
+
+describe('personal message', () => {
+  const MESSAGE = 'Thank you for being our 100th user. We are giving you one month of Pro free.';
+
+  it('is absent when the server sends none, including answers from an older server', () => {
+    expect(resolveEntitlement(sub(), at(1)).banner).toBeNull();
+    // An answer without the new fields, exactly as an older database sends it, still parses.
+    expect(sub()).toMatchObject({ banner_message: null, banner_expires_at: null });
+    expect(resolveEntitlement(null, at(1)).banner).toBeNull();
+  });
+
+  it('shows the message until it expires on the server clock', () => {
+    const s = sub({ banner_message: MESSAGE, banner_expires_at: at(100).toISOString() });
+    expect(resolveEntitlement(s, at(1)).banner).toBe(MESSAGE);
+    expect(resolveEntitlement(s, new Date(at(100).getTime() - 1)).banner).toBe(MESSAGE);
+    expect(resolveEntitlement(s, at(100)).banner).toBeNull();
+  });
+
+  it('stays until removed when it has no expiry, and ignores blank text', () => {
+    expect(resolveEntitlement(sub({ banner_message: MESSAGE }), at(5000)).banner).toBe(MESSAGE);
+    expect(resolveEntitlement(sub({ banner_message: '   ' }), at(1)).banner).toBeNull();
+  });
+
+  it('is never shown to a revoked account and never changes access', () => {
+    const revoked = sub({ status: 'revoked', banner_message: MESSAGE });
+    expect(resolveEntitlement(revoked, at(1)).banner).toBeNull();
+    const withMessage = resolveEntitlement(sub({ banner_message: MESSAGE }), at(1));
+    const without = resolveEntitlement(sub(), at(1));
+    expect({ ...withMessage, banner: null }).toEqual(without);
+  });
+});
