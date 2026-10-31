@@ -37,6 +37,9 @@ update public.billing_plans set razorpay_plan_id = 'plan_TmJNvuUeyHZrDY' where i
 update public.billing_plans set razorpay_plan_id = 'plan_TmJOUMCcxJUXT7' where id = 'yearly';
 ```
 
+1:1 coaching (₹999 a month, migration 0018) is one more plan, `coach_monthly`; its setup is in
+`docs/admin-coaching.md`.
+
 A plan with no `razorpay_plan_id` shows its price with "Plans open soon" and cannot be bought.
 
 To change a price: create a new plan in Razorpay with the new price, then update both columns:

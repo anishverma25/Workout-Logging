@@ -1,24 +1,24 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { Crown, Sparkles } from 'lucide-react';
-import { formatRupees, usePlans } from '@/app/billing';
-import { useFeature } from '@/app/entitlement';
+import { ClipboardList, Crown, Sparkles } from 'lucide-react';
+import { formatRupees, useCoachingPlan } from '@/app/billing';
+import { useEntitlement } from '@/app/entitlement';
 import { BottomSheet, PrimaryButton, SecondaryButton } from '@/components/kit';
 import { seenRelease, markReleaseSeen, RELEASE_ID } from './whatsNewStore';
 
 /**
- * Shown once per release when the app opens, to everyone. This release: the fresh look (UI v3):
- * five tabs, OverloadGPT on every tab, Progress in sections and History search. The price comes
- * from the server's plans, never from this file. Never over a running workout or setup.
+ * Shown once per release when the app opens, to everyone. This release (November 2026) is about
+ * one thing only: 1:1 coaching. The price comes from the server's plans, never from this file.
+ * Never over a running workout or setup.
  */
 export function WhatsNew() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const pro = useFeature('ai_coach');
-  const plans = usePlans();
-  const monthly = plans?.find((p) => p.id === 'monthly' && p.priceInr > 0) ?? null;
+  const e = useEntitlement();
+  const plan = useCoachingPlan();
   const [open, setOpen] = useState(() => !seenRelease());
-  const busy = pathname.startsWith('/workout') || pathname.startsWith('/setup');
+  const busy =
+    pathname.startsWith('/workout') || pathname.startsWith('/setup') || pathname === '/coaching';
   const close = () => {
     markReleaseSeen();
     setOpen(false);
@@ -34,44 +34,46 @@ export function WhatsNew() {
           className="flex size-20 items-center justify-center rounded-full bg-lime-dim text-lime"
           aria-hidden
         >
-          <Sparkles className="size-10" strokeWidth={1.5} />
+          <ClipboardList className="size-10" strokeWidth={1.5} />
         </span>
-        <p className="type-subhead mt-4 font-semibold text-lime">A fresh look</p>
-        <p className="type-title-1 mt-1 text-text-1">Cleaner, calmer, quicker.</p>
+        <p className="type-subhead mt-4 font-semibold text-lime">New: 1:1 coaching</p>
+        <p className="type-title-1 mt-1 text-text-1 [text-wrap:balance]">
+          Your own coach, inside Overload
+        </p>
         <p className="type-body mt-1 text-text-2 [text-wrap:balance]">
-          Every screen was redrawn so the number you came for comes first.
+          An experienced, science-based coach who plans your training and diet with you.
         </p>
         <ul className="type-body mt-4 flex flex-col gap-2.5 text-left text-text-2">
           <Point>
-            <strong className="font-semibold text-text-1">Five tabs.</strong> Home, Workout, Food,
-            Progress and History. Your routines live inside Workout.
-          </Point>
-          <Point pro>
-            <strong className="font-semibold text-text-1">OverloadGPT on every tab.</strong> Tap the
-            sparkle at the top right to ask about your own training and food.
+            <strong className="font-semibold text-text-1">Your plan.</strong> Split, exercises, sets
+            and reps for your goal, days and gym.
           </Point>
           <Point>
-            <strong className="font-semibold text-text-1">Progress in sections.</strong> Overview,
-            strength, volume, body and food, from 7 days to all time.
+            <strong className="font-semibold text-text-1">Your diet.</strong> Calories, protein and
+            meals from the Indian food you already eat.
           </Point>
           <Point>
-            <strong className="font-semibold text-text-1">Search your history.</strong> Find a
-            workout by name or exercise, and filter by date, muscle or exercise.
+            <strong className="font-semibold text-text-1">Calls and WhatsApp.</strong> One to one
+            with your coach, between calls too.
+          </Point>
+          <Point>
+            <strong className="font-semibold text-text-1">Pro included.</strong> Every Pro feature
+            and OverloadGPT while your coaching runs.
           </Point>
         </ul>
-        {pro ? null : (
+        {plan && !e.coaching ? (
           <p className="type-subhead mt-4 w-full rounded-nested bg-surface-2 p-3 text-left text-text-2">
             <Crown className="mr-1 inline size-4 align-[-3px] text-lime" aria-hidden />
-            OverloadGPT and the full Progress analysis are part of Pro
-            {monthly ? `, from ${formatRupees(monthly.priceInr)} a month.` : '.'}
+            {formatRupees(plan.priceInr)} a month, about{' '}
+            {formatRupees(Math.round(plan.priceInr / 30))} a day. Cancel any time.
           </p>
-        )}
+        ) : null}
         <div className="mt-5 flex w-full flex-col gap-2">
-          <PrimaryButton block data-autofocus onClick={() => (pro ? go('/progress') : close())}>
-            {pro ? 'Open Progress' : 'Got it'}
+          <PrimaryButton block data-autofocus onClick={() => go('/coaching')} data-release-open>
+            {e.coaching ? 'Open my coaching' : 'See 1:1 coaching'}
           </PrimaryButton>
-          <SecondaryButton block onClick={() => (pro ? close() : go('/pro'))}>
-            {pro ? 'Later' : 'See Pro'}
+          <SecondaryButton block onClick={close}>
+            Later
           </SecondaryButton>
         </div>
       </div>

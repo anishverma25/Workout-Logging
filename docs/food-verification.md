@@ -188,3 +188,57 @@ No values were changed in this check: none had a second source showing ours was 
 fixed so staples come first ("milk" is full cream milk, "rice" is steamed rice), and foods gained
 the measures they are eaten in (plate, bowl, ml), which removes the biggest source of logging
 error in practice: the amount.
+
+## Round 5: regional India and Amul (November 2026)
+
+Source data:
+
+- **Indian Food Composition Tables 2017** (Longvah et al., National Institute of Nutrition),
+  read from `@ifct2017/compositions@2.0.9` by `scripts/usda-ingredients.mjs` (`IFCT_PICK`).
+  About 100 Indian ingredients the USDA tables lack or describe poorly: millets (ragi, kodo,
+  little millet), whole pulses (horse gram, moth, lobia, val, kala chana), regional vegetables
+  (tindora, parwal, gawar, banana flower and stem, bathua, gongura, colocasia leaves, drumstick
+  and its leaves), fruits (amla, bael, jamun, phalsa), and Indian fish and meats (bombay duck,
+  pomfret, seer, hilsa, rohu, catla, bhetki, karimeen, country chicken, goat liver and tripe).
+  IFCT reports available carbohydrate and fibre separately, so carbs here are their sum, as in
+  the USDA rows; energy is IFCT's kJ / 4.184 plus 2 kcal per gram of fibre (FAO 2003), which
+  puts both tables on the same basis.
+- **USDA SR28** for about 30 further ingredients (pork belly, bacon, mince, chicken cuts,
+  mussels, ash gourd, ridge gourd, lotus stem, amaranth, dried figs and apricots, and others).
+- Dropped because the source row failed the energy check (stated energy against 4/4/9 Atwater
+  more than 12% apart): cocoa powder (USDA), curry leaves and dried red chilli (IFCT).
+
+Regional dishes (`src/data/library/regional/`, about 1,100): each is a recipe of raw ingredient
+grams from the tables above, with the cooked weight or a moisture rule, computed the same way as
+the curated dishes (`fromDish`). Every dish passes the library tests (energy matches macros
+within 12%, one portion under 800 kcal, light < normal < rich oil). Thalis, feasts and mixed
+platters were left out: they are several dishes, logged one by one.
+
+Amul (amul.com product pages, November 2026), stored as printed:
+
+| Product | Basis | kcal | Protein | Carbs | Fat |
+| --- | --- | --- | --- | --- | --- |
+| Kool Protein milkshake (chocolate, coffee, kesar) | 180 ml | 133 | 10 | 25 | 2.7 |
+| Protein lassi (plain, rose) | 200 ml | 107 | 15 | 12 | 1.7 |
+| High protein blueberry shake | 200 ml | 138 | 20 | rest | low |
+| Whey protein, plain | 100 g (32 g sachet) | 400 | 78 | 10.8 | 5 |
+| Whey protein, chocolate | 100 g (34 g sachet) | 383 | 74 | 10.6 | 5 |
+| High protein paneer | 100 g | 170 | 25 | 4 | 6 |
+| High protein kulfi | 60 g | 57 | 10 | | |
+| Gold milk | 100 ml | 86 | 3.1 | 5 | 6 |
+| Shakti / T-Special | 100 ml | 71 | 3 | 4.7 | 4.5 |
+| Slim n Trim | 100 ml | 46 | 3.1 | 5 | 1.5 |
+| Cow / A2 | 100 ml | 62 | 3 | 4.7 | 3.5 |
+| Buffalo | 100 ml | 91 | 3.2 | 5 | 6.5 |
+| Moti (toned) | 100 ml | 61 | 3.5 | 5 | 3 |
+
+- The Kool Protein page prints 133 kcal for values that add up to about 165; the label is kept
+  as printed (`asPrinted` in `regional.test.ts`). Vanilla has no page of its own and uses its
+  siblings' label.
+- Moti prints 35 kcal per 100 ml, which its own macros contradict; energy is computed from the
+  printed macros.
+- Cadbury 5 Star (Open Food Facts, matching the pack): 525 kcal, 7.5 g protein, 75 g carbs,
+  22.5 g fat per 100 g, 40 g bar.
+- Left out: other brands whose only published numbers were user-entered aggregator data, and an
+  Amul mango lassi whose page values did not add up. Any pack can be logged from its label
+  (Pack label in Add food), which reads the printed values.

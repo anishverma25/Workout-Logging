@@ -34,7 +34,8 @@ export interface BillingResponse {
   body: Record<string, unknown>;
 }
 
-const PLAN_IDS = ['monthly', 'quarterly', 'yearly'] as const;
+/** Pro plans, and the 1:1 coaching plan (which includes Pro for its month). */
+const PLAN_IDS = ['monthly', 'quarterly', 'yearly', 'coach_monthly'] as const;
 type PlanId = (typeof PLAN_IDS)[number];
 
 const ok = (body: Record<string, unknown>): BillingResponse => ({ status: 200, body });
@@ -344,7 +345,12 @@ export async function handleCancel(deps: BillingDeps, userId: string): Promise<B
 // Webhooks from Razorpay
 // ---------------------------------------------------------------------------------------------
 
-const MONTHS_FALLBACK: Record<string, number> = { monthly: 1, quarterly: 3, yearly: 12 };
+const MONTHS_FALLBACK: Record<string, number> = {
+  monthly: 1,
+  quarterly: 3,
+  yearly: 12,
+  coach_monthly: 1,
+};
 
 export async function handleWebhook(
   deps: BillingDeps,

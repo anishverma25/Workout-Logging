@@ -11,6 +11,7 @@ import { SyncBadge } from '@/features/account/SyncStatus';
 import { useProfile } from '@/data/hooks';
 import { LegalLinks } from '@/features/legal/LegalPage';
 import { ProRow } from '@/features/pro/ProRow';
+import { CoachingRow } from '@/features/coaching/CoachingRow';
 import { GOAL_LABEL, EXPERIENCE_LABEL } from '@/domain/models/labels';
 
 const GROUPS: { key: NonNullable<NavItem['group']>; title: string }[] = [
@@ -40,12 +41,14 @@ export function MorePage() {
           <ProfileCard />
           {/* Pro sits right under the person, with its price (owner request, UI v3 A2). */}
           <ProRow />
+          <CoachingRow />
         </div>
         <ReloadNote />
         {GROUPS.map((g) => (
           <ListGroup key={g.key} title={g.title}>
             {MORE_NAV.filter(
-              (i) => i.group === g.key && i.to !== '/profile' && i.to !== '/pro',
+              (i) =>
+                i.group === g.key && i.to !== '/profile' && i.to !== '/pro' && i.to !== '/coaching',
             ).map((i) => (
               <ListRow
                 key={i.to}

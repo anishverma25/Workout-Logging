@@ -26,6 +26,23 @@ function sub(overrides: Partial<Record<keyof SubscriptionSnapshot, unknown>> = {
 }
 
 describe('resolveEntitlement', () => {
+  it('has coaching only until its own end date, and never when revoked', () => {
+    const coached = sub({
+      status: 'active',
+      pro_expires_at: at(24 * 365).toISOString(),
+      coaching_expires_at: at(720).toISOString(),
+    });
+    expect(resolveEntitlement(coached, at(10))).toMatchObject({ coaching: true, pro: true });
+    expect(resolveEntitlement(coached, at(720))).toMatchObject({ coaching: false, pro: true });
+    expect(
+      resolveEntitlement(
+        sub({ coaching_expires_at: at(720).toISOString(), status: 'revoked' }),
+        at(10),
+      ).coaching,
+    ).toBe(false);
+    expect(resolveEntitlement(sub(), at(10)).coaching).toBe(false);
+  });
+
   it('gives no Pro features without an account', () => {
     const e = resolveEntitlement(null, start);
     expect(e.plan).toBe('guest');

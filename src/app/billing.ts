@@ -8,8 +8,11 @@ import { refreshEntitlement } from './entitlement';
  * Nothing here can grant access, and prices come from the server's billing_plans table.
  */
 
+export type ProPlanId = 'monthly' | 'quarterly' | 'yearly';
+export type CoachingPlanId = 'coach_monthly';
+
 export interface BillingPlan {
-  id: 'monthly' | 'quarterly' | 'yearly';
+  id: ProPlanId;
   label: string;
   months: number;
   priceInr: number;
@@ -21,23 +24,42 @@ export interface BillingPlan {
 
 export class BillingError extends Error {}
 
-let cached: BillingPlan[] | null = null;
+/** The 1:1 coaching plan: a month of coaching with Pro included (November 2026). */
+export interface CoachingPlan extends Omit<BillingPlan, 'id'> {
+  id: CoachingPlanId;
+}
 
-async function fetchPlans(): Promise<BillingPlan[]> {
+let cached: BillingPlan[] | null = null;
+let cachedCoaching: CoachingPlan | null = null;
+let inflight: Promise<BillingPlan[]> | null = null;
+
+const toPlan = (p: Record<string, unknown>) => ({
+  label: String(p.label),
+  months: Number(p.months),
+  priceInr: Number(p.price_inr),
+  oncePriceInr: Number(p.once_price_inr ?? p.price_inr),
+  available: p.available === true,
+});
+
+async function load(): Promise<BillingPlan[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc('get_billing_plans');
   if (error || !Array.isArray(data)) return cached ?? [];
-  cached = (data as Record<string, unknown>[])
+  const rows = data as Record<string, unknown>[];
+  // Only the known Pro plans go on the Pro page; servers before coaching have no `kind`.
+  cached = rows
     .filter((p) => p.id === 'monthly' || p.id === 'quarterly' || p.id === 'yearly')
-    .map((p) => ({
-      id: p.id as BillingPlan['id'],
-      label: String(p.label),
-      months: Number(p.months),
-      priceInr: Number(p.price_inr),
-      oncePriceInr: Number(p.once_price_inr ?? p.price_inr),
-      available: p.available === true,
-    }));
+    .map((p) => ({ id: p.id as ProPlanId, ...toPlan(p) }));
+  const coach = rows.find((p) => p.id === 'coach_monthly' && Number(p.price_inr) > 0);
+  cachedCoaching = coach ? { id: 'coach_monthly', ...toPlan(coach) } : null;
   return cached;
+}
+
+function fetchPlans(): Promise<BillingPlan[]> {
+  inflight ??= load().finally(() => {
+    inflight = null;
+  });
+  return inflight;
 }
 
 /** The plans, or null while loading. Empty when accounts are off or the server is unreachable. */
@@ -53,6 +75,26 @@ export function usePlans(): BillingPlan[] | null {
     };
   }, []);
   return plans;
+}
+
+/**
+ * The coaching plan: undefined while loading, null when the server has none (an older server,
+ * or accounts are off).
+ */
+export function useCoachingPlan(): CoachingPlan | null | undefined {
+  const [plan, setPlan] = useState<CoachingPlan | null | undefined>(
+    cached ? cachedCoaching : undefined,
+  );
+  useEffect(() => {
+    let live = true;
+    void fetchPlans().then(() => {
+      if (live) setPlan(cachedCoaching);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+  return plan;
 }
 
 /** Price per month, for comparing plans honestly. */
@@ -148,7 +190,7 @@ const themeColor = () =>
  * payment and Pro is on, 'closed' if the person closes the window.
  */
 export async function startCheckout(
-  plan: BillingPlan['id'],
+  plan: ProPlanId | CoachingPlanId,
   prefill: { email?: string | null; name?: string | null },
   mode: 'subscribe' | 'once' = 'subscribe',
 ): Promise<'paid' | 'closed'> {
@@ -170,8 +212,15 @@ export async function startCheckout(
     const checkout = new Razorpay({
       key: key_id,
       ...target,
-      name: 'Overload Pro',
-      description: mode === 'once' ? 'Pro, paid once' : 'Pro plan',
+      name: plan === 'coach_monthly' ? 'Overload 1:1 coaching' : 'Overload Pro',
+      description:
+        plan === 'coach_monthly'
+          ? mode === 'once'
+            ? 'One month of coaching with Pro'
+            : 'Monthly coaching with Pro'
+          : mode === 'once'
+            ? 'Pro, paid once'
+            : 'Pro plan',
       prefill: { email: prefill.email ?? undefined, name: prefill.name ?? undefined },
       theme: { color: themeColor() },
       handler: (response: RazorpayResponse) => {

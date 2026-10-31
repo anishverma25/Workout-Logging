@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
+  ClipboardList,
   CalendarRange,
   CircleUserRound,
   Flame,
@@ -66,6 +67,7 @@ export const SECONDARY_NAV: NavItem[] = [
   { to: '/account', label: 'Account', icon: CircleUserRound, tone: 'graphite', group: 'app' },
   { to: '/settings', label: 'Settings', icon: Settings, tone: 'graphite', group: 'app' },
   { to: '/pro', label: 'Pro', icon: Crown, tone: 'plum', group: 'app' },
+  { to: '/coaching', label: '1:1 coaching', icon: ClipboardList, tone: 'lime', group: 'app' },
   {
     to: '/feedback',
     label: 'Send feedback',

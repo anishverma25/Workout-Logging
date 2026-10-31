@@ -135,3 +135,41 @@ test('a webhook with a bad signature changes nothing', async () => {
   });
   expect(res.status).toBe(401);
 });
+
+test('1:1 coaching: the offer, paying once, the member view and the intake', async ({ page }) => {
+  await page.goto('/sign-up?next=/coaching');
+  await page
+    .getByRole('textbox', { name: 'Email' })
+    .fill(`coach-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`);
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await page.goto('/coaching');
+  await expect(page.locator('[data-coaching-hero]')).toContainText('₹999');
+  // Nobody sees the coach's number before joining.
+  await expect(page.locator('[data-whatsapp-coach]')).toHaveCount(0);
+  await expect(page.locator('[data-join-coaching]')).toContainText('Start coaching, ₹999 a month');
+
+  await page.locator('[data-join-coaching-once]').click();
+  const member = page.locator('[data-coaching-member]');
+  await expect(member).toContainText('Welcome to 1:1 coaching');
+  await expect(member).toContainText('Your coach: Coach Arjun');
+  await expect(member.locator('[data-whatsapp-coach]')).toHaveAttribute(
+    'href',
+    /^https:\/\/wa\.me\/919876543210\?text=/,
+  );
+
+  const form = page.locator('[data-coaching-form]');
+  await form.getByLabel('Your goal').fill('Lose 6 kg and bench 80 kg');
+  await form.getByLabel('When you train, and when you can talk').fill('Gym 7 am, free after 8 pm');
+  await form.getByLabel('WhatsApp number').fill('+91 98765 43210');
+  await form.locator('[data-send-intake]').click();
+  const told = page.locator('[data-coaching-intake]');
+  await expect(told).toContainText('Lose 6 kg and bench 80 kg');
+  await expect(told).toContainText('+91 98765 43210');
+
+  // Coaching includes Pro.
+  await page.goto('/progress?range=all');
+  await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
+  await page.goto('/more');
+  await expect(page.locator('[data-coaching-row]')).toContainText('Your 1:1 coaching');
+});
