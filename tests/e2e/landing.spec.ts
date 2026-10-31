@@ -3,7 +3,7 @@ import { startWithDemo } from './session';
 
 /** The public home page: what search engines and first-time visitors see at `/`. */
 
-const HEADING = 'Log every set. See real progress.';
+const HEADING = 'Log every set and every meal. See real progress.';
 
 test('a first visit opens the public home page, which leads to the tour and an account', async ({
   page,

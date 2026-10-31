@@ -37,7 +37,7 @@ export const PUBLIC_PAGES: PublicPage[] = [
     path: '/welcome',
     title: 'Take the tour | Overload',
     description:
-      'See how Overload logs a workout, tracks your progress and celebrates your records, with sample data and no account needed.',
+      'See how Overload logs workouts and Indian meals, tracks your progress and coaches you with OverloadGPT, using sample data and no account.',
     inSitemap: true,
   },
   {

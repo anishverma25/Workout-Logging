@@ -28,8 +28,19 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   await page.getByRole('button', { name: 'Take the tour' }).click();
   await page.getByRole('button', { name: 'Mark sample set 1 done' }).click();
   await expect(page.getByRole('button', { name: 'Set 1 done' })).toBeVisible();
-  // Five feature slides and the Pro slide.
-  for (let i = 0; i < 6; i++) await page.getByRole('button', { name: 'Next' }).click();
+  // Training, food, OverloadGPT, body and journey slides, then the Pro slide.
+  const next = () => page.getByRole('button', { name: 'Next' }).click();
+  for (let i = 0; i < 3; i++) await next();
+  const food = page.locator('[data-tour-food]');
+  await expect(food).toBeVisible();
+  // The sample day comes from the real library, so its numbers are filled in.
+  await expect(food).toContainText(/Breakfast[\s\S]*\d+ kcal/);
+  await next();
+  await expect(page.locator('[data-tour-coach]')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'An AI coach that knows your numbers' }),
+  ).toBeVisible();
+  for (let i = 0; i < 4; i++) await next();
   await page.getByRole('button', { name: 'Create my account' }).click();
 
   // The account.
