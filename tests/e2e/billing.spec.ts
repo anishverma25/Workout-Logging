@@ -137,12 +137,7 @@ test('a webhook with a bad signature changes nothing', async () => {
 });
 
 test('1:1 coaching: the offer, paying once, the member view and the intake', async ({ page }) => {
-  await page.goto('/sign-up?next=/coaching');
-  await page
-    .getByRole('textbox', { name: 'Email' })
-    .fill(`coach-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`);
-  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
-  await page.getByRole('button', { name: 'Create account' }).click();
+  await signUp(page);
   await page.goto('/coaching');
   await expect(page.locator('[data-coaching-hero]')).toContainText('₹999');
   // Nobody sees the coach's number before joining.
