@@ -57,7 +57,8 @@ async function signUp(page: Page) {
     .fill(`pay-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`);
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page).toHaveURL(/\/pro$/);
+  // The pathname itself: "/sign-up?next=/pro" also ends in /pro.
+  await page.waitForURL((u) => u.pathname === '/pro');
 }
 
 test('the plans show honest per-month prices and the introductory framing', async ({ page }) => {
