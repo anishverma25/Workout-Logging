@@ -1,6 +1,6 @@
 import { WorkoutDatabase } from '../db';
 import { loadDemoData } from '../demo/service';
-import { ProfileError, saveProfile, saveTargetSettings } from './profile';
+import { ProfileError, saveAvatar, saveProfile, saveTargetSettings } from './profile';
 import { loadTrainingData } from './training';
 
 let db: WorkoutDatabase;
@@ -25,6 +25,24 @@ describe('profile', () => {
     expect(second.id).toBe(first.id);
     expect(await db.profiles.count()).toBe(1);
     expect(await db.outbox.get(`profiles:${first.id}`)).toBeDefined();
+  });
+
+  it('keeps a profile photo, syncs it, and removes it again', async () => {
+    await expect(saveAvatar(db, 'data:image/jpeg;base64,AAAA')).rejects.toThrow(ProfileError);
+    const mine = await saveProfile(db, input);
+    await db.outbox.clear();
+    await saveAvatar(db, 'data:image/jpeg;base64,/9j/4AAQSkZJRg==');
+    expect((await db.profiles.get(mine.id))!.avatar).toBe(
+      'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
+    );
+    expect(await db.outbox.get(`profiles:${mine.id}`)).toBeDefined();
+    await saveAvatar(db, null);
+    expect((await db.profiles.get(mine.id))!.avatar).toBeNull();
+    // Anything that is not a small image data URL is refused.
+    await expect(saveAvatar(db, 'https://example.com/me.jpg')).rejects.toThrow(ProfileError);
+    await expect(saveAvatar(db, `data:image/jpeg;base64,${'A'.repeat(80_000)}`)).rejects.toThrow(
+      'too large',
+    );
   });
 
   it('never edits the demo profile, and the person’s own wins', async () => {

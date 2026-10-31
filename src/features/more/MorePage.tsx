@@ -1,3 +1,4 @@
+import { ProfileAvatar } from '@/features/profile/ProfileAvatar';
 import { Link } from 'react-router';
 import { ChevronRight, Crown, FileUp, RefreshCw, Sparkles } from 'lucide-react';
 import { useAccount } from '@/app/account';
@@ -111,23 +112,12 @@ function ProfileCard() {
       : entitlement.pro
         ? 'Pro'
         : null;
-  const initials = profile?.displayName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join('');
   return (
     <Link
       to="/profile"
       className="pressable chrome flex items-center gap-4 rounded-card bg-surface p-4"
     >
-      <span
-        aria-hidden
-        className="flex size-14 shrink-0 items-center justify-center rounded-full bg-fill text-[1.0625rem] font-semibold text-text-1"
-      >
-        {initials || '?'}
-      </span>
+      <ProfileAvatar name={profile?.displayName} avatar={profile?.avatar} size={56} />
       <span className="min-w-0 flex-1">
         <span className="type-headline block truncate text-text-1">
           {profile?.displayName ?? 'Set up your profile'}

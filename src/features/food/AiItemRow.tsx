@@ -11,7 +11,7 @@ import {
   Sparkles,
   UserRound,
 } from 'lucide-react';
-import { NumberField, PrimaryButton, TextLink } from '@/components/kit';
+import { NumberField, PrimaryButton, TextField, TextLink } from '@/components/kit';
 import { editedPortion, type EditedNumbers } from '@/app/foodAi';
 import { measurePortion, type FoodPortion } from '@/data/repositories/food';
 import { portionText } from '@/domain/nutrition/calc';
@@ -33,6 +33,7 @@ export function AiItemRow({
   onChange?: (next: FoodPortion) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [renaming, setRenaming] = useState(false);
   const f = portion.food;
   const amount =
     f.ai && portion.unit === 'serving'
@@ -62,7 +63,30 @@ export function AiItemRow({
       data-confidence={confidence}
     >
       <span className="min-w-0 flex-1">
-        <span className="type-headline block text-[1.125rem] text-text-1">{f.name}</span>
+        {renaming && onChange ? (
+          <NameEditor
+            name={f.name}
+            onDone={(name) => {
+              onChange({ ...portion, food: { ...f, name } });
+              setRenaming(false);
+            }}
+            onCancel={() => setRenaming(false)}
+          />
+        ) : onChange ? (
+          // The name OverloadGPT gave is a guess too: tap it to call the food what it is.
+          <button
+            type="button"
+            className="type-headline -mx-1 block rounded-sm px-1 text-left text-[1.125rem] text-text-1"
+            onClick={() => setRenaming(true)}
+            aria-label={`Rename ${f.name}`}
+            data-rename-ai-item
+          >
+            {f.name}
+            <Pencil className="ml-1.5 inline size-3.5 text-text-3" aria-hidden />
+          </button>
+        ) : (
+          <span className="type-headline block text-[1.125rem] text-text-1">{f.name}</span>
+        )}
         {f.ai?.ref ? <span className="type-caption block text-text-3">{f.ai.ref}</span> : null}
         {onChange && count && !editing ? (
           <CountStepper
@@ -126,6 +150,45 @@ export function AiItemRow({
         />
       ) : null}
     </li>
+  );
+}
+
+/** The food's name, editable in place: "Chicken curry" was really "Kadai chicken". */
+function NameEditor({
+  name,
+  onDone,
+  onCancel,
+}: {
+  name: string;
+  onDone: (name: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState(name);
+  const clean = value.replace(/\s+/g, ' ').trim();
+  return (
+    <span className="block" data-ai-name-editor>
+      <TextField
+        label="Name"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && clean) onDone(clean);
+          if (e.key === 'Escape') onCancel();
+        }}
+        maxLength={60}
+        autoFocus
+        // The card is the same grey as a field: a darker box shows where to type.
+        className="[&>div]:bg-surface"
+      />
+      <span className="mt-2 flex items-center gap-3">
+        <PrimaryButton compact disabled={!clean} onClick={() => onDone(clean)} data-save-ai-name>
+          Save name
+        </PrimaryButton>
+        <TextLink small onClick={onCancel}>
+          Cancel
+        </TextLink>
+      </span>
+    </span>
   );
 }
 

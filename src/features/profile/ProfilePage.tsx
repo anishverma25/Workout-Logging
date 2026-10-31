@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import {
   Activity,
   CalendarDays,
   Cake,
+  Camera,
   Dumbbell,
   Gauge,
   Pencil,
@@ -21,7 +22,9 @@ import { Sheet } from '@/components/ui/Sheet';
 import { ListGroup, ListRow } from '@/components/ui/List';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
-import { ProfileError, saveProfile } from '@/data/repositories/profile';
+import { ProfileError, saveAvatar, saveProfile } from '@/data/repositories/profile';
+import { AvatarError, avatarFromFile } from '@/lib/avatar';
+import { ProfileAvatar } from './ProfileAvatar';
 import { ProRow } from '@/features/pro/ProRow';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
@@ -60,12 +63,6 @@ export function ProfilePage() {
   const [editing, setEditing] = useState(false);
   // The demo profile is fictional and read only; editing creates the person's own.
   const editable = profile && profile.origin !== 'demo' ? profile : null;
-  const initials = profile?.displayName
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((p) => p[0]!.toUpperCase())
-    .slice(0, 2)
-    .join('');
   const age = profile?.birthDate ? ageFromBirthDate(profile.birthDate) : null;
 
   return (
@@ -94,12 +91,7 @@ export function ProfilePage() {
       {profile ? (
         <div className="flex max-w-2xl flex-col gap-7">
           <section className="flex flex-col items-center rounded-[var(--radius-card)] bg-surface px-5 pb-5 pt-6 text-center">
-            <span
-              aria-hidden
-              className="flex size-20 items-center justify-center rounded-full border border-border bg-surface-2 font-display text-[1.75rem] font-semibold text-white"
-            >
-              {initials}
-            </span>
+            <PhotoPicker profile={profile} editable={editable !== null} />
             <p className="mt-3 font-display text-[1.5rem] font-bold leading-tight tracking-tight">
               {profile.displayName}
             </p>
@@ -196,6 +188,85 @@ export function ProfilePage() {
         </div>
       ) : null}
     </>
+  );
+}
+
+/**
+ * The profile photo: tap it to choose one from the phone (or take one), and remove it again.
+ * It is shrunk to a 256 px square on the phone before it is saved, and syncs with the profile.
+ */
+function PhotoPicker({ profile, editable }: { profile: Profile; editable: boolean }) {
+  const toast = useToast();
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function choose(file: File | undefined) {
+    if (!file) return;
+    setBusy(true);
+    try {
+      await saveAvatar(db, await avatarFromFile(file));
+      toast('Photo saved');
+    } catch (e) {
+      toast(
+        e instanceof AvatarError || e instanceof ProfileError
+          ? e.message
+          : 'Could not use that photo. Try another one.',
+      );
+    } finally {
+      setBusy(false);
+      if (input.current) input.current.value = '';
+    }
+  }
+
+  async function remove() {
+    setBusy(true);
+    try {
+      await saveAvatar(db, null);
+      toast('Photo removed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!editable)
+    return <ProfileAvatar name={profile.displayName} avatar={profile.avatar} size={80} />;
+  return (
+    <div className="flex flex-col items-center gap-2" data-photo-picker>
+      <button
+        type="button"
+        className="pressable relative rounded-full"
+        onClick={() => input.current?.click()}
+        disabled={busy}
+        aria-label={profile.avatar ? 'Change profile photo' : 'Add a profile photo'}
+        data-choose-photo
+      >
+        <ProfileAvatar name={profile.displayName} avatar={profile.avatar} size={80} />
+        <span className="absolute -bottom-0.5 -right-0.5 flex size-7 items-center justify-center rounded-full border-2 border-surface bg-lime text-black">
+          <Camera className="size-3.5" aria-hidden />
+        </span>
+      </button>
+      <input
+        ref={input}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={(e) => void choose(e.target.files?.[0])}
+        data-photo-input
+      />
+      {profile.avatar ? (
+        <button
+          type="button"
+          className="type-meta text-text-2 underline-offset-2 hover:underline"
+          onClick={() => void remove()}
+          disabled={busy}
+          data-remove-photo
+        >
+          Remove photo
+        </button>
+      ) : null}
+    </div>
   );
 }
 

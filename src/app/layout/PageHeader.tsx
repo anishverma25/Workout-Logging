@@ -1,3 +1,4 @@
+import { ProfileAvatar } from '@/features/profile/ProfileAvatar';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import { ChevronLeft } from 'lucide-react';
@@ -122,24 +123,24 @@ function DemoBanner() {
   );
 }
 
-/** Initials in a 36px neutral circle, linking to More (profile, account, settings) on phones. */
+/** The person's photo or initials in a 36px circle, linking to More (profile, account, settings) on phones. */
 function AvatarLink() {
   const profile = useProfile().data;
   const { pathname } = useLocation();
   if (pathname === '/more') return null;
-  const initials = profile?.displayName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join('');
   return (
     <Link
       to="/more"
       aria-label="More: profile, account and settings"
-      className="pressable tap-target inline-flex size-9 items-center justify-center rounded-full bg-surface-2 text-[0.875rem] font-semibold text-text-1 lg:hidden"
+      className="pressable tap-target inline-flex size-9 items-center justify-center rounded-full lg:hidden"
     >
-      {initials || <MoreDots />}
+      <ProfileAvatar
+        name={profile?.displayName}
+        avatar={profile?.avatar}
+        size={36}
+        className="bg-surface-2"
+        fallback={<MoreDots />}
+      />
     </Link>
   );
 }

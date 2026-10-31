@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { BottomSheet, DestructiveButton, PrimaryButton, SegmentedControl } from '@/components/kit';
+import {
+  BottomSheet,
+  DestructiveButton,
+  PrimaryButton,
+  SegmentedControl,
+  TextField,
+} from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import {
@@ -7,6 +13,7 @@ import {
   deleteFoodLogs,
   FoodError,
   moveFoodLog,
+  renameOwnFood,
   restoreFoodLogs,
   updateFoodLog,
   type FoodPortion,
@@ -18,7 +25,10 @@ import { NutritionPanel } from './FoodProfile';
 import { NutrientLine, PortionEditor } from './PortionEditor';
 import { MEAL_LABEL, type FoodContext } from './useFoodContext';
 
-/** Change a logged food's portion, oil or meal, or delete it (with undo). */
+/**
+ * Change a logged food's portion, oil or meal, or delete it (with undo). The person's own foods
+ * (including those OverloadGPT found in a photo or on a label) can be renamed here too.
+ */
 export function EditFoodSheet({
   log,
   ctx,
@@ -45,12 +55,18 @@ function EditBody({ log, ctx, onDone }: { log: FoodLog; ctx: FoodContext; onDone
       : null,
   );
   const [busy, setBusy] = useState(false);
+  const own = food?.source === 'custom' || food?.source === 'custom_recipe';
+  const [name, setName] = useState(log.foodName);
+  const newName = name.replace(/\s+/g, ' ').trim();
+  const renamed = own && newName !== '' && newName !== log.foodName;
 
   async function save() {
     if (!portion) return;
     setBusy(true);
     try {
-      await updateFoodLog(db, log.id, portion, meal, ctx.katoriMl);
+      if (renamed && food) await renameOwnFood(db, food.id, log.id, newName);
+      const named = renamed ? { ...portion, food: { ...portion.food, name: newName } } : portion;
+      await updateFoodLog(db, log.id, named, meal, ctx.katoriMl);
       onDone();
     } catch (e) {
       toast(e instanceof FoodError ? e.message : 'Could not save. Try again.');
@@ -69,6 +85,16 @@ function EditBody({ log, ctx, onDone }: { log: FoodLog; ctx: FoodContext; onDone
 
   return (
     <div className="flex flex-col gap-4">
+      {own && portion ? (
+        <TextField
+          label="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={60}
+          error={newName === '' ? 'Give it a name.' : undefined}
+          data-food-name
+        />
+      ) : null}
       <SegmentedControl<Meal>
         label="Meal"
         block
@@ -106,6 +132,7 @@ function EditBody({ log, ctx, onDone }: { log: FoodLog; ctx: FoodContext; onDone
         <PrimaryButton
           block
           loading={busy}
+          disabled={own && portion !== null && newName === ''}
           onClick={() => (portion ? void save() : void moveFoodLog(db, log.id, meal).then(onDone))}
         >
           Save

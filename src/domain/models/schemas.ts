@@ -247,6 +247,9 @@ export type GymAccess = z.infer<typeof GymAccess>;
 export const DailyActivity = z.enum(['sitting', 'mixed', 'on_feet', 'physical']);
 export type DailyActivity = z.infer<typeof DailyActivity>;
 
+/** Longest profile photo data URL accepted (the server allows 80,000). */
+export const AVATAR_MAX_CHARS = 70_000;
+
 export const Profile = z.object({
   ...baseRecord,
   displayName: z.string().min(1).max(60),
@@ -275,6 +278,15 @@ export const Profile = z.object({
   /** Water in ml a day, and the size of the person's own glass in ml. */
   waterTargetMl: z.number().int().min(500).max(8000).nullish(),
   waterGlassMl: z.number().int().min(100).max(1000).nullish(),
+  /**
+   * Profile photo (October 2026): a square JPEG made on the phone, 256 px, as a data URL so it
+   * syncs with the profile row. Capped well under the server's check.
+   */
+  avatar: z
+    .string()
+    .max(AVATAR_MAX_CHARS)
+    .regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/)
+    .nullish(),
 });
 export type Profile = z.infer<typeof Profile>;
 

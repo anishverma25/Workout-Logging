@@ -260,6 +260,25 @@ async function keepAll(db: WorkoutDatabase, plate: FoodPortion[]): Promise<FoodP
   return out;
 }
 
+/** Renames one of the person's own foods, and the logged entry being edited. */
+export async function renameOwnFood(
+  db: WorkoutDatabase,
+  foodId: string,
+  logId: string,
+  name: string,
+): Promise<void> {
+  const clean = name.replace(/\s+/g, ' ').trim().slice(0, 60);
+  if (!clean) throw new FoodError('Give it a name.');
+  await db.transaction('rw', [db.customFoods, db.foodLogs, db.outbox], async () => {
+    const food = await db.customFoods.get(foodId);
+    if (food && food.deletedAt === null)
+      await patchRecord<CustomFood>(db, 'customFoods', foodId, { name: clean });
+    const log = await db.foodLogs.get(logId);
+    if (log && log.deletedAt === null)
+      await patchRecord<FoodLog>(db, 'foodLogs', logId, { foodName: clean });
+  });
+}
+
 export async function deleteCustomFood(db: WorkoutDatabase, id: string): Promise<void> {
   await db.transaction('rw', [db.customFoods, db.outbox], () =>
     softDelete(db, 'customFoods', [id]),
