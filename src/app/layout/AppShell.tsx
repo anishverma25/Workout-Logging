@@ -4,7 +4,8 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
-import { useActiveWorkout, useDemoStatus } from '@/data/hooks';
+import { useActiveWorkout, useDemoStatus, useProfile } from '@/data/hooks';
+import { ProfileAvatar } from '@/features/profile/ProfileAvatar';
 import {
   APP_NAME,
   BOTTOM_NAV,
@@ -158,10 +159,29 @@ function Sidebar() {
         </div>
       </nav>
       <div className="mt-auto flex flex-col items-start gap-2 px-2 pt-6">
+        <SidebarProfile />
         <DemoPill />
         <SyncBadge className="-mx-2 w-[calc(100%+1rem)]" />
       </div>
     </aside>
+  );
+}
+
+/** The person's photo (or initials) and name on desktop, where the header has no avatar. */
+function SidebarProfile() {
+  const profile = useProfile().data;
+  if (!profile || (!profile.avatar && !profile.displayName)) return null;
+  return (
+    <Link
+      to="/profile"
+      className="pressable chrome -mx-2 flex w-[calc(100%+1rem)] items-center gap-2.5 rounded-field px-2 py-1.5"
+      data-sidebar-profile
+    >
+      <ProfileAvatar name={profile.displayName} avatar={profile.avatar} size={36} />
+      <span className="type-subhead min-w-0 truncate text-text-1">
+        {profile.displayName || 'Your profile'}
+      </span>
+    </Link>
   );
 }
 

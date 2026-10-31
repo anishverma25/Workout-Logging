@@ -141,7 +141,7 @@ test('setting up a profile greets you by name and keeps the demo profile separat
   await sheet.getByRole('radio', { name: 'Hypertrophy', exact: true }).click();
   await sheet.getByRole('button', { name: 'Save profile' }).click();
   await expect(page.getByText('Profile saved')).toBeVisible();
-  await expect(page.getByText('Asha Rao')).toBeVisible();
+  await expect(page.getByText('Asha Rao').filter({ visible: true }).first()).toBeVisible();
   await expect(page.getByText('Fictional demo profile')).toHaveCount(0);
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Asha');
