@@ -7,13 +7,7 @@ import type { SubscriptionSnapshot } from '@/domain/entitlement/entitlement';
  */
 
 export type DevEntitlementState =
-  | 'real'
-  | 'founding'
-  | 'trial'
-  | 'trial_expired'
-  | 'pro'
-  | 'pro_expired'
-  | 'coaching';
+  'real' | 'founding' | 'trial' | 'trial_expired' | 'pro' | 'pro_expired' | 'coaching';
 
 export const DEV_STATES: { value: DevEntitlementState; label: string }[] = [
   { value: 'real', label: 'Real' },

@@ -19,6 +19,7 @@ import {
   Sparkles,
   Trophy,
   UserRound,
+  UsersRound,
   UtensilsCrossed,
 } from 'lucide-react';
 
@@ -56,6 +57,7 @@ export const PRIMARY_NAV: NavItem[] = [
 export const BOTTOM_NAV = PRIMARY_NAV.filter((i) => i.bottom !== false);
 
 export const SECONDARY_NAV: NavItem[] = [
+  { to: '/groups', label: 'Groups', icon: UsersRound, tone: 'lime', group: 'you' },
   { to: '/badges', label: 'Badges', icon: Medal, tone: 'amber', group: 'you' },
   { to: '/journey', label: 'Journey', icon: Route, tone: 'ember', group: 'you' },
   { to: '/body', label: 'Body metrics', icon: Scale, tone: 'sky', group: 'you' },

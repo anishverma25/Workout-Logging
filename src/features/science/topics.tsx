@@ -919,17 +919,17 @@ export const SCIENCE: TopicGroup[] = [
             have (ragi, horse gram, tindora, hilsa, surmai, bombil and about 80 more) come from the
             Indian Food Composition Tables 2017 by the National Institute of Nutrition, which
             measured them across six regions; their energy counts fibre at 2 kcal a gram, as FAO
-            recommends and as the rest of the library does. Each dish is built from its
-            ingredients, the same recipe method the Indian Nutrient Databank uses, so every number
-            can be traced to its source.
+            recommends and as the rest of the library does. Each dish is built from its ingredients,
+            the same recipe method the Indian Nutrient Databank uses, so every number can be traced
+            to its source.
           </>,
           <>
             Where each food comes from is shown under its name. Our own dishes are built as above,
-            including about 1,100 regional dishes from every state. Packaged products use the
-            values printed on their pack. About 8,000 more foods (fruit,
-            dairy, fast food, packaged and restaurant items from around the world) are USDA lab
-            values, and about 860 more Indian dishes come from the Indian Nutrient Databank
-            (Vijayakumar et al. 2024). Search shows our own dishes first.
+            including about 1,100 regional dishes from every state. Packaged products use the values
+            printed on their pack. About 8,000 more foods (fruit, dairy, fast food, packaged and
+            restaurant items from around the world) are USDA lab values, and about 860 more Indian
+            dishes come from the Indian Nutrient Databank (Vijayakumar et al. 2024). Search shows
+            our own dishes first.
           </>,
           <>
             With Pro, OverloadGPT can log a meal you describe. It looks up brands and restaurant
@@ -1075,6 +1075,40 @@ export const SCIENCE: TopicGroup[] = [
         title: 'Recovery',
         shows:
           'The app does not guess how recovered a muscle is, because a workout log cannot tell you that. It only shows days since each muscle was last trained.',
+      },
+      {
+        id: 'leaderboards',
+        title: 'Group leaderboards',
+        evidence: 'groupScore',
+        shows:
+          'The Overload Score in your groups: points for showing up, training hard, beating your own best and eating enough protein, each with a weekly cap.',
+        formulas: [
+          {
+            tex: String.raw`\text{score} = 10\,W + H + 5\,R + 3\,P`,
+            spoken:
+              'Score equals 10 times workouts, plus hard sets, plus 5 times records, plus 3 times protein days',
+            where:
+              'W: workouts of 10 minutes or more with at least 3 working sets, logged live, at most 2 a day and 6 a week. H: working sets not logged as easy (4 or fewer reps in reserve, or RPE 6 or more), at most 25 a week. R: a new best estimated 1RM on an exercise done in at least 2 earlier workouts and no more than 40% above the old best, at most 5 a week. P: days your logged protein reaches 90% of your own target. Monthly caps grow with the length of the month.',
+          },
+        ],
+        why: [
+          <>
+            Raw kilograms lifted would let the biggest, most experienced lifter win every week. So
+            the score rewards what everyone controls: consistency, which the 2026 ACSM Position
+            Stand calls the biggest win; effort close to failure, measured with reps in reserve as
+            in Zourdos and colleagues (2016); progress against your own past; and protein, which
+            Morton and colleagues (2018) found adds to the gains from training.
+          </>,
+          <>
+            Caps stop anyone winning by logging hundreds of sets. Only workouts logged live count,
+            so imported history or workouts typed in days later never do, and a finished week is
+            locked the first time anyone views it.
+          </>,
+        ],
+        forYou:
+          'Train most days your plan says, push working sets close to failure, and log your food: that is how to win.',
+        limits:
+          'The score is worked out on the server from synced data, so a workout counts once it has synced. Records need a weight and 1 to 10 reps.',
       },
       {
         id: 'trial',

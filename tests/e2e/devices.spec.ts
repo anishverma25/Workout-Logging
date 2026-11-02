@@ -25,6 +25,7 @@ const pages = [
   '/coach',
   '/profile',
   '/feedback',
+  '/groups',
 ];
 for (const [name, w, h] of [
   ['iphone16', 393, 852],

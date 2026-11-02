@@ -416,6 +416,20 @@ describe('row level security', () => {
     );
   });
 
+  it('usernames, groups and leaderboard results are reachable only through their functions', async () => {
+    for (const t of ['usernames', 'groups', 'group_members', 'group_results']) {
+      for (const run of [
+        (fn: (tx: Transaction) => Promise<unknown>) => server.asUser(userA, fn),
+        (fn: (tx: Transaction) => Promise<unknown>) => server.asAnon(fn),
+      ]) {
+        await expectError(
+          run((tx) => tx.query(`select * from public.${t}`)),
+          /permission denied/,
+        );
+      }
+    }
+  });
+
   it('the built-in library is readable but not writable', async () => {
     const count = await server.asUser(userA, (tx) =>
       tx.query<{ n: number }>('select count(*)::int as n from public.exercises'),

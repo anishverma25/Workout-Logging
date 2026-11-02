@@ -360,3 +360,15 @@ Read README.md for setup, architecture and calculation rules.
   (₹59, ₹149, ₹499) is shown crossed out next to the server's lower price, with an "Early bird
   offer" box on the Pro page. `regularPrice` hides both once the server price reaches the
   regular one, so raising prices needs only the SQL update.
+- Groups and leaderboards (November 2026, migration `20261102000019_groups.sql`, Dexie unchanged,
+  `docs/groups.md`): unique lower-case usernames (`set_username`, `check_username`), groups with a
+  6-character code (`create_group`, `join_group`, admin `rename_group`, `new_group_code`,
+  `remove_group_member`; last admin leaving passes it on, an empty group is deleted), 30 people,
+  3 groups free and 10 Pro. Scores only on the server (`community_scores`): 10 a workout (10+
+  min, 3+ working sets, logged live, 2 a day, 6 a week), 1 a hard set (25), 5 a record (2+
+  earlier sessions, under +40%, 5), 3 a protein day (90% of target); finished periods frozen in
+  `group_results`. New tables have RLS and no direct access; functions return usernames and
+  points only to members. App `app/community.ts`, `features/groups` (`/groups`, `/groups/:id`,
+  `GroupsHomeCard`), Pro feature `group_boards`, science topic `leaderboards`. E2E stretches
+  workouts with `/__test/stretch-workouts`. Release `2026-11-groups` (three steps, buttons in the
+  sheet footer), `CACHE_EPOCH` `ui-14`.

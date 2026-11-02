@@ -533,6 +533,7 @@ export const METRIC_EVIDENCE: Record<
   personalRecords: { kind: 'definition', citations: [] },
   workoutsPerWeek: { kind: 'definition', citations: [] },
   trialLength: { kind: 'definition', citations: [] },
+  groupScore: { kind: 'definition', citations: ['acsm2026', 'zourdos2016', 'morton2018'] },
   // Body page.
   bmr: { kind: 'evidence', citations: ['mifflin1990', 'frankenfield2005', 'mcardleKatch'] },
   maintenance: { kind: 'evidence', citations: ['fao2004', 'compendium2024'] },

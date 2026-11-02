@@ -16,6 +16,7 @@ import { StrengthCard } from './StrengthCard';
 import { TodayCard } from './TodayCard';
 import { WeekCard } from './WeekCard';
 import { FoodCard } from './FoodCard';
+import { GroupsHomeCard } from '@/features/groups/GroupsHomeCard';
 import { activeRoutine } from '@/domain/analytics/schedule';
 
 export function HomePage() {
@@ -106,6 +107,7 @@ export function HomePage() {
               consistency={model.consistency}
               unit={prefs.weightUnit}
             />
+            <GroupsHomeCard />
           </div>
           <div className="flex flex-col gap-8">
             {training.data?.profile ? (
