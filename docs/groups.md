@@ -72,3 +72,38 @@ from public.groups g, public.community_bounds('week', 0) b where g.code = 'ABC23
 
 Removing a username also hides that person from boards until they pick a new one; their
 memberships stay.
+
+## 5. Global leaderboard
+
+Everyone with points in the week or month appears on the global leaderboard (`/groups/global`),
+by the same Overload Score. Others see the person's profile name and points. The username shows
+only if the person turns on "Show my username" on that page. Everything is in
+`supabase/migrations/20261102000020_global_leaderboard.sql` (run it after 0019, safe to run more
+than once). If the app is deployed before it is run, the page says the leaderboard is not
+available yet and the Home row stays hidden.
+
+The board is worked out for everyone at once, so it is stored in `global_results` and refreshed
+at most once a minute. A finished week or month is frozen the first time it is shown.
+
+```sql
+-- Check it worked (returns a number, 0 if nobody has points yet).
+select jsonb_array_length(rows) from public.community_global_rows('week', 0);
+
+-- Keep an account off the global board (for example a cheater or an offensive name).
+insert into public.leaderboard_hidden (user_id, reason)
+select id, 'cheating' from auth.users where email = 'person@example.com';
+
+-- Put them back.
+delete from public.leaderboard_hidden
+where user_id = (select id from auth.users where email = 'person@example.com');
+
+-- Refresh less often when there are many users (seconds, 0 to 3600).
+update public.app_settings set leaderboard_refresh_seconds = 300;
+
+-- Recompute this week now (the next view refreshes it).
+delete from public.global_results where not final;
+```
+
+Hiding takes effect at the next refresh. A frozen past period keeps the hidden person until it is
+recomputed: `delete from public.global_results where period = 'week' and starts_on = '2026-11-02';`.
+

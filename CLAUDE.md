@@ -372,3 +372,13 @@ Read README.md for setup, architecture and calculation rules.
   `GroupsHomeCard`), Pro feature `group_boards`, science topic `leaderboards`. E2E stretches
   workouts with `/__test/stretch-workouts`. Release `2026-11-groups` (three steps, buttons in the
   sheet footer), `CACHE_EPOCH` `ui-14`.
+- Global leaderboard (November 2026, migration `20261102000020_global_leaderboard.sql`, Dexie
+  unchanged, `docs/groups.md`): everyone with points this week or month, by the same
+  `community_scores`, at `/groups/global` (`GlobalPage`), on Groups (`GlobalCard`) and Home
+  (`GroupsHomeCard` "Leaderboards"). Everyone appears by profile name by default; the username
+  only when they turn on `set_show_username` (`leaderboard_prefs`). `get_global_board` sends the
+  top 100 plus the caller, photos only for the top 3 and the caller; `get_my_global_standing`
+  feeds Home. Results cached in `global_results`, refreshed at most every
+  `app_settings.leaderboard_refresh_seconds` (60; 0 in the fake server and tests), finished
+  periods frozen. Admin hides an account with `leaderboard_hidden`. Release
+  `2026-11-leaderboards` announces groups and the global board, `CACHE_EPOCH` `ui-15`.
