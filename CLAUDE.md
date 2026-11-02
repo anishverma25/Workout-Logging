@@ -356,3 +356,7 @@ Read README.md for setup, architecture and calculation rules.
     (`submit_coaching_intake`). Admin steps in `docs/admin-coaching.md`.
   - Tour and landing show food logging and OverloadGPT. Release `2026-11-coaching` announces
     coaching only; `CACHE_EPOCH` `ui-13`.
+- Early bird prices (November 2026, no migration): `REGULAR_PRICE_INR` in `app/billing.ts`
+  (₹59, ₹149, ₹499) is shown crossed out next to the server's lower price, with an "Early bird
+  offer" box on the Pro page. `regularPrice` hides both once the server price reaches the
+  regular one, so raising prices needs only the SQL update.
