@@ -294,7 +294,7 @@ export const POINTS = { workout: 10, hardSet: 1, record: 5, proteinDay: 3 } as c
 export const WEEKLY_CAPS = { workouts: 6, hardSets: 25, records: 5 } as const;
 
 /** The breakdown of one person's score, in points. */
-export function scoreParts(r: BoardRow) {
+export function scoreParts(r: Pick<BoardRow, 'workouts' | 'hardSets' | 'records' | 'proteinDays'>) {
   return [
     { key: 'workouts', label: 'Workouts', count: r.workouts, points: r.workouts * POINTS.workout },
     { key: 'hardSets', label: 'Hard sets', count: r.hardSets, points: r.hardSets * POINTS.hardSet },
@@ -308,4 +308,86 @@ export function scoreParts(r: BoardRow) {
   ] as const;
 }
 
-export const __test = { parseBoard, parseGroup, parseRow };
+// ---------------------------------------------------------------------------------------------
+// The global leaderboard: everyone on Overload, by name; usernames only when shown.
+// ---------------------------------------------------------------------------------------------
+
+export interface GlobalRow {
+  rank: number;
+  name: string;
+  /** Only when its owner chose to show it. */
+  username: string | null;
+  avatar: string | null;
+  me: boolean;
+  score: number;
+  workouts: number;
+  hardSets: number;
+  records: number;
+  proteinDays: number;
+}
+
+export interface GlobalBoard {
+  period: Period;
+  startsOn: string;
+  endsOn: string;
+  locked: boolean;
+  /** Everyone with points in the period. */
+  total: number;
+  /** The top 100. */
+  rows: GlobalRow[];
+  mine: GlobalRow | null;
+  showUsername: boolean;
+  hasUsername: boolean;
+}
+
+function parseGlobalRow(v: Record<string, unknown>): GlobalRow {
+  const avatar =
+    typeof v.avatar === 'string' && v.avatar.startsWith('data:image/') ? v.avatar : null;
+  return {
+    rank: num(v.rank) ?? 0,
+    name: str(v.name) || 'Overload member',
+    username: typeof v.username === 'string' && v.username ? v.username : null,
+    avatar,
+    me: v.me === true,
+    score: num(v.score) ?? 0,
+    workouts: num(v.workouts) ?? 0,
+    hardSets: num(v.hard_sets) ?? 0,
+    records: num(v.records) ?? 0,
+    proteinDays: num(v.protein_days) ?? 0,
+  };
+}
+
+function parseGlobal(v: Record<string, unknown>): GlobalBoard {
+  return {
+    period: v.period === 'month' ? 'month' : 'week',
+    startsOn: str(v.starts_on),
+    endsOn: str(v.ends_on),
+    locked: v.locked === true,
+    total: num(v.total) ?? 0,
+    rows: Array.isArray(v.rows)
+      ? (v.rows as Record<string, unknown>[]).map(parseGlobalRow).sort((a, b) => a.rank - b.rank)
+      : [],
+    mine:
+      v.mine && typeof v.mine === 'object'
+        ? parseGlobalRow(v.mine as Record<string, unknown>)
+        : null,
+    showUsername: v.show_username === true,
+    hasUsername: v.has_username === true,
+  };
+}
+
+export const getGlobalBoard = (period: Period, offset: 0 | -1) =>
+  call('get_global_board', { p_period: period, p_offset: offset }, (v) =>
+    parseGlobal((v ?? {}) as Record<string, unknown>),
+  );
+
+export const getMyStanding = () =>
+  call('get_my_global_standing', {}, (v) => {
+    const o = (v ?? {}) as Record<string, unknown>;
+    return { rank: num(o.rank), score: num(o.score) ?? 0, total: num(o.total) ?? 0 };
+  });
+
+export const setShowUsername = (show: boolean) =>
+  call('set_show_username', { p_show: show }, (v) => v === true);
+
+export const __test = { parseBoard, parseGroup, parseRow, parseGlobal };

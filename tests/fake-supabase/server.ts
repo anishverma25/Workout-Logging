@@ -48,7 +48,7 @@ await pg.exec('grant all on all tables in schema public to service_role;');
 // free plan. Early access itself is covered against real Postgres in subscriptions.test.ts.
 // Keeping one fixed state here also means no test flips a setting every other test shares.
 await pg.exec(
-  "update public.app_settings set early_access_ended_at = now(), coach_name = 'Coach Arjun', coach_whatsapp = '919876543210'",
+  "update public.app_settings set early_access_ended_at = now(), coach_name = 'Coach Arjun', coach_whatsapp = '919876543210', leaderboard_refresh_seconds = 0",
 );
 
 // ---------------------------------------------------------------------------------------------

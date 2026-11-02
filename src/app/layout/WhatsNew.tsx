@@ -1,14 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { Crown, ShieldCheck, Sparkles, Trophy, UsersRound } from 'lucide-react';
+import { Crown, Globe2, ShieldCheck, Sparkles, Trophy } from 'lucide-react';
 import { BottomSheet, PrimaryButton, SecondaryButton } from '@/components/kit';
 import { cn } from '@/lib/cn';
 import { seenRelease, markReleaseSeen, RELEASE_ID } from './whatsNewStore';
 
 /**
  * Shown once per release when the app opens, to everyone. This release (November 2026) is about
- * groups and leaderboards only, explained in three short steps: what it is, how points work, and
- * what others can see. Never over a running workout or setup.
+ * leaderboards only, global and in groups, explained in three short steps: what they are, how
+ * points work, and what others can see. Never over a running workout or setup.
  */
 export function WhatsNew() {
   const { pathname } = useLocation();
@@ -68,8 +68,13 @@ export function WhatsNew() {
                 Next
               </PrimaryButton>
             ) : (
-              <PrimaryButton block data-autofocus onClick={() => go('/groups')} data-release-open>
-                Open Groups
+              <PrimaryButton
+                block
+                data-autofocus
+                onClick={() => go('/groups/global')}
+                data-release-open
+              >
+                See the leaderboard
               </PrimaryButton>
             )}
             <SecondaryButton
@@ -110,23 +115,23 @@ const STEPS: {
   body: ReactNode;
 }[] = [
   {
-    icon: <UsersRound className="size-8" strokeWidth={1.5} />,
-    kicker: 'New: groups and leaderboards',
-    title: 'Compete with your gym friends',
-    lead: 'Make a group for your friends or your gym, and see who trains hardest every week.',
+    icon: <Globe2 className="size-8" strokeWidth={1.5} />,
+    kicker: 'New: leaderboards',
+    title: 'Compete with all of Overload and your friends',
+    lead: 'Weekly and monthly leaderboards, for everyone and for your own groups.',
     body: (
       <ul className="type-body mt-4 flex flex-col gap-2.5 text-left text-text-2">
         <Point>
-          <strong className="font-semibold text-text-1">Create a group</strong> and get a
-          6-character code to share on WhatsApp or Instagram.
+          <strong className="font-semibold text-text-1">Global leaderboard.</strong> Everyone on
+          Overload who trains this week or month, ranked by the same fair score.
         </Point>
         <Point>
-          <strong className="font-semibold text-text-1">Join with a code</strong> a friend sends
-          you. Up to 30 people in a group.
+          <strong className="font-semibold text-text-1">Groups.</strong> Create one and share its
+          6-character code, or join a friend&apos;s by typing theirs. Up to 30 people.
         </Point>
         <Point>
-          <strong className="font-semibold text-text-1">Weekly and monthly leaderboards</strong>,
-          who trained today, and past winners.
+          <strong className="font-semibold text-text-1">In every group:</strong> who trained today,
+          a tap to see how points add up, and past winners.
         </Point>
       </ul>
     ),
@@ -151,20 +156,23 @@ const STEPS: {
   {
     icon: <ShieldCheck className="size-8" strokeWidth={1.5} />,
     kicker: 'Private by design',
-    title: 'Pick a username to start',
-    lead: 'Each username is unique. Friends see it with your photo and points, nothing more.',
+    title: 'Your name, your choice',
+    lead: 'On the global leaderboard others see your name and points. Your username shows only if you turn it on.',
     body: (
       <ul className="type-body mt-4 flex flex-col gap-2.5 text-left text-text-2">
-        <Point>Never your weights, food, body weight or workouts. Leave a group any time.</Point>
+        <Point>Never your weights, food, body weight or workouts.</Point>
+        <Point>
+          Groups need a unique username, picked once. Show it on the global leaderboard with one
+          switch, or keep it to your groups.
+        </Point>
         <Point>
           The Overload Score board is free for everyone. Consistency, Effort, Progress and Volume
-          boards come with Pro.
+          boards in groups come with Pro.
           <span className="type-caption ml-1.5 inline-flex items-center gap-1 rounded-full bg-fill px-2 py-0.5 align-[1px] font-semibold text-text-2">
             <Crown className="size-3" aria-hidden />
             Pro
           </span>
         </Point>
-        <Point>Find Groups on Home and in More.</Point>
       </ul>
     ),
   },
