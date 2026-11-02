@@ -445,6 +445,8 @@ test('an exercise of your own, made inside a workout, is logged, saved and still
   await card.getByRole('button', { name: 'Mark set 1 done' }).click();
   await page.getByRole('button', { name: 'Finish' }).click();
   await page.getByRole('button', { name: /Finish and save|Finish anyway/ }).click();
+  // Wait for the save to land (the summary opens) before reloading.
+  await expect(page).toHaveURL(/summary/);
 
   await page.reload();
   await page.goto('/exercises');
