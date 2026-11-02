@@ -61,13 +61,32 @@ async function signUp(page: Page) {
   await page.waitForURL((u) => u.pathname === '/pro');
 }
 
-test('the plans show honest per-month prices and the introductory framing', async ({ page }) => {
+test('the plans show early bird prices against the regular prices', async ({ page }) => {
   await signUp(page);
   const plans = page.getByRole('region', { name: 'Pro plans' });
   const yearly = plans.getByRole('radio', { name: /^Yearly/ });
   await expect(yearly).toContainText('₹249');
-  await expect(plans.getByTestId('intro-offer')).toContainText('Introductory prices');
-  await expect(plans.getByTestId('intro-offer')).toContainText('under ₹1 a day');
+  const offer = plans.getByTestId('intro-offer');
+  await expect(offer).toContainText('Early bird offer');
+  await expect(offer).toContainText('keep your price for as long as your plan renews');
+  await expect(offer).toContainText('under ₹1 a day');
+  // Each plan's regular price, crossed out, next to its early bird price.
+  const monthly = plans.getByRole('radio', { name: /^Monthly/ });
+  const quarterly = plans.getByRole('radio', { name: /^3 months/ });
+  await expect(monthly.locator('[data-regular-price]')).toHaveText('₹59');
+  await expect(quarterly.locator('[data-regular-price]')).toHaveText('₹149');
+  await expect(yearly.locator('[data-regular-price]')).toHaveText('₹499');
+  await expect(yearly.locator('[data-regular-price]')).toHaveCSS(
+    'text-decoration-line',
+    'line-through',
+  );
+  await expect(monthly).toContainText('₹29');
+  await expect(quarterly).toContainText('₹69');
+  // Paying once shows the same offer.
+  await plans.getByRole('radio', { name: /^Pay once/ }).click();
+  await expect(offer).toContainText('Early bird offer');
+  await expect(yearly.locator('[data-regular-price]')).toHaveText('₹499');
+  await plans.getByRole('radio', { name: /^Auto-renew/ }).click();
   await expect(yearly).toContainText('Best value');
   // 249 a year against 29 a month: 20.75 a month, 28% less.
   await expect(yearly).toContainText('₹20.75 a month · save 28%');

@@ -7,6 +7,7 @@ import {
   formatRupees,
   perDay,
   perMonth,
+  regularPrice,
   savingPercent,
   startCheckout,
   usePlans,
@@ -57,18 +58,26 @@ function bestValue(plans: BillingPlan[]): BillingPlan['id'] | null {
 }
 
 /**
- * Honest launch framing: the prices really are introductory, so say so. No countdown and no
- * invented stock; the reason to act is the price itself, which will rise.
+ * Early bird framing (November 2026): the server's prices are below the regular prices in
+ * `REGULAR_PRICE_INR`, so say so plainly. No countdown and no invented stock. Renewing plans keep
+ * the price they were bought at, so joining now really does keep it.
  */
-function IntroOffer({ plans }: { plans: BillingPlan[] }) {
+function EarlyBird({ plans, mode }: { plans: BillingPlan[]; mode: PayMode }) {
+  if (!plans.some((p) => regularPrice(p) !== null)) return null;
   const monthly = plans.find((p) => p.id === 'monthly');
   const daily = monthly ? perDay(monthly) : null;
   return (
     <div className="mb-4 rounded-nested bg-lime-dim px-4 py-3" data-testid="intro-offer">
-      <p className="type-headline text-text-1">Introductory prices. Not our regular prices.</p>
-      <p className="type-meta mt-1 text-text-1">
-        Overload is new, so Pro is priced low while we grow. These prices will go up later, so the
-        best time to join is now.
+      <p className="flex flex-wrap items-center gap-2">
+        <span className="type-caption rounded-full bg-lime px-2 py-0.5 font-semibold text-on-lime">
+          Early bird offer
+        </span>
+        <span className="type-headline text-text-1">Pro for less, while Overload is new</span>
+      </p>
+      <p className="type-meta mt-1.5 text-text-1">
+        {mode === 'subscribe'
+          ? 'These are early bird prices, below our regular prices. Subscribe now and you keep your price for as long as your plan renews.'
+          : 'These are early bird prices, below our regular prices, which will apply later.'}
       </p>
       {monthly && daily !== null && daily < 1 ? (
         <p className="type-meta tabular mt-1 text-text-1">
@@ -121,8 +130,6 @@ function PlanChoice({
   periods: Record<BillingPlan['id'], string>;
 }) {
   const best = bestValue(plans);
-  // What the same months cost on the monthly plan: the honest anchor for longer plans.
-  const monthly = plans.find((p) => p.id === 'monthly');
   return (
     <div role="radiogroup" aria-label="Pro plans" className="flex flex-col gap-2">
       {plans.map((p) => {
@@ -158,12 +165,19 @@ function PlanChoice({
             </span>
             <span className="text-right">
               <span className="flex items-baseline justify-end gap-1.5">
-                {monthly && p.months > 1 && monthly.priceInr * p.months > p.priceInr ? (
-                  // Twelve months on the monthly plan, crossed out: a real price, not a made-up
-                  // "was" price.
-                  <span className="type-meta tabular text-text-2 line-through" aria-hidden>
-                    {formatRupees(monthly.priceInr * p.months)}
-                  </span>
+                {regularPrice(p) !== null ? (
+                  <>
+                    <span
+                      className="type-meta tabular text-text-2 line-through"
+                      aria-hidden
+                      data-regular-price
+                    >
+                      {formatRupees(regularPrice(p)!)}
+                    </span>
+                    <span className="sr-only">
+                      Regular price {formatRupees(regularPrice(p)!)}, early bird price
+                    </span>
+                  </>
                 ) : null}
                 <span className="type-title tabular">{formatRupees(p.priceInr)}</span>
               </span>
@@ -303,7 +317,7 @@ function BuyPlan({
                 : 'Every Pro feature, renewed automatically until you cancel.'}
       </p>
 
-      {onceOnly ? null : <IntroOffer plans={plans} />}
+      {onceOnly ? null : <EarlyBird plans={shown} mode={mode} />}
 
       {onceOnly ? null : <ModeChoice value={mode} onChange={setMode} />}
 

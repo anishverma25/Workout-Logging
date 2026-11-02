@@ -24,6 +24,23 @@ export interface BillingPlan {
 
 export class BillingError extends Error {}
 
+/**
+ * Regular Pro prices (November 2026). Until they apply, the server's lower prices are an early
+ * bird offer, and the Pro page shows these crossed out. They are the owner's stated regular
+ * prices, not invented anchors: once the server's price reaches them, nothing is crossed out.
+ */
+export const REGULAR_PRICE_INR: Record<ProPlanId, number> = {
+  monthly: 59,
+  quarterly: 149,
+  yearly: 499,
+};
+
+/** The regular price to show crossed out, or null when this price is not below it. */
+export function regularPrice(plan: Pick<BillingPlan, 'id' | 'priceInr'>): number | null {
+  const regular = REGULAR_PRICE_INR[plan.id];
+  return regular > plan.priceInr ? regular : null;
+}
+
 /** The 1:1 coaching plan: a month of coaching with Pro included (November 2026). */
 export interface CoachingPlan extends Omit<BillingPlan, 'id'> {
   id: CoachingPlanId;
