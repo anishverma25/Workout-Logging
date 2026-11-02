@@ -695,6 +695,20 @@ const server = createServer(async (req, res) => {
       });
       return send(res, 200, { changed });
     }
+    // Test control, standing in for a longer workout: the account's completed workouts started
+    // 30 minutes before they ended, so they count on group leaderboards (10 minutes or more)
+    // without a test waiting that long. Returns how many workouts the server has.
+    if (url.pathname === '/__test/stretch-workouts' && req.method === 'POST') {
+      const { email } = (await readJson(req)) as { email: string };
+      const result = await pg.query(
+        `update public.workouts set started_at = ended_at - interval '30 minutes',
+           created_at = ended_at - interval '30 minutes'
+         where status = 'completed' and ended_at is not null
+           and user_id = (select id from auth.users where email = $1)`,
+        [email],
+      );
+      return send(res, 200, { changed: result.affectedRows ?? 0 });
+    }
     if (url.pathname === '/__test/early-access' && req.method === 'POST') {
       const { open } = (await readJson(req)) as { open: boolean };
       await pg.query('update public.app_settings set early_access_ended_at = $1', [

@@ -126,8 +126,7 @@ export function resolveEntitlement(sub: SubscriptionSnapshot | null, now: Date):
       (sub.billing_status === 'active' || sub.billing_status === 'authenticated') &&
       !sub.cancel_at_period_end,
     paymentIssue: sub.billing_status === 'pending' || sub.billing_status === 'halted',
-    coaching:
-      !revoked && !!sub.coaching_expires_at && t < sub.coaching_expires_at.getTime(),
+    coaching: !revoked && !!sub.coaching_expires_at && t < sub.coaching_expires_at.getTime(),
     coachingEndsAt: sub.coaching_expires_at,
   };
 }
@@ -152,7 +151,8 @@ export type ProFeature =
   | 'recaps'
   | 'ai_coach'
   | 'ai_food'
-  | 'food_insights';
+  | 'food_insights'
+  | 'group_boards';
 
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
   long_range: {
@@ -202,6 +202,11 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
     description:
       'Snap your plate or tell OverloadGPT what you ate, typed or spoken. It finds any food, brand or restaurant dish, reads nutrition labels and fills your plate.',
   },
+  group_boards: {
+    title: 'Every group leaderboard',
+    description:
+      'Consistency, effort, progress and volume boards in your groups, on top of the Overload Score.',
+  },
   food_insights: {
     title: 'Food insights',
     description:
@@ -216,6 +221,7 @@ export const FREE_FEATURES = [
   'Profile setup, every routine template and personalised routines',
   'Body weight, measurements, calories, protein, BMI and body fat',
   'Food logging for Indian meals: thalis, katori portions, your usual meals and daily totals',
+  'Groups with friends, with weekly and monthly leaderboards',
   'Goals, milestones and progress photos',
   'Progress for the last 7 and 30 days, with insights',
   'Backup and sync across your devices',
