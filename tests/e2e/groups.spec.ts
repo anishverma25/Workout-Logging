@@ -190,5 +190,65 @@ test('a wrong code and a free account see plain messages; leaving the last seat 
 test('the science page explains the score', async ({ page }) => {
   await signUpFresh(page, { tag: 'grp-sci' });
   await page.goto('/science#leaderboards');
-  await expect(page.getByRole('heading', { name: 'Group leaderboards' }).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Leaderboards' }).first()).toBeVisible();
+});
+
+test('global leaderboard: everyone by name, the username only when they turn it on', async ({
+  page,
+  browser,
+}) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize(IPHONE_16);
+  const email = await signUpFresh(page, { tag: 'global-a' });
+  const name = `Global ${Date.now().toString(36).slice(-5)}`;
+  await page.goto('/profile');
+  await page.getByRole('button', { name: 'Fill in a form instead' }).click();
+  await page.getByRole('textbox', { name: 'Name' }).fill(name);
+  await page.getByRole('button', { name: 'Save profile' }).click();
+  await expect(page.getByText('Profile saved')).toBeVisible();
+  const handle = `glob${Date.now().toString(36).slice(-6)}`;
+  await pickUsername(page, handle);
+  await logWorkout(page, email);
+
+  // Someone else sees the name, not the username, on the global board.
+  const other = await secondPerson(browser);
+  await other.page.setViewportSize({ width: 360, height: 780 });
+  await signUpFresh(other.page, { tag: 'global-b' });
+  await other.page.goto('/groups');
+  await other.page.locator('[data-global-card]').click();
+  await expect(other.page).toHaveURL(/\/groups\/global$/);
+  const row = other.page.locator('[data-global-row]', { hasText: name });
+  await expect(row).toBeVisible();
+  await expect(row).toContainText('13');
+  await expect(row).not.toContainText(`@${handle}`);
+  await expect(other.page.locator('[data-global-mine]')).toContainText('Not on the board yet');
+  // Without a username, the switch is off and explains why.
+  await expect(other.page.getByRole('switch')).toBeDisabled();
+  await noSideScroll(other.page);
+
+  // The owner turns on their username; it shows for everyone.
+  await page.goto('/groups/global');
+  await expect(page.locator('[data-global-mine]')).toContainText(/You are #\d+ of \d+/);
+  await expect(page.locator('[data-global-row][data-me]')).toContainText(name);
+  const toggle = page.getByRole('switch');
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  await other.page.reload();
+  await expect(other.page.locator('[data-global-row]', { hasText: name })).toContainText(
+    `@${handle}`,
+  );
+  // And off again.
+  await page.getByRole('switch').click();
+  await expect(page.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await other.page.reload();
+  await expect(other.page.locator('[data-global-row]', { hasText: name })).not.toContainText(
+    `@${handle}`,
+  );
+
+  // Home shows the global place.
+  await page.goto('/');
+  await expect(page.locator('[data-home-global]')).toContainText(/#\d+ of \d+ on Overload/);
+  await noSideScroll(page);
+  await other.context.close();
 });

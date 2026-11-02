@@ -1078,10 +1078,10 @@ export const SCIENCE: TopicGroup[] = [
       },
       {
         id: 'leaderboards',
-        title: 'Group leaderboards',
+        title: 'Leaderboards',
         evidence: 'groupScore',
         shows:
-          'The Overload Score in your groups: points for showing up, training hard, beating your own best and eating enough protein, each with a weekly cap.',
+          'The Overload Score on the global leaderboard and in your groups: points for showing up, training hard, beating your own best and eating enough protein, each with a weekly cap.',
         formulas: [
           {
             tex: String.raw`\text{score} = 10\,W + H + 5\,R + 3\,P`,
@@ -1108,7 +1108,7 @@ export const SCIENCE: TopicGroup[] = [
         forYou:
           'Train most days your plan says, push working sets close to failure, and log your food: that is how to win.',
         limits:
-          'The score is worked out on the server from synced data, so a workout counts once it has synced. Records need a weight and 1 to 10 reps.',
+          'The score is worked out on the server from synced data, so a workout counts once it has synced. The global leaderboard refreshes about once a minute. Records need a weight and 1 to 10 reps.',
       },
       {
         id: 'trial',

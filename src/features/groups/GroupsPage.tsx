@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { ChevronRight, KeyRound, Plus, Trophy, UsersRound } from 'lucide-react';
+import { ChevronRight, Globe2, KeyRound, Plus, Trophy, UsersRound } from 'lucide-react';
 import { useSyncStatus } from '@/app/account';
 import {
   getMyGroups,
+  getMyStanding,
   getMyUsername,
   POINTS,
   useRemote,
@@ -45,6 +46,8 @@ export function GroupsPage() {
         subtitle="Train with friends and compete on fair, weekly leaderboards."
       />
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 pb-10" data-groups-page>
+        <GlobalCard />
+
         {username.loading ? <Skeleton height="8rem" radius="panel" /> : null}
 
         {username.error ? (
@@ -203,6 +206,35 @@ export function GroupsPage() {
         ) : null}
       </BottomSheet>
     </>
+  );
+}
+
+/** Everyone on Overload: the caller's place this week, linking to the full board. */
+function GlobalCard() {
+  const standing = useRemote(getMyStanding, 'standing');
+  const s = standing.data;
+  return (
+    <Link
+      to="/groups/global"
+      className="pressable chrome flex items-center gap-3 rounded-panel bg-surface p-4"
+      data-global-card
+    >
+      <span
+        aria-hidden
+        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime"
+      >
+        <Globe2 className="size-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="type-headline block text-text-1">Global leaderboard</span>
+        <span className="type-subhead tabular block text-text-2">
+          {s?.rank
+            ? `You are #${s.rank} of ${s.total} on Overload this week`
+            : 'Everyone on Overload, weekly and monthly'}
+        </span>
+      </span>
+      <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />
+    </Link>
   );
 }
 

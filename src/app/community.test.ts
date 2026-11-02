@@ -77,3 +77,27 @@ describe('server answers', () => {
     expect(scoreParts(board.rows[0]!).reduce((n, p) => n + p.points, 0)).toBe(26);
   });
 });
+
+describe('the global board', () => {
+  it('reads names, usernames only when sent, and the caller below the top 100', () => {
+    const g = __test.parseGlobal({
+      period: 'month',
+      starts_on: '2026-11-01',
+      ends_on: '2026-11-30',
+      total: 312,
+      rows: [
+        { rank: 2, name: 'Ravi K', username: null, score: 40 },
+        { rank: 1, name: 'Asha Rao', username: 'asha.lifts', score: 55, avatar: 'javascript:x' },
+      ],
+      mine: { rank: 140, name: '', me: true, score: 3 },
+      show_username: false,
+      has_username: true,
+    });
+    expect(g.rows.map((r) => r.name)).toEqual(['Asha Rao', 'Ravi K']);
+    expect(g.rows[0]!.username).toBe('asha.lifts');
+    expect(g.rows[0]!.avatar).toBeNull();
+    expect(g.rows[1]!.username).toBeNull();
+    expect(g.mine).toMatchObject({ rank: 140, name: 'Overload member', me: true });
+    expect(g.total).toBe(312);
+  });
+});

@@ -417,7 +417,15 @@ describe('row level security', () => {
   });
 
   it('usernames, groups and leaderboard results are reachable only through their functions', async () => {
-    for (const t of ['usernames', 'groups', 'group_members', 'group_results']) {
+    for (const t of [
+      'usernames',
+      'groups',
+      'group_members',
+      'group_results',
+      'leaderboard_prefs',
+      'leaderboard_hidden',
+      'global_results',
+    ]) {
       for (const run of [
         (fn: (tx: Transaction) => Promise<unknown>) => server.asUser(userA, fn),
         (fn: (tx: Transaction) => Promise<unknown>) => server.asAnon(fn),

@@ -152,6 +152,10 @@ export const router = createBrowserRouter([
             lazy: page(() => import('@/features/groups/GroupsPage'), 'GroupsPage'),
           },
           {
+            path: 'groups/global',
+            lazy: page(() => import('@/features/groups/GlobalPage'), 'GlobalPage'),
+          },
+          {
             path: 'groups/:groupId',
             lazy: page(() => import('@/features/groups/GroupPage'), 'GroupPage'),
           },
