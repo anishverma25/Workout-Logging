@@ -65,7 +65,8 @@ export const REVIEWS: Review[] = [
   {
     name: 'Mayukh',
     rating: 5,
-    quote: 'Excellent app! Smooth, user-friendly and packed with amazing features. Love the experience!',
+    quote:
+      'Excellent app! Smooth, user-friendly and packed with amazing features. Love the experience!',
   },
   {
     name: 'Naman',
@@ -288,7 +289,10 @@ export function faqHtml(faq: Faq[] = FAQ): string {
 
 export function guideLinksHtml(guides: Guide[] = GUIDES): string {
   return guides
-    .map((g) => `          <a href="${g.path}" class="text-text-2 hover:text-text-1">${esc(g.heading)}</a>`)
+    .map(
+      (g) =>
+        `          <a href="${g.path}" class="text-text-2 hover:text-text-1">${esc(g.heading)}</a>`,
+    )
     .join('\n');
 }
 
@@ -380,9 +384,24 @@ export function structuredData(prices: Prices = PUBLIC_PRICES, faq: Faq[] = FAQ)
       publisher: { '@id': `${SITE_ORIGIN}/#organization` },
       offers: [
         { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'INR' },
-        { '@type': 'Offer', name: 'Pro monthly', price: String(prices.monthly), priceCurrency: 'INR' },
-        { '@type': 'Offer', name: 'Pro 3 months', price: String(prices.quarterly), priceCurrency: 'INR' },
-        { '@type': 'Offer', name: 'Pro yearly', price: String(prices.yearly), priceCurrency: 'INR' },
+        {
+          '@type': 'Offer',
+          name: 'Pro monthly',
+          price: String(prices.monthly),
+          priceCurrency: 'INR',
+        },
+        {
+          '@type': 'Offer',
+          name: 'Pro 3 months',
+          price: String(prices.quarterly),
+          priceCurrency: 'INR',
+        },
+        {
+          '@type': 'Offer',
+          name: 'Pro yearly',
+          price: String(prices.yearly),
+          priceCurrency: 'INR',
+        },
       ],
     },
     {

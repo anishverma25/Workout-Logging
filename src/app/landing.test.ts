@@ -116,7 +116,8 @@ describe('public home page', () => {
     }
     for (const [, tag] of LANDING.matchAll(/(<img[^>]*>)/g)) {
       // Screens are described; the logo beside the name is decoration.
-      if (/src="\/(landing\/mark|icon)\.svg"/.test(tag!)) expect(tag).toMatch(/alt="" aria-hidden="true"/);
+      if (/src="\/(landing\/mark|icon)\.svg"/.test(tag!))
+        expect(tag).toMatch(/alt="" aria-hidden="true"/);
       else expect(tag).toMatch(/alt="[^"]{10,}"/);
     }
   });
@@ -128,7 +129,9 @@ describe('public home page', () => {
       expect(seed).toMatch(new RegExp(`\\('${id}', '[^']+', \\d+, ${price},`));
       const card = new RegExp(`data-plan-price="${id}">([\\s\\S]*?)</li>`).exec(LANDING)?.[1] ?? '';
       expect(card).toContain(`₹${price}</span>`);
-      expect(card).toContain(`<s class="type-meta text-text-3">₹${REGULAR_PRICE_INR[id as keyof typeof REGULAR_PRICE_INR]}</s>`);
+      expect(card).toContain(
+        `<s class="type-meta text-text-3">₹${REGULAR_PRICE_INR[id as keyof typeof REGULAR_PRICE_INR]}</s>`,
+      );
     }
     expect(LANDING).toContain('₹23 a month');
     expect(Math.round(PUBLIC_PRICES.quarterly / 3)).toBe(23);
@@ -142,7 +145,8 @@ describe('public home page', () => {
 
   it('quotes only real member reviews, with the real average rating', () => {
     expect(averageRating()).toBe(4.9);
-    for (const m of LANDING.matchAll(/data-rating>([\d.]+)</g)) expect(Number(m[1])).toBe(averageRating());
+    for (const m of LANDING.matchAll(/data-rating>([\d.]+)</g))
+      expect(Number(m[1])).toBe(averageRating());
     expect(LANDING).toContain(`<span data-count="ratings">${SURVEY_RATINGS.length}</span>`);
     expect(LANDING.match(/data-review>/g)).toHaveLength(REVIEWS.length);
     for (const r of REVIEWS) {

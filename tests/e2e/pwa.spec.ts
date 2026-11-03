@@ -139,7 +139,9 @@ test('public pages are readable before scripts and open as pages', async ({ page
   const home = await (await request.get('/')).text();
   const data = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(home)?.[1];
   expect(JSON.parse(data!)[0].name).toBe('Overload Gym');
-  expect(await (await request.get('/sitemap.xml')).text()).toContain('/indian-food-calorie-counter');
+  expect(await (await request.get('/sitemap.xml')).text()).toContain(
+    '/indian-food-calorie-counter',
+  );
 
   page.on('pageerror', (e) => {
     throw e;

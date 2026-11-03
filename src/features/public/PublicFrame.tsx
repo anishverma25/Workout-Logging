@@ -30,7 +30,9 @@ export function PublicFrame({
 
   return (
     <div className="min-h-dvh bg-bg">
-      <header className={`mx-auto flex ${width} items-center justify-between gap-3 px-4 pt-safe pb-2`}>
+      <header
+        className={`mx-auto flex ${width} items-center justify-between gap-3 px-4 pt-safe pb-2`}
+      >
         <Link to="/" className="chrome tap-target flex items-center gap-2 rounded-field">
           <BrandMark className="size-8" />
           <span className="type-headline text-text-1">{APP_NAME}</span>
