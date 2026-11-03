@@ -10,6 +10,7 @@ import {
   energyPlan,
   ffmi,
   latestMeasurements,
+  measurementRatios,
   leanMassKg,
   navyBodyFat,
   normalizedFfmi,
@@ -281,5 +282,62 @@ describe('body snapshot', () => {
       null,
     ]);
     expect(empty.missing.weight).toBe(true);
+  });
+});
+
+describe('measurement ratios', () => {
+  const at = (day: number, fields: Partial<BodyMeasurement>): BodyMeasurement => ({
+    id: `00000000-0000-4000-8000-${String(day).padStart(12, '0')}`,
+    origin: 'user',
+    createdAt: new Date(2026, 9, day).toISOString(),
+    updatedAt: new Date(2026, 9, day).toISOString(),
+    deletedAt: null,
+    measuredAt: new Date(2026, 9, day).toISOString(),
+    waistCm: null,
+    neckCm: null,
+    hipCm: null,
+    chestCm: null,
+    armCm: null,
+    thighCm: null,
+    calfCm: null,
+    bodyFatPct: null,
+    note: null,
+    ...fields,
+  });
+
+  it('gives waist to height from the newest waist, with Ashwell boundaries', () => {
+    const r = measurementRatios([at(1, { waistCm: 100 }), at(5, { waistCm: 85 })], {
+      heightCm: 175,
+    });
+    expect(r.waistToHeight).toEqual({ value: 0.49, band: 'healthy' });
+    expect(measurementRatios([at(1, { waistCm: 90 })], { heightCm: 175 }).waistToHeight).toEqual(
+      { value: 0.51, band: 'raised' },
+    );
+    expect(measurementRatios([at(1, { waistCm: 110 })], { heightCm: 175 }).waistToHeight?.band).toBe(
+      'high',
+    );
+    expect(measurementRatios([at(1, { waistCm: 90 })], { heightCm: null }).waistToHeight).toBeNull();
+  });
+
+  it('gives waist to hip only from one entry with both, against the WHO cut-off for the sex', () => {
+    const entries = [at(1, { waistCm: 80, hipCm: 100 }), at(5, { waistCm: 82 })];
+    expect(measurementRatios(entries, { sex: 'male' }).waistToHip).toEqual({
+      value: 0.8,
+      raised: false,
+    });
+    expect(
+      measurementRatios([at(1, { waistCm: 86, hipCm: 100 })], { sex: 'female' }).waistToHip,
+    ).toEqual({ value: 0.86, raised: true });
+    expect(measurementRatios(entries, { sex: null }).waistToHip).toBeNull();
+  });
+
+  it('shows a left and right difference only when it is beyond measuring error', () => {
+    const r = measurementRatios(
+      [at(1, { armCm: 38, armRightCm: 39.5, thighCm: 58, thighRightCm: 58.5 })],
+      null,
+    );
+    expect(r.sides).toEqual([{ part: 'arm', leftCm: 38, rightCm: 39.5 }]);
+    // Old entries without the new fields are fine.
+    expect(measurementRatios([at(1, { armCm: 38 })], null).sides).toEqual([]);
   });
 });

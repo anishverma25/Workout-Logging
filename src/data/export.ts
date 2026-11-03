@@ -76,7 +76,9 @@ export function bodyCsv(data: TrainingData): string {
       'date',
       'type',
       'weight_kg',
-      ...MEASUREMENT_FIELDS.map((f) => f.replace('Cm', '_cm')),
+      ...MEASUREMENT_FIELDS.map(
+        (f) => `${f.replace(/Cm$/, '').replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)}_cm`,
+      ),
       'body_fat_pct',
       'note',
     ],
@@ -95,7 +97,7 @@ export function bodyCsv(data: TrainingData): string {
       iso(m.measuredAt),
       'measurements',
       null,
-      ...MEASUREMENT_FIELDS.map((f) => m[f]),
+      ...MEASUREMENT_FIELDS.map((f) => m[f] ?? null),
       m.bodyFatPct,
       m.note,
     ]);

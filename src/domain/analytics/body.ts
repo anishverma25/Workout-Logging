@@ -382,6 +382,74 @@ export function latestMeasurements(entries: BodyMeasurement[]) {
   };
 }
 
+/** Waist to height: Ashwell and colleagues' boundaries (0.5 consider action, 0.6 take action). */
+export const WHTR_BOUNDS = { raised: 0.5, high: 0.6 } as const;
+/** Waist to hip at or above which the WHO reports substantially raised risk, by sex. */
+export const WHR_RAISED = { male: 0.9, female: 0.85 } as const;
+/** A left and right difference under this is within measuring error, so it is not shown. */
+export const SIDE_DIFF_MIN_CM = 1;
+
+export type RatioBand = 'healthy' | 'raised' | 'high';
+
+export interface MeasurementRatios {
+  /** Waist over height, from the newest waist; null without both. */
+  waistToHeight: { value: number; band: RatioBand } | null;
+  /** Waist over hips, both from the same entry; null without both, or without sex. */
+  waistToHip: { value: number; raised: boolean } | null;
+  /** Left and right differences of at least SIDE_DIFF_MIN_CM, from the newest entry with both. */
+  sides: { part: 'arm' | 'forearm' | 'thigh' | 'calf'; leftCm: number; rightCm: number }[];
+}
+
+const SIDE_PAIRS = [
+  ['arm', 'armCm', 'armRightCm'],
+  ['forearm', 'forearmCm', 'forearmRightCm'],
+  ['thigh', 'thighCm', 'thighRightCm'],
+  ['calf', 'calfCm', 'calfRightCm'],
+] as const;
+
+/**
+ * What a tape measure says beyond the numbers themselves: waist to height (works for everyone,
+ * Ashwell 2012), waist to hip against the WHO's cut-offs, and any real difference between the
+ * left and right side. Nothing is shown without the measurements it needs.
+ */
+export function measurementRatios(
+  entries: BodyMeasurement[],
+  profile: { heightCm?: number | null; sex?: Sex | null } | null,
+): MeasurementRatios {
+  const sorted = entries.filter(isAlive).sort((a, b) => b.measuredAt.localeCompare(a.measuredAt));
+  const waist = sorted.find((m) => m.waistCm != null)?.waistCm ?? null;
+  const height = profile?.heightCm ?? null;
+  const r2 = (v: number) => Math.round(v * 100) / 100;
+
+  let waistToHeight: MeasurementRatios['waistToHeight'] = null;
+  if (waist != null && height != null && height > 0) {
+    const value = r2(waist / height);
+    waistToHeight = {
+      value,
+      band:
+        value >= WHTR_BOUNDS.high ? 'high' : value >= WHTR_BOUNDS.raised ? 'raised' : 'healthy',
+    };
+  }
+
+  let waistToHip: MeasurementRatios['waistToHip'] = null;
+  const both = sorted.find((m) => m.waistCm != null && m.hipCm != null);
+  const sex = profile?.sex;
+  if (both && (sex === 'male' || sex === 'female')) {
+    const value = r2(both.waistCm! / both.hipCm!);
+    waistToHip = { value, raised: value >= WHR_RAISED[sex] };
+  }
+
+  const sides: MeasurementRatios['sides'] = [];
+  for (const [part, left, right] of SIDE_PAIRS) {
+    const e = sorted.find((m) => m[left] != null && m[right] != null);
+    if (!e) continue;
+    const l = e[left] as number;
+    const r = e[right] as number;
+    if (Math.abs(l - r) >= SIDE_DIFF_MIN_CM) sides.push({ part, leftCm: l, rightCm: r });
+  }
+  return { waistToHeight, waistToHip, sides };
+}
+
 // ---------------------------------------------------------------------------------------------
 // Everything at once, for the body page
 // ---------------------------------------------------------------------------------------------

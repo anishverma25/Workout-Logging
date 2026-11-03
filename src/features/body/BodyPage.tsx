@@ -233,6 +233,7 @@ export function BodyPage() {
               entries={data.measurements}
               unit={prefs.lengthUnit}
               sex={profile?.sex ?? null}
+              heightCm={profile?.heightCm ?? null}
             />
           ) : null}
 

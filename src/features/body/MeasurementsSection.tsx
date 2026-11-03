@@ -5,7 +5,8 @@ import { ChartEmpty } from '@/components/charts/ChartParts';
 import { Card, IconTile, ListRow, SecondaryButton, SectionHeader } from '@/components/kit';
 import { IconButton } from '@/components/ui/Button';
 import { Chips } from '@/components/ui/Fields';
-import { MEASUREMENT_LABELS, type LengthUnit } from '@/data/repositories/measurements';
+import { type LengthUnit } from '@/data/repositories/measurements';
+import { measurementRatios, type MeasurementRatios } from '@/domain/analytics/body';
 import { isAlive } from '@/domain/analytics/sessions';
 import {
   MEASUREMENT_FIELDS,
@@ -16,20 +17,25 @@ import {
 import { formatDayMonth, formatShortDate } from '@/lib/dates';
 import { formatLength, toDisplayLength } from './format';
 import { MeasurementSheet } from './MeasurementSheet';
+import { measurementLabel } from './measureSites';
+import { EvidenceLink } from '../science/EvidenceLink';
 
 type Series = MeasurementField | 'bodyFatPct';
 
-const label = (f: Series) => (f === 'bodyFatPct' ? 'Body fat' : MEASUREMENT_LABELS[f]);
 
 export function MeasurementsSection({
   entries,
   unit,
   sex,
+  heightCm = null,
 }: {
   entries: BodyMeasurement[];
   unit: LengthUnit;
   sex: Sex | null;
+  heightCm?: number | null;
 }) {
+  const label = (f: Series) =>
+    f === 'bodyFatPct' ? 'Body fat' : measurementLabel(f, sex, f.endsWith('RightCm') || hasRight(f));
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<BodyMeasurement | null>(null);
   const sorted = useMemo(
@@ -37,7 +43,14 @@ export function MeasurementsSection({
     [entries],
   );
   const available = [...MEASUREMENT_FIELDS, 'bodyFatPct' as const].filter((f) =>
-    sorted.some((e) => e[f] !== null),
+    sorted.some((e) => e[f] != null),
+  );
+  // A part measured on both sides reads "Left arm" next to "Right arm".
+  const hasRight = (f: MeasurementField) =>
+    sorted.some((e) => e[`${f.replace(/Cm$/, '')}RightCm` as MeasurementField] != null);
+  const ratios = useMemo(
+    () => measurementRatios(entries, { heightCm, sex }),
+    [entries, heightCm, sex],
   );
   const [picked, setPicked] = useState<Series | null>(null);
   const field: Series | null =
@@ -78,10 +91,11 @@ export function MeasurementsSection({
         </Card>
       ) : (
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+          <RatiosCard ratios={ratios} unit={unit} needsHeight={heightCm == null} />
           <Card flush className="self-start">
             <ul className="divide-y-[0.5px] divide-divider px-4" aria-label="Latest measurements">
               {available.map((f) => {
-                const withValue = sorted.filter((e) => e[f] !== null);
+                const withValue = sorted.filter((e) => e[f] != null);
                 const last = withValue[withValue.length - 1]!;
                 const first = withValue[0]!;
                 const change = (last[f] as number) - (first[f] as number);
@@ -124,7 +138,7 @@ export function MeasurementsSection({
                   onChange={(v) => v && setPicked(v)}
                   className="mb-3"
                 />
-                {sorted.filter((e) => e[field] !== null).length >= 2 ? (
+                {sorted.filter((e) => e[field] != null).length >= 2 ? (
                   <LineChart
                     label={`${label(field)} over time`}
                     height={190}
@@ -135,7 +149,7 @@ export function MeasurementsSection({
                         color: 'var(--chart-1)',
                         style: 'line',
                         points: sorted
-                          .filter((e) => e[field] !== null)
+                          .filter((e) => e[field] != null)
                           .map((e) => ({
                             x: new Date(e.measuredAt).getTime(),
                             y:
@@ -170,7 +184,7 @@ export function MeasurementsSection({
                       titleWeight={500}
                       title={formatShortDate(new Date(e.measuredAt))}
                       subtitle={[...MEASUREMENT_FIELDS, 'bodyFatPct' as const]
-                        .filter((f) => e[f] !== null)
+                        .filter((f) => e[f] != null)
                         .map((f) => `${label(f)} ${show(f, e[f] as number)}`)
                         .join(', ')}
                       chevron
@@ -191,5 +205,88 @@ export function MeasurementsSection({
         onClose={() => setEditing(null)}
       />
     </section>
+  );
+}
+
+const BAND_COPY = {
+  healthy: 'In the healthy range, under 0.5',
+  raised: 'Above 0.5: worth bringing your waist down',
+  high: 'Above 0.6: high, worth acting on',
+} as const;
+
+const PART = { arm: 'Arm', forearm: 'Forearm', thigh: 'Thigh', calf: 'Calf' } as const;
+
+/** Waist ratios and any real left and right difference, from `measurementRatios`. */
+function RatiosCard({
+  ratios,
+  unit,
+  needsHeight,
+}: {
+  ratios: MeasurementRatios;
+  unit: LengthUnit;
+  needsHeight: boolean;
+}) {
+  const { waistToHeight: whtr, waistToHip: whr, sides } = ratios;
+  if (!whtr && !whr && sides.length === 0) {
+    if (!needsHeight) return null;
+  }
+  const n2 = (v: number) => v.toLocaleString('en-GB', { minimumFractionDigits: 2 });
+  return (
+    <Card flush className="self-start lg:col-span-2" data-measure-ratios>
+      <ul className="divide-y-[0.5px] divide-divider px-4" aria-label="What your measurements say">
+        {whtr ? (
+          <li>
+            <ListRow
+              title="Waist to height"
+              subtitle={BAND_COPY[whtr.band]}
+              trailing={
+                <span
+                  className={`type-headline tabular shrink-0 ${whtr.band === 'healthy' ? 'text-up' : 'text-text-1'}`}
+                >
+                  {n2(whtr.value)}
+                </span>
+              }
+            />
+          </li>
+        ) : needsHeight ? (
+          <li>
+            <ListRow
+              title="Waist to height"
+              subtitle="Add your height in Profile to see how your waist compares"
+            />
+          </li>
+        ) : null}
+        {whr ? (
+          <li>
+            <ListRow
+              title="Waist to hip"
+              subtitle={
+                whr.raised ? 'At or above the WHO cut-off for raised risk' : 'Below the WHO cut-off'
+              }
+              trailing={<span className="type-headline tabular shrink-0">{n2(whr.value)}</span>}
+            />
+          </li>
+        ) : null}
+        {sides.map((s) => {
+          const diff = toDisplayLength(Math.abs(s.rightCm - s.leftCm), unit);
+          return (
+            <li key={s.part}>
+              <ListRow
+                title={`${PART[s.part]}, left and right`}
+                subtitle={`${s.rightCm > s.leftCm ? 'Right' : 'Left'} is ${diff.toLocaleString('en-GB', { maximumFractionDigits: 1 })} ${unit} bigger`}
+                trailing={
+                  <span className="type-meta tabular shrink-0 text-text-2">
+                    {formatLength(s.leftCm, unit)} · {formatLength(s.rightCm, unit)}
+                  </span>
+                }
+              />
+            </li>
+          );
+        })}
+      </ul>
+      <div className="px-4 pb-3">
+        <EvidenceLink topic="measurements" about="waist ratios" />
+      </div>
+    </Card>
   );
 }

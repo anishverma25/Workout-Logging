@@ -510,6 +510,25 @@ export const CITATIONS: Record<string, Citation> = {
     journal: 'Agriculture Handbook No. 74, USDA',
     openAccess: true,
   },
+  ashwell2012: {
+    id: 'ashwell2012',
+    authors: 'Ashwell M, Gunn P, Gibson S',
+    year: 2012,
+    title:
+      'Waist-to-height ratio is a better screening tool than waist circumference and BMI for adult cardiometabolic risk factors: systematic review and meta-analysis',
+    journal: 'Obesity Reviews 13(3):275-286',
+    doi: '10.1111/j.1467-789X.2011.00952.x',
+    openAccess: false,
+  },
+  who2011waist: {
+    id: 'who2011waist',
+    authors: 'World Health Organization',
+    year: 2011,
+    title: 'Waist circumference and waist-hip ratio: report of a WHO expert consultation',
+    journal: 'WHO, Geneva',
+    url: 'https://www.who.int/publications/i/item/9789241501491',
+    openAccess: true,
+  },
 };
 
 // Which citations back each calculated metric. "definition" = arithmetic / product rule, no paper.
@@ -539,6 +558,7 @@ export const METRIC_EVIDENCE: Record<
   maintenance: { kind: 'evidence', citations: ['fao2004', 'compendium2024'] },
   protein: { kind: 'evidence', citations: ['morton2018', 'helms2014protein'] },
   bodyFat: { kind: 'evidence', citations: ['hodgdon1984'] },
+  waistRatios: { kind: 'evidence', citations: ['ashwell2012', 'who2011waist'] },
   bmi: { kind: 'evidence', citations: ['who2004bmi'] },
   ffmi: { kind: 'evidence', citations: ['kouri1995'] },
   strengthLevels: { kind: 'evidence', citations: ['rippetoe2009', 'dots2019'] },

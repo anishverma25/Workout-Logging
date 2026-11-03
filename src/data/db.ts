@@ -3,6 +3,7 @@ import type {
   ActivityLog,
   WaterLog,
   BodyMeasurement,
+  PinnedExerciseNote,
   BodyWeightEntry,
   CustomFood,
   Exercise,
@@ -40,7 +41,8 @@ export type DomainTable =
   | 'foodLogs'
   | 'customFoods'
   | 'waterLogs'
-  | 'activityLogs';
+  | 'activityLogs'
+  | 'exerciseNotes';
 
 /** What the outbox can hold: domain records, plus the preferences stored in meta. */
 export type SyncTable = DomainTable | 'preferences';
@@ -87,6 +89,7 @@ export class WorkoutDatabase extends Dexie {
   customFoods!: EntityTable<CustomFood, 'id'>;
   waterLogs!: EntityTable<WaterLog, 'id'>;
   activityLogs!: EntityTable<ActivityLog, 'id'>;
+  exerciseNotes!: EntityTable<PinnedExerciseNote, 'id'>;
   meta!: EntityTable<MetaRecord, 'key'>;
   outbox!: EntityTable<OutboxEntry, 'id'>;
 
@@ -136,6 +139,11 @@ export class WorkoutDatabase extends Dexie {
       waterLogs: 'id, date, origin',
       activityLogs: 'id, date, kind, origin',
     });
+    // v6: notes pinned to an exercise. Body measurements gain optional fields; nothing to
+    // migrate.
+    this.version(6).stores({
+      exerciseNotes: 'id, exerciseId, origin',
+    });
   }
 
   /** Tables that hold origin-tagged domain records. */
@@ -156,6 +164,7 @@ export class WorkoutDatabase extends Dexie {
       this.customFoods,
       this.waterLogs,
       this.activityLogs,
+      this.exerciseNotes,
     ] as const;
   }
 }

@@ -3,6 +3,8 @@ import {
   ActivityLog,
   WaterLog,
   BodyMeasurement,
+  LATE_MEASUREMENT_FIELDS,
+  PinnedExerciseNote,
   BodyWeightEntry,
   CustomFood,
   Exercise,
@@ -40,7 +42,8 @@ export type ServerTable =
   | 'food_logs'
   | 'custom_foods'
   | 'water_logs'
-  | 'activity_logs';
+  | 'activity_logs'
+  | 'exercise_notes';
 
 export type ServerRow = Record<string, unknown>;
 
@@ -222,10 +225,12 @@ export const TABLE_SPECS: TableSpec[] = [
       'armCm',
       'thighCm',
       'calfCm',
+      ...LATE_MEASUREMENT_FIELDS,
       'bodyFatPct',
       'note',
     ],
     schema: BodyMeasurement,
+    optional: [...LATE_MEASUREMENT_FIELDS],
   },
   {
     local: 'goals',
@@ -298,6 +303,12 @@ export const TABLE_SPECS: TableSpec[] = [
       'kcalSource',
     ],
     schema: ActivityLog,
+  },
+  {
+    local: 'exerciseNotes',
+    server: 'exercise_notes',
+    fields: ['exerciseId', 'note'],
+    schema: PinnedExerciseNote,
   },
 ];
 

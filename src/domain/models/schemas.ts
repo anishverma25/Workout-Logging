@@ -301,6 +301,16 @@ export const BodyMeasurement = z.object({
   armCm: z.number().min(10).max(80).nullable(),
   thighCm: z.number().min(20).max(120).nullable(),
   calfCm: z.number().min(15).max(80).nullable(),
+  // November 2026: more sites, and the right side for people who measure both. The fields
+  // above are the left side, or the only side measured. Missing on older entries.
+  shouldersCm: z.number().min(60).max(200).nullish(),
+  forearmCm: z.number().min(15).max(60).nullish(),
+  wristCm: z.number().min(10).max(30).nullish(),
+  underbustCm: z.number().min(50).max(200).nullish(),
+  armRightCm: z.number().min(10).max(80).nullish(),
+  forearmRightCm: z.number().min(15).max(60).nullish(),
+  thighRightCm: z.number().min(20).max(120).nullish(),
+  calfRightCm: z.number().min(15).max(80).nullish(),
   bodyFatPct: z.number().min(2).max(70).nullable(),
   note: z.string().max(500).nullable(),
 });
@@ -313,8 +323,38 @@ export const MEASUREMENT_FIELDS = [
   'armCm',
   'thighCm',
   'calfCm',
+  'shouldersCm',
+  'forearmCm',
+  'wristCm',
+  'underbustCm',
+  'armRightCm',
+  'forearmRightCm',
+  'thighRightCm',
+  'calfRightCm',
+] as const;
+/** Fields added in November 2026: late columns on the server. */
+export const LATE_MEASUREMENT_FIELDS = [
+  'shouldersCm',
+  'forearmCm',
+  'wristCm',
+  'underbustCm',
+  'armRightCm',
+  'forearmRightCm',
+  'thighRightCm',
+  'calfRightCm',
 ] as const;
 export type MeasurementField = (typeof MEASUREMENT_FIELDS)[number];
+
+/**
+ * A note pinned to an exercise (November 2026): shown every time the person does it, in any
+ * workout or routine. One live note per exercise; the newest wins if two devices made one.
+ */
+export const PinnedExerciseNote = z.object({
+  ...baseRecord,
+  exerciseId: z.string().uuid(),
+  note: z.string().min(1).max(500),
+});
+export type PinnedExerciseNote = z.infer<typeof PinnedExerciseNote>;
 
 export const GoalKind = z.enum(['exercise_e1rm', 'exercise_load', 'body_weight']);
 export type GoalKind = z.infer<typeof GoalKind>;

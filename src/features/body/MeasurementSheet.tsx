@@ -7,6 +7,7 @@ import {
   NumberField,
   PrimaryButton,
   SegmentedControl,
+  Switch,
   TextField,
 } from '@/components/kit';
 import { TextArea } from '@/components/ui/Fields';
@@ -15,7 +16,6 @@ import { db } from '@/data/db';
 import {
   addMeasurement,
   deleteMeasurement,
-  MEASUREMENT_LABELS,
   updateMeasurement,
   type LengthUnit,
 } from '@/data/repositories/measurements';
@@ -29,6 +29,7 @@ import {
 import { toDateKey } from '@/lib/dates';
 import { readableError } from '@/lib/errors';
 import { toDisplayLength } from './format';
+import { HOW, RIGHT_FIELDS, RIGHT_OF, measurementGroups, measurementLabel } from './measureSites';
 
 interface Props {
   open: boolean;
@@ -37,17 +38,6 @@ interface Props {
   sex: Sex | null;
   onClose: () => void;
 }
-
-/** Where to measure, so readings stay comparable from week to week. */
-const HOW: Record<MeasurementField, string> = {
-  waistCm: 'At the navel, relaxed, after breathing out',
-  neckCm: 'Just below the Adam’s apple',
-  hipCm: 'Widest point of the hips',
-  chestCm: 'Across the nipples, arms down',
-  armCm: 'Flexed, at the peak of the biceps',
-  thighCm: 'Halfway between hip and knee',
-  calfCm: 'Widest point',
-};
 
 export function MeasurementSheet(props: Props) {
   return props.open ? <Form {...props} /> : null;
@@ -61,6 +51,9 @@ function Form({ entry, unit: startUnit, sex, onClose }: Props) {
       MEASUREMENT_FIELDS.map((f) => [f, entry?.[f] ? toDisplayLength(entry[f]!, startUnit) : null]),
     ),
   );
+  const [bothSides, setBothSides] = useState(() =>
+    [...RIGHT_FIELDS].some((f) => entry?.[f] != null),
+  );
   const [bodyFat, setBodyFat] = useState<number | null>(entry?.bodyFatPct ?? null);
   const [date, setDate] = useState(
     entry ? toDateKey(new Date(entry.measuredAt)) : toDateKey(new Date()),
@@ -69,16 +62,16 @@ function Form({ entry, unit: startUnit, sex, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Hips feed the body-fat formula for women; show it first in that case.
-  const fields: MeasurementField[] =
-    sex === 'female'
-      ? ['waistCm', 'neckCm', 'hipCm', 'chestCm', 'armCm', 'thighCm', 'calfCm']
-      : ['waistCm', 'neckCm', 'chestCm', 'armCm', 'thighCm', 'calfCm', 'hipCm'];
+  const groups = measurementGroups(sex);
 
   async function save() {
     setError(null);
     try {
-      const input = { values, unit, bodyFatPct: bodyFat, date, note };
+      // Turning both sides off leaves only one value for each part.
+      const kept = bothSides
+        ? values
+        : Object.fromEntries(Object.entries(values).filter(([f]) => !RIGHT_FIELDS.has(f as MeasurementField)));
+      const input = { values: kept, unit, bodyFatPct: bodyFat, date, note };
       if (entry) await updateMeasurement(db, entry.id, input);
       else await addMeasurement(db, input);
       if (unit !== startUnit) await updatePreferences(db, { lengthUnit: unit });
@@ -95,7 +88,7 @@ function Form({ entry, unit: startUnit, sex, onClose }: Props) {
         open={!confirmDelete}
         onClose={onClose}
         title={entry ? 'Edit measurements' : 'Add measurements'}
-        subtitle="Fill in any you like. Waist and neck give a body-fat estimate."
+        subtitle="Fill in any you like. Waist and neck give a body-fat estimate; the rest show where you are changing."
         footer={
           <div className="flex items-center justify-between gap-2">
             {entry ? (
@@ -152,18 +145,42 @@ function Form({ entry, unit: startUnit, sex, onClose }: Props) {
               }}
             />
           </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-4">
-            {fields.map((f) => (
-              <div key={f}>
-                <NumberField
-                  label={MEASUREMENT_LABELS[f]}
-                  unit={unit}
-                  value={values[f] ?? null}
-                  onValueChange={(v) => setValues((cur) => ({ ...cur, [f]: v }))}
-                />
-                <p className="type-meta mt-1.5 text-text-2">{HOW[f]}</p>
+          <div className="flex items-center justify-between gap-3 rounded-card bg-surface-2 px-4 py-3">
+            <span id="both-sides" className="min-w-0">
+              <span className="type-headline block text-text-1">Left and right</span>
+              <span className="type-meta block text-text-2">
+                Measure arms, forearms, thighs and calves on both sides
+              </span>
+            </span>
+            <Switch
+              checked={bothSides}
+              onChange={setBothSides}
+              aria-labelledby="both-sides"
+              data-both-sides
+            />
+          </div>
+          {groups.map((g) => (
+            <fieldset key={g.title} className="flex flex-col gap-3" data-measure-group={g.title}>
+              <legend className="type-meta mb-3 font-semibold text-text-2">{g.title}</legend>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+                {g.fields.flatMap((f) => {
+                  const right = bothSides ? RIGHT_OF[f] : undefined;
+                  return [f, ...(right ? [right] : [])].map((k) => (
+                    <div key={k}>
+                      <NumberField
+                        label={measurementLabel(k, sex, bothSides)}
+                        unit={unit}
+                        value={values[k] ?? null}
+                        onValueChange={(v) => setValues((cur) => ({ ...cur, [k]: v }))}
+                      />
+                      <p className="type-meta mt-1.5 text-text-2">{HOW[k]}</p>
+                    </div>
+                  ));
+                })}
               </div>
-            ))}
+            </fieldset>
+          ))}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-4">
             <div>
               <NumberField
                 label="Body fat"

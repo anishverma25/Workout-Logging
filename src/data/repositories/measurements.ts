@@ -32,6 +32,14 @@ export const MEASUREMENT_RANGES: Record<MeasurementField, [number, number]> = {
   armCm: [10, 80],
   thighCm: [20, 120],
   calfCm: [15, 80],
+  shouldersCm: [60, 200],
+  forearmCm: [15, 60],
+  wristCm: [10, 30],
+  underbustCm: [50, 200],
+  armRightCm: [10, 80],
+  forearmRightCm: [15, 60],
+  thighRightCm: [20, 120],
+  calfRightCm: [15, 80],
 };
 
 export const MEASUREMENT_LABELS: Record<MeasurementField, string> = {
@@ -42,20 +50,23 @@ export const MEASUREMENT_LABELS: Record<MeasurementField, string> = {
   armCm: 'Arm',
   thighCm: 'Thigh',
   calfCm: 'Calf',
+  shouldersCm: 'Shoulders',
+  forearmCm: 'Forearm',
+  wristCm: 'Wrist',
+  underbustCm: 'Under the bust',
+  armRightCm: 'Right arm',
+  forearmRightCm: 'Right forearm',
+  thighRightCm: 'Right thigh',
+  calfRightCm: 'Right calf',
 };
 
 const round1 = (v: number) => Math.round(v * 10) / 10;
 
 function toFields(input: MeasurementInput) {
-  const out: Record<MeasurementField, number | null> = {
-    waistCm: null,
-    neckCm: null,
-    hipCm: null,
-    chestCm: null,
-    armCm: null,
-    thighCm: null,
-    calfCm: null,
-  };
+  const out = Object.fromEntries(MEASUREMENT_FIELDS.map((f) => [f, null])) as Record<
+    MeasurementField,
+    number | null
+  >;
   for (const field of MEASUREMENT_FIELDS) {
     const raw = input.values[field];
     if (raw === null || raw === undefined) continue;

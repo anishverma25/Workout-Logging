@@ -62,6 +62,7 @@ import {
   MAINTENANCE_WINDOW_DAYS,
 } from '@/domain/nutrition/analysis';
 import { GOAL_LABEL } from '@/domain/models/labels';
+import { SIDE_DIFF_MIN_CM, WHR_RAISED, WHTR_BOUNDS } from '@/domain/analytics/body';
 
 /**
  * Every number in the app, the formula behind it and the research it rests on. Thresholds are
@@ -1044,6 +1045,39 @@ export const SCIENCE: TopicGroup[] = [
           </>,
         ],
         limits: 'BMI cannot tell muscle from fat, so it misreads many lifters.',
+      },
+      {
+        id: 'measurements',
+        title: 'Waist ratios and left and right',
+        evidence: 'waistRatios',
+        shows:
+          'Your waist against your height and your hips, and any real difference between your left and right side.',
+        formulas: [
+          {
+            tex: String.raw`	ext{WHtR} = \dfrac{	ext{waist}}{	ext{height}} \qquad 	ext{WHR} = \dfrac{	ext{waist}}{	ext{hips}}`,
+            spoken: 'Waist to height equals waist over height. Waist to hip equals waist over hips',
+          },
+        ],
+        why: [
+          <>
+            Ashwell and colleagues pooled 31 studies of over 300,000 adults: waist to height
+            picked out raised heart and metabolic risk better than waist alone or BMI, in men and
+            women and across ethnic groups. Below {WHTR_BOUNDS.raised} is the healthy range; from{' '}
+            {WHTR_BOUNDS.high} it is high.
+          </>,
+          <>
+            The WHO reports substantially raised risk from a waist to hip ratio of{' '}
+            {WHR_RAISED.male} in men and {WHR_RAISED.female} in women.
+          </>,
+          <>
+            A tape is rarely closer than about a centimetre from one day to the next, so a left and
+            right difference under {SIDE_DIFF_MIN_CM} cm is not shown.
+          </>,
+        ],
+        forYou:
+          'A waist that shrinks while your weight holds steady means fat lost and muscle kept. Measure at the same time of day, relaxed, after breathing out.',
+        limits:
+          'Ratios screen for risk across a population; they do not diagnose anything. Talk to a doctor about your own health.',
       },
     ],
   },
