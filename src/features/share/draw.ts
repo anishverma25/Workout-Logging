@@ -11,6 +11,7 @@ import {
   type StreakCard,
   type WorkoutCard,
 } from '@/domain/share/cards';
+import { gapLine, type RankCard } from '@/domain/share/rankCard';
 import { formatDayMonthFixed, shortDayName } from '@/lib/format/dates';
 import { formatWeightValue, type WeightUnit } from '@/lib/units';
 
@@ -44,6 +45,8 @@ const font = (weight: number, size: number, family = 'Inter') =>
   `${weight} ${size}px ${family === 'Inter' ? "'Inter', sans-serif" : `'${family}', 'Inter', sans-serif`}`;
 
 let fontsReady: Promise<void> | null = null;
+/** The app icon (public/icon.svg), drawn in each card's footer once loaded. */
+let logo: HTMLImageElement | null = null;
 
 /** Loads the card fonts once: Inter Tight for numbers, JetBrains Mono for the receipt. */
 export function loadCardFonts(): Promise<void> {
@@ -68,6 +71,14 @@ export function loadCardFonts(): Promise<void> {
         document.fonts.load(`${w} 32px Inter`).catch(() => []),
       ),
     );
+    try {
+      const img = new Image(512, 512);
+      img.src = '/icon.svg';
+      await img.decode();
+      logo = img;
+    } catch {
+      // The footer draws a plain mark instead.
+    }
   })();
   return fontsReady;
 }
@@ -121,16 +132,13 @@ function clip(ctx: Ctx, s: string, width: number) {
   return `${out.trimEnd()}…`;
 }
 
+/** The Overload Gym icon: the app's own image, or a lime tile if it could not load. */
 function mark(ctx: Ctx, x: number, y: number, size: number, onLime: boolean) {
-  const k = size / 32;
-  rr(ctx, x, y, size, size, 9 * k, onLime ? C.black : C.lime);
-  const bar = onLime ? C.lime : C.black;
-  ctx.globalAlpha = 0.45;
-  rr(ctx, x + 7.5 * k, y + 17 * k, 4 * k, 8 * k, 1.2 * k, bar);
-  ctx.globalAlpha = 0.7;
-  rr(ctx, x + 14 * k, y + 12 * k, 4 * k, 13 * k, 1.2 * k, bar);
-  ctx.globalAlpha = 1;
-  rr(ctx, x + 20.5 * k, y + 7 * k, 4 * k, 18 * k, 1.2 * k, bar);
+  if (logo) {
+    ctx.drawImage(logo, x, y, size, size);
+    return;
+  }
+  rr(ctx, x, y, size, size, size * 0.22, onLime ? C.black : C.lime);
 }
 
 /** Logo, name, tagline and link: the same on every card, inside the safe area. */
@@ -138,7 +146,7 @@ function footer(ctx: Ctx, tagline: string, link: string, onLime = false) {
   const y = SAFE_BOTTOM - 92;
   mark(ctx, X, y, 84, onLime);
   const ink = onLime ? C.black : C.white;
-  text(ctx, 'Overload', X + 106, y + 40, font(800, 42, TIGHT), ink);
+  text(ctx, 'Overload Gym', X + 106, y + 40, font(800, 42, TIGHT), ink);
   text(ctx, tagline, X + 106, y + 78, font(500, 26), onLime ? 'rgba(0,0,0,0.7)' : C.text2);
   ctx.font = font(600, 28);
   const w = ctx.measureText(link).width + 60;
@@ -750,4 +758,62 @@ export function drawMedalsCard(ctx: Ctx, m: MedalsCard, c: CardContext) {
     text(ctx, `+ ${m.medals.length - shown.length} more`, X, y + 30, font(600, 30), C.text2);
 
   footer(ctx, 'Medals earned on Overload', c.link);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Leaderboard place (global or a group)
+// ---------------------------------------------------------------------------------------------
+
+export function drawRankCard(ctx: Ctx, r: RankCard, c: CardContext) {
+  rr(ctx, 0, 0, CARD_W, CARD_H, 0, C.black);
+  // Light behind the rank.
+  const glow = ctx.createRadialGradient(CARD_W / 2, SAFE_TOP + 420, 40, CARD_W / 2, SAFE_TOP + 420, 700);
+  glow.addColorStop(0, C.limeA(0.26));
+  glow.addColorStop(1, C.limeA(0));
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+  const when = `${r.locked ? 'Last' : 'This'} ${r.period} · ${formatDayMonthFixed(
+    new Date(`${r.startsOn}T00:00:00`),
+  )} to ${formatDayMonthFixed(new Date(`${r.endsOn}T00:00:00`))}`;
+  text(ctx, when, X, SAFE_TOP + 30, font(600, 30), C.text2);
+  const scope = r.scope === 'global' ? 'Global leaderboard' : 'Group leaderboard';
+  text(ctx, c.person ? `${c.person} · ${scope}` : scope, X, SAFE_TOP + 78, font(600, 30), C.lime);
+
+  const n = `#${r.rank}`;
+  const size = fit(ctx, n, INNER, 380, 900, TIGHT);
+  text(ctx, n, X - 10, SAFE_TOP + 430, font(900, size, TIGHT), C.lime);
+  const where = `of ${thousands(r.total)} ${r.scope === 'global' ? 'on' : 'in'} ${r.where}`;
+  const ws = fit(ctx, where, INNER, 64, 800, TIGHT);
+  ctx.font = font(800, ws, TIGHT);
+  text(ctx, clip(ctx, where, INNER), X, SAFE_TOP + 520, font(800, ws, TIGHT), C.white);
+  const line = gapLine(r);
+  if (line) text(ctx, line, X, SAFE_TOP + 590, font(700, 44, TIGHT), C.text2);
+
+  // Points, then what earned them.
+  const py = SAFE_TOP + 660;
+  rr(ctx, X, py, INNER, 190, 40, C.limeA(0.14));
+  text(ctx, 'Overload Score', X + 44, py + 70, font(600, 30), C.lime);
+  text(ctx, thousands(r.score), X + 44, py + 160, font(900, 96, TIGHT), C.white);
+  ctx.font = font(900, 96, TIGHT);
+  const sw = ctx.measureText(thousands(r.score)).width;
+  text(ctx, r.score === 1 ? 'point' : 'points', X + 64 + sw, py + 160, font(700, 40), C.text2);
+
+  const stats: [string, number][] = [
+    ['Workouts', r.workouts],
+    ['Hard sets', r.hardSets],
+    ['Records', r.records],
+    ['Protein days', r.proteinDays],
+  ];
+  const gap = 20;
+  const boxW = (INNER - gap) / 2;
+  stats.forEach(([label, v], i) => {
+    const x = X + (i % 2) * (boxW + gap);
+    const y = py + 220 + Math.floor(i / 2) * 170;
+    rr(ctx, x, y, boxW, 150, 32, C.surface);
+    text(ctx, label, x + 32, y + 54, font(400, 26), C.text2);
+    text(ctx, thousands(v), x + 32, y + 120, font(800, 58, TIGHT), C.white);
+  });
+
+  footer(ctx, 'Compete with your gym', c.link);
 }

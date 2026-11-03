@@ -21,7 +21,7 @@ import { ConfirmSheet, Sheet } from '@/components/ui/Sheet';
 import { EmptyState } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
-import { useBestsBefore, useProfile } from '@/data/hooks';
+import { useBestsBefore, usePinnedNotes, useProfile } from '@/data/hooks';
 import { medalsForSet } from '@/domain/analytics/medals';
 import { MedalAlert, type MedalNews } from './MedalAlert';
 import { useDeviceSettings } from '@/app/deviceSettings';
@@ -77,6 +77,10 @@ export function ActiveWorkout({ view, prefs }: Props) {
   const paused = workout.pausedAt !== null;
   // Live records: each finished set is compared with the bests from before this workout.
   const bests = useBestsBefore(workout.id);
+  const pinned = usePinnedNotes(
+    workout,
+    exercises.map((e) => e.workoutExercise.exerciseId),
+  );
   const bestsRef = useRef(bests);
   useEffect(() => {
     bestsRef.current = bests;
@@ -346,6 +350,10 @@ export function ActiveWorkout({ view, prefs }: Props) {
             hasNext={i < exercises.length - 1}
             active={ex.workoutExercise.id === activeId}
             rests={rests}
+            pinnedNote={pinned.exercise.get(ex.workoutExercise.exerciseId)?.note ?? null}
+            slotId={pinned.routine.get(ex.workoutExercise.exerciseId)?.id ?? null}
+            routineName={workout.name}
+            routineNote={pinned.routine.get(ex.workoutExercise.exerciseId)?.notes ?? null}
           />
         ))}
       </div>

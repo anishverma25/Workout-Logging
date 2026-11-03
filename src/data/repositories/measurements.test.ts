@@ -159,3 +159,28 @@ describe('goals', () => {
     expect((await db.goals.get(g.id))?.deletedAt).not.toBeNull();
   });
 });
+
+describe('more measurements (November 2026)', () => {
+  it('stores the new sites and both sides, and checks their ranges', async () => {
+    const a = await addMeasurement(
+      db,
+      {
+        values: { shouldersCm: 118, armCm: 38, armRightCm: 39, wristCm: 17, underbustCm: 76 },
+        unit: 'cm',
+        bodyFatPct: null,
+        date: today,
+        note: null,
+      },
+      NOW,
+    );
+    expect(a).toMatchObject({ shouldersCm: 118, armCm: 38, armRightCm: 39, wristCm: 17 });
+    expect((await db.outbox.toArray()).some((o) => o.table === 'bodyMeasurements')).toBe(true);
+    await expect(
+      addMeasurement(
+        db,
+        { values: { wristCm: 45 }, unit: 'cm', bodyFatPct: null, date: today, note: null },
+        NOW,
+      ),
+    ).rejects.toThrow(MeasurementError);
+  });
+});

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { ChevronDown, Globe2 } from 'lucide-react';
+import { ChevronDown, Globe2, Share2 } from 'lucide-react';
 import { useSyncStatus } from '@/app/account';
 import {
   CommunityError,
@@ -14,6 +14,7 @@ import {
 import { PageHeader } from '@/app/layout/PageHeader';
 import {
   InlineNotice,
+  SecondaryButton,
   Section,
   SegmentedControl,
   Skeleton,
@@ -25,6 +26,8 @@ import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { HowPointsWork } from './GroupsPage';
 import { MemberAvatar } from './parts';
+import { rankCard } from '@/domain/share/rankCard';
+import { RankShareSheet } from '@/features/share/RankShareSheet';
 
 const dateLabel = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -58,6 +61,20 @@ export function GlobalPage() {
   const periodName = period === 'week' ? 'week' : 'month';
   const which = offset === 0 ? `This ${periodName}` : `Last ${periodName}`;
   const mineInTop = !!b?.rows.some((r) => r.me);
+  const [sharing, setSharing] = useState(false);
+  const shareCard = b
+    ? rankCard({
+        scope: 'global',
+        where: 'Overload Gym',
+        period: b.period,
+        locked: b.locked,
+        startsOn: b.startsOn,
+        endsOn: b.endsOn,
+        total: b.total,
+        rows: b.rows,
+        mine: b.mine,
+      })
+    : null;
 
   const toggle = async (next: boolean) => {
     setSaving(true);
@@ -169,6 +186,17 @@ export function GlobalPage() {
               </span>
             </div>
 
+            {shareCard ? (
+              <SecondaryButton
+                block
+                icon={<Share2 className="size-4" aria-hidden />}
+                onClick={() => setSharing(true)}
+                data-share-rank
+              >
+                Share my place
+              </SecondaryButton>
+            ) : null}
+
             {sync.pending - sync.rejected > 0 ? (
               <InlineNotice>
                 Some of your changes have not reached your account yet. Your workouts count here
@@ -247,6 +275,7 @@ export function GlobalPage() {
             </Section>
 
             <HowPointsWork />
+            <RankShareSheet card={shareCard} open={sharing} onClose={() => setSharing(false)} />
           </>
         ) : null}
       </div>

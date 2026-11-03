@@ -9,6 +9,9 @@ import {
   type BodyWeightEntry,
   type ActivityLog,
   type Preferences,
+  type PinnedExerciseNote,
+  type RoutineExercise,
+  type Workout,
 } from '@/domain/models/schemas';
 import { exerciseUsage, type ExerciseUsage } from '@/domain/exercises/search';
 import { buildSessions, type TrainingData } from '@/domain/analytics/sessions';
@@ -18,6 +21,7 @@ import { migrationHandled, summarizeGuestData, type GuestDataSummary } from './s
 import { getDemoStatus, type DemoStatus } from './demo/service';
 import { getDismissedSuggestions, getPreferences, getRestTimer } from './repositories/meta';
 import { getActiveWorkout } from './repositories/workouts';
+import { pinnedNotesByExercise, routineSlotsFor } from './repositories/exerciseNotes';
 import {
   combineWorkoutView,
   loadPreviousPerformance,
@@ -177,6 +181,28 @@ export function useGuestImport(userId: string | null) {
  * All-time bests per exercise before a workout, read once when it opens (not live: the sets
  * logged during the workout are compared against these, not folded into them).
  */
+/** Notes pinned to the exercises of a workout and to its routine (`exerciseNotes.ts`). */
+export function usePinnedNotes(
+  workout: Pick<Workout, 'id' | 'routineDayId'>,
+  exerciseIds: string[],
+): PinnedNotes {
+  const key = exerciseIds.join(',');
+  const state = useLiveData(
+    async () => ({
+      exercise: await pinnedNotesByExercise(db, exerciseIds),
+      routine: await routineSlotsFor(db, workout),
+    }),
+    [workout.id, workout.routineDayId, key],
+  );
+  return state.data ?? EMPTY_PINS;
+}
+
+export interface PinnedNotes {
+  exercise: Map<string, PinnedExerciseNote>;
+  routine: Map<string, RoutineExercise>;
+}
+const EMPTY_PINS: PinnedNotes = { exercise: new Map(), routine: new Map() };
+
 export function useBestsBefore(workoutId: string): Map<string, Bests> | null {
   const [state, setState] = useState<{ id: string; bests: Map<string, Bests> } | null>(null);
   useEffect(() => {

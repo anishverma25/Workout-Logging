@@ -416,6 +416,13 @@ export async function updateTargets(
   });
 }
 
+/** The note pinned to this exercise of the routine, shown whenever the routine is done. */
+export async function setSlotNote(db: WorkoutDatabase, slotId: string, notes: string) {
+  await patchRecord<RoutineExercise>(db, 'routineExercises', slotId, {
+    notes: notes.trim().slice(0, 500) || null,
+  });
+}
+
 /** Bench angle for a routine exercise, copied into each workout started from it. */
 export async function updateSlotAngle(
   db: WorkoutDatabase,

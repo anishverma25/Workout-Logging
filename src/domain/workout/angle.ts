@@ -16,6 +16,12 @@ export const DEFAULT_ANGLE: Record<AngleKind, number> = { incline: 30, decline: 
  */
 const SMITH_BENCH = /\bsmith\b.*\b(bench|press)\b|\b(bench|press)\b.*\bsmith\b/i;
 
+/**
+ * A flat bench press (barbell, dumbbell, close-grip) is often done with the bench raised a
+ * little, so it takes an angle too, starting from flat (November 2026).
+ */
+const FLAT_BENCH = /\bbench press\b/i;
+
 /** Which kind of angle an exercise takes, from its name. Treadmill incline is a grade, not this. */
 export function angleKind(
   exercise: { name: string; trackingType?: string } | undefined,
@@ -24,7 +30,15 @@ export function angleKind(
   if (/\bdecline\b/i.test(exercise.name)) return 'decline';
   if (/\bincline\b/i.test(exercise.name)) return 'incline';
   if (SMITH_BENCH.test(exercise.name)) return 'incline';
+  if (FLAT_BENCH.test(exercise.name)) return 'incline';
   return null;
+}
+
+/** Where the angle picker starts: flat for a bench press, else the usual incline or decline. */
+export function startAngle(exercise: { name: string }, kind: AngleKind): number {
+  if (kind === 'incline' && FLAT_BENCH.test(exercise.name) && !/\bincline\b/i.test(exercise.name))
+    return 0;
+  return DEFAULT_ANGLE[kind];
 }
 
 /** "30° incline", "15° decline", or "flat" at zero. */

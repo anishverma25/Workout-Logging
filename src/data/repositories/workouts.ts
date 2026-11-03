@@ -165,7 +165,8 @@ export async function startWorkoutFromDay(
         exerciseId: exercise.id,
         exerciseName: exercise.name,
         order: order++,
-        notes: slot.notes,
+        // The routine's note stays pinned to the routine (shown on the card); today's starts empty.
+        notes: null,
         target,
         supersetGroup: slot.supersetGroup ?? null,
         angleDeg: slot.angleDeg ?? null,
@@ -231,7 +232,8 @@ export async function startWorkoutFromPast(
         exerciseId: exercise.id,
         exerciseName: exercise.name,
         order: order++,
-        notes: old.notes,
+        // Today's notes are for that day; last time's note is offered on the card instead.
+        notes: null,
         target: old.target,
         supersetGroup: old.supersetGroup ?? null,
         angleDeg: old.angleDeg ?? null,

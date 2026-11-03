@@ -13,7 +13,7 @@ import {
 } from '@/components/kit';
 import { canLogBySide, logsBySide } from '@/data/library/sides';
 import { usePreferences } from '@/data/hooks';
-import { angleKind, DEFAULT_ANGLE } from '@/domain/workout/angle';
+import { angleKind, startAngle } from '@/domain/workout/angle';
 import { Sheet } from '@/components/ui/Sheet';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
@@ -191,7 +191,7 @@ function SlotEditor({
             <AnglePicker
               kind={angle}
               value={slot.angleDeg ?? null}
-              startAt={DEFAULT_ANGLE[angle]}
+              startAt={startAngle(exercise!, angle)}
               onChange={(deg) => {
                 setSavedTick((t) => t + 1);
                 void updateSlotAngle(db, slot.id, deg);
@@ -222,7 +222,8 @@ function SlotEditor({
         ) : null}
 
         <TextArea
-          label="Notes (optional)"
+          label="Pinned note for this routine (optional)"
+          hint="Shows on this exercise whenever you do this routine."
           className="mt-6"
           value={notes}
           maxLength={500}

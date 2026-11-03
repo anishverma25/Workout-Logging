@@ -39,6 +39,7 @@ import {
   IconButton,
   InlineNotice,
   PrimaryButton,
+  SecondaryButton,
   Section,
   SegmentedControl,
   Skeleton,
@@ -51,6 +52,8 @@ import { cn } from '@/lib/cn';
 import { HowPointsWork } from './GroupsPage';
 import { MemberAvatar } from './parts';
 import { shareCode } from './shareCode';
+import { rankCard } from '@/domain/share/rankCard';
+import { RankShareSheet } from '@/features/share/RankShareSheet';
 
 /** The boards a group can switch to. Overload Score is free; the others are Pro. */
 type BoardKind = 'score' | 'consistency' | 'effort' | 'progress' | 'volume';
@@ -145,6 +148,21 @@ export function GroupPage() {
   const b = board.data ?? null;
   const shownRows = b ? sortedFor(proBoards ? kind : 'score', b.rows) : [];
   const me = b?.rows.find((r) => r.me) ?? null;
+  const [sharing, setSharing] = useState(false);
+  // The story card is for the Overload Score board only.
+  const shareCard =
+    b && (!proBoards || kind === 'score')
+      ? rankCard({
+          scope: 'group',
+          where: b.group.name,
+          period: b.period,
+          locked: b.locked,
+          startsOn: b.startsOn,
+          endsOn: b.endsOn,
+          total: b.rows.length,
+          rows: b.rows,
+        })
+      : null;
   const wanted = b
     ? Array.from(
         new Set([...b.rows.slice(0, 3).map((r) => r.username), me?.username ?? '']),
@@ -304,6 +322,17 @@ export function GroupPage() {
                 </Link>
               )}
             </div>
+
+            {shareCard ? (
+              <SecondaryButton
+                block
+                icon={<Share2 className="size-4" aria-hidden />}
+                onClick={() => setSharing(true)}
+                data-share-rank
+              >
+                Share my place
+              </SecondaryButton>
+            ) : null}
 
             <Section
               title={`${which} · ${dateLabel(b.startsOn)} to ${dateLabel(b.endsOn)}`}
@@ -487,6 +516,7 @@ export function GroupPage() {
               navigate('/groups', { replace: true });
             }}
           />
+          <RankShareSheet card={shareCard} open={sharing} onClose={() => setSharing(false)} />
         </>
       ) : null}
     </>

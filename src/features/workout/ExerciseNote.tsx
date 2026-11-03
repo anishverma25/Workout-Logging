@@ -1,5 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { History } from 'lucide-react';
+import { Bookmark, History, Pin } from 'lucide-react';
+import type { NoteKind } from '@/data/repositories/exerciseNotes';
+import { PinnedNoteSheet } from './PinnedNoteSheet';
+import { KIND_LABEL, type NoteTargets } from './noteKinds';
 import { db } from '@/data/db';
 import { updateWorkoutExerciseNotes } from '@/data/repositories/workouts';
 
@@ -11,18 +14,39 @@ export interface ExerciseNoteHandle {
   focus: () => void;
 }
 
+export interface NotePins {
+  exerciseId: string;
+  /** The note pinned to the exercise, shown every time. */
+  exercise: string | null;
+  /** The routine slot this came from, its name and its pinned note. */
+  slotId: string | null;
+  routineName: string | null;
+  routine: string | null;
+}
+
 /**
- * A note on this exercise for this workout, typed right on the card (seat height, grip, how it
- * felt), as in Hevy. Saved as the person types. Last session's note shows underneath until
- * they write their own, with one tap to carry it over.
+ * Notes on the card, in three kinds as in Hevy (November 2026): pinned to the exercise (shown
+ * every time), pinned to the routine (shown whenever that routine is done), and today's note,
+ * typed right on the card and saved as the person types. Last session's note shows under
+ * today's until they write their own, with one tap to carry it over. The pin button moves
+ * today's note to a pinned kind; tapping a pinned note edits or moves it.
  *
  * The text is 16 px: iPhone Safari zooms the page into any smaller field it focuses.
  */
 export const ExerciseNote = forwardRef<
   ExerciseNoteHandle,
-  { workoutExerciseId: string; exerciseName: string; notes: string | null; lastNote: string | null }
->(function ExerciseNote({ workoutExerciseId, exerciseName, notes, lastNote }, ref) {
+  {
+    workoutExerciseId: string;
+    exerciseName: string;
+    notes: string | null;
+    lastNote: string | null;
+    pins: NotePins;
+  }
+>(function ExerciseNote({ workoutExerciseId, exerciseName, notes, lastNote, pins }, ref) {
   const [draft, setDraft] = useState(notes ?? '');
+  const [sheet, setSheet] = useState<{ kind: NoteKind; text?: string; from?: NoteKind } | null>(
+    null,
+  );
   const field = useRef<HTMLTextAreaElement>(null);
   const editing = useRef(false);
   const saved = useRef(notes ?? '');
@@ -75,9 +99,48 @@ export const ExerciseNote = forwardRef<
   );
 
   const showLast = !!lastNote && !draft.trim();
+  const targets: NoteTargets = {
+    exerciseId: pins.exerciseId,
+    exerciseName,
+    workoutExerciseId,
+    slotId: pins.slotId,
+    routineName: pins.routineName,
+    current: { exercise: pins.exercise ?? '', routine: pins.routine ?? '', workout: draft },
+  };
+  const pinned = (
+    [
+      ['exercise', pins.exercise],
+      ['routine', pins.slotId ? pins.routine : null],
+    ] as const
+  ).filter(([, text]) => !!text);
 
   return (
     <div className="mx-4 mt-2" data-exercise-note>
+      {pinned.length > 0 ? (
+        <ul className="mb-1 flex flex-col gap-1.5" aria-label={`Pinned notes for ${exerciseName}`}>
+          {pinned.map(([kind, text]) => (
+            <li key={kind}>
+              <button
+                type="button"
+                onClick={() => setSheet({ kind })}
+                className="pressable flex w-full items-start gap-2 rounded-field bg-lime-dim px-3 py-2 text-left"
+                data-pinned-note={kind}
+              >
+                {kind === 'exercise' ? (
+                  <Pin className="mt-0.5 size-3.5 shrink-0 text-lime" aria-hidden />
+                ) : (
+                  <Bookmark className="mt-0.5 size-3.5 shrink-0 text-lime" aria-hidden />
+                )}
+                <span className="type-meta min-w-0 flex-1 break-words text-text-1">
+                  <span className="font-semibold text-lime">{KIND_LABEL[kind]}: </span>
+                  {text}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <div className="flex items-start gap-1">
       <label htmlFor={`note-${workoutExerciseId}`} className="sr-only">
         Note for {exerciseName}
       </label>
@@ -109,8 +172,25 @@ export const ExerciseNote = forwardRef<
             e.currentTarget.blur();
           }
         }}
-        className="-mx-2 block w-[calc(100%+1rem)] resize-none overflow-hidden rounded-field bg-transparent px-2 py-1.5 text-[16px] leading-snug text-text-1 outline-none placeholder:text-text-3 focus:bg-surface-2"
+        className="-ml-2 block min-w-0 flex-1 resize-none overflow-hidden rounded-field bg-transparent px-2 py-1.5 text-[16px] leading-snug text-text-1 outline-none placeholder:text-text-3 focus:bg-surface-2"
       />
+        <button
+          type="button"
+          aria-label={`Pin a note to ${exerciseName}`}
+          onClick={() => {
+            save(draft);
+            setSheet(
+              draft.trim()
+                ? { kind: 'exercise', text: draft, from: 'workout' }
+                : { kind: 'exercise' },
+            );
+          }}
+          className="pressable -mr-2 flex size-9 shrink-0 items-center justify-center rounded-full text-text-2"
+          data-pin-note
+        >
+          <Pin className="size-4" aria-hidden />
+        </button>
+      </div>
       {showLast ? (
         <div className="type-meta mt-0.5 flex items-start gap-2 text-text-2" data-last-note>
           <History className="mt-0.5 size-3.5 shrink-0" aria-hidden />
@@ -128,6 +208,14 @@ export const ExerciseNote = forwardRef<
           </button>
         </div>
       ) : null}
+      <PinnedNoteSheet
+        open={!!sheet}
+        targets={targets}
+        startKind={sheet?.kind ?? 'exercise'}
+        startText={sheet?.text}
+        fromKind={sheet?.from}
+        onClose={() => setSheet(null)}
+      />
     </div>
   );
 });

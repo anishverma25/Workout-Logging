@@ -173,6 +173,13 @@ function rowsFor(userId: string) {
       kcal_source: 'estimated',
       ...meta,
     },
+    exercise_notes: {
+      id: id(),
+      user_id: userId,
+      exercise_id: custom,
+      note: 'Seat on 4, pin on 7',
+      ...meta,
+    },
     user_preferences: {
       user_id: userId,
       weight_unit: 'kg',
@@ -366,6 +373,16 @@ describe('row level security', () => {
       ),
       /Unknown exercise/,
     );
+    // Nor pin a note to it.
+    await expectError(
+      server.asUser(userB, (tx) =>
+        insertRow(tx, 'exercise_notes', {
+          ...rowsB.exercise_notes,
+          exercise_id: rowsA.user_exercises.id,
+        }),
+      ),
+      /Unknown exercise/,
+    );
     // A body weight goal has no exercise; an exercise goal must have one.
     await server.asUser(userB, (tx) =>
       insertRow(tx, 'goals', {
@@ -492,6 +509,56 @@ describe('row level security', () => {
       [rows.routines.id],
     );
     expect(row.rows[0]!.name).toBe('New');
+  });
+
+  it('measurements take the new sites within plausible ranges, and pinned notes need text', async () => {
+    const rowsB = rowsFor(userB);
+    await server.asUser(userB, (tx) =>
+      insertRow(tx, 'body_measurements', {
+        ...rowsB.body_measurements,
+        id: crypto.randomUUID(),
+        shoulders_cm: 118,
+        forearm_cm: 30,
+        wrist_cm: 17,
+        underbust_cm: 75,
+        arm_right_cm: 38.5,
+        forearm_right_cm: 30.5,
+        thigh_right_cm: 58,
+        calf_right_cm: 38,
+      }),
+    );
+    for (const bad of [{ shoulders_cm: 20 }, { wrist_cm: 45 }, { calf_right_cm: 5 }]) {
+      await expectError(
+        server.asUser(userB, (tx) =>
+          insertRow(tx, 'body_measurements', {
+            ...rowsB.body_measurements,
+            id: crypto.randomUUID(),
+            ...bad,
+          }),
+        ),
+        /check constraint/,
+      );
+    }
+    const own = crypto.randomUUID();
+    await server.asUser(userB, async (tx) => {
+      await insertRow(tx, 'user_exercises', { ...rowsB.user_exercises, id: own });
+      await insertRow(tx, 'exercise_notes', {
+        ...rowsB.exercise_notes,
+        id: crypto.randomUUID(),
+        exercise_id: own,
+      });
+    });
+    await expectError(
+      server.asUser(userB, (tx) =>
+        insertRow(tx, 'exercise_notes', {
+          ...rowsB.exercise_notes,
+          id: crypto.randomUUID(),
+          exercise_id: own,
+          note: '',
+        }),
+      ),
+      /check constraint/,
+    );
   });
 
   it('food logs take plates, bowls and ml, and nothing else new', async () => {
