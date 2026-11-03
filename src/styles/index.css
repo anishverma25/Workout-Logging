@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
 @import './tokens.css';
+@import './landing.css';
 
 /* Every token is defined in tokens.css. Dark only (decision D3). */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
@@ -62,6 +63,7 @@
   --color-up-dim: var(--up-dim);
   --color-down: var(--down);
   --color-down-dim: var(--down-dim);
+  --color-down-text: var(--down-text);
   --color-warning-dim: var(--warning-dim);
 
   --breakpoint-tab: 37.5rem;

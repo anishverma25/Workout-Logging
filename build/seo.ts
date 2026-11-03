@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Plugin } from 'vite';
+import { fillLanding } from '../src/app/marketing.ts';
 import { PUBLIC_PAGES, pageHtml, sitemapXml } from '../src/app/publicPages.ts';
 
 /**
@@ -32,6 +33,17 @@ export const FUNCTION_ROUTES = {
  * the sitemap, and the Pages Functions routes. Cloudflare Pages serves `/terms` from
  * `terms.html`; every other address still gets index.html, as before.
  */
+/**
+ * Fills the home page's reviews, questions and guide links from src/app/marketing.ts, in the
+ * dev server and the build alike, so tests and visitors see the same page.
+ */
+export function landingContent(): Plugin {
+  return {
+    name: 'overload-landing-content',
+    transformIndexHtml: { order: 'pre', handler: (html) => fillLanding(html) },
+  };
+}
+
 export function seo(): Plugin {
   return {
     name: 'overload-seo',

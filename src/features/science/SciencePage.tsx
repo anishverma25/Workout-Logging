@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router';
-import { PageHeader } from '@/app/layout/PageHeader';
+import { PublicFrame } from '@/features/public/PublicFrame';
 import { ChevronRight } from 'lucide-react';
 import { Badge, Card, TextLink } from '@/components/kit';
 import { Tex } from '@/components/ui/Tex';
@@ -26,12 +26,12 @@ export function SciencePage() {
   }, [hash]);
 
   return (
-    <div className="mx-auto max-w-3xl pb-10">
-      <PageHeader
-        back={{ to: '/more', label: 'More' }}
-        title="How every number is calculated"
-        subtitle="Every number in Overload, the formula behind it and the research it rests on. Read a section, follow a source, and judge it for yourself."
-      />
+    <PublicFrame path="/science">
+      <h1 className="type-display text-text-1">How every number is calculated</h1>
+      <p className="type-body mt-3 mb-6 text-text-2">
+        Every number in Overload Gym, the formula behind it and the research it rests on. Read a
+        section, follow a source, and judge it for yourself.
+      </p>
 
       <Card className="mb-6">
         <p className="type-body text-text-2">
@@ -89,7 +89,7 @@ export function SciencePage() {
         abstract with the full text behind the journal&apos;s paywall. Formulas are estimates for
         healthy adults and are not medical advice.
       </p>
-    </div>
+    </PublicFrame>
   );
 }
 

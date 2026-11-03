@@ -3,7 +3,7 @@ import { startWithDemo } from './session';
 
 /** The public home page: what search engines and first-time visitors see at `/`. */
 
-const HEADING = 'Log every set and every meal. See real progress.';
+const HEADING = 'Your workouts and your Indian meals, in one app.';
 
 test('a first visit opens the public home page, which leads to the tour and an account', async ({
   page,
@@ -14,17 +14,19 @@ test('a first visit opens the public home page, which leads to the tour and an a
   await page.goto('/');
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('heading', { level: 1, name: HEADING })).toBeVisible();
-  await expect(page).toHaveTitle('Overload: workout log and strength progress tracker');
+  await expect(page).toHaveTitle('Overload Gym: Workout Tracker, Indian Food Calorie Counter');
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     'content',
-    /Log every set and every meal/,
+    /Log every set and every Indian meal/,
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',
     'https://overloadgym.in/',
   );
   // Real content to read, not an empty app shell.
-  await expect(page.getByRole('heading', { level: 2 })).toHaveCount(4);
+  await expect(page.getByRole('heading', { level: 2 })).toHaveCount(7);
+  await expect(page.locator('[data-review]')).toHaveCount(8);
+  await expect(page.locator('[data-plan-price]')).toHaveCount(3);
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
@@ -34,7 +36,7 @@ test('a first visit opens the public home page, which leads to the tour and an a
   await page.getByRole('link', { name: 'Take the tour' }).first().click();
   await expect(page).toHaveURL(/\/welcome$/);
   await expect(page.getByText('Sample data', { exact: true })).toBeVisible();
-  await expect(page).toHaveTitle('Take the tour | Overload');
+  await expect(page).toHaveTitle('Take the tour | Overload Gym');
 
   await page.goto('/');
   await page.getByRole('link', { name: 'Create free account' }).first().click();
@@ -77,5 +79,5 @@ test('someone signed in never sees the home page, even for a moment', async ({ p
   expect(shown).toBe(false);
   await expect(page.locator('#landing')).toBeHidden();
   await expect(page.locator('#today-title')).toBeVisible();
-  await expect(page).toHaveTitle('Overload');
+  await expect(page).toHaveTitle('Overload Gym');
 });

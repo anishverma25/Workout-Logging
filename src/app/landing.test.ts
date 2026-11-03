@@ -5,9 +5,19 @@ import { SYSTEM_EXERCISES } from '@/data/library/exercises';
 import { ROUTINE_TEMPLATES } from '@/data/library/templates';
 import { FREE_FEATURES, PRO_FEATURES } from '@/domain/entitlement/entitlement';
 import { LANDING_ATTR, wantsLanding } from './landing';
+import { REGULAR_PRICE_INR } from './billing';
+import {
+  COACHING_PRICE,
+  FAQ,
+  PUBLIC_PRICES,
+  REVIEWS,
+  SURVEY_RATINGS,
+  averageRating,
+  fillLanding,
+} from './marketing';
 import { PUBLIC_PAGES } from './publicPages';
 
-const INDEX = readFileSync('index.html', 'utf8');
+const INDEX = fillLanding(readFileSync('index.html', 'utf8'));
 const LANDING = INDEX.slice(
   INDEX.indexOf('<!-- landing:start -->'),
   INDEX.indexOf('<!-- landing:end -->'),
@@ -95,13 +105,55 @@ describe('public home page', () => {
   it('has one main heading and no broken links or images', () => {
     expect(LANDING.match(/<h1[\s>]/g)).toHaveLength(1);
     const paths = PUBLIC_PAGES.map((p) => p.path);
-    for (const [, href] of LANDING.matchAll(/href="([^"]+)"/g)) expect(paths).toContain(href);
+    for (const [, href] of LANDING.matchAll(/href="([^"]+)"/g)) {
+      if (href!.startsWith('#')) expect(LANDING).toContain(`id="${href!.slice(1)}"`);
+      else expect(paths).toContain(href);
+    }
     for (const [, src] of LANDING.matchAll(/(?:src|srcset)="([^"]+)"/g)) {
       for (const part of src!.split(',')) {
         expect(existsSync(`public${part.trim().split(' ')[0]}`)).toBe(true);
       }
     }
-    for (const [, tag] of LANDING.matchAll(/(<img[^>]*>)/g)) expect(tag).toMatch(/alt="[^"]{10,}"/);
+    for (const [, tag] of LANDING.matchAll(/(<img[^>]*>)/g)) {
+      // Screens are described; the logo beside the name is decoration.
+      if (/src="\/(landing\/mark|icon)\.svg"/.test(tag!))
+        expect(tag).toMatch(/alt="" aria-hidden="true"/);
+      else expect(tag).toMatch(/alt="[^"]{10,}"/);
+    }
+  });
+
+  it('shows the real prices, with the regular ones crossed out', () => {
+    const seed = readFileSync('supabase/migrations/20261011000008_razorpay_billing.sql', 'utf8');
+    for (const [id, price] of Object.entries(PUBLIC_PRICES)) {
+      // The plans migration seeds the same price the server charges today.
+      expect(seed).toMatch(new RegExp(`\\('${id}', '[^']+', \\d+, ${price},`));
+      const card = new RegExp(`data-plan-price="${id}">([\\s\\S]*?)</li>`).exec(LANDING)?.[1] ?? '';
+      expect(card).toContain(`₹${price}</span>`);
+      expect(card).toContain(
+        `<s class="type-meta text-text-3">₹${REGULAR_PRICE_INR[id as keyof typeof REGULAR_PRICE_INR]}</s>`,
+      );
+    }
+    expect(LANDING).toContain('₹23 a month');
+    expect(Math.round(PUBLIC_PRICES.quarterly / 3)).toBe(23);
+    expect(Math.round(PUBLIC_PRICES.yearly / 12)).toBe(21);
+    expect(LANDING).toContain('₹21 a month');
+    expect(LANDING).toContain(`<span data-price-from>${PUBLIC_PRICES.monthly}</span>`);
+    expect(LANDING).toContain(`<span data-price-coaching>${COACHING_PRICE}</span>`);
+    const coaching = readFileSync('supabase/migrations/20261031000018_coaching.sql', 'utf8');
+    expect(coaching).toMatch(new RegExp(`'coach_monthly'[^)]*\\b${COACHING_PRICE}\\b`));
+  });
+
+  it('quotes only real member reviews, with the real average rating', () => {
+    expect(averageRating()).toBe(4.9);
+    for (const m of LANDING.matchAll(/data-rating>([\d.]+)</g))
+      expect(Number(m[1])).toBe(averageRating());
+    expect(LANDING).toContain(`<span data-count="ratings">${SURVEY_RATINGS.length}</span>`);
+    expect(LANDING.match(/data-review>/g)).toHaveLength(REVIEWS.length);
+    for (const r of REVIEWS) {
+      expect(r.rating).toBeGreaterThanOrEqual(4);
+      expect(r.name).not.toMatch(/\s/);
+    }
+    for (const f of FAQ) expect(LANDING).toContain(`<dt class="type-headline">${f.q}</dt>`);
   });
 
   it('follows the copy rules', () => {

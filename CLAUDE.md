@@ -382,3 +382,15 @@ Read README.md for setup, architecture and calculation rules.
   `app_settings.leaderboard_refresh_seconds` (60; 0 in the fake server and tests), finished
   periods frozen. Admin hides an account with `leaderboard_hidden`. Release
   `2026-11-leaderboards` announces groups and the global board, `CACHE_EPOCH` `ui-15`.
+- Brand, SEO and landing (November 2026, no migration, Dexie unchanged): the brand is "Overload Gym"
+  (`APP_NAME`, manifest, titles); the logo is a dumbbell in a ring ending in a fork
+  (`public/icon.svg`, `icons/*`, `landing/mark.svg`, `og-image.png`, `BrandMark`). The home page
+  (index.html, `src/styles/landing.css`, motion in `app/landingMotion.ts`, never needed to read it)
+  shows real prices (`PUBLIC_PRICES` in `app/marketing.ts`, tested against the plans migration
+  and `REGULAR_PRICE_INR`: change them with the SQL update) and real member reviews (`REVIEWS`,
+  `SURVEY_RATINGS` from the November survey; first names only, never invented). Reviews,
+  questions and guide links are filled by `landingContent()` (build/seo.ts) in dev and build.
+  `/science` and the guides (`GUIDES`: Indian food calorie counter, workout tracker, gym
+  leaderboard) are public pages outside the account gate; guides are also written as plain HTML
+  into `#root` by the build. The home page carries JSON-LD (Organization, WebSite,
+  SoftwareApplication with prices, FAQPage; no ratings markup). `CACHE_EPOCH` `ui-16`.
