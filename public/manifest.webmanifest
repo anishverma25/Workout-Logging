@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Overload",
+  "name": "Overload Gym",
   "short_name": "Overload",
-  "description": "Fast workout logging and transparent strength analytics.",
+  "description": "Your workouts and your Indian meals, in one app.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

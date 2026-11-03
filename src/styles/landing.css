@@ -1,0 +1,335 @@
+/*
+ * The public home page (index.html, between the landing markers). Apple-style: a translucent
+ * bar content scrolls under, large display type with size-specific tracking, depth from light
+ * and blur rather than borders, and motion that only uses transform and opacity.
+ *
+ * Motion is progressive: everything is visible without scripts. `Landing` (src/app/layout)
+ * sets `data-lp-motion` and reveals sections as they scroll in, and moves the hero phones with
+ * scroll. With reduced motion, nothing slides or loops.
+ */
+
+#landing {
+  --lp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --lp-glow: color-mix(in oklab, var(--lime) 28%, transparent);
+  --lp-glass: color-mix(in oklab, var(--bg) 62%, transparent);
+  --lp-card: color-mix(in oklab, var(--surface) 82%, transparent);
+  --lp-edge: color-mix(in oklab, var(--text-1) 9%, transparent);
+  --lp-edge-strong: color-mix(in oklab, var(--text-1) 16%, transparent);
+}
+
+/* Translucent bar: content scrolls underneath, a soft edge instead of a hard line. */
+.lp-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--lp-glass);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 1px 0 var(--lp-edge);
+}
+
+.lp-logo {
+  filter: drop-shadow(0 0 10px color-mix(in oklab, var(--lime) 45%, transparent));
+}
+
+/* Display type: tight leading, negative tracking that grows with size. */
+.lp-display {
+  font-family: var(--font-display, inherit);
+  font-weight: 700;
+  font-size: clamp(2.75rem, 9vw, 5.75rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+.lp-h2 {
+  font-family: var(--font-display, inherit);
+  font-weight: 700;
+  font-size: clamp(2rem, 5.2vw, 3.5rem);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.lp-lead {
+  font-size: clamp(1.0625rem, 1.6vw, 1.3125rem);
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  text-wrap: pretty;
+}
+.lp-eyebrow {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--lime);
+}
+
+/* Text lit from within: white into lime, the logo's two colours. */
+.lp-gradient-text {
+  background: linear-gradient(100deg, color-mix(in oklab, var(--lime) 55%, var(--text-1)), var(--lime) 60%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Light behind the hero and the final call to action. */
+.lp-aura {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(40% 36% at 50% 62%, var(--lp-glow), transparent 70%),
+    radial-gradient(30% 24% at 20% 20%, color-mix(in oklab, var(--lime) 10%, transparent), transparent 70%);
+}
+.lp-grid-lines {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--lp-edge) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lp-edge) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(60% 50% at 50% 30%, black, transparent 75%);
+  opacity: 0.5;
+}
+
+.lp-btn {
+  transition:
+    transform 120ms ease-out,
+    box-shadow 200ms ease-out,
+    background-color 200ms ease-out;
+}
+.lp-btn:active {
+  transform: scale(0.97);
+}
+.lp-btn-primary {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--lime) 60%, transparent),
+    0 10px 30px -8px var(--lp-glow);
+}
+@media (hover: hover) {
+  .lp-btn-primary:hover {
+    box-shadow:
+      0 0 0 1px var(--lime),
+      0 14px 40px -8px color-mix(in oklab, var(--lime) 45%, transparent);
+  }
+}
+
+/* A phone: thin bezel, light catching the top edge, deep soft shadow. */
+.lp-phone {
+  border-radius: 2.4rem;
+  padding: 0.45rem;
+  background: linear-gradient(160deg, var(--surface-2), var(--bg) 60%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--text-1) 18%, transparent),
+    0 0 0 1px var(--lp-edge),
+    0 40px 80px -30px color-mix(in oklab, var(--bg) 90%, transparent),
+    0 30px 60px -40px var(--lp-glow);
+}
+.lp-phone img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 2rem;
+}
+
+.lp-stage {
+  perspective: 1600px;
+}
+.lp-stage .lp-phone {
+  will-change: transform;
+}
+.lp-phone-side {
+  --lp-tilt: 9deg;
+}
+.lp-phone-left {
+  transform: translate3d(14%, calc(10% + var(--lp-p, 0) * -40px), 0) rotateY(var(--lp-tilt))
+    rotateZ(-4deg) scale(0.86);
+}
+.lp-phone-right {
+  transform: translate3d(-14%, calc(10% + var(--lp-p, 0) * -40px), 0)
+    rotateY(calc(var(--lp-tilt) * -1)) rotateZ(4deg) scale(0.86);
+}
+.lp-phone-center {
+  position: relative;
+  z-index: 2;
+  transform: translate3d(0, calc(var(--lp-p, 0) * -90px), 0);
+}
+
+/* Glass card with a hairline that catches light at the top. */
+.lp-card {
+  position: relative;
+  border-radius: 1.75rem;
+  background: var(--lp-card);
+  box-shadow:
+    inset 0 1px 0 var(--lp-edge-strong),
+    0 0 0 1px var(--lp-edge);
+  overflow: hidden;
+}
+.lp-card-lime {
+  background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--lime) 18%, transparent), transparent 60%),
+    var(--lp-card);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--lime) 40%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--lime) 30%, transparent),
+    0 30px 80px -40px var(--lp-glow);
+}
+@media (hover: hover) {
+  .lp-lift {
+    transition:
+      transform 500ms var(--lp-ease),
+      box-shadow 500ms var(--lp-ease);
+  }
+  .lp-lift:hover {
+    transform: translateY(-4px);
+  }
+}
+
+/* A screen tucked into a bento tile, bleeding off its bottom edge. */
+.lp-tile-shot {
+  border-radius: 1.6rem 1.6rem 0 0;
+  box-shadow:
+    0 0 0 1px var(--lp-edge-strong),
+    0 -20px 60px -30px var(--lp-glow);
+}
+
+.lp-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--text-1) 7%, transparent);
+  box-shadow: inset 0 1px 0 var(--lp-edge);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* The endless strip of foods and lifts, and the rows of reviews. */
+.lp-marquee {
+  --lp-gap: 0.75rem;
+  display: flex;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+}
+.lp-marquee-track {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--lp-gap);
+  padding-right: var(--lp-gap);
+  animation: lp-scroll var(--lp-speed, 40s) linear infinite;
+}
+.lp-marquee-reverse .lp-marquee-track {
+  animation-direction: reverse;
+}
+@media (hover: hover) {
+  .lp-marquee:hover .lp-marquee-track {
+    animation-play-state: paused;
+  }
+}
+@keyframes lp-scroll {
+  to {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+.lp-review {
+  width: min(22rem, 78vw);
+  flex-shrink: 0;
+  padding: 1.5rem;
+}
+.lp-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  font-weight: 700;
+  color: var(--on-lime);
+  background: linear-gradient(
+    140deg,
+    color-mix(in oklab, var(--lime) 60%, var(--text-1)),
+    var(--lime) 55%,
+    color-mix(in oklab, var(--lime) 78%, var(--bg))
+  );
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--lime) 18%, transparent);
+}
+.lp-quote-mark {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 6rem;
+  line-height: 0.6;
+  color: var(--lime);
+  opacity: 0.9;
+}
+
+.lp-formula {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  font-style: italic;
+  letter-spacing: 0;
+}
+
+/* Entrance: the hero rises in once, on load (no script needed). */
+/* Never from fully transparent: the headline is the page's main content and must paint at once. */
+@keyframes lp-rise {
+  from {
+    opacity: 0.3;
+    transform: translate3d(0, 24px, 0);
+  }
+}
+.lp-rise {
+  animation: lp-rise 900ms var(--lp-ease) both;
+  animation-delay: calc(var(--lp-i, 0) * 90ms);
+}
+@keyframes lp-rise-stage {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 60px, 0) scale(0.96);
+  }
+}
+.lp-rise-stage {
+  animation: lp-rise-stage 1200ms var(--lp-ease) 250ms both;
+}
+
+/* Sections reveal as they scroll in, once scripts have said they will reveal them. */
+html[data-lp-motion] .lp-reveal {
+  opacity: 0;
+  transform: translate3d(0, 36px, 0);
+  transition:
+    opacity 900ms var(--lp-ease),
+    transform 900ms var(--lp-ease);
+  transition-delay: calc(var(--lp-i, 0) * 80ms);
+}
+html[data-lp-motion] .lp-reveal.lp-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-rise,
+  .lp-rise-stage {
+    animation: none;
+  }
+  .lp-marquee-track {
+    animation: none;
+  }
+  .lp-marquee {
+    overflow-x: auto;
+  }
+  html[data-lp-motion] .lp-reveal {
+    transform: none;
+    transition: opacity 300ms ease;
+  }
+  .lp-phone-left,
+  .lp-phone-right,
+  .lp-phone-center {
+    --lp-p: 0;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .lp-bar {
+    background: var(--bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

@@ -3,6 +3,7 @@ import { MethodologyRedirect } from './layout/MethodologyRedirect';
 import { AppShell } from './layout/AppShell';
 import { AuthScreen } from './layout/AuthScreen';
 import { RequireAccount } from './layout/RequireAccount';
+import { GUIDES } from './marketing';
 import { RouteError } from './layout/RouteError';
 import { HomePage } from '@/features/home/HomePage';
 import { SummaryPage } from '@/features/workout/SummaryPage';
@@ -25,7 +26,18 @@ export const router = createBrowserRouter([
     errorElement: <RouteError />,
     lazy: page(() => import('@/features/tour/TourPage'), 'TourPage'),
   },
-  // Public pages, readable without an account: the legal pages Razorpay and users look for.
+  // Public pages, readable without an account: the science behind every number, guides for
+  // what people search for, and the legal pages Razorpay and users look for.
+  {
+    path: 'science',
+    errorElement: <RouteError />,
+    lazy: page(() => import('@/features/science/SciencePage'), 'SciencePage'),
+  },
+  ...GUIDES.map((g) => ({
+    path: g.path.slice(1),
+    errorElement: <RouteError />,
+    lazy: page(() => import('@/features/public/GuidePage'), 'GuidePage'),
+  })),
   {
     path: 'terms',
     errorElement: <RouteError />,
@@ -106,10 +118,6 @@ export const router = createBrowserRouter([
           {
             path: 'progress',
             lazy: page(() => import('@/features/progress/ProgressPage'), 'ProgressPage'),
-          },
-          {
-            path: 'science',
-            lazy: page(() => import('@/features/science/SciencePage'), 'SciencePage'),
           },
           // The old address of the methodology page, kept for bookmarks and installed shortcuts.
           { path: 'progress/methodology', Component: MethodologyRedirect },

@@ -25,7 +25,7 @@ import {
 
 import type { TileTone } from '@/components/ui/List';
 
-export const APP_NAME = 'Overload';
+export const APP_NAME = 'Overload Gym';
 
 export interface NavItem {
   to: string;

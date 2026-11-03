@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { startWithDemo } from './session';
 
 /** Automated accessibility checks (WCAG 2.1 A and AA) on every screen. The app is dark only (D3). */
@@ -14,6 +14,18 @@ const PUBLIC_PAGES = [
   '/terms',
   '/privacy',
 ];
+
+/**
+ * Waits for entrance animations to finish: axe measures contrast as drawn, and text halfway
+ * through fading in is not what anyone reads. Endless ones (the home page's strips) are left.
+ */
+async function settled(page: Page) {
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity),
+  );
+}
 
 const PAGES = [
   '/',
@@ -45,6 +57,7 @@ test('no accessibility violations', async ({ page }) => {
   for (const path of [...PUBLIC_PAGES]) {
     await page.goto(path);
     await page.waitForLoadState('networkidle');
+    await settled(page);
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
@@ -56,6 +69,7 @@ test('no accessibility violations', async ({ page }) => {
   for (const path of PAGES) {
     await page.goto(path);
     await page.waitForLoadState('networkidle');
+    await settled(page);
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();

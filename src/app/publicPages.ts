@@ -10,8 +10,9 @@
  * Only relative imports and no browser APIs here: the build reads this file from Node.
  */
 
-/** The one address search engines should know. Old and preview addresses point here. */
-export const SITE_ORIGIN = 'https://overloadgym.in';
+import { GUIDES, SITE_ORIGIN, guideHtml, guide, structuredData } from './marketing';
+
+export { SITE_ORIGIN };
 
 export interface PublicPage {
   path: string;
@@ -25,56 +26,72 @@ export interface PublicPage {
 
 export const HOME_PAGE: PublicPage = {
   path: '/',
-  title: 'Overload: workout log and strength progress tracker',
+  title: 'Overload Gym: Workout Tracker, Indian Food Calorie Counter',
   description:
-    'Log every set and every meal, Indian food by the katori. Watch strength, volume and records grow with research-based routines. Works offline. Free to start.',
+    'Log every set and every Indian meal in one app. Track strength, calories and protein, compete with friends, and trust every number. Free to start.',
+  inSitemap: true,
+};
+
+/** The science page, open to everyone: every formula in the app and the research behind it. */
+export const SCIENCE_PAGE: PublicPage = {
+  path: '/science',
+  title: 'The science behind every number | Overload Gym',
+  description:
+    'Estimated one rep max, hard sets, volume, body weight trend, calories and protein: the formula behind every number in Overload Gym and the research it rests on.',
   inSitemap: true,
 };
 
 export const PUBLIC_PAGES: PublicPage[] = [
   HOME_PAGE,
+  SCIENCE_PAGE,
+  ...GUIDES.map((g) => ({
+    path: g.path,
+    title: g.title,
+    description: g.description,
+    inSitemap: true,
+  })),
   {
     path: '/welcome',
-    title: 'Take the tour | Overload',
+    title: 'Take the tour | Overload Gym',
     description:
       'See how Overload logs workouts and Indian meals, tracks your progress and coaches you with OverloadGPT, using sample data and no account.',
     inSitemap: true,
   },
   {
     path: '/sign-up',
-    title: 'Create your account | Overload',
+    title: 'Create your account | Overload Gym',
     description:
       'Create a free Overload account to log workouts, keep your training backed up and see your progress on every device.',
     inSitemap: true,
   },
   {
     path: '/sign-in',
-    title: 'Sign in | Overload',
+    title: 'Sign in | Overload Gym',
     description: 'Sign in to Overload to log your workouts and see your progress.',
     inSitemap: false,
   },
   {
     path: '/terms',
-    title: 'Terms and conditions | Overload',
+    title: 'Terms and conditions | Overload Gym',
     description:
       'The rules for using Overload, the workout log and progress tracker, in plain language.',
     inSitemap: true,
   },
   {
     path: '/privacy',
-    title: 'Privacy policy | Overload',
+    title: 'Privacy policy | Overload Gym',
     description: 'What Overload keeps about you and your training, why, and how you can remove it.',
     inSitemap: true,
   },
   {
     path: '/refunds',
-    title: 'Cancellation and refund policy | Overload',
+    title: 'Cancellation and refund policy | Overload Gym',
     description: 'How to cancel Overload Pro, and when a payment can be refunded.',
     inSitemap: true,
   },
   {
     path: '/contact',
-    title: 'Contact us | Overload',
+    title: 'Contact us | Overload Gym',
     description: 'How to reach the Overload team, by email or on Instagram.',
     inSitemap: true,
   },
@@ -137,8 +154,17 @@ export function pageHtml(indexHtml: string, page: PublicPage): string {
     if (!pattern.test(html)) throw new Error(`index.html is missing ${pattern}`);
     html = html.replace(pattern, value);
   }
-  if (page.path === '/') return html;
+  if (page.path === '/') {
+    if (!html.includes('</head>')) throw new Error('index.html is missing </head>');
+    return html.replace('</head>', `    ${structuredData()}\n  </head>`);
+  }
   const landing = /\s*<!-- landing:start -->[\s\S]*<!-- landing:end -->/;
   if (!landing.test(html)) throw new Error('index.html is missing the landing markers');
-  return html.replace(landing, '');
+  html = html.replace(landing, '');
+  const g = guide(page.path);
+  if (g) {
+    if (!html.includes('<div id="root"></div>')) throw new Error('index.html is missing #root');
+    html = html.replace('<div id="root"></div>', `<div id="root">${guideHtml(g)}</div>`);
+  }
+  return html;
 }

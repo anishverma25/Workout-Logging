@@ -89,7 +89,7 @@ export function Delta({
       className={cn(
         'type-caption tabular inline-flex h-[1.375rem] shrink-0 items-center gap-0.5 rounded-full px-2 font-semibold whitespace-nowrap',
         tone === 'up' && 'bg-up-dim text-up',
-        tone === 'down' && 'bg-down-dim text-down',
+        tone === 'down' && 'bg-down-dim text-down-text',
         tone === 'flat' && 'bg-fill text-text-2',
         className,
       )}

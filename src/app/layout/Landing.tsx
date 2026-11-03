@@ -1,5 +1,6 @@
 import { useLayoutEffect } from 'react';
 import { LANDING_ATTR } from '../landing';
+import { startLandingMotion } from '../landingMotion';
 import { usePageMeta } from '../usePageMeta';
 
 const RELOADED = 'overload.landingReload';
@@ -30,8 +31,13 @@ export function Landing() {
     }
     html.setAttribute(LANDING_ATTR, '');
     window.scrollTo(0, 0);
-    return () => html.removeAttribute(LANDING_ATTR);
+    const stopMotion = startLandingMotion(html);
+    return () => {
+      stopMotion();
+      html.removeAttribute(LANDING_ATTR);
+    };
   }, []);
 
   return null;
 }
+

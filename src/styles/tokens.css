@@ -116,6 +116,8 @@
   --up-dim: rgb(48 209 88 / 0.16);
   --down: #ff453a;
   --down-dim: rgb(255 69 58 / 0.16);
+  /* Red text on --down-dim: the system red is 4.2:1 there, this lighter red is 5:1. */
+  --down-text: #ff6961;
   --warning-dim: rgb(255 179 64 / 0.16);
 
   /* Type */

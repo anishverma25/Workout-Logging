@@ -4,12 +4,12 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, loadEnv } from 'vite';
 import { pwa, securityHeaders } from './build/pwa.ts';
-import { seo } from './build/seo.ts';
+import { landingContent, seo } from './build/seo.ts';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   return {
-    plugins: [react(), tailwindcss(), pwa(env), seo()],
+    plugins: [react(), tailwindcss(), pwa(env), landingContent(), seo()],
     define: {
       // Which build sent a piece of feedback: the commit on Cloudflare Pages, else "local".
       __APP_VERSION__: JSON.stringify(process.env.CF_PAGES_COMMIT_SHA?.slice(0, 7) ?? 'local'),
@@ -31,6 +31,9 @@ export default defineConfig(({ mode }) => {
     build: {
       target: 'es2022',
       sourcemap: true,
+      // Fonts stay files: the Content Security Policy allows fonts from this site only, so a
+      // small KaTeX font inlined as a data: address would be refused on the science page.
+      assetsInlineLimit: (file: string) => (/\.(woff2?|ttf|otf)$/.test(file) ? false : undefined),
     },
     test: {
       globals: true,
