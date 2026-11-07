@@ -7,7 +7,7 @@ import { BrandMark } from './BrandMark';
 import { Landing } from './Landing';
 
 /**
- * Overload is an account app: everything you log is backed up and synced, so the whole app
+ * Macrotrophy is an account app: everything you log is backed up and synced, so the whole app
  * sits behind a signed-in account.
  *
  * - First visit on this device, at `/`: the public home page (`<Landing />`), which leads to the

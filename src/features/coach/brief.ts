@@ -561,7 +561,7 @@ const FOOD_QUESTIONS = [
 ];
 
 const STARTER_QUESTIONS = [
-  'How should I start training with Overload?',
+  'How should I start training with Macrotrophy?',
   'How many days a week should I train?',
   'What should my first routine look like?',
   'How much protein do I need?',

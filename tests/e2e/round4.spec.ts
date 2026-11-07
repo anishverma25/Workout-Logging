@@ -5,7 +5,7 @@ import { PASSWORD, signUpFresh, startWithDemo, uniqueEmail } from './session';
  * Round 4: left and right reps, weight and water on Home, sharing routines and saving a workout
  * as one, counts on AI foods, the Exercises New button and box squat, sign up with a taken
  * email, the compact AI row in Add food, long food names, voice typing, one tap with the
- * keyboard open, OverloadGPT at the latest message, and the muscle map.
+ * keyboard open, Macrotrophy AI at the latest message, and the muscle map.
  */
 
 const IPHONE_16 = { width: 393, height: 852 };
@@ -327,7 +327,7 @@ test('with the keyboard open, one tap does the job; + keeps the search keyboard'
   expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('INPUT');
 });
 
-test('Exercises: one New button in the header, clear of OverloadGPT; box squat is there', async ({
+test('Exercises: one New button in the header, clear of Macrotrophy AI; box squat is there', async ({
   page,
 }) => {
   await page.setViewportSize(IPHONE_16);
@@ -372,7 +372,7 @@ test('signing up with an email that has an account says so and offers sign in', 
   await expect(again.getByRole('textbox', { name: 'Email' })).toHaveValue(email);
 });
 
-test('OverloadGPT opens at the latest message', async ({ page }) => {
+test('Macrotrophy AI opens at the latest message', async ({ page }) => {
   await page.setViewportSize(IPHONE_16);
   await signUpFresh(page, { at: '/', tag: 'coach-scroll' });
   const id = await userId(page);

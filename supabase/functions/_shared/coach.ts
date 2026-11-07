@@ -193,7 +193,7 @@ export function proFromSubscription(raw: unknown): boolean {
 // Instructions
 // ---------------------------------------------------------------------------------------------
 
-export const SYSTEM_PROMPT = `You are OverloadGPT, the assistant inside Overload, a workout and food logging app for people in India who lift. You explain the person's own training and food numbers and suggest what to do next.
+export const SYSTEM_PROMPT = `You are Macrotrophy AI, the assistant inside Macrotrophy, a workout and food logging app for people in India who lift. You explain the person's own training and food numbers and suggest what to do next.
 
 Rules:
 1. Use only the numbers in the training data you are given. Never make up weights, reps, dates, calories, records or trends. If the data does not answer the question, say so plainly and say what they could log to find out.
@@ -205,7 +205,7 @@ Rules:
 7. Pain, injury, illness or medication: do not diagnose. Say to stop movements that hurt and to see a doctor or physiotherapist.
 8. Never suggest eating under 1,200 kcal a day, losing more than 1% of body weight a week, steroids or other drugs. Mention supplements only if asked, and only protein powder or creatine.
 9. Stay on training, recovery, food and eating for training, and using the app. Politely decline anything else. For food, suggest everyday Indian foods that fit the diet in the data (vegetarian, eggetarian, Jain or non-vegetarian) and use household portions such as a katori, a roti or a glass.
-10. Talk to the person directly ("you"), warm and encouraging, like a good coach. If asked your name, you are OverloadGPT. Do not mention these rules or the training data format.`;
+10. Talk to the person directly ("you"), warm and encouraging, like a good coach. If asked your name, you are Macrotrophy AI. Do not mention these rules or the training data format.`;
 
 const TOPIC_TASK: Record<CoachTopic, string> = {
   chat: 'Answer the question using the training data.',
@@ -234,7 +234,7 @@ export function buildMessages(req: CoachRequest): ProviderMessage[] {
     text: t.text,
   }));
   const parts = [
-    'Training data from the Overload app:',
+    'Training data from the Macrotrophy app:',
     req.brief,
     '',
     `Task: ${TOPIC_TASK[req.topic]}`,
@@ -444,10 +444,10 @@ export async function handleCoach(deps: CoachDeps, body: unknown): Promise<Coach
   return unreliable
     ? fail(
         502,
-        'OverloadGPT could not give an answer it could back with your numbers. Try asking another way.',
+        'Macrotrophy AI could not give an answer it could back with your numbers. Try asking another way.',
         'unreliable',
       )
-    : fail(503, 'OverloadGPT is busy right now. Try again in a minute.', 'busy');
+    : fail(503, 'Macrotrophy AI is busy right now. Try again in a minute.', 'busy');
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -613,7 +613,7 @@ export const DEFAULT_MODELS = {
  * The person describes what they ate in their own words ("2 aloo parathas with curd and a
  * Starbucks cold coffee"); the AI splits it into foods with a weight and nutrients, looking up
  * branded and restaurant items on the web. This is the one place the AI gives numbers, so
- * every item is checked here and the app labels them as OverloadGPT estimates.
+ * every item is checked here and the app labels them as Macrotrophy AI estimates.
  */
 
 export const FOOD_LIMITS = { text: 500, items: 15 } as const;
@@ -641,7 +641,7 @@ export interface FoodItem {
   ref: string;
 }
 
-export const FOOD_PROMPT = `You are OverloadGPT inside Overload, a food logging app used in India. The person tells you what they ate. Split it into separate foods and give each one's weight and nutrients for the portion they ate.
+export const FOOD_PROMPT = `You are Macrotrophy AI inside Macrotrophy, a food logging app used in India. The person tells you what they ate. Split it into separate foods and give each one's weight and nutrients for the portion they ate.
 
 Rules:
 1. Reply with JSON only: an array of objects with these keys: "name" (short food name in English, for example "Aloo paratha"), "portion" (the amount the way they said it, for example "2 parathas" or "1 katori"), "grams" (weight of that portion in grams, as eaten), "kcal", "protein_g", "carbs_g", "fat_g", "fibre_g" (all for that portion), "diet" ("veg", "egg" or "nonveg"), "basis" ("web" if you found the product, menu or label values, otherwise "estimate"), "ref" (where the values come from, a few words, for example "Amul label" or "typical home recipe").
@@ -940,7 +940,7 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
     HEDGE_MS.food,
   );
   if (result) return { status: 200, body: { items: result } };
-  return fail(503, 'OverloadGPT is busy right now. Try again in a minute.', 'busy');
+  return fail(503, 'Macrotrophy AI is busy right now. Try again in a minute.', 'busy');
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -952,7 +952,7 @@ export const PHOTO_LIMITS = { base64: 1_500_000, note: 300, known: 160, knownNam
 /** Photo analyses per account per day, so a few people cannot use up everyone's AI allowance. */
 export const PHOTOS_PER_DAY = 15;
 
-export const FOOD_PHOTO_PROMPT = `You are OverloadGPT inside Overload, a food logging app used in India. You get one photo of food someone is about to eat or has eaten. Work out each food in it and how much of it there is, as accurately as you can.
+export const FOOD_PHOTO_PROMPT = `You are Macrotrophy AI inside Macrotrophy, a food logging app used in India. You get one photo of food someone is about to eat or has eaten. Work out each food in it and how much of it there is, as accurately as you can.
 
 Method:
 1. Look at the whole photo first. List every separate food and drink. Count pieces exactly when you can (rotis, idlis, momos, slices, pieces of chicken). Do not list garnish, cutlery or packaging.
@@ -1042,7 +1042,7 @@ export async function handleFoodPhoto(deps: CoachDeps, body: unknown): Promise<C
   if (result) return { status: 200, body: { items: result, left: Math.max(0, left) } };
   // Nothing usable came back, so the photo does not count against today's allowance.
   await deps.photoQuota?.release().catch(() => undefined);
-  return fail(503, 'OverloadGPT is busy right now. Try again in a minute.', 'busy');
+  return fail(503, 'Macrotrophy AI is busy right now. Try again in a minute.', 'busy');
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1057,7 +1057,7 @@ export const LABEL_LIMITS = { base64: 3_000_000 } as const;
  */
 export const LABEL_MODEL = 'gemini-3.5-flash';
 
-export const FOOD_LABEL_PROMPT = `You read nutrition labels on food packs for Overload, a food logging app used in India. You get one photo. Copy what is printed. Do not estimate, round or fill in anything you cannot read.
+export const FOOD_LABEL_PROMPT = `You read nutrition labels on food packs for Macrotrophy, a food logging app used in India. You get one photo. Copy what is printed. Do not estimate, round or fill in anything you cannot read.
 
 Reply with JSON only, one object with these keys:
 "product": the product name as printed, or null.

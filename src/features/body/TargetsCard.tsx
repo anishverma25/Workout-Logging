@@ -197,7 +197,7 @@ export function TargetsCard({
         <p className="type-meta mt-3 text-text-2">
           {set
             ? 'Add a weigh-in and your profile details to see how your targets compare.'
-            : 'Set the calories and protein you are aiming for, and Overload checks them against your maintenance, your goal, your weight trend and your lifts.'}
+            : 'Set the calories and protein you are aiming for, and Macrotrophy checks them against your maintenance, your goal, your weight trend and your lifts.'}
         </p>
       )}
       <FoodLogBlock
@@ -259,7 +259,7 @@ function FoodLogBlock({
         className="type-meta mt-4 flex flex-wrap items-center gap-x-2 text-text-2"
         data-food-log-block
       >
-        Log what you eat and Overload compares it with these targets.
+        Log what you eat and Macrotrophy compares it with these targets.
         <TextLink to="/food" small chevron>
           Log food
         </TextLink>

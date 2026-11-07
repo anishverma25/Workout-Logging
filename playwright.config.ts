@@ -9,7 +9,9 @@ const executablePath = process.env.PW_CHROMIUM_PATH;
 /** The release announcement is marked seen, so it never covers what a test is doing. */
 const seenAnnouncement = (origin: string) => ({
   cookies: [],
-  origins: [{ origin, localStorage: [{ name: 'overload.whatsNew', value: '2026-11-leaderboards' }] }],
+  origins: [
+    { origin, localStorage: [{ name: 'overload.whatsNew', value: '2026-11-macrotrophy' }] },
+  ],
 });
 
 export default defineConfig({

@@ -29,29 +29,29 @@
       #boot-help .main{background:#c6f432;color:#000;margin-top:20px}
       #boot-help .alt{background:#27272a;color:#f5f5f7}
     </style>
-    <script>(function(){var w=window,d=document,started=false,errs=[];var o=w.__overload={stage:"loading the app",errors:errs,started:function(){started=true;var p=d.getElementById("boot-help");if(p&&p.parentNode)p.parentNode.removeChild(p)}};function note(m){if(m&&errs.length<4)errs.push(String(m).slice(0,240))}w.addEventListener("error",function(e){var t=e.target;note(e.message||(t&&(t.src||t.href)?"Could not load "+(t.src||t.href):""))},true);w.addEventListener("unhandledrejection",function(e){var r=e.reason;note(r&&r.message||r)});o.repair=function(){var jobs=[];try{if(navigator.serviceWorker)jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister()}))}));if(w.caches)jobs.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}))}catch(e){}return Promise.all(jobs).catch(function(){}).then(function(){location.replace(location.pathname+location.search)})};o.help=function(){if(started||d.getElementById("boot-help"))return;var b=d.getElementById("boot");if(!b)return;b.classList.remove("out");var h=d.createElement("div");h.id="boot-help";h.setAttribute("role","alert");function line(text,cls){var p=d.createElement("p");p.textContent=text;if(cls)p.className=cls;h.appendChild(p)}function button(text,cls,fn){var x=d.createElement("button");x.type="button";x.className=cls;x.textContent=text;x.onclick=fn;h.appendChild(x)}line("Overload is taking longer than usual to open.");line("Everything you logged is safe, on this phone and in your account.","sub");button("Repair and open","main",function(){o.repair()});button("Try again","alt",function(){location.reload()});line("Stuck while "+o.stage+(errs.length?". "+errs.join(" | "):"."),"why");b.removeAttribute("aria-hidden");b.appendChild(h)};function arm(){setTimeout(function(){if(started||d.documentElement.hasAttribute("data-landing"))return;if(d.visibilityState==="hidden"){d.addEventListener("visibilitychange",arm,{once:true});return}var k="overload.autoRepairAt",last=0;try{last=+localStorage.getItem(k)||0}catch(e){}var sw=navigator.serviceWorker;if(sw&&sw.controller&&Date.now()-last>600000){try{localStorage.setItem(k,String(Date.now()))}catch(e){}o.repair();return}o.help()},6000)}arm()})();</script>
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <script>(function(){var w=window,d=document,started=false,errs=[];var o=w.__overload={stage:"loading the app",errors:errs,started:function(){started=true;var p=d.getElementById("boot-help");if(p&&p.parentNode)p.parentNode.removeChild(p)}};function note(m){if(m&&errs.length<4)errs.push(String(m).slice(0,240))}w.addEventListener("error",function(e){var t=e.target;note(e.message||(t&&(t.src||t.href)?"Could not load "+(t.src||t.href):""))},true);w.addEventListener("unhandledrejection",function(e){var r=e.reason;note(r&&r.message||r)});o.repair=function(){var jobs=[];try{if(navigator.serviceWorker)jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister()}))}));if(w.caches)jobs.push(caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}))}catch(e){}return Promise.all(jobs).catch(function(){}).then(function(){location.replace(location.pathname+location.search)})};o.help=function(){if(started||d.getElementById("boot-help"))return;var b=d.getElementById("boot");if(!b)return;b.classList.remove("out");var h=d.createElement("div");h.id="boot-help";h.setAttribute("role","alert");function line(text,cls){var p=d.createElement("p");p.textContent=text;if(cls)p.className=cls;h.appendChild(p)}function button(text,cls,fn){var x=d.createElement("button");x.type="button";x.className=cls;x.textContent=text;x.onclick=fn;h.appendChild(x)}line("Macrotrophy is taking longer than usual to open.");line("Everything you logged is safe, on this phone and in your account.","sub");button("Repair and open","main",function(){o.repair()});button("Try again","alt",function(){location.reload()});line("Stuck while "+o.stage+(errs.length?". "+errs.join(" | "):"."),"why");b.removeAttribute("aria-hidden");b.appendChild(h)};function arm(){setTimeout(function(){if(started||d.documentElement.hasAttribute("data-landing"))return;if(d.visibilityState==="hidden"){d.addEventListener("visibilitychange",arm,{once:true});return}var k="overload.autoRepairAt",last=0;try{last=+localStorage.getItem(k)||0}catch(e){}var sw=navigator.serviceWorker;if(sw&&sw.controller&&Date.now()-last>600000){try{localStorage.setItem(k,String(Date.now()))}catch(e){}o.repair();return}o.help()},6000)}arm()})();</script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Overload" />
-    <link rel="canonical" href="https://overloadgym.in/" />
+    <meta name="apple-mobile-web-app-title" content="Macrotrophy" />
+    <link rel="canonical" href="https://macrotrophy.in/" />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Overload Gym" />
-    <meta property="og:title" content="Overload Gym: Workout Tracker, Indian Food Calorie Counter" />
+    <meta property="og:site_name" content="Macrotrophy" />
+    <meta property="og:title" content="Macrotrophy: Workout Tracker, Indian Food Calorie Counter" />
     <meta property="og:description" content="Log every set and every Indian meal in one app. Track strength, calories and protein, compete with friends, and trust every number. Free to start." />
-    <meta property="og:url" content="https://overloadgym.in/" />
-    <meta property="og:image" content="https://overloadgym.in/og-image.png" />
+    <meta property="og:url" content="https://macrotrophy.in/" />
+    <meta property="og:image" content="https://macrotrophy.in/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Overload Gym: your workouts and your Indian meals, in one app." />
+    <meta property="og:image:alt" content="Macrotrophy: your workouts and your Indian meals, in one app." />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Overload Gym: Workout Tracker, Indian Food Calorie Counter" />
+    <meta name="twitter:title" content="Macrotrophy: Workout Tracker, Indian Food Calorie Counter" />
     <meta name="twitter:description" content="Log every set and every Indian meal in one app. Track strength, calories and protein, compete with friends, and trust every number. Free to start." />
-    <meta name="twitter:image" content="https://overloadgym.in/og-image.png" />
-    <title>Overload Gym: Workout Tracker, Indian Food Calorie Counter</title>
+    <meta name="twitter:image" content="https://macrotrophy.in/og-image.png" />
+    <title>Macrotrophy: Workout Tracker, Indian Food Calorie Counter</title>
   </head>
   <body>
     <!-- landing:start -->
@@ -65,9 +65,9 @@
     <div id="landing" class="min-h-dvh overflow-x-clip bg-bg text-text-1">
       <header class="lp-bar pt-safe">
         <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-safe">
-          <a href="/" class="chrome flex items-center gap-2.5 rounded-field" aria-label="Overload Gym home">
+          <a href="/" class="chrome flex items-center gap-2.5 rounded-field" aria-label="Macrotrophy home">
             <img src="/landing/mark.svg" width="36" height="36" alt="" aria-hidden="true" class="lp-logo size-9" />
-            <span class="text-[1.125rem] font-semibold tracking-[-0.02em]">Overload Gym</span>
+            <span class="text-[1.125rem] font-semibold tracking-[-0.02em]">Macrotrophy</span>
           </a>
           <nav aria-label="Main" class="flex items-center gap-1">
             <a href="#features" class="hidden h-9 items-center rounded-full px-3 type-meta font-medium text-text-2 tab:inline-flex">Features</a>
@@ -129,7 +129,7 @@
           <div class="lp-reveal text-center">
             <p class="lp-eyebrow">The problem</p>
             <h2 id="landing-why" class="lp-h2 mx-auto mt-3 max-w-[18ch]">Three apps, and you are still guessing.</h2>
-            <p class="lp-lead mx-auto mt-5 max-w-[38rem] text-text-2">A workout app that knows nothing about your food. A calorie app that cannot find your mother's dal. Numbers with no source. Overload Gym puts it all in one place, and shows its working.</p>
+            <p class="lp-lead mx-auto mt-5 max-w-[38rem] text-text-2">A workout app that knows nothing about your food. A calorie app that cannot find your mother's dal. Numbers with no source. Macrotrophy puts it all in one place, and shows its working.</p>
           </div>
           <div class="mt-12 grid gap-4 tab:grid-cols-3">
             <div class="lp-card lp-lift lp-reveal p-7" style="--lp-i: 0">
@@ -167,7 +167,7 @@
               </div>
             </article>
             <article class="lp-card lp-card-lime lp-lift lp-reveal flex flex-col p-7 lg:col-span-2" style="--lp-i: 1">
-              <p class="lp-eyebrow">OverloadGPT</p>
+              <p class="lp-eyebrow">Macrotrophy AI</p>
               <h3 class="mt-2 font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em]">A coach that speaks Hinglish.</h3>
               <div class="mt-6 flex flex-col gap-2.5" role="group" aria-label="An example chat">
                 <p class="ml-auto max-w-[85%] rounded-[1.25rem] rounded-br-md bg-lime px-4 py-2.5 text-[0.9375rem] font-medium text-on-lime">Mera bench press kyun ruk gaya?</p>
@@ -282,7 +282,7 @@
               </ul>
               <p class="type-meta mt-7 font-semibold text-text-1">Everything in Free, plus</p>
               <ul class="type-body mt-3 grid list-disc gap-x-6 gap-y-2.5 pl-5 text-text-2 tab:grid-cols-2" data-plan="pro">
-                <li>OverloadGPT</li>
+                <li>Macrotrophy AI</li>
                 <li>AI food logging</li>
                 <li>Food insights</li>
                 <li>90-day and all-time trends</li>
@@ -321,7 +321,7 @@
 
       <footer class="mx-auto max-w-6xl border-t border-border px-safe pt-8 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <div class="flex flex-col gap-6 tab:flex-row tab:items-start tab:justify-between">
-          <p class="flex items-center gap-2.5"><img src="/landing/mark.svg" width="28" height="28" alt="" aria-hidden="true" class="size-7" loading="lazy" /><span class="type-headline">Overload Gym</span></p>
+          <p class="flex items-center gap-2.5"><img src="/landing/mark.svg" width="28" height="28" alt="" aria-hidden="true" class="size-7" loading="lazy" /><span class="type-headline">Macrotrophy</span></p>
           <nav aria-label="More" class="type-meta flex flex-wrap gap-x-5 gap-y-2">
             <!-- GUIDES_HERE -->
             <a href="/science" class="text-text-2 hover:text-text-1">The science</a>
@@ -331,7 +331,7 @@
             <a href="/contact" class="text-text-2 hover:text-text-1">Contact</a>
           </nav>
         </div>
-        <p class="type-caption mt-6 text-text-2">Overload Gym is run by Anish Verma, India.</p>
+        <p class="type-caption mt-6 text-text-2">Macrotrophy is run by Anish Verma, India.</p>
       </footer>
     </div>
     <!-- landing:end -->

@@ -1,3 +1,4 @@
+import { MARK_LIME, MARK_WHITE } from '@/app/brandPaths';
 import interTight800 from '@fontsource/inter-tight/files/inter-tight-latin-800-normal.woff2?url';
 import interTight900 from '@fontsource/inter-tight/files/inter-tight-latin-900-normal.woff2?url';
 import mono500 from '@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2?url';
@@ -121,16 +122,18 @@ function clip(ctx: Ctx, s: string, width: number) {
   return `${out.trimEnd()}…`;
 }
 
+/** The Macrotrophy mark: a near-black rounded square with the white M and lime Y. */
 function mark(ctx: Ctx, x: number, y: number, size: number, onLime: boolean) {
-  const k = size / 32;
-  rr(ctx, x, y, size, size, 9 * k, onLime ? C.black : C.lime);
-  const bar = onLime ? C.lime : C.black;
-  ctx.globalAlpha = 0.45;
-  rr(ctx, x + 7.5 * k, y + 17 * k, 4 * k, 8 * k, 1.2 * k, bar);
-  ctx.globalAlpha = 0.7;
-  rr(ctx, x + 14 * k, y + 12 * k, 4 * k, 13 * k, 1.2 * k, bar);
-  ctx.globalAlpha = 1;
-  rr(ctx, x + 20.5 * k, y + 7 * k, 4 * k, 18 * k, 1.2 * k, bar);
+  rr(ctx, x, y, size, size, size * 0.22, onLime ? C.black : '#050505');
+  ctx.save();
+  ctx.translate(x + size / 2, y + size * 0.51);
+  const k = (size * 0.72) / 100;
+  ctx.scale(k, k);
+  ctx.fillStyle = C.white;
+  ctx.fill(new Path2D(MARK_WHITE));
+  ctx.fillStyle = C.lime;
+  ctx.fill(new Path2D(MARK_LIME));
+  ctx.restore();
 }
 
 /** Logo, name, tagline and link: the same on every card, inside the safe area. */
@@ -138,7 +141,7 @@ function footer(ctx: Ctx, tagline: string, link: string, onLime = false) {
   const y = SAFE_BOTTOM - 92;
   mark(ctx, X, y, 84, onLime);
   const ink = onLime ? C.black : C.white;
-  text(ctx, 'Overload', X + 106, y + 40, font(800, 42, TIGHT), ink);
+  text(ctx, 'Macrotrophy', X + 106, y + 40, font(800, 42, TIGHT), ink);
   text(ctx, tagline, X + 106, y + 78, font(500, 26), onLime ? 'rgba(0,0,0,0.7)' : C.text2);
   ctx.font = font(600, 28);
   const w = ctx.measureText(link).width + 60;
@@ -367,7 +370,7 @@ export function drawReceiptCard(ctx: Ctx, w: WorkoutCard, c: CardContext) {
   const R = px + paperW - 56;
   const ink = C.black;
   let y = py + 64 + 30;
-  text(ctx, 'OVERLOAD', L, y, font(800, 40, MONO), ink);
+  text(ctx, 'MACROTROPHY', L, y, font(800, 40, MONO), ink);
   text(ctx, `#${String(w.number).padStart(4, '0')}`, R, y, font(500, 26, MONO), ink, 'right');
   y += 50;
   ctx.font = font(500, 26, MONO);
@@ -749,5 +752,5 @@ export function drawMedalsCard(ctx: Ctx, m: MedalsCard, c: CardContext) {
   if (m.medals.length > shown.length)
     text(ctx, `+ ${m.medals.length - shown.length} more`, X, y + 30, font(600, 30), C.text2);
 
-  footer(ctx, 'Medals earned on Overload', c.link);
+  footer(ctx, 'Medals earned on Macrotrophy', c.link);
 }

@@ -103,7 +103,7 @@ function candidates(f: NudgeFacts): Nudge[] {
         perDay < 1
           ? `Pro is ₹${f.monthlyInr} a month, under ₹1 a day.`
           : `Pro is ₹${f.monthlyInr} a month.`,
-      body: 'Every analysis feature, OverloadGPT and your whole history open, and you can cancel any time.',
+      body: 'Every analysis feature, Macrotrophy AI and your whole history open, and you can cancel any time.',
     });
   }
   if (f.monthlyInr !== null && f.yearlyInr) {
@@ -112,14 +112,14 @@ function candidates(f: NudgeFacts): Nudge[] {
       out.push({
         id: 'yearly',
         title: `A year of Pro is ₹${f.yearlyInr}, ₹${saved} less than paying monthly.`,
-        body: 'One payment covers twelve months of progress analysis, food insights and OverloadGPT.',
+        body: 'One payment covers twelve months of progress analysis, food insights and Macrotrophy AI.',
       });
     }
   }
   if (f.historyDays > 0) {
     out.push({
       id: 'coach',
-      title: 'OverloadGPT can read your training and explain it.',
+      title: 'Macrotrophy AI can read your training and explain it.',
       body: 'Ask why a lift has stalled, what to eat on a training day, or what to change next week. It uses the numbers the app has already worked out from your log.',
     });
   }

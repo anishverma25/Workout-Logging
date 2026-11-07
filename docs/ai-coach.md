@@ -54,7 +54,7 @@ requests a day per Google project; Groq's free tier on GPT-OSS 120B about 1,000 
 2. **Groq key**: console.groq.com > API Keys > Create API Key. Free tier.
 3. **Supabase secrets**: Project > Edge Functions > Secrets (or `supabase secrets set`):
    `GEMINI_API_KEY`, `GROQ_API_KEY`. Optional: `GEMINI_MODEL`, `GROQ_MODEL` to change models.
-   `APP_ORIGIN` is shared with billing (already `https://overloadgym.in`).
+   `APP_ORIGIN` is shared with billing: a comma-separated list, `https://macrotrophy.in,https://overloadgym.in`.
 4. **Deploy**: `supabase functions deploy coach --no-verify-jwt` (the function checks the
    access token itself, like billing).
 

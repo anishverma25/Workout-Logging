@@ -248,7 +248,7 @@ test('global leaderboard: everyone by name, the username only when they turn it 
 
   // Home shows the global place.
   await page.goto('/');
-  await expect(page.locator('[data-home-global]')).toContainText(/#\d+ of \d+ on Overload/);
+  await expect(page.locator('[data-home-global]')).toContainText(/#\d+ of \d+ on Macrotrophy/);
   await noSideScroll(page);
   await other.context.close();
 });

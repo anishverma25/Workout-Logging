@@ -26,7 +26,7 @@ import { EvidenceLink } from '../science/EvidenceLink';
 const n = (v: number) => Math.round(v).toLocaleString('en-GB');
 
 /**
- * The choice every person makes once: have Overload work out calories, protein, carbs, fat,
+ * The choice every person makes once: have Macrotrophy work out calories, protein, carbs, fat,
  * fibre and water from their body and goal, or type their own. Own numbers left empty fall
  * back to the worked-out ones. Typed numbers stay saved when switching to calculated.
  */
@@ -150,7 +150,7 @@ function TargetsBody({
   return (
     <div className="flex flex-col gap-4 pt-1" data-targets-sheet>
       <p className="type-body text-text-2">
-        How should Overload set your daily calories, protein, carbs, fat, fibre and water?
+        How should Macrotrophy set your daily calories, protein, carbs, fat, fibre and water?
       </p>
       <div role="radiogroup" aria-label="How to set your targets" className="grid gap-2">
         <OptionCard
@@ -183,8 +183,8 @@ function TargetsBody({
             </dl>
           ) : (
             <p className="type-meta text-text-2">
-              To work out calories and macros, Overload needs your weight, height, sex and training
-              days. Add them on the Body page.
+              To work out calories and macros, Macrotrophy needs your weight, height, sex and
+              training days. Add them on the Body page.
               {weightKg ? ' Water is worked out from your weight already.' : ''}
             </p>
           )}

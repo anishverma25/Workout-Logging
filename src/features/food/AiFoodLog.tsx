@@ -20,7 +20,7 @@ import { defaultPortion } from './foodText';
 import type { FoodContext } from './useFoodContext';
 
 /**
- * Tell OverloadGPT what you ate (Pro). The words go to the server, which asks the AI with web
+ * Tell Macrotrophy AI what you ate (Pro). The words go to the server, which asks the AI with web
  * search for brands and restaurant items and checks every number it returns. Foods the
  * library already knows by exactly that name use the library's values; the rest are labelled
  * as found on the web or estimated. Without a connection the library parser fills what it can.
@@ -124,7 +124,7 @@ export function AiFoodLog({
         message:
           e instanceof FoodAiError && e.code === 'not_pro'
             ? e.message
-            : 'OverloadGPT could not be reached, so these come from the food library.',
+            : 'Macrotrophy AI could not be reached, so these come from the food library.',
         portions: parsed.items.map((i) => {
           const base = defaultPortion(i.food);
           const unit = i.unit ?? base.unit;

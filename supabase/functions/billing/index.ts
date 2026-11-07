@@ -1,4 +1,4 @@
-// Overload Pro billing with Razorpay. Deployed as a Supabase Edge Function (Deno):
+// Macrotrophy Pro billing with Razorpay. Deployed as a Supabase Edge Function (Deno):
 //   supabase functions deploy billing --no-verify-jwt
 // Routes: POST /billing/subscribe, /billing/order (pay once), /billing/verify, /billing/cancel (signed-in user, checked
 // here with the user's access token) and POST /billing/webhook (Razorpay, checked with the
@@ -53,11 +53,19 @@ const deps: BillingDeps = {
 };
 
 // Only the app's own origin may call the signed-in routes from a browser. Set APP_ORIGIN to
-// the site's address, for example https://overloadgym.in.
-const allowedOrigin = env('APP_ORIGIN');
+// the site's address, for example https://macrotrophy.in.
+// A comma-separated list is allowed, for example during a move to a new domain:
+// https://macrotrophy.in,https://overloadgym.in
+const allowedOrigins = (env('APP_ORIGIN') ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
 
 function cors(origin: string | null): Record<string, string> {
-  const allow = origin && (origin === allowedOrigin || !allowedOrigin) ? origin : allowedOrigin;
+  const allow =
+    origin && (allowedOrigins.includes(origin) || !allowedOrigins.length)
+      ? origin
+      : allowedOrigins[0];
   return {
     'access-control-allow-origin': allow || '*',
     'access-control-allow-headers': 'authorization, x-client-info, apikey, content-type',

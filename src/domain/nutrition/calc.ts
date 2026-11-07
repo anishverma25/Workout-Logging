@@ -71,7 +71,7 @@ export interface Food {
     | 'custom_recipe';
   /** The recipe as it was calculated, for the detail view. */
   recipe: { lines: { name: string; grams: number }[]; cookedG: number; makes: string } | null;
-  /** For OverloadGPT estimates: whether a label or menu was found, and where. */
+  /** For Macrotrophy AI estimates: whether a label or menu was found, and where. */
   ai?: {
     basis: 'web' | 'estimate' | 'photo' | 'label' | 'yours';
     ref: string;

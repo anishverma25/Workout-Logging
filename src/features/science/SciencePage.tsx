@@ -29,7 +29,7 @@ export function SciencePage() {
     <PublicFrame path="/science">
       <h1 className="type-display text-text-1">How every number is calculated</h1>
       <p className="type-body mt-3 mb-6 text-text-2">
-        Every number in Overload Gym, the formula behind it and the research it rests on. Read a
+        Every number in Macrotrophy, the formula behind it and the research it rests on. Read a
         section, follow a source, and judge it for yourself.
       </p>
 

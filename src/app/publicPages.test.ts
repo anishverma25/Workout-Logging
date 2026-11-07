@@ -38,7 +38,7 @@ describe('public pages', () => {
       INDEX,
       PUBLIC_PAGES.find((p) => p.path === '/terms')!,
     );
-    expect(terms).toContain('<title>Terms and conditions | Overload Gym</title>');
+    expect(terms).toContain('<title>Terms and conditions | Macrotrophy</title>');
     expect(terms).toContain(`<link rel="canonical" href="${SITE_ORIGIN}/terms" />`);
     expect(terms).toContain(`<meta property="og:url" content="${SITE_ORIGIN}/terms" />`);
     expect(terms).not.toContain('id="landing"');
@@ -61,7 +61,7 @@ describe('public pages', () => {
       'SoftwareApplication',
       'FAQPage',
     ]);
-    expect(parsed[0]!.name).toBe('Overload Gym');
+    expect(parsed[0]!.name).toBe('Macrotrophy');
   });
 
   it('writes each guide as plain HTML search engines can read without scripts', () => {

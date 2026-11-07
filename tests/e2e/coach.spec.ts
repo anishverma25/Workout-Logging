@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { expireTrial, signUpFresh, startWithDemo } from './session';
 
 /**
- * OverloadGPT (the AI coach), against the real server handler with stand-in AI providers (tests never call a
+ * Macrotrophy AI (the AI coach), against the real server handler with stand-in AI providers (tests never call a
  * real AI). Pro only; asked once before anything is sent; answers come from the brief; Gemini
  * failing falls back to Groq; the chat stays on the phone and can be cleared.
  */
@@ -26,7 +26,7 @@ test('free accounts see the coach everywhere, marked Pro, and locked', async ({ 
   );
   await page.goto('/pro');
   await expect(
-    page.locator('#main').getByText('OverloadGPT', { exact: true }).first(),
+    page.locator('#main').getByText('Macrotrophy AI', { exact: true }).first(),
   ).toBeVisible();
 });
 
@@ -97,7 +97,7 @@ test('when the AI is down or makes up numbers, the coach says so and can retry',
   await box.fill('Help #all-down');
   await box.press('Enter');
   await expect(
-    page.getByText('OverloadGPT is busy right now. Try again in a minute.'),
+    page.getByText('Macrotrophy AI is busy right now. Try again in a minute.'),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
 

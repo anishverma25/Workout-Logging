@@ -6,7 +6,7 @@ import { inferRoutine, type InferredRoutine } from './routine';
 
 /**
  * What an import will do, shown to the person before anything is saved: how many workouts and
- * sets, the dates they cover, and what each exercise becomes in Overload.
+ * sets, the dates they cover, and what each exercise becomes in Macrotrophy.
  */
 
 export type ExerciseChoice =

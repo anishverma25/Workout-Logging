@@ -23,7 +23,7 @@ import { TAB_ICONS } from './TabIcons';
 
 export function AppShell() {
   const { pathname } = useLocation();
-  // index.html carries the home page's search title; inside the app the tab just says Overload.
+  // index.html carries the home page's search title; inside the app the tab just says Macrotrophy.
   useEffect(() => {
     document.title = APP_NAME;
   }, []);

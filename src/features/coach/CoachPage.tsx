@@ -21,7 +21,7 @@ export function CoachPage() {
     <>
       <PageHeader
         back={{ to: '/progress', label: 'Progress' }}
-        title="OverloadGPT"
+        title="Macrotrophy AI"
         subtitle="Ask about your training and food, in any language"
       />
       <div className="flex max-w-2xl flex-col gap-4">
@@ -38,7 +38,7 @@ export function CoachBody() {
   if (!pro)
     return (
       <>
-        <CoachLock lead="Ask OverloadGPT anything about your training and food." />
+        <CoachLock lead="Ask Macrotrophy AI anything about your training and food." />
         <WhatItDoes />
       </>
     );
@@ -54,10 +54,10 @@ export function CoachBody() {
 function WhatItDoes() {
   return (
     <Card>
-      <h2 className="type-headline text-text-1">What OverloadGPT does</h2>
+      <h2 className="type-headline text-text-1">What Macrotrophy AI does</h2>
       <ul className="type-meta mt-3 flex list-disc flex-col gap-2 pl-5 text-text-2">
         <li>
-          Explains why a lift has stalled, using the cause Overload found, and what to change.
+          Explains why a lift has stalled, using the cause Macrotrophy found, and what to change.
         </li>
         <li>Tells you which lifts are ready for more weight, and how much.</li>
         <li>
@@ -176,13 +176,13 @@ function Chat() {
             <h2 className="type-headline">Ask about your training and food</h2>
           </div>
           <p className="type-meta mt-1 text-text-2">
-            OverloadGPT reads your last 30 days: lifts, records, stalls, sets per muscle, rest, body
-            weight and what you ate. Pick a question or write your own.
+            Macrotrophy AI reads your last 30 days: lifts, records, stalls, sets per muscle, rest,
+            body weight and what you ate. Pick a question or write your own.
           </p>
         </Card>
       ) : null}
 
-      <ol className="flex flex-col gap-3" aria-label="Chat with OverloadGPT" aria-live="polite">
+      <ol className="flex flex-col gap-3" aria-label="Chat with Macrotrophy AI" aria-live="polite">
         {messages.map((m) => (
           <li key={m.id}>
             <Bubble role={m.role} text={m.text} />

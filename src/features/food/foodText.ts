@@ -40,7 +40,7 @@ export const SOURCE: Record<Food['source'], string> = {
   usda: 'USDA lab values.',
   indb: 'Indian Nutrient Databank, calculated from a published Indian recipe.',
   off: 'From the pack label, via Open Food Facts.',
-  ai: 'Worked out by OverloadGPT. Check the portion.',
+  ai: 'Worked out by Macrotrophy AI. Check the portion.',
   custom: 'Your food, from its label.',
   custom_recipe: 'Your recipe.',
 };

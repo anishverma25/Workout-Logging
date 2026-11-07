@@ -97,7 +97,7 @@ describe('the global board', () => {
     expect(g.rows[0]!.username).toBe('asha.lifts');
     expect(g.rows[0]!.avatar).toBeNull();
     expect(g.rows[1]!.username).toBeNull();
-    expect(g.mine).toMatchObject({ rank: 140, name: 'Overload member', me: true });
+    expect(g.mine).toMatchObject({ rank: 140, name: 'Macrotrophy member', me: true });
     expect(g.total).toBe(312);
   });
 });

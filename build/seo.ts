@@ -21,6 +21,7 @@ export const FUNCTION_ROUTES = {
     '/sw.js',
     '/manifest.webmanifest',
     '/icon.svg',
+    '/favicon.svg',
     '/og-image.png',
     '/robots.txt',
     '/sitemap.xml',

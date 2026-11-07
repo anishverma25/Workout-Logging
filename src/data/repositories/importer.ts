@@ -18,7 +18,7 @@ import type { WorkoutDatabase } from '../db';
 import { nowIso, putRecords } from './write';
 
 /**
- * Saves an import from Hevy or Strong as ordinary Overload records, so every screen, record,
+ * Saves an import from Hevy or Strong as ordinary Macrotrophy records, so every screen, record,
  * chart and insight treats it exactly like training logged here, and it syncs like it too.
  *
  * Importing the same export again adds nothing: every record's id is derived from the

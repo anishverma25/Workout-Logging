@@ -12,7 +12,7 @@ const CoachBody = lazy(() => import('./CoachPage').then((m) => ({ default: m.Coa
 const preload = () => void import('./CoachPage');
 
 /**
- * OverloadGPT one tap away: a round sparkle button in the header of every main tab (UI v3, A1).
+ * Macrotrophy AI one tap away: a round sparkle button in the header of every main tab (UI v3, A1).
  * It opens the coach over the page, as the old floating button did, without covering anything.
  */
 export function CoachButton({ className }: { className?: string }) {
@@ -29,8 +29,8 @@ export function CoachButton({ className }: { className?: string }) {
           if (pro) warmAi();
         }}
         onPointerDown={preload}
-        aria-label={pro ? 'Ask OverloadGPT' : 'Ask OverloadGPT (Pro)'}
-        title="Ask OverloadGPT"
+        aria-label={pro ? 'Ask Macrotrophy AI' : 'Ask Macrotrophy AI (Pro)'}
+        title="Ask Macrotrophy AI"
         data-coach-launcher
         className={cn(
           'pressable chrome tap-target inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-fill text-lime',
@@ -42,7 +42,7 @@ export function CoachButton({ className }: { className?: string }) {
       <BottomSheet
         open={open}
         onClose={() => setOpen(false)}
-        title="OverloadGPT"
+        title="Macrotrophy AI"
         subtitle="Ask about your training, in any language"
         wide
       >

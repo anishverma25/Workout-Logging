@@ -30,14 +30,14 @@ export function ProRow({ className }: { className?: string }) {
       : null;
 
   const title = member
-    ? 'Overload Pro'
+    ? 'Macrotrophy Pro'
     : trialDays !== null
       ? `Pro trial · ${trialDays} ${trialDays === 1 ? 'day' : 'days'} left`
-      : 'Get Overload Pro';
+      : 'Get Macrotrophy Pro';
   const detail = member
     ? 'Active. Manage your plan'
     : [price, 'cancel any time'].filter(Boolean).join(' · ') ||
-      'Progress analysis, food insights and OverloadGPT';
+      'Progress analysis, food insights and Macrotrophy AI';
 
   const body = (
     <>

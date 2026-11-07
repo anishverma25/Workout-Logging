@@ -3,7 +3,7 @@
 interface ImportMetaEnv {
   readonly VITE_DEMO_AUTOLOAD?: string;
   /** Supabase project URL. Without it (and the anon key) the app runs on this device only. */
-  /** The custom domain, for example https://overloadgym.in. Setting it moves the old address. */
+  /** The custom domain, for example https://macrotrophy.in. Setting it moves the old address. */
   readonly VITE_CANONICAL_ORIGIN?: string;
   readonly VITE_SUPABASE_URL?: string;
   /** Public anon (publishable) key. Never the service role key. */

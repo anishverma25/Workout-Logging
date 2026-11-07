@@ -105,8 +105,8 @@ const INCLUDED: { icon: typeof Dumbbell; title: string; body: string }[] = [
   },
   {
     icon: Crown,
-    title: 'Overload Pro for the month',
-    body: 'Every Pro feature, OverloadGPT included, for as long as your coaching runs.',
+    title: 'Macrotrophy Pro for the month',
+    body: 'Every Pro feature, Macrotrophy AI included, for as long as your coaching runs.',
   },
 ];
 
@@ -163,8 +163,8 @@ function Sell({ entitlement: e }: { entitlement: EntitlementView }) {
         </h1>
         <p className="type-body mx-auto mt-2 max-w-[44ch] text-text-2">
           An experienced, science-based coach builds your training and diet, talks to you on calls
-          and stays with you on WhatsApp. You keep logging in Overload; your coach helps you act on
-          it.
+          and stays with you on WhatsApp. You keep logging in Macrotrophy; your coach helps you act
+          on it.
         </p>
         {plan === undefined ? (
           <Skeleton height="4rem" className="mx-auto mt-5 max-w-60" />
@@ -184,8 +184,8 @@ function Sell({ entitlement: e }: { entitlement: EntitlementView }) {
       {workouts > 0 ? (
         <InlineNotice icon={<CalendarCheck />}>
           Your coach starts from what you have already done: {workouts}{' '}
-          {workouts === 1 ? 'workout' : 'workouts'} logged in Overload, every set and record in your
-          history.
+          {workouts === 1 ? 'workout' : 'workouts'} logged in Macrotrophy, every set and record in
+          your history.
         </InlineNotice>
       ) : null}
 
@@ -295,7 +295,7 @@ function Sell({ entitlement: e }: { entitlement: EntitlementView }) {
               </SecondaryButton>
             </div>
             <p className="type-caption mt-3 text-center text-text-2">
-              Payments by Razorpay; Overload never sees your card or UPI PIN.
+              Payments by Razorpay; Macrotrophy never sees your card or UPI PIN.
             </p>
           </>
         )}
@@ -445,9 +445,9 @@ function Member({
         </h2>
         <ul className="mt-3 flex flex-col gap-2.5">
           {[
-            'Log every workout and meal in Overload, so your coach and you are looking at the same numbers.',
+            'Log every workout and meal in Macrotrophy, so your coach and you are looking at the same numbers.',
             'Share your Progress and food screens on your calls, or send them on WhatsApp.',
-            'Ask OverloadGPT anything between calls; it is included.',
+            'Ask Macrotrophy AI anything between calls; it is included.',
           ].map((t) => (
             <li key={t} className="type-body flex gap-2.5 text-text-1">
               <Check className="mt-1 size-4 shrink-0 text-lime" aria-hidden />

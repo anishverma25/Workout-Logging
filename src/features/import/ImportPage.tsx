@@ -178,8 +178,8 @@ export function ImportPage() {
               {welcome ? 'Coming from another app?' : 'Import your training'}
             </h1>
             <p className="type-body mt-2 mb-8 text-text-2 [text-wrap:balance]">
-              Bring your workouts, records and body weight from Hevy or Strong. Overload carries on
-              from your last session, with every chart and record built from your full history.
+              Bring your workouts, records and body weight from Hevy or Strong. Macrotrophy carries
+              on from your last session, with every chart and record built from your full history.
             </p>
             <div role="radiogroup" aria-label="Import from" className="flex flex-col gap-2">
               {(['hevy', 'strong'] as const).map((s) => (
@@ -196,7 +196,7 @@ export function ImportPage() {
             <ul className="mt-6 flex flex-col gap-2.5">
               {[
                 'Every set, rep and weight, with warm-ups and drop sets kept apart.',
-                'Your exercises matched to Overload’s, and the rest kept as your own.',
+                'Your exercises matched to Macrotrophy’s, and the rest kept as your own.',
                 'Nothing is saved until you have checked it.',
               ].map((line) => (
                 <li key={line} className="type-meta flex gap-2.5 text-text-2">
@@ -383,7 +383,7 @@ function Review({
         <>
           <h2 className="type-title mt-8 text-text-1">Your exercises</h2>
           <p className="type-meta mt-1 text-text-2">
-            {matched} of {plan.exercises.length} matched to Overload’s library, so their records,
+            {matched} of {plan.exercises.length} matched to Macrotrophy’s library, so their records,
             strength levels and muscle sets work straight away. The rest are kept as your own.
             Change any of them below.
           </p>
@@ -463,7 +463,7 @@ function ExerciseRow({
           <Badge>Your own</Badge>
         )}
         <label htmlFor={selectId} className="sr-only">
-          What {name} becomes in Overload
+          What {name} becomes in Macrotrophy
         </label>
         <select
           id={selectId}
@@ -496,7 +496,7 @@ function ExerciseRow({
               ))}
             </optgroup>
           ) : null}
-          <optgroup label="Overload library">
+          <optgroup label="Macrotrophy library">
             {library.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.name}
@@ -561,7 +561,7 @@ function Done({
       </h1>
       <p className="type-body mt-2 text-text-2 [text-wrap:balance]">
         {anything
-          ? `Everything from ${APPS[source].name} is now part of Overload${firstWorkout && result.workoutsAdded > 0 ? `, back to ${formatCalendarDate(firstWorkout)}` : ''}. Your next workout carries on from here.`
+          ? `Everything from ${APPS[source].name} is now part of Macrotrophy${firstWorkout && result.workoutsAdded > 0 ? `, back to ${formatCalendarDate(firstWorkout)}` : ''}. Your next workout carries on from here.`
           : `These ${APPS[source].name} workouts were imported before, so nothing was added twice.`}
       </p>
       <Card className="mt-6">

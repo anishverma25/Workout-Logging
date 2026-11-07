@@ -2,7 +2,7 @@ import { createTestServer, type TestServer } from '@/test/server';
 
 /**
  * Friends, groups and leaderboards on real Postgres with the migrations: usernames, join codes,
- * limits, privacy, admin powers and every rule of the Overload Score.
+ * limits, privacy, admin powers and every rule of the Macrotrophy Score.
  */
 
 let server: TestServer;
@@ -317,7 +317,7 @@ describe('groups', () => {
   });
 });
 
-describe('Overload Score', () => {
+describe('Macrotrophy Score', () => {
   it('counts workouts and hard sets, ignoring warm-ups and easy sets', async () => {
     const a = await user();
     await workout(a, day(7), [

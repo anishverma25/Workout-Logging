@@ -96,7 +96,7 @@ ${all}
  * Bumped by hand at the end of every UI redesign part (UI rules 3.1), so installed apps always
  * fetch a fresh shell even when only public files changed. Part of the cache name and hash.
  */
-export const CACHE_EPOCH = 'ui-16';
+export const CACHE_EPOCH = 'ui-17';
 
 const TEMPLATE = fileURLToPath(new URL('./sw-template.js', import.meta.url));
 
@@ -115,6 +115,7 @@ export function pwa(env: Record<string, string | undefined>): Plugin {
       const publicFiles = [
         '/manifest.webmanifest',
         '/icon.svg',
+        '/favicon.svg',
         '/fonts/inter-400.woff2',
         '/fonts/inter-500.woff2',
         '/fonts/inter-600.woff2',

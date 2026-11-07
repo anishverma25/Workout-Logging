@@ -193,19 +193,19 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
     description: 'Your month and your year in numbers, as a card you can share.',
   },
   ai_coach: {
-    title: 'OverloadGPT',
+    title: 'Macrotrophy AI',
     description:
       'Ask about your training and food in any language, or tap Explain on a card. Answers use your own logged numbers.',
   },
   ai_food: {
     title: 'AI food logging',
     description:
-      'Snap your plate or tell OverloadGPT what you ate, typed or spoken. It finds any food, brand or restaurant dish, reads nutrition labels and fills your plate.',
+      'Snap your plate or tell Macrotrophy AI what you ate, typed or spoken. It finds any food, brand or restaurant dish, reads nutrition labels and fills your plate.',
   },
   group_boards: {
     title: 'Every group leaderboard',
     description:
-      'Consistency, effort, progress and volume boards in your groups, on top of the Overload Score.',
+      'Consistency, effort, progress and volume boards in your groups, on top of the Macrotrophy Score.',
   },
   food_insights: {
     title: 'Food insights',

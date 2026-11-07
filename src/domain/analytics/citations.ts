@@ -1,6 +1,6 @@
 // src/domain/analytics/citations.ts
 //
-// Single source of truth for every research-backed number in Overload.
+// Single source of truth for every research-backed number in Macrotrophy.
 // Reference a citation by id from the methodology / Evidence Corner UI.
 // Keep this file as the only place DOIs live, so links stay consistent app-wide.
 //

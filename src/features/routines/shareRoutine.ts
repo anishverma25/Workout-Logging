@@ -11,7 +11,7 @@ export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | { link: string };
 export async function shareRoutine(routineId: string): Promise<ShareOutcome> {
   const shared = await routineToShare(db, routineId);
   const link = shareLink(window.location.origin, shared);
-  const text = `My ${shared.name} routine on Overload. Open the link to add it to yours.`;
+  const text = `My ${shared.name} routine on Macrotrophy. Open the link to add it to yours.`;
   if (typeof navigator.share === 'function') {
     try {
       await navigator.share({ title: shared.name, text, url: link });

@@ -14,14 +14,14 @@ test('a first visit opens the public home page, which leads to the tour and an a
   await page.goto('/');
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('heading', { level: 1, name: HEADING })).toBeVisible();
-  await expect(page).toHaveTitle('Overload Gym: Workout Tracker, Indian Food Calorie Counter');
+  await expect(page).toHaveTitle('Macrotrophy: Workout Tracker, Indian Food Calorie Counter');
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     'content',
     /Log every set and every Indian meal/,
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',
-    'https://overloadgym.in/',
+    'https://macrotrophy.in/',
   );
   // Real content to read, not an empty app shell.
   await expect(page.getByRole('heading', { level: 2 })).toHaveCount(7);
@@ -36,7 +36,7 @@ test('a first visit opens the public home page, which leads to the tour and an a
   await page.getByRole('link', { name: 'Take the tour' }).first().click();
   await expect(page).toHaveURL(/\/welcome$/);
   await expect(page.getByText('Sample data', { exact: true })).toBeVisible();
-  await expect(page).toHaveTitle('Take the tour | Overload Gym');
+  await expect(page).toHaveTitle('Take the tour | Macrotrophy');
 
   await page.goto('/');
   await page.getByRole('link', { name: 'Create free account' }).first().click();
@@ -53,13 +53,13 @@ test('a policy page leads back to the home page inside the app', async ({ page }
   await expect(page.getByRole('heading', { level: 1, name: HEADING })).toBeHidden();
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',
-    'https://overloadgym.in/terms',
+    'https://macrotrophy.in/terms',
   );
   await page.getByRole('link', { name: 'Open the app' }).click();
   await expect(page.getByRole('heading', { level: 1, name: HEADING })).toBeVisible();
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',
-    'https://overloadgym.in/',
+    'https://macrotrophy.in/',
   );
 });
 
@@ -79,5 +79,5 @@ test('someone signed in never sees the home page, even for a moment', async ({ p
   expect(shown).toBe(false);
   await expect(page.locator('#landing')).toBeHidden();
   await expect(page.locator('#today-title')).toBeVisible();
-  await expect(page).toHaveTitle('Overload Gym');
+  await expect(page).toHaveTitle('Macrotrophy');
 });

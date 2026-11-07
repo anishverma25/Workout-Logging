@@ -5,7 +5,7 @@ const EVERY_MS = 4 * 60_000;
 let last = 0;
 
 /**
- * Starts the AI function before the person asks anything (opening OverloadGPT or the food
+ * Starts the AI function before the person asks anything (opening Macrotrophy AI or the food
  * screen), so their question does not also wait for the server to start. Sends nothing about
  * the person and never shows an error.
  */

@@ -1,4 +1,4 @@
-// Overload AI coach. Deployed as a Supabase Edge Function (Deno):
+// Macrotrophy AI coach. Deployed as a Supabase Edge Function (Deno):
 //   supabase functions deploy coach --no-verify-jwt
 // POST /coach with { topic, question, brief, history }, { kind: 'food', text } or
 // { kind: 'food_photo', image, note }, signed in (checked here with the user's
@@ -39,10 +39,18 @@ if (env('GROQ_API_KEY'))
     ),
   );
 
-const allowedOrigin = env('APP_ORIGIN');
+// A comma-separated list is allowed, for example during a move to a new domain:
+// https://macrotrophy.in,https://overloadgym.in
+const allowedOrigins = (env('APP_ORIGIN') ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
 
 function cors(origin: string | null): Record<string, string> {
-  const allow = origin && (origin === allowedOrigin || !allowedOrigin) ? origin : allowedOrigin;
+  const allow =
+    origin && (allowedOrigins.includes(origin) || !allowedOrigins.length)
+      ? origin
+      : allowedOrigins[0];
   return {
     'access-control-allow-origin': allow || '*',
     'access-control-allow-headers': 'authorization, x-client-info, apikey, content-type',
@@ -64,7 +72,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return reply({ status: 405, body: { error: 'POST only' } }, origin);
   try {
     const body = await req.json().catch(() => null);
-    // Opening OverloadGPT or AI food logging starts the function early, so the real request
+    // Opening Macrotrophy AI or AI food logging starts the function early, so the real request
     // does not wait for a cold start. Nothing is read or sent to an AI.
     if (isWarmUp(body)) return reply({ status: 200, body: { ok: true } }, origin);
     const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');

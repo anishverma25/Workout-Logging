@@ -69,8 +69,8 @@ export function ExplainButton({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={`Explain ${about} with OverloadGPT${pro ? '' : ' (Pro)'}`}
-        title="Explain with OverloadGPT"
+        aria-label={`Explain ${about} with Macrotrophy AI${pro ? '' : ' (Pro)'}`}
+        title="Explain with Macrotrophy AI"
         className={cn(
           // UI v3 (G5): a small round icon, no label, beside the section title.
           'pressable chrome tap-target inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-fill text-text-2 hover:text-text-1',
@@ -83,7 +83,7 @@ export function ExplainButton({
       <BottomSheet
         open={open}
         onClose={() => setOpen(false)}
-        title="OverloadGPT"
+        title="Macrotrophy AI"
         subtitle={`About ${about}`}
       >
         {open ? <ExplainBody topic={topic} getBrief={getBrief} pro={pro} /> : null}
@@ -102,7 +102,7 @@ function ExplainBody({
   pro: boolean;
 }) {
   const store = useCoachStore();
-  if (!pro) return <CoachLock lead="OverloadGPT explains this card with your own numbers." />;
+  if (!pro) return <CoachLock lead="Macrotrophy AI explains this card with your own numbers." />;
   if (!store.consent) return <CoachConsent />;
   return <ExplainAnswer topic={topic} getBrief={getBrief} />;
 }
@@ -169,7 +169,7 @@ function ExplainAnswer({ topic, getBrief }: { topic: CoachTopic; getBrief: () =>
 export function Thinking({ className }: { className?: string }) {
   return (
     <div className={cn('flex flex-col gap-2', className)} role="status" aria-live="polite">
-      <span className="sr-only">OverloadGPT is thinking</span>
+      <span className="sr-only">Macrotrophy AI is thinking</span>
       <Skeleton height={16} width="92%" radius="full" />
       <Skeleton height={16} width="80%" radius="full" />
       <Skeleton height={16} width="64%" radius="full" />
@@ -274,7 +274,7 @@ export function CoachText({ text, className }: { text: string; className?: strin
   );
 }
 
-/** The mark that heads every OverloadGPT answer. */
+/** The mark that heads every Macrotrophy AI answer. */
 export function AiByline({ className }: { className?: string }) {
   return (
     <p className={cn('mb-3 flex items-center gap-2', className)}>
@@ -284,7 +284,7 @@ export function AiByline({ className }: { className?: string }) {
       >
         <Sparkles className="size-4" />
       </span>
-      <span className="type-headline text-text-1">OverloadGPT</span>
+      <span className="type-headline text-text-1">Macrotrophy AI</span>
     </p>
   );
 }
@@ -302,7 +302,7 @@ export function CoachFootnote({ className }: { className?: string }) {
 export function CoachConsent({ onDone }: { onDone?: () => void }) {
   return (
     <div data-coach-consent>
-      <h3 className="type-headline text-text-1">Turn on OverloadGPT</h3>
+      <h3 className="type-headline text-text-1">Turn on Macrotrophy AI</h3>
       <ul className="type-meta mt-3 flex list-disc flex-col gap-2 pl-5 text-text-2">
         <li>
           To answer, the numbers it needs (your sets, records, body weight and goals) and your
@@ -314,7 +314,7 @@ export function CoachConsent({ onDone }: { onDone?: () => void }) {
         </li>
         <li>
           Nothing is kept on our servers. Your chat stays on this phone for 7 days, and you can turn
-          OverloadGPT off or clear it in Settings.
+          Macrotrophy AI off or clear it in Settings.
         </li>
       </ul>
       <div className="mt-5 flex flex-col gap-2 tab:flex-row">
@@ -360,7 +360,7 @@ export function AskCoachRow({ className }: { className?: string }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="type-headline flex items-center gap-2 text-text-1">
-          Ask OverloadGPT
+          Ask Macrotrophy AI
           {pro ? null : (
             <span className="type-caption rounded-full bg-surface-2 px-2 py-0.5 font-semibold text-text-2">
               Pro

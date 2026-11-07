@@ -3,7 +3,7 @@
  *
  * The energy left after protein (Atwater: 4 kcal per g of protein and carbohydrate, 9 per g of
  * fat) is shared between carbohydrate and fat the way the reference food shares it, for
- * example the food OverloadGPT suggested. With no reference, 60% of that energy goes to
+ * example the food Macrotrophy AI suggested. With no reference, 60% of that energy goes to
  * carbohydrate and 40% to fat, close to a typical Indian home meal. The result is a starting
  * point the person can change; anything they type themselves is never replaced.
  */

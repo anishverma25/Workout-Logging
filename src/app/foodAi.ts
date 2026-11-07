@@ -11,7 +11,7 @@ import {
 } from '../../supabase/functions/_shared/coach.ts';
 
 /**
- * AI food logging (Pro): the person says what they ate, OverloadGPT splits it into foods with
+ * AI food logging (Pro): the person says what they ate, Macrotrophy AI splits it into foods with
  * weights and nutrients (looking up brands and restaurant items on the web), and the server
  * checks every item before it comes back. Nothing is stored on the server.
  */
@@ -33,7 +33,7 @@ async function invoke(body: Record<string, unknown>): Promise<Record<string, unk
     throw new FoodAiError('Accounts are not set up in this version of the app.', 'off');
   const { data, error } = await supabase.functions.invoke('coach', { body });
   if (error) {
-    let message = 'OverloadGPT could not be reached. Check your connection and try again.';
+    let message = 'Macrotrophy AI could not be reached. Check your connection and try again.';
     let code = 'network';
     try {
       const ctx = (error as { context?: Response }).context;

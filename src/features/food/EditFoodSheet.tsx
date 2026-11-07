@@ -27,7 +27,7 @@ import { MEAL_LABEL, type FoodContext } from './useFoodContext';
 
 /**
  * Change a logged food's portion, oil or meal, or delete it (with undo). The person's own foods
- * (including those OverloadGPT found in a photo or on a label) can be renamed here too.
+ * (including those Macrotrophy AI found in a photo or on a label) can be renamed here too.
  */
 export function EditFoodSheet({
   log,

@@ -211,7 +211,7 @@ export async function saveCustomFood(
 }
 
 /**
- * Foods that exist only on the plate (OverloadGPT estimates, Open Food Facts products) become
+ * Foods that exist only on the plate (Macrotrophy AI estimates, Open Food Facts products) become
  * the person's own foods when logged, so the log can be edited and logged again later.
  */
 export async function keepPlateFoods(
@@ -219,7 +219,7 @@ export async function keepPlateFoods(
   plate: FoodPortion[],
 ): Promise<FoodPortion[]> {
   // One transaction for the whole plate: the food list updates once, not once per food, which
-  // kept a phone busy for seconds when OverloadGPT found several foods.
+  // kept a phone busy for seconds when Macrotrophy AI found several foods.
   return db.transaction('rw', [db.customFoods, db.outbox], () => keepAll(db, plate));
 }
 

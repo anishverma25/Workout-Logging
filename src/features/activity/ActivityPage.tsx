@@ -162,7 +162,7 @@ export function ActivityPage() {
               </p>
             )}
             <p className="type-caption mt-3 text-text-2" data-pedometer-note>
-              Overload cannot count steps by itself. A web app cannot read your phone&apos;s step
+              Macrotrophy cannot count steps by itself. A web app cannot read your phone&apos;s step
               counter reliably, and guessing from motion would give wrong numbers.
             </p>
           </Card>

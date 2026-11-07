@@ -35,7 +35,7 @@ export function FeedbackPage() {
       <PageHeader
         back={{ to: '/more', label: 'More' }}
         title="Feedback"
-        subtitle="Tell us how Overload feels to use. Every message is read by the person building it."
+        subtitle="Tell us how Macrotrophy feels to use. Every message is read by the person building it."
       />
       <div className="flex max-w-2xl flex-col gap-8">
         {signedIn ? (
@@ -99,7 +99,7 @@ function FeedbackForm() {
         <h2 className="font-display text-[1.5rem] font-bold leading-tight">Thank you</h2>
         <p className="text-muted">
           {done === 'sent'
-            ? 'It went straight to the person building Overload. If you asked something, the reply shows up below.'
+            ? 'It went straight to the person building Macrotrophy. If you asked something, the reply shows up below.'
             : 'It is saved on this phone and will be sent as soon as you are back online.'}
         </p>
         <Button
@@ -143,7 +143,7 @@ function FeedbackForm() {
           id="feedback-form-title"
           className="font-display text-[1.3rem] font-semibold leading-tight"
         >
-          How has Overload been for you?
+          How has Macrotrophy been for you?
         </h2>
         <Stars value={rating} onChange={setRating} />
         <p className="mt-1.5 h-5 text-sm font-medium text-muted" aria-live="polite">
@@ -298,7 +298,7 @@ function History() {
               ) : null}
               {!item.pending && item.reply ? (
                 <div className="mt-3 rounded-[1rem] bg-surface-2 p-3.5">
-                  <p className="text-xs font-semibold text-accent-text">Reply from Overload</p>
+                  <p className="text-xs font-semibold text-accent-text">Reply from Macrotrophy</p>
                   <p className="mt-1 whitespace-pre-line break-words text-[0.95rem]">
                     {item.reply}
                   </p>

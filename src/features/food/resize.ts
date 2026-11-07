@@ -4,7 +4,7 @@ import { measurePortion, type FoodPortion } from '@/data/repositories/food';
 export const MAX_SERVING_G = 5000;
 
 /**
- * The same food at a new weight, everything else scaling with it. An OverloadGPT food is "1
+ * The same food at a new weight, everything else scaling with it. An Macrotrophy AI food is "1
  * serving" of that many grams, so the serving itself changes and keeps its source; a library
  * food keeps its unit and the number of katoris, rotis or pieces changes instead.
  */
@@ -74,7 +74,7 @@ function recount(text: string, from: number, to: number): string {
 
 /**
  * The same item with `count` of them: 4 rotis instead of the 3 the photo showed. Calories and
- * macros scale with it. An OverloadGPT food changes its serving (and the words of its portion);
+ * macros scale with it. An Macrotrophy AI food changes its serving (and the words of its portion);
  * a library food changes how many rotis, katoris or plates it is.
  */
 export function withCount(p: FoodPortion, count: number): FoodPortion | null {

@@ -209,7 +209,7 @@ export function GroupsPage() {
   );
 }
 
-/** Everyone on Overload: the caller's place this week, linking to the full board. */
+/** Everyone on Macrotrophy: the caller's place this week, linking to the full board. */
 function GlobalCard() {
   const standing = useRemote(getMyStanding, 'standing');
   const s = standing.data;
@@ -229,8 +229,8 @@ function GlobalCard() {
         <span className="type-headline block text-text-1">Global leaderboard</span>
         <span className="type-subhead tabular block text-text-2">
           {s?.rank
-            ? `You are #${s.rank} of ${s.total} on Overload this week`
-            : 'Everyone on Overload, weekly and monthly'}
+            ? `You are #${s.rank} of ${s.total} on Macrotrophy this week`
+            : 'Everyone on Macrotrophy, weekly and monthly'}
         </span>
       </span>
       <ChevronRight className="size-5 shrink-0 text-text-3" aria-hidden />

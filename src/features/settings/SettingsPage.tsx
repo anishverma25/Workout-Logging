@@ -258,25 +258,25 @@ function CoachSection() {
   const saved = coach.messages.length;
   return (
     <Panel
-      title="OverloadGPT"
+      title="Macrotrophy AI"
       footer={
         pro
           ? 'When on, questions and the numbers they need are sent to a third-party AI service to answer. The chat stays on this phone for 7 days.'
-          : 'OverloadGPT is part of Pro.'
+          : 'Macrotrophy AI is part of Pro.'
       }
     >
       <PanelRow
-        title="Use OverloadGPT"
+        title="Use Macrotrophy AI"
         detail={pro ? 'Ask about your training and explain cards.' : 'Available with Pro.'}
       >
         <Switch
-          label="Use OverloadGPT"
+          label="Use Macrotrophy AI"
           checked={coach.consent}
           onChange={(v) => setCoachConsent(v)}
         />
       </PanelRow>
       <PanelRow
-        title="Clear OverloadGPT chat"
+        title="Clear Macrotrophy AI chat"
         detail={saved ? `${saved} messages on this phone.` : 'Nothing saved on this phone.'}
       >
         <Button

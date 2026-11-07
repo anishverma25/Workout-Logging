@@ -126,7 +126,7 @@ export async function submitIntake(input: {
 
 /** A WhatsApp chat with the coach, with a first message the member can edit. */
 export function whatsappLink(number: string, name: string | null): string {
-  const hello = `Hi${name ? ` ${name}` : ''}, I joined 1:1 coaching on Overload.`;
+  const hello = `Hi${name ? ` ${name}` : ''}, I joined 1:1 coaching on Macrotrophy.`;
   return `https://wa.me/${number}?text=${encodeURIComponent(hello)}`;
 }
 

@@ -3,7 +3,7 @@ import { expireTrial, signUpFresh, startWithDemo } from './session';
 
 /**
  * Round 5: regional and Amul foods in search, a food that is not in the library leading to
- * OverloadGPT, renaming AI foods, the Smith machine bench angle, and the profile photo.
+ * Macrotrophy AI, renaming AI foods, the Smith machine bench angle, and the profile photo.
  */
 
 async function openAddFood(page: Page) {
@@ -29,7 +29,7 @@ test('regional dishes and Amul packs are found by name and by other names', asyn
   await expect(sheet.locator('[data-food-not-found]')).toHaveCount(0);
 });
 
-test('a food not in the library offers OverloadGPT with the words already typed', async ({
+test('a food not in the library offers Macrotrophy AI with the words already typed', async ({
   page,
 }) => {
   await startWithDemo(page, { tag: 'not-found-pro' });
@@ -37,19 +37,19 @@ test('a food not in the library offers OverloadGPT with the words already typed'
   const sheet = await search(page, 'zqxv mystery dish');
   const none = sheet.locator('[data-food-not-found]');
   await expect(none).toContainText('is not in our foods yet', { timeout: 15_000 });
-  await none.getByRole('button', { name: 'Ask OverloadGPT' }).click();
+  await none.getByRole('button', { name: 'Ask AI' }).click();
   const turnOn = sheet.getByRole('button', { name: 'Turn on' });
   if (await turnOn.count()) await turnOn.click();
   await expect(sheet.locator('#ai-food')).toHaveValue('zqxv mystery dish');
 });
 
-test('free accounts are told OverloadGPT can find a missing food with Pro', async ({ page }) => {
+test('free accounts are told Macrotrophy AI can find a missing food with Pro', async ({ page }) => {
   const email = await signUpFresh(page, { tag: 'not-found-free' });
   await expireTrial(email);
   await openAddFood(page);
   const sheet = await search(page, 'zqxv mystery dish');
   const link = sheet.locator('[data-food-not-found]').getByRole('link', {
-    name: 'Ask OverloadGPT with Pro',
+    name: 'Ask AI with Pro',
   });
   await expect(link).toBeVisible({ timeout: 15_000 });
   await link.click();
