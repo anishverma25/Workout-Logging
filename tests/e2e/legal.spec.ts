@@ -31,7 +31,7 @@ test('the contact page shows who runs Macrotrophy and how to reach them', async 
     'href',
     'mailto:team@macrotrophy.in',
   );
-  await expect(page.getByRole('link', { name: '@macrotrophy.in' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: '@macrotrophy.in', exact: true })).toHaveAttribute(
     'href',
     'https://www.instagram.com/macrotrophy.in/',
   );

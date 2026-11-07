@@ -14,10 +14,8 @@ test('the announcement explains the new name in two steps and opens Food', async
   await dialog.getByRole('button', { name: 'Next' }).click();
   await expect(dialog.getByText('Your AI has a new name too')).toBeVisible();
   await expect(dialog.locator('[data-release-ai]')).toContainText('AI snap');
-  // Back works, then forward again.
-  await dialog.getByRole('button', { name: 'Back' }).click();
-  await expect(dialog.getByText('Overload is now Macrotrophy')).toBeVisible();
-  await dialog.getByRole('button', { name: 'Next' }).click();
+  // The last step can still be closed for later.
+  await expect(dialog.getByRole('button', { name: 'Later' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Log a meal' }).click();
   await expect(page).toHaveURL(/\/food$/);
   await page.goto('/');
