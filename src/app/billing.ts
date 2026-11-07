@@ -229,7 +229,7 @@ export async function startCheckout(
     const checkout = new Razorpay({
       key: key_id,
       ...target,
-      name: plan === 'coach_monthly' ? 'Overload 1:1 coaching' : 'Overload Pro',
+      name: plan === 'coach_monthly' ? 'Macrotrophy 1:1 coaching' : 'Macrotrophy Pro',
       description:
         plan === 'coach_monthly'
           ? mode === 'once'

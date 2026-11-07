@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 
 /**
- * Overload needs an account: the whole app sits behind one, so almost every test starts by
+ * Macrotrophy needs an account: the whole app sits behind one, so almost every test starts by
  * creating a fresh one. Each test uses its own email, so they can run in parallel.
  *
  * An account always starts empty, exactly as a real one does. A test that needs training to

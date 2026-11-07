@@ -16,7 +16,7 @@ export function RouteError() {
   if (reloading)
     return (
       <main className="flex min-h-dvh items-center justify-center bg-bg px-6 text-center" aria-busy>
-        <p className="type-body text-text-2">Opening the new version of Overload...</p>
+        <p className="type-body text-text-2">Opening the new version of Macrotrophy...</p>
       </main>
     );
   const message = isRouteErrorResponse(error)

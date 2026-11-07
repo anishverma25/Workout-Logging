@@ -19,7 +19,7 @@ interface PageHeaderProps {
   compactTitle?: string;
   /** A pushed screen: back chevron with the parent's name instead of the avatar. */
   back?: { to: string; label: string };
-  /** The OverloadGPT button; on by default on the five main tabs (UI v3, A1). */
+  /** The Macrotrophy AI button; on by default on the five main tabs (UI v3, A1). */
   coach?: boolean;
 }
 

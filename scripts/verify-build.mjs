@@ -3,7 +3,7 @@
 // public pages: the home page's inline script is allowed by the CSP, and the SEO files exist.
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 
 const FORBIDDEN = [
   { pattern: /overload\.dev\.entitlement/, why: 'development access override' },
@@ -52,6 +52,24 @@ for (const file of ['sitemap.xml', '_routes.json', 'robots.txt']) {
   } catch {
     problems.push(`dist/${file} is missing`);
   }
+}
+// The old-address redirect (functions/_middleware.ts) must never see the service worker or any
+// file: an installed app on overloadgym.in keeps updating only while /sw.js is served there.
+{
+  const routes = JSON.parse(readFileSync('dist/_routes.json', 'utf8'));
+  const excluded = (path) =>
+    routes.exclude.some((p) => (p.endsWith('/*') ? path.startsWith(p.slice(0, -1)) : path === p));
+  const walk = (dir) =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)],
+    );
+  for (const file of walk('dist')) {
+    const path = '/' + relative('dist', file).split(sep).join('/');
+    if (/\.html$/.test(path) || path === '/_headers' || path === '/_routes.json') continue;
+    if (!excluded(path))
+      problems.push(`${path} is not excluded in _routes.json (old-address redirect)`);
+  }
+  if (!excluded('/sw.js')) problems.push('/sw.js must be excluded in _routes.json');
 }
 if (!readFileSync('dist/index.html', 'utf8').includes('id="landing"')) {
   problems.push('dist/index.html has no public home page');

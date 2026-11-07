@@ -181,7 +181,7 @@ export function messageFor(error: { message?: string; code?: string } | null): s
   // The server has not been updated yet (migration 0019 not run).
   if (error?.code === 'PGRST202' || /does not exist|Could not find the function/i.test(m))
     return 'Groups are not available yet. Please try again later.';
-  return 'Could not reach Overload. Check your connection and try again.';
+  return 'Could not reach Macrotrophy. Check your connection and try again.';
 }
 
 async function call<T>(fn: string, args: Record<string, unknown>, parse: (v: unknown) => T) {
@@ -289,7 +289,7 @@ export function useRemote<T>(load: (() => Promise<T>) | null, key: string) {
   };
 }
 
-/** Points for each part of the Overload Score: the same numbers as the server. */
+/** Points for each part of the Macrotrophy Score: the same numbers as the server. */
 export const POINTS = { workout: 10, hardSet: 1, record: 5, proteinDay: 3 } as const;
 export const WEEKLY_CAPS = { workouts: 6, hardSets: 25, records: 5 } as const;
 
@@ -309,7 +309,7 @@ export function scoreParts(r: Pick<BoardRow, 'workouts' | 'hardSets' | 'records'
 }
 
 // ---------------------------------------------------------------------------------------------
-// The global leaderboard: everyone on Overload, by name; usernames only when shown.
+// The global leaderboard: everyone on Macrotrophy, by name; usernames only when shown.
 // ---------------------------------------------------------------------------------------------
 
 export interface GlobalRow {
@@ -345,7 +345,8 @@ function parseGlobalRow(v: Record<string, unknown>): GlobalRow {
     typeof v.avatar === 'string' && v.avatar.startsWith('data:image/') ? v.avatar : null;
   return {
     rank: num(v.rank) ?? 0,
-    name: str(v.name) || 'Overload member',
+    // The server names someone with no profile name 'Overload member' (migration 0020).
+    name: !str(v.name) || str(v.name) === 'Overload member' ? 'Macrotrophy member' : str(v.name),
     username: typeof v.username === 'string' && v.username ? v.username : null,
     avatar,
     me: v.me === true,

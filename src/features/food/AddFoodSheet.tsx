@@ -375,7 +375,7 @@ function AddFoodBody({
   if (view.kind === 'type')
     return (
       <div className="flex flex-col gap-4 pt-5">
-        <BackRow label="Tell OverloadGPT" onBack={() => setView({ kind: 'pick' })} />
+        <BackRow label="Tell Macrotrophy AI" onBack={() => setView({ kind: 'pick' })} />
         <AiFoodLog
           ctx={ctx}
           initialText={view.text}
@@ -570,7 +570,7 @@ function Results({
   query: string;
   pro: boolean;
   onCreate: () => void;
-  /** Opens OverloadGPT with the search already typed in. */
+  /** Opens Macrotrophy AI with the search already typed in. */
   onAsk: () => void;
 }) {
   const { ctx } = rows;
@@ -612,8 +612,8 @@ function Results({
           <p className="type-headline text-text-1">“{query.trim()}” is not in our foods yet</p>
           <p className="type-meta mt-1 text-text-2">
             {pro
-              ? 'OverloadGPT can look it up and work out its numbers for you to check.'
-              : 'With Pro, OverloadGPT looks it up and works out its numbers for you to check.'}
+              ? 'Macrotrophy AI can look it up and work out its numbers for you to check.'
+              : 'With Pro, Macrotrophy AI looks it up and works out its numbers for you to check.'}
           </p>
           <div className="mt-3 flex justify-center">
             {pro ? (
@@ -623,7 +623,7 @@ function Results({
                 icon={<Sparkles className="size-4" aria-hidden />}
                 data-ask-gpt-food
               >
-                Ask OverloadGPT
+                Ask AI
               </PrimaryButton>
             ) : (
               <Link
@@ -632,7 +632,7 @@ function Results({
                 data-ask-gpt-food
               >
                 <Crown className="size-4" aria-hidden />
-                Ask OverloadGPT with Pro
+                Ask AI with Pro
               </Link>
             )}
           </div>
@@ -787,7 +787,7 @@ function FoodList({
 }
 
 /**
- * The ways to log with OverloadGPT, as one slim row above the lists: ask (type or say the
+ * The ways to log with Macrotrophy AI, as one slim row above the lists: ask (type or say the
  * meal), snap the plate, or read a pack's label. Small on purpose, so it says AI logging is
  * here without pushing the foods down. Free accounts see the same row; asking and snapping
  * lead to Pro, and typing a label's numbers stays free.
@@ -808,29 +808,29 @@ function AiQuick({
   const icon = 'size-4 shrink-0 text-lime';
   const lock = pro ? null : <Crown className="size-3.5 shrink-0 text-text-2" aria-label="Pro" />;
   return (
-    <section aria-label="Log with OverloadGPT" data-ai-hero>
+    <section aria-label="Log with Macrotrophy AI" data-ai-hero>
       <div className="grid grid-cols-3 gap-2">
         {pro ? (
           <>
             <button type="button" onClick={onType} className={chip} data-type-meal>
               <Sparkles className={icon} aria-hidden />
-              <span className="truncate">Ask GPT</span>
+              <span className="truncate">Ask AI</span>
             </button>
             <button type="button" onClick={onPhoto} className={chip} data-photo-meal>
               <Camera className={icon} aria-hidden />
-              <span className="truncate">Snap</span>
+              <span className="truncate">AI snap</span>
             </button>
           </>
         ) : (
           <>
             <Link to="/pro" className={chip} data-type-meal>
               <Sparkles className={icon} aria-hidden />
-              <span className="truncate">Ask GPT</span>
+              <span className="truncate">Ask AI</span>
               {lock}
             </Link>
             <Link to="/pro" className={chip} data-snap-locked>
               <Camera className={icon} aria-hidden />
-              <span className="truncate">Snap</span>
+              <span className="truncate">AI snap</span>
               {lock}
             </Link>
           </>

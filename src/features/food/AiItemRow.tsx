@@ -19,7 +19,7 @@ import { fillMacros } from '@/domain/nutrition/fillMacros';
 import { cn } from '@/lib/cn';
 import { itemCount, MAX_COUNT, MAX_SERVING_G, resizedPortion, withCount } from './resize';
 
-/** One food OverloadGPT found, with where its numbers come from and how sure it is. */
+/** One food Macrotrophy AI found, with where its numbers come from and how sure it is. */
 export function AiItemRow({
   portion,
   katoriMl,
@@ -73,7 +73,7 @@ export function AiItemRow({
             onCancel={() => setRenaming(false)}
           />
         ) : onChange ? (
-          // The name OverloadGPT gave is a guess too: tap it to call the food what it is.
+          // The name Macrotrophy AI gave is a guess too: tap it to call the food what it is.
           <button
             type="button"
             className="type-headline -mx-1 block rounded-sm px-1 text-left text-[1.125rem] text-text-1"

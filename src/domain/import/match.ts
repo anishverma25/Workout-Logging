@@ -9,7 +9,7 @@ import { normalize } from '@/domain/exercises/search';
 import type { ImportedSet } from './formats';
 
 /**
- * Turning another app's exercise names into Overload's library.
+ * Turning another app's exercise names into Macrotrophy's library.
  *
  * Hevy and Strong name exercises "Movement (Equipment)", for example "Bench Press (Barbell)".
  * A match is only made when it is the same movement on the same equipment: a wrong match

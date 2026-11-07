@@ -134,7 +134,7 @@ describe('food logging', () => {
   });
 });
 
-describe('OverloadGPT foods on the plate', () => {
+describe('Macrotrophy AI foods on the plate', () => {
   it("become the person's own foods when logged, with the same numbers", async () => {
     const shake = foodFromItem({
       name: 'Starbucks cold coffee',

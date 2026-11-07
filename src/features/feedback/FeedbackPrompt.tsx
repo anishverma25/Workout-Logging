@@ -32,7 +32,7 @@ export function FeedbackPrompt({ finishedWorkouts }: { finishedWorkouts: number 
             Three workouts in. How is it going?
           </h2>
           <p className="mt-1 text-muted">
-            You have used Overload enough to have an opinion. A rating and a line or two tell us
+            You have used Macrotrophy enough to have an opinion. A rating and a line or two tell us
             what to build next.
           </p>
         </div>

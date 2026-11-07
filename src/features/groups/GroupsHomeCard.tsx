@@ -52,7 +52,7 @@ export function GroupsHomeCard() {
             to="/groups/global"
             icon={<Globe2 className="size-5" />}
             tone="lime"
-            title={`#${s.rank} of ${s.total} on Overload`}
+            title={`#${s.rank} of ${s.total} on Macrotrophy`}
             line={`${s.score} ${s.score === 1 ? 'point' : 'points'} this week`}
             data-home-global
           />

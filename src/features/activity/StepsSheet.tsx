@@ -6,7 +6,7 @@ import { ActivityError, saveSteps } from '@/data/repositories/activity';
 import { estimateSteps } from '@/domain/activity/burn';
 import { EstimateNote } from './EstimateNote';
 
-/** The day's steps: type the count, and either type the calories or let Overload estimate them. */
+/** The day's steps: type the count, and either type the calories or let Macrotrophy estimate them. */
 export function StepsSheet({
   open,
   onClose,
@@ -88,8 +88,8 @@ function Body({
       data-steps-form
     >
       <p className="type-body text-text-2">
-        Copy the day&apos;s count from Apple Health, Google Fit or your watch. Overload cannot count
-        steps by itself.
+        Copy the day&apos;s count from Apple Health, Google Fit or your watch. Macrotrophy cannot
+        count steps by itself.
       </p>
       <NumberField
         label="Steps today"

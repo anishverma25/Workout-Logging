@@ -72,8 +72,8 @@ describe('sharing a routine', () => {
     });
 
     const shared = await routineToShare(db, r.id);
-    const link = shareLink('https://overloadgym.in', shared);
-    expect(link).toMatch(/^https:\/\/overloadgym\.in\/r#[A-Za-z0-9_-]+$/);
+    const link = shareLink('https://macrotrophy.in', shared);
+    expect(link).toMatch(/^https:\/\/macrotrophy\.in\/r#[A-Za-z0-9_-]+$/);
     // Short enough for any chat app.
     expect(link.length).toBeLessThan(3000);
     const received = decodeRoutine(link.split('#')[1]!)!;

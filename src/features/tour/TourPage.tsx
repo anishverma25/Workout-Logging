@@ -713,7 +713,7 @@ function Food({ sample }: SlideProps) {
   );
 }
 
-/** OverloadGPT: what it can do, said plainly, without a made-up conversation. */
+/** Macrotrophy AI: what it can do, said plainly, without a made-up conversation. */
 function Coach({ sample }: SlideProps) {
   const plateau = sample.progress.plateaus[0];
   const plateauName = plateau
@@ -728,7 +728,7 @@ function Coach({ sample }: SlideProps) {
     <>
       <Title
         icon={<MessageCircle className="size-4" aria-hidden />}
-        kicker="OverloadGPT"
+        kicker="Macrotrophy AI"
         title="An AI coach that knows your numbers"
         body="Ask about your training and food in English, Hinglish or Hindi. It answers from your own logs and the numbers the app has already worked out, never guesses of its own."
       />
@@ -758,7 +758,7 @@ function Coach({ sample }: SlideProps) {
         ))}
       </ul>
       <p className="type-meta mt-auto pt-4 text-text-2">
-        OverloadGPT is part of Pro, and in your {TRIAL_DAYS}-day trial.
+        Macrotrophy AI is part of Pro, and in your {TRIAL_DAYS}-day trial.
       </p>
     </>
   );
@@ -828,7 +828,7 @@ function ProSlide({ sample }: SlideProps) {
     <>
       <Title
         icon={<Crown className="size-4" aria-hidden />}
-        kicker="Overload Pro"
+        kicker="Macrotrophy Pro"
         title="It tells you what to do next"
         body="Pro reads every set and turns it into decisions: when to add weight, what has stalled, which muscles need more. Here is what it found for the sample lifter."
       />

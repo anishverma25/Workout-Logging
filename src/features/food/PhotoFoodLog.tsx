@@ -93,7 +93,7 @@ export function PhotoFoodLog({
         message:
           e instanceof FoodAiError
             ? e.message
-            : 'OverloadGPT could not be reached. Check your connection and try again.',
+            : 'Macrotrophy AI could not be reached. Check your connection and try again.',
         limit: e instanceof FoodAiError && e.code === 'photo_limit',
       });
     }
@@ -276,8 +276,8 @@ export function PhotoFoodLog({
       ) : null}
 
       <p className="type-caption text-text-3">
-        The photo goes to a third-party AI service to work out the food, then it is gone: Overload
-        does not keep it. Up to {PHOTOS_PER_DAY} photos a day.
+        The photo goes to a third-party AI service to work out the food, then it is gone:
+        Macrotrophy does not keep it. Up to {PHOTOS_PER_DAY} photos a day.
       </p>
     </div>
   );

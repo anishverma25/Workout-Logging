@@ -55,7 +55,7 @@ test('send a rating and a message, then see the reply', async ({ page }) => {
     body: JSON.stringify({ reply: 'Coming in the next update.' }),
   });
   await page.reload();
-  await expect(history).toContainText('Reply from Overload');
+  await expect(history).toContainText('Reply from Macrotrophy');
   await expect(history).toContainText('Coming in the next update.');
 });
 

@@ -47,7 +47,7 @@ export function speechProblem(code: string | undefined): string {
   switch (code) {
     case 'not-allowed':
     case 'service-not-allowed':
-      return 'The microphone is not allowed for Overload here. Tap the mic on your keyboard and speak instead, or allow the microphone in your phone settings.';
+      return 'The microphone is not allowed for Macrotrophy here. Tap the mic on your keyboard and speak instead, or allow the microphone in your phone settings.';
     case 'no-speech':
       return 'Nothing was heard. Tap the mic and speak, or use the mic on your keyboard.';
     case 'network':

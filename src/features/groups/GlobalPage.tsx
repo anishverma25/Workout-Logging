@@ -36,8 +36,8 @@ const MEDAL = [
 ];
 
 /**
- * The global leaderboard (November 2026): everyone on Overload with points this week or month,
- * by Overload Score. Everyone appears under their profile name; a username shows only when its
+ * The global leaderboard (November 2026): everyone on Macrotrophy with points this week or month,
+ * by Macrotrophy Score. Everyone appears under their profile name; a username shows only when its
  * owner turns it on here.
  */
 export function GlobalPage() {
@@ -81,7 +81,7 @@ export function GlobalPage() {
       <PageHeader
         back={{ to: '/groups', label: 'Groups' }}
         title="Global leaderboard"
-        subtitle="Everyone on Overload, by the same fair Overload Score."
+        subtitle="Everyone on Macrotrophy, by the same fair Macrotrophy Score."
       />
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 pb-10" data-global-page>
         {board.loading && !b ? <Skeleton height="16rem" radius="panel" /> : null}
@@ -208,7 +208,7 @@ export function GlobalPage() {
               }
               footer={
                 offset === 0
-                  ? 'The top 100 by Overload Score. Updates every minute or so. Tap a name to see how the points add up.'
+                  ? 'The top 100 by Macrotrophy Score. Updates every minute or so. Tap a name to see how the points add up.'
                   : 'Final result, locked when it ended.'
               }
             >

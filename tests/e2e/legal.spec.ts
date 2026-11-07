@@ -24,16 +24,16 @@ for (const { path, title } of PAGES) {
   });
 }
 
-test('the contact page shows who runs Overload and how to reach them', async ({ page }) => {
+test('the contact page shows who runs Macrotrophy and how to reach them', async ({ page }) => {
   await page.goto('/contact');
   await expect(page.getByText('Anish Verma, India', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'overloadgymofficial@gmail.com' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'team@macrotrophy.in' })).toHaveAttribute(
     'href',
-    'mailto:overloadgymofficial@gmail.com',
+    'mailto:team@macrotrophy.in',
   );
-  await expect(page.getByRole('link', { name: '@overloadxgym' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: '@macrotrophy.in' })).toHaveAttribute(
     'href',
-    'https://www.instagram.com/overloadxgym/',
+    'https://www.instagram.com/macrotrophy.in/',
   );
   // No personal email or phone number.
   await expect(page.getByText(/anish\.verma|82768/)).toHaveCount(0);

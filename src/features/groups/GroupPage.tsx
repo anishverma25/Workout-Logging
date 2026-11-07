@@ -52,11 +52,11 @@ import { HowPointsWork } from './GroupsPage';
 import { MemberAvatar } from './parts';
 import { shareCode } from './shareCode';
 
-/** The boards a group can switch to. Overload Score is free; the others are Pro. */
+/** The boards a group can switch to. Macrotrophy Score is free; the others are Pro. */
 type BoardKind = 'score' | 'consistency' | 'effort' | 'progress' | 'volume';
 
 const BOARDS: { value: BoardKind; label: string }[] = [
-  { value: 'score', label: 'Overload Score' },
+  { value: 'score', label: 'Macrotrophy Score' },
   { value: 'consistency', label: 'Consistency' },
   { value: 'effort', label: 'Effort' },
   { value: 'progress', label: 'Progress' },
@@ -237,7 +237,7 @@ export function GroupPage() {
                 {isNew ? 'Your group is ready. Invite your friends' : 'Invite friends'}
               </h2>
               <p className="type-subhead mt-0.5 text-text-2">
-                They open Overload, go to Groups, tap Join with a code and type:
+                They open Macrotrophy, go to Groups, tap Join with a code and type:
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <span

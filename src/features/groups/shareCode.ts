@@ -8,10 +8,10 @@ export async function shareCode(
   groupName: string,
   code: string,
 ): Promise<'shared' | 'copied' | 'cancelled' | 'failed'> {
-  const text = `Join my group "${groupName}" on Overload and let's see who trains hardest this week. Open Overload, go to Groups, tap Join with a code and type ${formatCode(code)}`;
+  const text = `Join my group "${groupName}" on Macrotrophy and let's see who trains hardest this week. Open Macrotrophy, go to Groups, tap Join with a code and type ${formatCode(code)}`;
   if (typeof navigator.share === 'function') {
     try {
-      await navigator.share({ title: `Join ${groupName} on Overload`, text });
+      await navigator.share({ title: `Join ${groupName} on Macrotrophy`, text });
       return 'shared';
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';

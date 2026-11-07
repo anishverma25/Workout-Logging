@@ -151,7 +151,7 @@ test('activity: cardio and steps with estimates, typed numbers and the warning',
   await expect(page.locator('[data-burn-summary] [data-estimate-note]')).toContainText(
     'can be wrong',
   );
-  // Overload says plainly that it does not count steps itself.
+  // Macrotrophy says plainly that it does not count steps itself.
   await expect(page.locator('[data-pedometer-note]')).toContainText('cannot count steps');
 
   // Cardio: a treadmill walk, estimated from speed and minutes.

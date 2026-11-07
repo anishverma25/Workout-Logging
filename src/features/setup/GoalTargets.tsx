@@ -86,7 +86,7 @@ export function GoalTargets({
       <p className="type-caption mt-3 text-text-3">
         From about 7,700 kcal per kg of body weight and your estimated maintenance of{' '}
         {kcalText(input.maintenanceKcal)} kcal. The body adapts as weight changes, so treat the date
-        as a guide; Overload checks it against your weigh-ins.
+        as a guide; Macrotrophy checks it against your weigh-ins.
       </p>
     </div>
   );

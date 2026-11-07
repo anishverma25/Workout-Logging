@@ -1,5 +1,5 @@
 /**
- * Razorpay subscriptions for Overload Pro: the server side, shared by the `billing` Edge
+ * Razorpay subscriptions for Macrotrophy Pro: the server side, shared by the `billing` Edge
  * Function (Deno, deployed) and the local fake Supabase used by end-to-end tests (Node). It has
  * no imports, so it runs unchanged in both: Web Crypto, fetch and plain objects only.
  *

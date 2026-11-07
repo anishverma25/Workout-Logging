@@ -36,7 +36,7 @@ test('is installable: manifest, icons and theme', async ({ page, request }) => {
   await page.goto('/');
   const href = await page.locator('link[rel="manifest"]').getAttribute('href');
   const manifest = await (await request.get(href!)).json();
-  expect(manifest).toMatchObject({ display: 'standalone', start_url: '/', name: 'Overload Gym' });
+  expect(manifest).toMatchObject({ display: 'standalone', start_url: '/', name: 'Macrotrophy' });
   const sizes = manifest.icons.map((i: { sizes: string }) => i.sizes);
   expect(sizes).toEqual(expect.arrayContaining(['192x192', '512x512']));
   expect(manifest.icons.some((i: { purpose: string }) => i.purpose === 'maskable')).toBe(true);
@@ -134,11 +134,11 @@ test('caches only the app itself, never account or training data from the server
 test('public pages are readable before scripts and open as pages', async ({ page, request }) => {
   // What a search engine fetches: the guide's text and the home page's structured data.
   const guide = await (await request.get('/workout-tracker')).text();
-  expect(guide).toContain('<title>Workout tracker and gym log | Overload Gym</title>');
+  expect(guide).toContain('<title>Workout tracker and gym log | Macrotrophy</title>');
   expect(guide).toContain('<main data-static-guide><h1>Workout tracker</h1>');
   const home = await (await request.get('/')).text();
   const data = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(home)?.[1];
-  expect(JSON.parse(data!)[0].name).toBe('Overload Gym');
+  expect(JSON.parse(data!)[0].name).toBe('Macrotrophy');
   expect(await (await request.get('/sitemap.xml')).text()).toContain(
     '/indian-food-calorie-counter',
   );
@@ -155,5 +155,5 @@ test('public pages are readable before scripts and open as pages', async ({ page
   await expect(
     page.getByRole('heading', { level: 1, name: 'How every number is calculated' }),
   ).toBeVisible();
-  await expect(page).toHaveTitle('The science behind every number | Overload Gym');
+  await expect(page).toHaveTitle('The science behind every number | Macrotrophy');
 });

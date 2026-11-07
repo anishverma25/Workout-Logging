@@ -1,5 +1,5 @@
 /**
- * What the public pages say about Overload Gym: member reviews, the questions on the home page,
+ * What the public pages say about Macrotrophy: member reviews, the questions on the home page,
  * the guide pages for what people search for, and the structured data search engines read.
  * One source for three places: the build (index.html and each guide's own HTML, readable before
  * any script runs), the app (the same guides as pages) and the tests.
@@ -7,10 +7,12 @@
  * Only relative imports and no browser APIs here: the build reads this file from Node.
  */
 
-/** The one address search engines should know. Old and preview addresses point here. */
-export const SITE_ORIGIN = 'https://overloadgym.in';
+import { INSTAGRAM_URL, SUPPORT_EMAIL } from '../features/legal/contact';
 
-export const BRAND = 'Overload Gym';
+/** The one address search engines should know. Old and preview addresses point here. */
+export const SITE_ORIGIN = 'https://macrotrophy.in';
+
+export const BRAND = 'Macrotrophy';
 export const TAGLINE = 'Your workouts and your Indian meals, in one app.';
 
 /**
@@ -36,7 +38,7 @@ export const REVIEWS: Review[] = [
     name: 'Satyam',
     rating: 5,
     quote:
-      'Imported all my data from Hevy and the experience has been very smooth. Overload has every tracking feature that is necessary, and the best part is both workout and food tracking in the same app. The workout tracking is seamless, with data points and suggestions to decide how much to lift next workout. It has become my go-to app.',
+      'Imported all my data from Hevy and the experience has been very smooth. Macrotrophy has every tracking feature that is necessary, and the best part is both workout and food tracking in the same app. The workout tracking is seamless, with data points and suggestions to decide how much to lift next workout. It has become my go-to app.',
   },
   {
     name: 'Aryan',
@@ -54,7 +56,7 @@ export const REVIEWS: Review[] = [
     name: 'Prince',
     rating: 5,
     quote:
-      'Whether it is tracking progress or calories, Overload makes it so convenient and easy. A solid 11/10 for those who want to step up their tracking game.',
+      'Whether it is tracking progress or calories, Macrotrophy makes it so convenient and easy. A solid 11/10 for those who want to step up their tracking game.',
   },
   {
     name: 'Tiyas',
@@ -88,8 +90,8 @@ export interface Faq {
 
 export const FAQ: Faq[] = [
   {
-    q: 'Is Overload Gym free?',
-    a: 'Yes. Workout logging, routines, food logging, your full history and every record are free with no limit. Pro is a paid upgrade for longer trends, OverloadGPT and AI food logging.',
+    q: 'Is Macrotrophy free?',
+    a: 'Yes. Workout logging, routines, food logging, your full history and every record are free with no limit. Pro is a paid upgrade for longer trends, Macrotrophy AI and AI food logging.',
   },
   {
     q: 'Does it count calories for Indian food?',
@@ -97,14 +99,14 @@ export const FAQ: Faq[] = [
   },
   {
     q: 'Do I need to install anything?',
-    a: "No. Overload Gym runs in your phone's browser. Add it to your home screen and it opens full screen like any other app, even offline.",
+    a: "No. Macrotrophy runs in your phone's browser. Add it to your home screen and it opens full screen like any other app, even offline.",
   },
   {
     q: 'Can I move my data from Hevy or Strong?',
-    a: 'Yes. Export your workouts from Hevy or Strong and import the file in Overload Gym. Your workouts, records and routine come with you, and importing the same file twice adds nothing new.',
+    a: 'Yes. Export your workouts from Hevy or Strong and import the file in Macrotrophy. Your workouts, records and routine come with you, and importing the same file twice adds nothing new.',
   },
   {
-    q: 'What is OverloadGPT?',
+    q: 'What is Macrotrophy AI?',
     a: 'An AI coach inside the app, part of Pro. It explains your progress and food in plain words, in English, Hinglish or Hindi, logs meals from a photo or a sentence, and never makes up numbers of its own.',
   },
   {
@@ -136,11 +138,11 @@ export const GUIDES: Guide[] = [
   {
     path: '/indian-food-calorie-counter',
     heading: 'Indian food calorie counter',
-    title: 'Indian food calorie counter | Overload Gym',
+    title: 'Indian food calorie counter | Macrotrophy',
     description:
       'Count calories and protein in Indian food by the katori, the plate or the roti. Thousands of dishes worked out from their ingredients. Free to start.',
     intro:
-      'Most calorie apps were built for Western food, so dal, sabzi and roti end up as guesses from user entries. Overload Gym counts Indian meals the way you actually eat them.',
+      'Most calorie apps were built for Western food, so dal, sabzi and roti end up as guesses from user entries. Macrotrophy counts Indian meals the way you actually eat them.',
     sections: [
       {
         heading: 'Log food the way you eat it',
@@ -160,7 +162,7 @@ export const GUIDES: Guide[] = [
       {
         heading: 'Calories and protein against your own targets',
         paragraphs: [
-          'Set a goal and Overload Gym works out calories and protein for you, then checks each day against published ranges for protein, carbs, fat and fibre. Your real maintenance is measured from your weight trend, not guessed.',
+          'Set a goal and Macrotrophy works out calories and protein for you, then checks each day against published ranges for protein, carbs, fat and fibre. Your real maintenance is measured from your weight trend, not guessed.',
         ],
       },
     ],
@@ -168,11 +170,11 @@ export const GUIDES: Guide[] = [
   {
     path: '/workout-tracker',
     heading: 'Workout tracker',
-    title: 'Workout tracker and gym log | Overload Gym',
+    title: 'Workout tracker and gym log | Macrotrophy',
     description:
       'A fast gym log for your phone: last time’s weights beside every set, rest timer, records, and charts of strength and volume. Free to start.',
     intro:
-      'Progress in the gym comes from doing a little more than last time. Overload Gym shows you exactly what that is, set by set.',
+      'Progress in the gym comes from doing a little more than last time. Macrotrophy shows you exactly what that is, set by set.',
     sections: [
       {
         heading: 'Fast logging between sets',
@@ -200,17 +202,17 @@ export const GUIDES: Guide[] = [
   {
     path: '/gym-leaderboard',
     heading: 'Gym leaderboard',
-    title: 'Gym leaderboard for you and your friends | Overload Gym',
+    title: 'Gym leaderboard for you and your friends | Macrotrophy',
     description:
       'Make a group for your gym, share a 6-character code and compete on weekly and monthly leaderboards that are fair for every level.',
     intro:
-      'Training is easier when your friends are watching. Overload Gym turns your gym into a friendly weekly competition.',
+      'Training is easier when your friends are watching. Macrotrophy turns your gym into a friendly weekly competition.',
     sections: [
       {
         heading: 'How it works',
         points: [
           'Create a group and share its 6-character code, or join a friend’s.',
-          'Weekly and monthly boards, plus a global leaderboard for everyone on Overload Gym.',
+          'Weekly and monthly boards, plus a global leaderboard for everyone on Macrotrophy.',
           'Your name shows on the global board; your username only if you choose.',
         ],
       },
@@ -239,7 +241,7 @@ function reviewCard(r: Review, copy: boolean): string {
   return `<li class="lp-card lp-review"${copy ? ' aria-hidden="true"' : ' data-review'}>
                 ${stars(r)}
                 <blockquote class="type-body mt-4 text-[1.0625rem] leading-relaxed text-text-1">“${esc(r.quote)}”</blockquote>
-                <p class="mt-5 flex items-center gap-3"><span class="lp-avatar" aria-hidden="true">${esc(r.name[0]!)}</span><span><span class="type-headline block text-text-1">${esc(r.name)}</span><span class="type-caption block text-text-2">Overload Gym member</span></span></p>
+                <p class="mt-5 flex items-center gap-3"><span class="lp-avatar" aria-hidden="true">${esc(r.name[0]!)}</span><span><span class="type-headline block text-text-1">${esc(r.name)}</span><span class="type-caption block text-text-2">Macrotrophy member</span></span></p>
               </li>`;
 }
 
@@ -267,7 +269,7 @@ export function reviewsHtml(reviews: Review[] = REVIEWS): string {
   return `<figure class="lp-card lp-card-lime lp-reveal mx-auto max-w-4xl p-7 tab:p-10" data-review>
             <span class="lp-quote-mark block" aria-hidden="true">“</span>
             <blockquote class="mt-2 font-display text-[1.5rem] leading-[1.25] font-semibold tracking-[-0.02em] text-text-1 tab:text-[2rem]">${esc(first.quote)}</blockquote>
-            <figcaption class="mt-7 flex items-center gap-3"><span class="lp-avatar" aria-hidden="true">${esc(first.name[0]!)}</span><span><span class="type-headline block text-text-1">${esc(first.name)}</span><span class="type-caption block text-text-2">Overload Gym member, moved from Hevy</span></span><span class="ml-auto">${stars(first)}</span></figcaption>
+            <figcaption class="mt-7 flex items-center gap-3"><span class="lp-avatar" aria-hidden="true">${esc(first.name[0]!)}</span><span><span class="type-headline block text-text-1">${esc(first.name)}</span><span class="type-caption block text-text-2">Macrotrophy member, moved from Hevy</span></span><span class="ml-auto">${stars(first)}</span></figcaption>
           </figure>
           <div class="lp-reveal mt-10 flex flex-col gap-4">
           ${marqueeRow(rest.slice(0, half), false, '55s')}
@@ -343,8 +345,8 @@ export const PUBLIC_PRICES: Prices = { monthly: 29, quarterly: 69, yearly: 249 }
 export const COACHING_PRICE = 999;
 
 /**
- * What search engines read about Overload Gym: the organisation, the site (so "Overload" and
- * "Overload Gym" lead here) and the app with its price. No ratings markup: Google does not
+ * What search engines read about Macrotrophy: the organisation, the site (so "Macrotrophy" and
+ * "Macrotrophy" lead here) and the app with its price. No ratings markup: Google does not
  * accept reviews a business shows about itself.
  */
 export function structuredData(prices: Prices = PUBLIC_PRICES, faq: Faq[] = FAQ): string {
@@ -354,18 +356,18 @@ export function structuredData(prices: Prices = PUBLIC_PRICES, faq: Faq[] = FAQ)
       '@type': 'Organization',
       '@id': `${SITE_ORIGIN}/#organization`,
       name: BRAND,
-      alternateName: 'Overload',
+      alternateName: ['Overload Gym', 'Overload'],
       url: `${SITE_ORIGIN}/`,
       logo: `${SITE_ORIGIN}/icons/icon-512.png`,
-      email: 'overloadgymofficial@gmail.com',
-      sameAs: ['https://www.instagram.com/overloadxgym/'],
+      email: SUPPORT_EMAIL,
+      sameAs: [INSTAGRAM_URL],
     },
     {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
       '@id': `${SITE_ORIGIN}/#website`,
       name: BRAND,
-      alternateName: ['Overload', 'Overload workout tracker', 'overloadgym.in'],
+      alternateName: ['Macrotrophy workout tracker', 'Overload Gym', 'macrotrophy.in'],
       url: `${SITE_ORIGIN}/`,
       publisher: { '@id': `${SITE_ORIGIN}/#organization` },
     },
@@ -373,7 +375,7 @@ export function structuredData(prices: Prices = PUBLIC_PRICES, faq: Faq[] = FAQ)
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
       name: BRAND,
-      alternateName: 'Overload',
+      alternateName: 'Overload Gym',
       description:
         'Workout tracker and Indian food calorie counter: log sets and meals, track strength and protein, compete with friends, with every number backed by published research.',
       applicationCategory: 'HealthApplication',

@@ -7,7 +7,7 @@ import { defaultPortion } from './foodText';
 import type { FoodContext } from './useFoodContext';
 
 /**
- * Turning OverloadGPT's foods into plate portions. A food the curated library has by exactly
+ * Turning Macrotrophy AI's foods into plate portions. A food the curated library has by exactly
  * that name or alias uses the library's values with the AI's amount, because a tested recipe
  * beats an estimate; anything else becomes an AI food with the numbers the server checked.
  */

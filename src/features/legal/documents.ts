@@ -19,27 +19,27 @@ export const TERMS: LegalDocument = {
   slug: 'terms',
   title: 'Terms and conditions',
   label: 'Terms',
-  summary: 'The rules for using Overload, in plain language.',
+  summary: 'The rules for using Macrotrophy, in plain language.',
   sections: [
     {
       heading: 'About these terms',
       paragraphs: [
-        `Overload is a workout logging app run by ${OWNER_NAME} in India ("we", "us"). By creating an account or using Overload you agree to these terms and to our Privacy policy and Cancellation and refund policy. If you do not agree, please do not use the app.`,
+        `Macrotrophy is a workout logging app run by ${OWNER_NAME} in India ("we", "us"). By creating an account or using Macrotrophy you agree to these terms and to our Privacy policy and Cancellation and refund policy. If you do not agree, please do not use the app.`,
       ],
     },
     {
-      heading: 'Using Overload',
+      heading: 'Using Macrotrophy',
       items: [
-        'You need an account to use Overload, so your training is backed up and the same on every device. The welcome tour and these policies can be read without one.',
+        'You need an account to use Macrotrophy, so your training is backed up and the same on every device. The welcome tour and these policies can be read without one.',
         'An account needs a real email address. You are responsible for keeping your password safe and for what happens under your account.',
-        'If you are under 18, use Overload with the permission of a parent or guardian.',
+        'If you are under 18, use Macrotrophy with the permission of a parent or guardian.',
         'Do not misuse the app: no attempts to break it, scrape it, resell it or get around its limits.',
       ],
     },
     {
       heading: 'Fitness information, not medical advice',
       paragraphs: [
-        'Overload shows numbers and suggestions from what you log. They are for general fitness use and are not medical advice. Check with a doctor before starting a new training or diet plan, and stop if something hurts. You train at your own risk.',
+        'Macrotrophy shows numbers and suggestions from what you log. They are for general fitness use and are not medical advice. Check with a doctor before starting a new training or diet plan, and stop if something hurts. You train at your own risk.',
       ],
     },
     {
@@ -69,13 +69,13 @@ export const TERMS: LegalDocument = {
     {
       heading: 'Changes to the app and these terms',
       paragraphs: [
-        'We may add, change or remove features, and we may update these terms. When we make an important change we will show a notice in the app. Using Overload after a change means you accept it.',
+        'We may add, change or remove features, and we may update these terms. When we make an important change we will show a notice in the app. Using Macrotrophy after a change means you accept it.',
       ],
     },
     {
       heading: 'Our responsibility',
       paragraphs: [
-        'We work to keep Overload running and accurate, but it is provided as it is, without a promise that it will always be available or free of errors. To the extent the law allows, we are not responsible for indirect or consequential loss, and our total responsibility to you is limited to the amount you paid us in the 12 months before the problem.',
+        'We work to keep Macrotrophy running and accurate, but it is provided as it is, without a promise that it will always be available or free of errors. To the extent the law allows, we are not responsible for indirect or consequential loss, and our total responsibility to you is limited to the amount you paid us in the 12 months before the problem.',
       ],
     },
     {
@@ -93,24 +93,24 @@ export const PRIVACY: LegalDocument = {
   slug: 'privacy',
   title: 'Privacy policy',
   label: 'Privacy',
-  summary: 'What Overload keeps, why, and how you can remove it.',
+  summary: 'What Macrotrophy keeps, why, and how you can remove it.',
   sections: [
     {
       heading: 'Who we are',
       paragraphs: [
-        `Overload is run by ${OWNER_NAME} in India. This page explains what personal data the app handles and what you can do about it.`,
+        `Macrotrophy is run by ${OWNER_NAME} in India. This page explains what personal data the app handles and what you can do about it.`,
       ],
     },
     {
       heading: 'On your phone',
       paragraphs: [
-        'Overload keeps a copy of your data on your phone, in the browser, so it opens and works without internet. The welcome tour uses sample data that stays on your phone and is never sent to us.',
+        'Macrotrophy keeps a copy of your data on your phone, in the browser, so it opens and works without internet. The welcome tour uses sample data that stays on your phone and is never sent to us.',
       ],
     },
     {
       heading: 'Your account',
       paragraphs: [
-        'Overload needs an account. We store the following on our servers so your training is backed up and in sync between your devices:',
+        'Macrotrophy needs an account. We store the following on our servers so your training is backed up and in sync between your devices:',
       ],
       items: [
         'Your email address and your password. The password is stored in scrambled form by our sign in provider, so we cannot read it.',
@@ -131,10 +131,10 @@ export const PRIVACY: LegalDocument = {
       ],
     },
     {
-      heading: 'OverloadGPT, the AI assistant (Pro, only if you turn it on)',
+      heading: 'Macrotrophy AI, the AI assistant (Pro, only if you turn it on)',
       paragraphs: [
-        'OverloadGPT is off until you turn it on. When you ask it a question or tap Explain, the app sends the numbers needed for that answer (for example your sets, records, rest times, body weight, goal, targets and food totals), your question and your recent OverloadGPT messages to a third-party AI service that writes the answer. Your name, email and account details are never sent.',
-        'The AI service may keep what is sent and use it to improve its products, so please do not include private details in your questions. We do not store your questions or the answers on our servers. Your OverloadGPT chat is kept only on your phone, for 7 days, and you can turn it off or clear the chat in Settings at any time.',
+        'Macrotrophy AI is off until you turn it on. When you ask it a question or tap Explain, the app sends the numbers needed for that answer (for example your sets, records, rest times, body weight, goal, targets and food totals), your question and your recent Macrotrophy AI messages to a third-party AI service that writes the answer. Your name, email and account details are never sent.',
+        'The AI service may keep what is sent and use it to improve its products, so please do not include private details in your questions. We do not store your questions or the answers on our servers. Your Macrotrophy AI chat is kept only on your phone, for 7 days, and you can turn it off or clear the chat in Settings at any time.',
       ],
     },
     {
@@ -151,7 +151,7 @@ export const PRIVACY: LegalDocument = {
     {
       heading: 'Who handles it for us',
       paragraphs: [
-        'We use a small number of providers to run Overload: Supabase for the database and sign in, Cloudflare to host the app, Razorpay for payments, Brevo to send account emails, and third-party AI services for OverloadGPT when you turn it on. They process data to provide those services. Their servers may be in other countries.',
+        'We use a small number of providers to run Macrotrophy: Supabase for the database and sign in, Cloudflare to host the app, Razorpay for payments, Brevo to send account emails, and third-party AI services for Macrotrophy AI when you turn it on. They process data to provide those services. Their servers may be in other countries.',
       ],
     },
     {
@@ -177,7 +177,7 @@ export const PRIVACY: LegalDocument = {
     {
       heading: 'Children',
       paragraphs: [
-        `Overload is not aimed at children. If you believe a child has given us data without a parent's permission, write to ${SUPPORT_EMAIL} and we will delete it.`,
+        `Macrotrophy is not aimed at children. If you believe a child has given us data without a parent's permission, write to ${SUPPORT_EMAIL} and we will delete it.`,
       ],
     },
     {
@@ -242,14 +242,14 @@ export const CONTACT: LegalDocument = {
   slug: 'contact',
   title: 'Contact us',
   label: 'Contact',
-  summary: 'How to reach the Overload team, by email or on Instagram.',
+  summary: 'How to reach the Macrotrophy team, by email or on Instagram.',
   sections: [
     {
       heading: 'What to write to us about',
       items: [
         'Billing, plans and refund questions.',
         'Problems with your account or with signing in.',
-        'Bugs and ideas for new features: tell us what you want in Overload and we will build it as soon as we can. You can also use the feedback page inside the app.',
+        'Bugs and ideas for new features: tell us what you want in Macrotrophy and we will build it as soon as we can. You can also use the feedback page inside the app.',
         'Requests about your data, such as a copy or a deletion.',
       ],
     },

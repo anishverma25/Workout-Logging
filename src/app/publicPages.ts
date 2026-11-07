@@ -26,7 +26,7 @@ export interface PublicPage {
 
 export const HOME_PAGE: PublicPage = {
   path: '/',
-  title: 'Overload Gym: Workout Tracker, Indian Food Calorie Counter',
+  title: 'Macrotrophy: Workout Tracker, Indian Food Calorie Counter',
   description:
     'Log every set and every Indian meal in one app. Track strength, calories and protein, compete with friends, and trust every number. Free to start.',
   inSitemap: true,
@@ -35,9 +35,9 @@ export const HOME_PAGE: PublicPage = {
 /** The science page, open to everyone: every formula in the app and the research behind it. */
 export const SCIENCE_PAGE: PublicPage = {
   path: '/science',
-  title: 'The science behind every number | Overload Gym',
+  title: 'The science behind every number | Macrotrophy',
   description:
-    'Estimated one rep max, hard sets, volume, body weight trend, calories and protein: the formula behind every number in Overload Gym and the research it rests on.',
+    'Estimated one rep max, hard sets, volume, body weight trend, calories and protein: the formula behind every number in Macrotrophy and the research it rests on.',
   inSitemap: true,
 };
 
@@ -52,47 +52,48 @@ export const PUBLIC_PAGES: PublicPage[] = [
   })),
   {
     path: '/welcome',
-    title: 'Take the tour | Overload Gym',
+    title: 'Take the tour | Macrotrophy',
     description:
-      'See how Overload logs workouts and Indian meals, tracks your progress and coaches you with OverloadGPT, using sample data and no account.',
+      'See how Macrotrophy logs workouts and Indian meals, tracks your progress and coaches you with Macrotrophy AI, using sample data and no account.',
     inSitemap: true,
   },
   {
     path: '/sign-up',
-    title: 'Create your account | Overload Gym',
+    title: 'Create your account | Macrotrophy',
     description:
-      'Create a free Overload account to log workouts, keep your training backed up and see your progress on every device.',
+      'Create a free Macrotrophy account to log workouts, keep your training backed up and see your progress on every device.',
     inSitemap: true,
   },
   {
     path: '/sign-in',
-    title: 'Sign in | Overload Gym',
-    description: 'Sign in to Overload to log your workouts and see your progress.',
+    title: 'Sign in | Macrotrophy',
+    description: 'Sign in to Macrotrophy to log your workouts and see your progress.',
     inSitemap: false,
   },
   {
     path: '/terms',
-    title: 'Terms and conditions | Overload Gym',
+    title: 'Terms and conditions | Macrotrophy',
     description:
-      'The rules for using Overload, the workout log and progress tracker, in plain language.',
+      'The rules for using Macrotrophy, the workout log and progress tracker, in plain language.',
     inSitemap: true,
   },
   {
     path: '/privacy',
-    title: 'Privacy policy | Overload Gym',
-    description: 'What Overload keeps about you and your training, why, and how you can remove it.',
+    title: 'Privacy policy | Macrotrophy',
+    description:
+      'What Macrotrophy keeps about you and your training, why, and how you can remove it.',
     inSitemap: true,
   },
   {
     path: '/refunds',
-    title: 'Cancellation and refund policy | Overload Gym',
-    description: 'How to cancel Overload Pro, and when a payment can be refunded.',
+    title: 'Cancellation and refund policy | Macrotrophy',
+    description: 'How to cancel Macrotrophy Pro, and when a payment can be refunded.',
     inSitemap: true,
   },
   {
     path: '/contact',
-    title: 'Contact us | Overload Gym',
-    description: 'How to reach the Overload team, by email or on Instagram.',
+    title: 'Contact us | Macrotrophy',
+    description: 'How to reach the Macrotrophy team, by email or on Instagram.',
     inSitemap: true,
   },
 ];

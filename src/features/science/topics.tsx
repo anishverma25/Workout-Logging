@@ -803,7 +803,7 @@ export const SCIENCE: TopicGroup[] = [
         title: 'Your water target',
         evidence: 'water',
         shows:
-          'How many glasses of water a day Overload suggests, and why it is a guide and not a rule.',
+          'How many glasses of water a day Macrotrophy suggests, and why it is a guide and not a rule.',
         formulas: [
           {
             tex: String.raw`W = ${WATER_ML_PER_KG} \times m`,
@@ -872,7 +872,7 @@ export const SCIENCE: TopicGroup[] = [
           </>,
         ],
         forYou:
-          'Treat these as a guide to the size of the number, not the exact number. If your watch or tracker is one you trust, type its number in and Overload uses that.',
+          'Treat these as a guide to the size of the number, not the exact number. If your watch or tracker is one you trust, type its number in and Macrotrophy uses that.',
         limits:
           'Estimates can be 10 to 25% out for most people and further for some, because fitness, body size, technique and the machine all change the true cost. Gym machines often overstate. Calories burned after a session are not counted. Not medical advice.',
       },
@@ -932,14 +932,14 @@ export const SCIENCE: TopicGroup[] = [
             our own dishes first.
           </>,
           <>
-            With Pro, OverloadGPT can log a meal you describe. It looks up brands and restaurant
+            With Pro, Macrotrophy AI can log a meal you describe. It looks up brands and restaurant
             items on the web, or estimates from a typical recipe, and each food is marked as from
             the web or estimated. Its numbers are checked before you see them: no more than 9.5 kcal
             a gram, protein, carbs and fat that fit in the weight, and energy within 30% of 4, 4 and
             9 kcal a gram. A food the library already has by that name uses the library's values.
           </>,
           <>
-            Photos work the same way. OverloadGPT judges amounts from things of known size in the
+            Photos work the same way. Macrotrophy AI judges amounts from things of known size in the
             picture (the plate, a katori, a roti, a glass), counts visible oil, reads nutrition
             labels, and says how sure it is about each food. Unsure foods are marked, and nothing is
             logged until you check your plate.
@@ -957,7 +957,7 @@ export const SCIENCE: TopicGroup[] = [
         forYou:
           'Set your own katori size in Food settings, and pick light or rich oil when a dish was cooked that way.',
         limits:
-          'Home cooking varies, so a dish is an estimate, usually within 10 to 20%. A few Indian ingredients use the closest USDA food: paneer uses queso blanco (made the same way), poha uses white rice. Brands change recipes, so a pack in your hand beats the value here. OverloadGPT estimates can be wrong; check the portion before logging.',
+          'Home cooking varies, so a dish is an estimate, usually within 10 to 20%. A few Indian ingredients use the closest USDA food: paneer uses queso blanco (made the same way), poha uses white rice. Brands change recipes, so a pack in your hand beats the value here. Macrotrophy AI estimates can be wrong; check the portion before logging.',
       },
       {
         id: 'day-analysis',
@@ -1081,7 +1081,7 @@ export const SCIENCE: TopicGroup[] = [
         title: 'Leaderboards',
         evidence: 'groupScore',
         shows:
-          'The Overload Score on the global leaderboard and in your groups: points for showing up, training hard, beating your own best and eating enough protein, each with a weekly cap.',
+          'The Macrotrophy Score on the global leaderboard and in your groups: points for showing up, training hard, beating your own best and eating enough protein, each with a weekly cap.',
         formulas: [
           {
             tex: String.raw`\text{score} = 10\,W + H + 5\,R + 3\,P`,

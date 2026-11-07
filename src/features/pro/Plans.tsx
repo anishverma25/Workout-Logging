@@ -72,7 +72,7 @@ function EarlyBird({ plans, mode }: { plans: BillingPlan[]; mode: PayMode }) {
         <span className="type-caption rounded-full bg-lime px-2 py-0.5 font-semibold text-on-lime">
           Early bird offer
         </span>
-        <span className="type-headline text-text-1">Pro for less, while Overload is new</span>
+        <span className="type-headline text-text-1">Pro for less, while Macrotrophy is new</span>
       </p>
       <p className="type-meta mt-1.5 text-text-1">
         {mode === 'subscribe'
@@ -375,7 +375,7 @@ function BuyPlan({
           {mode === 'once'
             ? `Charged once, ${formatRupees(plan.priceInr)}. `
             : `Renews ${PERIOD[plan.id]} at ${formatRupees(plan.priceInr)} until you cancel. `}
-          Payments by Razorpay; Overload never sees your card or UPI PIN.
+          Payments by Razorpay; Macrotrophy never sees your card or UPI PIN.
         </p>
       ) : null}
     </Card>

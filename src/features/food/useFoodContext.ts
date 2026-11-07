@@ -95,7 +95,7 @@ export function useFoodContextFrom(now: Date, training: QueryState<TrainingData>
 
 export type FoodContext = ReturnType<typeof useFoodContext>;
 
-/** What OverloadGPT is told about food, or null when nothing has been logged. */
+/** What Macrotrophy AI is told about food, or null when nothing has been logged. */
 export function nutritionBrief(ctx: FoodContext, now: Date, days = 14) {
   if (ctx.status !== 'success' || ctx.logs.length === 0) return null;
   return {

@@ -2,15 +2,18 @@ import type { AccountState } from './account';
 import type { SyncState } from '@/data/sync/controller';
 
 /**
- * Moving people from the old `*.pages.dev` address to the custom domain. Browsers keep data per
- * address, so the move waits until every change on this phone is saved to the account.
+ * Moving people from old addresses (`overload-gym.pages.dev`, and `overloadgym.in` since the
+ * November 2026 rename to Macrotrophy) to the canonical one. Browsers keep data per address, so
+ * a browser tab moves only once every change on this phone is saved to the account and its
+ * phone-only progress photos are saved or let go. An app installed from an old address is never
+ * moved: it keeps working and updating there, and shows how to install the new one.
  *
  * The move is off until `VITE_CANONICAL_ORIGIN` is set for the build (Cloudflare Pages,
  * Production), so the redirect can be switched on after the domain is approved for payments.
  */
 
 /** Addresses that move to the canonical one. Previews and localhost never do. */
-export const LEGACY_HOSTS = ['overload-gym.pages.dev'];
+export const LEGACY_HOSTS = ['overload-gym.pages.dev', 'overloadgym.in', 'www.overloadgym.in'];
 
 interface Place {
   hostname: string;
@@ -64,4 +67,31 @@ export function legacyRedirect(
   const target = moveTarget(new URL(requestUrl), canonicalOrigin);
   if (!target) return null;
   return new Response(null, { status: 301, headers: { Location: target } });
+}
+
+/** What the old address shows: nothing, the steps to install the new app, or a tab's move. */
+export type MovePlan = 'stay' | 'install' | 'save-photos' | 'wait' | 'move';
+
+/**
+ * - An installed app (home screen) never leaves: it shows how to install the new one.
+ * - A browser tab with phone-only photos first offers to save them.
+ * - Then it waits for every change to be saved, and moves.
+ */
+export function movePlan(o: {
+  target: string | null;
+  installed: boolean;
+  photos: number | null;
+  photosDone: boolean;
+  ready: boolean;
+}): MovePlan {
+  if (!o.target) return 'stay';
+  if (o.installed) return 'install';
+  if (o.photos === null) return 'wait';
+  if (o.photos > 0 && !o.photosDone) return 'save-photos';
+  return o.ready ? 'move' : 'wait';
+}
+
+/** The file name a saved progress photo gets: date, pose and a number, so they sort by date. */
+export function photoFileName(takenAt: string, pose: string, n: number): string {
+  return `macrotrophy-${takenAt.slice(0, 10)}-${pose}-${n + 1}.jpg`;
 }

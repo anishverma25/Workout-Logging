@@ -35,6 +35,6 @@ describe('get_my_coaching answers', () => {
 
 it('links to WhatsApp with an editable hello', () => {
   expect(whatsappLink('919876543210', 'Arjun')).toBe(
-    'https://wa.me/919876543210?text=Hi%20Arjun%2C%20I%20joined%201%3A1%20coaching%20on%20Overload.',
+    'https://wa.me/919876543210?text=Hi%20Arjun%2C%20I%20joined%201%3A1%20coaching%20on%20Macrotrophy.',
   );
 });

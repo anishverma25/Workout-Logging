@@ -394,3 +394,15 @@ Read README.md for setup, architecture and calculation rules.
   leaderboard) are public pages outside the account gate; guides are also written as plain HTML
   into `#root` by the build. The home page carries JSON-LD (Organization, WebSite,
   SoftwareApplication with prices, FAQPage; no ratings markup). `CACHE_EPOCH` `ui-16`.
+- Macrotrophy (November 2026, no migration, Dexie unchanged, `docs/domain-move.md`): the brand
+  is "Macrotrophy" at `macrotrophy.in`; the AI is "Macrotrophy AI" (food: Ask AI, AI snap,
+  Label). The mark (an M holding a lime Y) is traced into `public/landing/mark.svg` and
+  `src/app/brandPaths.ts`; `node scripts/generate-icons.mjs` builds `icon.svg`, `favicon.svg`
+  (the tab icon, a new file so browsers drop the old one) and the PNG icons. Internal names stay
+  `overload` (storage keys, database names, cache names, `window.__overload`): renaming them
+  would wipe data. `overloadgym.in` is a legacy host: with `VITE_CANONICAL_ORIGIN` set, page
+  requests get a 301 (never `/sw.js` or files: `verify-build` checks `_routes.json`), a browser
+  tab moves after sync and after offering to save phone-only progress photos, and an installed
+  app never moves (it keeps updating and shows how to install the new one, `MoveToNewHome`,
+  `movePlan`). Both domains are one Pages deployment. `APP_ORIGIN` for the Edge Functions takes
+  a comma-separated list. Release `2026-11-macrotrophy`, `CACHE_EPOCH` `ui-17`.

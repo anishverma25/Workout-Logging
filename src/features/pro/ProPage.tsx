@@ -148,7 +148,7 @@ function Hero({
   return (
     <section aria-labelledby="pro-hero-title" className="flex flex-col gap-5">
       <Badge tone="lime" icon={<Crown />} className="w-fit">
-        Overload Pro
+        Macrotrophy Pro
       </Badge>
       <div>
         <h1 id="pro-hero-title" className="type-display text-text-1 [text-wrap:balance]">
@@ -392,7 +392,7 @@ const PILLARS: { icon: ReactNode; title: string; line: string; features: ProFeat
   {
     icon: <UtensilsCrossed />,
     title: 'Log food in seconds',
-    line: 'Say what you ate. OverloadGPT finds it and does the maths.',
+    line: 'Say what you ate. Macrotrophy AI finds it and does the maths.',
     features: ['ai_food', 'food_insights'],
   },
   {
@@ -566,7 +566,7 @@ function Faq({ plans }: { plans: BillingPlan[] | null }) {
     ],
     [
       'How do I pay, and is it safe?',
-      'Through Razorpay, a regulated Indian payment gateway: UPI, UPI autopay, cards and net banking. Overload never sees your card number or UPI PIN.',
+      'Through Razorpay, a regulated Indian payment gateway: UPI, UPI autopay, cards and net banking. Macrotrophy never sees your card number or UPI PIN.',
     ],
     [
       'Can I use Pro on more than one device?',

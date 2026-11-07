@@ -117,8 +117,8 @@ export function FoodPage() {
                 Set your daily targets
               </h2>
               <p className="type-meta mt-1 mb-3 text-text-2">
-                Let Overload work out calories, protein, carbs, fat, fibre and water from your body
-                and goal, or type your own.
+                Let Macrotrophy work out calories, protein, carbs, fat, fibre and water from your
+                body and goal, or type your own.
               </p>
               <PrimaryButton compact onClick={() => setTargetsOpen(true)}>
                 Choose how

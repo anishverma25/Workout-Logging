@@ -1,14 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { Crown, Globe2, ShieldCheck, Sparkles, Trophy } from 'lucide-react';
+import { Camera, ScanText, Sparkles } from 'lucide-react';
 import { BottomSheet, PrimaryButton, SecondaryButton } from '@/components/kit';
 import { cn } from '@/lib/cn';
 import { seenRelease, markReleaseSeen, RELEASE_ID } from './whatsNewStore';
 
 /**
- * Shown once per release when the app opens, to everyone. This release (November 2026) is about
- * leaderboards only, global and in groups, explained in three short steps: what they are, how
- * points work, and what others can see. Never over a running workout or setup.
+ * Shown once per release when the app opens, to everyone. This release (November 2026) is the
+ * new name: Overload is now Macrotrophy, with a new logo and address, and the AI is Macrotrophy
+ * AI, in two short steps. Never over a running workout or setup.
  */
 export function WhatsNew() {
   const { pathname } = useLocation();
@@ -38,7 +38,7 @@ export function WhatsNew() {
     <BottomSheet
       open={open && !busy}
       onClose={close}
-      title="New in Overload"
+      title="New in Macrotrophy"
       hideHeader
       footer={
         <div>
@@ -68,13 +68,8 @@ export function WhatsNew() {
                 Next
               </PrimaryButton>
             ) : (
-              <PrimaryButton
-                block
-                data-autofocus
-                onClick={() => go('/groups/global')}
-                data-release-open
-              >
-                See the leaderboard
+              <PrimaryButton block data-autofocus onClick={() => go('/food')} data-release-open>
+                Log a meal
               </PrimaryButton>
             )}
             <SecondaryButton
@@ -115,64 +110,46 @@ const STEPS: {
   body: ReactNode;
 }[] = [
   {
-    icon: <Globe2 className="size-8" strokeWidth={1.5} />,
-    kicker: 'New: leaderboards',
-    title: 'Compete with all of Overload and your friends',
-    lead: 'Weekly and monthly leaderboards, for everyone and for your own groups.',
+    icon: <img src="/icon.svg" alt="" width={64} height={64} className="size-16 rounded-[18px]" />,
+    kicker: 'A new name',
+    title: 'Overload is now Macrotrophy',
+    lead: 'The same app and the same account, with a new name and a new logo.',
     body: (
       <ul className="type-body mt-4 flex flex-col gap-2.5 text-left text-text-2">
         <Point>
-          <strong className="font-semibold text-text-1">Global leaderboard.</strong> Everyone on
-          Overload who trains this week or month, ranked by the same fair score.
+          <strong className="font-semibold text-text-1">Nothing to do.</strong> Your workouts,
+          meals, records, groups and Pro stay exactly as they are.
         </Point>
         <Point>
-          <strong className="font-semibold text-text-1">Groups.</strong> Create one and share its
-          6-character code, or join a friend&apos;s by typing theirs. Up to 30 people.
+          <strong className="font-semibold text-text-1">Our new address</strong> is macrotrophy.in.
+          The app on your home screen keeps working.
         </Point>
         <Point>
-          <strong className="font-semibold text-text-1">In every group:</strong> who trained today,
-          a tap to see how points add up, and past winners.
+          <strong className="font-semibold text-text-1">Find us</strong> on Instagram at
+          @macrotrophy.in.
         </Point>
       </ul>
     ),
   },
   {
-    icon: <Trophy className="size-8" strokeWidth={1.5} />,
-    kicker: 'Fair for every level',
-    title: 'Points for effort, not size',
-    lead: 'A beginner can beat a strong lifter by showing up and pushing hard.',
+    icon: <Sparkles className="size-8" strokeWidth={1.5} />,
+    kicker: 'Macrotrophy AI',
+    title: 'Your AI has a new name too',
+    lead: 'OverloadGPT is now Macrotrophy AI. Log food in seconds from Add food.',
     body: (
-      <ul className="mt-3 flex w-full flex-col gap-1.5 text-left" data-release-points>
-        <PointsRow points={10}>a workout of 10 minutes or more (up to 6 a week)</PointsRow>
-        <PointsRow points={1}>a hard working set (up to 25 a week)</PointsRow>
-        <PointsRow points={5}>a personal record on a lift you have done before</PointsRow>
-        <PointsRow points={3}>a day you reach 90% of your protein target</PointsRow>
+      <ul className="mt-3 flex w-full flex-col gap-1.5 text-left" data-release-ai>
+        <AiRow icon={<Sparkles className="size-4" />} name="Ask AI">
+          type or say what you ate
+        </AiRow>
+        <AiRow icon={<Camera className="size-4" />} name="AI snap">
+          take a photo of your plate
+        </AiRow>
+        <AiRow icon={<ScanText className="size-4" />} name="Label">
+          copy a pack&apos;s nutrition label
+        </AiRow>
         <li className="type-subhead mt-1 text-text-2">
-          Worked out on our server from what you log, so nobody can fake it.
+          Ask AI and AI snap are part of Pro. Explain buttons on Progress use it too.
         </li>
-      </ul>
-    ),
-  },
-  {
-    icon: <ShieldCheck className="size-8" strokeWidth={1.5} />,
-    kicker: 'Private by design',
-    title: 'Your name, your choice',
-    lead: 'On the global leaderboard others see your name and points. Your username shows only if you turn it on.',
-    body: (
-      <ul className="type-body mt-4 flex flex-col gap-2.5 text-left text-text-2">
-        <Point>Never your weights, food, body weight or workouts.</Point>
-        <Point>
-          Groups need a unique username, picked once. Show it on the global leaderboard with one
-          switch, or keep it to your groups.
-        </Point>
-        <Point>
-          The Overload Score board is free for everyone. Consistency, Effort, Progress and Volume
-          boards in groups come with Pro.
-          <span className="type-caption ml-1.5 inline-flex items-center gap-1 rounded-full bg-fill px-2 py-0.5 align-[1px] font-semibold text-text-2">
-            <Crown className="size-3" aria-hidden />
-            Pro
-          </span>
-        </Point>
       </ul>
     ),
   },
@@ -187,13 +164,18 @@ function Point({ children }: { children: ReactNode }) {
   );
 }
 
-function PointsRow({ points, children }: { points: number; children: ReactNode }) {
+function AiRow({ icon, name, children }: { icon: ReactNode; name: string; children: ReactNode }) {
   return (
-    <li className="flex items-center gap-3 rounded-nested bg-surface-2 px-3 py-1.5">
-      <span className="type-headline tabular flex h-7 min-w-11 shrink-0 items-center justify-center rounded-full bg-lime px-2 text-on-lime">
-        +{points}
+    <li className="flex items-center gap-3 rounded-nested bg-surface-2 px-3 py-2">
+      <span
+        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime"
+        aria-hidden
+      >
+        {icon}
       </span>
-      <span className="type-subhead text-text-1">For {children}</span>
+      <span className="type-subhead text-text-1">
+        <strong className="font-semibold">{name}</strong>: {children}
+      </span>
     </li>
   );
 }

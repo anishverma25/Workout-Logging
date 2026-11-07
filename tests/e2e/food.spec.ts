@@ -109,7 +109,7 @@ test('free accounts see what Pro adds to food', async ({ page }) => {
   ).toBeVisible();
 });
 
-test('Pro tells OverloadGPT a meal and sees food on Progress', async ({ page }) => {
+test('Pro tells Macrotrophy AI a meal and sees food on Progress', async ({ page }) => {
   await startWithDemo(page, { tag: 'food-pro' });
   await openFood(page);
 
@@ -197,9 +197,9 @@ test('free accounts see photo logging as part of Pro', async ({ page }) => {
   await expireTrial(email);
   await page.goto('/food');
   await page.locator('[data-add-food]').click();
-  // The slim AI row: Ask GPT and Snap lead to Pro, with the Pro mark on each.
+  // The slim AI row: Ask AI and AI snap lead to Pro, with the Pro mark on each.
   const snap = page.getByRole('dialog').locator('[data-snap-locked]');
-  await expect(snap).toContainText('Snap');
+  await expect(snap).toContainText('AI snap');
   await expect(snap.getByLabel('Pro')).toBeVisible();
   await expect(page.getByRole('dialog').locator('[data-photo-meal]')).toHaveCount(0);
 });

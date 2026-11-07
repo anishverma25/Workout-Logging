@@ -28,7 +28,7 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   await page.getByRole('button', { name: 'Take the tour' }).click();
   await page.getByRole('button', { name: 'Mark sample set 1 done' }).click();
   await expect(page.getByRole('button', { name: 'Set 1 done' })).toBeVisible();
-  // Training, food, OverloadGPT, body and journey slides, then the Pro slide.
+  // Training, food, Macrotrophy AI, body and journey slides, then the Pro slide.
   const next = () => page.getByRole('button', { name: 'Next' }).click();
   for (let i = 0; i < 3; i++) await next();
   const food = page.locator('[data-tour-food]');

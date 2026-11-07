@@ -25,7 +25,7 @@ import {
 
 import type { TileTone } from '@/components/ui/List';
 
-export const APP_NAME = 'Overload Gym';
+export const APP_NAME = 'Macrotrophy';
 
 export interface NavItem {
   to: string;
@@ -64,7 +64,7 @@ export const SECONDARY_NAV: NavItem[] = [
   { to: '/records', label: 'Records', icon: Trophy, tone: 'amber', group: 'training' },
   { to: '/exercises', label: 'Exercises', icon: Library, tone: 'lime', group: 'training' },
   { to: '/science', label: 'The science', icon: FlaskConical, tone: 'sky', group: 'training' },
-  { to: '/coach', label: 'OverloadGPT', icon: Sparkles, tone: 'lime', group: 'training' },
+  { to: '/coach', label: 'Macrotrophy AI', icon: Sparkles, tone: 'lime', group: 'training' },
   { to: '/profile', label: 'Profile', icon: UserRound, tone: 'iris', group: 'you' },
   { to: '/account', label: 'Account', icon: CircleUserRound, tone: 'graphite', group: 'app' },
   { to: '/settings', label: 'Settings', icon: Settings, tone: 'graphite', group: 'app' },
@@ -79,7 +79,7 @@ export const SECONDARY_NAV: NavItem[] = [
   },
 ];
 
-/** The five main tabs: their headers carry OverloadGPT and the avatar (UI v3, A1 and B9). */
+/** The five main tabs: their headers carry Macrotrophy AI and the avatar (UI v3, A1 and B9). */
 export const TAB_ROOTS = ['/', '/workout', '/food', '/progress', '/history'];
 
 /**

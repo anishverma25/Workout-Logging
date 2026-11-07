@@ -228,7 +228,7 @@ export function realMaintenance(input: {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Summaries for Progress, Home and OverloadGPT
+// Summaries for Progress, Home and Macrotrophy AI
 // ---------------------------------------------------------------------------------------------
 
 export interface NutritionSummary {

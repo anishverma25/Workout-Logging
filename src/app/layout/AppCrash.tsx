@@ -29,7 +29,7 @@ export class AppCrash extends Component<{ children: ReactNode }, { error: Error 
         role="alert"
         className="mx-auto flex min-h-dvh w-full max-w-100 flex-col justify-center gap-4 bg-bg px-6 pt-safe pb-safe text-text-1"
       >
-        <h1 className="type-title">Overload ran into a problem</h1>
+        <h1 className="type-title">Macrotrophy ran into a problem</h1>
         <p className="type-body text-text-2">
           Everything you logged is safe, on this phone and in your account. Opening the app again
           usually fixes it.
