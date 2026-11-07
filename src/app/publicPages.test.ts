@@ -1,7 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { GUIDES, fillLanding, guideHtml } from './marketing';
-import { HOME_PAGE, PUBLIC_PAGES, SITE_ORIGIN, pageHtml, sitemapXml } from './publicPages';
+import {
+  HOME_PAGE,
+  PUBLIC_PAGES,
+  ROBOTS_NOINDEX,
+  SITE_ORIGIN,
+  breadcrumbData,
+  pageHtml,
+  sitemapXml,
+} from './publicPages';
 
 const INDEX = fillLanding(readFileSync('index.html', 'utf8'));
 const ROUTER = readFileSync('src/app/router.tsx', 'utf8');
@@ -31,6 +39,49 @@ describe('public pages', () => {
     expect(xml).toContain(`<loc>${SITE_ORIGIN}/</loc>`);
     expect(xml).toContain(`<loc>${SITE_ORIGIN}/terms</loc>`);
     expect(xml).not.toContain('/sign-in<');
+    expect(xml).not.toContain('/sign-up<');
+  });
+
+  it('keeps only sign-in and sign-up out of search results, never listed and never indexed', () => {
+    const hidden = PUBLIC_PAGES.filter((p) => p.noindex).map((p) => p.path);
+    expect(hidden).toEqual(['/sign-up', '/sign-in']);
+    for (const page of PUBLIC_PAGES) {
+      if (page.noindex) expect(page.inSitemap, page.path).toBe(false);
+      const html = pageHtml(INDEX, page);
+      expect(html.includes(ROBOTS_NOINDEX), page.path).toBe(!!page.noindex);
+    }
+  });
+
+  it('gives the guides and the science page a breadcrumb trail from home', () => {
+    for (const page of PUBLIC_PAGES) {
+      const data = breadcrumbData(page);
+      if (!page.breadcrumb) {
+        expect(data, page.path).toBeNull();
+        continue;
+      }
+      const html = pageHtml(INDEX, page);
+      expect(html).toContain(data!);
+      const parsed = JSON.parse(/>(.*)</.exec(data!)![1]!) as {
+        itemListElement: { position: number; item: string; name: string }[];
+      };
+      expect(parsed.itemListElement.map((i) => i.item)).toEqual([
+        `${SITE_ORIGIN}/`,
+        `${SITE_ORIGIN}${page.path}`,
+      ]);
+    }
+    expect(PUBLIC_PAGES.filter((p) => p.breadcrumb).map((p) => p.path)).toEqual([
+      '/science',
+      '/indian-food-calorie-counter',
+      '/workout-tracker',
+      '/gym-leaderboard',
+    ]);
+  });
+
+  it('puts given text into #root of pages that are not guides', () => {
+    const terms = PUBLIC_PAGES.find((p) => p.path === '/terms')!;
+    expect(pageHtml(INDEX, terms, '<main>x</main>')).toContain(
+      '<div id="root"><main>x</main></div>',
+    );
   });
 
   it('gives each page its own head and keeps the home page off other pages', () => {

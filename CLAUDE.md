@@ -406,3 +406,10 @@ Read README.md for setup, architecture and calculation rules.
   app never moves (it keeps updating and shows how to install the new one, `MoveToNewHome`,
   `movePlan`). Both domains are one Pages deployment. `APP_ORIGIN` for the Edge Functions takes
   a comma-separated list. Release `2026-11-macrotrophy`, `CACHE_EPOCH` `ui-17`.
+- SEO v3 (November 2026, no migration, Dexie unchanged, Project doc
+  `claude/seo-audit-macrotrophy.md`): sign-in and sign-up carry `noindex, follow` (`noindex` on
+  `PublicPage`, kept in step by `usePageMeta`) and are not in the sitemap; the science page and
+  the four legal pages are written as plain HTML into `#root` at build (`src/app/staticPages.ts`;
+  science topics are rendered by a short-lived Vite server in `build/seo.ts`), replaced by the
+  app on start like the guides; guides and science carry BreadcrumbList JSON-LD
+  (`breadcrumb`). No visible change.

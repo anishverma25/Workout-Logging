@@ -11,15 +11,24 @@ export function usePageMeta(path: string) {
   useEffect(() => {
     const page = publicPage(path);
     if (!page) return;
-    set(page.title, page.description, `${SITE_ORIGIN}${page.path}`);
-    return () => set(APP_NAME, HOME_PAGE.description, `${SITE_ORIGIN}/`);
+    set(page.title, page.description, `${SITE_ORIGIN}${page.path}`, !!page.noindex);
+    return () => set(APP_NAME, HOME_PAGE.description, `${SITE_ORIGIN}/`, false);
   }, [path]);
 }
 
-function set(title: string, description: string, canonical: string) {
+function set(title: string, description: string, canonical: string, noindex: boolean) {
   document.title = title;
   document
     .querySelector<HTMLMetaElement>('meta[name="description"]')
     ?.setAttribute('content', description);
   document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute('href', canonical);
+  // The sign-in and sign-up pages carry `noindex` in their own HTML; keep the page in step when
+  // people move to or from them inside the app.
+  let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+  if (noindex && !robots) {
+    robots = document.createElement('meta');
+    robots.name = 'robots';
+    robots.content = 'noindex, follow';
+    document.head.appendChild(robots);
+  } else if (!noindex) robots?.remove();
 }

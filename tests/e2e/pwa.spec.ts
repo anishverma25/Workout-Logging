@@ -156,4 +156,31 @@ test('public pages are readable before scripts and open as pages', async ({ page
     page.getByRole('heading', { level: 1, name: 'How every number is calculated' }),
   ).toBeVisible();
   await expect(page).toHaveTitle('The science behind every number | Macrotrophy');
+  await expect(page.locator('[data-static-page]')).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+  await page.goto('/terms');
+  await expect(page.getByRole('heading', { level: 1, name: 'Terms and conditions' })).toBeVisible();
+  await expect(page.locator('[data-static-page]')).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+});
+
+test('science and legal text is in the HTML; sign-in and sign-up stay out of search', async ({
+  request,
+}) => {
+  const science = await (await request.get('/science')).text();
+  expect(science).toContain('<main data-static-page><h1>How every number is calculated</h1>');
+  expect(science).toContain('<h3>Estimated 1RM</h3>');
+  expect(science).toContain('"@type":"BreadcrumbList"');
+  const terms = await (await request.get('/terms')).text();
+  expect(terms).toContain('<h1>Terms and conditions</h1>');
+  const contact = await (await request.get('/contact')).text();
+  expect(contact).toContain('mailto:team@macrotrophy.in');
+  for (const path of ['/sign-in', '/sign-up']) {
+    const html = await (await request.get(path)).text();
+    expect(html, path).toContain('<meta name="robots" content="noindex, follow" />');
+  }
+  expect(await (await request.get('/terms')).text()).not.toContain('noindex');
+  const sitemap = await (await request.get('/sitemap.xml')).text();
+  expect(sitemap).not.toContain('/sign-up<');
+  expect(sitemap).not.toContain('/sign-in<');
 });

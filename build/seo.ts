@@ -1,8 +1,15 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { ReactNode } from 'react';
 import type { Plugin } from 'vite';
 import { fillLanding } from '../src/app/marketing.ts';
-import { PUBLIC_PAGES, pageHtml, sitemapXml } from '../src/app/publicPages.ts';
+import { PUBLIC_PAGES, SCIENCE_PAGE, pageHtml, sitemapXml } from '../src/app/publicPages.ts';
+import {
+  legalDocument,
+  legalHtml,
+  scienceHtml,
+  type StaticTopicGroup,
+} from '../src/app/staticPages.ts';
 
 /**
  * Cloudflare Pages `_routes.json`: which requests run `functions/_middleware.ts` (the 301 from
@@ -49,15 +56,64 @@ export function seo(): Plugin {
   return {
     name: 'overload-seo',
     apply: 'build',
-    writeBundle(options) {
+    async writeBundle(options) {
       const dir = options.dir ?? 'dist';
       const index = readFileSync(join(dir, 'index.html'), 'utf8');
+      const science = scienceHtml(await scienceGroups());
       for (const page of PUBLIC_PAGES) {
         const file = page.path === '/' ? 'index.html' : `${page.path.slice(1)}.html`;
-        writeFileSync(join(dir, file), pageHtml(index, page));
+        const legal = legalDocument(page.path);
+        const body =
+          page.path === SCIENCE_PAGE.path ? science : legal ? legalHtml(legal) : undefined;
+        writeFileSync(join(dir, file), pageHtml(index, page, body));
       }
       writeFileSync(join(dir, 'sitemap.xml'), sitemapXml());
       writeFileSync(join(dir, '_routes.json'), `${JSON.stringify(FUNCTION_ROUTES, null, 2)}\n`);
     },
   };
+}
+
+/**
+ * The science topics with their text as HTML. They are React content (`src/features/science/
+ * topics.tsx`), so a short-lived Vite server loads them and React renders them to markup.
+ */
+async function scienceGroups(): Promise<StaticTopicGroup[]> {
+  const { createServer } = await import('vite');
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const { createElement, Fragment } = await import('react');
+  const server = await createServer({
+    server: { middlewareMode: true, hmr: false, ws: false },
+    appType: 'custom',
+    logLevel: 'error',
+  });
+  try {
+    const { SCIENCE } = (await server.ssrLoadModule('/src/features/science/topics.tsx')) as {
+      SCIENCE: {
+        title: string;
+        topics: {
+          id: string;
+          title: string;
+          shows: ReactNode;
+          why?: ReactNode[];
+          forYou?: ReactNode;
+          limits?: ReactNode;
+          formulas?: { spoken: string; where?: string }[];
+        }[];
+      }[];
+    };
+    const html = (n: ReactNode) =>
+      n == null || n === false ? '' : renderToStaticMarkup(createElement(Fragment, null, n));
+    const para = (n: ReactNode) => (html(n) ? `<p>${html(n)}</p>` : '');
+    return SCIENCE.map((g) => ({
+      title: g.title,
+      topics: g.topics.map((t) => ({
+        id: t.id,
+        title: t.title,
+        body: para(t.shows) + (t.why ?? []).map(para).join('') + para(t.forYou) + para(t.limits),
+        formulas: (t.formulas ?? []).map((f) => (f.where ? `${f.spoken}, ${f.where}` : f.spoken)),
+      })),
+    }));
+  } finally {
+    await server.close();
+  }
 }

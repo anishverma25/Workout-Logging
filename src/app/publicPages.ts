@@ -22,6 +22,13 @@ export interface PublicPage {
   description: string;
   /** Listed in sitemap.xml. Sign in and password pages are reachable but not worth listing. */
   inSitemap: boolean;
+  /**
+   * Kept out of search results (`noindex, follow`): the sign-in and sign-up forms, which have
+   * nothing to read. Links on them are still followed.
+   */
+  noindex?: boolean;
+  /** Shown as a trail under the result (BreadcrumbList): pages one level below home. */
+  breadcrumb?: string;
 }
 
 export const HOME_PAGE: PublicPage = {
@@ -39,6 +46,7 @@ export const SCIENCE_PAGE: PublicPage = {
   description:
     'Estimated one rep max, hard sets, volume, body weight trend, calories and protein: the formula behind every number in Macrotrophy and the research it rests on.',
   inSitemap: true,
+  breadcrumb: 'The science',
 };
 
 export const PUBLIC_PAGES: PublicPage[] = [
@@ -49,6 +57,7 @@ export const PUBLIC_PAGES: PublicPage[] = [
     title: g.title,
     description: g.description,
     inSitemap: true,
+    breadcrumb: g.heading,
   })),
   {
     path: '/welcome',
@@ -62,13 +71,15 @@ export const PUBLIC_PAGES: PublicPage[] = [
     title: 'Create your account | Macrotrophy',
     description:
       'Create a free Macrotrophy account to log workouts, keep your training backed up and see your progress on every device.',
-    inSitemap: true,
+    inSitemap: false,
+    noindex: true,
   },
   {
     path: '/sign-in',
     title: 'Sign in | Macrotrophy',
     description: 'Sign in to Macrotrophy to log your workouts and see your progress.',
     inSitemap: false,
+    noindex: true,
   },
   {
     path: '/terms',
@@ -102,6 +113,27 @@ export function publicPage(path: string): PublicPage | undefined {
   return PUBLIC_PAGES.find((p) => p.path === path);
 }
 
+/** BreadcrumbList structured data for a page one level below home, or null. */
+export function breadcrumbData(page: PublicPage): string | null {
+  if (!page.breadcrumb) return null;
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Macrotrophy', item: `${SITE_ORIGIN}/` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: page.breadcrumb,
+        item: `${SITE_ORIGIN}${page.path}`,
+      },
+    ],
+  };
+  return `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`;
+}
+
+export const ROBOTS_NOINDEX = '<meta name="robots" content="noindex, follow" />';
+
 /** sitemap.xml for the pages worth listing. No dates: a wrong date is worse than none. */
 export function sitemapXml(pages: PublicPage[] = PUBLIC_PAGES): string {
   const urls = pages
@@ -123,7 +155,7 @@ const escapeAttr = (s: string) =>
  * share preview tags), and without the landing page, which belongs to the home page only.
  * Throws if a tag it must replace is missing, so a changed index.html fails the build.
  */
-export function pageHtml(indexHtml: string, page: PublicPage): string {
+export function pageHtml(indexHtml: string, page: PublicPage, rootHtml?: string): string {
   const url = `${SITE_ORIGIN}${page.path}`;
   const replacements: [RegExp, string][] = [
     [/<title>[^<]*<\/title>/, `<title>${escapeAttr(page.title)}</title>`],
@@ -162,10 +194,13 @@ export function pageHtml(indexHtml: string, page: PublicPage): string {
   const landing = /\s*<!-- landing:start -->[\s\S]*<!-- landing:end -->/;
   if (!landing.test(html)) throw new Error('index.html is missing the landing markers');
   html = html.replace(landing, '');
+  const head = [page.noindex ? ROBOTS_NOINDEX : null, breadcrumbData(page)].filter(Boolean);
+  if (head.length) html = html.replace('</head>', `    ${head.join('\n    ')}\n  </head>`);
   const g = guide(page.path);
-  if (g) {
+  const body = g ? guideHtml(g) : rootHtml;
+  if (body) {
     if (!html.includes('<div id="root"></div>')) throw new Error('index.html is missing #root');
-    html = html.replace('<div id="root"></div>', `<div id="root">${guideHtml(g)}</div>`);
+    html = html.replace('<div id="root"></div>', `<div id="root">${body}</div>`);
   }
   return html;
 }

@@ -1,3 +1,4 @@
+import { SCIENCE_HEADING, SCIENCE_INTRO } from '@/app/staticPages';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router';
 import { PublicFrame } from '@/features/public/PublicFrame';
@@ -27,11 +28,8 @@ export function SciencePage() {
 
   return (
     <PublicFrame path="/science">
-      <h1 className="type-display text-text-1">How every number is calculated</h1>
-      <p className="type-body mt-3 mb-6 text-text-2">
-        Every number in Macrotrophy, the formula behind it and the research it rests on. Read a
-        section, follow a source, and judge it for yourself.
-      </p>
+      <h1 className="type-display text-text-1">{SCIENCE_HEADING}</h1>
+      <p className="type-body mt-3 mb-6 text-text-2">{SCIENCE_INTRO}</p>
 
       <Card className="mb-6">
         <p className="type-body text-text-2">
