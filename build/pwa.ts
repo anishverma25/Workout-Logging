@@ -106,6 +106,13 @@ export const CACHE_EPOCH = 'ui-18';
 export const LAZY_FONTS =
   /(^|\/)(bricolage-grotesque|unbounded|syne|doto|pixelify-sans|instrument-serif|space-mono|big-shoulders-display|permanent-marker|dm-sans|dm-mono)-[^/]*\.woff2$/;
 
+/**
+ * Code only the weekly report's PDF download uses (pdf-lib and fontkit, about 1.3 MB). It loads
+ * from the network when someone downloads a PDF, so installs and updates stay small; offline,
+ * the download says it needs a connection.
+ */
+export const LAZY_CHUNKS = /(^|\/)makePdf-[^/]*\.js$/;
+
 const TEMPLATE = fileURLToPath(new URL('./sw-template.js', import.meta.url));
 
 /**
@@ -120,7 +127,7 @@ export function pwa(env: Record<string, string | undefined>): Plugin {
       // Older font formats (KaTeX ships woff and ttf beside woff2) are fallbacks every browser
       // that can install the app skips, so they are not worth precaching.
       const files = Object.keys(bundle).filter(
-        (f) => !/\.(map|ttf|woff)$/.test(f) && !LAZY_FONTS.test(f),
+        (f) => !/\.(map|ttf|woff)$/.test(f) && !LAZY_FONTS.test(f) && !LAZY_CHUNKS.test(f),
       );
       const publicFiles = [
         '/manifest.webmanifest',

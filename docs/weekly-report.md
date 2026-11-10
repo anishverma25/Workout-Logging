@@ -71,6 +71,10 @@ Design and decisions: Project docs `claude/weekly-intelligence-spec.md` and
     Quick is at most 4. Set `REPORT_PDF_OUT=dir` to keep the files and look at them.
 - **Download.** `DownloadSheet.tsx` uses Web Share with the PDF file when it can, otherwise it
   saves the file.
+- **Not precached.** The PDF chunk (`makePdf-*.js`, `LAZY_CHUNKS` in `build/pwa.ts`) and the WOFF
+  fonts are left out of the precache, so installs and updates stay small. The service worker
+  passes them through to the network. The `pwa` e2e test downloads a PDF on the production
+  build under the real CSP and checks neither is cached.
 
 ## Development note
 
