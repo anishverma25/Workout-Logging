@@ -52,6 +52,8 @@
   --color-on-lime: var(--on-lime);
   --color-focus: var(--focus);
   --color-warning: var(--warning);
+  --color-report-food: var(--report-food);
+  --color-report-body: var(--report-body);
   --color-danger-text: var(--danger-text);
   /* UI v3 */
   --color-group: var(--group);

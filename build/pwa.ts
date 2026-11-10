@@ -98,6 +98,14 @@ ${all}
  */
 export const CACHE_EPOCH = 'ui-17';
 
+/**
+ * Fonts only the share sheet and the weekly report use (November 2026). They are fetched when
+ * those open and are left out of the precache, so installing and updating the app stays small;
+ * offline, the cards and report fall back to the app's own fonts.
+ */
+export const LAZY_FONTS =
+  /(^|\/)(bricolage-grotesque|unbounded|syne|doto|pixelify-sans|instrument-serif|space-mono|big-shoulders-display|permanent-marker|dm-sans|dm-mono)-[^/]*\.woff2$/;
+
 const TEMPLATE = fileURLToPath(new URL('./sw-template.js', import.meta.url));
 
 /**
@@ -111,7 +119,9 @@ export function pwa(env: Record<string, string | undefined>): Plugin {
     generateBundle(_options, bundle) {
       // Older font formats (KaTeX ships woff and ttf beside woff2) are fallbacks every browser
       // that can install the app skips, so they are not worth precaching.
-      const files = Object.keys(bundle).filter((f) => !/\.(map|ttf|woff)$/.test(f));
+      const files = Object.keys(bundle).filter(
+        (f) => !/\.(map|ttf|woff)$/.test(f) && !LAZY_FONTS.test(f),
+      );
       const publicFiles = [
         '/manifest.webmanifest',
         '/icon.svg',

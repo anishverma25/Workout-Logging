@@ -108,6 +108,9 @@
 
   --focus: #ffffff;
   --warning: #ffb340;
+  /* Weekly report: training lime, food amber, body sky (charts and legends). */
+  --report-food: #ffb020;
+  --report-body: #5cc8ff;
   --danger: #ff453a;
   /* Destructive text and field errors: --danger is 4.1:1 on --surface-2, this is 5.0:1. */
   --danger-text: #ff6b5e;

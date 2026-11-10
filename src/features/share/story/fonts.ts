@@ -1,3 +1,6 @@
+import dmsans from '@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2?url';
+import dmmono400 from '@fontsource/dm-mono/files/dm-mono-latin-400-normal.woff2?url';
+import dmmono500 from '@fontsource/dm-mono/files/dm-mono-latin-500-normal.woff2?url';
 import bric400 from '@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-400-normal.woff2?url';
 import bric600 from '@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-600-normal.woff2?url';
 import bric800 from '@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-800-normal.woff2?url';
@@ -22,14 +25,14 @@ import unb400 from '@fontsource/unbounded/files/unbounded-latin-400-normal.woff2
 import unb600 from '@fontsource/unbounded/files/unbounded-latin-600-normal.woff2?url';
 
 /**
- * The story card fonts (share cards 2.0). Self-hosted from @fontsource, fetched only when the
- * share sheet needs them, and never precached by the service worker (build/pwa.ts leaves out
- * files named `story-font-*`... by their package names). Each family loads on its own, so one
- * that fails falls back to Inter Tight without blocking the others.
+ * The story card and weekly report fonts (November 2026). Self-hosted from @fontsource, fetched
+ * only when the share sheet or the report needs them, and never precached by the service worker
+ * (build/pwa.ts leaves them out by name: LAZY_FONTS). Each family loads on its own, so one that
+ * fails falls back without blocking the others.
  */
 
 export type FontId = 'bric' | 'unb' | 'syne' | 'doto' | 'pixel' | 'serif' | 'mono' | 'sport';
-export type Family = FontId | 'tight' | 'marker';
+export type Family = FontId | 'tight' | 'marker' | 'dmsans' | 'dmmono';
 
 /** Names the faces are registered under; prefixed so they never clash with page fonts. */
 export const FAMILY: Record<Family, string> = {
@@ -43,6 +46,8 @@ export const FAMILY: Record<Family, string> = {
   sport: 'MT Big Shoulders',
   tight: 'MT Inter Tight',
   marker: 'MT Marker',
+  dmsans: 'MT DM Sans',
+  dmmono: 'MT DM Mono',
 };
 
 /** Fallbacks when a face could not load: the closest look that is always there. */
@@ -57,6 +62,8 @@ const FALLBACK: Record<Family, string> = {
   sport: 'sans-serif',
   tight: 'Inter, sans-serif',
   marker: 'cursive',
+  dmsans: 'Inter, sans-serif',
+  dmmono: 'monospace',
 };
 
 export const css = (f: Family) => `'${FAMILY[f]}', '${FAMILY.tight}', ${FALLBACK[f]}`;
@@ -114,6 +121,11 @@ const FILES: Record<Family, { url: string; weight: string; style?: string }[]> =
     { url: tight800, weight: '800' },
   ],
   marker: [{ url: marker400, weight: '400' }],
+  dmsans: [{ url: dmsans, weight: '100 1000' }],
+  dmmono: [
+    { url: dmmono400, weight: '400' },
+    { url: dmmono500, weight: '500' },
+  ],
 };
 
 const loading = new Map<Family, Promise<void>>();

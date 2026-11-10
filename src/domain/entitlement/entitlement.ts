@@ -152,7 +152,8 @@ export type ProFeature =
   | 'ai_coach'
   | 'ai_food'
   | 'food_insights'
-  | 'group_boards';
+  | 'group_boards'
+  | 'weekly_report';
 
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
   long_range: {
@@ -206,6 +207,11 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
     title: 'Every group leaderboard',
     description:
       'Consistency, effort, progress and volume boards in your groups, on top of the Macrotrophy Score.',
+  },
+  weekly_report: {
+    title: 'Weekly intelligence report',
+    description:
+      'Every week, your training and food read together: what changed, what it means and three things to do next week. Download it as a PDF.',
   },
   food_insights: {
     title: 'Food insights',
