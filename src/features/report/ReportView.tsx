@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { Link } from 'react-router';
 import { BrandMark } from '@/app/layout/BrandMark';
 import { muscleName, type WeeklyReport } from '@/domain/analytics/weekly';
 import { cn } from '@/lib/cn';
@@ -842,7 +843,12 @@ export function ReportView({
               ))}
             </div>
           </Panel>
-          <p className="mt-3 text-[12.5px] text-text-3">Educational information about training and nutrition, not medical advice.</p>
+          <p className="mt-3 text-[12.5px] text-text-3">
+            {DISCLAIMER}{' '}
+            <Link to="/science#weekly-report" className="text-lime underline-offset-2 hover:underline">
+              Every rule explained
+            </Link>
+          </p>
         </Section>
       ) : null}
     </article>

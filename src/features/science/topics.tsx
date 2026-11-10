@@ -1111,6 +1111,51 @@ export const SCIENCE: TopicGroup[] = [
           'The score is worked out on the server from synced data, so a workout counts once it has synced. The global leaderboard refreshes about once a minute. Records need a weight and 1 to 10 reps.',
       },
       {
+        id: 'weekly-report',
+        title: 'Weekly report',
+        evidence: 'weeklyReport',
+        shows:
+          'The weekly report (Pro): your training and your food read together, one report a week, with up to three changes for next week that the next report checks.',
+        formulas: [
+          {
+            tex: String.raw`\text{maintenance} = \overline{\text{intake}} + \frac{7700 \times \Delta W}{7}`,
+            spoken:
+              'Maintenance equals average daily intake plus 7,700 times the weekly weight change, divided by 7',
+            where:
+              'Intake: your logged calories, averaged over 4 weeks. ΔW: the weekly fall in your 7 day average weight in kg (a rise counts as negative). 7,700 kcal is treated as one kilogram of body weight.',
+          },
+        ],
+        why: [
+          <>
+            Strength counts as moved only at 5% or more over 4 weeks: day to day 1RM noise is about
+            4% (Grgic and colleagues, 2020). Weight uses a 7 day average because it swings across
+            the week (Orsama and colleagues, 2014), and on a cut the 0.5 to 1% a week band follows
+            Helms and colleagues (2014).
+          </>,
+          <>
+            A calorie day lands within 10% of your target and a protein day reaches 90% of it.
+            Protein per meal aims for 0.4 g per kg, and protein benefits level off near 1.6 g per kg
+            a day (Morton and colleagues, 2018). Fibre is judged at 14 g per 1,000 kcal and training
+            day carbs from 4 g per kg.
+          </>,
+          <>
+            Muscle volume is compared with your own 4 week average of hard sets, the measure that
+            tracks growth best (Pelland and colleagues, 2026); frequency matters less once volume is
+            equal (Schoenfeld and colleagues, 2019).
+          </>,
+          <>
+            Patterns between food and training are labelled Established only when a fixed rule
+            holds on your own numbers. Others are Early signals, which never change your advice; an
+            exact statistical test decides whether one is shown at all, and no probability is shown
+            to you.
+          </>,
+        ],
+        forYou:
+          'Make it once the week is logged: each week gets one report, saved once and never changed.',
+        limits:
+          'A report needs 2 workouts or 3 days of food in the week; parts with too little data are left out. The words come from fixed templates, never from AI, and every number is calculated on your phone.',
+      },
+      {
         id: 'trial',
         title: 'Trial length',
         evidence: 'trialLength',

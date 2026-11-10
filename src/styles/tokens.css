@@ -105,6 +105,33 @@
   --tier-gold-2: #c9971a;
   --tier-legend-1: #d8ff5a;
   --tier-legend-2: #78a300;
+  /* Badges 2.0 (November 2026): three metal stops, the ink printed on the metal, and the glow
+     of the unlock moment. Legend is holographic: four stops that slowly shift hue. */
+  --tier-bronze-a: #f6c896;
+  --tier-bronze-b: #a8622e;
+  --tier-bronze-c: #5a2f12;
+  --tier-bronze-ink: #2a1406;
+  --tier-bronze-glow: rgb(240 170 110 / 0.55);
+  --tier-bronze-text: #f3c08f;
+  --tier-silver-a: #ffffff;
+  --tier-silver-b: #a7b2be;
+  --tier-silver-c: #5d6874;
+  --tier-silver-ink: #1b2128;
+  --tier-silver-glow: rgb(220 230 240 / 0.5);
+  --tier-silver-text: #e6edf3;
+  --tier-gold-a: #fff1a8;
+  --tier-gold-b: #e2a91f;
+  --tier-gold-c: #8a5a00;
+  --tier-gold-ink: #2a1c00;
+  --tier-gold-glow: rgb(255 205 70 / 0.6);
+  --tier-gold-text: #ffd75e;
+  --tier-legend-a: #d2f25c;
+  --tier-legend-b: #5cc8ff;
+  --tier-legend-c: #c58bff;
+  --tier-legend-d: #ff8f6b;
+  --tier-legend-ink: #0d1006;
+  --tier-legend-glow: rgb(197 139 255 / 0.55);
+  --tier-legend-text: #d2f25c;
 
   --focus: #ffffff;
   --warning: #ffb340;
