@@ -608,7 +608,7 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
       id: `meal-${m.meal}`,
       title: `Add ${addG} g of protein at ${MEAL_WORD[m.meal]}`,
       titleHi: `${MEAL_HI[m.meal]} mein ${addG} g protein badhao`,
-      detail: `${MEAL_WORD[m.meal].charAt(0).toUpperCase()}${MEAL_WORD[m.meal].slice(1)} averages ${m.avgG} g against about ${nutrition.mealAim}. Two eggs, curd or a scoop of whey closes it.`,
+      detail: `${MEAL_WORD[m.meal].charAt(0).toUpperCase()}${MEAL_WORD[m.meal].slice(1)} averaged ${m.avgG} g of protein against about ${nutrition.mealAim} g. Two eggs, curd or a scoop of whey closes it.`,
       checkText: `${MEAL_WORD[m.meal].charAt(0).toUpperCase()}${MEAL_WORD[m.meal].slice(1)} at ${nutrition.mealAim - 5} g or more on 5 days.`,
       check: { kind: 'mealProtein', meal: m.meal, minG: nutrition.mealAim - 5, days: 5 },
     });
