@@ -31,6 +31,8 @@ import {
   type Winner,
 } from '@/app/community';
 import { PageHeader } from '@/app/layout/PageHeader';
+import { groupRankStory } from '@/domain/share/story';
+import { RankShareSheet } from '@/features/share/RankShareSheet';
 import {
   ActionMenu,
   BottomSheet,
@@ -42,6 +44,7 @@ import {
   Section,
   SegmentedControl,
   Skeleton,
+  CapsuleButton,
   TextButton,
   TextField,
 } from '@/components/kit';
@@ -133,6 +136,7 @@ export function GroupPage() {
   const [open, setOpen] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
   const [sheet, setSheet] = useState<'rename' | 'members' | 'code' | 'leave' | null>(null);
+  const [sharing, setSharing] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const sync = useSyncStatus();
   const proBoards = useFeature('group_boards');
@@ -304,6 +308,26 @@ export function GroupPage() {
                 </Link>
               )}
             </div>
+
+            {me && b.available && me.score > 0 ? (
+              <div
+                className="flex items-center gap-3 rounded-panel bg-lime-dim px-5 py-4"
+                data-group-mine
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="type-headline tabular block text-text-1">
+                    You are #{me.rank} of {b.group.members}
+                  </span>
+                  <span className="type-subhead tabular block text-text-2">
+                    {me.score} {me.score === 1 ? 'point' : 'points'}{' '}
+                    {offset === 0 ? `this ${periodName}` : `last ${periodName}`}
+                  </span>
+                </span>
+                <CapsuleButton tone="lime" onClick={() => setSharing(true)} data-share-rank>
+                  Share
+                </CapsuleButton>
+              </div>
+            ) : null}
 
             <Section
               title={`${which} · ${dateLabel(b.startsOn)} to ${dateLabel(b.endsOn)}`}
@@ -488,6 +512,39 @@ export function GroupPage() {
             }}
           />
         </>
+      ) : null}
+      {b && me ? (
+        <RankShareSheet
+          open={sharing}
+          onClose={() => setSharing(false)}
+          fileTag={`group-${period}`}
+          load={async () => {
+            // Movement only against a finished, frozen period.
+            let previousRank: number | null = null;
+            if (offset === 0) {
+              const prev = await getBoard(b.group.id, period, -1).catch(() => null);
+              const was = prev?.locked && prev.available ? prev.rows.find((r) => r.me) : null;
+              if (was) previousRank = was.rank;
+            }
+            const leader = b.rows.reduce((m, r) => Math.max(m, r.score), 0);
+            return groupRankStory({
+              period,
+              startsOn: b.startsOn,
+              endsOn: b.endsOn,
+              rank: me.rank,
+              total: b.group.members,
+              previousRank,
+              score: me.score,
+              workouts: me.workouts,
+              hardSets: me.hardSets,
+              records: me.records,
+              proteinDays: me.proteinDays,
+              groupName: b.group.name,
+              members: b.group.members,
+              leaderScore: leader,
+            });
+          }}
+        />
       ) : null}
     </>
   );

@@ -43,6 +43,8 @@ export interface WorkoutCard {
   records: number;
   restSeconds: number | null;
   lines: ReceiptLine[];
+  /** This workout's best numbers among the workouts of the 12 weeks up to it (itself included). */
+  bests: { minutes: number | null; workingSets: number; volumeKg: number };
 }
 
 export interface PrCard {
@@ -131,6 +133,16 @@ export function workoutCard(data: TrainingData, workoutId: string): WorkoutCard 
   const setRests = [...restIntervals(all).values()]
     .filter((r) => r.kind === 'set')
     .map((r) => r.seconds);
+  const since = addDays(session.date, -84).getTime();
+  const recent = sessions.slice(0, index + 1).filter((s) => s.date.getTime() >= since);
+  const minutesList = recent.map(sessionDurationMinutes).filter((m): m is number => m !== null);
+  const bests = {
+    minutes: minutesList.length ? Math.max(...minutesList) : null,
+    workingSets: Math.max(
+      ...recent.map((s) => s.exercises.flatMap((e) => e.sets).filter(isWorkingSet).length),
+    ),
+    volumeKg: Math.max(...recent.map(sessionVolumeLoad)),
+  };
   return {
     workoutId,
     title: session.workout.name,
@@ -142,6 +154,7 @@ export function workoutCard(data: TrainingData, workoutId: string): WorkoutCard 
     records: new Set(records.map((r) => r.exerciseId)).size,
     restSeconds: setRests.length >= 2 ? median(setRests) : null,
     lines: session.exercises.filter((e) => e.sets.some(isWorkingSet)).map(bestSet),
+    bests,
   };
 }
 
