@@ -50,7 +50,7 @@ import {
 import { formatWeightValue, type WeightUnit } from '@/lib/units';
 import type { TrackingType } from '@/domain/models/schemas';
 import { useLongPress } from '@/components/ui/useLongPress';
-import { angleKind, DEFAULT_ANGLE, formatAngle, type AngleKind } from '@/domain/workout/angle';
+import { angleKind, angleStart, formatAngle, type AngleKind } from '@/domain/workout/angle';
 import { checkProgression, loadIncrement, progressionStyle } from '@/domain/analytics/progression';
 import { fromDisplayWeight, toDisplayWeight } from '@/lib/units';
 import { useFeature } from '@/app/entitlement';
@@ -496,6 +496,7 @@ function ExerciseCardImpl({
       {editingAngle && angle ? (
         <AngleSheet
           kind={angle}
+          startAt={angleStart(exercise, angle)}
           value={we.angleDeg ?? null}
           onChange={(deg) => void updateWorkoutExerciseAngle(db, we.id, deg)}
           onClose={() => setEditingAngle(false)}
@@ -768,11 +769,13 @@ export const ExerciseCard = memo(ExerciseCardImpl);
 /** Bench angle for this workout's exercise: stepper, presets, keypad and a bench diagram. */
 function AngleSheet({
   kind,
+  startAt,
   value,
   onChange,
   onClose,
 }: {
   kind: AngleKind;
+  startAt: number;
   value: number | null;
   onChange: (deg: number | null) => void;
   onClose: () => void;
@@ -800,7 +803,7 @@ function AngleSheet({
         </PrimaryButton>
       }
     >
-      <AnglePicker kind={kind} value={deg} startAt={DEFAULT_ANGLE[kind]} onChange={setDeg} />
+      <AnglePicker kind={kind} value={deg} startAt={startAt} onChange={setDeg} />
     </Sheet>
   );
 }
