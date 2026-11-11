@@ -1,14 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { Camera, ScanText, Sparkles } from 'lucide-react';
+import { FileChartColumn, ImagePlus, Medal, Sparkles } from 'lucide-react';
 import { BottomSheet, PrimaryButton, SecondaryButton } from '@/components/kit';
 import { cn } from '@/lib/cn';
 import { seenRelease, markReleaseSeen, RELEASE_ID } from './whatsNewStore';
 
 /**
- * Shown once per release when the app opens, to everyone. This release (November 2026) is the
- * new name: Overload is now Macrotrophy, with a new logo and address, and the AI is Macrotrophy
- * AI, in two short steps. Never over a running workout or setup.
+ * Shown once per release when the app opens, to everyone. This release (November 2026) is story
+ * cards on your own photo, the new badges and the weekly report, in three short steps. Never over
+ * a running workout or setup.
  */
 export function WhatsNew() {
   const { pathname } = useLocation();
@@ -68,8 +68,8 @@ export function WhatsNew() {
                 Next
               </PrimaryButton>
             ) : (
-              <PrimaryButton block data-autofocus onClick={() => go('/food')} data-release-open>
-                Log a meal
+              <PrimaryButton block data-autofocus onClick={() => go('/report')} data-release-open>
+                See your weekly report
               </PrimaryButton>
             )}
             <SecondaryButton
@@ -110,46 +110,67 @@ const STEPS: {
   body: ReactNode;
 }[] = [
   {
-    icon: <img src="/icon.svg" alt="" width={64} height={64} className="size-16 rounded-[18px]" />,
-    kicker: 'A new name',
-    title: 'Overload is now Macrotrophy',
-    lead: 'The same app and the same account, with a new name and a new logo.',
+    icon: <ImagePlus className="size-8" strokeWidth={1.5} />,
+    kicker: 'Story cards',
+    title: 'Your workout on your own photo',
+    lead: 'Share a workout, a record or your streak as a story card, with your photo behind it.',
     body: (
-      <ul className="type-body mt-4 flex flex-col gap-2.5 text-left text-text-2">
+      <ul className="type-body mt-4 flex flex-col gap-2.5 text-left text-text-2" data-release-cards>
         <Point>
-          <strong className="font-semibold text-text-1">Nothing to do.</strong> Your workouts,
-          meals, records, groups and Pro stay exactly as they are.
+          <strong className="font-semibold text-text-1">Seven designs</strong>, from stickers to a
+          receipt and a scoreboard.
         </Point>
         <Point>
-          <strong className="font-semibold text-text-1">Our new address</strong> is macrotrophy.in.
-          The app on your home screen keeps working.
+          <strong className="font-semibold text-text-1">Drag, pinch and resize</strong> the stats
+          anywhere on the photo, and pick the colours and font.
         </Point>
         <Point>
-          <strong className="font-semibold text-text-1">Find us</strong> on Instagram at
-          @macrotrophy.in.
+          <strong className="font-semibold text-text-1">Share your rank</strong> from Groups and
+          the global leaderboard.
         </Point>
       </ul>
     ),
   },
   {
-    icon: <Sparkles className="size-8" strokeWidth={1.5} />,
-    kicker: 'Macrotrophy AI',
-    title: 'Your AI has a new name too',
-    lead: 'OverloadGPT is now Macrotrophy AI. Log food in seconds from Add food.',
+    icon: <Medal className="size-8" strokeWidth={1.5} />,
+    kicker: 'Badges',
+    title: 'Badges got a glow up',
+    lead: 'A new look for every badge, and a proper moment when you earn one.',
     body: (
-      <ul className="mt-3 flex w-full flex-col gap-1.5 text-left" data-release-ai>
-        <AiRow icon={<Sparkles className="size-4" />} name="Ask AI">
-          type or say what you ate
-        </AiRow>
-        <AiRow icon={<Camera className="size-4" />} name="AI snap">
-          take a photo of your plate
-        </AiRow>
-        <AiRow icon={<ScanText className="size-4" />} name="Label">
-          copy a pack&apos;s nutrition label
-        </AiRow>
-        <li className="type-subhead mt-1 text-text-2">
-          Ask AI and AI snap are part of Pro. Explain buttons on Progress use it too.
-        </li>
+      <ul className="type-body mt-4 flex flex-col gap-2.5 text-left text-text-2" data-release-badges>
+        <Point>
+          <strong className="font-semibold text-text-1">A shape for each kind</strong>: workouts,
+          streaks, records, strength and habits.
+        </Point>
+        <Point>
+          <strong className="font-semibold text-text-1">Bronze to Legend.</strong> Gold shines and
+          Legend shifts colour.
+        </Point>
+        <Point>
+          <strong className="font-semibold text-text-1">See what is next</strong> and how close you
+          are, right after you unlock one.
+        </Point>
+      </ul>
+    ),
+  },
+  {
+    icon: <FileChartColumn className="size-8" strokeWidth={1.5} />,
+    kicker: 'Weekly report',
+    title: 'Your week, read for you',
+    lead: 'One report a week that reads your training and your food together.',
+    body: (
+      <ul className="type-body mt-4 flex flex-col gap-2.5 text-left text-text-2" data-release-report>
+        <Point>
+          <strong className="font-semibold text-text-1">Three changes for next week</strong>, each
+          checked in your next report.
+        </Point>
+        <Point>
+          <strong className="font-semibold text-text-1">Strength, muscles, weight and food</strong>,
+          all from your own logs, in English or Hinglish.
+        </Point>
+        <Point>
+          <strong className="font-semibold text-text-1">Download it as a PDF.</strong> Part of Pro.
+        </Point>
       </ul>
     ),
   },
@@ -160,22 +181,6 @@ function Point({ children }: { children: ReactNode }) {
     <li className="flex gap-2.5">
       <Sparkles className="mt-1 size-4 shrink-0 text-lime" aria-hidden />
       <span>{children}</span>
-    </li>
-  );
-}
-
-function AiRow({ icon, name, children }: { icon: ReactNode; name: string; children: ReactNode }) {
-  return (
-    <li className="flex items-center gap-3 rounded-nested bg-surface-2 px-3 py-2">
-      <span
-        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime"
-        aria-hidden
-      >
-        {icon}
-      </span>
-      <span className="type-subhead text-text-1">
-        <strong className="font-semibold">{name}</strong>: {children}
-      </span>
     </li>
   );
 }

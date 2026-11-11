@@ -184,3 +184,64 @@ test('science and legal text is in the HTML; sign-in and sign-up stay out of sea
   expect(sitemap).not.toContain('/sign-up<');
   expect(sitemap).not.toContain('/sign-in<');
 });
+
+/** A Hevy export with two workouts in the week a report can be made for now. */
+function hevyWeek(now = new Date()): string {
+  const monday = new Date(now);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const sundayEvening = new Date(monday);
+  sundayEvening.setDate(monday.getDate() + 6);
+  sundayEvening.setHours(18, 0, 0, 0);
+  const start = new Date(monday);
+  if (now < sundayEvening) start.setDate(monday.getDate() - 7);
+  const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const at = (offset: number, h: number) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + offset);
+    return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()}, ${h}:00`;
+  };
+  const rows = ['"title","start_time","end_time","description","exercise_title","superset_id","exercise_notes","set_index","set_type","weight_kg","reps","distance_km","duration_seconds","rpe"'];
+  for (const [day, title] of [
+    [0, 'Upper'],
+    [2, 'Lower'],
+  ] as const) {
+    const lift = title === 'Upper' ? 'Bench Press (Barbell)' : 'Squat (Barbell)';
+    for (const i of [0, 1, 2])
+      rows.push(`"${title}","${at(day, 18)}","${at(day, 19)}","","${lift}",,"",${i},"normal",80,6,,,8`);
+  }
+  return rows.join('\n');
+}
+
+test('the weekly report PDF downloads under the production security policy', async ({ page }) => {
+  test.setTimeout(150_000);
+  const { signUpFresh } = await import('./session');
+  // The production build has no demo data: two workouts come in through the Hevy import.
+  await signUpFresh(page, { at: '/import?next=/report', tag: 'pwa-report' });
+  await waitForServiceWorker(page);
+  await page.getByRole('radio', { name: /^Hevy/ }).click();
+  await page.getByRole('button', { name: 'Continue with Hevy' }).click();
+  await page
+    .getByLabel('Hevy export file')
+    .setInputFiles({ name: 'workouts.csv', mimeType: 'text/csv', buffer: Buffer.from(hevyWeek()) });
+  await page.getByRole('button', { name: 'Import 2 workouts' }).click();
+  await expect(page.getByRole('heading', { name: 'Your history is in' })).toBeVisible();
+  await page.goto('/report');
+  await page.locator('[data-report-make]').click();
+  await expect(page.locator('[data-report]')).toBeVisible();
+  await page.locator('[data-report-download]').click();
+  const sheet = page.getByRole('dialog', { name: 'Download your report' });
+  const download = page.waitForEvent('download');
+  await sheet.locator('[data-report-save-pdf]').click();
+  const file = await download;
+  const { readFileSync } = await import('node:fs');
+  expect(readFileSync((await file.path())!).subarray(0, 5).toString()).toBe('%PDF-');
+  // The PDF code is fetched when used, never installed with the app.
+  const precached = await page.evaluate(async () => {
+    const names = await caches.keys();
+    const urls: string[] = [];
+    for (const n of names) for (const r of await (await caches.open(n)).keys()) urls.push(r.url);
+    return urls.filter((u) => /makePdf-|dm-sans-latin-400-normal-[^/]*\.woff$/.test(u));
+  });
+  expect(precached).toEqual([]);
+});

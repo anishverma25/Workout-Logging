@@ -10,7 +10,7 @@ const executablePath = process.env.PW_CHROMIUM_PATH;
 const seenAnnouncement = (origin: string) => ({
   cookies: [],
   origins: [
-    { origin, localStorage: [{ name: 'overload.whatsNew', value: '2026-11-macrotrophy' }] },
+    { origin, localStorage: [{ name: 'overload.whatsNew', value: '2026-11-report' }] },
   ],
 });
 

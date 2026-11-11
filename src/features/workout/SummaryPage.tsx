@@ -1,4 +1,5 @@
-import { badgesEarnedIn, computeBadges } from '@/domain/achievements/badges';
+import { badgesEarnedIn, computeBadges, type Badge } from '@/domain/achievements/badges';
+import { BadgeUnlock, markBadgesSeen, seenBadges } from '@/features/medals/BadgeUnlock';
 import { BadgeMedallion } from '@/features/medals/BadgeMedallion';
 import { MedalIcon } from '@/features/medals/Medal';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -36,6 +37,18 @@ import { haptic } from '@/lib/haptics';
 import { formatWeight, toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { useNow } from '@/lib/useNow';
 
+/**
+ * End-to-end tests finish many workouts; the full-screen unlock would sit over every one of
+ * them, so in the e2e build it shows only where a test turns it on.
+ */
+function unlockInTests() {
+  try {
+    return localStorage.getItem('overload.test.unlock') === 'on';
+  } catch {
+    return false;
+  }
+}
+
 /** Shown right after finishing. Only metrics with real meaning; nothing padded in. */
 export function SummaryPage() {
   const { workoutId } = useParams();
@@ -48,19 +61,41 @@ export function SummaryPage() {
   );
   // Milestones this workout reached: counted over all history up to and including it.
   // Badges this workout unlocked: counted over all history up to and including it.
-  const unlocked = useMemo(() => {
-    if (!training.data || !workoutId) return [];
-    return badgesEarnedIn(
-      computeBadges({
-        sessions: buildSessions(training.data),
-        exercises: training.data.exercises,
-        bodyWeights: training.data.bodyWeights,
-        now: new Date(),
-        weekStartsOn: prefs.weekStartsOn,
-      }),
-      workoutId,
-    );
-  }, [training.data, workoutId, prefs.weekStartsOn]);
+  const allBadges = useMemo(() => {
+    if (!training.data) return [];
+    return computeBadges({
+      sessions: buildSessions(training.data),
+      exercises: training.data.exercises,
+      bodyWeights: training.data.bodyWeights,
+      now: new Date(),
+      weekStartsOn: prefs.weekStartsOn,
+    });
+  }, [training.data, prefs.weekStartsOn]);
+  const unlocked = useMemo(
+    () => (workoutId ? badgesEarnedIn(allBadges, workoutId) : []),
+    [allBadges, workoutId],
+  );
+
+  // The unlock moment: once per badge on this phone, only for a workout finished in the last
+  // day (opening an old summary never sets it off).
+  const account = useAccount();
+  const accountId = account.status === 'signedIn' ? (account.user?.id ?? null) : null;
+  const [celebrate, setCelebrate] = useState<Badge[] | null>(null);
+  const [shareBadge, setShareBadge] = useState<Badge | null>(null);
+  const endedAt = summary?.session.workout.endedAt ?? null;
+  useEffect(() => {
+    if (!unlocked.length || celebrate !== null || !endedAt) return;
+    if (Date.now() - Date.parse(endedAt) > 24 * 3600_000) return;
+    if (import.meta.env.MODE === 'e2e' && !unlockInTests()) return;
+    const seen = seenBadges(accountId);
+    const fresh = unlocked.filter((b) => !seen.has(b.id));
+    if (!fresh.length) return;
+    markBadgesSeen(accountId, fresh.map((b) => b.id));
+    const order = { legend: 0, gold: 1, silver: 2, bronze: 3 } as const;
+    // Effects may set state from data the page just read; this runs once per new badge set.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCelebrate([...fresh].sort((a, b) => order[a.tier] - order[b.tier]));
+  }, [unlocked, celebrate, endedAt, accountId]);
 
   const [sharing, setSharing] = useState(false);
   const [aboutChanges, setAboutChanges] = useState(false);
@@ -155,6 +190,20 @@ export function SummaryPage() {
         ) : null}
       </dl>
       <ShareSheet workoutId={session.workout.id} open={sharing} onClose={() => setSharing(false)} />
+      {shareBadge ? (
+        <ShareSheet workoutId={session.workout.id} badgeId={shareBadge.id} open onClose={() => setShareBadge(null)} />
+      ) : null}
+      {celebrate?.length ? (
+        <BadgeUnlock
+          queue={celebrate}
+          all={allBadges}
+          onDone={() => setCelebrate([])}
+          onShare={(b) => {
+            setCelebrate([]);
+            setShareBadge(b);
+          }}
+        />
+      ) : null}
 
       {summary.prs.length > 0 ? <RecordsCard prs={summary.prs} unit={unit} /> : null}
 

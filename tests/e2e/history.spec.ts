@@ -162,25 +162,58 @@ test('a past workout can be started again from its page', async ({ page }) => {
   ).toBeVisible();
 });
 
-test('a workout makes story cards that save as 1080 × 1920 images', async ({ page }) => {
+test('a workout makes story cards the person arranges, saved as 1080 × 1920 images', async ({
+  page,
+}) => {
   await page.goto('/history');
   await page.locator('a[href^="/history/"]').first().click();
   // Share lives in the workout's menu (UI v3, S9.2).
   await page.getByRole('button', { name: 'Workout options' }).click();
   await page.getByRole('menuitem', { name: 'Share' }).click();
   const sheet = page.getByRole('dialog', { name: 'Share to your story' });
-  await expect(sheet.getByRole('img')).toBeVisible();
-  for (const name of ['Receipt', 'Total lifted']) {
-    await sheet.getByRole('button', { name, exact: true }).click();
-    await expect(sheet.getByRole('img')).toHaveAttribute('alt', new RegExp(name));
-    const size = await sheet.getByRole('img').evaluate(async (el) => {
-      const img = el as HTMLImageElement;
-      await img.decode();
-      return [img.naturalWidth, img.naturalHeight];
-    });
-    expect(size).toEqual([1080, 1920]);
+  const canvas = sheet.locator('[data-story-canvas]');
+  const handle = sheet.locator('[data-story-handle]');
+  await expect(canvas).toBeVisible();
+  await expect(sheet.getByRole('button', { name: 'Workout', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  const where = async () => (await handle.boundingBox())!;
+
+  // Drag the stats box up: grab it just inside its corner handle.
+  const before = await where();
+  await page.mouse.move(before.x - 10, before.y - 10);
+  await page.mouse.down();
+  await page.mouse.move(before.x - 40, before.y - 140, { steps: 6 });
+  await page.mouse.up();
+  const moved = await where();
+  expect(moved.y).toBeLessThan(before.y - 60);
+
+  // Smaller with the Size slider, then every design draws.
+  await sheet.locator('#story-size').fill('60');
+  const smaller = await where();
+  expect(Math.abs(smaller.x - moved.x) + Math.abs(smaller.y - moved.y)).toBeGreaterThan(10);
+  for (const design of ['Receipt', 'LED scoreboard', 'Achievement', 'Die-cut sticker', 'Caption note', 'Rings widget']) {
+    await sheet.getByRole('button', { name: design, exact: true }).click();
+    await expect(sheet.getByRole('button', { name: design, exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   }
+
+  // A photo from the phone becomes the background, without leaving the device.
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAIAAAA2iEnWAAAAEklEQVR4nGNwaDjg0HCAAYUCAFuVCQES9ecaAAAAAElFTkSuQmCC',
+    'base64',
+  );
+  await sheet.locator('[data-story-photo]').setInputFiles({ name: 'me.png', mimeType: 'image/png', buffer: png });
+  await expect(sheet.getByRole('button', { name: 'Use your photo' })).toHaveAttribute('aria-pressed', 'true');
+
   const download = page.waitForEvent('download');
   await sheet.getByRole('button', { name: 'Save image' }).click();
-  expect((await download).suggestedFilename()).toMatch(/^overload-total-.+\.png$/);
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/^macrotrophy-workout-.+\.png$/);
+  const bytes = await (await import('node:fs/promises')).readFile((await file.path())!);
+  // The PNG header's width and height.
+  expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([1080, 1920]);
 });

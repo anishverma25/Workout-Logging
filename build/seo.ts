@@ -84,6 +84,10 @@ async function scienceGroups(): Promise<StaticTopicGroup[]> {
   const server = await createServer({
     server: { middlewareMode: true, hmr: false, ws: false },
     appType: 'custom',
+    // Its own cache, so it never races the dev server's dependency optimizer (which would
+    // leave the app asking for stale pre-bundled files).
+    cacheDir: 'node_modules/.vite-seo',
+    optimizeDeps: { noDiscovery: true },
     logLevel: 'error',
   });
   try {

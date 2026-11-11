@@ -26,6 +26,20 @@ async function pickUsername(page: Page, name: string) {
   await expect(page.locator('[data-my-username]')).toHaveText(`@${name.toLowerCase()}`);
 }
 
+/** Opens the rank card, checks it waits for the real rank, and saves a 1080 × 1920 image. */
+async function shareRank(page: Page, file: RegExp) {
+  await page.locator('[data-share-rank]').click();
+  const sheet = page.getByRole('dialog', { name: 'Share your rank' });
+  await expect(sheet.locator('[data-story-canvas]')).toBeVisible();
+  const download = page.waitForEvent('download');
+  await sheet.getByRole('button', { name: 'Save image' }).click();
+  const saved = await download;
+  expect(saved.suggestedFilename()).toMatch(file);
+  const bytes = await (await import('node:fs/promises')).readFile((await saved.path())!);
+  expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([1080, 1920]);
+  await sheet.getByRole('button', { name: 'Close' }).click();
+}
+
 /** Logs a short workout of three working sets, then stretches it to 30 minutes on the server. */
 async function logWorkout(page: Page, email: string) {
   await page.goto('/workout');
@@ -135,6 +149,11 @@ test('two friends: username, create, join by code, points, home card and admin',
   // Anish's Home card shows the group once he has training.
   await page.goto('/');
   await expect(page.locator('[data-home-group="Iron Squad"]')).toContainText('#1');
+  // Anish shares first place as a story card.
+  await page.goto('/groups');
+  await page.locator('[data-group-row="Iron Squad"]').click();
+  await expect(page.locator('[data-group-mine]')).toContainText('You are #1 of 2');
+  await shareRank(page, /^macrotrophy-group-week\.png$/);
 
   // Admin: rename and remove the friend, who then loses access.
   await page.goto('/groups');
@@ -230,6 +249,7 @@ test('global leaderboard: everyone by name, the username only when they turn it 
   await page.goto('/groups/global');
   await expect(page.locator('[data-global-mine]')).toContainText(/You are #\d+ of \d+/);
   await expect(page.locator('[data-global-row][data-me]')).toContainText(name);
+  await shareRank(page, /^macrotrophy-rank-week\.png$/);
   const toggle = page.getByRole('switch');
   await expect(toggle).toHaveAttribute('aria-checked', 'false');
   await toggle.click();

@@ -19,6 +19,7 @@ const pages = [
   '/settings',
   '/journey',
   '/badges',
+  '/report',
   '/exercises',
   '/science',
   '/pro',

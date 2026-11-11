@@ -19,6 +19,11 @@ export default defineConfig(({ mode }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
+    // Libraries only the report PDF loads, bundled up front in development so the first
+    // download does not trigger a dependency reload (production builds are unaffected).
+    optimizeDeps: {
+      include: ['pdf-lib', '@pdf-lib/fontkit', 'react-dom/server'],
+    },
     server: {
       port: 5173,
       host: true,

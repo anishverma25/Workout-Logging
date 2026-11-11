@@ -1,11 +1,16 @@
-import { angleKind, formatAngle, signedAngle } from './angle';
+import { angleKind, angleStart, formatAngle, signedAngle } from './angle';
 
 describe('bench angle', () => {
   it('knows which exercises take an incline or a decline', () => {
     expect(angleKind({ name: 'Incline dumbbell press' })).toBe('incline');
     expect(angleKind({ name: 'Decline barbell bench press' })).toBe('decline');
     expect(angleKind({ name: 'Incline dumbbell curl' })).toBe('incline');
-    expect(angleKind({ name: 'Barbell bench press' })).toBeNull();
+    // A barbell bench press may be done on an adjustable bench, so it takes an angle too.
+    expect(angleKind({ name: 'Barbell bench press' })).toBe('incline');
+    expect(angleStart({ name: 'Barbell bench press' }, 'incline')).toBe(0);
+    expect(angleStart({ name: 'Incline barbell bench press' }, 'incline')).toBe(30);
+    expect(angleKind({ name: 'Close-grip bench press' })).toBeNull();
+    expect(angleKind({ name: 'Dumbbell bench press' })).toBeNull();
     // Smith machine presses sit on an adjustable bench, flat to upright.
     expect(angleKind({ name: 'Smith machine bench press' })).toBe('incline');
     expect(angleKind({ name: 'Smith machine shoulder press' })).toBe('incline');

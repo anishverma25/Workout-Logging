@@ -413,3 +413,22 @@ Read README.md for setup, architecture and calculation rules.
   science topics are rendered by a short-lived Vite server in `build/seo.ts`), replaced by the
   app on start like the guides; guides and science carry BreadcrumbList JSON-LD
   (`breadcrumb`). No visible change.
+- Share cards 2.0, weekly report and badges 2.0 (November 2026, migration
+  `20261110000021_weekly_reports.sql`, Dexie unchanged):
+  - Bench angle on the flat barbell bench press too (`angleStart`, starts at 0).
+  - Story cards: one canvas renderer (`features/share/story/render.ts`, 1080 × 1920, designs A
+    to G) for the editor preview and the saved PNG; content from `domain/share/story.ts`
+    (workout, PR, streak, global and group rank, never other people's names); placement maths
+    in `domain/share/layout.ts`; fonts in `share/story/fonts.ts` (lazy, `LAZY_FONTS` keeps them
+    out of the precache). Rank cards from Groups and the global board (`RankShareSheet`).
+  - Weekly report (Pro `weekly_report`, `docs/weekly-report.md`): engine
+    `domain/analytics/weekly.ts`, one per week by `claim_weekly_report` on the server clock,
+    page `/report`, Quick and Full, English and Hinglish, PDF in `features/report/pdf` (own
+    pagination, vector charts, Dark and Print friendly). Science topic `weekly-report`.
+  - Badges 2.0 (`BadgeMedallion`: a shape per family, metal per tier, `FIT` keeps numbers inside;
+    `BadgeUnlock`: the unlock moment once per badge per phone, only after a workout finished in
+    the last day; in the e2e build only where `overload.test.unlock` is `on`). Tier tokens
+    `--tier-*-a/b/c/ink/glow/text`.
+  - `build/seo.ts` uses its own Vite `cacheDir` so it never races the dev server's optimizer.
+  - Release `2026-11-report` (three steps: story cards, badges, weekly report), `CACHE_EPOCH`
+    `ui-18`.

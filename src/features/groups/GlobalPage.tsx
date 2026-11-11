@@ -13,6 +13,7 @@ import {
 } from '@/app/community';
 import { PageHeader } from '@/app/layout/PageHeader';
 import {
+  CapsuleButton,
   InlineNotice,
   Section,
   SegmentedControl,
@@ -21,6 +22,8 @@ import {
   TextButton,
 } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
+import { globalRankStory } from '@/domain/share/story';
+import { RankShareSheet } from '@/features/share/RankShareSheet';
 import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { HowPointsWork } from './GroupsPage';
@@ -48,6 +51,7 @@ export function GlobalPage() {
   const [open, setOpen] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [shown, setShown] = useState<boolean | null>(null);
+  const [sharing, setSharing] = useState(false);
   const sync = useSyncStatus();
   const board = useRemote(
     () => getGlobalBoard(period, offset),
@@ -167,6 +171,11 @@ export function GlobalPage() {
                   </>
                 )}
               </span>
+              {b.mine ? (
+                <CapsuleButton tone="lime" onClick={() => setSharing(true)} data-share-rank>
+                  Share
+                </CapsuleButton>
+              ) : null}
             </div>
 
             {sync.pending - sync.rejected > 0 ? (
@@ -250,6 +259,36 @@ export function GlobalPage() {
           </>
         ) : null}
       </div>
+      {b?.mine ? (
+        <RankShareSheet
+          open={sharing}
+          onClose={() => setSharing(false)}
+          fileTag={`rank-${period}`}
+          load={async () => {
+            const mine = b.mine;
+            if (!mine) return null;
+            // Movement only against a finished, frozen period.
+            let previousRank: number | null = null;
+            if (offset === 0) {
+              const prev = await getGlobalBoard(period, -1).catch(() => null);
+              if (prev?.locked && prev.mine) previousRank = prev.mine.rank;
+            }
+            return globalRankStory({
+              period,
+              startsOn: b.startsOn,
+              endsOn: b.endsOn,
+              rank: mine.rank,
+              total: b.total,
+              previousRank,
+              score: mine.score,
+              workouts: mine.workouts,
+              hardSets: mine.hardSets,
+              records: mine.records,
+              proteinDays: mine.proteinDays,
+            });
+          }}
+        />
+      ) : null}
     </>
   );
 }

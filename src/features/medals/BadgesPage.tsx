@@ -15,6 +15,7 @@ import { formatCalendarDate } from '@/lib/format/dates';
 import { useNow } from '@/lib/useNow';
 import { ShareSheet } from '../share/ShareSheet';
 import { BadgeMedallion } from './BadgeMedallion';
+import { toGo } from './BadgeUnlock';
 
 const GROUP_ORDER: BadgeGroup[] = ['workouts', 'streaks', 'medals', 'plates', 'tonnage', 'habits'];
 
@@ -59,30 +60,33 @@ export function BadgesPage() {
       <PageHeader
         back={{ to: '/more', label: 'More' }}
         title="Badges"
-        subtitle={
-          badges.length
-            ? `${earned.length} of ${badges.length} earned`
-            : 'Earned from your workouts'
-        }
+        subtitle="Earned from your own logs"
       />
       {training.status === 'loading' ? <Skeleton className="h-96 rounded-panel" /> : null}
       {training.status === 'error' ? <ErrorState error={training.error} /> : null}
 
-      {latest ? (
-        <button
-          type="button"
-          onClick={() => setOpen(latest)}
-          className="pressable flex w-full items-center gap-4 rounded-panel border border-border bg-surface p-4 text-left"
+      {badges.length ? (
+        <section
+          aria-label="Your collection"
+          className="flex items-center gap-4 rounded-panel border border-lime/20 bg-[linear-gradient(135deg,var(--lime-dim),var(--surface)_70%)] p-4"
+          data-badge-collection
         >
-          <BadgeMedallion badge={latest} className="size-20" />
-          <span className="min-w-0">
-            <span className="type-caption block font-semibold text-gold">Latest unlock</span>
-            <span className="type-title block text-text-1">{latest.title}</span>
-            <span className="type-meta block text-text-2">
-              {formatCalendarDate(latest.earnedAt!)} · tap to share
-            </span>
-          </span>
-        </button>
+          {latest ? (
+            <button type="button" onClick={() => setOpen(latest)} className="pressable shrink-0" aria-label={`Latest: ${latest.title}`}>
+              <BadgeMedallion badge={latest} className="size-[72px]" />
+            </button>
+          ) : null}
+          <div className="min-w-0 flex-1">
+            <p className="type-title-1 tabular leading-none text-text-1">
+              {earned.length}
+              <span className="type-headline text-text-2"> of {badges.length}</span>
+            </p>
+            <p className="type-footnote mt-1 text-text-2">
+              badges collected{latest ? `. Latest: ${latest.title}, ${formatCalendarDate(latest.earnedAt!)}` : ''}
+            </p>
+            <ProgressBar value={earned.length} max={badges.length} label="Badges collected" className="mt-2.5" />
+          </div>
+        </section>
       ) : null}
 
       {next.length > 0 ? (
@@ -98,13 +102,11 @@ export function BadgesPage() {
                   onClick={() => setOpen(b)}
                   className="pressable flex w-full items-center gap-3 rounded-panel bg-surface p-3 text-left"
                 >
-                  <BadgeMedallion badge={b} className="size-12" />
+                  <BadgeMedallion badge={b} className="size-14" still />
                   <span className="min-w-0 flex-1">
                     <span className="type-headline block text-text-1">{b.title}</span>
-                    <span className="type-meta tabular block text-text-2">
-                      {b.current.toLocaleString('en-GB')} of {b.target.toLocaleString('en-GB')} ·{' '}
-                      {b.goal}
-                    </span>
+                    <span className="type-meta block text-text-2">{b.goal}</span>
+                    <span className="type-meta tabular block font-semibold text-lime">{toGo(b)}</span>
                     <ProgressBar
                       value={b.current}
                       max={b.target}
@@ -130,20 +132,23 @@ export function BadgesPage() {
                 {list.filter((b) => b.earnedAt).length}/{list.length}
               </span>
             </h2>
-            <ul className="mt-3 grid grid-cols-3 gap-x-2 gap-y-4 sm:grid-cols-4 lg:grid-cols-6">
+            <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
               {list.map((b) => (
                 <li key={b.id}>
                   <button
                     type="button"
                     onClick={() => setOpen(b)}
                     aria-label={`${b.title}, ${b.earnedAt ? `earned ${formatCalendarDate(b.earnedAt)}` : `locked, ${b.current} of ${b.target}`}`}
-                    className="pressable flex w-full flex-col items-center gap-1.5 rounded-nested px-1 py-2 text-center"
+                    className="pressable flex h-full w-full flex-col items-center gap-1.5 rounded-nested bg-surface px-1.5 pt-3 pb-2.5 text-center"
                   >
-                    <BadgeMedallion badge={b} className="size-20" />
+                    <BadgeMedallion badge={b} className="size-[72px]" />
                     <span
                       className={`type-caption line-clamp-2 font-semibold ${b.earnedAt ? 'text-text-1' : 'text-text-2'}`}
                     >
                       {b.title}
+                    </span>
+                    <span className={`type-caption tabular ${b.earnedAt ? 'text-text-3' : 'font-semibold text-lime'}`}>
+                      {b.earnedAt ? TIER_LABEL[b.tier] : toGo(b)}
                     </span>
                   </button>
                 </li>
@@ -175,7 +180,7 @@ export function BadgesPage() {
                     setOpen(null);
                   }}
                 >
-                  Share to your story
+                  Share as story card
                 </PrimaryButton>
               </>
             ) : (
