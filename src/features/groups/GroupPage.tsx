@@ -33,6 +33,7 @@ import {
 import { PageHeader } from '@/app/layout/PageHeader';
 import { groupRankStory } from '@/domain/share/story';
 import { RankShareSheet } from '@/features/share/RankShareSheet';
+import { DuelsCard } from './DuelsCard';
 import {
   ActionMenu,
   BottomSheet,
@@ -395,6 +396,7 @@ export function GroupPage() {
               ) : null}
             </Section>
 
+            {offset === 0 ? <DuelsCard groupId={groupId} rows={b.rows} version={version} /> : null}
             <PastWinners winners={winners.data ?? []} />
             <HowPointsWork />
           </>

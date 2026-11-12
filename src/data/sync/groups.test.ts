@@ -474,3 +474,102 @@ describe('Macrotrophy Score', () => {
     expect(winners[0]).toMatchObject({ username: 'frozen.week', period: 'week' });
   });
 });
+
+describe('duels', () => {
+  interface Duel {
+    id: string;
+    live: boolean;
+    challenger: string;
+    opponent: string;
+    challenger_score: number;
+    opponent_score: number;
+    mine: boolean;
+    i_am_challenger: boolean;
+  }
+  const duels = (userId: string, group: string) =>
+    as<{ limit: number; duels: Duel[] }>(userId, 'public.get_group_duels($1)', [group]);
+  /** An hour ago: inside this week whatever day the tests run, and logged live. */
+  const recently = () => new Date(Date.now() - 60 * 60_000);
+
+  async function trio() {
+    const tag = String(++n);
+    const a = await user(`duel_a${tag}`);
+    const b = await user(`duel_b${tag}`);
+    const c = await user(`duel_c${tag}`);
+    const g = await as<{ id: string; code: string }>(a, 'public.create_group($1)', ['Duelists']);
+    await as(b, 'public.join_group($1)', [g.code]);
+    await as(c, 'public.join_group($1)', [g.code]);
+    return { a, b, c, group: g.id, names: { a: `duel_a${tag}`, b: `duel_b${tag}`, c: `duel_c${tag}` } };
+  }
+
+  it('one member challenges another, and both see the live points of the week', async () => {
+    const { a, b, c, group, names } = await trio();
+    await as(a, 'public.create_duel($1, $2)', [group, names.b]);
+    await workout(b, recently(), three());
+    const mine = await duels(a, group);
+    expect(mine.limit).toBe(3);
+    expect(mine.duels).toMatchObject([
+      { live: true, challenger: names.a, opponent: names.b, challenger_score: 0, opponent_score: 13, mine: true, i_am_challenger: true },
+    ]);
+    // The whole group can watch; someone outside it cannot.
+    expect((await duels(c, group)).duels).toMatchObject([{ mine: false, opponent_score: 13 }]);
+    const outsider = await user();
+    await expect(duels(outsider, group)).rejects.toThrow(/Not a member/);
+    // Nothing but usernames and points comes back.
+    expect(JSON.stringify(mine)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-4000-9000/);
+  });
+
+  it('refuses a second duel with the same person, a duel with yourself, strangers, and a fourth in a week', async () => {
+    const { a, b, group, names } = await trio();
+    await as(a, 'public.create_duel($1, $2)', [group, names.b]);
+    await expect(as(a, 'public.create_duel($1, $2)', [group, names.b])).rejects.toThrow(/Duel exists/);
+    await expect(as(b, 'public.create_duel($1, $2)', [group, names.a])).rejects.toThrow(/Duel exists/);
+    await expect(as(a, 'public.create_duel($1, $2)', [group, names.a])).rejects.toThrow(/Duel yourself/);
+    await expect(as(a, 'public.create_duel($1, $2)', [group, 'nobody_here'])).rejects.toThrow(/No member/);
+    const tag = String(++n);
+    const outsider = await user(`duel_out${tag}`);
+    await expect(as(outsider, 'public.create_duel($1, $2)', [group, names.a])).rejects.toThrow(/Not a member/);
+    await as(a, 'public.create_duel($1, $2)', [group, names.c]);
+    const d = await user(`duel_d${tag}`);
+    const e = await user(`duel_e${tag}`);
+    const code = (await server.pg.query<{ code: string }>('select code from public.groups where id = $1', [group])).rows[0]!.code;
+    await as(d, 'public.join_group($1)', [code]);
+    await as(e, 'public.join_group($1)', [code]);
+    await as(a, 'public.create_duel($1, $2)', [group, `duel_d${tag}`]);
+    await expect(as(a, 'public.create_duel($1, $2)', [group, `duel_e${tag}`])).rejects.toThrow(/Duel limit 3/);
+    // Being challenged does not use up your own three.
+    await as(e, 'public.create_duel($1, $2)', [group, names.a]);
+    expect(b).toBeTruthy();
+    // The table itself is closed.
+    await expect(server.asUser(a, (tx) => tx.query('select * from public.group_duels'))).rejects.toThrow(/permission denied/);
+  });
+
+  it('either of the two can call it off, nobody else, and leaving the group ends it', async () => {
+    const { a, b, c, group, names } = await trio();
+    const made = await as<{ id: string }>(a, 'public.create_duel($1, $2)', [group, names.b]);
+    expect(await as<boolean>(c, 'public.cancel_duel($1)', [made.id])).toBe(false);
+    expect((await duels(a, group)).duels).toHaveLength(1);
+    expect(await as<boolean>(b, 'public.cancel_duel($1)', [made.id])).toBe(true);
+    expect((await duels(a, group)).duels).toHaveLength(0);
+    await as(a, 'public.create_duel($1, $2)', [group, names.c]);
+    await as(c, 'public.leave_group($1)', [group]);
+    expect((await duels(a, group)).duels).toHaveLength(0);
+  });
+
+  it('last week is settled once, with the winner by points', async () => {
+    const { a, b, group, names } = await trio();
+    const made = await as<{ id: string }>(a, 'public.create_duel($1, $2)', [group, names.b]);
+    // The duel was last week's, and A trained in it.
+    await server.pg.query("update public.group_duels set week_start = week_start - 7 where id = $1", [made.id]);
+    const lastWeek = new Date(Date.now() - 7 * 86_400_000);
+    await workout(a, lastWeek, three(), { createdAt: lastWeek });
+    const seen = await duels(b, group);
+    expect(seen.duels).toMatchObject([{ live: false, challenger_score: 13, opponent_score: 0 }]);
+    const row = (await server.pg.query<{ winner: string; settled_at: string }>('select winner, settled_at from public.group_duels where id = $1', [made.id])).rows[0]!;
+    expect(row.winner).toBe(a);
+    // A workout logged afterwards does not rewrite a finished duel.
+    await workout(b, lastWeek, [...three(), ...three(), ...three()], { createdAt: lastWeek });
+    expect((await duels(b, group)).duels).toMatchObject([{ challenger_score: 13, opponent_score: 0 }]);
+    expect(await as<boolean>(a, 'public.cancel_duel($1)', [made.id])).toBe(false);
+  });
+});
