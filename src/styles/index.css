@@ -833,3 +833,23 @@ html[data-landing] #landing {
     width: var(--w);
   }
 }
+
+/* The release walkthrough's voice drawing: a sound wave that breathes. */
+@keyframes release-wave {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.release-wave {
+  transform-origin: center;
+  animation: release-wave 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .release-wave {
+    animation: none;
+  }
+}
