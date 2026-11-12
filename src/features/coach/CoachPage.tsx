@@ -169,7 +169,7 @@ function Chat() {
     setError(null);
     setPending(q);
     try {
-      await ask(q, buildBrief('chat', input));
+      await ask(q, buildBrief('chat', { ...input, question: q }));
     } catch (err) {
       setError({
         question: q,

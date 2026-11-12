@@ -49,6 +49,8 @@ export interface BriefInput {
   memory?: string[];
   /** The adaptive plan: learned maintenance, this week's changes and their reasons. */
   plan?: string[];
+  /** The question being asked, to leave out tables it has nothing to do with. */
+  question?: string;
 }
 
 const MAX_LINES = 12;
@@ -509,7 +511,17 @@ function briefBody(topic: CoachTopic, input: BriefInput): string {
     case 'records':
       lines.push(...records(m, unit));
       break;
-    case 'chat':
+    case 'chat': {
+      // A question about food does not need every training table, and the other way round:
+      // a shorter brief is answered faster and stays on the point.
+      const focus = questionFocus(input.question);
+      if (focus === 'food') {
+        if (input.data) lines.push(...recentWorkouts(input.data, unit, 3));
+        lines.push(...body(m, unit));
+        if (input.targets) lines.push(...targetLines(input.targets));
+        if (input.nutrition) lines.push(...nutritionLines(input.nutrition));
+        break;
+      }
       if (input.data) lines.push(...recentWorkouts(input.data, unit));
       lines.push(
         ...insights(m),
@@ -527,10 +539,24 @@ function briefBody(topic: CoachTopic, input: BriefInput): string {
         ),
       );
       if (input.targets) lines.push(...targetLines(input.targets));
-      if (input.nutrition) lines.push(...nutritionLines(input.nutrition));
+      if (input.nutrition && focus !== 'training') lines.push(...nutritionLines(input.nutrition));
       break;
+    }
   }
   return lines.join('\n');
+}
+
+const FOOD_WORDS =
+  /\b(eat|eating|ate|food|foods|diet|protein|calorie|calories|kcal|carbs?|fats?|fibre|fiber|meal|meals|breakfast|lunch|dinner|snack|snacks|macro|macros|maintenance|deficit|surplus|hungry|whey|creatine|roti|rice|dal|paneer|eggs?|chicken|milk|curd|soya|khana|khaana|khau|khaun|khaya|bhook|nashta)\b/i;
+const TRAINING_WORDS =
+  /\b(bench|squat|deadlift|press|curl|row|rows|pull|push|lift|lifts|lifting|sets?|reps?|1rm|pr|prs|record|records|stall|stalled|plateau|stuck|volume|muscle|muscles|chest|back|legs?|arms?|shoulders?|biceps?|triceps?|glutes?|quads?|hamstrings?|calves|abs|workout|workouts|train|training|gym|exercise|exercises|rest|deload|routine|split|strength|stronger|weak|progress|warm|form|badh|ruk|ruka|ruki)\b/i;
+
+/** What a question is about, when it is clearly about only one of food or training. */
+export function questionFocus(question: string | undefined): 'food' | 'training' | 'all' {
+  if (!question) return 'all';
+  const food = FOOD_WORDS.test(question);
+  const training = TRAINING_WORDS.test(question);
+  return food && !training ? 'food' : training && !food ? 'training' : 'all';
 }
 
 /**

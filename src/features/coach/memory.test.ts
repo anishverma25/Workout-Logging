@@ -48,3 +48,16 @@ describe('what Macrotrophy AI knows', () => {
       expect(looksLikeFact(t), t).toBe(false);
   });
 });
+
+describe('a brief that stays on the point', () => {
+  it('tells food questions from training questions', async () => {
+    const { questionFocus } = await import('./brief');
+    expect(questionFocus('What can I eat to hit my protein today?')).toBe('food');
+    expect(questionFocus('kya khana chahiye raat ko')).toBe('food');
+    expect(questionFocus('Why is my bench stuck?')).toBe('training');
+    expect(questionFocus('bench kyu nahi badh raha')).toBe('training');
+    expect(questionFocus('Should I eat more to fix my squat?')).toBe('all');
+    expect(questionFocus('What should I focus on this week?')).toBe('all');
+    expect(questionFocus(undefined)).toBe('all');
+  });
+});

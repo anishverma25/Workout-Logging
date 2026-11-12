@@ -105,7 +105,7 @@ const fail = (status: number, error: string, code: string): CoachResponse => ({
  * person wait for its timeout. Food answers search the web and photos are heavier, so they get
  * longer. Every answer still goes through the same checks.
  */
-export const HEDGE_MS = { chat: 5_000, food: 9_000, photo: 12_000, label: 12_000 } as const;
+export const HEDGE_MS = { chat: 3_000, food: 7_000, photo: 10_000, label: 10_000 } as const;
 
 export interface Attempt<T> {
   /** Passed every check: use it. */
@@ -511,7 +511,7 @@ export function geminiProvider(
                     ]
                   : [{ text: m.text }],
               })),
-              generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
+              generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
               // Grounding with Google Search, for packaged and restaurant foods.
               ...(grounded ? { tools: [{ google_search: {} }] } : {}),
             }),
@@ -574,7 +574,7 @@ export function groqProvider(
                     : m.text,
                 })),
               ],
-              temperature: 0.4,
+              temperature: 0.2,
               max_completion_tokens: 2048,
               // GPT-OSS models think before answering; a little is enough for this.
               ...(gptOss ? { reasoning_effort: 'low' } : {}),
