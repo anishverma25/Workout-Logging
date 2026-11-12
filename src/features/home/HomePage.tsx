@@ -1,3 +1,4 @@
+import { NowCard } from './NowCard';
 import { useMemo, useState } from 'react';
 import { CalendarRange, Dumbbell, FileUp, Sparkles, X } from 'lucide-react';
 import { CapsuleButton } from '@/components/kit';
@@ -48,6 +49,8 @@ export function HomePage() {
       <PageHeader title={title} eyebrow={formatCalendarDate(now)} compactTitle="Home" />
       {training.status === 'success' && !ownProfile ? <SetupPrompt /> : null}
       {model ? <ProNudgeCard workoutDates={workoutDates} records={model.recentPrCount} /> : null}
+
+      {model && ownProfile ? <NowCard training={training} today={model.today} now={now} /> : null}
 
       {training.status === 'loading' ? <HomeSkeleton /> : null}
       {training.status === 'error' ? (

@@ -45,9 +45,15 @@ export interface BriefInput {
     targets: DailyTargets;
     diet: DietType | null;
   } | null;
+  /** What the person has told the app about their life (Coming up, pain, things to remember). */
+  memory?: string[];
+  /** The adaptive plan: learned maintenance, this week's changes and their reasons. */
+  plan?: string[];
 }
 
 const MAX_LINES = 12;
+/** The server takes briefs up to 12,000 characters; memory never pushes one past this. */
+export const BRIEF_ROOM = 11_000;
 
 const day = (d: Date) => d.toISOString().slice(0, 10);
 const words = (v: string) => v.replace(/_/g, ' ');
@@ -449,7 +455,7 @@ function recentWorkouts(data: TrainingData, unit: WeightUnit, limit = 6): string
 // ---------------------------------------------------------------------------------------------
 
 /** The brief for an Explain button or the chat. */
-export function buildBrief(topic: CoachTopic, input: BriefInput): string {
+function briefBody(topic: CoachTopic, input: BriefInput): string {
   const { model: m, unit } = input;
   const lines = [...personLines(input)];
   if (topic === 'checkin') {
@@ -525,6 +531,29 @@ export function buildBrief(topic: CoachTopic, input: BriefInput): string {
       break;
   }
   return lines.join('\n');
+}
+
+/**
+ * The numbers for one answer. What the person told the app about their life goes first and the
+ * week's plan second; both give way, a line at a time, before the brief would grow too long.
+ */
+export function buildBrief(topic: CoachTopic, input: BriefInput): string {
+  const brief = briefBody(topic, input);
+  const memory = [...(input.memory ?? [])];
+  const plan = [...(input.plan ?? [])];
+  const head = () =>
+    [
+      ...(memory.length
+        ? ['What this person has told us about their life (use it, do not repeat it back):', ...memory, '']
+        : []),
+      ...(plan.length
+        ? ["This week's plan, decided by the app's fixed rules (explain it, never change its numbers):", ...plan, '']
+        : []),
+    ].join('\n');
+  while ((memory.length || plan.length) && head().length + brief.length > BRIEF_ROOM)
+    (plan.length > memory.length ? plan : memory).pop();
+  const top = head();
+  return top ? `${top}\n${brief}` : brief;
 }
 
 /** Muscles most people train on purpose, so a suggestion about them is worth asking. */

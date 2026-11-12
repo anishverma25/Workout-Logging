@@ -9,7 +9,11 @@ import { matchSpokenExercise, parseSpokenSet, type Spoken } from '@/domain/worko
 import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
 import { fromDisplayWeight, toDisplayWeight, type WeightUnit } from '@/lib/units';
-import { speechProblem, speechRecognition, transcriptOf, type SpeechRecognitionLike } from '../food/speech';
+import { listenPatiently, speechProblem, speechRecognition } from '../food/speech';
+
+/** Listening goes on through pauses of this long, for up to this long in all. */
+const SET_PATIENCE_MS = 2500;
+const SET_LISTEN_MAX_MS = 20_000;
 
 const LB_TO_KG = 0.45359237;
 const trim = (v: number) => String(Math.round(v * 100) / 100);
@@ -100,7 +104,7 @@ export function VoiceSets(props: {
   const toast = useToast();
   const [listening, setListening] = useState(false);
   const [heard, setHeard] = useState('');
-  const rec = useRef<SpeechRecognitionLike | null>(null);
+  const rec = useRef<{ stop: () => void; abort: () => void } | null>(null);
   const latest = useRef(props);
   useEffect(() => {
     latest.current = props;
@@ -137,34 +141,29 @@ export function VoiceSets(props: {
       rec.current?.stop();
       return;
     }
-    const r = new Recognition();
-    r.lang = 'en-IN';
-    r.interimResults = true;
-    r.continuous = false;
-    r.maxAlternatives = 1;
-    let final = '';
-    r.onresult = (e) => {
-      const t = transcriptOf(e.results);
-      final = t.final;
-      setHeard(t.final || t.interim);
-    };
-    r.onerror = (e) => {
-      if (e.error !== 'aborted') toast(speechProblem(e.error));
-    };
-    r.onend = () => {
+    const done = () => {
       setListening(false);
       setHeard('');
       rec.current = null;
-      if (final) void say(final);
     };
-    rec.current = r;
-    try {
-      r.start();
-      haptic('light');
-      setListening(true);
-    } catch {
-      toast(speechProblem(undefined));
-    }
+    rec.current = listenPatiently(Recognition, {
+      // "80 kilo ... 8 reps": a breath between the two does not end it.
+      patienceMs: SET_PATIENCE_MS,
+      maxMs: SET_LISTEN_MAX_MS,
+      onText: (final, interim) => setHeard([final, interim].filter(Boolean).join(' ')),
+      onEnd: (final, alternatives) => {
+        done();
+        // The phone's first guess, or another way it heard the last words when that one fits.
+        const understood = [final, ...alternatives].find((t) => parseSpokenSet(t)) ?? final;
+        void say(understood);
+      },
+      onError: (code) => {
+        done();
+        if (code !== 'stopped') toast(speechProblem(code));
+      },
+    });
+    haptic('light');
+    setListening(true);
   };
 
   return (

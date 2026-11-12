@@ -23,6 +23,8 @@ const ONES: Record<string, number> = {
   zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
   ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16,
   seventeen: 17, eighteen: 18, nineteen: 19,
+  // How a phone often writes a spoken number.
+  ate: 8, won: 1,
   // Hindi, as people say it in the gym.
   ek: 1, do: 2, teen: 3, tin: 3, char: 4, chaar: 4, paanch: 5, panch: 5, che: 6, chhe: 6, chhah: 6,
   saat: 7, sat: 7, aath: 8, aat: 8, nau: 9, das: 10, dus: 10, gyarah: 11, gyara: 11, barah: 12,
@@ -39,12 +41,12 @@ const WHOLE: Record<string, number> = {
   pachattar: 75, pachasi: 85, pachanve: 95, sau: 100, hundred: 100,
 };
 const UNIT: Record<string, 'kg' | 'lb'> = {
-  kg: 'kg', kgs: 'kg', kilo: 'kg', kilos: 'kg', kilogram: 'kg', kilograms: 'kg', kilogramme: 'kg', k: 'kg',
+  kg: 'kg', kgs: 'kg', kilo: 'kg', kilos: 'kg', killo: 'kg', kilogram: 'kg', kilograms: 'kg', kilogramme: 'kg', k: 'kg', kay: 'kg',
   lb: 'lb', lbs: 'lb', pound: 'lb', pounds: 'lb',
 };
-const REP_WORDS = new Set(['rep', 'reps', 'repetition', 'repetitions', 'baar', 'bar', 'times']);
+const REP_WORDS = new Set(['rep', 'reps', 'raps', 'rap', 'wraps', 'repetition', 'repetitions', 'baar', 'bar', 'times']);
 /** Words that sit between a weight and its reps: "80 ke 8", "80 into 8", "80 for 8". */
-const JOINERS = new Set(['ke', 'k', 'ka', 'into', 'x', 'by', 'for', 'pe', 'par', 'se', 'cross']);
+const JOINERS = new Set(['ke', 'k', 'ka', 'ki', 'kay', 'key', 'into', 'x', 'by', 'for', 'pe', 'par', 'se', 'cross', 'times']);
 const SAME = [/^same( again| set| as (before|last))?$/, /^(wahi|vahi|wohi)( wala| set)?$/, /^phir se$/, /^(again|repeat)$/, /^ek (aur|baar aur)$/];
 const FILLER = new Set(['and', 'aur', 'a', 'the', 'of', 'with', 'at', 'set', 'did', 'done', 'kiya', 'kiye', 'ho', 'gaya', 'hua']);
 
@@ -54,6 +56,8 @@ const clean = (text: string) =>
     .replace(/(\d),(\d)/g, '$1$2')
     .replace(/(\d)\s*(kgs?|kilos?|lbs?)\b/g, '$1 $2')
     .replace(/(\d)\s*[x×*]\s*(\d)/g, '$1 x $2')
+    // Hindi digits, when the phone writes them.
+    .replace(/[०-९]/g, (d) => String('०१२३४५६७८९'.indexOf(d)))
     .replace(/[^a-z0-9.\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();

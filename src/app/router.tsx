@@ -162,6 +162,10 @@ export const router = createBrowserRouter([
             path: 'settings',
             lazy: page(() => import('@/features/settings/SettingsPage'), 'SettingsPage'),
           },
+          {
+            path: 'settings/memory',
+            lazy: page(() => import('@/features/settings/MemoryPage'), 'MemoryPage'),
+          },
           { path: 'pro', lazy: page(() => import('@/features/pro/ProPage'), 'ProPage') },
           {
             path: 'groups',

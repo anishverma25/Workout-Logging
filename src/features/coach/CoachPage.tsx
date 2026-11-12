@@ -1,3 +1,10 @@
+import { Link } from 'react-router';
+import { db } from '@/data/db';
+import { addMemory } from '@/data/repositories/plan';
+import { toDateKey } from '@/lib/dates';
+import { useBrain, usePlanItems } from '../brain/useBrain';
+import { planLines } from './planBrief';
+import { looksLikeFact, memoryLines } from './memory';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { ArrowUp, Sparkles } from 'lucide-react';
 import { warmAi } from '@/app/aiWarm';
@@ -77,6 +84,17 @@ function useBriefInput(): BriefInput | null {
   const now = useNow();
   const food = useFoodContextFrom(now, training);
   const nutrition = useMemo(() => nutritionBrief(food, now), [food, now]);
+  const items = usePlanItems();
+  const today = toDateKey(now);
+  const memory = useMemo(() => memoryLines(items.data ?? [], today), [items.data, today]);
+  const brain = useBrain(now);
+  const exercises = training.data?.exercises;
+  const plan = useMemo(() => {
+    const names = new Map((exercises ?? []).map((e) => [e.id, e.name]));
+    return planLines(brain, (id) => names.get(id) ?? 'A lift');
+    // The brain's parts change together, once an hour at most.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brain.model, brain.decision, brain.record, exercises]);
   return useMemo(() => {
     if (!training.data) return null;
     const profile = training.data.profile ?? null;
@@ -103,8 +121,10 @@ function useBriefInput(): BriefInput | null {
             }
           : null,
       nutrition,
+      memory,
+      plan,
     };
-  }, [training.data, prefs.weightUnit, prefs.weekStartsOn, now, nutrition]);
+  }, [training.data, prefs.weightUnit, prefs.weekStartsOn, now, nutrition, memory, plan]);
 }
 
 function Chat() {
@@ -186,6 +206,7 @@ function Chat() {
         {messages.map((m) => (
           <li key={m.id}>
             <Bubble role={m.role} text={m.text} />
+            {m.role === 'user' && looksLikeFact(m.text) ? <RememberThis text={m.text} /> : null}
           </li>
         ))}
         {pending ? (
@@ -267,6 +288,43 @@ function Chat() {
       </p>
       <div ref={end} />
     </>
+  );
+}
+
+/** Offers to keep something the person said about themselves, with their yes. */
+function RememberThis({ text }: { text: string }) {
+  const items = usePlanItems();
+  const [saving, setSaving] = useState(false);
+  const clean = text.replace(/\s+/g, ' ').trim();
+  const known = (items.data ?? []).some((i) => i.kind === 'memory' && i.data.text === clean);
+  if (items.status !== 'success') return null;
+  return (
+    <div className="mt-1 flex justify-end">
+      {known ? (
+        <Link to="/settings/memory" className="type-footnote text-text-3" data-remembered>
+          Remembered
+        </Link>
+      ) : (
+        <button
+          type="button"
+          disabled={saving}
+          className="pressable type-footnote font-semibold text-lime"
+          data-remember
+          onClick={async () => {
+            setSaving(true);
+            try {
+              await addMemory(db, clean, 'chat');
+            } catch {
+              // Full, or too long: Settings says why when they add it there.
+            } finally {
+              setSaving(false);
+            }
+          }}
+        >
+          Remember this
+        </button>
+      )}
+    </div>
   );
 }
 
