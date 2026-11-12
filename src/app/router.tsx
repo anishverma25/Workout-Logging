@@ -168,6 +168,10 @@ export const router = createBrowserRouter([
           },
           { path: 'pro', lazy: page(() => import('@/features/pro/ProPage'), 'ProPage') },
           {
+            path: 'wrapped',
+            lazy: page(() => import('@/features/wrapped/WrappedPage'), 'WrappedPage'),
+          },
+          {
             path: 'groups',
             lazy: page(() => import('@/features/groups/GroupsPage'), 'GroupsPage'),
           },

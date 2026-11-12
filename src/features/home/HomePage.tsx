@@ -1,3 +1,5 @@
+import { wrapped, wrappedDue } from '@/domain/share/wrapped';
+import { wrappedSeen } from '../wrapped/seen';
 import { NowCard } from './NowCard';
 import { useMemo, useState } from 'react';
 import { CalendarRange, Dumbbell, FileUp, Sparkles, X } from 'lucide-react';
@@ -42,6 +44,15 @@ export function HomePage() {
   const firstName = training.data?.profile?.displayName.split(' ')[0];
   const title = firstName ? `${greetingFor(now)}, ${firstName}` : greetingFor(now);
   const ownProfile = training.data?.profile?.origin === 'user';
+  // Last month's recap, in the first days of a month, until it has been opened on this phone.
+  const dayOfMonth = now.getDate();
+  const monthNow = now.getMonth();
+  const yearNow = now.getFullYear();
+  const wrappedMonth = useMemo(() => {
+    if (!training.data || dayOfMonth > 5) return null;
+    const w = wrapped(training.data, wrappedDue(new Date(yearNow, monthNow, dayOfMonth)).month);
+    return w && !wrappedSeen().includes(w.key) ? w.label : null;
+  }, [training.data, dayOfMonth, monthNow, yearNow]);
   const routineName = training.data ? (activeRoutine(training.data.routines)?.name ?? null) : null;
 
   return (
@@ -50,7 +61,9 @@ export function HomePage() {
       {training.status === 'success' && !ownProfile ? <SetupPrompt /> : null}
       {model ? <ProNudgeCard workoutDates={workoutDates} records={model.recentPrCount} /> : null}
 
-      {model ? <NowCard training={training} today={model.today} now={now} /> : null}
+      {model ? (
+        <NowCard training={training} today={model.today} now={now} wrappedMonth={wrappedMonth} />
+      ) : null}
 
       {training.status === 'loading' ? <HomeSkeleton /> : null}
       {training.status === 'error' ? (
