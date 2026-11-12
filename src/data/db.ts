@@ -15,6 +15,7 @@ import type {
   Workout,
   WorkoutExercise,
   WorkoutSet,
+  PlanItem,
 } from '@/domain/models/schemas';
 
 /** Key-value records for app state that is not domain data (preferences, demo flags, timer). */
@@ -40,7 +41,8 @@ export type DomainTable =
   | 'foodLogs'
   | 'customFoods'
   | 'waterLogs'
-  | 'activityLogs';
+  | 'activityLogs'
+  | 'planItems';
 
 /** What the outbox can hold: domain records, plus the preferences stored in meta. */
 export type SyncTable = DomainTable | 'preferences';
@@ -87,6 +89,7 @@ export class WorkoutDatabase extends Dexie {
   customFoods!: EntityTable<CustomFood, 'id'>;
   waterLogs!: EntityTable<WaterLog, 'id'>;
   activityLogs!: EntityTable<ActivityLog, 'id'>;
+  planItems!: EntityTable<PlanItem, 'id'>;
   meta!: EntityTable<MetaRecord, 'key'>;
   outbox!: EntityTable<OutboxEntry, 'id'>;
 
@@ -136,6 +139,11 @@ export class WorkoutDatabase extends Dexie {
       waterLogs: 'id, date, origin',
       activityLogs: 'id, date, kind, origin',
     });
+    // v6: what the adaptive plan remembers (events, pain, decisions, temporary changes, AI
+    // memory, meal plans). A new table only; nothing existing changes.
+    this.version(6).stores({
+      planItems: 'id, kind, status, origin',
+    });
   }
 
   /** Tables that hold origin-tagged domain records. */
@@ -156,6 +164,7 @@ export class WorkoutDatabase extends Dexie {
       this.customFoods,
       this.waterLogs,
       this.activityLogs,
+      this.planItems,
     ] as const;
   }
 }

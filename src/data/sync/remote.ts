@@ -35,6 +35,18 @@ export class RemoteError extends Error {
   }
 }
 
+/**
+ * The server does not have this table yet: PostgREST's PGRST205 ("Could not find the table"),
+ * or Postgres 42P01 (undefined table).
+ */
+export function isMissingTable(error: { code?: string | null; message?: string }): boolean {
+  return (
+    error.code === 'PGRST205' ||
+    error.code === '42P01' ||
+    /could not find the table|relation .* does not exist/i.test(error.message ?? '')
+  );
+}
+
 /** Postgres error classes that will not succeed on retry: data, integrity, permission. */
 const PERMANENT_SQLSTATE = /^(22|23|42|P0)/;
 

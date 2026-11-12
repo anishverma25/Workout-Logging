@@ -3,6 +3,7 @@ import type { OutboxEntry, SyncTable, WorkoutDatabase } from '../db';
 import { getMeta, getPreferences, META_KEYS, setMeta } from '../repositories/meta';
 import {
   fromServerRow,
+  LATE_TABLES,
   preferencesFromRow,
   preferencesToRow,
   TABLE_SPECS,
@@ -10,6 +11,7 @@ import {
   type ServerRow,
 } from './mapping';
 import {
+  isMissingTable,
   keyColumn,
   RemoteError,
   type PullCursor,
@@ -187,6 +189,21 @@ export async function push(
     for (let i = 0; i < entries.length; i += PUSH_BATCH) {
       const outgoing = await collect(db, table, entries.slice(i, i + PUSH_BATCH), userId);
       if (outgoing.length === 0) continue;
+      if (LATE_TABLES.has(remoteTableOf(table))) {
+        // A table the server may not have yet: its rows wait on the phone, untouched, and
+        // nothing else is held back.
+        try {
+          await remote.upsert(
+            remoteTableOf(table),
+            outgoing.map((b) => b.row),
+          );
+          await acknowledge(db, outgoing);
+          pushed += outgoing.length;
+          continue;
+        } catch (err) {
+          if (isMissingTable(asRemoteError(err))) break;
+        }
+      }
       const r = await pushBatch(db, remote, table, outgoing);
       pushed += r.pushed;
       rejected += r.rejected;
@@ -248,7 +265,14 @@ export async function pull(db: WorkoutDatabase, remote: RemoteStore): Promise<nu
     let cursor = await readCursor(db, target);
     let after = withOverlap(cursor);
     for (;;) {
-      const rows = await remote.pull(target, after, PULL_PAGE);
+      let rows: ServerRow[];
+      try {
+        rows = await remote.pull(target, after, PULL_PAGE);
+      } catch (err) {
+        // The server does not have this newer table yet: there is nothing to fetch from it.
+        if (LATE_TABLES.has(target) && isMissingTable(asRemoteError(err))) break;
+        throw err;
+      }
       for (const row of rows) {
         if (table === 'preferences') {
           if (await mergePreferences(db, row)) pulled++;
