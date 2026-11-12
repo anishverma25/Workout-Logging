@@ -96,6 +96,33 @@ export async function askFoodLabel(input: {
   };
 }
 
+/**
+ * Sends a photo of a menu; the server returns the dish names printed on it and nothing else.
+ * The numbers come from the food library on the phone.
+ */
+export async function askFoodMenu(input: {
+  image: string;
+  mime: string;
+}): Promise<{ dishes: string[]; left: number | null }> {
+  if (input.image.length > LABEL_LIMITS.base64)
+    throw new FoodAiError('That photo is too large. Try again a little further away.', 'too_large');
+  let data: Record<string, unknown>;
+  try {
+    data = await invoke({ kind: 'food_menu', image: input.image, mime: input.mime });
+  } catch (e) {
+    // A server from before menus were added does not know the request.
+    if (e instanceof FoodAiError && e.code === 'bad_request' && /request could not be read/i.test(e.message))
+      throw new FoodAiError('Reading menus is being set up. Search for the dish for now.', 'not_configured');
+    throw e;
+  }
+  return {
+    dishes: Array.isArray(data.dishes)
+      ? data.dishes.filter((d): d is string => typeof d === 'string').slice(0, 40)
+      : [],
+    left: typeof data.left === 'number' ? data.left : null,
+  };
+}
+
 const newId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()

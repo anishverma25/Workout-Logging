@@ -110,6 +110,10 @@ export const router = createBrowserRouter([
             lazy: page(() => import('@/features/routines/RoutineEditorPage'), 'RoutineEditorPage'),
           },
           { path: 'food', lazy: page(() => import('@/features/food/FoodPage'), 'FoodPage') },
+          {
+            path: 'food/plan',
+            lazy: page(() => import('@/features/food/MealPlanPage'), 'MealPlanPage'),
+          },
           { path: 'water', element: <Navigate to="/food#water" replace /> },
           {
             path: 'activity',

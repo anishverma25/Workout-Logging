@@ -1,3 +1,4 @@
+import { EatNextCard } from './EatNextCard';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { Plus, Settings2, Target, UtensilsCrossed } from 'lucide-react';
@@ -126,6 +127,7 @@ export function FoodPage() {
             </Card>
           ) : null}
           <DaySummary ctx={ctx} date={date} onTargets={() => setTargetsOpen(true)} />
+          <EatNextCard ctx={ctx} date={date} today={today} now={now} />
           <DayAnalysisCard ctx={ctx} date={date} now={now} />
           <section aria-labelledby="meals-title">
             <h2 id="meals-title" className="type-section mb-2 text-text-1">

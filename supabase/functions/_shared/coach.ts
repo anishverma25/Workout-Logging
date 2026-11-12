@@ -395,6 +395,8 @@ export async function handleCoach(deps: CoachDeps, body: unknown): Promise<Coach
     return handleFoodPhoto(deps, body);
   if (body && typeof body === 'object' && (body as { kind?: unknown }).kind === 'food_label')
     return handleFoodLabel(deps, body);
+  if (body && typeof body === 'object' && (body as { kind?: unknown }).kind === 'food_menu')
+    return handleFoodMenu(deps, body);
   const req = parseRequest(body);
   if (!req) return fail(400, 'That request could not be read.', 'bad_request');
   if (!proFromSubscription(await deps.subscription()))
@@ -1215,4 +1217,84 @@ export async function handleFoodLabel(deps: CoachDeps, body: unknown): Promise<C
     'The label could not be read. Try a sharper photo of just the table, or type the numbers.',
     'unreadable',
   );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Menu photo (November 2026): the AI reads dish names only. Every number the person then sees
+// comes from the food library on their phone, never from here.
+// ---------------------------------------------------------------------------------------------
+
+export const FOOD_MENU_PROMPT = `You read restaurant, canteen and mess menus for Macrotrophy, a food logging app used in India. You get one photo of a menu. List the dishes printed on it.
+
+Reply with JSON only: {"dishes": ["Dish name", ...]}.
+Copy each dish name as printed, in English letters, without prices, numbers, section headings or descriptions. At most 40 dishes, in the order printed. Do not add dishes that are not printed, and do not give calories or any other numbers. If the photo is not a menu, reply {"not_a_menu": true}.`;
+
+export const MENU_MAX_DISHES = 40;
+
+/** Dish names only: short text, no figures, no duplicates. */
+export function checkMenu(raw: Record<string, unknown>): string[] | null {
+  if (!Array.isArray(raw.dishes)) return null;
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const d of raw.dishes) {
+    if (typeof d !== 'string') continue;
+    // Prices and portion sizes are dropped: a name carries no numbers out of here.
+    const name = d
+      .replace(/[₹$]\s*\d[\d,.]*/g, ' ')
+      .replace(/\b\d+[\d,.]*\s*(rs|inr|kcal|cal|g|gm|ml|pcs?|pc)?\b\.?/gi, ' ')
+      .replace(/\b(rs|inr)\b\.?/gi, ' ')
+      .replace(/[^\p{L}\s&'()-]/gu, ' ')
+      .replace(/\(\s*\)/g, ' ')
+      .replace(/[\s-]+$/, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 60);
+    const key = name.toLowerCase();
+    if (name.length < 3 || seen.has(key)) continue;
+    seen.add(key);
+    out.push(name);
+    if (out.length >= MENU_MAX_DISHES) break;
+  }
+  return out.length ? out : null;
+}
+
+export async function handleFoodMenu(deps: CoachDeps, body: unknown): Promise<CoachResponse> {
+  const b = body as Record<string, unknown>;
+  const image = typeof b.image === 'string' ? b.image : '';
+  const mime = b.mime === 'image/png' || b.mime === 'image/webp' ? b.mime : 'image/jpeg';
+  if (!image || image.length > LABEL_LIMITS.base64 || !/^[A-Za-z0-9+/=]+$/.test(image))
+    return fail(400, 'That photo could not be read.', 'bad_request');
+  if (!proFromSubscription(await deps.subscription()))
+    return fail(403, 'Reading menus is part of Pro.', 'not_pro');
+  if (deps.providers.length === 0)
+    return fail(503, 'Reading menus is not set up yet.', 'not_configured');
+  const left = deps.photoQuota ? await deps.photoQuota.claim() : PHOTOS_PER_DAY;
+  if (left < 0)
+    return fail(429, `You have used today's ${PHOTOS_PER_DAY} photos. Search for the dish instead.`, 'photo_limit');
+  const messages: ProviderMessage[] = [
+    { role: 'user', text: 'List the dishes on this menu.', image: { mime, data: image } },
+  ];
+  let notMenu = false;
+  for (const provider of deps.providers) {
+    let answer: string;
+    try {
+      answer = await provider.generate(FOOD_MENU_PROMPT, messages);
+    } catch (err) {
+      console.error(`menu: ${provider.name} failed`, err instanceof Error ? err.message : err);
+      continue;
+    }
+    const raw = parseObject(answer);
+    if (!raw) continue;
+    if (raw.not_a_menu === true) {
+      notMenu = true;
+      break;
+    }
+    const dishes = checkMenu(raw);
+    if (!dishes) continue;
+    return { status: 200, body: { dishes, left: Math.max(0, left) } };
+  }
+  await deps.photoQuota?.release().catch(() => undefined);
+  if (notMenu)
+    return fail(422, 'That does not look like a menu. Photograph the page with the dish names.', 'not_a_menu');
+  return fail(503, 'The menu could not be read. Try a sharper photo, or search for the dish.', 'unreadable');
 }
