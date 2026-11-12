@@ -109,3 +109,50 @@ test('a free member can log pain and sees what the plan would do with Pro', asyn
   await expect(page.locator('[data-pro-lock="adaptive_plan"]')).toBeVisible({ timeout: 30_000 });
   await expect(page.locator('[data-plan-apply]')).toHaveCount(0);
 });
+
+test('the Now card points at the weekly review when changes are waiting', async ({ page }) => {
+  test.setTimeout(120_000);
+  await startWithDemo(page, { tag: 'brain-now' });
+  await page.goto('/report');
+  await expect(page.locator('[data-next-week]')).toBeVisible({ timeout: 30_000 });
+  await addExams(page);
+  await expect(page.locator('[data-plan-changes]')).toBeVisible();
+  await page.goto('/');
+  const now = page.locator('[data-now-card="review"]');
+  await expect(now).toContainText('Your week is ready');
+  await now.locator('[data-now-action]').click();
+  await expect(page).toHaveURL(/\/report/);
+  // Once answered, the card has nothing more to say about it.
+  await page.locator('[data-plan-keep]').click();
+  await page.goto('/');
+  await expect(page.locator('#today-title')).toBeVisible();
+  await expect(page.locator('[data-now-card="review"]')).toHaveCount(0);
+});
+
+test('what Macrotrophy AI knows: told, edited, deleted, and offered from the chat', async ({ page }) => {
+  test.setTimeout(120_000);
+  await startWithDemo(page, { tag: 'brain-memory' });
+  await page.goto('/settings');
+  await page.getByRole('link', { name: 'Open' }).click();
+  await expect(page).toHaveURL(/\/settings\/memory/);
+  const list = page.locator('[data-memory-list]');
+  await page.getByLabel('Tell it something').fill('I train at 6 am before class');
+  await page.locator('[data-memory-add]').click();
+  await expect(list.locator('[data-memory-item="note"]')).toContainText('I train at 6 am before class');
+  await page.getByRole('button', { name: 'Edit: I train at 6 am before class' }).click();
+  await page.getByLabel('Edit what it remembers').fill('I train at 7 am');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(list).toContainText('I train at 7 am');
+
+  // Said in the chat, kept only with a yes.
+  await page.goto('/coach');
+  await page.getByRole('button', { name: 'Turn on' }).click();
+  await page.getByLabel('Your question').fill('I am vegetarian and my left knee was operated on');
+  await page.getByRole('button', { name: 'Send' }).click();
+  await page.locator('[data-remember]').click();
+  await expect(page.locator('[data-remembered]')).toBeVisible();
+  await page.locator('[data-remembered]').click();
+  await expect(page.locator('[data-memory-list]')).toContainText('my left knee was operated on');
+  await page.getByRole('button', { name: 'Delete: I train at 7 am' }).click();
+  await expect(page.locator('[data-memory-list]')).not.toContainText('I train at 7 am');
+});

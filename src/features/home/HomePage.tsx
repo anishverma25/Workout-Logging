@@ -50,7 +50,7 @@ export function HomePage() {
       {training.status === 'success' && !ownProfile ? <SetupPrompt /> : null}
       {model ? <ProNudgeCard workoutDates={workoutDates} records={model.recentPrCount} /> : null}
 
-      {model && ownProfile ? <NowCard training={training} today={model.today} now={now} /> : null}
+      {model ? <NowCard training={training} today={model.today} now={now} /> : null}
 
       {training.status === 'loading' ? <HomeSkeleton /> : null}
       {training.status === 'error' ? (
