@@ -49,6 +49,7 @@ import { formatClock, pluralize } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { ExercisePicker } from '../exercises/ExercisePicker';
 import { ExerciseCard } from './ExerciseCard';
+import { VoiceSets } from './VoiceSets';
 import { restActions } from './restActions';
 import { RestTimerBar, RestTimerSheet } from './RestTimer';
 import { EffortPicker, ReadinessCard } from './Readiness';
@@ -397,6 +398,12 @@ export function ActiveWorkout({ view, prefs }: Props) {
         onPick={async (ids) => {
           await addExercisesToWorkout(db, workout.id, ids);
         }}
+      />
+      <VoiceSets
+        exercises={exercises}
+        activeId={activeId}
+        unit={prefs.weightUnit}
+        onSetCompleted={onSetCompleted}
       />
       <ReorderSheet open={reordering} exercises={exercises} onClose={() => setReordering(false)} />
       <RestTimerSheet
