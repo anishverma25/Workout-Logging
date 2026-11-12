@@ -273,7 +273,7 @@ function decideCalories(
           to: maintenance,
           cause: 'event',
           topic: 'adaptive-plan',
-          until: weekAfter(event),
+          until: weekAfter(event, input.nextWeekStart),
           title: {
             en: `Calories ${kcalText(kcal)} to ${kcalText(maintenance)}`,
             hi: `Calories ${kcalText(kcal)} se ${kcalText(maintenance)}`,
@@ -657,7 +657,7 @@ export function decideWeek(input: DecideInput): Decision {
         minutes: effect.sessionMinutes,
         cause: 'event',
         topic: 'adaptive-plan',
-        until: weekAfter(event),
+        until: weekAfter(event, input.nextWeekStart),
         title: {
           en: `Sessions of about ${effect.sessionMinutes} minutes`,
           hi: `Lagbhag ${effect.sessionMinutes} minute ke sessions`,

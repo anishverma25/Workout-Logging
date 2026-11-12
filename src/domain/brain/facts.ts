@@ -1,4 +1,4 @@
-import { addDays, startOfDay, startOfWeek, toDateKey } from '@/lib/dates';
+import { addDays, startOfDay, startOfWeek, toDateKey, type WeekStartsOn } from '@/lib/dates';
 import { estimateOneRepMax, supportsE1rm } from '../analytics/e1rm';
 import { isHardSet } from '../analytics/muscles';
 import { isWorkingSet, type Session } from '../analytics/sessions';
@@ -61,7 +61,8 @@ const median = (xs: number[]) => {
   return s.length % 2 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2;
 };
 
-export const weekKey = (date: Date) => toDateKey(startOfWeek(startOfDay(date), 1));
+export const weekKey = (date: Date, weekStartsOn: WeekStartsOn = 1) =>
+  toDateKey(startOfWeek(startOfDay(date), weekStartsOn));
 
 /** The best estimated 1RM of one exercise in one session, with the reps that gave it. */
 function sessionBest(ex: Session['exercises'][number]): { e1rm: number; reps: number } | null {
@@ -85,9 +86,12 @@ export function buildWeekFacts(input: {
   weights: { measuredAt: string; weightKg: number }[];
   from: Date;
   to: Date;
+  /** The first day of the person's week (Monday unless they chose Sunday). */
+  weekStartsOn?: WeekStartsOn;
 }): WeekFacts[] {
-  const first = startOfWeek(startOfDay(input.from), 1);
-  const last = startOfWeek(startOfDay(input.to), 1);
+  const ws = input.weekStartsOn ?? 1;
+  const first = startOfWeek(startOfDay(input.from), ws);
+  const last = startOfWeek(startOfDay(input.to), ws);
   const weeks = new Map<string, WeekFacts>();
   const rirs = new Map<string, number[]>();
   for (let d = first; d <= last; d = addDays(d, 7)) {
@@ -108,7 +112,7 @@ export function buildWeekFacts(input: {
   }
 
   for (const session of input.sessions) {
-    const week = weeks.get(weekKey(session.date));
+    const week = weeks.get(weekKey(session.date, ws));
     if (!week) continue;
     week.sessions += 1;
     for (const ex of session.exercises) {
@@ -152,7 +156,7 @@ export function buildWeekFacts(input: {
   const foodByWeek = new Map<string, FoodDay[]>();
   for (const day of input.food) {
     if (day.kcal < LOGGED_DAY_KCAL) continue;
-    const key = weekKey(new Date(`${day.date}T12:00:00`));
+    const key = weekKey(new Date(`${day.date}T12:00:00`), ws);
     if (!weeks.has(key)) continue;
     foodByWeek.set(key, [...(foodByWeek.get(key) ?? []), day]);
   }
@@ -167,7 +171,7 @@ export function buildWeekFacts(input: {
   const weightByDay = new Map<string, { week: string; kg: number; at: number }>();
   for (const w of input.weights) {
     const at = new Date(w.measuredAt);
-    const key = weekKey(at);
+    const key = weekKey(at, ws);
     if (!weeks.has(key)) continue;
     const day = toDateKey(at);
     const prev = weightByDay.get(day);

@@ -260,7 +260,12 @@ export interface ApplyResult {
 export async function applyDecision(
   db: WorkoutDatabase,
   decision: Decision,
-  options: { accept?: string[]; label?: (change: Change) => Text | null } = {},
+  options: {
+    accept?: string[];
+    label?: (change: Change) => Text | null;
+    /** False for a change made between weekly reviews (a pain report): the week stays open. */
+    record?: boolean;
+  } = {},
 ): Promise<ApplyResult> {
   const accept = new Set(options.accept ?? decision.changes.map((c) => c.id));
   const chosen = decision.changes.filter((c) => accept.has(c.id));
@@ -431,6 +436,7 @@ export async function applyDecision(
       // 3. Pain reports have been answered, and the decision is on record.
       for (const pain of items.filter((i) => i.kind === 'pain' && i.status === 'active'))
         await patchRecord<PlanItem>(db, 'planItems', pain.id, { status: 'done' });
+      if (options.record === false) return;
       const record = make('decision', {
         startDate: decision.weekStart,
         endDate: null,

@@ -62,12 +62,13 @@ export function daysInWeek(event: Pick<LifeEvent, 'start' | 'end'>, weekStart: s
   return Math.max(0, to - from + 1);
 }
 
-/** The Monday after the event ends: when anything changed for it goes back. */
-export function weekAfter(event: Pick<LifeEvent, 'end'>): string {
-  const end = dayNumber(event.end);
-  // 1970-01-01 was a Thursday: day 4 is a Monday.
-  const sinceMonday = (((end - 4) % 7) + 7) % 7;
-  return new Date((end - sinceMonday + 7) * 86_400_000).toISOString().slice(0, 10);
+/**
+ * The first week boundary after the event ends, on the person's own weeks (`weekStart` is the
+ * first day of any of them): when anything changed for it goes back.
+ */
+export function weekAfter(event: Pick<LifeEvent, 'end'>, weekStart: string): string {
+  const weeks = Math.floor((dayNumber(event.end) - dayNumber(weekStart)) / 7) + 1;
+  return addDaysKey(weekStart, weeks * 7);
 }
 
 // ---------------------------------------------------------------------------------------------

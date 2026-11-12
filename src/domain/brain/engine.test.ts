@@ -149,8 +149,10 @@ describe('what is coming up', () => {
   it('counts the days of a week an event covers', () => {
     expect(daysInWeek({ start: '2026-11-12', end: '2026-11-20' }, '2026-11-09')).toBe(4);
     expect(daysInWeek({ start: '2026-11-01', end: '2026-11-08' }, '2026-11-09')).toBe(0);
-    expect(weekAfter({ end: '2026-11-15' })).toBe('2026-11-16');
-    expect(weekAfter({ end: '2026-11-16' })).toBe('2026-11-23');
+    expect(weekAfter({ end: '2026-11-15' }, '2026-11-09')).toBe('2026-11-16');
+    expect(weekAfter({ end: '2026-11-16' }, '2026-11-09')).toBe('2026-11-23');
+    // A person whose weeks start on Sunday.
+    expect(weekAfter({ end: '2026-11-14' }, '2026-11-08')).toBe('2026-11-15');
   });
 
   function weekEnd(index: number) {

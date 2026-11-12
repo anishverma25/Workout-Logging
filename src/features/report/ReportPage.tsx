@@ -19,6 +19,7 @@ import { canMakeReport, MIN_FOOD_DAYS, MIN_SESSIONS } from '@/domain/analytics/w
 import { addDays, toDateKey } from '@/lib/dates';
 import { cn } from '@/lib/cn';
 import { useNow } from '@/lib/useNow';
+import { NextWeek } from '../brain/NextWeek';
 import { ProLock } from '../pro/ProLock';
 import { loadFamilies } from '../share/story/fonts';
 import { DownloadSheet } from './DownloadSheet';
@@ -126,8 +127,8 @@ export function ReportPage() {
     <>
       <PageHeader
         back={{ to: '/more', label: 'More' }}
-        title="Weekly report"
-        subtitle="One a week, from your own logs"
+        title="Your week and next week"
+        subtitle="One report a week, and the plan for the next"
       />
 
       <div className="flex flex-col gap-3" style={BODY} data-report-page>
@@ -223,6 +224,8 @@ export function ReportPage() {
       ) : pro && !savedOpen && loaded && !ordered.length ? (
         <p className="type-footnote mt-6 text-text-3">Your reports will be kept here.</p>
       ) : null}
+
+      <NextWeek lang={lang} now={now} />
 
       <DownloadSheet open={download && !!shown} onClose={() => setDownload(false)} saved={shown} number={number} lang={lang} />
     </>
