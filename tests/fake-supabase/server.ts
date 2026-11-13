@@ -387,6 +387,7 @@ interface FakeRazorpaySub {
   current_end: number | null;
   notes: Record<string, string>;
   plan_id: string;
+  start_at: number | null;
 }
 const fakeOrders = new Map<string, { id: string; amount: number }>();
 const fakeSubs = new Map<string, FakeRazorpaySub>();
@@ -396,13 +397,14 @@ const billingDeps: BillingDeps = {
   config: FAKE_RAZORPAY,
   async razorpay(method, path, body) {
     if (method === 'POST' && path === '/subscriptions') {
-      const b = body as { plan_id: string; notes: Record<string, string> };
-      const sub = {
+      const b = body as { plan_id: string; notes: Record<string, string>; start_at?: number };
+      const sub: FakeRazorpaySub = {
         id: `sub_${randomBytes(6).toString('hex')}`,
         status: 'created',
         current_end: null,
         notes: b.notes,
         plan_id: b.plan_id,
+        start_at: b.start_at ?? null,
       };
       fakeSubs.set(sub.id, sub);
       return sub;
@@ -413,14 +415,34 @@ const billingDeps: BillingDeps = {
       fakeOrders.set(order.id, order);
       return order;
     }
+    const plan = /^\/plans\/(\w+)$/.exec(path);
+    if (plan) {
+      // A Razorpay plan carries the amount it was made with: here, the price on the server.
+      const row = await pg.query<{ price_inr: string }>(
+        'select price_inr from public.billing_plans where razorpay_plan_id = $1',
+        [plan[1]],
+      );
+      return row.rows[0]
+        ? { id: plan[1], item: { amount: Math.round(Number(row.rows[0].price_inr) * 100) } }
+        : null;
+    }
     const cancel = /^\/subscriptions\/(\w+)\/cancel$/.exec(path);
-    if (cancel) return fakeSubs.get(cancel[1]!) ?? null;
+    if (cancel) {
+      const sub = fakeSubs.get(cancel[1]!);
+      if (sub && (body as { cancel_at_cycle_end?: number }).cancel_at_cycle_end === 0) {
+        sub.status = 'cancelled';
+      }
+      return sub ?? null;
+    }
     const get = /^\/subscriptions\/(\w+)$/.exec(path);
     if (get) {
       // Checkout finished: the first charge went through for one period.
       const sub = fakeSubs.get(get[1]!);
       if (!sub) return null;
-      if (sub.status === 'created') {
+      if (sub.status === 'created' && sub.start_at && sub.start_at * 1000 > Date.now()) {
+        // The mandate is set up; the plan's own charges start later.
+        sub.status = 'authenticated';
+      } else if (sub.status === 'created') {
         const end = new Date();
         end.setMonth(end.getMonth() + (PLAN_MONTHS[sub.plan_id] ?? 1));
         sub.status = 'active';

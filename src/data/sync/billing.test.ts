@@ -26,8 +26,14 @@ interface FakeSub {
   current_end: number | null;
   notes: Record<string, string>;
   plan_id: string;
+  start_at?: number | null;
+  /** Paise charged up front as an add-on. */
+  upfront?: number | null;
 }
 const subs = new Map<string, FakeSub>();
+/** Razorpay plan amounts in paise that differ from the server price (a plan left from old prices). */
+const planAmounts = new Map<string, number>();
+const cancelledNow: string[] = [];
 const orders: { id: string; amount: number }[] = [];
 let counter = 0;
 
@@ -36,16 +42,29 @@ function deps(): BillingDeps {
     config,
     async razorpay(method, path, body) {
       if (method === 'POST' && path === '/subscriptions') {
-        const b = body as { plan_id: string; notes: Record<string, string> };
-        const sub = {
+        const b = body as FakeSub & { addons?: { item: { amount: number } }[] };
+        const sub: FakeSub = {
           id: `sub_test${++counter}`,
           status: 'created',
           current_end: null,
           notes: b.notes,
           plan_id: b.plan_id,
+          start_at: b.start_at ?? null,
+          upfront: b.addons?.[0]?.item.amount ?? null,
         };
         subs.set(sub.id, sub);
         return sub;
+      }
+      const plan = /^\/plans\/(\w+)$/.exec(path);
+      if (plan) {
+        if (planAmounts.has(plan[1]!)) return { id: plan[1], item: { amount: planAmounts.get(plan[1]!) } };
+        const row = await server.pg.query<{ price_inr: string }>(
+          'select price_inr from public.billing_plans where razorpay_plan_id = $1',
+          [plan[1]],
+        );
+        return row.rows[0]
+          ? { id: plan[1], item: { amount: Math.round(Number(row.rows[0].price_inr) * 100) } }
+          : null;
       }
       if (method === 'POST' && path === '/orders') {
         const order = { id: `order_test${++counter}`, amount: (body as { amount: number }).amount };
@@ -53,7 +72,14 @@ function deps(): BillingDeps {
         return order;
       }
       const cancel = /^\/subscriptions\/(\w+)\/cancel$/.exec(path);
-      if (cancel) return subs.get(cancel[1]!) ?? null;
+      if (cancel) {
+        const sub = subs.get(cancel[1]!);
+        if (sub && (body as { cancel_at_cycle_end?: number }).cancel_at_cycle_end === 0) {
+          sub.status = 'cancelled';
+          cancelledNow.push(sub.id);
+        }
+        return sub ?? null;
+      }
       const get = /^\/subscriptions\/(\w+)$/.exec(path);
       if (get) return subs.get(get[1]!) ?? null;
       return null;
@@ -109,9 +135,9 @@ describe('billing', () => {
       )
     ).rows[0]!.p;
     expect(plans.map((p) => [p.id, Number(p.price_inr), p.months])).toEqual([
-      ['monthly', 29, 1],
-      ['quarterly', 69, 3],
-      ['yearly', 249, 12],
+      ['monthly', 149, 1],
+      ['quarterly', 399, 3],
+      ['yearly', 1499, 12],
       ['coach_monthly', 999, 1],
     ]);
     expect(plans.every((p) => p.available === false)).toBe(true);
@@ -212,9 +238,6 @@ describe('billing', () => {
     let now = await mine(user);
     expect(now.cancel_at_period_end).toBe(true);
     expect(now.pro_expires_at).toBe(before);
-    // A second plan cannot be bought on top while this one runs out.
-    expect((await handleSubscribe(deps(), user, { plan: 'monthly' })).status).toBe(409);
-
     sub.status = 'cancelled';
     await webhook('subscription.cancelled', sub, 'evt_y2');
     now = await mine(user);
@@ -227,9 +250,9 @@ describe('billing', () => {
     const started = await handleOrder(deps(), user, { plan: 'quarterly' });
     expect(started.status).toBe(200);
     const orderId = started.body.order_id as string;
-    // The server fixes the price: 69 rupees in paise, whatever the browser says.
-    expect(started.body.amount).toBe(6900);
-    expect(orders.find((o) => o.id === orderId)!.amount).toBe(6900);
+    // The server fixes the price: 399 rupees in paise, whatever the browser says.
+    expect(started.body.amount).toBe(39900);
+    expect(orders.find((o) => o.id === orderId)!.amount).toBe(39900);
 
     const signature = await hmacSha256Hex(config.keySecret, `${orderId}|pay_o1`);
     const verified = await handleVerify(deps(), user, {
@@ -344,9 +367,9 @@ describe('billing', () => {
       )
     ).rows[0]!.p;
     expect(plans.map((p) => [p.id, Number(p.once_price_inr)])).toEqual([
-      ['monthly', 29],
+      ['monthly', 149],
       ['quarterly', 79],
-      ['yearly', 249],
+      ['yearly', 1499],
       ['coach_monthly', 999],
     ]);
     await server.pg.exec(`update public.billing_plans set once_price_inr = null`);
@@ -462,6 +485,217 @@ describe('billing', () => {
         server.asUser(user, (tx) => tx.query(sql)),
         sql,
       ).rejects.toThrow();
+    }
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // New prices, both ways to pay at any time, stuck renewals and coupons (migration 0024)
+  // -------------------------------------------------------------------------------------------
+
+  const activate = async (subId: string, days: number, evt: string) => {
+    Object.assign(subs.get(subId)!, {
+      status: 'active',
+      current_end: Math.floor((Date.now() + days * DAY) / 1000),
+    });
+    await webhook('subscription.activated', subs.get(subId)!, evt);
+  };
+  const payOnce = async (user: string, plan: string, pay: string, coupon?: string) => {
+    const started = await handleOrder(deps(), user, { plan, coupon });
+    if (started.status !== 200) return started;
+    const orderId = started.body.order_id as string;
+    const signature = await hmacSha256Hex(config.keySecret, `${orderId}|${pay}`);
+    await handleVerify(deps(), user, {
+      razorpay_order_id: orderId,
+      razorpay_payment_id: pay,
+      razorpay_signature: signature,
+    });
+    return started;
+  };
+  const verifySub = async (user: string, subId: string, pay: string) =>
+    handleVerify(deps(), user, {
+      razorpay_payment_id: pay,
+      razorpay_signature: await hmacSha256Hex(config.keySecret, `${pay}|${subId}`),
+    });
+  const near = (iso: unknown, ms: number, slack = 2 * DAY) =>
+    Math.abs(new Date(iso as string).getTime() - ms) < slack;
+
+  it('autopay never charges through a Razorpay plan left from another price', async () => {
+    const user = await server.createUser('oldplan@example.com');
+    planAmounts.set('plan_M', 2900);
+    const res = await handleSubscribe(deps(), user, { plan: 'monthly' });
+    expect(res.status).toBe(409);
+    expect(String(res.body.error)).toContain('pay once');
+    planAmounts.delete('plan_M');
+    // Paying once does not need a Razorpay plan and uses the server price.
+    expect((await handleOrder(deps(), user, { plan: 'monthly' })).body.amount).toBe(14900);
+  });
+
+  it('a renewing member must turn renewal off before changing; then both ways are open', async () => {
+    const user = await server.createUser('switch@example.com');
+    const first = (await handleSubscribe(deps(), user, { plan: 'monthly' })).body
+      .subscription_id as string;
+    await activate(first, 30, 'evt_sw1');
+    expect((await handleSubscribe(deps(), user, { plan: 'yearly' })).status).toBe(409);
+    expect((await handleOrder(deps(), user, { plan: 'yearly' })).status).toBe(409);
+
+    expect((await handleCancel(deps(), user)).status).toBe(200);
+    const paidUntil = new Date((await mine(user)).pro_expires_at as string).getTime();
+
+    // Autopay again: it starts when the paid month runs out, and adds nothing until then.
+    const again = await handleSubscribe(deps(), user, { plan: 'yearly' });
+    expect(again.status).toBe(200);
+    const sub = subs.get(again.body.subscription_id as string)!;
+    expect(sub.start_at! * 1000).toBeGreaterThan(paidUntil - 2000);
+    expect(sub.start_at! * 1000).toBeLessThan(paidUntil + 2000);
+    sub.status = 'authenticated';
+    const verified = await verifySub(user, sub.id, 'pay_sw2');
+    expect(verified.status).toBe(200);
+    const now = await mine(user);
+    expect(new Date(now.pro_expires_at as string).getTime()).toBe(paidUntil);
+    expect(now.billing_status).toBe('authenticated');
+    expect(now.cancel_at_period_end).toBe(false);
+
+    // The first real charge, at the start date, runs the year from there.
+    Object.assign(sub, {
+      status: 'active',
+      current_end: Math.floor((paidUntil + 365 * DAY) / 1000),
+    });
+    await webhook('subscription.charged', sub, 'evt_sw3');
+    expect(near((await mine(user)).pro_expires_at, paidUntil + 365 * DAY)).toBe(true);
+  });
+
+  it('paid once, then more: pay once adds on top, and autopay starts when the paid time ends', async () => {
+    const user = await server.createUser('extend@example.com');
+    await payOnce(user, 'monthly', 'pay_e1');
+    await payOnce(user, 'quarterly', 'pay_e2');
+    const s = await mine(user);
+    expect(s.billing_kind).toBe('once');
+    const paidUntil = new Date(s.pro_expires_at as string).getTime();
+    expect(paidUntil).toBeGreaterThan(Date.now() + 118 * DAY);
+
+    const auto = await handleSubscribe(deps(), user, { plan: 'monthly' });
+    expect(auto.status).toBe(200);
+    expect(new Date(auto.body.starts_at as string).getTime()).toBeGreaterThan(paidUntil - 2000);
+    // And a member whose autopay is waiting to start can still not double up.
+    subs.get(auto.body.subscription_id as string)!.status = 'authenticated';
+    await verifySub(user, auto.body.subscription_id as string, 'pay_e3');
+    expect((await handleOrder(deps(), user, { plan: 'monthly' })).status).toBe(409);
+  });
+
+  it('a renewal stuck on a failed payment is cleared, so the person can pay again either way', async () => {
+    const user = await server.createUser('stuck@example.com');
+    const first = (await handleSubscribe(deps(), user, { plan: 'monthly' })).body
+      .subscription_id as string;
+    await activate(first, 30, 'evt_st1');
+    const paidUntil = (await mine(user)).pro_expires_at;
+    subs.get(first)!.status = 'halted';
+    await webhook('subscription.halted', subs.get(first)!, 'evt_st2');
+    expect((await mine(user)).billing_status).toBe('halted');
+
+    const order = await handleOrder(deps(), user, { plan: 'monthly' });
+    expect(order.status).toBe(200);
+    expect(cancelledNow).toContain(first);
+    const s = await mine(user);
+    expect(s.billing_status).toBe('cancelled');
+    // Clearing it takes nothing away.
+    expect(s.pro_expires_at).toBe(paidUntil);
+  });
+
+  it('coupons: 10% off one payment, checked on the server, one per account', async () => {
+    await server.pg.exec(`
+      insert into public.coupons (code, note) values ('GYM10', 'test');
+      insert into public.coupons (code, percent, max_uses) values ('ONCE20', 20, 1);
+      insert into public.coupons (code, active) values ('OFF10', false);
+      insert into public.coupons (code, expires_at) values ('OLD10', now() - interval '1 day');
+    `);
+    const user = await server.createUser('coupon@example.com');
+    const check = async (u: string, code: string) =>
+      (
+        await server.asUser(u, (tx) =>
+          tx.query<{ c: { ok: boolean; percent?: number; reason?: string } }>(
+            'select public.check_coupon($1) as c',
+            [code],
+          ),
+        )
+      ).rows[0]!.c;
+    expect(await check(user, ' gym10 ')).toMatchObject({ ok: true, percent: 10, code: 'GYM10' });
+    expect((await check(user, 'NOPE')).reason).toBe('unknown');
+    expect((await check(user, 'OFF10')).reason).toBe('unknown');
+    expect((await check(user, 'OLD10')).reason).toBe('ended');
+
+    // A bad code stops the payment instead of charging full price quietly.
+    expect((await handleOrder(deps(), user, { plan: 'yearly', coupon: 'NOPE' })).status).toBe(400);
+    expect((await handleOrder(deps(), user, { plan: 'coach_monthly', coupon: 'GYM10' })).status).toBe(400);
+
+    // Starting a payment does not use the code up; paying does.
+    const abandoned = await handleOrder(deps(), user, { plan: 'yearly', coupon: 'gym10' });
+    expect(abandoned.body.amount).toBe(134900);
+    expect((await check(user, 'GYM10')).ok).toBe(true);
+    const paid = await payOnce(user, 'yearly', 'pay_c1', 'GYM10');
+    expect(paid.body.amount).toBe(134900);
+    expect(near((await mine(user)).pro_expires_at, Date.now() + 365 * DAY)).toBe(true);
+    const uses = await server.pg.query<{ code: string; discount_inr: string }>(
+      'select code, discount_inr from public.coupon_uses where user_id = $1',
+      [user],
+    );
+    expect(uses.rows).toEqual([{ code: 'GYM10', discount_inr: '150.00' }]);
+    expect((await check(user, 'ONCE20')).reason).toBe('already_used');
+    expect((await handleOrder(deps(), user, { plan: 'monthly', coupon: 'ONCE20' })).status).toBe(400);
+    // Without a code they still pay the normal price.
+    expect((await handleOrder(deps(), user, { plan: 'monthly' })).body.amount).toBe(14900);
+
+    // A code with a limit runs out.
+    const a = await server.createUser('coupon-a@example.com');
+    const b = await server.createUser('coupon-b@example.com');
+    expect((await payOnce(a, 'monthly', 'pay_c2', 'ONCE20')).body.amount).toBe(11900);
+    expect((await check(b, 'ONCE20')).reason).toBe('used_up');
+  });
+
+  it('coupons on autopay: the first period is paid up front at the lower price, then the plan runs', async () => {
+    const user = await server.createUser('coupon-auto@example.com');
+    const started = await handleSubscribe(deps(), user, { plan: 'quarterly', coupon: 'GYM10' });
+    expect(started.status).toBe(200);
+    expect(started.body.first_charge_paise).toBe(35900);
+    const sub = subs.get(started.body.subscription_id as string)!;
+    expect(sub.upfront).toBe(35900);
+    const start = sub.start_at! * 1000;
+    expect(near(start, Date.now() + 91 * DAY, 3 * DAY)).toBe(true);
+    expect(sub.notes.coupon).toBe('GYM10');
+
+    // Nothing is given, and the code is not used, until the payment is confirmed.
+    expect((await mine(user)).pro_expires_at).toBeNull();
+    sub.status = 'authenticated';
+    // The webhook alone is enough (the person closed the window early)...
+    await webhook('subscription.authenticated', sub, 'evt_ca1');
+    let s = await mine(user);
+    expect(new Date(s.pro_expires_at as string).getTime()).toBe(start);
+    // ...and the checkout answer on top changes nothing.
+    await verifySub(user, sub.id, 'pay_ca1');
+    s = await mine(user);
+    expect(new Date(s.pro_expires_at as string).getTime()).toBe(start);
+    const uses = await server.pg.query<{ code: string; discount_inr: string; payment_ref: string }>(
+      'select code, discount_inr, payment_ref from public.coupon_uses where user_id = $1',
+      [user],
+    );
+    expect(uses.rows).toEqual([{ code: 'GYM10', discount_inr: '40.00', payment_ref: sub.id }]);
+
+    // The first normal charge, three months in, carries on at the full price.
+    Object.assign(sub, { status: 'active', current_end: Math.floor((start + 91 * DAY) / 1000) });
+    await webhook('subscription.charged', sub, 'evt_ca2');
+    expect(near((await mine(user)).pro_expires_at, start + 91 * DAY)).toBe(true);
+  });
+
+  it('keeps coupons closed to the app', async () => {
+    const user = await server.createUser('coupon-snoop@example.com');
+    for (const sql of [
+      'select * from public.coupons',
+      'select * from public.coupon_uses',
+      `insert into public.coupons (code) values ('FREE50')`,
+      `select public.coupon_status('${user}', 'GYM10')`,
+      `select public.billing_coupon_redeem('${user}', 'GYM10', 'x', 10)`,
+      `select public.billing_order_create('${user}', 'monthly', 'order_y', 1, 'GYM10', 148)`,
+    ]) {
+      await expect(server.asUser(user, (tx) => tx.query(sql)), sql).rejects.toThrow();
     }
   });
 });
