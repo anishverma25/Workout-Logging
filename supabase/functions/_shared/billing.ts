@@ -208,9 +208,32 @@ async function settleStuck(
 // Coupons
 // ---------------------------------------------------------------------------------------------
 
+/** What lowers a payment: a code the person typed, or a thank-you credit they hold. */
 interface Coupon {
-  code: string;
+  /** The coupon code; null for a credit. */
+  code: string | null;
   percent: number;
+  /** A thank-you credit for a food they added to the shared library (migration 0025). */
+  credit?: string;
+}
+
+/** The thank-you credit open for this account today, if any. Servers before 0025 have none. */
+async function creditFor(
+  deps: BillingDeps,
+  userId: string,
+  info: CheckoutInfo,
+): Promise<Coupon | null> {
+  if (info.plan_kind && info.plan_kind !== 'pro') return null;
+  try {
+    const c = (await deps.rpc('billing_credit', { p_user: userId })) as {
+      id?: string;
+      percent?: number;
+    } | null;
+    if (!c || typeof c.id !== 'string' || typeof c.percent !== 'number') return null;
+    return { code: null, percent: c.percent, credit: c.id };
+  } catch {
+    return null;
+  }
 }
 
 const COUPON_REASONS: Record<string, string> = {
@@ -228,7 +251,8 @@ async function couponFrom(
   info: CheckoutInfo,
 ): Promise<Coupon | null | BillingResponse> {
   const raw = (body as { coupon?: unknown } | null)?.coupon;
-  if (raw === undefined || raw === null || raw === '') return null;
+  // No code typed: a thank-you credit, when they hold one, applies by itself.
+  if (raw === undefined || raw === null || raw === '') return creditFor(deps, userId, info);
   if (typeof raw !== 'string' || raw.length > 40) return fail(400, COUPON_REASONS.unknown!);
   if (info.plan_kind && info.plan_kind !== 'pro') return fail(400, 'Codes work on Pro plans.');
   const status = (await deps.rpc('coupon_status', { p_user: userId, p_code: raw })) as {
@@ -335,7 +359,8 @@ export async function handleSubscribe(
     extra.addons = [
       { item: { name: `First period, ${coupon.percent}% off`, amount: upfront, currency: 'INR' } },
     ];
-    notes.coupon = coupon.code;
+    if (coupon.code) notes.coupon = coupon.code;
+    if (coupon.credit) notes.credit = coupon.credit;
     notes.upfront = '1';
     notes.discount = String(Math.round(price * 100 - upfront) / 100);
   }
@@ -398,7 +423,13 @@ async function retireLegacy(deps: BillingDeps, id: string): Promise<boolean> {
 function laterStart(
   sub: RazorpaySubscription,
   now: Date,
-): { at: Date; upfront: boolean; coupon: string | null; discount: number } | null {
+): {
+  at: Date;
+  upfront: boolean;
+  coupon: string | null;
+  credit: string | null;
+  discount: number;
+} | null {
   const at = Number(sub.notes?.start_at);
   if (!Number.isFinite(at) || at * 1000 <= now.getTime()) return null;
   if (sub.status !== 'created' && sub.status !== 'authenticated') return null;
@@ -406,6 +437,7 @@ function laterStart(
     at: new Date(at * 1000),
     upfront: sub.notes?.upfront === '1',
     coupon: sub.notes?.coupon ?? null,
+    credit: sub.notes?.credit ?? null,
     discount: Number(sub.notes?.discount ?? 0) || 0,
   };
 }
@@ -434,6 +466,9 @@ async function applyLaterStart(
         p_ref: subscriptionId,
         p_discount: later.discount,
       });
+    }
+    if (later.credit) {
+      await deps.rpc('billing_credit_use', { p_credit: later.credit, p_ref: subscriptionId });
     }
   } else {
     await deps.rpc('billing_set_status', {
@@ -519,14 +554,20 @@ export async function handleOrder(
     amount: paise,
     currency: 'INR',
     receipt,
-    notes: { user_id: userId, plan, kind: 'once', ...(coupon ? { coupon: coupon.code } : {}) },
+    notes: {
+      user_id: userId,
+      plan,
+      kind: 'once',
+      ...(coupon?.code ? { coupon: coupon.code } : {}),
+      ...(coupon?.credit ? { credit: coupon.credit } : {}),
+    },
   })) as { id?: unknown } | null;
   if (!created || typeof created.id !== 'string') {
     return fail(502, 'Could not start the payment. Try again.');
   }
   await deps.rpc(
     'billing_order_create',
-    coupon
+    coupon?.code
       ? {
           p_user: userId,
           p_plan: plan,
@@ -537,6 +578,13 @@ export async function handleOrder(
         }
       : { p_user: userId, p_plan: plan, p_order: created.id, p_amount: paise / 100 },
   );
+  if (coupon?.credit) {
+    await deps.rpc('billing_order_credit', {
+      p_order: created.id,
+      p_credit: coupon.credit,
+      p_discount: (full - paise) / 100,
+    });
+  }
   return ok({ order_id: created.id, amount: paise, key_id: deps.config.keyId });
 }
 
