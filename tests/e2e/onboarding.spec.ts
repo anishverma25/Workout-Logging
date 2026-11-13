@@ -28,22 +28,22 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   await page.getByRole('button', { name: 'Take the tour' }).click();
   await page.getByRole('button', { name: 'Mark sample set 1 done' }).click();
   await expect(page.getByRole('button', { name: 'Set 1 done' })).toBeVisible();
-  // Training, food and Macrotrophy AI slides, then the plan that adapts, leaderboards, reviews
-  // and the Pro slide.
+  // Food, then the Brain that reads training and food together, Macrotrophy AI, records and
+  // progress, leaderboards, reviews and the Pro slide.
   const next = () => page.getByRole('button', { name: 'Next' }).click();
-  for (let i = 0; i < 3; i++) await next();
+  await next();
   const food = page.locator('[data-tour-food]');
   await expect(food).toBeVisible();
   // The sample day comes from the real library, so its numbers are filled in.
   await expect(food).toContainText(/Breakfast[\s\S]*\d+ kcal/);
   await next();
+  await expect(page.locator('[data-tour-brain]')).toBeVisible();
+  await next();
   await expect(page.locator('[data-tour-coach]')).toBeVisible();
   await expect(
     page.getByRole('heading', { name: 'An AI coach that knows your numbers' }),
   ).toBeVisible();
-  await next();
-  await expect(page.locator('[data-tour-brain]')).toBeVisible();
-  await next();
+  for (let i = 0; i < 3; i++) await next();
   await expect(page.locator('[data-tour-score]')).toContainText('points');
   await next();
   await expect(page.locator('[data-tour-reviews] li')).toHaveCount(3);

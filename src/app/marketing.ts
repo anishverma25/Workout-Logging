@@ -91,11 +91,23 @@ export interface Faq {
 export const FAQ: Faq[] = [
   {
     q: 'Is Macrotrophy free?',
-    a: 'Yes. Workout logging, routines, food logging, your full history and every record are free with no limit. Pro is a paid upgrade for longer trends, Macrotrophy AI and AI food logging.',
+    a: 'Yes. Workout logging, your full history, every personal record, 2 routines and Indian food logging with calories are free forever. Pro adds the weekly plan, protein and macros, Macrotrophy AI, the weekly report and longer trends. Every new account gets 7 days of Pro free.',
+  },
+  {
+    q: 'What happens after the 7-day trial?',
+    a: 'Nothing is charged, because we never ask for a card to start. You move to the Free plan and keep everything you logged. Choose a Pro plan whenever you like.',
   },
   {
     q: 'Does it count calories for Indian food?',
     a: 'Yes. Dishes from every state are worked out from their ingredients, using USDA lab values and the Indian Food Composition Tables. Log by the katori, the plate or the roti. Pack foods use the numbers printed on the pack.',
+  },
+  {
+    q: 'What is the Macrotrophy Brain?',
+    a: 'The part of Pro that plans your next week. It reads your weight trend, your food and your lifts, then proposes calories, protein and sets for each muscle, with the reason for every change. Nothing changes until you tap Apply.',
+  },
+  {
+    q: 'What is Macrotrophy AI?',
+    a: 'An AI coach inside the app, part of Pro. It explains your progress and food in plain words, in English, Hinglish or Hindi, logs meals from a photo or a sentence, and never makes up numbers of its own.',
   },
   {
     q: 'Do I need to install anything?',
@@ -106,12 +118,12 @@ export const FAQ: Faq[] = [
     a: 'Yes. Export your workouts from Hevy or Strong and import the file in Macrotrophy. Your workouts, records and routine come with you, and importing the same file twice adds nothing new.',
   },
   {
-    q: 'What is Macrotrophy AI?',
-    a: 'An AI coach inside the app, part of Pro. It explains your progress and food in plain words, in English, Hinglish or Hindi, logs meals from a photo or a sentence, and never makes up numbers of its own.',
+    q: 'How do I pay, and can I cancel?',
+    a: 'Pay by UPI or card through Razorpay, with autopay or as a single payment that does not renew. Turn autopay off at any time and Pro stays on until the end of the period you paid for.',
   },
   {
     q: 'How do the leaderboards work?',
-    a: 'Make a group and share its code, or join the global leaderboard. Points come from finished workouts, hard sets, personal records and protein days, with weekly limits, so effort counts more than how much you already lift.',
+    a: 'Make a group and share its code, or join the global leaderboard. Points come from finished workouts, hard sets, personal records, protein days, training three days a week and getting stronger, with weekly limits, so effort counts more than how much you already lift.',
   },
   {
     q: 'How are the numbers calculated?',
@@ -122,6 +134,112 @@ export const FAQ: Faq[] = [
     a: 'It is kept on your phone and in your account so it is never lost. We do not sell your data or show ads. You can export it as CSV or delete your account at any time.',
   },
 ];
+
+/**
+ * The plate on the home page ("Count a thali in five taps"). Kcal and protein for one of each
+ * are the app's own numbers for the usual unit (medium katori, normal oil); landing.test.ts
+ * recomputes them from the food library, so they cannot drift from what the app logs.
+ */
+export interface ThaliItem {
+  /** The food's id in the library. */
+  id: string;
+  /** One and many, as said at home: "roti" and "rotis", "katori dal tadka". */
+  one: string;
+  many: string;
+  /** The button's label. */
+  label: string;
+  kcal: number;
+  proteinG: number;
+  /** How many are on the plate when the page opens. */
+  start: number;
+}
+
+export const THALI: ThaliItem[] = [
+  { id: 'roti', one: 'roti', many: 'rotis', label: 'Roti', kcal: 102, proteinG: 4.0, start: 2 },
+  {
+    id: 'dal-tadka',
+    one: 'katori dal tadka',
+    many: 'katoris dal tadka',
+    label: 'Dal tadka',
+    kcal: 139,
+    proteinG: 6.9,
+    start: 1,
+  },
+  {
+    id: 'rice',
+    one: 'katori rice',
+    many: 'katoris rice',
+    label: 'Rice',
+    kcal: 138,
+    proteinG: 2.7,
+    start: 1,
+  },
+  {
+    id: 'curd',
+    one: 'katori curd',
+    many: 'katoris curd',
+    label: 'Curd',
+    kcal: 100,
+    proteinG: 5.7,
+    start: 1,
+  },
+  {
+    id: 'paneer-bhurji',
+    one: 'katori paneer bhurji',
+    many: 'katoris paneer bhurji',
+    label: 'Paneer bhurji',
+    kcal: 269,
+    proteinG: 14.3,
+    start: 0,
+  },
+  {
+    id: 'chicken-curry',
+    one: 'katori chicken curry',
+    many: 'katoris chicken curry',
+    label: 'Chicken curry',
+    kcal: 199,
+    proteinG: 21.3,
+    start: 0,
+  },
+  {
+    id: 'rajma',
+    one: 'katori rajma',
+    many: 'katoris rajma',
+    label: 'Rajma',
+    kcal: 139,
+    proteinG: 6.7,
+    start: 0,
+  },
+  {
+    id: 'boiled-egg',
+    one: 'boiled egg',
+    many: 'boiled eggs',
+    label: 'Boiled egg',
+    kcal: 72,
+    proteinG: 6.3,
+    start: 0,
+  },
+];
+
+/** The day the thali's rings are drawn against. */
+export const THALI_DAY = { kcal: 1800, proteinG: 90 };
+
+export const thaliTotals = (items: ThaliItem[] = THALI) => ({
+  kcal: items.reduce((a, i) => a + i.kcal * i.start, 0),
+  proteinG: Math.round(items.reduce((a, i) => a + i.proteinG * i.start, 0)),
+});
+
+export const thaliLine = (items: ThaliItem[] = THALI) =>
+  items
+    .filter((i) => i.start > 0)
+    .map((i) => `${i.start} ${i.start === 1 ? i.one : i.many}`)
+    .join(', ');
+
+/** What paying for a longer plan saves against paying monthly for the same time, in rupees. */
+export const planSavings = (p: Prices = PUBLIC_PRICES) => ({
+  quarterly: p.monthly * 3 - p.quarterly,
+  yearly: p.monthly * 12 - p.yearly,
+});
 
 /** A guide: a public page for one thing people search for, with plain sections. */
 export interface Guide {
@@ -268,7 +386,7 @@ export function reviewsHtml(reviews: Review[] = REVIEWS): string {
   const half = Math.ceil(rest.length / 2);
   return `<figure class="lp-card lp-card-lime lp-reveal mx-auto max-w-4xl p-7 tab:p-10" data-review>
             <span class="lp-quote-mark block" aria-hidden="true">“</span>
-            <blockquote class="mt-2 font-display text-[1.5rem] leading-[1.25] font-semibold tracking-[-0.02em] text-text-1 tab:text-[2rem]">${esc(first.quote)}</blockquote>
+            <blockquote class="mt-2 font-display text-[1.25rem] leading-[1.3] font-semibold tracking-[-0.02em] text-text-1 tab:text-[1.875rem] tab:leading-[1.25] [text-wrap:pretty]">${esc(first.quote)}</blockquote>
             <figcaption class="mt-7 flex items-center gap-3"><span class="lp-avatar" aria-hidden="true">${esc(first.name[0]!)}</span><span><span class="type-headline block text-text-1">${esc(first.name)}</span><span class="type-caption block text-text-2">Macrotrophy member, moved from Hevy</span></span><span class="ml-auto">${stars(first)}</span></figcaption>
           </figure>
           <div class="lp-reveal mt-10 flex flex-col gap-4">
@@ -277,25 +395,34 @@ export function reviewsHtml(reviews: Review[] = REVIEWS): string {
           </div>`;
 }
 
-/** The questions on the home page. */
+/** The questions on the home page: each opens in place, and reads in full without scripts. */
 export function faqHtml(faq: Faq[] = FAQ): string {
   return faq
     .map(
-      (f) => `            <div>
-              <dt class="type-headline">${esc(f.q)}</dt>
-              <dd class="type-body mt-2 text-text-2">${esc(f.a)}</dd>
-            </div>`,
+      (f, i) => `            <details class="lp-q"${i === 0 ? ' open' : ''}>
+              <summary><span data-faq-q>${esc(f.q)}</span><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 4v12M4 10h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg></summary>
+              <p>${esc(f.a)}</p>
+            </details>`,
+    )
+    .join('\n');
+}
+
+/** The plate's buttons: one food each, with its numbers for the counter. */
+export function thaliHtml(items: ThaliItem[] = THALI): string {
+  return items
+    .map(
+      (
+        i,
+      ) => `                <li class="lp-food" data-food="${i.id}" data-kcal="${i.kcal}" data-protein="${i.proteinG.toFixed(1)}" data-one="${esc(i.one)}" data-many="${esc(i.many)}" data-n="${i.start}">
+                  <span class="lp-food-name">${esc(i.label)}<small>${i.kcal} kcal · ${i.proteinG.toFixed(1)} g protein</small></span>
+                  <span class="lp-food-step"><button type="button" data-step="-1" aria-label="One less ${esc(i.one)}">−</button><output aria-label="${esc(i.many)} on the plate">${i.start}</output><button type="button" data-step="1" aria-label="One more ${esc(i.one)}">+</button></span>
+                </li>`,
     )
     .join('\n');
 }
 
 export function guideLinksHtml(guides: Guide[] = GUIDES): string {
-  return guides
-    .map(
-      (g) =>
-        `          <a href="${g.path}" class="text-text-2 hover:text-text-1">${esc(g.heading)}</a>`,
-    )
-    .join('\n');
+  return guides.map((g) => `            <a href="${g.path}">${esc(g.heading)}</a>`).join('\n');
 }
 
 /**
@@ -319,6 +446,7 @@ export function fillLanding(html: string): string {
   const markers: [string, string][] = [
     ['REVIEWS_HERE', reviewsHtml()],
     ['FAQ_HERE', faqHtml()],
+    ['THALI_HERE', thaliHtml()],
     ['GUIDES_HERE', guideLinksHtml()],
   ];
   let out = html;
@@ -377,7 +505,7 @@ export function structuredData(prices: Prices = PUBLIC_PRICES, faq: Faq[] = FAQ)
       name: BRAND,
       alternateName: 'Overload Gym',
       description:
-        'Workout tracker and Indian food calorie counter: log sets and meals, track strength and protein, compete with friends, with every number backed by published research.',
+        'Workout tracker and Indian food calorie counter that plans your next week from your training and food: log sets and meals, an AI coach in English and Hinglish, a weekly report, leaderboards, and every number backed by published research.',
       applicationCategory: 'HealthApplication',
       applicationSubCategory: 'Fitness',
       operatingSystem: 'Web, iOS, Android',

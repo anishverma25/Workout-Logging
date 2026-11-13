@@ -10,7 +10,7 @@
     <meta name="color-scheme" content="dark" />
     <link rel="preload" href="/fonts/inter-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/inter-600.woff2" as="font" type="font/woff2" crossorigin />
-    <meta name="description" content="Log every set and every Indian meal in one app. Track strength, calories and protein, compete with friends, and trust every number. Free to start." />
+    <meta name="description" content="Log every set and every Indian meal in one app. Macrotrophy plans your next week from both, with an AI coach and a weekly report. 7 days of Pro free." />
     <script>(function(){var h=document.documentElement;try{if(location.pathname!=="/")return;if(localStorage.getItem("overload.seenTour")==="1")return;for(var i=0;i<localStorage.length;i++){if(/^sb-.+-auth-token$/.test(localStorage.key(i)||""))return}}catch(e){}h.setAttribute("data-landing","")})();</script>
     <style>
       /* Shown from the very first paint until the app has drawn its first screen (src/main.tsx),
@@ -41,298 +41,651 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Macrotrophy" />
     <meta property="og:title" content="Macrotrophy: Workout Tracker, Indian Food Calorie Counter" />
-    <meta property="og:description" content="Log every set and every Indian meal in one app. Track strength, calories and protein, compete with friends, and trust every number. Free to start." />
+    <meta property="og:description" content="Log every set and every Indian meal in one app. Macrotrophy plans your next week from both, with an AI coach and a weekly report. 7 days of Pro free." />
     <meta property="og:url" content="https://macrotrophy.in/" />
-    <meta property="og:image" content="https://macrotrophy.in/og-image.png" />
+    <meta property="og:image" content="https://macrotrophy.in/og-image.png?v=2" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Macrotrophy: your workouts and your Indian meals, in one app." />
+    <meta property="og:image:alt" content="Macrotrophy: your gym and your thali, read together. The home, workout and food screens of the app." />
+    <meta property="og:locale" content="en_IN" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Macrotrophy: Workout Tracker, Indian Food Calorie Counter" />
-    <meta name="twitter:description" content="Log every set and every Indian meal in one app. Track strength, calories and protein, compete with friends, and trust every number. Free to start." />
-    <meta name="twitter:image" content="https://macrotrophy.in/og-image.png" />
+    <meta name="twitter:description" content="Log every set and every Indian meal in one app. Macrotrophy plans your next week from both, with an AI coach and a weekly report. 7 days of Pro free." />
+    <meta name="twitter:image" content="https://macrotrophy.in/og-image.png?v=2" />
     <title>Macrotrophy: Workout Tracker, Indian Food Calorie Counter</title>
   </head>
   <body>
     <!-- landing:start -->
     <!--
       The public home page: what search engines, shared links and first-time visitors see at /.
-      Plain HTML so it is readable before any script runs; styles in src/styles/landing.css.
+      Plain HTML so it is readable before any script runs; styles in src/styles/landing.css,
+      motion and the thali counter in src/app/landingMotion.ts (never needed to read the page).
       Shown only when the inline script in the head finds no signed-in account and no finished
       tour on this device (src/app/landing.ts keeps the same rule). Links are plain links. Every
-      count, price, feature and review here is checked against the app by src/app/landing.test.ts.
+      count, price, saving, food number, feature and review here is checked against the app by
+      src/app/landing.test.ts. Screens show the app's sample athlete.
     -->
-    <div id="landing" class="min-h-dvh overflow-x-clip bg-bg text-text-1">
-      <header class="lp-bar pt-safe">
-        <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-safe">
-          <a href="/" class="chrome flex items-center gap-2.5 rounded-field" aria-label="Macrotrophy home">
-            <img src="/landing/mark.svg" width="36" height="36" alt="" aria-hidden="true" class="lp-logo size-9" />
-            <span class="text-[1.125rem] font-semibold tracking-[-0.02em]">Macrotrophy</span>
+    <div id="landing" class="lp min-h-dvh overflow-x-clip bg-bg text-text-1">
+      <a href="#landing-title" class="lp-skip">Skip to content</a>
+      <header class="lp-bar pt-safe" data-lp-bar>
+        <div class="lp-wrap lp-bar-row">
+          <a href="/" class="lp-brand chrome" aria-label="Macrotrophy home">
+            <img src="/landing/mark.svg" width="32" height="32" alt="" aria-hidden="true" class="lp-logo" />
+            <span>Macrotrophy</span>
           </a>
-          <nav aria-label="Main" class="flex items-center gap-1">
-            <a href="#features" class="hidden h-9 items-center rounded-full px-3 type-meta font-medium text-text-2 tab:inline-flex">Features</a>
-            <a href="#pricing" class="hidden h-9 items-center rounded-full px-3 type-meta font-medium text-text-2 tab:inline-flex">Pricing</a>
-            <a href="/science" class="hidden h-9 items-center rounded-full px-3 type-meta font-medium text-text-2 tab:inline-flex">The science</a>
-            <a href="/sign-in" class="lp-btn pressable chrome ml-1 inline-flex h-9 items-center rounded-full bg-surface-2 px-4 type-meta font-semibold text-text-1">Sign in</a>
+          <nav aria-label="Main" class="lp-nav">
+            <a href="#brain" class="lp-nav-link">The Brain</a>
+            <a href="#features" class="lp-nav-link">Features</a>
+            <a href="#pricing" class="lp-nav-link">Pricing</a>
+            <a href="/science" class="lp-nav-link">The science</a>
+            <a href="/sign-in" class="lp-nav-link lp-nav-signin">Sign in</a>
+            <a href="/sign-up" class="lp-btn lp-btn-primary lp-btn-sm pressable chrome">Start free</a>
           </nav>
         </div>
       </header>
 
       <main>
-        <section class="relative" aria-labelledby="landing-title">
-          <div class="lp-grid-lines" aria-hidden="true"></div>
-          <div class="lp-aura" aria-hidden="true"></div>
-          <div class="relative mx-auto max-w-6xl px-safe pt-14 text-center tab:pt-20 lg:pt-24">
-            <p class="lp-rise mx-auto inline-flex items-center gap-2 rounded-full bg-lime-dim px-3.5 py-1.5 type-meta font-semibold text-lime" style="--lp-i: 0">
-              <span class="size-1.5 rounded-full bg-lime" aria-hidden="true"></span>Workout tracker and Indian food calorie counter
+        <!-- Hero -->
+        <section class="lp-hero" aria-labelledby="landing-title">
+          <div class="lp-hero-bg" aria-hidden="true">
+            <div class="lp-grid-lines"></div>
+            <div class="lp-aura"></div>
+            <svg class="lp-orbits" viewBox="0 0 1200 900" fill="none" preserveAspectRatio="xMidYMid slice">
+              <circle cx="600" cy="640" r="300" />
+              <circle cx="600" cy="640" r="430" />
+              <circle cx="600" cy="640" r="570" />
+            </svg>
+          </div>
+          <div class="lp-wrap lp-hero-inner">
+            <a href="#brain" class="lp-pill lp-rise chrome" style="--lp-i: 0">
+              <span class="lp-pill-tag">New</span>
+              <span>Macrotrophy Brain: a plan that rewrites itself every week</span>
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </a>
+            <h1 id="landing-title" class="lp-display lp-rise" style="--lp-i: 1">Your gym and your thali, <span class="lp-gradient-text">read together.</span></h1>
+            <p class="lp-lead lp-hero-lead lp-rise" style="--lp-i: 2">
+              A workout tracker and an Indian food calorie counter in one app. It logs every set
+              and every meal, then plans your next week from both.
             </p>
-            <h1 id="landing-title" class="lp-display lp-rise mx-auto mt-6 max-w-[14ch]" style="--lp-i: 1">Your workouts and your Indian meals, in <span class="lp-gradient-text">one app.</span></h1>
-            <p class="lp-lead lp-rise mx-auto mt-6 max-w-[40rem] text-text-2" style="--lp-i: 2">
-              Log every set and every meal, from roti and dal to your post-workout shake. See what to
-              beat each session, hit your calories and protein, and compete with your friends. Every
-              number is backed by published research, never guessed.
-            </p>
-            <div class="lp-rise mt-9 flex flex-col justify-center gap-3 tab:flex-row" style="--lp-i: 3">
-              <a href="/sign-up" class="lp-btn lp-btn-primary pressable chrome inline-flex h-14 items-center justify-center rounded-full bg-lime px-8 text-[1.0625rem] font-semibold text-on-lime">Create free account</a>
-              <a href="/welcome" class="lp-btn pressable chrome inline-flex h-14 items-center justify-center rounded-full bg-surface-2 px-8 text-[1.0625rem] font-semibold text-text-1">Take the tour</a>
+            <div class="lp-cta-row lp-rise" style="--lp-i: 3">
+              <a href="/sign-up" class="lp-btn lp-btn-primary lp-btn-lg pressable chrome">Start 7 days of Pro free</a>
+              <a href="/welcome" class="lp-btn lp-btn-ghost lp-btn-lg pressable chrome">
+                <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M7 4.5v11l9-5.5z" fill="currentColor" /></svg>
+                Take the tour
+              </a>
             </div>
-            <p class="lp-rise type-meta mt-5 text-text-2" style="--lp-i: 4">
-              Free to start · Pro from ₹<span data-price-from>149</span> a month · Rated <span class="font-semibold text-text-1" data-rating>4.9</span> by members
-            </p>
+            <ul class="lp-trust lp-rise" style="--lp-i: 4">
+              <li>
+                <span class="lp-stars" aria-hidden="true">★★★★★</span>
+                <span><span class="lp-strong" data-rating>4.9</span> from member reviews</span>
+              </li>
+              <li>No card needed</li>
+              <li><span>Pro from ₹<span data-price-from>149</span> a month</span></li>
+            </ul>
 
-            <div class="lp-stage lp-rise-stage relative mx-auto mt-14 flex max-w-[44rem] items-start justify-center tab:mt-20" data-lp-stage>
-              <div class="lp-phone lp-phone-side lp-phone-left w-[34%] max-w-[230px]">
-                <img src="/landing/progress-360.webp" srcset="/landing/progress-360.webp 360w, /landing/progress-720.webp 720w" sizes="(min-width: 768px) 230px, 34vw" width="360" height="779" alt="The progress screen: workouts, working sets, volume load, records and insights for the last 30 days." fetchpriority="high" />
+            <div class="lp-stage lp-rise-stage" data-lp-stage>
+              <div class="lp-phone lp-phone-side lp-phone-left">
+                <div class="lp-screen">
+                  <div class="lp-status" aria-hidden="true"><span class="lp-status-time">9:41</span><span class="lp-status-island"></span><svg class="lp-status-icons" viewBox="0 0 66 12"><path d="M1 8.5h2.2v3H1zM5 6.5h2.2v5H5zM9 4.2h2.2v7.3H9zM13 1.8h2.2v9.7H13z" fill="currentColor"/><path d="M27.5 3.2a8.6 8.6 0 0 1 6 2.4l1.1-1.1a10.2 10.2 0 0 0-14.2 0l1.1 1.1a8.6 8.6 0 0 1 6-2.4Zm0 3.1a5.4 5.4 0 0 1 3.8 1.5l1.1-1.1a7 7 0 0 0-9.8 0l1.1 1.1a5.4 5.4 0 0 1 3.8-1.5Zm0 3.1a2.3 2.3 0 0 1 1.6.7l-1.6 1.6-1.6-1.6a2.3 2.3 0 0 1 1.6-.7Z" fill="currentColor"/><rect x="40.5" y="1.5" width="21" height="9.6" rx="2.8" fill="none" stroke="currentColor" stroke-opacity=".45"/><rect x="42.2" y="3.2" width="15.6" height="6.2" rx="1.6" fill="currentColor"/><path d="M63 4.6v3.4a1.8 1.8 0 0 0 0-3.4Z" fill="currentColor" fill-opacity=".45"/></svg></div>
+                  <img src="/landing/screen-logger-390.webp" srcset="/landing/screen-logger-390.webp 390w, /landing/screen-logger-780.webp 780w, /landing/screen-logger-1170.webp 1170w" sizes="(min-width: 48rem) 262px, 40vw" width="390" height="794" alt="The workout logger: last time's weight and reps beside each set, two sets ticked and the rest timer counting down." />
+                </div>
               </div>
-              <div class="lp-phone lp-phone-center w-[38%] max-w-[260px]">
-                <img src="/landing/logger-360.webp" srcset="/landing/logger-360.webp 360w, /landing/logger-720.webp 720w" sizes="(min-width: 768px) 260px, 38vw" width="360" height="779" alt="The workout logger: last time's weight beside each set, a ticked set and the rest timer counting down." fetchpriority="high" />
+              <div class="lp-phone lp-phone-center">
+                <div class="lp-screen">
+                  <div class="lp-status" aria-hidden="true"><span class="lp-status-time">9:41</span><span class="lp-status-island"></span><svg class="lp-status-icons" viewBox="0 0 66 12"><path d="M1 8.5h2.2v3H1zM5 6.5h2.2v5H5zM9 4.2h2.2v7.3H9zM13 1.8h2.2v9.7H13z" fill="currentColor"/><path d="M27.5 3.2a8.6 8.6 0 0 1 6 2.4l1.1-1.1a10.2 10.2 0 0 0-14.2 0l1.1 1.1a8.6 8.6 0 0 1 6-2.4Zm0 3.1a5.4 5.4 0 0 1 3.8 1.5l1.1-1.1a7 7 0 0 0-9.8 0l1.1 1.1a5.4 5.4 0 0 1 3.8-1.5Zm0 3.1a2.3 2.3 0 0 1 1.6.7l-1.6 1.6-1.6-1.6a2.3 2.3 0 0 1 1.6-.7Z" fill="currentColor"/><rect x="40.5" y="1.5" width="21" height="9.6" rx="2.8" fill="none" stroke="currentColor" stroke-opacity=".45"/><rect x="42.2" y="3.2" width="15.6" height="6.2" rx="1.6" fill="currentColor"/><path d="M63 4.6v3.4a1.8 1.8 0 0 0 0-3.4Z" fill="currentColor" fill-opacity=".45"/></svg></div>
+                  <img src="/landing/screen-home-390.webp" srcset="/landing/screen-home-390.webp 390w, /landing/screen-home-780.webp 780w, /landing/screen-home-1170.webp 1170w" sizes="(min-width: 48rem) 300px, 50vw" width="390" height="794" alt="The home screen: today's workout ready to start, and the week's sessions, sets and minutes in rings." fetchpriority="high" />
+                </div>
               </div>
-              <div class="lp-phone lp-phone-side lp-phone-right w-[34%] max-w-[230px]">
-                <img src="/landing/food-360.webp" srcset="/landing/food-360.webp 360w, /landing/food-720.webp 720w" sizes="(min-width: 768px) 230px, 34vw" width="360" height="779" alt="The food screen: calories left for the day, protein, carbs, fat and fibre, and the day analysis." fetchpriority="high" />
+              <div class="lp-phone lp-phone-side lp-phone-right">
+                <div class="lp-screen">
+                  <div class="lp-status" aria-hidden="true"><span class="lp-status-time">9:41</span><span class="lp-status-island"></span><svg class="lp-status-icons" viewBox="0 0 66 12"><path d="M1 8.5h2.2v3H1zM5 6.5h2.2v5H5zM9 4.2h2.2v7.3H9zM13 1.8h2.2v9.7H13z" fill="currentColor"/><path d="M27.5 3.2a8.6 8.6 0 0 1 6 2.4l1.1-1.1a10.2 10.2 0 0 0-14.2 0l1.1 1.1a8.6 8.6 0 0 1 6-2.4Zm0 3.1a5.4 5.4 0 0 1 3.8 1.5l1.1-1.1a7 7 0 0 0-9.8 0l1.1 1.1a5.4 5.4 0 0 1 3.8-1.5Zm0 3.1a2.3 2.3 0 0 1 1.6.7l-1.6 1.6-1.6-1.6a2.3 2.3 0 0 1 1.6-.7Z" fill="currentColor"/><rect x="40.5" y="1.5" width="21" height="9.6" rx="2.8" fill="none" stroke="currentColor" stroke-opacity=".45"/><rect x="42.2" y="3.2" width="15.6" height="6.2" rx="1.6" fill="currentColor"/><path d="M63 4.6v3.4a1.8 1.8 0 0 0 0-3.4Z" fill="currentColor" fill-opacity=".45"/></svg></div>
+                  <img src="/landing/screen-food-390.webp" srcset="/landing/screen-food-390.webp 390w, /landing/screen-food-780.webp 780w, /landing/screen-food-1170.webp 1170w" sizes="(min-width: 48rem) 262px, 40vw" width="390" height="794" alt="The food screen: 1,649 kcal left today, protein, carbs, fat and fibre against targets, and what to eat next." />
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section class="py-10 tab:py-14" aria-label="Foods and lifts you can log">
-          <div class="lp-marquee" style="--lp-speed: 45s">
+        <!-- What you can log -->
+        <section class="lp-strip" aria-label="Foods and lifts you can log">
+          <div class="lp-marquee" style="--lp-speed: 48s">
             <ul class="lp-marquee-track">
-              <li class="lp-chip">Dal makhani</li><li class="lp-chip">Bench press</li><li class="lp-chip">Roti</li><li class="lp-chip">Paneer tikka</li><li class="lp-chip">Deadlift</li><li class="lp-chip">Poha</li><li class="lp-chip">Masala dosa</li><li class="lp-chip">Squat</li><li class="lp-chip">Chole bhature</li><li class="lp-chip">Pull-up</li><li class="lp-chip">Idli sambar</li><li class="lp-chip">Whey protein</li><li class="lp-chip">Biryani</li><li class="lp-chip">Overhead press</li><li class="lp-chip">Rajma chawal</li>
+              <li class="lp-chip">Dal makhani</li><li class="lp-chip lp-chip-lift">Bench press</li><li class="lp-chip">Roti</li><li class="lp-chip">Paneer tikka</li><li class="lp-chip lp-chip-lift">Deadlift</li><li class="lp-chip">Poha</li><li class="lp-chip">Masala dosa</li><li class="lp-chip lp-chip-lift">Squat</li><li class="lp-chip">Chole bhature</li><li class="lp-chip lp-chip-lift">Pull-up</li><li class="lp-chip">Idli sambar</li><li class="lp-chip">Whey protein</li><li class="lp-chip">Biryani</li><li class="lp-chip lp-chip-lift">Overhead press</li><li class="lp-chip">Rajma chawal</li>
             </ul>
             <ul class="lp-marquee-track" aria-hidden="true">
-              <li class="lp-chip">Dal makhani</li><li class="lp-chip">Bench press</li><li class="lp-chip">Roti</li><li class="lp-chip">Paneer tikka</li><li class="lp-chip">Deadlift</li><li class="lp-chip">Poha</li><li class="lp-chip">Masala dosa</li><li class="lp-chip">Squat</li><li class="lp-chip">Chole bhature</li><li class="lp-chip">Pull-up</li><li class="lp-chip">Idli sambar</li><li class="lp-chip">Whey protein</li><li class="lp-chip">Biryani</li><li class="lp-chip">Overhead press</li><li class="lp-chip">Rajma chawal</li>
+              <li class="lp-chip">Dal makhani</li><li class="lp-chip lp-chip-lift">Bench press</li><li class="lp-chip">Roti</li><li class="lp-chip">Paneer tikka</li><li class="lp-chip lp-chip-lift">Deadlift</li><li class="lp-chip">Poha</li><li class="lp-chip">Masala dosa</li><li class="lp-chip lp-chip-lift">Squat</li><li class="lp-chip">Chole bhature</li><li class="lp-chip lp-chip-lift">Pull-up</li><li class="lp-chip">Idli sambar</li><li class="lp-chip">Whey protein</li><li class="lp-chip">Biryani</li><li class="lp-chip lp-chip-lift">Overhead press</li><li class="lp-chip">Rajma chawal</li>
             </ul>
           </div>
         </section>
 
-        <section class="mx-auto max-w-6xl px-safe py-16 tab:py-24" aria-labelledby="landing-why">
-          <div class="lp-reveal text-center">
-            <p class="lp-eyebrow">The problem</p>
-            <h2 id="landing-why" class="lp-h2 mx-auto mt-3 max-w-[18ch]">Three apps, and you are still guessing.</h2>
-            <p class="lp-lead mx-auto mt-5 max-w-[38rem] text-text-2">A workout app that knows nothing about your food. A calorie app that cannot find your mother's dal. Numbers with no source. Macrotrophy puts it all in one place, and shows its working.</p>
+        <!-- The Brain: the flagship -->
+        <section id="brain" class="lp-section lp-anchor lp-brain-section" aria-labelledby="landing-brain">
+          <div class="lp-brain-bg" aria-hidden="true"></div>
+          <div class="lp-wrap">
+            <div class="lp-head lp-reveal">
+              <p class="lp-eyebrow">Macrotrophy Brain · Pro</p>
+              <h2 id="landing-brain" class="lp-h2 lp-h2-xl">Meet the coach that <span class="lp-gradient-text">rewrites your week.</span></h2>
+              <p class="lp-lead lp-sub">Every week the Brain reads your weight trend, what you ate and how your lifts moved, then writes next week: calories, protein, sets for each muscle, and a lighter week when you need one. You say yes, or keep your plan.</p>
+              <a href="/science#adaptive-plan" class="lp-link">How the Brain decides
+                <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </a>
+            </div>
+
+            <div class="lp-flow lp-reveal" role="img" aria-label="An example week. The Brain reads four things: weight rising 0.6 kg a week against a goal of 0.25, no new bench press best in 3 weeks, five hard leg weeks in a row, and exams from the 24th. It proposes calories from 2,700 to 2,550, chest from 10 to 12 sets, a lighter leg week and 3 short sessions in exam week.">
+              <svg class="lp-flow-lines" viewBox="0 0 1000 400" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M300 40 C 360 40, 350 200, 400 200" />
+                <path d="M300 147 C 350 147, 360 200, 400 200" />
+                <path d="M300 253 C 350 253, 360 200, 400 200" />
+                <path d="M300 360 C 360 360, 350 200, 400 200" />
+                <path class="lp-flow-out" d="M400 200 L 618 200" />
+              </svg>
+              <ul class="lp-flow-in" aria-hidden="true">
+                <li style="--lp-r: 0"><span class="lp-flow-k">Weight trend</span><span class="lp-flow-v">+0.6 kg a week</span><span class="lp-flow-s">Your goal is +0.25</span></li>
+                <li style="--lp-r: 1"><span class="lp-flow-k">Bench press</span><span class="lp-flow-v">No new best</span><span class="lp-flow-s">3 weeks running</span></li>
+                <li style="--lp-r: 2"><span class="lp-flow-k">Legs</span><span class="lp-flow-v">5 hard weeks</span><span class="lp-flow-s">In a row</span></li>
+                <li style="--lp-r: 3"><span class="lp-flow-k">Coming up</span><span class="lp-flow-v">Exams</span><span class="lp-flow-s">From the 24th</span></li>
+              </ul>
+              <div class="lp-core" aria-hidden="true">
+                <span class="lp-core-ring lp-core-ring-1"></span>
+                <span class="lp-core-ring lp-core-ring-2"></span>
+                <span class="lp-core-orb">
+                  <img src="/landing/mark.svg" width="44" height="44" alt="" aria-hidden="true" />
+                </span>
+                <span class="lp-core-label">Learn · Decide · Explain</span>
+              </div>
+              <div class="lp-brain">
+                <div class="lp-brain-glow" aria-hidden="true"></div>
+              <div class="lp-brain-card" aria-hidden="true">
+                <div class="lp-brain-top">
+                  <span class="lp-brain-badge">Next week</span>
+                  <span class="lp-brain-date">An example week</span>
+                </div>
+                <p class="lp-brain-title">4 changes, each with a reason</p>
+                <ul class="lp-brain-rows">
+                  <li style="--lp-r: 0">
+                    <span class="lp-brain-k">Calories</span>
+                    <span class="lp-brain-change"><span class="lp-was">2,700</span><b>2,550</b></span>
+                    <span class="lp-brain-why">Weight rose faster than your goal rate for 2 weeks.</span>
+                  </li>
+                  <li style="--lp-r: 1">
+                    <span class="lp-brain-k">Chest</span>
+                    <span class="lp-brain-change"><span class="lp-was">10 sets</span><b>12 sets</b></span>
+                    <span class="lp-brain-why">Bench press stalled, and you recover well from 10.</span>
+                  </li>
+                  <li style="--lp-r: 2">
+                    <span class="lp-brain-k">Legs</span>
+                    <span class="lp-brain-change"><b>Lighter week</b></span>
+                    <span class="lp-brain-why">Five hard weeks in a row. Back to full the week after.</span>
+                  </li>
+                  <li style="--lp-r: 3">
+                    <span class="lp-brain-k">Exam week</span>
+                    <span class="lp-brain-change"><b>3 short sessions</b></span>
+                    <span class="lp-brain-why">You said exams start on the 24th.</span>
+                  </li>
+                </ul>
+                <div class="lp-brain-actions">
+                  <span class="lp-brain-apply">Apply</span>
+                  <span class="lp-brain-keep">Keep my plan</span>
+                </div>
+              </div>
+              </div>
+            </div>
+
+            <ol class="lp-brain-steps lp-reveal" aria-label="How the Brain works">
+              <li><span>1</span><p><strong>Learn.</strong> Your real maintenance from your food and weight, and what your lifts answer to.</p></li>
+              <li><span>2</span><p><strong>Decide.</strong> Next week's changes, always inside safe limits.</p></li>
+              <li><span>3</span><p><strong>Explain.</strong> A reason and the research for every change, and nothing moves without your yes.</p></li>
+            </ol>
+            <ul class="lp-brain-grid" aria-label="What the Brain does">
+              <li class="lp-brain-item lp-reveal" style="--lp-i: 0" data-lp-spot>
+                <span class="lp-brain-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M 19 3 L 5 3"></path><path d="M 21 13 L 21 5"></path><path d="M 21 5 A2 2 0 0 0 19 3"></path><path d="M 3 19 A2 2 0 0 0 5 21"></path><path d="M 3 5 L 3 19"></path><path d="M 5 3 A2 2 0 0 0 3 5"></path><path d="m16 19 2 2 4-4"></path><path d="M16 2v3"></path><path d="M3 9h18"></path><path d="M5 21 L12.5 21"></path><path d="M8 2v3"></path></svg></span>
+                <h3>Next week, every week <span class="lp-pro">Pro</span></h3>
+                <p>Calories, protein, sets for each muscle, a lighter week, a stalled lift swapped. Apply or keep your plan.</p>
+              </li>
+              <li class="lp-brain-item lp-reveal" style="--lp-i: 1" data-lp-spot>
+                <span class="lp-brain-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 5H3"></path><path d="M12 19H3"></path><path d="M14 3v4"></path><path d="M16 17v4"></path><path d="M21 12h-9"></path><path d="M21 19h-5"></path><path d="M21 5h-7"></path><path d="M8 10v4"></path><path d="M8 12H3"></path></svg></span>
+                <h3>Try a different plan <span class="lp-pro">Pro</span></h3>
+                <p>Slide to a faster cut or more sets and see what it would mean before you choose.</p>
+              </li>
+              <li class="lp-brain-item lp-reveal" style="--lp-i: 2" data-lp-spot>
+                <span class="lp-brain-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg></span>
+                <h3>Coming up <span class="lp-pro">Pro</span></h3>
+                <p>Exams, travel, a wedding or a fast. Tell it once and the week bends around it.</p>
+              </li>
+              <li class="lp-brain-item lp-reveal" style="--lp-i: 3" data-lp-spot>
+                <span class="lp-brain-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 10.01h.01"></path><path d="M10 14.01h.01"></path><path d="M14 10.01h.01"></path><path d="M14 14.01h.01"></path><path d="M18 6v12"></path><path d="M6 6v12"></path><rect x="2" y="6" width="20" height="12" rx="2"></rect></svg></span>
+                <h3>Something hurts <span class="lp-pro">Pro</span></h3>
+                <p>Say where in the logger. The plan works around that joint, and tells you to see a professional when it should.</p>
+              </li>
+              <li class="lp-brain-item lp-reveal" style="--lp-i: 0" data-lp-spot>
+                <span class="lp-brain-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg></span>
+                <h3>The Now card</h3>
+                <p>One thing on Home that fits the hour: weigh in, train, close your protein or log a meal.</p>
+              </li>
+              <li class="lp-brain-item lp-reveal" style="--lp-i: 1" data-lp-spot>
+                <span class="lp-brain-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg></span>
+                <h3>Eat next <span class="lp-pro">Pro</span></h3>
+                <p>Up to three foods that fit what is left of your day, each added in one tap.</p>
+              </li>
+              <li class="lp-brain-item lp-reveal" style="--lp-i: 2" data-lp-spot>
+                <span class="lp-brain-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19v3"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><rect x="9" y="2" width="6" height="13" rx="3"></rect></svg></span>
+                <h3>Voice sets</h3>
+                <p>Say the weight and reps between sets. It logs them while you rest.</p>
+              </li>
+              <li class="lp-brain-item lp-reveal" style="--lp-i: 3" data-lp-spot>
+                <span class="lp-brain-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"></path><path d="M9 13a4.5 4.5 0 0 0 3-4"></path><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"></path><path d="M3.477 10.896a4 4 0 0 1 .585-.396"></path><path d="M6 18a4 4 0 0 1-1.967-.516"></path><path d="M12 13h4"></path><path d="M12 18h6a2 2 0 0 1 2 2v1"></path><path d="M12 8h8"></path><path d="M16 8V5a2 2 0 0 1 2-2"></path><circle cx="16" cy="13" r=".5"></circle><circle cx="18" cy="3" r=".5"></circle><circle cx="20" cy="21" r=".5"></circle><circle cx="20" cy="8" r=".5"></circle></svg></span>
+                <h3>It remembers you <span class="lp-pro">Pro</span></h3>
+                <p>Tell Macrotrophy AI about a knee or a mess menu once. You can see and edit what it keeps.</p>
+              </li>
+            </ul>
           </div>
-          <div class="mt-12 grid gap-4 tab:grid-cols-3">
-            <div class="lp-card lp-lift lp-reveal p-7" style="--lp-i: 0">
-              <p class="font-display text-[2.75rem] leading-none font-bold tracking-[-0.04em] tabular" data-count="exercises">120</p>
-              <p class="type-headline mt-3">Exercises</p>
-              <p class="type-body mt-1 text-text-2">With instructions and the muscles each one works.</p>
+        </section>
+
+        <!-- The problem, and the numbers -->
+        <section class="lp-wrap lp-section" aria-labelledby="landing-why">
+          <div class="lp-head lp-reveal">
+            <p class="lp-eyebrow">Why Macrotrophy</p>
+            <h2 id="landing-why" class="lp-h2">Three apps, and you are still guessing.</h2>
+            <p class="lp-lead lp-sub">A workout app that knows nothing about your food. A calorie app that cannot find your mother's dal. A spreadsheet to connect the two. Macrotrophy does all three jobs, and shows its working.</p>
+          </div>
+          <dl class="lp-stats lp-reveal">
+            <div class="lp-stat">
+              <dt>Exercises, each with the muscles it works</dt>
+              <dd><span data-count="exercises" data-lp-count>120</span></dd>
             </div>
-            <div class="lp-card lp-lift lp-reveal p-7" style="--lp-i: 1">
-              <p class="font-display text-[2.75rem] leading-none font-bold tracking-[-0.04em]">Every state</p>
-              <p class="type-headline mt-3">Indian dishes</p>
-              <p class="type-body mt-1 text-text-2">Worked out from their ingredients, by the katori or the plate.</p>
+            <div class="lp-stat">
+              <dt>Foods, from home dal to chain burgers</dt>
+              <dd><span data-count="foods" data-lp-count>10,000+</span></dd>
             </div>
-            <div class="lp-card lp-lift lp-reveal p-7" style="--lp-i: 2">
-              <p class="font-display text-[2.75rem] leading-none font-bold tracking-[-0.04em] tabular" data-count="templates">16</p>
-              <p class="type-headline mt-3">Routine templates</p>
-              <p class="type-body mt-1 text-text-2">Or one built for your days, time and equipment.</p>
+            <div class="lp-stat">
+              <dt>Routine templates, or one built for you</dt>
+              <dd><span data-count="templates" data-lp-count>16</span></dd>
+            </div>
+            <div class="lp-stat">
+              <dt>Average rating in our member survey</dt>
+              <dd><span data-rating>4.9</span><small>/5</small></dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- The thali counter -->
+        <section class="lp-wrap lp-section" aria-labelledby="landing-thali">
+          <div class="lp-thali lp-card lp-reveal" data-lp-thali>
+            <div class="lp-thali-copy">
+              <p class="lp-eyebrow">Try it here</p>
+              <h2 id="landing-thali" class="lp-h2">Count a thali in five taps.</h2>
+              <p class="lp-lead lp-sub">No grams, no scales. Tap what is on your plate, the way you would say it at home. These are the app's own numbers, worked out from each dish's ingredients.</p>
+              <ul class="lp-thali-items" aria-label="Add food to the plate">
+                <!-- THALI_HERE -->
+              </ul>
+              <p class="lp-note">Medium katori, home-style oil. In the app you can change the katori size and the oil.</p>
+            </div>
+            <div class="lp-thali-plate">
+              <div class="lp-thali-dial">
+                <svg class="lp-thali-ring" viewBox="0 0 240 240" aria-hidden="true">
+                  <circle cx="120" cy="120" r="104" class="lp-ring-track" />
+                  <circle cx="120" cy="120" r="104" class="lp-ring-fill" data-lp-ring pathLength="100" stroke-dasharray="100" stroke-dashoffset="68" />
+                  <circle cx="120" cy="120" r="84" class="lp-ring-track lp-ring-track-2" />
+                  <circle cx="120" cy="120" r="84" class="lp-ring-fill lp-ring-fill-2" data-lp-ring-protein pathLength="100" stroke-dasharray="100" stroke-dashoffset="74" />
+                </svg>
+                <div class="lp-thali-total" aria-live="polite">
+                  <p class="lp-thali-kcal"><span data-lp-kcal>581</span><small>kcal</small></p>
+                  <p class="lp-thali-protein"><span data-lp-protein>23</span> g protein</p>
+                  <p class="lp-thali-line" data-lp-line>2 rotis, 1 katori dal tadka, 1 katori rice, 1 katori curd</p>
+                </div>
+              </div>
+              <p class="lp-thali-legend"><span>Calories</span><span>Protein</span></p>
+              <p class="lp-thali-of">Rings show a 1,800 kcal, 90 g protein day.</p>
+              <a href="/sign-up" class="lp-btn lp-btn-primary pressable chrome">Log your real plate</a>
             </div>
           </div>
         </section>
 
-        <section id="features" class="mx-auto max-w-6xl scroll-mt-20 px-safe pb-16 tab:pb-24" aria-labelledby="landing-features">
-          <div class="lp-reveal text-center">
+
+        <!-- Weekly report -->
+        <section class="lp-wrap lp-section" aria-labelledby="landing-report">
+          <div class="lp-split lp-split-flip">
+            <div class="lp-split-copy lp-reveal">
+              <p class="lp-eyebrow">Weekly intelligence report · Pro</p>
+              <h2 id="landing-report" class="lp-h2">A report written about you, every week.</h2>
+              <p class="lp-lead lp-sub">Training and food on the same page, for once. What changed, what it means, and three things to do next week, each with a check you can pass.</p>
+              <ul class="lp-ticks">
+                <li><strong>Patterns from your own weeks.</strong> "Your carbs are low on the days you lift."</li>
+                <li><strong>In English or Hinglish.</strong> Read the quick summary, or the full report.</li>
+                <li><strong>Yours to keep.</strong> Download it as a PDF, dark or print friendly.</li>
+              </ul>
+            </div>
+            <div class="lp-pages lp-reveal" style="--lp-i: 1">
+              <img class="lp-page lp-page-3" src="/landing/report-page-5-400.webp" srcset="/landing/report-page-5-400.webp 400w, /landing/report-page-5-800.webp 800w" sizes="(min-width: 60rem) 300px, 62vw" width="400" height="566" alt="A page of the weekly report: hard sets for each muscle this week against the four-week average." loading="lazy" decoding="async" />
+              <img class="lp-page lp-page-2" src="/landing/report-page-3-400.webp" srcset="/landing/report-page-3-400.webp 400w, /landing/report-page-3-800.webp 800w" sizes="(min-width: 60rem) 300px, 62vw" width="400" height="566" alt="A page of the weekly report: calories eaten and training, day by day, with patterns found in the week." loading="lazy" decoding="async" />
+              <img class="lp-page lp-page-1" src="/landing/report-page-1-400.webp" srcset="/landing/report-page-1-400.webp 400w, /landing/report-page-1-800.webp 800w" sizes="(min-width: 60rem) 300px, 62vw" width="400" height="566" alt="The first page of a weekly report: the week in one sentence, the win of the week and what to do differently next week." loading="lazy" decoding="async" />
+            </div>
+          </div>
+        </section>
+
+        <!-- Features -->
+        <section id="features" class="lp-wrap lp-section lp-anchor" aria-labelledby="landing-features">
+          <div class="lp-head lp-reveal">
             <p class="lp-eyebrow">Everything in one place</p>
-            <h2 id="landing-features" class="lp-h2 mx-auto mt-3 max-w-[16ch]">Built for the way you train and eat.</h2>
+            <h2 id="landing-features" class="lp-h2">Built for the way you train and eat.</h2>
           </div>
-          <div class="mt-12 grid gap-4 lg:grid-cols-6">
-            <article class="lp-card lp-lift lp-reveal flex flex-col lg:col-span-4" style="--lp-i: 0">
-              <div class="p-7 tab:p-9">
+
+          <div class="lp-bento">
+            <article class="lp-card lp-tile lp-tile-wide lp-tile-shot-right lp-reveal" data-lp-spot>
+              <div class="lp-tile-copy">
                 <p class="lp-eyebrow">Workout logging</p>
-                <h3 class="mt-2 font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em] tab:text-[2.25rem]">Know what to beat, every set.</h3>
-                <p class="type-body mt-3 max-w-[44ch] text-text-2">Last time's weight and reps sit beside every set. Tick it and the rest timer starts. Records are spotted the moment you lift them, and the app tells you when to add weight.</p>
+                <h3 class="lp-h3">Know what to beat, every set.</h3>
+                <p class="lp-body">Last time's weight and reps sit beside every set. Tick it and the rest timer starts. Say the set out loud and it is logged. Records are spotted the moment you lift them.</p>
+                <ul class="lp-tags"><li>Rest timer</li><li>Voice sets</li><li>Plate maths</li><li>Supersets</li><li>Left and right reps</li></ul>
               </div>
-              <div class="mt-auto h-[19rem] overflow-hidden px-7 tab:h-[24rem] tab:px-9">
-                <img src="/landing/logger-360.webp" srcset="/landing/logger-360.webp 360w, /landing/logger-720.webp 720w" sizes="(min-width: 1024px) 340px, 70vw" width="360" height="779" alt="Logging a bench press set with last time's numbers beside it." class="lp-tile-shot mx-auto h-auto w-[78%] max-w-[340px]" loading="lazy" decoding="async" />
-              </div>
-            </article>
-            <article class="lp-card lp-card-lime lp-lift lp-reveal flex flex-col p-7 lg:col-span-2" style="--lp-i: 1">
-              <p class="lp-eyebrow">Macrotrophy AI</p>
-              <h3 class="mt-2 font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em]">A coach that speaks Hinglish.</h3>
-              <div class="mt-6 flex flex-col gap-2.5" role="group" aria-label="An example chat">
-                <p class="ml-auto max-w-[85%] rounded-[1.25rem] rounded-br-md bg-lime px-4 py-2.5 text-[0.9375rem] font-medium text-on-lime">Mera bench press kyun ruk gaya?</p>
-                <p class="max-w-[90%] rounded-[1.25rem] rounded-bl-md bg-surface-2 px-4 py-2.5 text-[0.9375rem] text-text-1">It answers from your own logs, the sets, rest and food behind the stall, and never makes up a number.</p>
-              </div>
-              <p class="type-caption mt-auto pt-6 text-text-2">Part of Pro. In English, Hinglish or Hindi.</p>
-            </article>
-            <article class="lp-card lp-lift lp-reveal flex flex-col lg:col-span-3" style="--lp-i: 0">
-              <div class="p-7 tab:p-9">
-                <p class="lp-eyebrow">Food logging</p>
-                <h3 class="mt-2 font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em]">Indian food, counted properly.</h3>
-                <p class="type-body mt-3 text-text-2">Roti, dal and sabzi the way you eat them: by the katori, with light or rich oil. With Pro, your usual breakfast in one tap. Snap your plate or a label, or type it in Hinglish.</p>
-                <p class="mt-5 flex flex-wrap gap-2"><span class="lp-chip">1 katori dal</span><span class="lp-chip">2 rotis</span><span class="lp-chip">Half plate rice</span></p>
-              </div>
-              <div class="mt-auto h-[17rem] overflow-hidden px-7 tab:h-[20rem] tab:px-9">
-                <img src="/landing/food-360.webp" srcset="/landing/food-360.webp 360w, /landing/food-720.webp 720w" sizes="(min-width: 1024px) 300px, 70vw" width="360" height="779" alt="A day of food: calories left, protein, carbs, fat and fibre against targets." class="lp-tile-shot mx-auto h-auto w-[78%] max-w-[300px]" loading="lazy" decoding="async" />
+              <div class="lp-tile-shot">
+                <img class="lp-ui" src="/landing/tile-logger-358.webp" srcset="/landing/tile-logger-358.webp 358w, /landing/tile-logger-716.webp 716w" sizes="358px" width="358" height="431" alt="A Romanian deadlift in the logger: last time's 72.5 kg for 9 and 8 beside each set, two sets ticked." loading="lazy" decoding="async" />
               </div>
             </article>
-            <article class="lp-card lp-lift lp-reveal flex flex-col p-7 tab:p-9 lg:col-span-3" style="--lp-i: 1">
-              <p class="lp-eyebrow">Leaderboards</p>
-              <h3 class="mt-2 font-display text-[1.75rem] leading-tight font-bold tracking-[-0.03em]">Compete with your gym, every week.</h3>
-              <p class="type-body mt-3 text-text-2">Share a 6-character code and your friends are in. Points reward finished workouts, hard sets, records and protein days, so effort beats how much you already lift.</p>
-              <ol class="mt-6 flex flex-col gap-2" aria-label="An example group leaderboard">
-                <li class="flex items-center gap-3 rounded-2xl bg-lime-dim px-4 py-3"><span class="flex size-8 items-center justify-center rounded-full bg-lime font-bold text-on-lime">1</span><span class="type-headline flex-1">You</span><span class="type-headline tabular text-lime">96 pts</span></li>
-                <li class="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3"><span class="flex size-8 items-center justify-center rounded-full bg-[var(--fill)] font-bold">2</span><span class="type-headline flex-1">Gym buddy</span><span class="type-headline tabular text-text-2">88 pts</span></li>
-                <li class="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-3"><span class="flex size-8 items-center justify-center rounded-full bg-[var(--fill)] font-bold">3</span><span class="type-headline flex-1">Roommate</span><span class="type-headline tabular text-text-2">71 pts</span></li>
+
+            <article class="lp-card lp-card-lime lp-tile lp-reveal" style="--lp-i: 1" data-lp-spot>
+              <p class="lp-eyebrow">Macrotrophy AI · Pro</p>
+              <h3 class="lp-h3">A coach that speaks Hinglish.</h3>
+              <div class="lp-chat" role="group" aria-label="An example chat">
+                <p class="lp-chat-me">Mera bench press kyun ruk gaya?</p>
+                <p class="lp-chat-ai">Your bench has not moved in 3 weeks. Chest is at 10 hard sets and protein averaged 0.9 g per kg. Add 2 sets and one more protein meal.</p>
+              </div>
+              <p class="lp-note">An example. It answers from your own logs, and never makes up a number.</p>
+            </article>
+
+            <article class="lp-card lp-tile lp-tile-shot-bottom lp-reveal" data-lp-spot>
+              <div class="lp-tile-copy">
+                <p class="lp-eyebrow">Indian food</p>
+                <h3 class="lp-h3">Counted the way you eat.</h3>
+                <p class="lp-body">By the katori, the plate or the roti, with light or rich oil. Dishes from every state, pack labels and chain menus.</p>
+              </div>
+              <div class="lp-tile-shot">
+                <img class="lp-ui lp-ui-fade" src="/landing/tile-meals-358.webp" srcset="/landing/tile-meals-358.webp 358w, /landing/tile-meals-716.webp 716w" sizes="358px" width="358" height="390" alt="Today's breakfast and lunch: poha, chai, chaas, roti and chole, logged by the katori, cup, glass and roti." loading="lazy" decoding="async" />
+              </div>
+            </article>
+
+            <article class="lp-card lp-tile lp-reveal" style="--lp-i: 1" data-lp-spot>
+              <p class="lp-eyebrow">AI food logging · Pro</p>
+              <h3 class="lp-h3">Snap it. Say it. Scan it.</h3>
+              <p class="lp-body">A photo of your plate, a sentence in Hinglish, a nutrition label or a restaurant menu. The AI fills the plate and you correct anything before it is logged.</p>
+              <div class="lp-snap" role="img" aria-label="An example: typing 2 roti, ek katori rajma aur chai logs 2 rotis, a katori of rajma and a cup of chai, 397 kcal and 16 g protein.">
+                <p class="lp-snap-in" aria-hidden="true">"2 roti, ek katori rajma aur chai"</p>
+                <div class="lp-snap-card" aria-hidden="true">
+                  <p class="lp-snap-head"><span>Macrotrophy AI</span><span>3 items</span></p>
+                  <ul>
+                    <li><span>Roti<small>2 rotis</small></span><span>204 kcal</span></li>
+                    <li><span>Rajma<small>1 katori</small></span><span>139 kcal</span></li>
+                    <li><span>Chai with sugar<small>1 cup</small></span><span>54 kcal</span></li>
+                  </ul>
+                  <p class="lp-snap-out"><b>397 kcal</b> · 16 g protein</p>
+                  <span class="lp-snap-log">Log to lunch</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="lp-card lp-tile lp-tile-shot-bottom lp-reveal" style="--lp-i: 2" data-lp-spot>
+              <div class="lp-tile-copy">
+                <p class="lp-eyebrow">Meal plan · Pro</p>
+                <h3 class="lp-h3">A week of meals, and the grocery list.</h3>
+                <p class="lp-body">Built for home, hostel, mess or PG food, your diet and your budget, at your targets.</p>
+              </div>
+              <div class="lp-tile-shot">
+                <img class="lp-ui lp-ui-fade" src="/landing/tile-plan-358.webp" srcset="/landing/tile-plan-358.webp 358w, /landing/tile-plan-716.webp 716w" sizes="358px" width="358" height="350" alt="A planned breakfast and lunch with calories and protein, each loggable in one tap." loading="lazy" decoding="async" />
+              </div>
+            </article>
+
+            <article class="lp-card lp-tile lp-tile-wide lp-tile-shot-right lp-reveal" data-lp-spot>
+              <div class="lp-tile-copy">
+                <p class="lp-eyebrow">Progress</p>
+                <h3 class="lp-h3">Charts you can trust, and a reason when a lift stalls.</h3>
+                <p class="lp-body">Estimated 1RM, volume, hard sets per muscle and consistency, all from the sets you log. When a lift stops moving, the app names the most likely cause: rest, effort, volume or food.</p>
+                <ul class="lp-tags"><li>Stall detection</li><li>Strength levels</li><li>Rest analysis</li><li>Muscle map</li></ul>
+              </div>
+              <div class="lp-tile-shot">
+                <img class="lp-ui" src="/landing/tile-consistency-358.webp" srcset="/landing/tile-consistency-358.webp 358w, /landing/tile-consistency-716.webp 716w" sizes="358px" width="358" height="294" alt="Workouts per week over five weeks, rising to 4 this week." loading="lazy" decoding="async" />
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- Compete and share -->
+        <section class="lp-wrap lp-section" aria-labelledby="landing-compete">
+          <div class="lp-head lp-reveal">
+            <p class="lp-eyebrow">Compete and share</p>
+            <h2 id="landing-compete" class="lp-h2">Effort beats ego on this leaderboard.</h2>
+            <p class="lp-lead lp-sub">Points come from showing up, hard sets, records, protein days and getting stronger than you were. A beginner who trains hard can beat a strong lifter who skips.</p>
+          </div>
+          <div class="lp-bento lp-bento-3">
+            <article class="lp-card lp-tile lp-reveal" data-lp-spot>
+              <p class="lp-eyebrow">Groups and global</p>
+              <h3 class="lp-h3">Your gym, ranked weekly.</h3>
+              <ol class="lp-board" aria-label="An example group leaderboard">
+                <li class="lp-board-me"><span class="lp-board-n">1</span><span class="lp-board-name">You <svg viewBox="0 0 20 20" width="14" height="14" role="img" aria-label="Pro member"><path d="M3 15h14l1-8-4.5 3L10 4 6.5 10 2 7z" fill="currentColor" /></svg></span><span class="lp-board-p">96 pts</span></li>
+                <li><span class="lp-board-n">2</span><span class="lp-board-name">Gym buddy</span><span class="lp-board-p">88 pts</span></li>
+                <li><span class="lp-board-n">3</span><span class="lp-board-name">Roommate</span><span class="lp-board-p">71 pts</span></li>
               </ol>
-              <p class="type-caption mt-3 text-text-2">An example group. Plus a global leaderboard for everyone.</p>
+              <p class="lp-note">An example group. Share a 6-character code and your friends are in. Tap anyone on the board to see the routine they train, and copy it with Pro.</p>
             </article>
-            <article class="lp-card lp-lift lp-reveal p-7 lg:col-span-2" style="--lp-i: 0">
-              <p class="lp-eyebrow">Progress</p>
-              <h3 class="type-title mt-2">Charts you can trust</h3>
-              <p class="type-body mt-2 text-text-2">Estimated 1RM, volume, hard sets per muscle and consistency, from the sets you log.</p>
+
+            <article class="lp-card lp-tile lp-tile-stories lp-reveal" style="--lp-i: 1" data-lp-spot>
+              <div class="lp-tile-copy">
+                <p class="lp-eyebrow">Story cards</p>
+                <h3 class="lp-h3">Made for your story.</h3>
+                <p class="lp-body">Your photo, your numbers, seven designs. Sized for Instagram.</p>
+              </div>
+              <div class="lp-stories">
+                <img class="lp-story lp-story-a" src="/landing/story-led-360.webp" srcset="/landing/story-led-360.webp 360w, /landing/story-led-720.webp 720w" sizes="200px" width="360" height="639" alt="A story card in the LED scoreboard design over a gym photo: push day, 12,480 kg lifted, 62 minutes, 21 sets, 2 records." loading="lazy" decoding="async" />
+                <img class="lp-story lp-story-b" src="/landing/story-clean-360.webp" srcset="/landing/story-clean-360.webp 360w, /landing/story-clean-720.webp 720w" sizes="200px" width="360" height="639" alt="A story card in the clean design over a gym photo: push day, 12,480 kg lifted, average rest 1:48 and a 12 week streak." loading="lazy" decoding="async" />
+              </div>
             </article>
-            <article class="lp-card lp-lift lp-reveal p-7 lg:col-span-2" style="--lp-i: 1">
-              <p class="lp-eyebrow">Switching is easy</p>
-              <h3 class="type-title mt-2">Bring your Hevy or Strong history</h3>
-              <p class="type-body mt-2 text-text-2">Import the export file and your workouts, records and routine come with you.</p>
+
+            <article class="lp-card lp-tile lp-tile-shot-bottom lp-reveal" style="--lp-i: 2" data-lp-spot>
+              <div class="lp-tile-copy">
+                <p class="lp-eyebrow">Medals and badges</p>
+                <h3 class="lp-h3">Every record, earned.</h3>
+                <p class="lp-body">Gold medals on record sets, live as you lift, and badges with real progress toward the next.</p>
+              </div>
+              <div class="lp-tile-shot">
+                <img class="lp-ui lp-ui-fade" src="/landing/tile-badges-358.webp" srcset="/landing/tile-badges-358.webp 358w, /landing/tile-badges-716.webp 716w" sizes="358px" width="358" height="401" alt="Badges: 13 of 37 collected, a two plate squat 12.5 kg away and eight weeks in a row 2 weeks away." loading="lazy" decoding="async" />
+              </div>
             </article>
-            <article class="lp-card lp-lift lp-reveal p-7 lg:col-span-2" style="--lp-i: 2">
-              <p class="lp-eyebrow">1:1 coaching</p>
-              <h3 class="type-title mt-2">A real coach, on WhatsApp</h3>
-              <p class="type-body mt-2 text-text-2">Your workouts and diet planned and checked, inside the same app.</p>
-            </article>
+          </div>
+
+          <ul class="lp-minis lp-reveal">
+            <li><h3>Bring your Hevy or Strong history</h3><p>Import the export file. Workouts, records and your routine come with you.</p></li>
+            <li><h3>Works offline, installs in a tap</h3><p>Add it to your home screen. No app store, no waiting, and it opens without signal.</p></li>
+            <li><h3>1:1 coaching on WhatsApp</h3><p>A real coach plans and checks your training and diet, inside the same app.</p></li>
+            <li><h3>Your data stays yours</h3><p>No ads, nothing sold. Export as CSV or delete your account whenever you like.</p></li>
+          </ul>
+        </section>
+
+        <!-- Science -->
+        <section class="lp-wrap lp-section" aria-labelledby="landing-science">
+          <div class="lp-card lp-science lp-reveal">
+            <div class="lp-aura lp-aura-soft" aria-hidden="true"></div>
+            <p class="lp-eyebrow">Backed by research</p>
+            <h2 id="landing-science" class="lp-h2">If we cannot show the source, we do not show the number.</h2>
+            <p class="lp-formula" role="img" aria-label="Estimated one rep max equals weight times, 1 plus reps over 30">e1RM = W × (1 + r ⁄ 30)</p>
+            <p class="lp-lead lp-sub">Estimated one rep max uses the Epley formula. Hard sets are counted by reps in reserve. Your weight trend is a 7-day average. Every method, and the papers behind it, are on one page that anyone can read.</p>
+            <ul class="lp-sources" aria-label="Where the numbers come from">
+              <li>USDA FoodData Central</li><li>Indian Food Composition Tables 2017</li><li>Institute of Medicine macro ranges</li><li>Peer-reviewed training research</li>
+            </ul>
+            <a href="/science" class="lp-btn lp-btn-ghost pressable chrome">Read the science</a>
           </div>
         </section>
 
-        <section class="mx-auto max-w-6xl px-safe pb-16 tab:pb-24" aria-labelledby="landing-science">
-          <div class="lp-card lp-reveal relative overflow-hidden px-7 py-12 text-center tab:px-12 tab:py-16">
-            <div class="lp-aura opacity-60" aria-hidden="true"></div>
-            <p class="lp-eyebrow relative">Backed by research</p>
-            <h2 id="landing-science" class="lp-h2 relative mx-auto mt-3 max-w-[20ch]">If we cannot show the source, we do not show the number.</h2>
-            <p class="lp-formula relative mt-8 text-[1.75rem] text-text-1 tab:text-[2.5rem]" role="img" aria-label="Estimated one rep max equals weight times, 1 plus reps over 30">e1RM = W × (1 + r ⁄ 30)</p>
-            <p class="lp-lead relative mx-auto mt-6 max-w-[38rem] text-text-2">Estimated one rep max uses the Epley formula, hard sets are counted by reps in reserve, and your weight trend is a 7-day average. Every method and the papers behind it are on one page, open to everyone.</p>
-            <a href="/science" class="lp-btn pressable chrome relative mt-8 inline-flex h-12 items-center justify-center rounded-full bg-surface-2 px-7 type-headline text-text-1">Read the science</a>
-          </div>
-        </section>
-
-        <section class="pb-16 tab:pb-24" aria-labelledby="landing-reviews">
-          <div class="lp-reveal mx-auto max-w-6xl px-safe text-center">
+        <!-- Reviews -->
+        <section class="lp-section lp-section-flush" aria-labelledby="landing-reviews">
+          <div class="lp-wrap lp-head lp-reveal">
             <p class="lp-eyebrow">Loved by lifters</p>
-            <h2 id="landing-reviews" class="lp-h2 mx-auto mt-3">What members say.</h2>
-            <p class="type-body mt-4 text-text-2"><span class="font-semibold text-text-1" data-rating>4.9</span> out of 5 from <span data-count="ratings">12</span> member reviews</p>
+            <h2 id="landing-reviews" class="lp-h2">What members say.</h2>
+            <p class="lp-body lp-sub"><span class="lp-strong" data-rating>4.9</span> out of 5 from <span data-count="ratings">12</span> member reviews in our November survey</p>
           </div>
-          <div class="mx-auto mt-10 max-w-6xl px-safe">
+          <div class="lp-wrap lp-reviews">
             <!-- REVIEWS_HERE -->
           </div>
         </section>
 
-        <section id="pricing" class="mx-auto max-w-6xl scroll-mt-20 px-safe pb-16 tab:pb-24" aria-labelledby="landing-plans">
-          <div class="lp-reveal text-center">
-            <p class="lp-eyebrow">Pricing</p>
-            <h2 id="landing-plans" class="lp-h2 mx-auto mt-3">Less than a protein bar a month.</h2>
-            <p class="lp-lead mx-auto mt-5 max-w-[38rem] text-text-2">Logging and your history are never locked. Pro adds longer trends and coaching tools, and every new account gets 7 days of Pro to try them.</p>
+        <!-- One app instead of three -->
+        <section class="lp-wrap lp-section" aria-labelledby="landing-compare">
+          <div class="lp-head lp-reveal">
+            <p class="lp-eyebrow">One app instead of three</p>
+            <h2 id="landing-compare" class="lp-h2">What you stop juggling.</h2>
           </div>
-          <div class="mt-12 grid gap-4 lg:grid-cols-[1fr_1.5fr]">
-            <div class="lp-card lp-reveal p-7 tab:p-9" style="--lp-i: 0">
-              <h3 class="type-headline text-text-2">Free</h3>
-              <p class="mt-3 font-display text-[3rem] leading-none font-bold tracking-[-0.04em]">₹0</p>
-              <p class="type-meta mt-1 text-text-2">Forever</p>
-              <ul class="type-body mt-6 list-disc space-y-2.5 pl-5 text-text-2" data-plan="free">
+          <div class="lp-card lp-compare lp-reveal">
+            <table>
+              <caption class="sr-only">What a workout app, a calorie app and Macrotrophy each do</caption>
+              <thead>
+                <tr><th scope="col"><span class="sr-only">What you need</span></th><th scope="col">A workout app</th><th scope="col">A calorie app</th><th scope="col" class="lp-compare-us">Macrotrophy</th></tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">Log sets, records and rest</th><td data-v="yes">Yes</td><td data-v="no">No</td><td data-v="yes" class="lp-compare-us">Yes</td></tr>
+                <tr><th scope="row">Count Indian meals by the katori</th><td data-v="no">No</td><td data-v="some">Some</td><td data-v="yes" class="lp-compare-us">Yes</td></tr>
+                <tr><th scope="row">Read training and food together</th><td data-v="no">No</td><td data-v="no">No</td><td data-v="yes" class="lp-compare-us">Yes</td></tr>
+                <tr><th scope="row">Plan next week from both</th><td data-v="no">No</td><td data-v="no">No</td><td data-v="yes" class="lp-compare-us">Yes</td></tr>
+                <tr><th scope="row">One weekly report on all of it</th><td data-v="no">No</td><td data-v="no">No</td><td data-v="yes" class="lp-compare-us">Yes</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Pricing -->
+        <section id="pricing" class="lp-wrap lp-section lp-anchor" aria-labelledby="landing-plans">
+          <div class="lp-head lp-reveal">
+            <p class="lp-eyebrow">Pricing</p>
+            <h2 id="landing-plans" class="lp-h2">Start with everything. Decide in a week.</h2>
+            <p class="lp-lead lp-sub">Every new account gets all of Pro for 7 days, with no card and nothing charged. After that, keep Pro or stay on Free. What you logged is yours either way.</p>
+          </div>
+
+          <ol class="lp-steps lp-reveal" aria-label="How the trial works">
+            <li><span>Today</span><p>Create an account. Every Pro feature is on.</p></li>
+            <li><span>Day 7</span><p>Choose a plan to keep Pro, or do nothing.</p></li>
+            <li><span>After</span><p>Free stays free, with your whole history.</p></li>
+          </ol>
+
+          <div class="lp-plans">
+            <div class="lp-card lp-plan lp-reveal">
+              <h3 class="lp-plan-name">Free</h3>
+              <p class="lp-plan-price">₹0</p>
+              <p class="lp-plan-per">Forever</p>
+              <ul class="lp-plan-list" data-plan="free">
                 <li>Unlimited workout logging with last time beside every set</li>
                 <li>Your full workout history and every personal record</li>
                 <li>2 routines, from any template or built your own</li>
                 <li>Indian food logging with calories, by the katori, plate or roti</li>
                 <li>A group, a duel a week and the global leaderboard</li>
+                <li>Body weight, goals and progress photos</li>
+                <li>Progress for the last 7 days</li>
+                <li>Backup and sync across your devices</li>
               </ul>
-              <a href="/sign-up" class="lp-btn pressable chrome mt-8 inline-flex h-12 w-full items-center justify-center rounded-full bg-surface-2 px-6 type-headline text-text-1">Start free</a>
+              <a href="/sign-up" class="lp-btn lp-btn-ghost lp-btn-block pressable chrome">Start free</a>
             </div>
-            <div class="lp-card lp-card-lime lp-reveal p-7 tab:p-9" style="--lp-i: 1">
-              <h3 class="type-headline text-lime">Pro</h3>
-              <ul class="mt-5 grid gap-3 tab:grid-cols-3" data-prices>
-                <li class="rounded-[1.25rem] bg-surface-2 p-4" data-plan-price="monthly">
-                  <p class="type-meta text-text-2">Monthly</p>
-                  <p class="mt-1.5"><span class="font-display text-[2rem] leading-none font-bold tracking-[-0.03em] tabular">₹149</span></p>
-                  <p class="type-caption mt-1 text-text-2">a month</p>
+
+            <div class="lp-card lp-card-lime lp-plan lp-plan-pro lp-reveal" style="--lp-i: 1">
+              <div class="lp-plan-top">
+                <h3 class="lp-plan-name lp-plan-name-pro">Pro</h3>
+                <span class="lp-plan-flag">7 days free first</span>
+              </div>
+              <ul class="lp-prices" data-prices>
+                <li class="lp-price" data-plan-price="monthly">
+                  <p class="lp-price-name">Monthly</p>
+                  <p class="lp-price-amount"><span class="lp-price-n">₹149</span></p>
+                  <p class="lp-price-per">a month</p>
                 </li>
-                <li class="rounded-[1.25rem] bg-surface-2 p-4" data-plan-price="quarterly">
-                  <p class="type-meta text-text-2">3 months</p>
-                  <p class="mt-1.5"><span class="font-display text-[2rem] leading-none font-bold tracking-[-0.03em] tabular">₹399</span></p>
-                  <p class="type-caption mt-1 text-text-2">every 3 months</p>
+                <li class="lp-price" data-plan-price="quarterly">
+                  <p class="lp-price-name">3 months</p>
+                  <p class="lp-price-amount"><span class="lp-price-n">₹399</span></p>
+                  <p class="lp-price-per">every 3 months</p>
+                  <p class="lp-price-save">Save ₹<span data-save="quarterly">48</span></p>
                 </li>
-                <li class="rounded-[1.25rem] bg-lime-dim p-4 ring-1 ring-lime/50" data-plan-price="yearly">
-                  <p class="type-meta font-semibold text-lime">Yearly · best value</p>
-                  <p class="mt-1.5"><span class="font-display text-[2rem] leading-none font-bold tracking-[-0.03em] tabular">₹1,499</span></p>
-                  <p class="type-caption mt-1 text-text-2">a year</p>
+                <li class="lp-price lp-price-best" data-plan-price="yearly">
+                  <p class="lp-price-name">Yearly <span class="lp-price-badge">Best value</span></p>
+                  <p class="lp-price-amount"><span class="lp-price-n">₹1,499</span></p>
+                  <p class="lp-price-per">a year</p>
+                  <p class="lp-price-save">Save ₹<span data-save="yearly">289</span></p>
                 </li>
               </ul>
-              <p class="type-meta mt-7 font-semibold text-text-1">Everything in Free, plus</p>
-              <ul class="type-body mt-3 grid list-disc gap-x-6 gap-y-2.5 pl-5 text-text-2 tab:grid-cols-2" data-plan="pro">
+              <p class="lp-note">Savings are against paying monthly for the same time. Autopay or one payment, your choice.</p>
+              <p class="lp-plan-plus">Everything in Free, plus</p>
+              <ul class="lp-plan-list lp-plan-list-pro" data-plan="pro">
+                <li>A plan that adapts every week</li>
                 <li>Macrotrophy AI</li>
                 <li>AI food logging</li>
+                <li>Indian meal plan and grocery list</li>
+                <li>Weekly intelligence report</li>
+                <li>Protein, carbs, fat and fibre</li>
                 <li>Food insights</li>
                 <li>30-day, 90-day and all-time trends</li>
-                <li>Protein, carbs, fat and fibre</li>
+                <li>Plateau detection</li>
+                <li>Progression suggestions</li>
+                <li>Strength levels and DOTS</li>
+                <li>Sets per muscle group</li>
                 <li>Unlimited routines</li>
                 <li>Gym tools</li>
-                <li>Progression suggestions</li>
-                <li>Plateau detection</li>
-                <li>Sets per muscle group</li>
-                <li>Strength levels and DOTS</li>
-                <li>Weekly check-in</li>
-                <li>Every group leaderboard</li>
+                <li>Copy routines from the leaderboard</li>
+                <li>Every story card design</li>
                 <li>Usual meals in one tap</li>
                 <li>Body measurements and photo comparison</li>
               </ul>
-              <a href="/sign-up" class="lp-btn lp-btn-primary pressable chrome mt-8 inline-flex h-12 w-full items-center justify-center rounded-full bg-lime px-6 type-headline text-on-lime">Start your 7-day trial</a>
-              <p class="type-caption mt-4 text-text-2">Prices in Indian rupees, paid securely with Razorpay. Cancel any time. Prefer a coach? 1:1 coaching is ₹<span data-price-coaching>999</span> a month.</p>
+              <a href="/sign-up" class="lp-btn lp-btn-primary lp-btn-block pressable chrome">Start 7 days of Pro free</a>
+              <p class="lp-note">Prices in Indian rupees, paid securely by UPI or card through Razorpay. Cancel any time. Have a code? Add it when you pay. Prefer a coach? 1:1 coaching is ₹<span data-price-coaching>999</span> a month.</p>
             </div>
           </div>
         </section>
 
-        <section class="mx-auto max-w-4xl px-safe pb-16 tab:pb-24" aria-labelledby="landing-faq">
-          <h2 id="landing-faq" class="lp-h2 lp-reveal text-center">Questions.</h2>
-          <dl class="lp-reveal mt-10 grid gap-x-10 gap-y-8 tab:grid-cols-2">
+        <!-- FAQ -->
+        <section class="lp-wrap lp-section lp-faq-wrap" aria-labelledby="landing-faq">
+          <div class="lp-head lp-reveal">
+            <p class="lp-eyebrow">Questions</p>
+            <h2 id="landing-faq" class="lp-h2">Good to know.</h2>
+          </div>
+          <div class="lp-faq lp-reveal">
             <!-- FAQ_HERE -->
-          </dl>
+          </div>
         </section>
 
-        <section class="mx-auto max-w-6xl px-safe pb-20" aria-labelledby="landing-start">
-          <div class="lp-card lp-reveal relative overflow-hidden px-6 py-16 text-center tab:py-24">
+        <!-- Final call -->
+        <section class="lp-wrap lp-section" aria-labelledby="landing-start">
+          <div class="lp-card lp-final lp-reveal">
             <div class="lp-aura" aria-hidden="true"></div>
-            <img src="/landing/mark.svg" width="88" height="88" alt="" aria-hidden="true" class="lp-logo relative mx-auto size-22" loading="lazy" />
-            <h2 id="landing-start" class="lp-h2 relative mx-auto mt-7 max-w-[18ch]">Start your next workout and your next meal.</h2>
-            <div class="relative mt-9 flex flex-col justify-center gap-3 tab:flex-row">
-              <a href="/sign-up" class="lp-btn lp-btn-primary pressable chrome inline-flex h-14 items-center justify-center rounded-full bg-lime px-8 text-[1.0625rem] font-semibold text-on-lime">Create free account</a>
-              <a href="/welcome" class="lp-btn pressable chrome inline-flex h-14 items-center justify-center rounded-full bg-surface-2 px-8 text-[1.0625rem] font-semibold text-text-1">Take the tour</a>
+            <img src="/landing/mark.svg" width="72" height="72" alt="" aria-hidden="true" class="lp-logo lp-final-logo" loading="lazy" />
+            <h2 id="landing-start" class="lp-h2">Your next set and your next meal are waiting.</h2>
+            <p class="lp-lead lp-sub">Two minutes to set up. Seven days of Pro to see what it finds.</p>
+            <div class="lp-cta-row">
+              <a href="/sign-up" class="lp-btn lp-btn-primary lp-btn-lg pressable chrome">Create free account</a>
+              <a href="/welcome" class="lp-btn lp-btn-ghost lp-btn-lg pressable chrome">Take the tour</a>
             </div>
           </div>
         </section>
       </main>
 
-      <footer class="mx-auto max-w-6xl border-t border-border px-safe pt-8 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
-        <div class="flex flex-col gap-6 tab:flex-row tab:items-start tab:justify-between">
-          <p class="flex items-center gap-2.5"><img src="/landing/mark.svg" width="28" height="28" alt="" aria-hidden="true" class="size-7" loading="lazy" /><span class="type-headline">Macrotrophy</span></p>
-          <nav aria-label="More" class="type-meta flex flex-wrap gap-x-5 gap-y-2">
+      <footer class="lp-wrap lp-footer">
+        <div class="lp-footer-grid">
+          <div class="lp-footer-brand">
+            <p class="lp-brand"><img src="/landing/mark.svg" width="28" height="28" alt="" aria-hidden="true" loading="lazy" /><span>Macrotrophy</span></p>
+            <p class="lp-note">Your workouts and your Indian meals, in one app.</p>
+          </div>
+          <nav aria-label="Product" class="lp-footer-col">
+            <p>Product</p>
+            <a href="#brain">The Brain</a>
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="/welcome">Take the tour</a>
+          </nav>
+          <nav aria-label="Guides" class="lp-footer-col">
+            <p>Guides</p>
             <!-- GUIDES_HERE -->
-            <a href="/science" class="text-text-2 hover:text-text-1">The science</a>
-            <a href="/terms" class="text-text-2 hover:text-text-1">Terms</a>
-            <a href="/privacy" class="text-text-2 hover:text-text-1">Privacy</a>
-            <a href="/refunds" class="text-text-2 hover:text-text-1">Refunds</a>
-            <a href="/contact" class="text-text-2 hover:text-text-1">Contact</a>
+            <a href="/science">The science</a>
+          </nav>
+          <nav aria-label="Company" class="lp-footer-col">
+            <p>Company</p>
+            <a href="/contact">Contact</a>
+            <a href="/terms">Terms</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/refunds">Refunds</a>
           </nav>
         </div>
-        <p class="type-caption mt-6 text-text-2">Macrotrophy is run by Anish Verma, India.</p>
+        <p class="lp-footer-legal">Macrotrophy is run by Anish Verma, India. Screens on this page show the app's sample athlete.</p>
       </footer>
     </div>
     <!-- landing:end -->

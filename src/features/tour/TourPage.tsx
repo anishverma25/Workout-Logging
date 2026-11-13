@@ -17,6 +17,7 @@ import {
   Timer,
   Trophy,
   BrainCircuit,
+  Dumbbell,
   Star,
 } from 'lucide-react';
 import { averageRating, REVIEWS, SURVEY_RATINGS } from '@/app/marketing';
@@ -729,10 +730,31 @@ function Brain({ sample }: SlideProps) {
     <>
       <Title
         icon={<BrainCircuit className="size-4" aria-hidden />}
-        kicker="The plan that adapts"
-        title="Next week, worked out for you"
-        body="Every week Macrotrophy reads your weight, food and lifts, and proposes next week. It plans around exams, travel, fasts and anything that hurts. Nothing changes without your yes."
+        kicker="Macrotrophy Brain"
+        title="A coach that rewrites your week"
+        body="Every week it reads your weight, food and lifts together, and proposes next week. It plans around exams, travel, fasts and anything that hurts. Nothing changes without your yes."
       />
+      <ol className="mb-3 flex items-center gap-1.5" aria-label="What the Brain reads">
+        {[
+          { icon: Scale, label: 'Weight' },
+          { icon: Utensils, label: 'Food' },
+          { icon: Dumbbell, label: 'Lifts' },
+        ].map(({ icon: Icon, label }) => (
+          <li
+            key={label}
+            className="type-caption flex flex-1 items-center justify-center gap-1.5 rounded-full bg-surface py-2 font-semibold text-text-1"
+          >
+            <Icon className="size-3.5 text-lime" aria-hidden />
+            {label}
+          </li>
+        ))}
+        <li aria-hidden className="text-lime">
+          <ArrowRight className="size-4" />
+        </li>
+        <li className="type-caption flex items-center justify-center rounded-full bg-lime px-3 py-2 font-semibold text-on-lime">
+          Next week
+        </li>
+      </ol>
       <div
         className="glow-lime relative overflow-hidden rounded-panel bg-surface p-4"
         data-tour-brain
@@ -770,8 +792,10 @@ function Brain({ sample }: SlideProps) {
       </div>
       <ul className="mt-4 flex flex-col gap-2">
         {[
-          'Eat next: the meal that fits what is left of your day',
-          'A week of Indian meals for home, hostel or mess, with one grocery list',
+          'Coming up: exams, travel or a fast, and the week bends around it',
+          'Something hurts? It works around that joint',
+          'Eat next and a week of Indian meals, with one grocery list',
+          'The Now card on Home, and sets logged by voice',
           'Every change has its reason and a one tap undo',
         ].map((t) => (
           <li key={t} className="type-meta flex gap-2.5 text-text-1">
@@ -999,11 +1023,12 @@ function YourTurn() {
 const SLIDES = [
   Welcome,
   Logger,
+  Food,
+  // The flagship comes as soon as both halves it reads have been shown.
+  Brain,
+  Coach,
   Records,
   Progress,
-  Food,
-  Coach,
-  Brain,
   Leaderboards,
   Reviews,
   ProSlide,
