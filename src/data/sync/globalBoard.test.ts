@@ -68,7 +68,7 @@ async function train(userId: string, sets = 3, at?: Date) {
           we,
           exerciseId,
           i,
-          new Date(start.getTime() + (i + 1) * 60_000).toISOString(),
+          new Date(start.getTime() + (i + 1) * 3 * 60_000).toISOString(),
           iso,
         ],
       );
@@ -139,7 +139,7 @@ describe('global leaderboard', () => {
     const noName = await person(null);
     await train(noName, 3);
     const b = await board(noName);
-    expect(b.mine).toMatchObject({ name: 'Overload member', username: null });
+    expect(b.mine).toMatchObject({ name: 'Macrotrophy member', username: null });
     expect(b.has_username).toBe(false);
     const standing = await as<{ rank: number; total: number; score: number }>(
       noName,
