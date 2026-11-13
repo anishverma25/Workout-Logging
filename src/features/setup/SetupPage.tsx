@@ -14,6 +14,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { APP_NAME } from '@/app/navigation';
+import { useEntitlement } from '@/app/entitlement';
 import {
   NumberField,
   OptionCard,
@@ -42,6 +43,9 @@ import { energyPlan } from '@/domain/analytics/body';
 import { intakeOutcome, targetPlan, type TargetInput } from '@/domain/analytics/goalPlan';
 import { addGoal } from '@/data/repositories/goals';
 import { GoalTargets } from './GoalTargets';
+import { Personalising, PictureOptions, RoadmapTimeline } from './Roadmap';
+import { milestonesFor } from './roadmapPlan';
+import { GoalArt, LevelArt } from './SetupArt';
 import { EXPERIENCE_LABEL, GOAL_DETAIL, GOAL_LABEL } from '@/domain/models/labels';
 import type {
   DailyActivity,
@@ -190,9 +194,14 @@ function SetupFlow({
   latestKg: number | null;
   imported: Routine | null;
 }) {
-  const navigate = useNavigate();
+  const rawNavigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get('next') ?? '/';
+  const entitlement = useEntitlement();
+  // First setup during the trial: show what the trial includes once, then go on.
+  const firstTrial = !own && entitlement.plan === 'trial';
+  const navigate = (to: string, opts?: { replace?: boolean }) =>
+    firstTrial ? rawNavigate(`/trial?next=${encodeURIComponent(to)}`, opts) : rawNavigate(to, opts);
   const toast = useToast();
   const prefs = usePreferences();
   const [index, setIndex] = useState(0);
@@ -374,7 +383,7 @@ function SetupFlow({
               Skip
             </TextLink>
           ) : (
-            <TextLink onClick={() => navigate(next, { replace: true })} className="px-2">
+            <TextLink onClick={() => rawNavigate(next, { replace: true })} className="px-2">
               {own ? 'Cancel' : 'Not now'}
             </TextLink>
           )}
@@ -419,7 +428,7 @@ function SetupFlow({
 
           {step === 'goal' ? (
             <Question title="What is your main goal?" usedFor={USED_FOR.goal}>
-              <Options
+              <PictureOptions
                 label="Goal"
                 value={draft.goal}
                 onChange={(v) => set('goal', v)}
@@ -427,6 +436,7 @@ function SetupFlow({
                   value: g,
                   label: GOAL_LABEL[g],
                   detail: GOAL_DETAIL[g],
+                  art: <GoalArt goal={g} />,
                 }))}
               />
             </Question>
@@ -434,14 +444,16 @@ function SetupFlow({
 
           {step === 'experience' ? (
             <Question title="How long have you been lifting?" usedFor={USED_FOR.experience}>
-              <Options
+              <PictureOptions
                 label="Experience"
+                columns={1}
                 value={draft.experience}
                 onChange={(v) => set('experience', v)}
                 options={(['beginner', 'intermediate', 'advanced'] as const).map((e) => ({
                   value: e,
                   label: EXPERIENCE_LABEL[e],
                   detail: EXPERIENCE_DETAIL[e],
+                  art: <LevelArt level={e} />,
                 }))}
               />
             </Question>
@@ -593,6 +605,49 @@ function SetupFlow({
 
           {step === 'plan' ? (
             <PlanSummary
+              roadmap={
+                <Personalising
+                  lines={[
+                    `Reading your goal: ${GOAL_LABEL[goal].toLowerCase()}`,
+                    draft.trainingDays
+                      ? `Fitting ${draft.trainingDays} days a week, ${draft.sessionMinutes ?? DEFAULT_SESSION} minutes each`
+                      : 'Fitting your week',
+                    'Choosing exercises for your equipment',
+                    energy
+                      ? 'Setting your calories and protein'
+                      : 'Leaving calories until you log your weight',
+                    'Mapping your first weeks',
+                  ]}
+                >
+                  <RoadmapTimeline
+                    milestones={milestonesFor({
+                      days: draft.trainingDays,
+                      programme: imported ? imported.name : (recommendation?.template.name ?? null),
+                      kcal: goalPlan
+                        ? (ownTargets.kcal ?? goalPlan.kcal)
+                        : (energy?.targetKcal ?? null),
+                      proteinG: goalPlan
+                        ? (ownTargets.proteinG ?? goalPlan.proteinG)
+                        : energy
+                          ? Math.round((energy.proteinG[0] + energy.proteinG[1]) / 2)
+                          : null,
+                      target:
+                        goalPlan && targetKg !== null
+                          ? {
+                              kg: targetKg,
+                              date: intakeOutcome({
+                                ...targetInput!,
+                                kcal: ownTargets.kcal ?? goalPlan.kcal,
+                                proteinG: ownTargets.proteinG ?? goalPlan.proteinG,
+                              }).date,
+                              direction: goalPlan.direction,
+                            }
+                          : null,
+                      unit: prefs.weightUnit,
+                    })}
+                  />
+                </Personalising>
+              }
               name={draft.name.trim()}
               goal={goal}
               experience={experience}
@@ -780,6 +835,7 @@ function NumberPicker({
 }
 
 function PlanSummary({
+  roadmap,
   name,
   goal,
   experience,
@@ -793,6 +849,8 @@ function PlanSummary({
   onMode,
   planOptions,
 }: {
+  /** The personalising checklist and the first weeks, shown under the title. */
+  roadmap?: ReactNode;
   name: string;
   goal: Goal;
   experience: Experience;
@@ -819,6 +877,7 @@ function PlanSummary({
         {GOAL_LABEL[goal]}, {EXPERIENCE_LABEL[experience].toLowerCase()}. Change any of it later in
         your profile.
       </p>
+      {roadmap ? <div className="mt-6">{roadmap}</div> : null}
 
       {targets ? (
         targets

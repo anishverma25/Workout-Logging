@@ -92,7 +92,19 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   await expect(
     page.getByRole('list', { name: 'Days in this routine' }).getByRole('listitem'),
   ).toHaveCount(5);
+  // The first weeks, worked out from the answers.
+  await expect(page.locator('[data-personalising="done"]')).toBeVisible();
+  await expect(page.locator('[data-roadmap]')).toContainText('This week');
+  await expect(page.locator('[data-roadmap]')).toContainText(
+    '5 sessions of Upper Lower Push Pull Legs',
+  );
   await page.getByRole('button', { name: 'Create my routine' }).click();
+  // Once, on a new account: the trial is on, what it includes, and the real prices.
+  await expect(page).toHaveURL(/\/trial\?next=/);
+  const trial = page.locator('[data-trial-welcome]');
+  await expect(trial.getByRole('heading', { level: 1 })).toHaveText('Your 7 days of Pro are on');
+  await expect(trial.locator('[data-trial-prices]')).toContainText('₹149 a month');
+  await trial.locator('[data-trial-start]').click();
   await expect(page).toHaveURL(/\/routines\/[\w-]+$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Upper Lower Push Pull Legs');
 
@@ -128,6 +140,7 @@ test('intermediate and advanced lifters choose the recommendation or their own r
   await expect(page.getByRole('button', { name: 'Create my routine' })).toBeVisible();
   await page.getByRole('radio', { name: /Build my own/ }).click();
   await page.getByRole('button', { name: 'Build my routine' }).click();
+  await page.locator('[data-trial-start]').click();
   await expect(page).toHaveURL(/\/routines\/[\w-]+$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('My routine');
   for (const day of ['Day 1', 'Day 2', 'Day 3', 'Day 4'])

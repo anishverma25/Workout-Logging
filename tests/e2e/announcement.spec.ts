@@ -16,7 +16,9 @@ const TITLES = [
   'Duels and Wrapped',
 ];
 
-test('the walkthrough explains every part of the release and opens the weekly review', async ({ page }) => {
+test('the walkthrough explains every part of the release and opens the weekly review', async ({
+  page,
+}) => {
   await signUpFresh(page, { tag: 'announce' });
   await page.evaluate(() => localStorage.removeItem('overload.whatsNew'));
   await page.goto('/');

@@ -160,6 +160,8 @@ test('setup: a target weight gives calories, protein and a date that moves with 
   await card.getByRole('button', { name: /^Use the suggestion/ }).click();
   await expect(card.getByLabel('Calories a day')).toHaveValue(String(suggested));
   await page.getByRole('button', { name: /Save, I will pick a routine later/ }).click();
+  // The roadmap on the trial welcome page carried the same plan.
+  await page.locator('[data-trial-start]').click();
   await expect(page).toHaveURL(/\/food$/);
   await expect(page.locator('[data-day-totals]')).toContainText(suggested.toLocaleString('en-GB'));
 });

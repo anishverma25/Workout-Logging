@@ -50,9 +50,7 @@ test('badges show what is earned, how close the rest are, and share as a story',
   ).toBeVisible();
 });
 
-test('a badge earned in a workout gets its unlock moment once', async ({
-  page,
-}) => {
+test('a badge earned in a workout gets its unlock moment once', async ({ page }) => {
   await page.evaluate(() => localStorage.setItem('overload.test.unlock', 'on'));
   await page.goto('/workout');
   await page
@@ -67,7 +65,8 @@ test('a badge earned in a workout gets its unlock moment once', async ({
     // The header counts sets done; a tap the record alert swallowed is tapped again.
     const counted = page.getByText(new RegExp(`^${i} of \\d+ sets$`));
     await expect(async () => {
-      if (!(await counted.count())) await card.getByRole('button', { name: `Mark set ${i} done` }).click();
+      if (!(await counted.count()))
+        await card.getByRole('button', { name: `Mark set ${i} done` }).click();
       await expect(counted).toBeVisible({ timeout: 2000 });
     }).toPass({ timeout: 20_000 });
   }
@@ -84,7 +83,8 @@ test('a badge earned in a workout gets its unlock moment once', async ({
   await expect(unlock).toContainText(/(Bronze|Silver|Gold|Legend) badge unlocked/);
   const url = page.url();
   // Every new badge in turn, then it is gone, and it never comes back for this workout.
-  for (let i = 0; i < 12 && (await unlock.count()); i++) await page.locator('[data-unlock-next]').click();
+  for (let i = 0; i < 12 && (await unlock.count()); i++)
+    await page.locator('[data-unlock-next]').click();
   await expect(unlock).toHaveCount(0);
   await expect(page.getByRole('heading', { name: /done$/ })).toBeVisible();
   await page.reload();

@@ -90,6 +90,11 @@ export const router = createBrowserRouter([
         path: 'setup',
         lazy: page(() => import('@/features/setup/SetupPage'), 'SetupPage'),
       },
+      // Once, right after setup on a new account: the trial is on, and what it includes.
+      {
+        path: 'trial',
+        lazy: page(() => import('@/features/pro/TrialWelcome'), 'TrialWelcomePage'),
+      },
       // Bringing history over from Hevy or Strong: after sign-up, and from More and Settings.
       {
         path: 'import',

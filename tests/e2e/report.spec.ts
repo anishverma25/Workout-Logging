@@ -19,25 +19,35 @@ test('a week gets one report, it opens again offline and downloads as a PDF', as
   await make.click();
   const report = page.locator('[data-report]');
   await expect(report).toBeVisible();
-  await expect(page.locator('[data-report-title]')).toHaveText(/\d+ (to|[A-Z][a-z]{2} to) \d+ [A-Z][a-z]{2}/);
+  await expect(page.locator('[data-report-title]')).toHaveText(
+    /\d+ (to|[A-Z][a-z]{2} to) \d+ [A-Z][a-z]{2}/,
+  );
   await expect(page.locator('[data-report-verdict]')).not.toBeEmpty();
 
   // Hinglish and the full report.
   await page.getByRole('button', { name: 'Hinglish' }).click();
-  await expect(page.getByRole('button', { name: 'Hinglish' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Hinglish' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   await page.getByRole('button', { name: 'Full report' }).click();
   await expect(page.locator('[data-report-section="r-method"]')).toBeVisible();
   // The full report fits a small Galaxy screen without sideways scrolling.
   if (test.info().project.name === 'mobile') {
     await page.setViewportSize({ width: 360, height: 780 });
     await expect
-      .poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth))
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        ),
+      )
       .toBeLessThanOrEqual(0);
   }
 
   // Made once: coming back, and with this phone's copy cleared, there is nothing to make again.
   await page.evaluate(() => {
-    for (const k of Object.keys(localStorage)) if (k.startsWith('overload.reports.')) localStorage.removeItem(k);
+    for (const k of Object.keys(localStorage))
+      if (k.startsWith('overload.reports.')) localStorage.removeItem(k);
   });
   await page.reload();
   await expect(report).toBeVisible({ timeout: 20_000 });

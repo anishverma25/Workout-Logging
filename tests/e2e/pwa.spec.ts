@@ -201,14 +201,18 @@ function hevyWeek(now = new Date()): string {
     d.setDate(start.getDate() + offset);
     return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()}, ${h}:00`;
   };
-  const rows = ['"title","start_time","end_time","description","exercise_title","superset_id","exercise_notes","set_index","set_type","weight_kg","reps","distance_km","duration_seconds","rpe"'];
+  const rows = [
+    '"title","start_time","end_time","description","exercise_title","superset_id","exercise_notes","set_index","set_type","weight_kg","reps","distance_km","duration_seconds","rpe"',
+  ];
   for (const [day, title] of [
     [0, 'Upper'],
     [2, 'Lower'],
   ] as const) {
     const lift = title === 'Upper' ? 'Bench Press (Barbell)' : 'Squat (Barbell)';
     for (const i of [0, 1, 2])
-      rows.push(`"${title}","${at(day, 18)}","${at(day, 19)}","","${lift}",,"",${i},"normal",80,6,,,8`);
+      rows.push(
+        `"${title}","${at(day, 18)}","${at(day, 19)}","","${lift}",,"",${i},"normal",80,6,,,8`,
+      );
   }
   return rows.join('\n');
 }
@@ -235,7 +239,11 @@ test('the weekly report PDF downloads under the production security policy', asy
   await sheet.locator('[data-report-save-pdf]').click();
   const file = await download;
   const { readFileSync } = await import('node:fs');
-  expect(readFileSync((await file.path())!).subarray(0, 5).toString()).toBe('%PDF-');
+  expect(
+    readFileSync((await file.path())!)
+      .subarray(0, 5)
+      .toString(),
+  ).toBe('%PDF-');
   // The PDF code is fetched when used, never installed with the app.
   const precached = await page.evaluate(async () => {
     const names = await caches.keys();
