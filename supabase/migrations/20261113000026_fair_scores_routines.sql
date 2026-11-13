@@ -3,8 +3,8 @@
 -- out again with the new rules.
 --
 -- What changed in the Macrotrophy Score, all on the server and hard to fake:
---   * A workout counts only if its working sets were ticked over 5 minutes or more (not all at the
---     end), and only one workout a day earns the 10 points (a second session still adds hard sets).
+--   * A workout counts only if its working sets were ticked over 2 minutes or more (not all at
+--     the end), and only one workout a day earns the 10 points (a second session still adds hard sets).
 --   * Consistency: +10 for each Monday to Sunday week with 3 or more training days.
 --   * Progress: +1 for each 1% stronger on average than the 4 weeks before, from 3 or more lifts,
 --     up to +10. Each lift is held between -50% and +40%, so one odd entry cannot decide it.
@@ -66,13 +66,13 @@ as $$
         where s.user_id = w.user_id and s.workout_id = w.id and s.deleted_at is null
           and s.completed_at is not null and s.set_type <> 'warmup'
       ) >= 3
-      -- Sets ticked as they were done: the working sets span 5 minutes or more. Ticking a whole
+      -- Sets ticked as they were done: the working sets span 2 minutes or more. Ticking a whole
       -- workout in one go at the end does not count.
       and (
         select max(s.completed_at) - min(s.completed_at) from public.sets s
         where s.user_id = w.user_id and s.workout_id = w.id and s.deleted_at is null
           and s.completed_at is not null and s.set_type <> 'warmup'
-      ) >= interval '5 minutes'
+      ) >= interval '2 minutes'
   ),
   -- One a day: a second session the same day adds hard sets, not another workout.
   counted_w as (

@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { Swords, X } from 'lucide-react';
-import { cancelDuel, CommunityError, createDuel, getDuels, useRemote, type BoardRow, type Duel } from '@/app/community';
+import {
+  cancelDuel,
+  CommunityError,
+  createDuel,
+  getDuels,
+  useRemote,
+  type BoardRow,
+  type Duel,
+} from '@/app/community';
 import { BottomSheet, CapsuleButton } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/cn';
@@ -10,7 +18,15 @@ import { cn } from '@/lib/cn';
  * weekly points, so there is nothing new to learn. Hidden when the server does not have duels
  * yet, or there is nobody to challenge.
  */
-export function DuelsCard({ groupId, rows, version }: { groupId: string; rows: BoardRow[]; version: number }) {
+export function DuelsCard({
+  groupId,
+  rows,
+  version,
+}: {
+  groupId: string;
+  rows: BoardRow[];
+  version: number;
+}) {
   const toast = useToast();
   const [own, setOwn] = useState(0);
   const [picking, setPicking] = useState(false);
@@ -64,12 +80,21 @@ export function DuelsCard({ groupId, rows, version }: { groupId: string; rows: B
         ) : (
           <ul className="divide-y-[0.5px] divide-divider">
             {[...live, ...last].map((d) => (
-              <DuelRow key={d.id} duel={d} onCancel={d.live && d.mine ? () => void cancel(d) : undefined} />
+              <DuelRow
+                key={d.id}
+                duel={d}
+                onCancel={d.live && d.mine ? () => void cancel(d) : undefined}
+              />
             ))}
           </ul>
         )}
       </div>
-      <BottomSheet open={picking} onClose={() => setPicking(false)} title="Challenge a member" subtitle="Most points this week wins">
+      <BottomSheet
+        open={picking}
+        onClose={() => setPicking(false)}
+        title="Challenge a member"
+        subtitle="Most points this week wins"
+      >
         {picking ? (
           <ul className="divide-y-[0.5px] divide-divider" data-duel-pick>
             {free.map((r) => (
@@ -96,7 +121,8 @@ export function DuelsCard({ groupId, rows, version }: { groupId: string; rows: B
 function DuelRow({ duel: d, onCancel }: { duel: Duel; onCancel?: () => void }) {
   const total = Math.max(1, d.challengerScore + d.opponentScore);
   const share = d.challengerScore + d.opponentScore === 0 ? 0.5 : d.challengerScore / total;
-  const lead = d.challengerScore === d.opponentScore ? null : d.challengerScore > d.opponentScore ? 'c' : 'o';
+  const lead =
+    d.challengerScore === d.opponentScore ? null : d.challengerScore > d.opponentScore ? 'c' : 'o';
   const meSide = d.mine ? (d.iAmChallenger ? 'c' : 'o') : null;
   const verdict = d.live
     ? lead === null
@@ -114,17 +140,28 @@ function DuelRow({ duel: d, onCancel }: { duel: Duel; onCancel?: () => void }) {
           : 'Last week: you lost'
         : `Last week: @${lead === 'c' ? d.challenger : d.opponent} won`;
   return (
-    <li className="py-3.5" data-duel={d.live ? 'live' : 'done'} data-duel-mine={d.mine || undefined}>
+    <li
+      className="py-3.5"
+      data-duel={d.live ? 'live' : 'done'}
+      data-duel-mine={d.mine || undefined}
+    >
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
-            <span className={cn('type-headline truncate', lead === 'c' ? 'text-text-1' : 'text-text-2')}>
+            <span
+              className={cn('type-headline truncate', lead === 'c' ? 'text-text-1' : 'text-text-2')}
+            >
               @{d.challenger}
             </span>
             <span className="type-headline tabular shrink-0 text-text-1">
               {d.challengerScore} <span className="text-text-2">:</span> {d.opponentScore}
             </span>
-            <span className={cn('type-headline truncate text-right', lead === 'o' ? 'text-text-1' : 'text-text-2')}>
+            <span
+              className={cn(
+                'type-headline truncate text-right',
+                lead === 'o' ? 'text-text-1' : 'text-text-2',
+              )}
+            >
               @{d.opponent}
             </span>
           </div>

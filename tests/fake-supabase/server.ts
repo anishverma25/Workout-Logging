@@ -734,6 +734,21 @@ const server = createServer(async (req, res) => {
            and user_id = (select id from auth.users where email = $1)`,
         [email],
       );
+      // And its sets ticked a couple of minutes apart through the session, as a real workout's
+      // are (the score needs the working sets to span 2 minutes or more).
+      await pg.query(
+        `with ordered as (
+           select s.id, w.started_at,
+             row_number() over (partition by s.workout_id order by s.order_index, s.id) as n
+           from public.sets s
+           join public.workouts w on w.id = s.workout_id and w.user_id = s.user_id
+           where s.completed_at is not null and w.status = 'completed'
+             and w.user_id = (select id from auth.users where email = $1)
+         )
+         update public.sets s set completed_at = o.started_at + make_interval(mins => 2 * o.n::int)
+         from ordered o where o.id = s.id`,
+        [email],
+      );
       return send(res, 200, { changed: result.affectedRows ?? 0 });
     }
     if (url.pathname === '/__test/early-access' && req.method === 'POST') {

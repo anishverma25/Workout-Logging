@@ -33,6 +33,10 @@ export interface BoardRow {
   hardSets: number;
   records: number;
   proteinDays: number;
+  /** Weeks in the period with 3+ training days (migration 0026; 0 before). */
+  consistencyWeeks: number;
+  /** Points for getting stronger on 3+ lifts, up to 10 (migration 0026; 0 before). */
+  progressPoints: number;
   hasProteinTarget: boolean;
   /** Pro only: the totals behind the extra boards. */
   activeDays: number | null;
@@ -94,6 +98,8 @@ function parseRow(v: Record<string, unknown>): BoardRow {
     hardSets: num(v.hard_sets) ?? 0,
     records: num(v.records) ?? 0,
     proteinDays: num(v.protein_days) ?? 0,
+    consistencyWeeks: num(v.consistency_weeks) ?? 0,
+    progressPoints: num(v.progress_points) ?? 0,
     hasProteinTarget: v.has_protein_target === true,
     activeDays: num(v.active_days),
     volumeKg: num(v.volume_kg),
@@ -293,12 +299,17 @@ export function useRemote<T>(load: (() => Promise<T>) | null, key: string) {
 }
 
 /** Points for each part of the Macrotrophy Score: the same numbers as the server. */
-export const POINTS = { workout: 10, hardSet: 1, record: 5, proteinDay: 3 } as const;
-export const WEEKLY_CAPS = { workouts: 6, hardSets: 25, records: 5 } as const;
+export const POINTS = { workout: 10, hardSet: 1, record: 5, proteinDay: 3, consistencyWeek: 10 } as const;
+export const WEEKLY_CAPS = { workouts: 6, hardSets: 25, records: 5, progress: 10 } as const;
 
-/** The breakdown of one person's score, in points. */
-export function scoreParts(r: Pick<BoardRow, 'workouts' | 'hardSets' | 'records' | 'proteinDays'>) {
-  return [
+type ScoreFields = Pick<
+  BoardRow,
+  'workouts' | 'hardSets' | 'records' | 'proteinDays' | 'consistencyWeeks' | 'progressPoints'
+>;
+
+/** The breakdown of one person's score, in points. Bonuses show only once earned. */
+export function scoreParts(r: ScoreFields) {
+  const parts = [
     { key: 'workouts', label: 'Workouts', count: r.workouts, points: r.workouts * POINTS.workout },
     { key: 'hardSets', label: 'Hard sets', count: r.hardSets, points: r.hardSets * POINTS.hardSet },
     { key: 'records', label: 'Records', count: r.records, points: r.records * POINTS.record },
@@ -308,8 +319,71 @@ export function scoreParts(r: Pick<BoardRow, 'workouts' | 'hardSets' | 'records'
       count: r.proteinDays,
       points: r.proteinDays * POINTS.proteinDay,
     },
-  ] as const;
+    {
+      key: 'consistency',
+      label: 'Consistency',
+      count: r.consistencyWeeks,
+      points: r.consistencyWeeks * POINTS.consistencyWeek,
+    },
+    { key: 'progress', label: 'Getting stronger', count: r.progressPoints, points: r.progressPoints },
+  ];
+  return parts.filter(
+    (p) => !(p.key === 'consistency' || p.key === 'progress') || p.points > 0,
+  );
 }
+
+// ---------------------------------------------------------------------------------------------
+// Routines on the boards (migration 0026): the plan only, never weights.
+// ---------------------------------------------------------------------------------------------
+
+export interface BoardRoutineExercise {
+  /** Null for an exercise of their own, which cannot be copied. */
+  exerciseId: string | null;
+  name: string;
+  sets: number;
+  repMin: number;
+  repMax: number;
+  rir: number | null;
+}
+export interface BoardRoutine {
+  name: string;
+  days: { name: string; weekdays: number[]; exercises: BoardRoutineExercise[] }[];
+}
+
+export function parseBoardRoutine(v: unknown): BoardRoutine | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  const days = Array.isArray(o.days) ? (o.days as Record<string, unknown>[]) : [];
+  const parsed = {
+    name: str(o.name) || 'Routine',
+    days: days.map((d) => ({
+      name: str(d.name) || 'Day',
+      weekdays: Array.isArray(d.weekdays)
+        ? (d.weekdays as unknown[]).map(Number).filter((n) => Number.isInteger(n) && n >= 0 && n <= 6)
+        : [],
+      exercises: (Array.isArray(d.exercises) ? (d.exercises as Record<string, unknown>[]) : []).map(
+        (e) => ({
+          exerciseId: typeof e.exercise_id === 'string' && e.exercise_id ? e.exercise_id : null,
+          name: str(e.name) || 'Exercise',
+          sets: Math.max(1, Math.min(20, num(e.sets) ?? 3)),
+          repMin: Math.max(1, num(e.rep_min) ?? 8),
+          repMax: Math.max(1, num(e.rep_max) ?? 12),
+          rir: num(e.rir),
+        }),
+      ),
+    })),
+  };
+  return parsed.days.length ? parsed : null;
+}
+
+export const getBoardRoutine = (period: Period, offset: 0 | -1, rank: number) =>
+  call('get_board_routine', { p_period: period, p_offset: offset, p_rank: rank }, parseBoardRoutine);
+
+export const getMemberRoutine = (groupId: string, username: string) =>
+  call('get_member_routine', { p_group: groupId, p_username: username }, parseBoardRoutine);
+
+export const setShareRoutine = (on: boolean) =>
+  call('set_share_routine', { p_on: on }, (v) => v !== false);
 
 // ---------------------------------------------------------------------------------------------
 // The global leaderboard: everyone on Macrotrophy, by name; usernames only when shown.
@@ -327,6 +401,8 @@ export interface GlobalRow {
   hardSets: number;
   records: number;
   proteinDays: number;
+  consistencyWeeks: number;
+  progressPoints: number;
 }
 
 export interface GlobalBoard {
@@ -341,6 +417,8 @@ export interface GlobalBoard {
   mine: GlobalRow | null;
   showUsername: boolean;
   hasUsername: boolean;
+  /** Whether the caller's routine plan shows to people who tap them on a board. */
+  shareRoutine: boolean;
 }
 
 function parseGlobalRow(v: Record<string, unknown>): GlobalRow {
@@ -358,6 +436,8 @@ function parseGlobalRow(v: Record<string, unknown>): GlobalRow {
     hardSets: num(v.hard_sets) ?? 0,
     records: num(v.records) ?? 0,
     proteinDays: num(v.protein_days) ?? 0,
+    consistencyWeeks: num(v.consistency_weeks) ?? 0,
+    progressPoints: num(v.progress_points) ?? 0,
   };
 }
 
@@ -377,6 +457,8 @@ function parseGlobal(v: Record<string, unknown>): GlobalBoard {
         : null,
     showUsername: v.show_username === true,
     hasUsername: v.has_username === true,
+    // On unless the person turned it off (servers before 0026 do not say: treat as on).
+    shareRoutine: v.share_routine !== false,
   };
 }
 

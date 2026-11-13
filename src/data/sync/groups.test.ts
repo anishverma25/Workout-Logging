@@ -89,7 +89,7 @@ async function workout(
           s.kg ?? 60,
           s.reps ?? 8,
           s.rir === undefined ? 2 : s.rir,
-          // Ticked as they are done, a few minutes apart (the server checks the sets span 5+ min).
+          // Ticked as they are done, a few minutes apart (the server checks the sets span 2+ min).
           new Date(start.getTime() + (i + 1) * 3 * 60_000).toISOString(),
           created,
         ],

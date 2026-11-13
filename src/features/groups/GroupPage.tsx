@@ -29,10 +29,12 @@ import {
   type BoardRow,
   type Period,
   type Winner,
+  getMemberRoutine,
 } from '@/app/community';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { groupRankStory } from '@/domain/share/story';
 import { RankShareSheet } from '@/features/share/RankShareSheet';
+import { BoardRoutineSheet } from './BoardRoutineSheet';
 import { DuelsCard } from './DuelsCard';
 import {
   ActionMenu,
@@ -138,6 +140,7 @@ export function GroupPage() {
   const [menu, setMenu] = useState(false);
   const [sheet, setSheet] = useState<'rename' | 'members' | 'code' | 'leave' | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [routineOf, setRoutineOf] = useState<string | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const sync = useSyncStatus();
   const proBoards = useFeature('group_boards');
@@ -384,6 +387,7 @@ export function GroupPage() {
                       photo={photo(r.username)}
                       open={open === r.username}
                       onToggle={() => setOpen((o) => (o === r.username ? null : r.username))}
+                      onRoutine={() => setRoutineOf(r.username)}
                     />
                   ))}
                 </ol>
@@ -515,6 +519,12 @@ export function GroupPage() {
           />
         </>
       ) : null}
+      <BoardRoutineSheet
+        open={routineOf !== null}
+        onClose={() => setRoutineOf(null)}
+        owner={routineOf ? `@${routineOf}` : ''}
+        load={() => getMemberRoutine(groupId, routineOf!)}
+      />
       {b && me ? (
         <RankShareSheet
           open={sharing}
@@ -559,6 +569,7 @@ function BoardRowView({
   photo,
   open,
   onToggle,
+  onRoutine,
 }: {
   row: BoardRow;
   place: number;
@@ -566,6 +577,7 @@ function BoardRowView({
   photo: string | null;
   open: boolean;
   onToggle: () => void;
+  onRoutine: () => void;
 }) {
   const v = valueFor(kind, r);
   return (
@@ -625,6 +637,13 @@ function BoardRowView({
               </Link>{' '}
               to earn protein day points.
             </p>
+          ) : null}
+          {!r.me ? (
+            <div className="mt-3">
+              <TextButton onClick={onRoutine} data-see-routine>
+                See their routine
+              </TextButton>
+            </div>
           ) : null}
         </div>
       ) : null}
