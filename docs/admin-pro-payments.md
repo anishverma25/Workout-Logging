@@ -72,3 +72,27 @@ A revoked account keeps every free feature and all of its data.
   `trial_started_at` and `trial_expires_at` fixed, even for the owner.
 - Users cannot read the table directly, cannot write to it at all, and never see `admin_note`.
   They can only call `get_my_subscription()` and `submit_payment_reference()`.
+
+## Free and Pro (November 2026, release 2)
+
+Macrotrophy AI is Pro only: the AI services are on free tiers and cannot carry free members.
+
+Free is a complete logger: workouts, routines, every template, full history and records, Indian
+food logging and Eat next, body metrics and targets, groups and leaderboards, 30 days of
+Progress, backup and sync. History is never locked.
+
+What makes people want Pro, without taking anything away:
+
+- **What Pro found** (Progress, free members): real facts from their own logs ("2 lifts are ready
+  for more weight", "1 lift has stalled", "a part of your training is out of balance"), with the
+  which, why and what to do behind Pro.
+- **Weekly check-in**: the good news is free (sessions, lifts up, records); what stalled and the
+  focus for this week are Pro.
+- **Leaderboards**: anyone can see the routine of a person on the board; copying it is Pro.
+  Paying members (a paid plan or coaching, not the trial) wear a gold crown on every board.
+- **Duels**: one a week on the free plan, three with Pro.
+- **Story cards**: three designs free; LED scoreboard, die-cut sticker, caption note and rings
+  widget are Pro. Free members can try them on their own card; saving needs Pro.
+- Everything Pro already had stays Pro: the plan that adapts, the meal plan, the weekly report,
+  Macrotrophy AI, food insights, plateaus, progression, strength levels, balance, 90-day and
+  all-time trends, goal dates, recaps, the extra group boards and 10 groups instead of 3.

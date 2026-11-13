@@ -30,7 +30,7 @@ import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { BoardRoutineSheet } from './BoardRoutineSheet';
 import { HowPointsWork } from './GroupsPage';
-import { MemberAvatar } from './parts';
+import { MemberAvatar, ProCrown } from './parts';
 
 const dateLabel = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -416,6 +416,7 @@ function Podium({ rows, onPick }: { rows: GlobalRow[]; onPick: (r: GlobalRow) =>
               </span>
               <span className="type-subhead line-clamp-2 min-h-[2.5em] w-full break-words text-text-1">
                 {r.name}
+                {r.pro ? <ProCrown /> : null}
                 {r.me ? <span className="block text-text-2">You</span> : null}
               </span>
               <span
@@ -466,6 +467,7 @@ function GlobalRowView({
         <span className="min-w-0 flex-1">
           <span className="type-headline block truncate text-text-1">
             {r.name}
+            {r.pro ? <ProCrown /> : null}
             {r.me ? <span className="type-subhead ml-1.5 text-text-2">You</span> : null}
           </span>
           {r.username ? (

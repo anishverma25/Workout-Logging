@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Copy, Lock } from 'lucide-react';
+import { Copy, Crown, Lock } from 'lucide-react';
 import { CommunityError, type BoardRoutine } from '@/app/community';
+import { useFeature } from '@/app/entitlement';
 import { BottomSheet, InlineNotice, PrimaryButton, Skeleton } from '@/components/kit';
+import { ButtonLink } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { addSharedRoutine } from '@/data/repositories/routineShare';
@@ -48,6 +50,7 @@ function Body({
 }) {
   const toast = useToast();
   const navigate = useNavigate();
+  const canCopy = useFeature('copy_routines');
   const [state, setState] = useState<
     | { kind: 'loading' }
     | { kind: 'none' }
@@ -149,7 +152,16 @@ function Body({
           </li>
         ))}
       </ol>
-      {copyable ? (
+      {copyable && !canCopy ? (
+        <div className="flex flex-col gap-2" data-copy-locked>
+          <ButtonLink to="/pro" size="lg" block>
+            <Crown className="size-4" aria-hidden /> Copy it with Pro
+          </ButtonLink>
+          <p className="type-caption text-center text-text-2">
+            Pro copies any routine on the boards into yours in one tap.
+          </p>
+        </div>
+      ) : copyable ? (
         <PrimaryButton block loading={busy} onClick={() => void copy()} data-copy-routine>
           <Copy className="size-4" aria-hidden /> Copy to my routines
         </PrimaryButton>

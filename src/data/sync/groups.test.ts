@@ -801,4 +801,38 @@ describe('duels', () => {
     const a = await user();
     await expect(as(a, `public.community_routine('${a}')`)).rejects.toThrow();
   });
+
+  it('free accounts start one duel a week, Pro three; only paying members wear the crown', async () => {
+    const a = await user('limit.free');
+    const b = await user('limit.b');
+    const c = await user('limit.c');
+    const g = await as<{ id: string; code: string }>(a, 'public.create_group($1)', ['Limits']);
+    await as(b, 'public.join_group($1)', [g.code]);
+    await as(c, 'public.join_group($1)', [g.code]);
+    await free(a);
+    await as(a, 'public.create_duel($1, $2)', [g.id, 'limit.b']);
+    await expect(as(a, 'public.create_duel($1, $2)', [g.id, 'limit.c'])).rejects.toThrow(
+      /Duel limit 1/,
+    );
+    expect((await as<{ limit: number }>(a, 'public.get_group_duels($1)', [g.id])).limit).toBe(1);
+    // On the trial: three.
+    expect((await as<{ limit: number }>(b, 'public.get_group_duels($1)', [g.id])).limit).toBe(3);
+
+    // The crown: not for a trial, yes once paid.
+    await workout(b, new Date(), three());
+    const rowsFor = async () =>
+      (
+        await as<{ rows: { username: string; pro: boolean }[] }>(
+          a,
+          'public.get_group_board($1, $2, $3)',
+          [g.id, 'week', 0],
+        )
+      ).rows;
+    expect((await rowsFor()).find((r) => r.username === 'limit.b')?.pro).toBe(false);
+    await server.pg.query(
+      `update public.subscriptions set pro_expires_at = now() + interval '30 days' where user_id = $1`,
+      [b],
+    );
+    expect((await rowsFor()).find((r) => r.username === 'limit.b')?.pro).toBe(true);
+  });
 });

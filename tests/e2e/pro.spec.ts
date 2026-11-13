@@ -34,6 +34,13 @@ test.describe('after early access ends', () => {
     await expect(lock(page, 'long_range')).toContainText('Your history is all here');
     await expect(page.getByRole('heading', { name: 'Volume', exact: true })).toHaveCount(0);
 
+    // What Pro found: real facts from their own logs, with the answers locked.
+    await page.goto('/progress');
+    await expect(page.locator('[data-pro-findings]')).toContainText('What Pro found');
+    await expect(page.locator('[data-pro-findings]')).toContainText(
+      /ready for more weight|stalled|out of balance/,
+    );
+
     // History and records are never locked.
     await page.goto('/history');
     await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
@@ -47,7 +54,7 @@ test.describe('after early access ends', () => {
     await expect(page.getByRole('heading', { name: 'Your free trial has ended' })).toBeVisible();
     // The comparison says plainly what stays free.
     const table = page.getByRole('table', { name: 'What the free plan and Pro include' });
-    const history = table.getByRole('row', { name: /Full workout history/ });
+    const history = table.getByRole('row', { name: /full history/ });
     await expect(history.getByRole('img', { name: 'Included' })).toHaveCount(2);
     await expect(page.getByText('Your workout history always stays free.')).toBeVisible();
     // No founding member or early access wording is left.

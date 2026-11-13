@@ -161,7 +161,9 @@ export type ProFeature =
   | 'group_boards'
   | 'weekly_report'
   | 'adaptive_plan'
-  | 'meal_plan';
+  | 'meal_plan'
+  | 'copy_routines'
+  | 'story_designs';
 
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
   long_range: {
@@ -231,6 +233,16 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
     description:
       'Seven days of meals that hit your targets, built for home, hostel, mess or PG food, your diet and your budget, with one grocery list.',
   },
+  copy_routines: {
+    title: 'Copy routines from the leaderboard',
+    description:
+      'See what the people at the top of the board train, and copy their plan into your own routines in one tap.',
+  },
+  story_designs: {
+    title: 'Every story card design',
+    description:
+      'LED scoreboard, die-cut sticker, caption note and rings widget, on top of the free designs.',
+  },
   food_insights: {
     title: 'Food insights',
     description:
@@ -242,9 +254,9 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
 export const FREE_FEATURES = [
   'Unlimited workout logging, routines and custom exercises',
   'Your full workout history and every personal record',
-  'Every routine template, personalised routines and copying routines from the leaderboard',
+  'Every routine template and personalised routines, and a look at the routines on the boards',
   'Indian food logging with thalis, katoris and your usual meals, and Eat next',
-  'Groups, duels and the global leaderboard',
+  'Groups, a duel a week and the global leaderboard',
   'Body weight, measurements, targets, goals and progress photos',
   'Progress for the last 7 and 30 days, with insights',
   'Backup and sync across your devices',

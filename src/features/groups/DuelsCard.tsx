@@ -14,8 +14,8 @@ import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/cn';
 
 /**
- * Duels (free): challenge one member of the group for the week. The points are the group's own
- * weekly points, so there is nothing new to learn. Hidden when the server does not have duels
+ * Duels: challenge a member of the group for the week. The points are the group's own
+ * weekly points, so there is nothing new to learn. Free accounts start one a week, Pro three. Hidden when the server does not have duels
  * yet, or there is nobody to challenge.
  */
 export function DuelsCard({
@@ -68,6 +68,10 @@ export function DuelsCard({
         {free.length > 0 && started < data.limit ? (
           <CapsuleButton onClick={() => setPicking(true)} data-duel-start>
             Challenge
+          </CapsuleButton>
+        ) : free.length > 0 && data.limit < 3 ? (
+          <CapsuleButton to="/pro" data-duel-more>
+            More with Pro
           </CapsuleButton>
         ) : null}
       </div>

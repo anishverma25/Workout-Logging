@@ -57,7 +57,9 @@ export function NowCard({
       .slice(-8);
     const logs = food.logs.filter((l) => !l.deletedAt);
     const weekAgo = toDateKey(addDays(now, -7));
-    const foodDays7 = new Set(logs.filter((l) => l.date > weekAgo && l.date <= day).map((l) => l.date)).size;
+    const foodDays7 = new Set(
+      logs.filter((l) => l.date > weekAgo && l.date <= day).map((l) => l.date),
+    ).size;
     const eaten = dayTotals(logs, day);
     const kcalLeft = food.targets.kcal ? food.targets.kcal - eaten.kcal : null;
     const proteinLeft = food.targets.proteinG ? food.targets.proteinG - eaten.proteinG : null;
@@ -96,7 +98,21 @@ export function NowCard({
     });
     // `now` is read through the hour and the day, so the card does not recompute every minute.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, food.status, food.logs, food.targets.kcal, food.targets.proteinG, hour, day, pro, brain.record, brain.decision, today, active.data, wrappedMonth]);
+  }, [
+    data,
+    food.status,
+    food.logs,
+    food.targets.kcal,
+    food.targets.proteinG,
+    hour,
+    day,
+    pro,
+    brain.record,
+    brain.decision,
+    today,
+    active.data,
+    wrappedMonth,
+  ]);
 
   if (!card) return null;
   const Icon = ICON[card.kind];

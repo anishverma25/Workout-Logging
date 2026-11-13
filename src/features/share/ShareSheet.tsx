@@ -113,7 +113,10 @@ function ShareForm({ workoutId, badgeId }: { workoutId: string | null; badgeId?:
   const story = useMemo<StoryContent | null>(() => {
     if (!cards || !kind) return null;
     if (kind === 'workout' && cards.workout)
-      return workoutStory(cards.workout, { unit: prefs.weightUnit, streakWeeks: cards.streak?.weeks ?? null });
+      return workoutStory(cards.workout, {
+        unit: prefs.weightUnit,
+        streakWeeks: cards.streak?.weeks ?? null,
+      });
     if (kind === 'pr' && cards.pr) return prStory(cards.pr, { unit: prefs.weightUnit });
     if (kind === 'streak' && cards.streak) return streakStory(cards.streak, new Date());
     return null;

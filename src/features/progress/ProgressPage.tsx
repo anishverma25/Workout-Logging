@@ -48,6 +48,7 @@ import { buildBrief } from '../coach/brief';
 import { CheckinCard } from '../home/CheckinCard';
 import { buildDashboard } from '@/domain/analytics/dashboard';
 import { type BodyWeightSummary } from '@/domain/analytics/bodyweight';
+import { ProFindings } from './ProFindings';
 import { ProLock } from '../pro/ProLock';
 import { useFoodContextFrom } from '../food/useFoodContext';
 import { NutritionSection } from './NutritionSection';
@@ -241,6 +242,7 @@ export function ProgressPage() {
               {view === 'overview' ? (
                 <>
                   <Summary model={model} unit={unit} />
+                  {progressionIncluded ? null : <ProFindings model={model} />}
                   <Section
                     id="insights"
                     title="Insights"

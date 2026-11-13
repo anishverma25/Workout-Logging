@@ -37,6 +37,8 @@ export interface BoardRow {
   consistencyWeeks: number;
   /** Points for getting stronger on 3+ lifts, up to 10 (migration 0026; 0 before). */
   progressPoints: number;
+  /** A paying member: shown with a crown. */
+  pro: boolean;
   hasProteinTarget: boolean;
   /** Pro only: the totals behind the extra boards. */
   activeDays: number | null;
@@ -100,6 +102,7 @@ function parseRow(v: Record<string, unknown>): BoardRow {
     proteinDays: num(v.protein_days) ?? 0,
     consistencyWeeks: num(v.consistency_weeks) ?? 0,
     progressPoints: num(v.progress_points) ?? 0,
+    pro: v.pro === true,
     hasProteinTarget: v.has_protein_target === true,
     activeDays: num(v.active_days),
     volumeKg: num(v.volume_kg),
@@ -403,6 +406,7 @@ export interface GlobalRow {
   proteinDays: number;
   consistencyWeeks: number;
   progressPoints: number;
+  pro: boolean;
 }
 
 export interface GlobalBoard {
@@ -438,6 +442,7 @@ function parseGlobalRow(v: Record<string, unknown>): GlobalRow {
     proteinDays: num(v.protein_days) ?? 0,
     consistencyWeeks: num(v.consistency_weeks) ?? 0,
     progressPoints: num(v.progress_points) ?? 0,
+    pro: v.pro === true,
   };
 }
 

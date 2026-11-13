@@ -19,9 +19,17 @@ export function saneStyle(raw: unknown): StoryStyle {
   const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const fonts = FONT_CHOICES.map((f) => f.id);
   return {
-    design: oneOf(o.design, DESIGNS.map((d) => d.id), DEFAULT_STYLE.design),
+    design: oneOf(
+      o.design,
+      DESIGNS.map((d) => d.id),
+      DEFAULT_STYLE.design,
+    ),
     font: oneOf<FontId | 'auto'>(o.font, ['auto', ...fonts], 'auto'),
-    accent: oneOf(o.accent, ACCENTS.map((a) => a.value), DEFAULT_STYLE.accent),
+    accent: oneOf(
+      o.accent,
+      ACCENTS.map((a) => a.value),
+      DEFAULT_STYLE.accent,
+    ),
     ink: oneOf(o.ink, ['white', 'black'] as const, 'white'),
     boxOpacity: pct(o.boxOpacity, DEFAULT_STYLE.boxOpacity),
     dim: pct(o.dim, DEFAULT_STYLE.dim),

@@ -11,9 +11,31 @@
 --   * A protein day needs food logged at two or more meals that day.
 -- Nothing typed by hand alone (steps, body weight, a single food entry) earns points.
 --
+-- Also: paying members show a crown on the boards (community_is_paid), and free accounts start
+-- one duel a week, Pro three (duel_limit_for).
+--
 -- Routines on the boards: tapping someone on a board shows their active routine's plan (days,
 -- exercises, sets and rep targets; never weights). It is on unless they turn it off
 -- (set_share_routine). Only library exercises are shown and can be copied.
+
+-- Paying members (a paid plan or coaching, not the free trial): shown with a crown on the boards.
+create or replace function public.community_is_paid(p_user uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce((
+    select s.status <> 'revoked' and (
+      (s.pro_expires_at > now() and (s.pro_started_at is null or s.pro_started_at <= now()))
+      or coalesce(s.coaching_expires_at > now(), false)
+    )
+    from public.subscriptions s
+    where s.user_id = p_user
+  ), false);
+$$;
+revoke all on function public.community_is_paid(uuid) from public, anon, authenticated;
 
 drop function if exists public.community_scores(uuid[], timestamptz, timestamptz);
 
@@ -258,7 +280,7 @@ as $$
       )::int as rank,
       s.user_id, un.username, s.score, s.workouts, s.hard_sets, s.records, s.protein_days,
       s.has_protein_target, s.active_days, s.volume_kg, s.progress_pct,
-      s.consistency_weeks, s.progress_points
+      s.consistency_weeks, s.progress_points, public.community_is_paid(s.user_id) as pro
     from public.community_scores(
       array(select m.user_id from public.group_members m where m.group_id = p_group),
       p_from, p_to
@@ -295,7 +317,7 @@ as $$
           s.user_id
       )::int as rank,
       s.user_id, s.score, s.workouts, s.hard_sets, s.records, s.protein_days,
-      s.consistency_weeks, s.progress_points
+      s.consistency_weeks, s.progress_points, public.community_is_paid(s.user_id) as pro
     from public.community_scores(array(select p.user_id from people p), p_from, p_to) s
     where s.score > 0
   ) r;
@@ -334,7 +356,8 @@ as $$
     'records', (p_row ->> 'records')::int,
     'protein_days', (p_row ->> 'protein_days')::int,
     'consistency_weeks', coalesce((p_row ->> 'consistency_weeks')::int, 0),
-    'progress_points', coalesce((p_row ->> 'progress_points')::int, 0)
+    'progress_points', coalesce((p_row ->> 'progress_points')::int, 0),
+    'pro', coalesce((p_row ->> 'pro')::boolean, false)
   );
 $$;
 
@@ -385,6 +408,158 @@ end;
 $$;
 revoke all on function public.get_global_board(text, integer) from public, anon;
 grant execute on function public.get_global_board(text, integer) to authenticated;
+
+-- Duels: one a week to start on the free plan, three with Pro (trial included).
+create or replace function public.duel_limit_for(p_user uuid) returns integer
+language sql stable security definer set search_path = '' as $$
+  select case when public.community_is_pro(p_user) then 3 else 1 end
+$$;
+revoke all on function public.duel_limit_for(uuid) from public, anon, authenticated;
+
+create or replace function public.create_duel(p_group uuid, p_username text)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := auth.uid();
+  other uuid;
+  wk date;
+  started integer;
+  new_id uuid;
+begin
+  if uid is null then
+    raise exception 'Not signed in' using errcode = '42501';
+  end if;
+  if not exists (select 1 from public.group_members m where m.group_id = p_group and m.user_id = uid) then
+    raise exception 'Not a member of this group' using errcode = '42501';
+  end if;
+  select un.user_id into other
+  from public.usernames un
+  join public.group_members m on m.user_id = un.user_id and m.group_id = p_group
+  where un.username = lower(btrim(coalesce(p_username, '')));
+  if other is null then
+    raise exception 'No member with that username' using errcode = '22023';
+  end if;
+  if other = uid then
+    raise exception 'Duel yourself' using errcode = '22023';
+  end if;
+  select b.starts_on into wk from public.community_bounds('week', 0) b;
+  if exists (
+    select 1 from public.group_duels d
+    where d.group_id = p_group and d.week_start = wk
+      and least(d.challenger, d.opponent) = least(uid, other)
+      and greatest(d.challenger, d.opponent) = greatest(uid, other)
+  ) then
+    raise exception 'Duel exists' using errcode = '23505';
+  end if;
+  select count(*)::int into started from public.group_duels d
+  where d.challenger = uid and d.week_start = wk;
+  if started >= public.duel_limit_for(uid) then
+    raise exception 'Duel limit %', public.duel_limit_for(uid) using errcode = '22023';
+  end if;
+  insert into public.group_duels (group_id, challenger, opponent, week_start)
+  values (p_group, uid, other, wk)
+  returning id into new_id;
+  return jsonb_build_object('id', new_id, 'week_start', wk);
+end;
+$$;
+revoke all on function public.create_duel(uuid, text) from public, anon;
+grant execute on function public.create_duel(uuid, text) to authenticated;
+
+create or replace function public.get_group_duels(p_group uuid)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := auth.uid();
+  cur record;
+  prev record;
+  d record;
+  s record;
+  out_rows jsonb := '[]'::jsonb;
+  c_score integer;
+  o_score integer;
+begin
+  if uid is null then
+    raise exception 'Not signed in' using errcode = '42501';
+  end if;
+  if not exists (select 1 from public.group_members m where m.group_id = p_group and m.user_id = uid) then
+    raise exception 'Not a member of this group' using errcode = '42501';
+  end if;
+  select * into cur from public.community_bounds('week', 0);
+  select * into prev from public.community_bounds('week', -1);
+
+  -- Last week's duels are settled once, from the same scores the board froze.
+  for d in
+    select * from public.group_duels g
+    where g.group_id = p_group and g.week_start = prev.starts_on and g.settled_at is null
+  loop
+    c_score := 0;
+    o_score := 0;
+    for s in
+      select sc.user_id, sc.score from public.community_scores(
+        array[d.challenger, d.opponent], prev.from_ts, prev.to_ts) sc
+    loop
+      if s.user_id = d.challenger then c_score := s.score; else o_score := s.score; end if;
+    end loop;
+    update public.group_duels set
+      challenger_score = c_score,
+      opponent_score = o_score,
+      winner = case when c_score > o_score then d.challenger
+                    when o_score > c_score then d.opponent else null end,
+      settled_at = now()
+    where id = d.id;
+  end loop;
+
+  for d in
+    select g.*, cu.username as challenger_name, ou.username as opponent_name
+    from public.group_duels g
+    join public.usernames cu on cu.user_id = g.challenger
+    join public.usernames ou on ou.user_id = g.opponent
+    where g.group_id = p_group and g.week_start in (cur.starts_on, prev.starts_on)
+    order by g.week_start desc, g.created_at asc
+  loop
+    if d.week_start = cur.starts_on then
+      c_score := 0;
+      o_score := 0;
+      for s in
+        select sc.user_id, sc.score from public.community_scores(
+          array[d.challenger, d.opponent], cur.from_ts, cur.to_ts) sc
+      loop
+        if s.user_id = d.challenger then c_score := s.score; else o_score := s.score; end if;
+      end loop;
+    else
+      c_score := coalesce(d.challenger_score, 0);
+      o_score := coalesce(d.opponent_score, 0);
+    end if;
+    out_rows := out_rows || jsonb_build_object(
+      'id', d.id,
+      'week_start', d.week_start,
+      'live', d.week_start = cur.starts_on,
+      'challenger', d.challenger_name,
+      'opponent', d.opponent_name,
+      'challenger_score', c_score,
+      'opponent_score', o_score,
+      'mine', uid in (d.challenger, d.opponent),
+      'i_am_challenger', uid = d.challenger
+    );
+  end loop;
+  return jsonb_build_object(
+    'week_start', cur.starts_on,
+    'ends_on', (cur.to_ts at time zone 'Asia/Kolkata')::date - 1,
+    'limit', public.duel_limit_for(uid),
+    'duels', out_rows
+  );
+end;
+$$;
+revoke all on function public.get_group_duels(uuid) from public, anon;
+grant execute on function public.get_group_duels(uuid) to authenticated;
 
 -- The running week and month are worked out again with the new rules on the next view.
 delete from public.global_results where not final;
