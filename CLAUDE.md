@@ -448,3 +448,27 @@ Read README.md for setup, architecture and calculation rules.
   The update check also proves history survives an update, the app opens offline after it, and an
   update cut off halfway leaves the old version working. Release `2026-11-brain` (seven
   illustrated steps, page `/whats-new`), `CACHE_EPOCH` `ui-19`.
+- Release 2 "fair play" (November 2026, migrations `20261113000024_pricing_coupons.sql`,
+  `20261113000025_food_contributions.sql`, `20261113000026_fair_scores_routines.sql`,
+  `20261113000027_groups_early_members.sql`, Dexie unchanged):
+  - Prices ₹149, ₹399, ₹1,499 (nothing crossed out, no per-day lines); `REGULAR_PRICE_INR` and
+    the early bird box are gone. Running subscriptions on the old prices get `legacy_price` and
+    move at renewal (`billing` route `retire-legacy`). Autopay and pay once on every plan; paying
+    with time left starts later or adds on.
+  - Discounts only with a code (`coupons`, `coupon_uses`, report `coupon_report`, one per
+    account): RISHI10; EARLY15 only for `subscriptions.early_member` (paid Pro when 0027 ran).
+    Food thank-you credits (`food_credits`) are the one discount without a code; never advertise.
+  - Free and Pro: 2 routines, calories only, 7 days of Progress, 1 group free; Pro adds
+    `macro_tracking`, `long_range`, `gym_tools`, `unlimited_routines`, `copy_routines`,
+    `story_designs`, `body_measurements`, `usual_meals`. History is never locked.
+  - Leaderboards v2 (`community_scores`): sets ticked live over 2+ minutes, one workout a day,
+    +10 per 3-day week, progress points; Pro crown; routines visible (`share_routine`, on by
+    default) and copyable with Pro.
+  - Landing page rebuilt (index.html, `landing.css`, `landingMotion.ts`): real 3x screens in phone
+    frames (`--lp-w` sizes the bezel from the phone, not the stage), the Brain as the flagship,
+    a thali counter tested against the food library, tiles from real app cards. Share image
+    `og-image.png?v=2`.
+  - In app: template covers (`TemplateCover`), empty-screen art (`EmptyArt`), Home "Muscles this
+    week", science sources band and `HeaderArt` on science groups and guides, `num-glow`, `shine`,
+    `pulse-glow`. Tour shows the Brain after food. Release `2026-11-fair-play`, `CACHE_EPOCH`
+    `ui-20`.

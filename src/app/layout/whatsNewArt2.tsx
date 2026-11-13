@@ -1,4 +1,4 @@
-import { Check, Crown, Dumbbell, Flame, Medal, Repeat2, Tag, Trophy } from 'lucide-react';
+import { Crown, Dumbbell, Medal, Repeat2, Tag } from 'lucide-react';
 import { Dot, Frame, Row } from './whatsNewArt';
 
 /**
@@ -114,37 +114,6 @@ export function LookArt() {
             <p className="type-caption text-text-2">On the science page, linked to the paper</p>
           </div>
         </Row>
-      </div>
-    </Frame>
-  );
-}
-
-/** What Free keeps and what Pro adds. */
-export function PlansArt() {
-  return (
-    <Frame label="Free keeps logging, history and records; Pro adds the plan, macros and AI">
-      <div className="grid grid-cols-2 gap-2 pt-4 text-left">
-        <div className="rounded-nested bg-surface p-3">
-          <p className="type-subhead font-semibold text-text-1">Free</p>
-          {['Unlimited logging', 'All your history', 'Every record', 'Calories'].map((t) => (
-            <p key={t} className="type-caption mt-1.5 flex items-center gap-1.5 text-text-2">
-              <Check className="size-3.5 text-text-2" />
-              {t}
-            </p>
-          ))}
-        </div>
-        <div className="rounded-nested bg-lime-dim p-3 ring-1 ring-lime/50">
-          <p className="type-subhead flex items-center gap-1 font-semibold text-lime">
-            <Trophy className="size-3.5" />
-            Pro
-          </p>
-          {['Weekly plan', 'Protein and macros', 'Macrotrophy AI', 'Long trends'].map((t) => (
-            <p key={t} className="type-caption mt-1.5 flex items-center gap-1.5 text-text-1">
-              <Flame className="size-3.5 text-lime" />
-              {t}
-            </p>
-          ))}
-        </div>
       </div>
     </Frame>
   );

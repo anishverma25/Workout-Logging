@@ -379,6 +379,14 @@ html[data-landing] #landing {
   }
 }
 
+/* Each page of the full-screen release walkthrough settles in from slightly below. */
+@keyframes release-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+}
+
 /* Sign-up and sign-in picture (release 2). */
 .auth-art-glow {
   background:

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { BrainArt, FoodArt, LifeArt, NowArt, PlanArt, SocialArt, VoiceArt } from './whatsNewArt';
-import { BoardArt, LookArt, PayArt, PlansArt } from './whatsNewArt2';
+import { BoardArt, LookArt, PayArt } from './whatsNewArt2';
 
 /**
  * What each release brings, part by part. The latest is shown as a walkthrough once after the
@@ -188,15 +188,96 @@ export const BRAIN_STEPS: ReleaseStep[] = [
   },
 ];
 
-/** Fair play, paying your way and a fresh look (mid November 2026): the latest release. */
-export const RELEASE_TITLE = 'Fairer, clearer, sharper';
+/**
+ * The latest walkthrough: the whole November revamp in one, the Brain and the fair-play release
+ * together, only the parts that matter most. Shown full screen once after the update.
+ */
+export const RELEASE_TITLE = 'Macrotrophy, rebuilt';
+
+const byId = (id: string) => BRAIN_STEPS.find((s) => s.id === id)!;
 
 export const RELEASE_STEPS: ReleaseStep[] = [
   {
+    id: 'revamp',
+    kicker: 'The biggest update yet',
+    title: RELEASE_TITLE,
+    lead: 'A coach that plans your week from your training and your food, fairer leaderboards, and a fresh look across the app.',
+    art: <BrainArt />,
+    points: [
+      {
+        strong: 'It learns you.',
+        text: 'Every week it reads your weight, food and lifts together.',
+      },
+      {
+        strong: 'Maths decides, AI explains.',
+        text: 'Every number comes from tested rules and your own logs.',
+      },
+      {
+        strong: 'Nothing changes without your yes.',
+        text: 'It proposes; you apply it or keep your plan.',
+      },
+    ],
+    plan: 'For everyone, with more in Pro',
+    where: { label: 'Open Home', to: '/' },
+  },
+  { ...byId('plan'), kicker: 'Macrotrophy Brain' },
+  { ...byId('life'), kicker: 'Plans around your life' },
+  { ...byId('food'), kicker: 'Food that plans itself' },
+  {
+    id: 'daily',
+    kicker: 'Every day, faster',
+    title: 'Say a set, see what matters now',
+    lead: 'Log without typing, and let Home show the one thing worth doing right now.',
+    art: <VoiceArt />,
+    points: [
+      {
+        strong: 'Voice sets.',
+        text: 'Say "80 kilo 8 reps" or "80 ke 8" between sets, in English or Hinglish.',
+      },
+      {
+        strong: 'The Now card.',
+        text: 'Weigh in, log a meal, start your session or close your protein gap, changing through the day.',
+      },
+      {
+        strong: 'An AI that remembers.',
+        text: 'Macrotrophy AI keeps what you tell it, and you can see and edit it in Settings.',
+      },
+    ],
+    plan: 'Voice and the Now card for everyone. Macrotrophy AI is Pro',
+    where: { label: 'Start a workout', to: '/workout' },
+  },
+  {
+    id: 'fair',
+    kicker: 'Leaderboards',
+    title: 'Effort beats ego',
+    lead: 'Points now reward showing up and getting stronger than you were, and they are much harder to game.',
+    art: <BoardArt />,
+    points: [
+      {
+        strong: 'New points.',
+        text: 'Training three days in a week and beating your own lifts both score. One workout a day counts, logged as you train.',
+      },
+      {
+        strong: 'See what the best train.',
+        text: 'Tap anyone on a board for their split and exercises, never their weights. Copy it with Pro.',
+      },
+      {
+        strong: 'Duels and Wrapped.',
+        text: 'Challenge a friend for the week, and get your month as a story card on the 1st.',
+      },
+      {
+        strong: 'Your choice.',
+        text: "Your routine is shown by default. Turn it off in the board's privacy settings.",
+      },
+    ],
+    plan: 'Boards, duels and Wrapped for everyone. Copying a routine is Pro',
+    where: { label: 'See the board', to: '/groups/global' },
+  },
+  {
     id: 'look',
     kicker: 'A fresh look',
-    title: RELEASE_TITLE,
-    lead: 'Small things that make every screen easier to read at a glance.',
+    title: 'Easier to read at a glance',
+    lead: 'Small things across the app that make every screen clearer.',
     art: <LookArt />,
     points: [
       {
@@ -213,77 +294,33 @@ export const RELEASE_STEPS: ReleaseStep[] = [
       },
     ],
     plan: 'For everyone',
-    where: { label: 'Open Home', to: '/' },
+    where: { label: 'Open the science', to: '/science' },
   },
   {
-    id: 'fair',
-    kicker: 'Leaderboards',
-    title: 'Effort beats ego',
-    lead: 'Points now reward showing up and getting stronger than you were, and they are much harder to game.',
-    art: <BoardArt />,
-    points: [
-      {
-        strong: 'New points.',
-        text: 'Training three days in a week and beating your own lifts both score. One workout a day counts.',
-      },
-      {
-        strong: 'Logged as you train.',
-        text: 'Sets ticked all at once after the session no longer count.',
-      },
-      {
-        strong: 'See what the best train.',
-        text: 'Tap anyone on a board to see their split and exercises, never their weights. Copy it into your routines with Pro.',
-      },
-      {
-        strong: 'Your choice.',
-        text: "Your routine is shown by default. Turn it off in the board's privacy settings.",
-      },
-    ],
-    plan: 'Boards for everyone. Copying a routine is Pro',
-    where: { label: 'See the board', to: '/groups/global' },
-  },
-  {
-    id: 'pay',
-    kicker: 'Pro',
-    title: 'Pay your way',
-    lead: 'Pick autopay or a single payment on any plan, and add time whenever you like.',
+    id: 'pro',
+    kicker: 'Free and Pro',
+    title: 'Pro, your way',
+    lead: 'Free stays free for logging and your whole history. Pro is the coaching around it, paid the way you like.',
     art: <PayArt />,
     points: [
       {
-        strong: 'Autopay or pay once.',
-        text: 'Both on every plan. Autopay can be turned off at any time.',
-      },
-      { strong: 'Add more time.', text: 'Paying before Pro ends adds the new time after it.' },
-      { strong: 'Codes.', text: 'Have a code? Add it when you pay.' },
-      {
-        strong: 'Already on a plan?',
-        text: 'Your price changes only at your next renewal, and the plans card shows it first.',
-      },
-    ],
-    plan: 'Pro from ₹149 a month',
-    where: { label: 'See plans', to: '/pro' },
-  },
-  {
-    id: 'plans',
-    kicker: 'Free and Pro',
-    title: 'What each plan includes',
-    lead: 'Free stays free for logging and your whole history. Pro is for the coaching around it.',
-    art: <PlansArt />,
-    points: [
-      {
         strong: 'Free.',
-        text: 'Unlimited workout logging, all your history and records, 2 routines, calories, a group and the global board, and the last 7 days of progress.',
+        text: 'Unlimited workout logging, all your history and records, 2 routines, calories, a group and the global board.',
       },
       {
         strong: 'Pro.',
-        text: 'The weekly plan, protein and macros, Macrotrophy AI, meal plans, the weekly report, long trends, gym tools and more.',
+        text: 'The weekly plan, protein and macros, Macrotrophy AI, meal plans, the weekly report, long trends and gym tools.',
+      },
+      {
+        strong: 'Autopay or pay once.',
+        text: 'Both on every plan, and paying early adds time after what you have. Have a code? Add it when you pay.',
       },
       {
         strong: 'Nothing is taken away.',
-        text: 'Routines and groups you already have stay, and everything you logged is yours.',
+        text: 'Routines and groups you already have stay. On an earlier plan, your price changes only at your next renewal.',
       },
     ],
-    plan: 'Free, or Pro from ₹149 a month',
-    where: { label: 'Compare plans', to: '/pro' },
+    plan: 'Pro from ₹149 a month',
+    where: { label: 'See Pro', to: '/pro' },
   },
 ];

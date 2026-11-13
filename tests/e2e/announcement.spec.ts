@@ -2,25 +2,20 @@ import { expect, test } from '@playwright/test';
 import { signUpFresh } from './session';
 
 /**
- * The release walkthrough (fair play, paying your way, a fresh look): four parts, each with a
- * drawing, shown once after the update, and kept on the "What is new" page with the Brain
- * release before it.
+ * The release walkthrough (the November revamp: the Brain and fair play together): eight parts,
+ * full screen, each with a drawing, shown once after the update, and kept on the "What is new"
+ * page.
  */
 
 const TITLES = [
-  'Fairer, clearer, sharper',
-  'Effort beats ego',
-  'Pay your way',
-  'What each plan includes',
-];
-const EARLIER = [
-  'Macrotrophy now learns you',
+  'Macrotrophy, rebuilt',
   'Your week and next week',
   'Exams, travel, fasts and pain',
   'Eat next, meal plans and menus',
-  'Log a set by saying it',
-  'A Now card, and an AI that remembers',
-  'Duels and Wrapped',
+  'Say a set, see what matters now',
+  'Effort beats ego',
+  'Easier to read at a glance',
+  'Pro, your way',
 ];
 
 test('the walkthrough explains every part of the release and ends on the plans', async ({
@@ -40,9 +35,12 @@ test('the walkthrough explains every part of the release and ends on the plans',
       return body.scrollWidth - body.clientWidth;
     });
     expect(over).toBeLessThanOrEqual(1);
+    // Full screen, not a sheet.
+    const box = await dialog.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual((page.viewportSize()?.height ?? 0) - 1);
     if (i < TITLES.length - 1) await dialog.getByRole('button', { name: 'Next' }).click();
   }
-  await dialog.getByRole('button', { name: 'Compare plans' }).click();
+  await dialog.getByRole('button', { name: 'See Pro' }).click();
   await expect(page).toHaveURL(/\/pro$/);
   await page.goto('/');
   await expect(page.getByRole('dialog', { name: 'New in Macrotrophy' })).toHaveCount(0);
@@ -63,7 +61,6 @@ test('Later closes it for good, and it stays readable from More', async ({ page 
   await page.goto('/more');
   await page.getByRole('link', { name: 'What is new' }).first().click();
   const all = page.locator('[data-whats-new-page]');
-  for (const title of [...TITLES, ...EARLIER])
-    await expect(all.getByRole('heading', { name: title })).toBeVisible();
-  await expect(all.getByRole('img')).toHaveCount(TITLES.length + EARLIER.length);
+  for (const title of TITLES) await expect(all.getByRole('heading', { name: title })).toBeVisible();
+  await expect(all.getByRole('img')).toHaveCount(TITLES.length);
 });
