@@ -13,11 +13,13 @@ import {
   Zap,
   FlaskConical,
   Medal,
-  Ruler,
   Sparkles,
   Timer,
   Trophy,
+  BrainCircuit,
+  Star,
 } from 'lucide-react';
+import { averageRating, REVIEWS, SURVEY_RATINGS } from '@/app/marketing';
 import { APP_NAME } from '@/app/navigation';
 import { LineChart } from '@/components/charts/LineChart';
 import { Button } from '@/components/ui/Button';
@@ -285,13 +287,13 @@ function Welcome({ sample, active }: SlideProps) {
         {active ? <Rings rings={rings} size={220} /> : <div className="size-[220px]" />}
       </div>
       <h1 className="type-display text-center text-[2.5rem] leading-[1.05] text-text-1">
-        Every rep counted.
+        Your gym and your thali,
         <br />
-        Every gain proven.
+        <span className="text-lime">read together.</span>
       </h1>
-      <p className="type-body mx-auto mt-4 max-w-[36ch] text-center text-text-2">
-        The fastest way to log a workout, and the clearest way to see it working. Here is {APP_NAME}{' '}
-        with a sample lifter&apos;s numbers. Your own training starts empty and stays yours.
+      <p className="type-body mx-auto mt-4 max-w-[38ch] text-center text-text-2">
+        The fastest workout logger, Indian food logging that understands katoris and rotis, and a
+        plan that adapts to you every week. Here is {APP_NAME} with a sample lifter&apos;s numbers.
       </p>
       <RingLegend rings={rings} className="mx-auto mt-6 flex-row gap-6" />
     </div>
@@ -516,80 +518,6 @@ function Progress({ sample, unit }: SlideProps) {
   );
 }
 
-function Body({ sample, unit }: SlideProps) {
-  const b = sample.body;
-  const tiles: [string, string, string][] = [
-    [
-      'Daily calories',
-      b.energy ? `${b.energy.targetKcal.toLocaleString('en-GB')}` : 'None',
-      'kcal',
-    ],
-    [
-      'Protein',
-      b.energy
-        ? `${b.energy.proteinG[0].toFixed(1)} to ${b.energy.proteinG[1].toFixed(1)}`
-        : 'None',
-      'g',
-    ],
-    ['BMI', b.bmi ? b.bmi.value.toFixed(1) : 'None', ''],
-    ['Body fat', b.bodyFat ? b.bodyFat.pct.toFixed(1) : 'None', '%'],
-  ];
-  return (
-    <>
-      <Title
-        icon={<Ruler className="size-4" aria-hidden />}
-        kicker="Body"
-        title="Your numbers, from published formulas"
-        body="Calories and protein for your goal, a smoothed weight trend, BMI, body fat from a tape measure. Each shows its formula."
-      />
-      <div className="grid grid-cols-2 gap-2.5">
-        {tiles.map(([label, value, u]) => (
-          <div key={label} className="rounded-[1.1rem] bg-surface p-4">
-            <p className="text-[0.8125rem] font-medium text-text-2">{label}</p>
-            <p className="tabular mt-1 font-display text-[1.6rem] font-semibold tracking-tight">
-              {value}
-              {u ? <span className="ml-1 text-base text-text-2">{u}</span> : null}
-            </p>
-          </div>
-        ))}
-      </div>
-      {b.trend.length >= 2 ? (
-        <div className="mt-3 rounded-[var(--radius-card)] bg-surface p-4">
-          <p className="mb-2 font-semibold">Weight trend</p>
-          <LineChart
-            label="Body weight, sample data"
-            height={130}
-            series={[
-              {
-                id: 'w',
-                label: 'Weigh-in',
-                color: 'var(--chart-2)',
-                style: 'dots',
-                points: b.trend.map((t) => ({
-                  x: t.date.getTime(),
-                  y: toDisplayWeight(t.kg, unit),
-                })),
-              },
-              {
-                id: 't',
-                label: 'Trend',
-                color: 'var(--chart-1)',
-                style: 'line',
-                points: b.trend.map((t) => ({
-                  x: t.date.getTime(),
-                  y: toDisplayWeight(t.trendKg, unit),
-                })),
-              },
-            ]}
-            formatY={(v) => v.toLocaleString('en-GB', { maximumFractionDigits: 1 })}
-          />
-        </div>
-      ) : null}
-    </>
-  );
-}
-
-/** A sample day of Indian food from the real library, against the sample lifter's targets. */
 const SAMPLE_DAY: {
   meal: string;
   items: [id: string, unit: 'piece' | 'katori', amount: number][];
@@ -747,9 +675,9 @@ function Coach({ sample }: SlideProps) {
       </ul>
       <ul className="mt-4 flex flex-col gap-2">
         {[
-          'Explain buttons on every Progress section, the check-in and your targets',
-          'Snap a meal or a nutrition label and it fills in the foods',
-          'Chats stay on your phone for 7 days',
+          'Snap a plate, a nutrition label or a restaurant menu',
+          'Speak your sets or your meal, it keeps listening through pauses',
+          'Remembers what you tell it, and you can edit what it remembers',
         ].map((t) => (
           <li key={t} className="type-meta flex gap-2.5 text-text-1">
             <Check className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
@@ -764,35 +692,179 @@ function Coach({ sample }: SlideProps) {
   );
 }
 
-function Journey({ sample, unit }: SlideProps) {
+/** The plan that adapts: next week, proposed from the sample lifter's own numbers. */
+function Brain({ sample }: SlideProps) {
+  const kcal = sample.body.energy?.targetKcal ?? null;
+  const protein = sample.body.energy ? Math.round(sample.body.energy.proteinG[1]) : null;
+  const p = sample.progress;
+  const weeks = Math.max(1, p.muscles.weeks);
+  const low = [...p.muscles.workload].sort((a, b) => a.weighted - b.weighted)[0];
+  const changes = [
+    kcal
+      ? {
+          what: 'Calories a day',
+          from: kcal.toLocaleString('en-IN'),
+          to: (kcal - 100).toLocaleString('en-IN'),
+          why: 'Weight has held for 3 weeks on a cut',
+        }
+      : null,
+    low
+      ? {
+          what: `${MUSCLE_LABELS[low.muscle]} sets a week`,
+          from: String(Math.round(low.weighted / weeks)),
+          to: String(Math.round(low.weighted / weeks) + 2),
+          why: 'The lowest of your muscles, and your lifts there are flat',
+        }
+      : null,
+    protein
+      ? {
+          what: 'Protein a day',
+          from: `${protein} g`,
+          to: `${protein} g`,
+          why: 'Already in range: kept',
+        }
+      : null,
+  ].filter((c): c is NonNullable<typeof c> => c !== null);
   return (
     <>
       <Title
-        icon={<Sparkles className="size-4" aria-hidden />}
-        kicker="Your journey"
-        title="Goals with a date you can trust"
-        body="Set a target, and the app works out when you will get there at your current rate. Add progress photos that stay on your phone."
+        icon={<BrainCircuit className="size-4" aria-hidden />}
+        kicker="The plan that adapts"
+        title="Next week, worked out for you"
+        body="Every week Macrotrophy reads your weight, food and lifts, and proposes next week. It plans around exams, travel, fasts and anything that hurts. Nothing changes without your yes."
       />
-      <div className="flex flex-col gap-2.5">
-        {sample.goals.map((g) => (
-          <div key={g.goal.id} className="rounded-[var(--radius-card)] bg-surface p-4">
-            <p className="font-semibold">
-              {g.goal.kind === 'body_weight'
-                ? `Weigh ${formatWeightValue(g.goal.targetValue, unit)} ${unit}`
-                : `Bench press ${formatWeightValue(g.goal.targetValue, unit)} ${unit}`}
-            </p>
-            <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-[var(--ring-track)]">
-              <div
-                className="h-full rounded-full bg-lime"
-                style={{ width: `${(g.fraction ?? 0) * 100}%` }}
-              />
-            </div>
-            <p className="mt-1.5 text-sm text-text-2">
-              {g.projected ? `On course for ${formatShortDate(g.projected)}` : 'Tracking'}
-            </p>
-          </div>
-        ))}
+      <div
+        className="glow-lime relative overflow-hidden rounded-panel bg-surface p-4"
+        data-tour-brain
+      >
+        <p className="type-caption font-semibold text-lime">Next week</p>
+        <ul className="mt-2 flex flex-col divide-y-[0.5px] divide-divider">
+          {changes.map((c) => (
+            <li key={c.what} className="py-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="type-headline text-text-1">{c.what}</span>
+                <span className="type-headline tabular shrink-0 text-text-1">
+                  {c.from === c.to ? (
+                    c.to
+                  ) : (
+                    <>
+                      <span className="text-text-2">{c.from}</span>
+                      <ArrowRight className="mx-1 inline size-4 text-lime" aria-label="to" />
+                      {c.to}
+                    </>
+                  )}
+                </span>
+              </div>
+              <p className="type-meta mt-0.5 text-text-2">{c.why}</p>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-3 grid grid-cols-2 gap-2" aria-hidden>
+          <span className="type-headline rounded-full bg-lime py-2.5 text-center text-on-lime">
+            Apply
+          </span>
+          <span className="type-headline rounded-full bg-surface-2 py-2.5 text-center text-text-1">
+            Keep my plan
+          </span>
+        </div>
       </div>
+      <ul className="mt-4 flex flex-col gap-2">
+        {[
+          'Eat next: the meal that fits what is left of your day',
+          'A week of Indian meals for home, hostel or mess, with one grocery list',
+          'Every change has its reason and a one tap undo',
+        ].map((t) => (
+          <li key={t} className="type-meta flex gap-2.5 text-text-1">
+            <Check className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
+            {t}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/** Groups and the global board: a fair score anyone can win by showing up and pushing. */
+function Leaderboards({ sample }: SlideProps) {
+  const w = sample.dashboard.week;
+  const workouts = Math.min(6, w.sessions.value);
+  const hard = Math.min(25, w.sets.value);
+  const consistent = workouts >= 3 ? 10 : 0;
+  const parts = [
+    { label: 'Workouts', points: workouts * 10 },
+    { label: 'Hard sets', points: hard },
+    { label: 'Consistent week', points: consistent },
+  ];
+  const total = parts.reduce((a, b) => a + b.points, 0);
+  return (
+    <>
+      <Title
+        icon={<Trophy className="size-4" aria-hidden />}
+        kicker="Leaderboards"
+        title="Compete on effort, not on size"
+        body="The Macrotrophy Score rewards showing up, training hard and beating your own best, so a beginner can top the board. Points are worked out on the server and cannot be typed in."
+      />
+      <div
+        className="glow-lime relative overflow-hidden rounded-panel bg-surface p-5 text-center"
+        data-tour-score
+      >
+        <p className="type-caption text-text-2">The sample lifter this week</p>
+        <p className="mt-1 font-display text-[3.25rem] leading-none font-bold tabular text-text-1">
+          {total}
+        </p>
+        <p className="type-meta text-text-2">points</p>
+        <ul className="mt-4 grid grid-cols-3 gap-2">
+          {parts.map((part) => (
+            <li key={part.label} className="rounded-nested bg-surface-2 px-2 py-2">
+              <span className="type-headline tabular block text-lime">+{part.points}</span>
+              <span className="type-caption block text-text-2">{part.label}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <ul className="mt-4 flex flex-col gap-2">
+        {[
+          'Groups with friends by a 6 letter code, and weekly duels',
+          'A global board for everyone on Macrotrophy',
+          'Tap anyone to see their routine and copy it',
+        ].map((t) => (
+          <li key={t} className="type-meta flex gap-2.5 text-text-1">
+            <Check className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
+            {t}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/** What members say: their own words from the November survey, first names only. */
+function Reviews() {
+  return (
+    <>
+      <Title
+        icon={<Star className="size-4" aria-hidden />}
+        kicker="From members"
+        title={`${averageRating()} out of 5, in their words`}
+        body={`From ${SURVEY_RATINGS.length} member reviews. First names only, nothing edited but spelling.`}
+      />
+      <ul className="flex flex-col gap-2.5" data-tour-reviews>
+        {REVIEWS.slice(0, 3).map((r, i) => (
+          <li
+            key={r.name}
+            className="pro-rise rounded-panel bg-surface p-4"
+            style={{ animationDelay: `${i * 90}ms` }}
+          >
+            <div className="flex gap-0.5 text-gold" aria-label={`${r.rating} out of 5`}>
+              {Array.from({ length: r.rating }, (_, k) => (
+                <Star key={k} className="size-3.5 fill-current" aria-hidden />
+              ))}
+            </div>
+            <p className="type-subhead mt-2 line-clamp-4 text-text-1">“{r.quote}”</p>
+            <p className="type-caption mt-1.5 text-text-2">{r.name}</p>
+          </li>
+        ))}
+      </ul>
     </>
   );
 }
@@ -890,7 +962,7 @@ function ProSlide({ sample }: SlideProps) {
         ) : null}
       </div>
       <p className="type-meta mt-auto pt-4 text-text-2">
-        Also in Pro: progression suggestions, strength levels, weekly check-ins, goal dates and
+        Also in Pro: the plan that adapts, the meal plan, the weekly report, strength levels and
         all-time trends. Free for your first {TRIAL_DAYS} days with an account.
       </p>
     </>
@@ -924,4 +996,16 @@ function YourTurn() {
   );
 }
 
-const SLIDES = [Welcome, Logger, Records, Progress, Food, Coach, Body, Journey, ProSlide, YourTurn];
+const SLIDES = [
+  Welcome,
+  Logger,
+  Records,
+  Progress,
+  Food,
+  Coach,
+  Brain,
+  Leaderboards,
+  Reviews,
+  ProSlide,
+  YourTurn,
+];
