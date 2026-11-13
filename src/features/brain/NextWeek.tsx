@@ -182,9 +182,9 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
                         {c.applied ? (
                           <Check className="mt-0.5 size-4 shrink-0 text-lime" aria-hidden />
                         ) : (
-                          <X className="mt-0.5 size-4 shrink-0 text-text-3" aria-hidden />
+                          <X className="mt-0.5 size-4 shrink-0 text-text-2" aria-hidden />
                         )}
-                        <span className={c.applied ? 'type-subhead text-text-1' : 'type-subhead text-text-3'}>
+                        <span className={c.applied ? 'type-subhead text-text-1' : 'type-subhead text-text-2'}>
                           {t(c.title)}
                           {c.applied ? '' : ` (${t(COPY.notApplied).toLowerCase()})`}
                         </span>
@@ -192,7 +192,7 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
                     ))}
                   </ul>
                   {skipped.length ? (
-                    <p className="type-footnote mt-3 text-text-3" role="status">
+                    <p className="type-footnote mt-3 text-text-2" role="status">
                       {skipped.length === 1 ? 'One change' : `${skipped.length} changes`} {t(COPY.skipped)}
                     </p>
                   ) : null}
@@ -225,7 +225,7 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
                               {t(COPY.why)}
                             </Link>
                             {c.until ? (
-                              <span className="type-footnote text-text-3">
+                              <span className="type-footnote text-text-2">
                                 {t(COPY.until)} {dayMonth(c.until)}
                               </span>
                             ) : null}
@@ -253,7 +253,7 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
 
           {!record && decision.holds.length ? (
             <div className="rounded-panel bg-surface p-5" data-plan-holds>
-              <p className="type-footnote font-semibold text-text-3">{t(COPY.staying)}</p>
+              <p className="type-footnote font-semibold text-text-2">{t(COPY.staying)}</p>
               <ul className="mt-2 flex flex-col gap-2">
                 {decision.holds.map((h) => (
                   <li key={h.kind} className="type-subhead text-text-2">
@@ -267,7 +267,7 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
           {decision.notes.length ? (
             <ul className="flex flex-col gap-2 px-1" data-plan-notes>
               {decision.notes.map((n) => (
-                <li key={n.en} className="type-footnote text-text-3">
+                <li key={n.en} className="type-footnote text-text-2">
                   {t(n)}
                 </li>
               ))}
@@ -287,14 +287,14 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
                   <li key={e.id} className="flex items-center justify-between gap-3">
                     <span className="type-subhead text-text-1">
                       {t(EVENT_LABEL[e.kind])}
-                      <span className="text-text-3">
+                      <span className="text-text-2">
                         {' '}
                         · {e.start === e.end ? dayMonth(e.start) : `${dayMonth(e.start)} to ${dayMonth(e.end)}`}
                       </span>
                     </span>
                     <button
                       type="button"
-                      className="pressable tap-target -mr-2 flex size-9 items-center justify-center rounded-full text-text-3"
+                      className="pressable tap-target -mr-2 flex size-9 items-center justify-center rounded-full text-text-2"
                       aria-label={`Remove ${EVENT_LABEL[e.kind].en}`}
                       onClick={() => void removePlanItem(db, e.id)}
                     >

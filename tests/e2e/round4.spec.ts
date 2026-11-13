@@ -260,10 +260,19 @@ test('voice typing shows words while speaking, adds them, and explains a blocked
       onend: (() => void) | null = null;
       onerror: ((e: { error: string }) => void) | null = null;
       start() {
-        const blocked = (window as unknown as { __blockMic?: boolean }).__blockMic;
+        const w = window as unknown as { __blockMic?: boolean; __heard?: boolean };
+        const blocked = w.__blockMic;
+        // The app keeps listening through pauses; after the meal is said, there is silence.
+        const said = w.__heard;
+        w.__heard = true;
         setTimeout(() => {
           if (blocked) {
             this.onerror?.({ error: 'not-allowed' });
+            this.onend?.();
+            return;
+          }
+          if (said) {
+            this.onerror?.({ error: 'no-speech' });
             this.onend?.();
             return;
           }
@@ -300,7 +309,11 @@ test('voice typing shows words while speaking, adds them, and explains a blocked
   await sheet.locator('[data-voice]').click();
   await expect(sheet.locator('[data-voice-live]')).toContainText('2 aloo parathas');
   await expect(sheet.locator('#ai-food')).toHaveValue('2 aloo parathas with curd');
+  // Listening ends by itself a few seconds after the words stop, with nothing added twice.
+  await expect(sheet.locator('[data-voice]')).toHaveAttribute('aria-pressed', 'false', { timeout: 10_000 });
+  await expect(sheet.locator('#ai-food')).toHaveValue('2 aloo parathas with curd');
   await page.evaluate(() => {
+    (window as unknown as { __heard?: boolean }).__heard = false;
     (window as unknown as { __blockMic?: boolean }).__blockMic = true;
   });
   await sheet.locator('[data-voice]').click();

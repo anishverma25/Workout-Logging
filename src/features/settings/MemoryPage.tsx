@@ -14,7 +14,7 @@ import { knownFacts, type KnownFact } from '../coach/memory';
 const ICON = { note: StickyNote, event: CalendarDays, pain: HeartPulse } as const;
 const SOURCE = { note: 'You told it', event: 'From Coming up', pain: 'From Something hurts' } as const;
 const fieldClass =
-  'min-h-12 w-full rounded-field bg-surface-2 px-3 py-3 text-[16px] text-text-1 placeholder:text-text-3';
+  'min-h-12 w-full rounded-field bg-surface-2 px-3 py-3 text-[16px] text-text-1 placeholder:text-text-2';
 
 /**
  * "What Macrotrophy AI knows": everything it is told about the person beyond their numbers,
@@ -92,7 +92,7 @@ export function MemoryPage() {
 
         {items.status === 'loading' ? <Skeleton className="h-40 rounded-panel" /> : null}
         {items.status === 'success' && facts.length === 0 ? (
-          <p className="type-subhead px-1 text-text-3">Nothing yet beyond your profile and your logs.</p>
+          <p className="type-subhead px-1 text-text-2">Nothing yet beyond your profile and your logs.</p>
         ) : null}
         {facts.length ? (
           <ul className="flex flex-col divide-y-[0.5px] divide-divider rounded-panel bg-surface px-5" data-memory-list>
@@ -130,7 +130,7 @@ export function MemoryPage() {
                     ) : (
                       <>
                         <p className="type-body text-text-1">{f.text}</p>
-                        <p className="type-footnote text-text-3">{SOURCE[f.kind]}</p>
+                        <p className="type-footnote text-text-2">{SOURCE[f.kind]}</p>
                       </>
                     )}
                   </div>

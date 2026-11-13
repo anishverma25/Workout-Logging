@@ -14,7 +14,7 @@ function Frame({ children, label }: { children: ReactNode; label: string }) {
       role="img"
       aria-label={label}
     >
-      <span className="type-caption absolute top-2.5 right-3 text-text-3" aria-hidden>
+      <span className="type-caption absolute top-2.5 right-3 text-text-2" aria-hidden>
         Example
       </span>
       <div aria-hidden>{children}</div>

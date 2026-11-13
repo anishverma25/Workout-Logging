@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Mic, MicOff } from 'lucide-react';
+import { IconButton as KitIconButton } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import type { WorkoutExerciseView } from '@/data/repositories/workoutView';
 import { addSet, completeSet, uncompleteSet, updateSet } from '@/data/repositories/workouts';
 import type { WorkoutSet } from '@/domain/models/schemas';
 import { matchSpokenExercise, parseSpokenSet, type Spoken } from '@/domain/workout/voice';
-import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
 import { fromDisplayWeight, toDisplayWeight, type WeightUnit } from '@/lib/units';
 import { listenPatiently, speechProblem, speechRecognition } from '../food/speech';
@@ -167,30 +167,27 @@ export function VoiceSets(props: {
   };
 
   return (
-    <div className="pointer-events-none fixed right-4 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-30 flex items-center gap-2 lg:right-10 lg:bottom-8">
+    <>
+      <KitIconButton
+        label={listening ? 'Stop listening' : 'Log a set by voice'}
+        icon={listening ? <MicOff /> : <Mic />}
+        onClick={start}
+        aria-pressed={listening}
+        data-voice-sets
+        data-keep-keyboard
+        className={listening ? 'bg-lime text-on-lime' : undefined}
+      />
       {listening ? (
+        // What is being heard, at the top of the screen where it covers nothing to tap.
         <span
-          className="type-subhead max-w-[60vw] truncate rounded-full bg-surface-2 px-4 py-2.5 text-text-1 shadow-lg"
+          className="type-subhead pointer-events-none fixed top-[calc(env(safe-area-inset-top)+4.5rem)] left-1/2 z-40 max-w-[85vw] -translate-x-1/2 truncate rounded-full bg-surface-2 px-4 py-2.5 text-text-1 shadow-lg"
           role="status"
           aria-live="polite"
+          data-voice-heard
         >
           {heard || 'Listening: "80 kilo 8 reps"'}
         </span>
       ) : null}
-      <button
-        type="button"
-        onClick={start}
-        data-keep-keyboard
-        data-voice-sets
-        aria-pressed={listening}
-        aria-label={listening ? 'Stop listening' : 'Log a set by voice'}
-        className={cn(
-          'pressable chrome tap-target pointer-events-auto flex size-14 items-center justify-center rounded-full shadow-lg',
-          listening ? 'bg-lime text-on-lime' : 'bg-surface-2 text-text-1',
-        )}
-      >
-        {listening ? <MicOff className="size-6" aria-hidden /> : <Mic className="size-6" aria-hidden />}
-      </button>
-    </div>
+    </>
   );
 }

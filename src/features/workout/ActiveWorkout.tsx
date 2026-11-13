@@ -247,6 +247,12 @@ export function ActiveWorkout({ view, prefs }: Props) {
               ) : null}
             </span>
           </button>
+          <VoiceSets
+            exercises={exercises}
+            activeId={activeId}
+            unit={prefs.weightUnit}
+            onSetCompleted={onSetCompleted}
+          />
           <KitIconButton label="Rest timer" icon={<Timer />} onClick={() => setTimerOpen(true)} />
           <KitIconButton
             label={paused ? 'Resume workout' : 'Pause workout'}
@@ -398,12 +404,6 @@ export function ActiveWorkout({ view, prefs }: Props) {
         onPick={async (ids) => {
           await addExercisesToWorkout(db, workout.id, ids);
         }}
-      />
-      <VoiceSets
-        exercises={exercises}
-        activeId={activeId}
-        unit={prefs.weightUnit}
-        onSetCompleted={onSetCompleted}
       />
       <ReorderSheet open={reordering} exercises={exercises} onClose={() => setReordering(false)} />
       <RestTimerSheet

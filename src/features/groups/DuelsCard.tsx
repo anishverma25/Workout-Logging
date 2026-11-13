@@ -58,7 +58,7 @@ export function DuelsCard({ groupId, rows, version }: { groupId: string; rows: B
       <div className="rounded-card bg-surface px-4">
         {live.length === 0 && last.length === 0 ? (
           <p className="type-subhead flex items-center gap-2.5 py-4 text-text-2">
-            <Swords className="size-5 shrink-0 text-text-3" aria-hidden />
+            <Swords className="size-5 shrink-0 text-text-2" aria-hidden />
             Challenge a member: most points by Sunday wins.
           </p>
         ) : (
@@ -122,7 +122,7 @@ function DuelRow({ duel: d, onCancel }: { duel: Duel; onCancel?: () => void }) {
               @{d.challenger}
             </span>
             <span className="type-headline tabular shrink-0 text-text-1">
-              {d.challengerScore} <span className="text-text-3">:</span> {d.opponentScore}
+              {d.challengerScore} <span className="text-text-2">:</span> {d.opponentScore}
             </span>
             <span className={cn('type-headline truncate text-right', lead === 'o' ? 'text-text-1' : 'text-text-2')}>
               @{d.opponent}
@@ -131,14 +131,14 @@ function DuelRow({ duel: d, onCancel }: { duel: Duel; onCancel?: () => void }) {
           <div className="mt-2 flex h-1.5 overflow-hidden rounded-full bg-fill" aria-hidden>
             <span className="bg-lime" style={{ width: `${share * 100}%` }} />
           </div>
-          <p className="type-footnote mt-1.5 text-text-3">{verdict}</p>
+          <p className="type-footnote mt-1.5 text-text-2">{verdict}</p>
         </div>
         {onCancel ? (
           <button
             type="button"
             onClick={onCancel}
             aria-label="Call off this duel"
-            className="pressable tap-target flex size-9 shrink-0 items-center justify-center rounded-full text-text-3"
+            className="pressable tap-target flex size-9 shrink-0 items-center justify-center rounded-full text-text-2"
             data-duel-cancel
           >
             <X className="size-4" aria-hidden />

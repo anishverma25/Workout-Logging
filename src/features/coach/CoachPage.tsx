@@ -301,7 +301,7 @@ function RememberThis({ text }: { text: string }) {
   return (
     <div className="mt-1 flex justify-end">
       {known ? (
-        <Link to="/settings/memory" className="type-footnote text-text-3" data-remembered>
+        <Link to="/settings/memory" className="type-footnote text-text-2" data-remembered>
           Remembered
         </Link>
       ) : (

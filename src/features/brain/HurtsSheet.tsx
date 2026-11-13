@@ -176,7 +176,7 @@ function Form({ onClose, exerciseId }: { onClose: () => void; exerciseId: string
             </li>
           ))}
         </ul>
-        <p className="type-footnote text-text-3">
+        <p className="type-footnote text-text-2">
           If the pain is sharp, lasts, or comes with swelling or numbness, stop and see a professional.
         </p>
         <div className="flex flex-col gap-2">

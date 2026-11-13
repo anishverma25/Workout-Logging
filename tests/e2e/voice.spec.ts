@@ -15,6 +15,8 @@ test('a clear sentence logs the set, "same again" repeats it, an unclear one wai
   const say = (text: string) =>
     page.evaluate((t) => (window as unknown as { __overloadVoice: (t: string) => Promise<void> }).__overloadVoice(t), text);
   await page.waitForFunction(() => '__overloadVoice' in window);
+  // The mic sits in the header, next to the rest timer, where it covers nothing.
+  await expect(page.getByRole('button', { name: 'Log a set by voice' })).toBeVisible();
 
   await say('100 kilo 5 reps');
   await expect(page.getByText(/: 100 kg × 5 logged$/)).toBeVisible();

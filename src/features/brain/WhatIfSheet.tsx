@@ -120,12 +120,12 @@ function Sliders({ brain }: { brain: Brain }) {
             <p className="type-footnote text-text-2">Body weight in {WHAT_IF_WEEKS} weeks</p>
             <p className="type-title tabular text-text-1">
               {kg(result.weight.mid)} kg
-              <span className="type-subhead text-text-3">
+              <span className="type-subhead text-text-2">
                 {' '}
                 ({kg(Math.min(result.weight.lo, result.weight.hi))} to {kg(Math.max(result.weight.lo, result.weight.hi))})
               </span>
             </p>
-            <p className="type-footnote tabular text-text-3">
+            <p className="type-footnote tabular text-text-2">
               {signed(result.weight.perWeek)} kg a week from {kg(weightKg)} kg
             </p>
           </div>
@@ -137,12 +137,12 @@ function Sliders({ brain }: { brain: Brain }) {
             </p>
             <p className="type-title tabular text-text-1">
               {kg(result.lift.mid)} kg
-              <span className="type-subhead text-text-3">
+              <span className="type-subhead text-text-2">
                 {' '}
                 ({kg(result.lift.lo)} to {kg(result.lift.hi)})
               </span>
             </p>
-            <p className="type-footnote text-text-3">
+            <p className="type-footnote text-text-2">
               {result.lift.personal
                 ? 'From how this muscle has answered to this many sets in your own logs.'
                 : 'Your trend of the last 8 weeks carried forward. Your logs do not yet show how sets change it.'}
@@ -151,7 +151,7 @@ function Sliders({ brain }: { brain: Brain }) {
         ) : null}
       </div>
 
-      <p className="type-footnote text-text-3">
+      <p className="type-footnote text-text-2">
         {basis} The 7,700 kcal per kg rule is a guide for the first weeks; the body adapts as weight changes.
       </p>
     </div>

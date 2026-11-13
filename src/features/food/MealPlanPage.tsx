@@ -211,7 +211,7 @@ export function MealPlanPage() {
                 onChange={(setting) => choose({ ...meal, setting })}
                 options={(Object.keys(SETTING_LABEL) as Setting[]).map((s) => ({ value: s, label: SETTING_LABEL[s] }))}
               />
-              <p className="type-footnote text-text-3">{SETTING_HINT[meal.setting]}</p>
+              <p className="type-footnote text-text-2">{SETTING_HINT[meal.setting]}</p>
             </div>
             <div className="flex flex-col gap-2">
               <p className="type-footnote text-text-2">Budget</p>
@@ -221,7 +221,7 @@ export function MealPlanPage() {
                 onChange={(budget) => choose({ ...meal, budget })}
                 options={(Object.keys(BUDGET_LABEL) as Budget[]).map((b) => ({ value: b, label: BUDGET_LABEL[b] }))}
               />
-              <p className="type-footnote text-text-3">{BUDGET_HINT[meal.budget]}</p>
+              <p className="type-footnote text-text-2">{BUDGET_HINT[meal.budget]}</p>
             </div>
             <p className="type-subhead text-text-2">
               Aiming at{' '}
@@ -272,7 +272,7 @@ export function MealPlanPage() {
                     <div className="flex items-baseline justify-between gap-3">
                       <h2 className="type-headline text-text-1">
                         {MEAL_LABEL[m.meal]}
-                        {m.kitchen ? <span className="type-footnote ml-2 font-normal text-text-3">as served</span> : null}
+                        {m.kitchen ? <span className="type-footnote ml-2 font-normal text-text-2">as served</span> : null}
                       </h2>
                       <span className="type-footnote tabular text-text-2">
                         {Math.round(sum(m.items).kcal)} kcal · {Math.round(sum(m.items).proteinG)} g
@@ -282,7 +282,7 @@ export function MealPlanPage() {
                       {m.items.map((p) => (
                         <li key={p.food.id} className="type-subhead text-text-2">
                           {p.food.name}
-                          <span className="text-text-3"> · {portionText(p.amount, p.unit, p.size, p.food.pieceName)}</span>
+                          <span className="text-text-2"> · {portionText(p.amount, p.unit, p.size, p.food.pieceName)}</span>
                         </li>
                       ))}
                     </ul>
@@ -318,7 +318,7 @@ export function MealPlanPage() {
                       </li>
                     ))}
                   </ul>
-                  <p className="type-footnote mt-3 text-text-3">
+                  <p className="type-footnote mt-3 text-text-2">
                     Amounts are for one person for the seven days, rounded up to the nearest 50 g. Oil, salt and spices
                     you already have are included where a recipe uses them.
                   </p>

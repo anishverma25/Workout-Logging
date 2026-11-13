@@ -156,7 +156,7 @@ function Body({ ctx, remaining, date, meal }: { ctx: FoodContext; remaining: { k
                     {Math.round(m.portion.nutrients.kcal)} kcal · {Math.round(m.portion.nutrients.proteinG)} g protein
                   </p>
                 ) : null}
-                <p className={m.verdict === 'best' ? 'type-footnote font-semibold text-lime' : 'type-footnote text-text-3'}>
+                <p className={m.verdict === 'best' ? 'type-footnote font-semibold text-lime' : 'type-footnote text-text-2'}>
                   {VERDICT[m.verdict]}
                 </p>
               </div>

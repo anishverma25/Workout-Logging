@@ -110,7 +110,7 @@ export function EatNextCard({ ctx, date, today, now }: { ctx: FoodContext; date:
                   {portionText(p.amount, p.unit, p.size, p.food.pieceName)} · {Math.round(p.nutrients.kcal)} kcal ·{' '}
                   {Math.round(p.nutrients.proteinG)} g protein
                 </p>
-                <p className="type-footnote text-text-3">{WHY[p.why]}</p>
+                <p className="type-footnote text-text-2">{WHY[p.why]}</p>
               </div>
               <button
                 type="button"

@@ -110,7 +110,7 @@ export function ReleaseStepView({ step: s, page = false }: { step: ReleaseStep; 
           </li>
         ))}
       </ul>
-      <p className="type-footnote mt-3 w-full text-left text-text-3" data-release-plan>
+      <p className="type-footnote mt-3 w-full text-left text-text-2" data-release-plan>
         {s.plan}
       </p>
     </div>
