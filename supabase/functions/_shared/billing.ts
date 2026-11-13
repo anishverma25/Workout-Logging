@@ -217,6 +217,21 @@ interface Coupon {
   credit?: string;
 }
 
+/** 10% off the first payment in the 48 hours after the trial ends (migration 0027). */
+async function trialOfferFor(
+  deps: BillingDeps,
+  userId: string,
+  info: CheckoutInfo,
+): Promise<Coupon | null> {
+  if (info.plan_kind && info.plan_kind !== 'pro') return null;
+  try {
+    const o = (await deps.rpc('trial_offer_for', { p_user: userId })) as { percent?: number } | null;
+    return o && typeof o.percent === 'number' ? { code: null, percent: o.percent } : null;
+  } catch {
+    return null;
+  }
+}
+
 /** The thank-you credit open for this account today, if any. Servers before 0025 have none. */
 async function creditFor(
   deps: BillingDeps,
@@ -251,8 +266,13 @@ async function couponFrom(
   info: CheckoutInfo,
 ): Promise<Coupon | null | BillingResponse> {
   const raw = (body as { coupon?: unknown } | null)?.coupon;
-  // No code typed: a thank-you credit, when they hold one, applies by itself.
-  if (raw === undefined || raw === null || raw === '') return creditFor(deps, userId, info);
+  // No code typed: the larger of a thank-you credit and the trial-end offer applies by itself.
+  if (raw === undefined || raw === null || raw === '') {
+    const credit = await creditFor(deps, userId, info);
+    const offer = await trialOfferFor(deps, userId, info);
+    if (credit && offer) return offer.percent > credit.percent ? offer : credit;
+    return credit ?? offer;
+  }
   if (typeof raw !== 'string' || raw.length > 40) return fail(400, COUPON_REASONS.unknown!);
   if (info.plan_kind && info.plan_kind !== 'pro') return fail(400, 'Codes work on Pro plans.');
   const status = (await deps.rpc('coupon_status', { p_user: userId, p_code: raw })) as {

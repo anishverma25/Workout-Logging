@@ -166,7 +166,9 @@ export type ProFeature =
   | 'story_designs'
   | 'unlimited_routines'
   | 'macro_tracking'
-  | 'gym_tools';
+  | 'gym_tools'
+  | 'body_measurements'
+  | 'usual_meals';
 
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
   long_range: {
@@ -186,6 +188,16 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
   gym_tools: {
     title: 'Gym tools',
     description: 'Plate calculator, warm-up sets, supersets and smart exercise swaps in the logger.',
+  },
+  body_measurements: {
+    title: 'Body measurements and photo comparison',
+    description:
+      'Waist, chest, arms and more with a trend for each, a body-fat estimate, and progress photos side by side.',
+  },
+  usual_meals: {
+    title: 'Usual meals in one tap',
+    description:
+      'Log the breakfast or lunch you eat most days with one tap, from Home or the Food page.',
   },
   muscle_balance: {
     title: 'Sets per muscle group',
@@ -276,7 +288,7 @@ export const FREE_FEATURES = [
   'Your full workout history and every personal record',
   '2 routines, from any template or built your own',
   'Indian food logging with calories, by the katori, plate or roti',
-  'Groups, a duel a week and the global leaderboard',
+  'A group, a duel a week and the global leaderboard',
   'Body weight, goals and progress photos',
   'Progress for the last 7 days',
   'Backup and sync across your devices',

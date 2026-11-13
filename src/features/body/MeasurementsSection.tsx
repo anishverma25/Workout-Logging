@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Plus, Ruler } from 'lucide-react';
+import { Link } from 'react-router';
+import { Crown, Plus, Ruler } from 'lucide-react';
+import { useFeature } from '@/app/entitlement';
 import { LineChart } from '@/components/charts/LineChart';
 import { ChartEmpty } from '@/components/charts/ChartParts';
 import { Card, IconTile, ListRow, SecondaryButton, SectionHeader } from '@/components/kit';
@@ -30,6 +32,8 @@ export function MeasurementsSection({
   unit: LengthUnit;
   sex: Sex | null;
 }) {
+  // Measuring and the trends are Pro; entries already saved stay visible and editable.
+  const pro = useFeature('body_measurements');
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<BodyMeasurement | null>(null);
   const sorted = useMemo(
@@ -54,7 +58,7 @@ export function MeasurementsSection({
         title="Measurements"
         className="items-center"
         action={
-          sorted.length > 0 ? (
+          sorted.length > 0 && pro ? (
             // An icon, so the title never truncates to "Measuremen" (UI v3, F4).
             <IconButton
               label="Add measurements"
@@ -65,17 +69,37 @@ export function MeasurementsSection({
         }
       />
 
+      {!pro ? (
+        <Link
+          to="/pro"
+          className="pressable mb-3 flex items-center gap-3 rounded-card bg-surface px-4 py-3"
+          data-measure-locked
+        >
+          <Crown className="size-4 shrink-0 text-lime" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="type-headline block text-text-1">
+              {sorted.length > 0 ? 'Measure again with Pro' : 'Body measurements with Pro'}
+            </span>
+            <span className="type-subhead block text-text-2">
+              Waist, chest and arms with a trend for each, and a body-fat estimate.
+            </span>
+          </span>
+        </Link>
+      ) : null}
+
       {sorted.length === 0 ? (
-        <Card className="flex flex-col items-start gap-4">
-          <IconTile icon={<Ruler />} />
-          <p className="type-body max-w-[48ch] text-text-2 [text-wrap:balance]">
-            A tape measure shows what the scale cannot: a waist that shrinks while weight holds
-            steady means fat lost and muscle gained. Waist and neck also give a body-fat estimate.
-          </p>
-          <SecondaryButton icon={<Plus aria-hidden />} onClick={() => setAdding(true)}>
-            Add measurements
-          </SecondaryButton>
-        </Card>
+        pro ? (
+          <Card className="flex flex-col items-start gap-4">
+            <IconTile icon={<Ruler />} />
+            <p className="type-body max-w-[48ch] text-text-2 [text-wrap:balance]">
+              A tape measure shows what the scale cannot: a waist that shrinks while weight holds
+              steady means fat lost and muscle gained. Waist and neck also give a body-fat estimate.
+            </p>
+            <SecondaryButton icon={<Plus aria-hidden />} onClick={() => setAdding(true)}>
+              Add measurements
+            </SecondaryButton>
+          </Card>
+        ) : null
       ) : (
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
           <Card flush className="self-start">
@@ -124,7 +148,11 @@ export function MeasurementsSection({
                   onChange={(v) => v && setPicked(v)}
                   className="mb-3"
                 />
-                {sorted.filter((e) => e[field] !== null).length >= 2 ? (
+                {!pro ? (
+                  <ChartEmpty height={190}>
+                    Your {label(field).toLowerCase()} trend is part of Pro.
+                  </ChartEmpty>
+                ) : sorted.filter((e) => e[field] !== null).length >= 2 ? (
                   <LineChart
                     label={`${label(field)} over time`}
                     height={190}

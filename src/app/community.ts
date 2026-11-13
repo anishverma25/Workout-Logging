@@ -178,9 +178,11 @@ export function messageFor(error: { message?: string; code?: string } | null): s
   if (/username first/i.test(m)) return 'Choose a username first.';
   if (/Group limit (\d+)/i.test(m)) {
     const n = /Group limit (\d+)/i.exec(m)![1];
-    return n === '3'
-      ? 'You are in 3 groups, the most on the free plan. Leave one, or get Pro for up to 10.'
-      : `You are in ${n} groups, the most allowed.`;
+    return n === '1'
+      ? 'The free plan has 1 group. Leave it, or get Pro to be in up to 10.'
+      : n === '3'
+        ? 'You are in 3 groups, the most on the free plan. Leave one, or get Pro for up to 10.'
+        : `You are in ${n} groups, the most allowed.`;
   }
   if (/No group has that code/i.test(m)) return 'No group has that code. Check it and try again.';
   if (/group is full/i.test(m)) return 'This group is full (30 people).';

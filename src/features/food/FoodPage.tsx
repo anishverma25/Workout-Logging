@@ -408,6 +408,7 @@ function MealCard({
   onEdit: (log: FoodLog) => void;
 }) {
   const toast = useToast();
+  const usualPro = useFeature('usual_meals');
   const items = mealsOn(ctx.logs, date)[meal];
   const total = roundNutrients(
     sumNutrients(
@@ -476,6 +477,20 @@ function MealCard({
             );
           })}
         </ul>
+      ) : offer && !usualPro ? (
+        <Link
+          to="/pro"
+          className="pressable chrome type-meta mt-2 inline-flex h-8 max-w-full items-center gap-1.5 rounded-full bg-fill px-3 text-text-1"
+          data-usual-locked={meal}
+        >
+          <span className="truncate">
+            {offerLabel} · {offer.items.map((i) => i.foodName).join(', ')}
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-lime">
+            <Crown className="size-3.5" aria-hidden />
+            Pro
+          </span>
+        </Link>
       ) : offer ? (
         <button
           type="button"

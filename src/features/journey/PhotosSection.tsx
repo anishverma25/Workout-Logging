@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { liveQuery } from 'dexie';
+import { Link } from 'react-router';
 import { Camera, Columns2, Lock, Trash2 } from 'lucide-react';
 import { useAccount } from '@/app/account';
+import { useFeature } from '@/app/entitlement';
 import {
   BottomSheet,
   ConfirmSheet,
@@ -52,6 +54,7 @@ export function PhotosSection() {
   const account = useAccount();
   const owner = account.user?.id ?? 'guest';
   const photos = usePhotos(owner);
+  const comparePro = useFeature('body_measurements');
   const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
   const [pose, setPose] = useState<Pose>('front');
@@ -121,7 +124,17 @@ export function PhotosSection() {
           </button>
         ))}
       </div>
-      {ofPose.length >= 2 ? (
+      {ofPose.length >= 2 && !comparePro ? (
+        <Link
+          to="/pro"
+          className="pressable type-subhead mt-3 inline-flex items-center gap-1.5 font-semibold text-lime"
+          data-compare-locked
+        >
+          <Columns2 className="size-4" aria-hidden />
+          Compare side by side
+          <span className="type-footnote rounded-full bg-fill px-1.5 text-text-2">Pro</span>
+        </Link>
+      ) : ofPose.length >= 2 ? (
         <SecondaryButton
           compact
           className="mt-3"

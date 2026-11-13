@@ -58,7 +58,8 @@ function deps(): BillingDeps {
       }
       const plan = /^\/plans\/(\w+)$/.exec(path);
       if (plan) {
-        if (planAmounts.has(plan[1]!)) return { id: plan[1], item: { amount: planAmounts.get(plan[1]!) } };
+        if (planAmounts.has(plan[1]!))
+          return { id: plan[1], item: { amount: planAmounts.get(plan[1]!) } };
         const row = await server.pg.query<{ price_inr: string }>(
           'select price_inr from public.billing_plans where razorpay_plan_id = $1',
           [plan[1]],
@@ -626,7 +627,9 @@ describe('billing', () => {
 
     // A bad code stops the payment instead of charging full price quietly.
     expect((await handleOrder(deps(), user, { plan: 'yearly', coupon: 'NOPE' })).status).toBe(400);
-    expect((await handleOrder(deps(), user, { plan: 'coach_monthly', coupon: 'GYM10' })).status).toBe(400);
+    expect(
+      (await handleOrder(deps(), user, { plan: 'coach_monthly', coupon: 'GYM10' })).status,
+    ).toBe(400);
 
     // Starting a payment does not use the code up; paying does.
     const abandoned = await handleOrder(deps(), user, { plan: 'yearly', coupon: 'gym10' });
@@ -641,7 +644,9 @@ describe('billing', () => {
     );
     expect(uses.rows).toEqual([{ code: 'GYM10', discount_inr: '150.00' }]);
     expect((await check(user, 'ONCE20')).reason).toBe('already_used');
-    expect((await handleOrder(deps(), user, { plan: 'monthly', coupon: 'ONCE20' })).status).toBe(400);
+    expect((await handleOrder(deps(), user, { plan: 'monthly', coupon: 'ONCE20' })).status).toBe(
+      400,
+    );
     // Without a code they still pay the normal price.
     expect((await handleOrder(deps(), user, { plan: 'monthly' })).body.amount).toBe(14900);
 
@@ -696,7 +701,10 @@ describe('billing', () => {
       `select public.billing_coupon_redeem('${user}', 'GYM10', 'x', 10)`,
       `select public.billing_order_create('${user}', 'monthly', 'order_y', 1, 'GYM10', 148)`,
     ]) {
-      await expect(server.asUser(user, (tx) => tx.query(sql)), sql).rejects.toThrow();
+      await expect(
+        server.asUser(user, (tx) => tx.query(sql)),
+        sql,
+      ).rejects.toThrow();
     }
   });
 
@@ -710,9 +718,10 @@ describe('billing', () => {
       .subscription_id as string;
     await activate(otherSub, 20, 'evt_lg2');
     // What the prices migration does to subscriptions that were running when prices changed.
-    await server.pg.query('update public.subscriptions set legacy_price = true where user_id = $1', [
-      user,
-    ]);
+    await server.pg.query(
+      'update public.subscriptions set legacy_price = true where user_id = $1',
+      [user],
+    );
     const paidUntil = (await mine(user)).pro_expires_at;
     expect((await mine(user)).legacy_price).toBe(true);
 
@@ -739,9 +748,10 @@ describe('billing', () => {
     const subId = (await handleSubscribe(deps(), user, { plan: 'monthly' })).body
       .subscription_id as string;
     await activate(subId, 2, 'evt_ll1');
-    await server.pg.query('update public.subscriptions set legacy_price = true where user_id = $1', [
-      user,
-    ]);
+    await server.pg.query(
+      'update public.subscriptions set legacy_price = true where user_id = $1',
+      [user],
+    );
     Object.assign(subs.get(subId)!, { current_end: Math.floor((Date.now() + 32 * DAY) / 1000) });
     await webhook('subscription.charged', subs.get(subId)!, 'evt_ll2');
     const s = await mine(user);
@@ -752,7 +762,11 @@ describe('billing', () => {
   it('the first code exists, and the owner can see how each code is doing', async () => {
     const user = await server.createUser('rishi@example.com');
     expect((await payOnce(user, 'quarterly', 'pay_r1', 'rishi10')).body.amount).toBe(35900);
-    const report = await server.pg.query<{ code: string; times_used: number; discount_given_inr: string }>(
+    const report = await server.pg.query<{
+      code: string;
+      times_used: number;
+      discount_given_inr: string;
+    }>(
       `select code, times_used, discount_given_inr from public.coupon_report where code in ('RISHI10', 'OFF10') order by code`,
     );
     expect(report.rows).toEqual([
@@ -762,5 +776,78 @@ describe('billing', () => {
     await expect(
       server.asUser(user, (tx) => tx.query('select * from public.coupon_report')),
     ).rejects.toThrow();
+  });
+  it('after the trial: 10% off the first payment for 48 hours, never paid before, never twice', async () => {
+    await server.pg.exec('update public.app_settings set early_access_ended_at = now() where id');
+    try {
+      const user = await server.createUser('trial-offer@example.com');
+      const offer = async (u: string) =>
+        (
+          await server.asUser(u, (tx) =>
+            tx.query<{ o: { percent: number; ends_at: string } | null }>(
+              'select public.get_trial_offer() as o',
+            ),
+          )
+        ).rows[0]!.o;
+      // The trial is fixed by a trigger; tests stand in for time passing the way e2e does.
+      const trialEnds = (u: string, hoursAgo: number) =>
+        server.pg.transaction(async (tx) => {
+          await tx.exec('alter table public.subscriptions disable trigger subscriptions_touch');
+          await tx.query(
+            `update public.subscriptions set
+               trial_started_at = now() - make_interval(hours => $2) - interval '7 days',
+               trial_expires_at = now() - make_interval(hours => $2)
+             where user_id = $1`,
+            [u, hoursAgo],
+          );
+          await tx.exec('alter table public.subscriptions enable trigger subscriptions_touch');
+        });
+
+      // Still in the trial: no offer, full price.
+      expect(await offer(user)).toBeNull();
+      expect((await handleOrder(deps(), user, { plan: 'monthly' })).body.amount).toBe(14900);
+
+      // Just ended: the offer is open and the server takes it off without a code.
+      await trialEnds(user, 1);
+      const open = await offer(user);
+      expect(open?.percent).toBe(10);
+      expect(near(open?.ends_at, Date.now() + 47 * 3_600_000, 3_600_000)).toBe(true);
+      expect((await handleOrder(deps(), user, { plan: 'yearly' })).body.amount).toBe(134900);
+      const auto = await handleSubscribe(deps(), user, { plan: 'quarterly' });
+      expect(auto.body.first_charge_paise).toBe(35900);
+      // Not for coaching.
+      expect((await handleOrder(deps(), user, { plan: 'coach_monthly' })).body.amount).toBe(99900);
+      // A typed code is used instead, not on top.
+      expect(
+        (await handleOrder(deps(), user, { plan: 'monthly', coupon: 'GYM10' })).body.amount,
+      ).toBe(13400);
+
+      // Paying closes it.
+      expect((await payOnce(user, 'monthly', 'pay_to1')).body.amount).toBe(13400);
+      expect(await offer(user)).toBeNull();
+      expect((await handleOrder(deps(), user, { plan: 'monthly' })).body.amount).toBe(14900);
+
+      // Over 48 hours ago: closed.
+      const late = await server.createUser('trial-late@example.com');
+      await trialEnds(late, 49);
+      expect(await offer(late)).toBeNull();
+      expect((await handleOrder(deps(), late, { plan: 'monthly' })).body.amount).toBe(14900);
+
+      // Anyone who has paid before gets no offer.
+      const before = await server.createUser('trial-paid@example.com');
+      await server.pg.query(
+        "update public.subscriptions set pro_expires_at = now() - interval '1 day' where user_id = $1",
+        [before],
+      );
+      await trialEnds(before, 1);
+      expect(await offer(before)).toBeNull();
+
+      // The function behind it is closed to the app.
+      await expect(
+        server.asUser(user, (tx) => tx.query('select public.trial_offer_for($1)', [user])),
+      ).rejects.toThrow();
+    } finally {
+      await server.pg.exec('update public.app_settings set early_access_ended_at = null where id');
+    }
   });
 });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertTriangle, ShieldCheck, Tag } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import {
@@ -6,12 +6,14 @@ import {
   cancelPlan,
   checkCoupon,
   formatRupees,
+  getTrialOffer,
   perMonth,
   startCheckout,
   usePlans,
   withCoupon,
   type BillingPlan,
   type Coupon,
+  type TrialOffer,
 } from '@/app/billing';
 import type { EntitlementView } from '@/app/entitlement';
 import { markProJustStarted } from './justPaid';
@@ -316,12 +318,25 @@ function BuyPlan({
   const [done, setDone] = useState(false);
   const [mode, setMode] = useState<PayMode>(extend ? 'once' : 'subscribe');
   const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const [offer, setOffer] = useState<TrialOffer | null>(null);
+  useEffect(() => {
+    if (!signedIn || e.plan !== 'free') return;
+    let live = true;
+    void getTrialOffer().then((o) => {
+      if (live) setOffer(o);
+    });
+    return () => {
+      live = false;
+    };
+  }, [signedIn, e.plan]);
+  // A typed code wins; otherwise the trial-end offer is applied by the server on its own.
+  const discount: Coupon | null = coupon ?? (offer ? { code: '', percent: offer.percent } : null);
   const shown = priced(plans, mode);
   const plan = shown.find((p) => p.id === choice) ?? shown[0]!;
   const periods = mode === 'once' ? PERIOD_ONCE : PERIOD;
   // A single payment needs no Razorpay plan, so every listed plan can be bought that way.
   const open = mode === 'once' ? true : plan.available;
-  const first = withCoupon(plan.priceInr, coupon);
+  const first = withCoupon(plan.priceInr, discount);
   const until = extend && e.proEndsAt ? formatCalendarDate(e.proEndsAt) : null;
 
   const pick = (m: PayMode) => {
@@ -389,6 +404,20 @@ function BuyPlan({
 
       <PlanChoice plans={shown} value={choice} onChange={setChoice} periods={periods} />
 
+      {offer && !coupon ? (
+        <InlineNotice icon={<Tag />} className="mt-4">
+          <span data-trial-offer>
+            Your trial has ended. {offer.percent}% off your first payment until{' '}
+            {offer.endsAt.toLocaleString('en-IN', {
+              weekday: 'short',
+              hour: 'numeric',
+              minute: '2-digit',
+            })}
+            . It comes off when you pay, no code needed.
+          </span>
+        </InlineNotice>
+      ) : null}
+
       {signedIn ? <CouponBox coupon={coupon} onChange={setCoupon} /> : null}
 
       <ul className="mt-4 flex flex-col gap-2">
@@ -439,7 +468,7 @@ function BuyPlan({
           <PrimaryButton block loading={busy} onClick={() => void buy()}>
             {mode === 'once'
               ? `Pay ${formatRupees(first)} once ${PERIOD_ONCE[plan.id]}`
-              : coupon
+              : discount
                 ? `Start autopay, ${formatRupees(first)} today`
                 : `Subscribe for ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]}`}
           </PrimaryButton>
@@ -453,7 +482,7 @@ function BuyPlan({
         <p className="type-caption mt-3 text-center text-text-2">
           {mode === 'once'
             ? `Charged once, ${formatRupees(first)}. `
-            : coupon
+            : discount
               ? `${formatRupees(first)} today for the first ${PERIOD_ONCE[plan.id].replace('for ', '')}, then ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]} until you cancel. `
               : until
                 ? `First charge on ${until}, then ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]} until you cancel. `

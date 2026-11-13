@@ -214,6 +214,33 @@ test('a code takes 10% off the first payment, once per account', async ({ page }
   await expect(more.getByRole('alert')).toContainText('already been used on this account');
 });
 
+test('right after the trial: 10% off the first payment for 48 hours, with no code', async ({
+  page,
+}) => {
+  const email = `offer-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`;
+  await page.goto('/sign-up?next=/pro');
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await page.waitForURL((u) => u.pathname === '/pro');
+  // In the trial there is no offer.
+  await expect(page.locator('[data-trial-offer]')).toHaveCount(0);
+  await control('/__test/expire-trial', { email, daysAgo: 1 });
+  await page.reload();
+  const plans = page.getByRole('region', { name: 'Pro plans' });
+  await expect(plans.locator('[data-trial-offer]')).toContainText(
+    'Your trial has ended. 10% off your first payment',
+  );
+  await expect(plans.getByRole('button', { name: 'Start autopay, ₹1,349 today' })).toBeVisible();
+  await plans.getByRole('radio', { name: /^Pay once/ }).click();
+  // The server applies it by itself: the order it makes is for the lower amount.
+  const order = page.waitForResponse((r) => r.url().endsWith('/billing/order'));
+  await plans.getByRole('button', { name: 'Pay ₹1,349 once for 1 year' }).click();
+  expect(((await (await order).json()) as { amount: number }).amount).toBe(134900);
+  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
+  await expect(page.locator('[data-trial-offer]')).toHaveCount(0);
+});
+
 test('a webhook with a bad signature changes nothing', async () => {
   const res = await fetch(`${FAKE}/functions/v1/billing/webhook`, {
     method: 'POST',

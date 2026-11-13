@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Crown } from 'lucide-react';
-import { usePlans } from '@/app/billing';
+import { getTrialOffer, usePlans, type TrialOffer } from '@/app/billing';
 import { useEntitlement } from '@/app/entitlement';
 import { CapsuleButton, TextButton } from '@/components/kit';
 import { db } from '@/data/db';
@@ -34,6 +34,18 @@ export function ProNudgeCard({
   const plans = usePlans();
   const [state, setState] = useState<NudgeState | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [offer, setOffer] = useState<TrialOffer | null>(null);
+  const free = e.plan === 'free';
+  useEffect(() => {
+    if (!free) return;
+    let live = true;
+    void getTrialOffer().then((o) => {
+      if (live) setOffer(o);
+    });
+    return () => {
+      live = false;
+    };
+  }, [free]);
 
   useEffect(() => {
     let live = true;
@@ -66,8 +78,10 @@ export function ProNudgeCard({
     };
   }, [workoutDates, records, e.pro, e.now, endedAt, plans]);
 
-  // Waits for the plans, so the price reminder can be offered with a real price.
-  const resolved = state && plans !== null && !e.loading ? chooseNudge(facts, state, e.now) : null;
+  // Waits for the plans, so the price reminder can be offered with a real price. The 48 hours
+  // after the trial show the real offer from the server instead, with its real end.
+  const resolved =
+    !offer && state && plans !== null && !e.loading ? chooseNudge(facts, state, e.now) : null;
 
   // The state it was chosen from is read once, on mount, so recording that this reminder was
   // shown cannot change what is on screen while it is being read. The next visit to Home reads
@@ -77,6 +91,49 @@ export function ProNudgeCard({
     if (nudge) void recordNudgeShown(db, nudge.id);
   }, [nudge]);
 
+  if (offer && !dismissed) {
+    const until = offer.endsAt.toLocaleString('en-IN', {
+      weekday: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return (
+      <section
+        aria-labelledby="trial-offer-title"
+        data-home-trial-offer
+        className={cn(
+          'glow-lime relative mb-4 overflow-hidden rounded-card bg-surface p-4',
+          className,
+        )}
+      >
+        <div className="relative flex items-start gap-3">
+          <span
+            aria-hidden
+            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-lime text-on-lime"
+          >
+            <Crown className="size-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 id="trial-offer-title" className="type-headline text-text-1 [text-wrap:pretty]">
+              Your trial has ended. Keep Pro for {offer.percent}% less.
+            </h2>
+            <p className="type-subhead mt-0.5 text-text-2 [text-wrap:pretty]">
+              {offer.percent}% off your first payment, autopay or once, until {until}. No code
+              needed.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+              <CapsuleButton to="/pro#get-pro" tone="lime">
+                See plans
+              </CapsuleButton>
+              <TextButton small onClick={() => setDismissed(true)}>
+                Not now
+              </TextButton>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
   if (!nudge || dismissed) return null;
 
   return (

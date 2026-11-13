@@ -1,5 +1,6 @@
 import { useFeature } from '@/app/entitlement';
 import { Link } from 'react-router';
+import { Crown } from 'lucide-react';
 import { CapsuleButton } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import type { QueryState } from '@/data/hooks';
@@ -36,6 +37,7 @@ export function FoodCard({
   const ctx = useFoodContextFrom(now, training);
   const toast = useToast();
   const macros = useFeature('macro_tracking');
+  const usualPro = useFeature('usual_meals');
   if (ctx.status !== 'success') return null;
   const today = toDateKey(now);
   const totals = dayTotals(ctx.logs, today);
@@ -101,7 +103,22 @@ export function FoodCard({
               Log
             </CapsuleButton>
           </div>
-          {usual ? (
+          {usual && !usualPro ? (
+            <Link
+              to="/pro"
+              className="pressable chrome type-meta mt-2.5 inline-flex h-8 max-w-full items-center gap-1.5 rounded-full bg-fill px-3 text-text-1"
+              data-home-usual-locked
+            >
+              <span className="truncate">
+                Usual {MEAL_LABEL[meal].toLowerCase()} ·{' '}
+                {usual.items.map((i) => i.foodName).join(', ')}
+              </span>
+              <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-lime">
+                <Crown className="size-3.5" aria-hidden />
+                Pro
+              </span>
+            </Link>
+          ) : usual ? (
             <button
               type="button"
               onClick={logUsual}

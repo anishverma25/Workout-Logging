@@ -237,13 +237,16 @@ describe('groups', () => {
     await expect(as(b, 'public.join_group($1)', ['ZZZZZZ'])).rejects.toThrow(/No group/);
   });
 
-  it('need a username first, and free accounts can be in three', async () => {
+  it('need a username first, and free accounts can be in one', async () => {
     const nameless = await user();
     await expect(as(nameless, 'public.create_group($1)', ['X'])).rejects.toThrow(/username/);
     const a = await user('three.groups');
     await free(a);
-    for (const name of ['One', 'Two', 'Three']) await as(a, 'public.create_group($1)', [name]);
-    await expect(as(a, 'public.create_group($1)', ['Four'])).rejects.toThrow(/limit 3/);
+    await as(a, 'public.create_group($1)', ['One']);
+    await expect(as(a, 'public.create_group($1)', ['Two'])).rejects.toThrow(/limit 1/);
+    const other = await user('other.owner');
+    const g = await as<{ code: string }>(other, 'public.create_group($1)', ['Theirs']);
+    await expect(as(a, 'public.join_group($1)', [g.code])).rejects.toThrow(/limit 1/);
     // Pro allows ten.
     await server.pg.query(
       "update public.subscriptions set status = 'active', pro_started_at = now(), pro_expires_at = now() + interval '30 days' where user_id = $1",

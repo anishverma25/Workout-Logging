@@ -78,14 +78,23 @@ A revoked account keeps every free feature and all of its data.
 Macrotrophy AI is Pro only: the AI services are on free tiers and cannot carry free members.
 
 Free (after the trial): unlimited workout logging with last time beside every set, the full
-history and every record, 2 routines, Indian food logging with calories, groups, a duel a week
-and the leaderboards, body weight, goals and photos, 7 days of Progress, backup and sync. History
-is never locked; routines over the limit are kept, only new ones need Pro.
+history and every record, 2 routines, Indian food logging with calories, 1 group, a duel a week
+and the global leaderboard, body weight, goals and photos, 7 days of Progress, backup and sync.
+History is never locked; routines and groups over the limit are kept, only new ones need Pro;
+measurements already saved stay visible and editable.
 
 Pro adds, on top of the list below: protein, carbs, fat and fibre with Eat next
 (`macro_tracking`), unlimited routines (`unlimited_routines`), 30 days and longer on Progress
-(`long_range`), and the gym tools in the logger: plate calculator, warm-up sets, supersets and
-swaps (`gym_tools`).
+(`long_range`), the gym tools in the logger: plate calculator, warm-up sets, supersets and
+swaps (`gym_tools`), body measurements with their trends and photos side by side
+(`body_measurements`), and logging a usual or earlier meal in one tap (`usual_meals`). Groups:
+1 free, 10 with Pro (migration 0027).
+
+**Trial-end offer** (migration 0027): for 48 hours after the trial ends, an account that has
+never paid gets 10% off its first Pro payment, autopay or once, with no code. The server applies
+it (`trial_offer_for`, used by the `billing` function when no code is typed; the larger of this
+and a food thank-you credit wins; a typed code replaces it). The app shows it on Home and on the
+plans card with its real end time. Change the percent or window in a new migration.
 
 What makes people want Pro, without taking anything away:
 
@@ -101,4 +110,4 @@ What makes people want Pro, without taking anything away:
   widget are Pro. Free members can try them on their own card; saving needs Pro.
 - Everything Pro already had stays Pro: the plan that adapts, the meal plan, the weekly report,
   Macrotrophy AI, food insights, plateaus, progression, strength levels, balance, 90-day and
-  all-time trends, goal dates, recaps, the extra group boards and 10 groups instead of 3.
+  all-time trends, goal dates, recaps and the extra group boards.

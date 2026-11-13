@@ -148,6 +148,26 @@ export async function checkCoupon(code: string): Promise<Coupon> {
   return { code: r.code, percent: r.percent };
 }
 
+export interface TrialOffer {
+  percent: number;
+  endsAt: Date;
+}
+
+/** The 48 hour offer after the trial ends, when open for this account (migration 0027). */
+export async function getTrialOffer(): Promise<TrialOffer | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.rpc('get_trial_offer');
+    if (error || !data) return null;
+    const d = data as { percent?: unknown; ends_at?: unknown };
+    if (typeof d.percent !== 'number' || typeof d.ends_at !== 'string') return null;
+    const endsAt = new Date(d.ends_at);
+    return endsAt.getTime() > Date.now() ? { percent: d.percent, endsAt } : null;
+  } catch {
+    return null;
+  }
+}
+
 /** The price after a coupon, in whole rupees: the same rounding the server uses. */
 export const withCoupon = (priceInr: number, coupon: Coupon | null): number =>
   coupon ? Math.round((priceInr * (100 - coupon.percent)) / 100) : priceInr;
