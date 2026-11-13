@@ -5,6 +5,9 @@ import { useEntitlement } from '@/app/entitlement';
 import { averageRating, REVIEWS, SURVEY_RATINGS } from '@/app/marketing';
 import { PrimaryButton, TextButton } from '@/components/kit';
 import { formatCalendarDate } from '@/lib/format';
+import { cn } from '@/lib/cn';
+
+const PERIOD = { monthly: 'a month', quarterly: 'every 3 months', yearly: 'a year' } as const;
 
 /** The four things Pro does that free does not, each in one line, in the order people use them. */
 const FLAGSHIP = [
@@ -41,8 +44,6 @@ export function TrialWelcomePage() {
   const next = params.get('next') ?? '/';
   const e = useEntitlement();
   const plans = usePlans();
-  const monthly = plans?.find((p) => p.id === 'monthly');
-  const yearly = plans?.find((p) => p.id === 'yearly');
   const ends = e.plan === 'trial' && e.trialEndsAt ? formatCalendarDate(e.trialEndsAt) : null;
   const review = REVIEWS[0]!;
 
@@ -91,11 +92,50 @@ export function TrialWelcomePage() {
           </figcaption>
         </figure>
 
-        {monthly && yearly ? (
-          <p className="type-subhead mt-6 text-center text-text-2" data-trial-prices>
-            After the trial, keep Pro for {formatRupees(monthly.priceInr)} a month or{' '}
-            {formatRupees(yearly.priceInr)} a year. Free stays free, with your whole history.
-          </p>
+        {plans && plans.length ? (
+          <section className="mt-8" aria-labelledby="trial-prices-title" data-trial-prices>
+            <h2 id="trial-prices-title" className="type-section text-text-1">
+              To keep Pro after{ends ? ` ${ends}` : ' the trial'}
+            </h2>
+            <ul className="mt-3 grid grid-cols-3 gap-2">
+              {plans.map((p) => {
+                const best = p.id === 'yearly';
+                return (
+                  <li
+                    key={p.id}
+                    className={cn(
+                      'relative flex flex-col items-center rounded-card px-2 pt-4 pb-3 text-center',
+                      best
+                        ? 'glow-lime overflow-hidden bg-lime-dim ring-1 ring-lime/60'
+                        : 'bg-surface',
+                    )}
+                    data-trial-price={p.id}
+                  >
+                    <span
+                      className={cn(
+                        'type-caption font-semibold',
+                        best ? 'text-lime' : 'text-text-2',
+                      )}
+                    >
+                      {p.label}
+                    </span>
+                    <span className="mt-1 font-display text-[1.6rem] leading-none font-bold tabular text-text-1">
+                      {formatRupees(p.priceInr)}
+                    </span>
+                    <span className="type-caption mt-1 text-text-2">{PERIOD[p.id]}</span>
+                    {best ? (
+                      <span className="type-caption mt-2 rounded-full bg-lime px-2 py-0.5 font-semibold text-on-lime">
+                        Best value
+                      </span>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="type-caption mt-3 text-center text-text-2">
+              Autopay or pay once, cancel any time. Free stays free, with your whole history.
+            </p>
+          </section>
         ) : null}
 
         <div className="mt-auto flex flex-col gap-2 pt-8">

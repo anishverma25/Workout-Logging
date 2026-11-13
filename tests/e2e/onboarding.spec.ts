@@ -28,7 +28,8 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   await page.getByRole('button', { name: 'Take the tour' }).click();
   await page.getByRole('button', { name: 'Mark sample set 1 done' }).click();
   await expect(page.getByRole('button', { name: 'Set 1 done' })).toBeVisible();
-  // Training, food, Macrotrophy AI, body and journey slides, then the Pro slide.
+  // Training, food and Macrotrophy AI slides, then the plan that adapts, leaderboards, reviews
+  // and the Pro slide.
   const next = () => page.getByRole('button', { name: 'Next' }).click();
   for (let i = 0; i < 3; i++) await next();
   const food = page.locator('[data-tour-food]');
@@ -40,7 +41,13 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   await expect(
     page.getByRole('heading', { name: 'An AI coach that knows your numbers' }),
   ).toBeVisible();
-  for (let i = 0; i < 4; i++) await next();
+  await next();
+  await expect(page.locator('[data-tour-brain]')).toBeVisible();
+  await next();
+  await expect(page.locator('[data-tour-score]')).toContainText('points');
+  await next();
+  await expect(page.locator('[data-tour-reviews] li')).toHaveCount(3);
+  for (let i = 0; i < 2; i++) await next();
   await page.getByRole('button', { name: 'Create my account' }).click();
 
   // The account.
@@ -103,7 +110,10 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   await expect(page).toHaveURL(/\/trial\?next=/);
   const trial = page.locator('[data-trial-welcome]');
   await expect(trial.getByRole('heading', { level: 1 })).toHaveText('Your 7 days of Pro are on');
-  await expect(trial.locator('[data-trial-prices]')).toContainText('₹149 a month');
+  // All three prices, as they are.
+  await expect(trial.locator('[data-trial-price="monthly"]')).toContainText('₹149');
+  await expect(trial.locator('[data-trial-price="quarterly"]')).toContainText('₹399');
+  await expect(trial.locator('[data-trial-price="yearly"]')).toContainText('₹1,499');
   await trial.locator('[data-trial-start]').click();
   await expect(page).toHaveURL(/\/routines\/[\w-]+$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Upper Lower Push Pull Legs');
