@@ -1,4 +1,5 @@
 import { EatNextCard } from './EatNextCard';
+import { FoodThanks } from './FoodThanks';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { Plus, Settings2, Target, UtensilsCrossed } from 'lucide-react';
@@ -15,6 +16,7 @@ import {
   Skeleton,
   TextButton,
 } from '@/components/kit';
+import { loadSharedFoods } from '@/app/sharedFoods';
 import { loadMoreFoods } from '@/data/library/moreFoods';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
@@ -48,6 +50,7 @@ const n = (v: number) => Math.round(v).toLocaleString('en-GB');
 export function FoodPage() {
   useEffect(() => {
     void loadMoreFoods();
+    void loadSharedFoods();
   }, []);
   const now = useNow();
   const ctx = useFoodContext(now);
@@ -126,6 +129,7 @@ export function FoodPage() {
               </PrimaryButton>
             </Card>
           ) : null}
+          <FoodThanks />
           <DaySummary ctx={ctx} date={date} onTargets={() => setTargetsOpen(true)} />
           <EatNextCard ctx={ctx} date={date} today={today} now={now} />
           <DayAnalysisCard ctx={ctx} date={date} now={now} />

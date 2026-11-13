@@ -13,6 +13,7 @@ import { warmAi } from '@/app/aiWarm';
 import { useFeature } from '@/app/entitlement';
 import { db } from '@/data/db';
 import { STARTER_FOODS } from '@/data/library/foods';
+import { loadSharedFoods } from '@/app/sharedFoods';
 import { loadMoreFoods, moreFoodsStore } from '@/data/library/moreFoods';
 import {
   copyFoodLogs,
@@ -109,6 +110,7 @@ function AddFoodBody({
   const pro = useFeature('ai_food');
   useEffect(() => {
     void loadMoreFoods();
+    void loadSharedFoods();
   }, []);
   // Pro may snap or type the meal: start the AI server while they choose.
   useEffect(() => {

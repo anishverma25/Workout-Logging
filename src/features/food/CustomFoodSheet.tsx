@@ -7,8 +7,10 @@ import {
   SearchField,
   SegmentedControl,
   Stepper,
+  Switch,
   TextField,
 } from '@/components/kit';
+import { SuggestError, suggestFood } from '@/app/sharedFoods';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { RECIPE_INGREDIENTS, recipePer100 } from '@/data/library/foods';
@@ -103,6 +105,8 @@ function CustomFoodForm({
     () => new Set(editing?.kind === 'food' ? (['carbsG', 'fatG'] as LabelKey[]) : []),
   );
   const [filled, setFilled] = useState(false);
+  // Suggest it for the shared library (label foods only: a family recipe is personal).
+  const [forEveryone, setForEveryone] = useState(false);
   const setField = (key: LabelKey) => (v: number | null) => {
     const now = new Set(typed).add(key);
     setTyped(now);
@@ -145,7 +149,7 @@ function CustomFoodForm({
     const per100 = (v: number | null) =>
       v === null ? null : basis === 'serving' && pieceG ? (v * 100) / pieceG : v;
     try {
-      await saveCustomFood(
+      const saved = await saveCustomFood(
         db,
         mode === 'recipe'
           ? { name, recipe: { ingredients: valid, cookedG, servings } }
@@ -162,7 +166,27 @@ function CustomFoodForm({
             },
         editing?.id,
       );
-      toast(`Saved ${name.trim()}`);
+      let note = `Saved ${name.trim()}`;
+      if (forEveryone && saved.kind === 'food') {
+        try {
+          await suggestFood({
+            name: saved.name,
+            diet: saved.diet,
+            per100: {
+              kcal: saved.kcal,
+              proteinG: saved.proteinG,
+              carbsG: saved.carbsG,
+              fatG: saved.fatG,
+              fibreG: saved.fibreG,
+            },
+            pieceG: saved.pieceG,
+          });
+          note = `Saved ${saved.name}. Sent for a check before it is added for everyone.`;
+        } catch (e) {
+          note = e instanceof SuggestError ? e.message : note;
+        }
+      }
+      toast(note);
       onDone();
     } catch (e) {
       setError(e instanceof FoodError ? e.message : 'Could not save. Try again.');
@@ -337,6 +361,19 @@ function CustomFoodForm({
         </>
       )}
 
+      {mode === 'label' && !editing ? (
+        <div className="flex items-start gap-3 rounded-nested bg-surface-2 px-4 py-3" data-share-food>
+          <div className="min-w-0 flex-1">
+            <p id="share-food-label" className="type-headline text-text-1">
+              Add it for everyone
+            </p>
+            <p className="type-caption mt-0.5 text-text-2">
+              We check the numbers, then anyone can find it in search. Your name is never shown.
+            </p>
+          </div>
+          <Switch checked={forEveryone} onChange={setForEveryone} aria-labelledby="share-food-label" />
+        </div>
+      ) : null}
       {error ? (
         <p role="alert" className="type-meta text-danger-text">
           {error}

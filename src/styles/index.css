@@ -284,6 +284,24 @@ html[data-landing] #landing {
   letter-spacing: -0.016em;
 }
 /* Horizontal scrollers fade at the trailing edge so a cut chip reads as "scroll" (G7). */
+/* A soft lime light behind key moments and numbers (release 2). Decorative only, never carries
+   meaning, and drawn behind content so text contrast is unchanged. */
+@utility glow-lime {
+  isolation: isolate;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -40% auto auto -20%;
+    width: 70%;
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    background: radial-gradient(closest-side, color-mix(in oklab, var(--lime) 22%, transparent), transparent);
+    filter: blur(8px);
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
 @utility edge-fade {
   -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 1.5rem), transparent);
   mask-image: linear-gradient(90deg, #000 calc(100% - 1.5rem), transparent);

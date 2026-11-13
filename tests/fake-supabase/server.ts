@@ -755,6 +755,14 @@ const server = createServer(async (req, res) => {
       );
       return send(res, 200, { connected });
     }
+    // Test control, standing in for the owner approving every waiting food in the SQL editor.
+    if (url.pathname === '/__test/approve-foods' && req.method === 'POST') {
+      const waiting = await pg.query<{ id: string }>(
+        `select id from public.food_submissions where status = 'pending'`,
+      );
+      for (const row of waiting.rows) await pg.query('select public.approve_food($1)', [row.id]);
+      return send(res, 200, { approved: waiting.rows.length });
+    }
     // Test control, standing in for the owner making a coupon code in the SQL editor.
     if (url.pathname === '/__test/coupon' && req.method === 'POST') {
       const { code, percent } = (await readJson(req)) as { code: string; percent?: number };
