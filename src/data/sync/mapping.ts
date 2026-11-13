@@ -1,6 +1,7 @@
 import type { ZodType } from 'zod';
 import {
   ActivityLog,
+  PlanItem,
   WaterLog,
   BodyMeasurement,
   BodyWeightEntry,
@@ -40,7 +41,8 @@ export type ServerTable =
   | 'food_logs'
   | 'custom_foods'
   | 'water_logs'
-  | 'activity_logs';
+  | 'activity_logs'
+  | 'plan_items';
 
 export type ServerRow = Record<string, unknown>;
 
@@ -62,6 +64,11 @@ interface TableSpec {
    * must not hold back a new calorie target. They reach the server with the row's next change.
    */
   dropWhenMissing?: string[];
+  /**
+   * A table added after release. If the server does not have it yet (its migration has not
+   * been run), its rows wait on the phone and every other table keeps syncing.
+   */
+  late?: boolean;
 }
 
 /** Parents before children, so foreign keys hold when pushing and pulling. */
@@ -299,7 +306,19 @@ export const TABLE_SPECS: TableSpec[] = [
     ],
     schema: ActivityLog,
   },
+  {
+    local: 'planItems',
+    server: 'plan_items',
+    fields: ['kind', 'startDate', 'endDate', 'status', 'data'],
+    schema: PlanItem,
+    late: true,
+  },
 ];
+
+/** Server tables added after release (see `TableSpec.late`). */
+export const LATE_TABLES: ReadonlySet<string> = new Set(
+  TABLE_SPECS.filter((s) => s.late).map((s) => s.server),
+);
 
 export const specFor = (table: DomainTable) => TABLE_SPECS.find((s) => s.local === table);
 
@@ -402,7 +421,10 @@ export function fromServerRow(spec: TableSpec, row: ServerRow): Record<string, u
     let value = row[toSnake(f)] ?? null;
     if (value !== null && f.endsWith('At')) value = normalizeTimestamp(value);
     // `date` columns stay plain YYYY-MM-DD strings.
-    if (typeof value === 'string' && (f === 'birthDate' || f === 'targetDate' || f === 'date'))
+    if (
+      typeof value === 'string' &&
+      (f === 'birthDate' || f === 'targetDate' || f === 'date' || f === 'startDate' || f === 'endDate')
+    )
       value = value.slice(0, 10);
     if (value !== null && NUMERIC_FIELDS.has(f)) value = Number(value);
     record[f] = value;

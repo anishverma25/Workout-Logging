@@ -65,3 +65,124 @@ export function joinSaid(text: string, said: string): string {
   if (!said) return t;
   return t ? `${t.replace(/[,\s]+$/, '')}, ${said}` : said;
 }
+
+export interface PatientOptions {
+  /** How long a pause may last before listening ends by itself. */
+  patienceMs: number;
+  /** The longest it listens in one go. */
+  maxMs: number;
+  /** Everything said so far, and the words still being heard. */
+  onText: (final: string, interim: string) => void;
+  /** Listening is over: what was said, and other ways the last part may have been heard. */
+  onEnd: (final: string, alternatives: string[]) => void;
+  onError: (code: string | undefined) => void;
+  now?: () => number;
+}
+
+/**
+ * Listens through pauses. A phone's speech recognition stops at the first short silence, which
+ * cuts people off mid-sentence ("80 kilo ... 8 reps", or a meal listed slowly). This keeps
+ * starting it again until the person has been quiet for `patienceMs`, taps stop, or `maxMs`
+ * passes, and joins what was heard. Each part is a fresh, non-continuous session, because
+ * continuous mode repeats words on Android. Indian English (en-IN) is the voice that follows
+ * Indian accents and Hinglish best of those phones offer.
+ */
+export function listenPatiently(
+  Speech: new () => SpeechRecognitionLike,
+  options: PatientOptions,
+): { stop: () => void; abort: () => void } {
+  const now = options.now ?? (() => Date.now());
+  const started = now();
+  let lastHeard = started;
+  let heardAnything = false;
+  let committed = '';
+  let alternatives: string[] = [];
+  let stopped = false;
+  let finished = false;
+  let fatal: string | undefined;
+  let current: SpeechRecognitionLike | null = null;
+
+  const join = (a: string, b: string) => [a, b].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    clearInterval(watch);
+    current = null;
+    if (fatal) options.onError(fatal);
+    else if (!committed) options.onError(stopped && !heardAnything ? 'stopped' : 'no-speech');
+    else options.onEnd(committed, alternatives);
+  };
+  const quietFor = () => now() - lastHeard;
+  const over = () =>
+    stopped ||
+    !!fatal ||
+    now() - started >= options.maxMs ||
+    quietFor() >= (heardAnything ? options.patienceMs : options.patienceMs + 3000);
+
+  const session = () => {
+    let r: SpeechRecognitionLike;
+    try {
+      r = new Speech();
+    } catch {
+      fatal = fatal ?? 'unavailable';
+      finish();
+      return;
+    }
+    r.lang = 'en-IN';
+    r.interimResults = true;
+    r.continuous = false;
+    r.maxAlternatives = 3;
+    let sessionFinal = '';
+    r.onresult = (e) => {
+      const t = transcriptOf(e.results);
+      if (t.final || t.interim) {
+        lastHeard = now();
+        heardAnything = true;
+      }
+      if (t.final && t.final !== sessionFinal) {
+        sessionFinal = t.final;
+        const last = e.results[e.results.length - 1] as unknown as ArrayLike<{ transcript?: string }> | undefined;
+        alternatives = [];
+        for (let i = 1; last && i < last.length; i += 1) {
+          const words = last[i]?.transcript?.replace(/\s+/g, ' ').trim();
+          if (words) alternatives.push(join(committed, words));
+        }
+      }
+      options.onText(join(committed, t.final), t.interim);
+    };
+    r.onerror = (e) => {
+      // Silence and stopping on purpose are how listening normally ends.
+      if (e.error === 'no-speech' || e.error === 'aborted') return;
+      fatal = e.error ?? 'unknown';
+    };
+    r.onend = () => {
+      if (finished) return;
+      committed = join(committed, sessionFinal);
+      if (over()) finish();
+      else session();
+    };
+    current = r;
+    try {
+      r.start();
+    } catch {
+      fatal = fatal ?? 'unavailable';
+      finish();
+    }
+  };
+
+  const watch = setInterval(() => {
+    if (!finished && over()) current?.stop();
+  }, 250);
+  session();
+  return {
+    stop: () => {
+      stopped = true;
+      current?.stop();
+    },
+    abort: () => {
+      finished = true;
+      clearInterval(watch);
+      current?.abort();
+    },
+  };
+}

@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { CalendarRange, Copy, Ellipsis, Plus, Share2, Star, Trash2 } from 'lucide-react';
 import { useShareRoutine } from './useShareRoutine';
+import { ComingUpRow } from '../brain/ComingUpRow';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -82,6 +83,7 @@ export function RoutinesPage() {
           ))}
         </ul>
       ) : null}
+      {data && routines.length > 0 ? <ComingUpRow /> : null}
 
       <NewRoutineSheet open={creating} onClose={() => setCreating(false)} />
     </>

@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Mic, MicOff, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import {
-  joinSaid,
-  speechProblem,
-  speechRecognition,
-  transcriptOf,
-  type SpeechRecognitionLike,
-} from './speech';
+import { joinSaid, listenPatiently, speechProblem, speechRecognition } from './speech';
+
+/** Listening goes on through pauses of this long, for up to this long in all. */
+const FOOD_PATIENCE_MS = 4000;
+const FOOD_LISTEN_MAX_MS = 60_000;
 import { PrimaryButton, SecondaryButton } from '@/components/kit';
 import { useCoachStore } from '@/app/coach';
 import { askFoodLog, FOOD_LIMITS, FoodAiError } from '@/app/foodAi';
@@ -49,7 +47,7 @@ export function AiFoodLog({
   /** Words still being heard, shown under the box while the person speaks. */
   const [heard, setHeard] = useState('');
   const [voiceError, setVoiceError] = useState<string | null>(null);
-  const recognition = useRef<SpeechRecognitionLike | null>(null);
+  const recognition = useRef<{ stop: () => void; abort: () => void } | null>(null);
   const Speech = useMemo(() => speechRecognition(), []);
 
   useEffect(() => () => recognition.current?.abort(), []);
@@ -64,47 +62,30 @@ export function AiFoodLog({
     }
     setVoiceError(null);
     setHeard('');
-    let r: SpeechRecognitionLike;
-    try {
-      r = new Speech();
-    } catch {
-      setVoiceError(speechProblem(undefined));
-      return;
-    }
-    // Indian English understands Hinglish best of the voices phones offer.
-    r.lang = 'en-IN';
-    // Words show while they are spoken, and listening stops by itself after a pause (the
-    // continuous mode repeats words on Android).
-    r.interimResults = true;
-    r.continuous = false;
-    r.maxAlternatives = 1;
-    let committed = '';
-    r.onresult = (e) => {
-      const { final, interim } = transcriptOf(e.results);
-      if (final && final !== committed) {
-        const fresh = final.startsWith(committed) ? final.slice(committed.length).trim() : final;
-        committed = final;
-        if (fresh) setText((t) => joinSaid(t, fresh));
-      }
-      setHeard(interim);
-    };
-    r.onerror = (e) => {
-      // Stopping on purpose is not a problem.
-      if (e.error !== 'aborted') setVoiceError(speechProblem(e.error));
-    };
-    r.onend = () => {
-      setListening(false);
-      setHeard('');
-      recognition.current = null;
-    };
-    recognition.current = r;
-    try {
-      r.start();
-      setListening(true);
-    } catch {
-      recognition.current = null;
-      setVoiceError(speechProblem(undefined));
-    }
+    // What was in the box before speaking; what is said is added after it as it is heard.
+    const before = text;
+    recognition.current = listenPatiently(Speech, {
+      // A meal is listed slowly: a pause of a few seconds does not end it.
+      patienceMs: FOOD_PATIENCE_MS,
+      maxMs: FOOD_LISTEN_MAX_MS,
+      onText: (final, interim) => {
+        if (final) setText(joinSaid(before, final));
+        setHeard(interim);
+      },
+      onEnd: (final) => {
+        setText(joinSaid(before, final));
+        setListening(false);
+        setHeard('');
+        recognition.current = null;
+      },
+      onError: (code) => {
+        setListening(false);
+        setHeard('');
+        recognition.current = null;
+        if (code !== 'stopped') setVoiceError(speechProblem(code));
+      },
+    });
+    setListening(true);
   }
 
   async function ask() {

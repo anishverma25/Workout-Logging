@@ -153,7 +153,9 @@ export type ProFeature =
   | 'ai_food'
   | 'food_insights'
   | 'group_boards'
-  | 'weekly_report';
+  | 'weekly_report'
+  | 'adaptive_plan'
+  | 'meal_plan';
 
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
   long_range: {
@@ -212,6 +214,16 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
     title: 'Weekly intelligence report',
     description:
       'Every week, your training and food read together: what changed, what it means and three things to do next week. Download it as a PDF.',
+  },
+  adaptive_plan: {
+    title: 'A plan that adapts every week',
+    description:
+      'Every week the app reads your weight, food and lifts and proposes next week: calories, protein, sets per muscle, a lighter week when you need one. It plans around exams, travel, fasts and anything that hurts. Nothing changes without your yes.',
+  },
+  meal_plan: {
+    title: 'Indian meal plan and grocery list',
+    description:
+      'Seven days of meals that hit your targets, built for home, hostel, mess or PG food, your diet and your budget, with one grocery list.',
   },
   food_insights: {
     title: 'Food insights',

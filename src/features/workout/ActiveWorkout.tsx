@@ -49,6 +49,7 @@ import { formatClock, pluralize } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { ExercisePicker } from '../exercises/ExercisePicker';
 import { ExerciseCard } from './ExerciseCard';
+import { VoiceSets } from './VoiceSets';
 import { restActions } from './restActions';
 import { RestTimerBar, RestTimerSheet } from './RestTimer';
 import { EffortPicker, ReadinessCard } from './Readiness';
@@ -246,6 +247,12 @@ export function ActiveWorkout({ view, prefs }: Props) {
               ) : null}
             </span>
           </button>
+          <VoiceSets
+            exercises={exercises}
+            activeId={activeId}
+            unit={prefs.weightUnit}
+            onSetCompleted={onSetCompleted}
+          />
           <KitIconButton label="Rest timer" icon={<Timer />} onClick={() => setTimerOpen(true)} />
           <KitIconButton
             label={paused ? 'Resume workout' : 'Pause workout'}

@@ -178,6 +178,9 @@ export function messageFor(error: { message?: string; code?: string } | null): s
   if (/group admin/i.test(m)) return 'Only the group admin can do that.';
   if (/Not a member/i.test(m)) return 'You are not in this group any more.';
   if (/1 to 40/i.test(m)) return 'Group names are 1 to 40 characters.';
+  if (/Duel exists/i.test(m)) return 'You two already have a duel this week.';
+  if (/Duel limit (\d+)/i.test(m)) return 'You can start 3 duels a week.';
+  if (/Duel yourself|No member with that username/i.test(m)) return 'Choose another member of this group.';
   // The server has not been updated yet (migration 0019 not run).
   if (error?.code === 'PGRST202' || /does not exist|Could not find the function/i.test(m))
     return 'Groups are not available yet. Please try again later.';
@@ -392,3 +395,54 @@ export const setShowUsername = (show: boolean) =>
   call('set_show_username', { p_show: show }, (v) => v === true);
 
 export const __test = { parseBoard, parseGroup, parseRow, parseGlobal };
+
+// ---------------------------------------------------------------------------------------------
+// Duels (migration 0023): one member against another for the week, on the same weekly points.
+// ---------------------------------------------------------------------------------------------
+
+export interface Duel {
+  id: string;
+  weekStart: string;
+  /** This week's (points still moving) or last week's (settled). */
+  live: boolean;
+  challenger: string;
+  opponent: string;
+  challengerScore: number;
+  opponentScore: number;
+  mine: boolean;
+  iAmChallenger: boolean;
+}
+
+export interface Duels {
+  weekStart: string;
+  endsOn: string;
+  limit: number;
+  duels: Duel[];
+}
+
+export const getDuels = (groupId: string) =>
+  call('get_group_duels', { p_group: groupId }, (v): Duels => {
+    const o = (v ?? {}) as Record<string, unknown>;
+    return {
+      weekStart: str(o.week_start),
+      endsOn: str(o.ends_on),
+      limit: num(o.limit) ?? 3,
+      duels: (Array.isArray(o.duels) ? (o.duels as Record<string, unknown>[]) : []).map((d) => ({
+        id: str(d.id),
+        weekStart: str(d.week_start),
+        live: d.live === true,
+        challenger: str(d.challenger),
+        opponent: str(d.opponent),
+        challengerScore: num(d.challenger_score) ?? 0,
+        opponentScore: num(d.opponent_score) ?? 0,
+        mine: d.mine === true,
+        iAmChallenger: d.i_am_challenger === true,
+      })),
+    };
+  });
+
+export const createDuel = (groupId: string, username: string) =>
+  call('create_duel', { p_group: groupId, p_username: username }, () => true);
+
+export const cancelDuel = (duelId: string) =>
+  call('cancel_duel', { p_duel: duelId }, (v) => v === true);

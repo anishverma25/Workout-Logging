@@ -131,6 +131,20 @@ test('two friends: username, create, join by code, points, home card and admin',
   await expect(top).toHaveAttribute('data-board-row', unique);
   await expect(top).toContainText('13');
   await expect(friend.page.locator('[data-trained-today]')).toContainText('1 of 2');
+
+  // A duel for the week, on the same points: the friend challenges, both see it, either ends it.
+  await friend.page.locator('[data-duel-start]').click();
+  await friend.page.locator(`[data-duel-member="${unique}"]`).click();
+  const duel = friend.page.locator('[data-duel="live"]');
+  await expect(duel).toContainText(`@${unique}.b`);
+  await expect(duel).toContainText(/0\s*:\s*13/);
+  await expect(duel).toContainText('You trail');
+  await expect(friend.page.locator('[data-duel-start]')).toHaveCount(0);
+  await noSideScroll(friend.page);
+  await page.goto(friend.page.url());
+  await expect(page.locator('[data-duel="live"]')).toContainText('You lead');
+  await page.locator('[data-duel-cancel]').click();
+  await expect(page.locator('[data-duel="live"]')).toHaveCount(0);
   // The breakdown shows how the points add up, and nothing about the workout itself.
   await top.getByRole('button').click();
   const breakdown = top.locator('[data-breakdown]');

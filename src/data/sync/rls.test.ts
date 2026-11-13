@@ -173,6 +173,16 @@ function rowsFor(userId: string) {
       kcal_source: 'estimated',
       ...meta,
     },
+    plan_items: {
+      id: id(),
+      user_id: userId,
+      kind: 'event',
+      start_date: '2026-11-12',
+      end_date: '2026-11-18',
+      status: 'active',
+      data: { event: 'exams' },
+      ...meta,
+    },
     user_preferences: {
       user_id: userId,
       weight_unit: 'kg',
@@ -564,6 +574,29 @@ describe('row level security', () => {
     );
     await expectError(
       server.asUser(userA, (tx) => insertRow(tx, 'water_logs', { ...rows.water_logs, ml: 20 })),
+      /check constraint/,
+    );
+    // Plan items: a known kind, an object for its data, and dates the right way round.
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'plan_items', { ...rows.plan_items, id: crypto.randomUUID(), kind: 'note' }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'plan_items', { ...rows.plan_items, id: crypto.randomUUID(), data: [1] }),
+      ),
+      /check constraint/,
+    );
+    await expectError(
+      server.asUser(userA, (tx) =>
+        insertRow(tx, 'plan_items', {
+          ...rows.plan_items,
+          id: crypto.randomUUID(),
+          end_date: '2026-11-01',
+        }),
+      ),
       /check constraint/,
     );
     await expectError(

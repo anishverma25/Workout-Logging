@@ -42,7 +42,8 @@ sh(`git worktree add --detach --force ${prevSrc} ${from}`);
 symlinkSync(join(ROOT, 'node_modules'), join(prevSrc, 'node_modules'));
 cpSync(join(ROOT, '.env.e2e'), join(prevSrc, '.env.e2e'));
 const build = (cwd, out) =>
-  sh(`pnpm exec vite build --mode e2e --outDir ${out} --emptyOutDir`, cwd);
+  // The demo athlete can be loaded in these builds, to update an account with real history.
+  sh(`VITE_DEMO_AUTOLOAD=true pnpm exec vite build --mode e2e --outDir ${out} --emptyOutDir`, cwd);
 build(prevSrc, join(WORK, 'prev'));
 build(ROOT, join(WORK, 'cur'));
 cpSync(join(WORK, 'cur'), join(WORK, 'next'), { recursive: true });
@@ -55,6 +56,8 @@ writeFileSync(
 // 2. Hosting like Cloudflare Pages: files, pretty .html addresses, index.html for anything else,
 // and the `/*` headers (the Content Security Policy matters). GET /__use/<name> switches build.
 let current = 'prev';
+/** While on, script files fail to download: an update cut off halfway. */
+let broken = false;
 const types = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -85,6 +88,14 @@ const server = createServer((req, res) => {
     current = url.pathname.slice(7);
     return res.end(current);
   }
+  if (url.pathname.startsWith('/__break/')) {
+    broken = url.pathname.endsWith('/on');
+    return res.end(String(broken));
+  }
+  if (broken && url.pathname.startsWith('/assets/') && url.pathname.endsWith('.js')) {
+    res.writeHead(503);
+    return res.end();
+  }
   const dir = join(WORK, current);
   let file = join(dir, decodeURIComponent(url.pathname));
   if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html');
@@ -99,6 +110,7 @@ const server = createServer((req, res) => {
   res.end(readFileSync(file));
 }).listen(PORT);
 const use = (v) => fetch(`${BASE}/__use/${v}`);
+const breakDownloads = (on) => fetch(`${BASE}/__break/${on ? 'on' : 'off'}`);
 
 let fake = null;
 const fakeUp = () =>
@@ -124,6 +136,57 @@ const state = (page) =>
     drawn: (document.getElementById('root')?.childElementCount ?? 0) > 0,
   }));
 
+/** How many workouts and sets the phone holds, read straight from its databases. */
+const records = (page) =>
+  page.evaluate(async () => {
+    let workouts = 0;
+    let sets = 0;
+    for (const info of await indexedDB.databases()) {
+      if (!info.name) continue;
+      const db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open(info.name);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      const count = (store) =>
+        db.objectStoreNames.contains(store)
+          ? new Promise((resolve) => {
+              const req = db.transaction(store).objectStore(store).count();
+              req.onsuccess = () => resolve(req.result);
+              req.onerror = () => resolve(0);
+            })
+          : 0;
+      workouts += await count('workouts');
+      sets += await count('sets');
+      db.close();
+    }
+    return { workouts, sets };
+  });
+
+/** Signs up on the version being served and waits until its offline copy is in charge. */
+async function signUp(page) {
+  await page.goto(`${BASE}/sign-up?next=/more`);
+  await page
+    .getByRole('textbox', { name: 'Email' })
+    .fill(`update-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`);
+  await page.getByLabel('Password', { exact: true }).fill('correct-horse-9');
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await page.waitForURL(/\/more/, { timeout: 30_000 });
+  await page.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 30_000 });
+  await page.waitForTimeout(1500);
+}
+
+/** Weeks of training in the account, as a member has. */
+async function loadTraining(page) {
+  await page.goto(`${BASE}/settings`);
+  await page.getByRole('button', { name: 'Load demo data' }).click();
+  await page
+    .locator('#demo-data')
+    .getByRole('status')
+    .filter({ hasText: 'workouts' })
+    .waitFor({ timeout: 60_000 });
+}
+
 /** The release announcement of the version a step starts on, marked seen so it covers nothing. */
 const releaseId = (src) =>
   /RELEASE_ID = '([^']+)'/.exec(
@@ -142,15 +205,14 @@ async function update(fromBuild, toBuild) {
   const page = await ctx.newPage();
   try {
     await use(fromBuild);
-    await page.goto(`${BASE}/sign-up?next=/more`);
-    await page
-      .getByRole('textbox', { name: 'Email' })
-      .fill(`update-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`);
-    await page.getByLabel('Password', { exact: true }).fill('correct-horse-9');
-    await page.getByRole('button', { name: 'Create account' }).click();
-    await page.waitForURL(/\/more/, { timeout: 30_000 });
-    await page.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 30_000 });
-    await page.waitForTimeout(1500);
+    await signUp(page);
+    // A member with real history: every workout and set must still be there afterwards.
+    await loadTraining(page);
+    const before = await records(page);
+    if (before.workouts < 10 || before.sets < 100)
+      throw new Error(`the training history did not load (${before.workouts} workouts)`);
+    await page.goto(`${BASE}/more`);
+    await page.waitForTimeout(1000);
 
     await use(toBuild);
     await page.evaluate(() => {
@@ -184,7 +246,24 @@ async function update(fromBuild, toBuild) {
     if (!cold.drawn || cold.help)
       throw new Error('the app did not open from cold after the update');
     if (!cold.main.endsWith(want)) throw new Error('opening from cold gave the old version');
-    console.log(`PASS ${name}`);
+    const kept = await records(again);
+    if (kept.workouts !== before.workouts || kept.sets !== before.sets)
+      throw new Error(
+        `training changed in the update: ${before.workouts} workouts and ${before.sets} sets before, ${kept.workouts} and ${kept.sets} after`,
+      );
+    await again.close();
+
+    // With no connection at all, the updated app still opens with the history in it.
+    await ctx.setOffline(true);
+    const off = await ctx.newPage();
+    await off.goto(`${BASE}/history`);
+    await off.waitForTimeout(4000);
+    const offline = await state(off);
+    if (!offline.drawn || offline.help)
+      throw new Error('the app did not open offline after the update');
+    if (!offline.main.endsWith(want)) throw new Error('offline opened the old version');
+    await ctx.setOffline(false);
+    console.log(`PASS ${name} (${kept.workouts} workouts kept, opens offline)`);
   } catch (err) {
     failures.push(`${name}: ${err.message}`);
     console.log(`FAIL ${name}: ${err.message}`);
@@ -193,8 +272,75 @@ async function update(fromBuild, toBuild) {
   }
 }
 
+/**
+ * An update cut off halfway (the connection drops while the new files download): the version
+ * the person has must keep opening, online and offline, and the update must finish next time.
+ */
+async function interrupted(fromBuild, toBuild) {
+  const name = `${fromBuild} -> ${toBuild}, cut off halfway`;
+  const ctx = await browser.newContext({ ...devices['Pixel 7'] });
+  await ctx.addInitScript((id) => {
+    try {
+      localStorage.setItem('overload.whatsNew', id);
+    } catch {}
+  }, RELEASES[fromBuild]);
+  const page = await ctx.newPage();
+  try {
+    await use(fromBuild);
+    await signUp(page);
+    const old = (await state(page)).main;
+
+    await breakDownloads(true);
+    await use(toBuild);
+    await page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.update());
+    await page.waitForTimeout(6000);
+    // Nothing half-installed took over: a reload and a cold start still open the old version.
+    await page.reload();
+    await page.waitForTimeout(4000);
+    const stuck = await state(page);
+    if (!stuck.drawn || stuck.help) throw new Error('the app stopped opening after a failed update');
+    if (stuck.main !== old) throw new Error('a half-downloaded version took over');
+    await ctx.setOffline(true);
+    const off = await ctx.newPage();
+    await off.goto(`${BASE}/more`);
+    await off.waitForTimeout(4000);
+    const offline = await state(off);
+    if (!offline.drawn || offline.help)
+      throw new Error('the app did not open offline after a failed update');
+    await off.close();
+    await ctx.setOffline(false);
+
+    // The connection is back: the update goes through as usual.
+    await breakDownloads(false);
+    await page.evaluate(() => {
+      window.__beforeUpdate = true;
+    });
+    await page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.update());
+    await page.getByText('A new version is ready').first().waitFor({ timeout: 30_000 });
+    await page.waitForTimeout(2000);
+    await page.getByRole('button', { name: 'Reload' }).first().click();
+    await page
+      .waitForFunction(() => !window.__beforeUpdate, null, { timeout: 15_000 })
+      .catch(() => {});
+    await page.waitForTimeout(3000);
+    const after = await state(page);
+    const want =
+      (await (await fetch(`${BASE}/`)).text()).match(/\/assets\/index-[^"]+\.js/)?.[0] ?? '';
+    if (!after.drawn || after.help) throw new Error('the app did not open after the retried update');
+    if (!after.main.endsWith(want)) throw new Error('the retried update did not take over');
+    console.log(`PASS ${name}`);
+  } catch (err) {
+    failures.push(`${name}: ${err.message}`);
+    console.log(`FAIL ${name}: ${err.message}`);
+  } finally {
+    await breakDownloads(false);
+    await ctx.close();
+  }
+}
+
 await update('prev', 'cur');
 await update('cur', 'next');
+await interrupted('prev', 'cur');
 
 await browser.close();
 server.close();
@@ -205,5 +351,5 @@ if (failures.length) {
   process.exit(1);
 }
 console.log(
-  '\nUpdate check passed: people with the app open get the new version when they tap Reload.',
+  '\nUpdate check passed: people with the app open get the new version when they tap Reload, keep their training, can open it offline, and survive an update cut off halfway.',
 );

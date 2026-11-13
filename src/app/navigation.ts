@@ -22,6 +22,7 @@ import {
   UserRound,
   UsersRound,
   UtensilsCrossed,
+  Gift,
 } from 'lucide-react';
 
 import type { TileTone } from '@/components/ui/List';
@@ -70,6 +71,7 @@ export const SECONDARY_NAV: NavItem[] = [
   { to: '/profile', label: 'Profile', icon: UserRound, tone: 'iris', group: 'you' },
   { to: '/account', label: 'Account', icon: CircleUserRound, tone: 'graphite', group: 'app' },
   { to: '/settings', label: 'Settings', icon: Settings, tone: 'graphite', group: 'app' },
+  { to: '/whats-new', label: 'What is new', icon: Gift, tone: 'lime', group: 'app' },
   { to: '/pro', label: 'Pro', icon: Crown, tone: 'plum', group: 'app' },
   { to: '/coaching', label: '1:1 coaching', icon: ClipboardList, tone: 'lime', group: 'app' },
   {

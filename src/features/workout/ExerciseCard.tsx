@@ -1,3 +1,4 @@
+import { HurtsSheet } from '../brain/HurtsSheet';
 import { ActionMenu } from '@/components/kit/menu';
 import { formatRest, type RestInterval } from '@/domain/analytics/rest';
 import { Fragment, memo, useCallback, useMemo, useState, useRef } from 'react';
@@ -20,6 +21,7 @@ import {
   TrendingUp,
   Timer,
   ArrowLeftRight,
+  HeartPulse,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { TextArea } from '@/components/ui/Fields';
@@ -115,6 +117,7 @@ function ExerciseCardImpl({
   const holdToReorder = useLongPress(() => onReorder?.());
   const [plates, setPlates] = useState(false);
   const [swapping, setSwapping] = useState(false);
+  const [hurts, setHurts] = useState(false);
   const toast = useToast();
   const noteField = useRef<ExerciseNoteHandle>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -468,6 +471,11 @@ function ExerciseCardImpl({
           workingKg !== null ? Math.round(toDisplayWeight(workingKg, unit) * 100) / 100 : null
         }
       />
+      <HurtsSheet
+        open={hurts}
+        onClose={() => setHurts(false)}
+        exerciseId={we.exerciseId}
+      />
       <ExercisePicker
         open={swapping}
         onClose={() => setSwapping(false)}
@@ -565,6 +573,14 @@ function ExerciseCardImpl({
             onSelect: () => {
               setMenu(false);
               setSwapping(true);
+            },
+          },
+          {
+            label: 'Something hurts',
+            icon: <HeartPulse className="size-5" aria-hidden />,
+            onSelect: () => {
+              setMenu(false);
+              setHurts(true);
             },
           },
           {

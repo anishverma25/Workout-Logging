@@ -26,6 +26,7 @@ import {
 } from '../../supabase/functions/_shared/billing.ts';
 import {
   FOOD_LABEL_PROMPT,
+  FOOD_MENU_PROMPT,
   FOOD_PHOTO_PROMPT,
   LABEL_MODEL,
   FOOD_PROMPT,
@@ -496,6 +497,10 @@ function fakeCoachProvider(name: 'gemini' | 'groq'): CoachProvider {
         return answer;
       }
       if (system === FOOD_PHOTO_PROMPT) return fakePhotoAnswer(name, last);
+      if (system === FOOD_MENU_PROMPT)
+        return JSON.stringify({
+          dishes: ['Paneer Butter Masala ₹240', 'Dal Tadka 120', 'Tandoori Roti', 'Jeera Rice', 'Chicken Tikka (6 pcs)', 'Gulab Jamun', 'Chef Special Zzyx'],
+        });
       if (system === FOOD_LABEL_PROMPT) {
         // The stronger label model is "over its free allowance", so the usual one answers.
         if (options?.model === LABEL_MODEL)

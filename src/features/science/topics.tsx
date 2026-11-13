@@ -1,3 +1,15 @@
+import {
+  CUT_BAND,
+  DELOAD_SHARE,
+  KCAL_ROUND,
+  LIFT_DOWN,
+  LIFT_UP,
+  MAX_KCAL_STEP,
+  MAX_SET_STEP,
+  MIN_DAILY_KCAL,
+  PROTEIN_RANGE,
+  SHRINK_K,
+} from '@/domain/brain/limits';
 import type { ReactNode } from 'react';
 import { E1RM_MAX_REPS, E1RM_PREFERRED_MAX_REPS } from '@/domain/analytics/e1rm';
 import {
@@ -1154,6 +1166,66 @@ export const SCIENCE: TopicGroup[] = [
           'Make it once the week is logged: each week gets one report, saved once and never changed.',
         limits:
           'A report needs 2 workouts or 3 days of food in the week; parts with too little data are left out. The words come from fixed templates, never from AI, and every number is calculated on your phone.',
+      },
+      {
+        id: 'adaptive-plan',
+        title: 'The plan that adapts',
+        evidence: 'adaptivePlan',
+        shows:
+          'Next week, in your weekly review (Pro): the changes the app proposes to your calories, protein and sets, each with its reason. Nothing changes until you tap Apply.',
+        formulas: [
+          {
+            tex: String.raw`\hat{\theta}_{\text{you}} = \frac{n}{n + k}\,\bar{\theta}_{\text{your data}} + \frac{k}{n + k}\,\theta_{\text{research}}`,
+            spoken:
+              'Your estimate equals n over n plus k times your own data, plus k over n plus k times the research default',
+            where: `n: your complete logged weeks. k = ${SHRINK_K}: how much evidence it takes. With no weeks the estimate is the research default; it moves toward your own numbers as weeks add up.`,
+          },
+          {
+            tex: String.raw`\Delta\text{kcal} = \frac{(r_{\text{plan}} - r_{\text{you}}) \times W \times 7700}{7}`,
+            spoken:
+              'The calorie change equals the planned weekly rate minus your rate, times body weight, times 7,700, divided by 7',
+            where: `r: weight change a week as a share of body weight W. The result is rounded to ${KCAL_ROUND} kcal and never more than ${MAX_KCAL_STEP} kcal in one week.`,
+          },
+        ],
+        why: [
+          <>
+            Maintenance is read from what you ate and how your weight moved over 4 weeks, then
+            blended with the body formula by how many complete weeks you have logged. The 7,700 kcal
+            per kg rule is a first-weeks guide: the body adapts as weight changes (Hall, 2008), which
+            is why the plan re-reads it every week instead of trusting one calculation.
+          </>,
+          <>
+            On a cut the plan aims for {CUT_BAND[0] * 100} to {CUT_BAND[1] * 100}% of body weight a
+            week, the pace that best keeps muscle (Helms and colleagues, 2014). It is always called
+            weight, because a scale cannot tell fat from water. Protein stays between{' '}
+            {PROTEIN_RANGE[0]} and {PROTEIN_RANGE[1]} g per kg (Morton and colleagues, 2018), or your
+            goal's range when that is higher, unless you typed your own target.
+          </>,
+          <>
+            Sets follow the dose and response of weekly hard sets (Pelland and colleagues, 2026). A
+            muscle whose lifts have not moved in 4 weeks gets {MAX_SET_STEP} more sets when you are
+            doing the planned work; one whose lifts drop while you eat under maintenance gets{' '}
+            {MAX_SET_STEP} fewer. A lift counts as moved at {LIFT_UP * 100}% up or{' '}
+            {Math.abs(LIFT_DOWN) * 100}% down, set against day to day noise in a tested max of about
+            4% (Grgic and colleagues, 2020).
+          </>,
+          <>
+            A lighter week (about {DELOAD_SHARE * 100}% of your sets, same weights) is proposed only
+            when two or more lifts drop across two sessions and you are also in a deficit, grinding
+            with almost nothing in reserve, or coming off heavier weeks than usual. Planned deloads
+            are common practice among coaches (Bell and colleagues, 2023); the trigger is an app
+            rule, not a threshold from research.
+          </>,
+          <>
+            A personal finding, such as the weekly sets a muscle answers to best, is named only when
+            your own logs separate the options clearly. A statistical test decides that, and no
+            probability is shown to you. Until then the plan says it is learning and uses research
+            defaults.
+          </>,
+        ],
+        forYou:
+          'Log food on 5 days and weigh in on 4 each week. Without that the plan holds your calories and tells you why.',
+        limits: `Limits the plan cannot cross: calories never under ${MIN_DAILY_KCAL.toLocaleString('en-IN')} kcal or your resting energy; at most ${MAX_KCAL_STEP} kcal and ${MAX_SET_STEP} sets per muscle of change a week; no deficit and nothing added through a fast, an illness or exams. Something hurts is training guidance, not medical advice: sharp or lasting pain, swelling or numbness means stop and see a professional. The step sizes and cut-offs are app rules built on the research, not numbers from it.`,
       },
       {
         id: 'trial',

@@ -538,6 +538,10 @@ export const METRIC_EVIDENCE: Record<
     kind: 'evidence',
     citations: ['morton2018', 'helms2014', 'orsama2014', 'grgic2020', 'pelland2026', 'schoenfeld2019freq'],
   },
+  adaptivePlan: {
+    kind: 'evidence',
+    citations: ['hall2008', 'helms2014', 'morton2018', 'pelland2026', 'bell2023', 'grgic2020'],
+  },
   // Body page.
   bmr: { kind: 'evidence', citations: ['mifflin1990', 'frankenfield2005', 'mcardleKatch'] },
   maintenance: { kind: 'evidence', citations: ['fao2004', 'compendium2024'] },

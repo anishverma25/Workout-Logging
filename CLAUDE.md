@@ -432,3 +432,19 @@ Read README.md for setup, architecture and calculation rules.
   - `build/seo.ts` uses its own Vite `cacheDir` so it never races the dev server's optimizer.
   - Release `2026-11-report` (three steps: story cards, badges, weekly report), `CACHE_EPOCH`
     `ui-18`.
+- Macrotrophy Brain (November 2026, migrations `20261112000022_plan_items.sql` and
+  `20261112000023_duels.sql`, Dexie v6 `planItems`, `docs/brain.md`): pure maths in
+  `src/domain/brain` (`limits.ts`, `response.ts`, `engine.ts`, `rewrite.ts`, `whatIf.ts`,
+  `life.ts`, `now.ts`) with simulation tests on generated people. Next week with Apply or Keep in
+  the weekly review (`features/brain`, Pro `adaptive_plan`), Coming up, Something hurts in the
+  logger menu, temporary changes that undo themselves (`data/repositories/plan.ts`). `plan_items`
+  is a late table (`TableSpec.late`): a server without it never blocks sync. Food solver
+  (`domain/nutrition/solver.ts`): Eat next (free), Plan my week with grocery list (Pro
+  `meal_plan`, `/food/plan`), Read a menu (`coach` function mode `food_menu`, names only). Voice
+  sets (`domain/workout/voice.ts`; `listenPatiently` in `features/food/speech.ts` listens through
+  pauses, for food too). Now card on Home. AI memory (`features/coach/memory.ts`,
+  `/settings/memory`) and the plan go into every brief; briefs are focused by the question
+  (`questionFocus`). Wrapped (`/wrapped`), duels in groups. Science topic `adaptive-plan`.
+  The update check also proves history survives an update, the app opens offline after it, and an
+  update cut off halfway leaves the old version working. Release `2026-11-brain` (seven
+  illustrated steps, page `/whats-new`), `CACHE_EPOCH` `ui-19`.

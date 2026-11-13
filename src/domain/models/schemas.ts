@@ -413,6 +413,34 @@ export const ActivityLog = z.object({
 export type ActivityLog = z.infer<typeof ActivityLog>;
 
 /**
+ * One thing the adaptive plan remembers (November 2026): something coming up, something that
+ * hurts, a week's decision and its answer, a temporary change with how to put it back, a fact
+ * Macrotrophy AI may use, or a week of planned meals. One table for all of them: each is small,
+ * dated and owned by the person, and they sync like every other log.
+ */
+export const PLAN_ITEM_KINDS = [
+  'event',
+  'pain',
+  'decision',
+  'temporary',
+  'memory',
+  'meal_plan',
+] as const;
+export const PlanItem = z.object({
+  ...baseRecord,
+  kind: z.enum(PLAN_ITEM_KINDS),
+  /** First and last day it is about, when it has dates. */
+  startDate: isoDate.nullable(),
+  endDate: isoDate.nullable(),
+  /** done: acted on, ended or put back. */
+  status: z.enum(['active', 'done']),
+  /** What it holds, by kind (see `data/repositories/plan.ts`). */
+  data: z.record(z.string(), z.unknown()),
+});
+export type PlanItem = z.infer<typeof PlanItem>;
+
+
+/**
  * A food the person added: from a label (per 100 g) or their own recipe, such as the family
  * pot. Recipes keep their ingredients so they can be edited; the per 100 g values are worked
  * out from them when saved.

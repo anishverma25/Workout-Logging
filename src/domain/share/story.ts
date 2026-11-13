@@ -8,7 +8,7 @@ import { compareVolume, type PrCard, type StreakCard, type WorkoutCard } from '.
  * own data; a field whose data is missing is left out rather than filled in.
  */
 
-export type StoryKind = 'workout' | 'pr' | 'streak' | 'global' | 'group';
+export type StoryKind = 'workout' | 'pr' | 'streak' | 'global' | 'group' | 'wrapped';
 
 export interface StoryStat {
   /** The number as printed ("12,480", "1:48", "#7"). */

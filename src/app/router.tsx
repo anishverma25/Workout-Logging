@@ -110,6 +110,10 @@ export const router = createBrowserRouter([
             lazy: page(() => import('@/features/routines/RoutineEditorPage'), 'RoutineEditorPage'),
           },
           { path: 'food', lazy: page(() => import('@/features/food/FoodPage'), 'FoodPage') },
+          {
+            path: 'food/plan',
+            lazy: page(() => import('@/features/food/MealPlanPage'), 'MealPlanPage'),
+          },
           { path: 'water', element: <Navigate to="/food#water" replace /> },
           {
             path: 'activity',
@@ -158,7 +162,19 @@ export const router = createBrowserRouter([
             path: 'settings',
             lazy: page(() => import('@/features/settings/SettingsPage'), 'SettingsPage'),
           },
+          {
+            path: 'settings/memory',
+            lazy: page(() => import('@/features/settings/MemoryPage'), 'MemoryPage'),
+          },
           { path: 'pro', lazy: page(() => import('@/features/pro/ProPage'), 'ProPage') },
+          {
+            path: 'whats-new',
+            lazy: page(() => import('@/features/more/WhatsNewPage'), 'WhatsNewPage'),
+          },
+          {
+            path: 'wrapped',
+            lazy: page(() => import('@/features/wrapped/WrappedPage'), 'WrappedPage'),
+          },
           {
             path: 'groups',
             lazy: page(() => import('@/features/groups/GroupsPage'), 'GroupsPage'),

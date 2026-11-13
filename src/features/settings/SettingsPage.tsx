@@ -276,6 +276,14 @@ function CoachSection() {
         />
       </PanelRow>
       <PanelRow
+        title="What Macrotrophy AI knows"
+        detail="What is coming up, what hurts and what you told it. Edit or delete any of it."
+      >
+        <ButtonLink to="/settings/memory" size="sm" variant="secondary">
+          Open
+        </ButtonLink>
+      </PanelRow>
+      <PanelRow
         title="Clear Macrotrophy AI chat"
         detail={saved ? `${saved} messages on this phone.` : 'Nothing saved on this phone.'}
       >
