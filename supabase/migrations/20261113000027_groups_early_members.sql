@@ -2,9 +2,10 @@
 --
 -- 1. Groups: one on the free plan (it was three), ten with Pro. Nobody is removed from a group
 --    they are already in; the limit applies to creating or joining another.
--- 2. Early members: everyone who had paid Pro time when the prices changed (the 29, 69 and 249
---    rupee plans) is marked once, and gets a code of their own: EARLY15, 15% off their first
---    payment at the new price. Like every code it must be typed, works once per account and on
+-- 2. Early members: everyone who paid for Pro before the prices changed (the 29, 69 and 249
+--    rupee plans, through Razorpay or the old UPI references) is marked once, and gets a code of
+--    their own: EARLY15, 15% off their first payment at the new price. Pro given by hand
+--    (gifts, giveaways, influencers) does not count, and neither does a checkout never paid. Like every code it must be typed, works once per account and on
 --    one payment only. Nobody else can use it. There is no discount without a code.
 --
 --    To end it on a date:  update public.coupons set expires_at = '2026-12-31' where code = 'EARLY15';
@@ -92,17 +93,45 @@ alter table public.subscriptions add column if not exists early_member boolean n
 alter table public.app_settings add column if not exists early_members_marked_at timestamptz;
 alter table public.coupons add column if not exists early_members_only boolean not null default false;
 
--- Marked once, when this file first runs: accounts with paid Pro time left at that moment.
-do $$
+-- Paid for Pro before the new prices: a paid one-time order, a Razorpay subscription that was
+-- paid at least once (a checkout never paid stays 'created' or 'expired'), or an old manual UPI
+-- reference that was approved with Pro. Pro given by hand leaves none of these behind.
+create or replace function public.billing_mark_early_members()
+returns integer
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  n integer := 0;
 begin
-  if (select a.early_members_marked_at from public.app_settings a where a.id) is null then
-    update public.subscriptions
-      set early_member = true
-      where pro_expires_at is not null and pro_expires_at > now() and status <> 'revoked';
-    update public.app_settings set early_members_marked_at = now() where id;
+  if (select a.early_members_marked_at from public.app_settings a where a.id) is not null then
+    return 0;
   end if;
+  update public.subscriptions s
+    set early_member = true
+    where s.status <> 'revoked'
+      and (
+        exists (
+          select 1 from public.billing_orders o where o.user_id = s.user_id and o.status = 'paid'
+        )
+        or (
+          s.razorpay_subscription_id is not null
+          and s.razorpay_status in ('authenticated', 'active', 'pending', 'halted', 'cancelled', 'completed')
+        )
+        or (s.payment_reference is not null and s.pro_expires_at is not null)
+      );
+  get diagnostics n = row_count;
+  update public.app_settings set early_members_marked_at = now() where id;
+  return n;
 end;
 $$;
+revoke all on function public.billing_mark_early_members() from public, anon, authenticated;
+grant execute on function public.billing_mark_early_members() to service_role;
+
+-- Marked once, when this file first runs.
+select public.billing_mark_early_members();
 
 insert into public.coupons (code, percent, note, early_members_only)
 values ('EARLY15', 15, 'Members from before the November 2026 prices', true)

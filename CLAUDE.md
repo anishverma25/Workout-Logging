@@ -456,7 +456,8 @@ Read README.md for setup, architecture and calculation rules.
     move at renewal (`billing` route `retire-legacy`). Autopay and pay once on every plan; paying
     with time left starts later or adds on.
   - Discounts only with a code (`coupons`, `coupon_uses`, report `coupon_report`, one per
-    account): RISHI10; EARLY15 only for `subscriptions.early_member` (paid Pro when 0027 ran).
+    account): RISHI10; EARLY15 only for `subscriptions.early_member` (paid for Pro before 0027 ran,
+    `billing_mark_early_members`; never gifted Pro).
     Food thank-you credits (`food_credits`) are the one discount without a code; never advertise.
   - Free and Pro: 2 routines, calories only, 7 days of Progress, 1 group free; Pro adds
     `macro_tracking`, `long_range`, `gym_tools`, `unlimited_routines`, `copy_routines`,

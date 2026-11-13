@@ -817,4 +817,79 @@ describe('billing', () => {
       ),
     ).rejects.toThrow();
   });
+
+  it('marks only people who paid as early members: never gifted Pro or an unpaid checkout', async () => {
+    const pg = server.pg;
+    const sub = (u: string, set: string, args: unknown[] = []) =>
+      pg.query(`update public.subscriptions set ${set} where user_id = $1`, [u, ...args]);
+    const later = "now() + interval '20 days'";
+
+    const paidOnce = await server.createUser('mark-paid-once@example.com');
+    await payOnce(paidOnce, 'monthly', 'pay_mark_once');
+    const autopay = await server.createUser('mark-autopay@example.com');
+    await sub(
+      autopay,
+      `razorpay_subscription_id = 'sub_mark_a', razorpay_status = 'active', pro_expires_at = ${later}`,
+    );
+    const renewalOff = await server.createUser('mark-renewal-off@example.com');
+    await sub(
+      renewalOff,
+      `razorpay_subscription_id = 'sub_mark_b', razorpay_status = 'cancelled', pro_expires_at = ${later}`,
+    );
+    const lapsed = await server.createUser('mark-lapsed@example.com');
+    await sub(
+      lapsed,
+      `razorpay_subscription_id = 'sub_mark_c', razorpay_status = 'completed', pro_expires_at = now() - interval '3 days'`,
+    );
+    const upi = await server.createUser('mark-upi@example.com');
+    await sub(upi, `payment_reference = 'UPI123456', pro_expires_at = ${later}`);
+
+    const gifted = await server.createUser('mark-gifted@example.com');
+    await sub(gifted, `status = 'active', pro_started_at = now(), pro_expires_at = ${later}`);
+    const giftedUnpaid = await server.createUser('mark-gifted-unpaid@example.com');
+    await sub(
+      giftedUnpaid,
+      `razorpay_subscription_id = 'sub_mark_d', razorpay_status = 'created', pro_expires_at = ${later}`,
+    );
+    const expiredLink = await server.createUser('mark-expired-link@example.com');
+    await sub(expiredLink, `razorpay_subscription_id = 'sub_mark_e', razorpay_status = 'expired'`);
+    const unpaidOrder = await server.createUser('mark-unpaid-order@example.com');
+    await handleOrder(deps(), unpaidOrder, { plan: 'yearly' });
+    const revoked = await server.createUser('mark-revoked@example.com');
+    await sub(
+      revoked,
+      `status = 'revoked', razorpay_subscription_id = 'sub_mark_f', razorpay_status = 'active'`,
+    );
+    const free = await server.createUser('mark-free@example.com');
+
+    await pg.query('update public.app_settings set early_members_marked_at = null where id');
+    await pg.query('update public.subscriptions set early_member = false');
+    await pg.query('select public.billing_mark_early_members()');
+    const marked = async (u: string) =>
+      (
+        await pg.query<{ early_member: boolean }>(
+          'select early_member from public.subscriptions where user_id = $1',
+          [u],
+        )
+      ).rows[0]!.early_member;
+    for (const u of [paidOnce, autopay, renewalOff, lapsed, upi])
+      expect(await marked(u)).toBe(true);
+    for (const u of [gifted, giftedUnpaid, expiredLink, unpaidOrder, revoked, free])
+      expect(await marked(u)).toBe(false);
+    expect((await mine(gifted)).early_code).toBeNull();
+    expect(await mine(autopay)).toMatchObject({ early_code: 'EARLY15', early_percent: 15 });
+
+    // Marked once: someone who pays after the prices changed is not an early member.
+    const newcomer = await server.createUser('mark-newcomer@example.com');
+    await payOnce(newcomer, 'monthly', 'pay_mark_new');
+    expect(
+      (await pg.query<{ n: number }>('select public.billing_mark_early_members() as n')).rows[0]!.n,
+    ).toBe(0);
+    expect(await marked(newcomer)).toBe(false);
+
+    // Only the service role runs it.
+    await expect(
+      server.asUser(free, (tx) => tx.query('select public.billing_mark_early_members()')),
+    ).rejects.toThrow();
+  });
 });

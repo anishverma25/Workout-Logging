@@ -93,8 +93,12 @@ swaps (`gym_tools`), body measurements with their trends and photos side by side
 **Discounts need a code.** Nothing comes off a price by itself, except the food thank-you credit
 (`docs/food-logging.md`). Codes live in `public.coupons` (`docs/razorpay-setup.md`): `RISHI10` is
 the influencer code. `EARLY15` (migration 0027) is for early members only: everyone who had paid
-Pro time when 0027 first ran is marked `subscriptions.early_member`, sees the code on the plans
-card, and gets 15% off one payment at the new price, once. Anyone else typing it is refused.
+for Pro when 0027 first ran (a paid order, a Razorpay subscription paid at least once, or an
+approved UPI reference; `billing_mark_early_members`) is marked `subscriptions.early_member`,
+sees the code on the plans card, and gets 15% off one payment at the new price, once. Pro given
+by hand (gifts, giveaways, influencers) does not count. Anyone else typing it is refused. To add
+one person by hand: `update public.subscriptions set early_member = true where user_id = (select
+id from auth.users where email = 'person@example.com');`
 
 What makes people want Pro, without taking anything away:
 
