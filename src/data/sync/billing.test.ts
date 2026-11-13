@@ -777,77 +777,44 @@ describe('billing', () => {
       server.asUser(user, (tx) => tx.query('select * from public.coupon_report')),
     ).rejects.toThrow();
   });
-  it('after the trial: 10% off the first payment for 48 hours, never paid before, never twice', async () => {
-    await server.pg.exec('update public.app_settings set early_access_ended_at = now() where id');
-    try {
-      const user = await server.createUser('trial-offer@example.com');
-      const offer = async (u: string) =>
-        (
-          await server.asUser(u, (tx) =>
-            tx.query<{ o: { percent: number; ends_at: string } | null }>(
-              'select public.get_trial_offer() as o',
-            ),
-          )
-        ).rows[0]!.o;
-      // The trial is fixed by a trigger; tests stand in for time passing the way e2e does.
-      const trialEnds = (u: string, hoursAgo: number) =>
-        server.pg.transaction(async (tx) => {
-          await tx.exec('alter table public.subscriptions disable trigger subscriptions_touch');
-          await tx.query(
-            `update public.subscriptions set
-               trial_started_at = now() - make_interval(hours => $2) - interval '7 days',
-               trial_expires_at = now() - make_interval(hours => $2)
-             where user_id = $1`,
-            [u, hoursAgo],
-          );
-          await tx.exec('alter table public.subscriptions enable trigger subscriptions_touch');
-        });
+  it('early members get a code of their own: 15% off one payment, typed, and nobody else can use it', async () => {
+    const early = await server.createUser('early15@example.com');
+    const later = await server.createUser('later-member@example.com');
+    await server.pg.query(
+      'update public.subscriptions set early_member = true where user_id = $1',
+      [early],
+    );
+    const check = async (u: string, code: string) =>
+      (
+        await server.asUser(u, (tx) =>
+          tx.query<{ c: { ok: boolean; percent?: number; reason?: string } }>(
+            'select public.check_coupon($1) as c',
+            [code],
+          ),
+        )
+      ).rows[0]!.c;
+    expect(await check(early, 'early15')).toMatchObject({ ok: true, percent: 15 });
+    expect((await check(later, 'EARLY15')).reason).toBe('early_only');
+    const refused = await handleOrder(deps(), later, { plan: 'monthly', coupon: 'EARLY15' });
+    expect(refused.status).toBe(400);
+    expect(String(refused.body.error)).toContain('before the new prices');
 
-      // Still in the trial: no offer, full price.
-      expect(await offer(user)).toBeNull();
-      expect((await handleOrder(deps(), user, { plan: 'monthly' })).body.amount).toBe(14900);
+    // The app is told the code only for the early member, and nothing comes off without typing it.
+    expect(await mine(early)).toMatchObject({ early_code: 'EARLY15', early_percent: 15 });
+    expect((await mine(later)).early_code).toBeNull();
+    expect((await handleOrder(deps(), early, { plan: 'monthly' })).body.amount).toBe(14900);
 
-      // Just ended: the offer is open and the server takes it off without a code.
-      await trialEnds(user, 1);
-      const open = await offer(user);
-      expect(open?.percent).toBe(10);
-      expect(near(open?.ends_at, Date.now() + 47 * 3_600_000, 3_600_000)).toBe(true);
-      expect((await handleOrder(deps(), user, { plan: 'yearly' })).body.amount).toBe(134900);
-      const auto = await handleSubscribe(deps(), user, { plan: 'quarterly' });
-      expect(auto.body.first_charge_paise).toBe(35900);
-      // Not for coaching.
-      expect((await handleOrder(deps(), user, { plan: 'coach_monthly' })).body.amount).toBe(99900);
-      // A typed code is used instead, not on top.
-      expect(
-        (await handleOrder(deps(), user, { plan: 'monthly', coupon: 'GYM10' })).body.amount,
-      ).toBe(13400);
+    // 15% off 149 is 127 (whole rupees), once. Then the code is gone for them.
+    expect((await payOnce(early, 'monthly', 'pay_early15', 'EARLY15')).body.amount).toBe(12700);
+    expect((await mine(early)).early_code).toBeNull();
+    expect((await check(early, 'EARLY15')).reason).toBe('already_used');
+    expect((await handleOrder(deps(), early, { plan: 'monthly' })).body.amount).toBe(14900);
 
-      // Paying closes it.
-      expect((await payOnce(user, 'monthly', 'pay_to1')).body.amount).toBe(13400);
-      expect(await offer(user)).toBeNull();
-      expect((await handleOrder(deps(), user, { plan: 'monthly' })).body.amount).toBe(14900);
-
-      // Over 48 hours ago: closed.
-      const late = await server.createUser('trial-late@example.com');
-      await trialEnds(late, 49);
-      expect(await offer(late)).toBeNull();
-      expect((await handleOrder(deps(), late, { plan: 'monthly' })).body.amount).toBe(14900);
-
-      // Anyone who has paid before gets no offer.
-      const before = await server.createUser('trial-paid@example.com');
-      await server.pg.query(
-        "update public.subscriptions set pro_expires_at = now() - interval '1 day' where user_id = $1",
-        [before],
-      );
-      await trialEnds(before, 1);
-      expect(await offer(before)).toBeNull();
-
-      // The function behind it is closed to the app.
-      await expect(
-        server.asUser(user, (tx) => tx.query('select public.trial_offer_for($1)', [user])),
-      ).rejects.toThrow();
-    } finally {
-      await server.pg.exec('update public.app_settings set early_access_ended_at = null where id');
-    }
+    // An account cannot mark itself.
+    await expect(
+      server.asUser(later, (tx) =>
+        tx.query('update public.subscriptions set early_member = true where user_id = $1', [later]),
+      ),
+    ).rejects.toThrow();
   });
 });

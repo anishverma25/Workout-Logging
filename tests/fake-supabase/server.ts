@@ -521,7 +521,15 @@ function fakeCoachProvider(name: 'gemini' | 'groq'): CoachProvider {
       if (system === FOOD_PHOTO_PROMPT) return fakePhotoAnswer(name, last);
       if (system === FOOD_MENU_PROMPT)
         return JSON.stringify({
-          dishes: ['Paneer Butter Masala ₹240', 'Dal Tadka 120', 'Tandoori Roti', 'Jeera Rice', 'Chicken Tikka (6 pcs)', 'Gulab Jamun', 'Chef Special Zzyx'],
+          dishes: [
+            'Paneer Butter Masala ₹240',
+            'Dal Tadka 120',
+            'Tandoori Roti',
+            'Jeera Rice',
+            'Chicken Tikka (6 pcs)',
+            'Gulab Jamun',
+            'Chef Special Zzyx',
+          ],
         });
       if (system === FOOD_LABEL_PROMPT) {
         // The stronger label model is "over its free allowance", so the usual one answers.
@@ -786,6 +794,16 @@ const server = createServer(async (req, res) => {
         [code, percent ?? 10],
       );
       return send(res, 200, { code });
+    }
+    // Test control: marks an account as a member from before the November 2026 prices.
+    if (url.pathname === '/__test/early-member' && req.method === 'POST') {
+      const { email } = (await readJson(req)) as { email: string };
+      await pg.query(
+        `update public.subscriptions set early_member = true
+         where user_id = (select id from auth.users where email = $1)`,
+        [email],
+      );
+      return send(res, 200, { email });
     }
     // Test control, standing in for Razorpay Checkout's signature on a finished payment.
     if (url.pathname === '/__test/razorpay-sign' && req.method === 'POST') {

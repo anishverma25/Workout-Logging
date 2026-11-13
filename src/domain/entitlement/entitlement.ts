@@ -36,6 +36,9 @@ export const SubscriptionSnapshot = z.object({
   billing_kind: z.string().nullable().optional().default(null),
   /** The plan was bought at a price that has since changed (servers before 0024 leave it out). */
   legacy_price: z.boolean().nullable().optional().default(null),
+  /** The code an early member can still use, and its percent (servers from 0027). */
+  early_code: z.string().nullable().optional().default(null),
+  early_percent: z.number().nullable().optional().default(null),
   /** Razorpay's state of that subscription: active, pending, halted, cancelled... */
   billing_status: z.string().nullable().optional().default(null),
   /** Renewal is off: Pro runs to the end of the paid period, then stops. */
@@ -73,6 +76,8 @@ export interface Entitlement {
   paymentIssue: boolean;
   /** The running plan was bought at a price that has since changed; it ends with its paid period. */
   legacyPrice: boolean;
+  /** Paid before the November 2026 prices and has a code of their own still to use. */
+  earlyCode: { code: string; percent: number } | null;
   /** 1:1 coaching is on (it includes Pro), and when it ends. */
   coaching: boolean;
   coachingEndsAt: Date | null;
@@ -94,6 +99,7 @@ const GUEST: Entitlement = {
   paidOnce: false,
   paymentIssue: false,
   legacyPrice: false,
+  earlyCode: null,
   coaching: false,
   coachingEndsAt: null,
 };
@@ -132,6 +138,10 @@ export function resolveEntitlement(sub: SubscriptionSnapshot | null, now: Date):
       !sub.cancel_at_period_end,
     paymentIssue: sub.billing_status === 'pending' || sub.billing_status === 'halted',
     legacyPrice: plan === 'pro' && sub.legacy_price === true && sub.billing_kind !== 'once',
+    earlyCode:
+      !revoked && sub.early_code && sub.early_percent
+        ? { code: sub.early_code, percent: sub.early_percent }
+        : null,
     coaching: !revoked && !!sub.coaching_expires_at && t < sub.coaching_expires_at.getTime(),
     coachingEndsAt: sub.coaching_expires_at,
   };
@@ -178,7 +188,8 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
   },
   unlimited_routines: {
     title: 'Unlimited routines',
-    description: 'Free keeps 2 routines. Pro keeps as many as you like: a cut, a bulk, a travel plan.',
+    description:
+      'Free keeps 2 routines. Pro keeps as many as you like: a cut, a bulk, a travel plan.',
   },
   macro_tracking: {
     title: 'Protein, carbs, fat and fibre',
@@ -187,7 +198,8 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
   },
   gym_tools: {
     title: 'Gym tools',
-    description: 'Plate calculator, warm-up sets, supersets and smart exercise swaps in the logger.',
+    description:
+      'Plate calculator, warm-up sets, supersets and smart exercise swaps in the logger.',
   },
   body_measurements: {
     title: 'Body measurements and photo comparison',

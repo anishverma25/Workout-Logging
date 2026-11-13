@@ -214,31 +214,29 @@ test('a code takes 10% off the first payment, once per account', async ({ page }
   await expect(more.getByRole('alert')).toContainText('already been used on this account');
 });
 
-test('right after the trial: 10% off the first payment for 48 hours, with no code', async ({
+test('a member from before the new prices sees a code of their own and uses it once', async ({
   page,
 }) => {
-  const email = `offer-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`;
+  const email = `early-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`;
   await page.goto('/sign-up?next=/pro');
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
   await page.waitForURL((u) => u.pathname === '/pro');
-  // In the trial there is no offer.
-  await expect(page.locator('[data-trial-offer]')).toHaveCount(0);
-  await control('/__test/expire-trial', { email, daysAgo: 1 });
+  // Nobody else is shown a code, and nothing comes off without one.
+  await expect(page.locator('[data-early-code]')).toHaveCount(0);
+  await control('/__test/early-member', { email });
   await page.reload();
   const plans = page.getByRole('region', { name: 'Pro plans' });
-  await expect(plans.locator('[data-trial-offer]')).toContainText(
-    'Your trial has ended. 10% off your first payment',
-  );
-  await expect(plans.getByRole('button', { name: 'Start autopay, ₹1,349 today' })).toBeVisible();
+  await expect(plans.locator('[data-early-code]')).toContainText('EARLY15 takes 15% off');
+  await expect(plans.getByRole('button', { name: 'Subscribe for ₹1,499 a year' })).toBeVisible();
+  await plans.locator('[data-use-early-code]').click();
+  await expect(plans.locator('[data-coupon-applied]')).toContainText('EARLY15 applied: 15% off');
+  await plans.getByRole('radio', { name: /^Monthly/ }).click();
   await plans.getByRole('radio', { name: /^Pay once/ }).click();
-  // The server applies it by itself: the order it makes is for the lower amount.
-  const order = page.waitForResponse((r) => r.url().endsWith('/billing/order'));
-  await plans.getByRole('button', { name: 'Pay ₹1,349 once for 1 year' }).click();
-  expect(((await (await order).json()) as { amount: number }).amount).toBe(134900);
+  await plans.getByRole('button', { name: 'Pay ₹127 once for 1 month' }).click();
   await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
-  await expect(page.locator('[data-trial-offer]')).toHaveCount(0);
+  await expect(page.locator('[data-early-code]')).toHaveCount(0);
 });
 
 test('a webhook with a bad signature changes nothing', async () => {

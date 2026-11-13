@@ -131,6 +131,7 @@ const COUPON_REASONS: Record<string, string> = {
   ended: 'That code has ended.',
   used_up: 'That code has been used up.',
   already_used: 'A code has already been used on this account. Each account gets one.',
+  early_only: 'That code is for members who joined before the new prices.',
 };
 
 /**
@@ -146,26 +147,6 @@ export async function checkCoupon(code: string): Promise<Coupon> {
     throw new BillingError(COUPON_REASONS[r.reason ?? 'unknown'] ?? COUPON_REASONS.unknown!);
   }
   return { code: r.code, percent: r.percent };
-}
-
-export interface TrialOffer {
-  percent: number;
-  endsAt: Date;
-}
-
-/** The 48 hour offer after the trial ends, when open for this account (migration 0027). */
-export async function getTrialOffer(): Promise<TrialOffer | null> {
-  if (!supabase) return null;
-  try {
-    const { data, error } = await supabase.rpc('get_trial_offer');
-    if (error || !data) return null;
-    const d = data as { percent?: unknown; ends_at?: unknown };
-    if (typeof d.percent !== 'number' || typeof d.ends_at !== 'string') return null;
-    const endsAt = new Date(d.ends_at);
-    return endsAt.getTime() > Date.now() ? { percent: d.percent, endsAt } : null;
-  } catch {
-    return null;
-  }
 }
 
 /** The price after a coupon, in whole rupees: the same rounding the server uses. */

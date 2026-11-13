@@ -79,18 +79,10 @@ test.describe('after early access ends', () => {
     await expireTrial(email, 1);
     await page.goto('/');
     await expect(page.getByTestId('pro-nudge')).toHaveCount(0);
-    // Instead, for 48 hours, the real offer from the server, with its real end.
-    const offer = page.locator('[data-home-trial-offer]');
-    await expect(offer).toContainText('10% off your first payment');
-    await expect(offer.getByRole('link', { name: 'See plans' })).toHaveAttribute(
-      'href',
-      '/pro#get-pro',
-    );
 
     // Later, one reminder, built from their own log.
     await expireTrial(email, 20);
     await page.goto('/');
-    await expect(page.locator('[data-home-trial-offer]')).toHaveCount(0);
     const nudge = page.getByTestId('pro-nudge');
     await expect(nudge).toBeVisible();
     await expect(nudge).toContainText(/\d+ (days|workouts|personal records)|₹\d+ a month/);

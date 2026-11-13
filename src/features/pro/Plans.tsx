@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AlertTriangle, ShieldCheck, Tag } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import {
@@ -6,14 +6,12 @@ import {
   cancelPlan,
   checkCoupon,
   formatRupees,
-  getTrialOffer,
   perMonth,
   startCheckout,
   usePlans,
   withCoupon,
   type BillingPlan,
   type Coupon,
-  type TrialOffer,
 } from '@/app/billing';
 import type { EntitlementView } from '@/app/entitlement';
 import { markProJustStarted } from './justPaid';
@@ -143,6 +141,56 @@ function PlanChoice({
  * "Have a code?": a quiet line that opens one field. The server decides whether the code works
  * for this account, and checks it again when the payment starts.
  */
+/** An early member's own code, shown to them only, with one tap to use it. */
+function EarlyCode({
+  code,
+  percent,
+  onApply,
+}: {
+  code: string;
+  percent: number;
+  onApply: (c: Coupon) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="mt-4 rounded-nested bg-surface-2 px-4 py-3" data-early-code>
+      <div className="flex items-center gap-3">
+        <Tag className="size-4 shrink-0 text-lime" aria-hidden />
+        <p className="type-meta min-w-0 flex-1 text-text-1 [text-wrap:pretty]">
+          You were with us before the new prices. Your code{' '}
+          <span className="font-semibold">{code}</span> takes {percent}% off your first payment.
+        </p>
+        <TextButton
+          data-use-early-code
+          onClick={() => {
+            if (busy) return;
+            setBusy(true);
+            setError(null);
+            checkCoupon(code)
+              .then(onApply)
+              .catch((err: unknown) =>
+                setError(
+                  err instanceof BillingError
+                    ? err.message
+                    : 'Could not check the code. Try again.',
+                ),
+              )
+              .finally(() => setBusy(false));
+          }}
+        >
+          Use code
+        </TextButton>
+      </div>
+      {error ? (
+        <p role="alert" className="type-caption mt-2 text-warning">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function CouponBox({
   coupon,
   onChange,
@@ -318,25 +366,12 @@ function BuyPlan({
   const [done, setDone] = useState(false);
   const [mode, setMode] = useState<PayMode>(extend ? 'once' : 'subscribe');
   const [coupon, setCoupon] = useState<Coupon | null>(null);
-  const [offer, setOffer] = useState<TrialOffer | null>(null);
-  useEffect(() => {
-    if (!signedIn || e.plan !== 'free') return;
-    let live = true;
-    void getTrialOffer().then((o) => {
-      if (live) setOffer(o);
-    });
-    return () => {
-      live = false;
-    };
-  }, [signedIn, e.plan]);
-  // A typed code wins; otherwise the trial-end offer is applied by the server on its own.
-  const discount: Coupon | null = coupon ?? (offer ? { code: '', percent: offer.percent } : null);
   const shown = priced(plans, mode);
   const plan = shown.find((p) => p.id === choice) ?? shown[0]!;
   const periods = mode === 'once' ? PERIOD_ONCE : PERIOD;
   // A single payment needs no Razorpay plan, so every listed plan can be bought that way.
   const open = mode === 'once' ? true : plan.available;
-  const first = withCoupon(plan.priceInr, discount);
+  const first = withCoupon(plan.priceInr, coupon);
   const until = extend && e.proEndsAt ? formatCalendarDate(e.proEndsAt) : null;
 
   const pick = (m: PayMode) => {
@@ -404,18 +439,8 @@ function BuyPlan({
 
       <PlanChoice plans={shown} value={choice} onChange={setChoice} periods={periods} />
 
-      {offer && !coupon ? (
-        <InlineNotice icon={<Tag />} className="mt-4">
-          <span data-trial-offer>
-            Your trial has ended. {offer.percent}% off your first payment until{' '}
-            {offer.endsAt.toLocaleString('en-IN', {
-              weekday: 'short',
-              hour: 'numeric',
-              minute: '2-digit',
-            })}
-            . It comes off when you pay, no code needed.
-          </span>
-        </InlineNotice>
+      {signedIn && e.earlyCode && !coupon ? (
+        <EarlyCode code={e.earlyCode.code} percent={e.earlyCode.percent} onApply={setCoupon} />
       ) : null}
 
       {signedIn ? <CouponBox coupon={coupon} onChange={setCoupon} /> : null}
@@ -468,7 +493,7 @@ function BuyPlan({
           <PrimaryButton block loading={busy} onClick={() => void buy()}>
             {mode === 'once'
               ? `Pay ${formatRupees(first)} once ${PERIOD_ONCE[plan.id]}`
-              : discount
+              : coupon
                 ? `Start autopay, ${formatRupees(first)} today`
                 : `Subscribe for ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]}`}
           </PrimaryButton>
@@ -482,7 +507,7 @@ function BuyPlan({
         <p className="type-caption mt-3 text-center text-text-2">
           {mode === 'once'
             ? `Charged once, ${formatRupees(first)}. `
-            : discount
+            : coupon
               ? `${formatRupees(first)} today for the first ${PERIOD_ONCE[plan.id].replace('for ', '')}, then ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]} until you cancel. `
               : until
                 ? `First charge on ${until}, then ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]} until you cancel. `
@@ -533,6 +558,9 @@ function ManagePlan({ entitlement: e }: { entitlement: EntitlementView }) {
             Our prices have changed. Everything you paid for stays yours
             {until ? ` until ${until}` : ''}, and you will not be charged again at the old price. To
             keep Pro after that, choose a plan{e.renews ? ' once renewal is off' : ' below'}.
+            {e.earlyCode
+              ? ` Your code ${e.earlyCode.code} takes ${e.earlyCode.percent}% off your first payment at the new price.`
+              : ''}
           </span>
         </InlineNotice>
       ) : null}

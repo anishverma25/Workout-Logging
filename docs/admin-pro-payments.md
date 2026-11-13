@@ -90,11 +90,11 @@ swaps (`gym_tools`), body measurements with their trends and photos side by side
 (`body_measurements`), and logging a usual or earlier meal in one tap (`usual_meals`). Groups:
 1 free, 10 with Pro (migration 0027).
 
-**Trial-end offer** (migration 0027): for 48 hours after the trial ends, an account that has
-never paid gets 10% off its first Pro payment, autopay or once, with no code. The server applies
-it (`trial_offer_for`, used by the `billing` function when no code is typed; the larger of this
-and a food thank-you credit wins; a typed code replaces it). The app shows it on Home and on the
-plans card with its real end time. Change the percent or window in a new migration.
+**Discounts need a code.** Nothing comes off a price by itself, except the food thank-you credit
+(`docs/food-logging.md`). Codes live in `public.coupons` (`docs/razorpay-setup.md`): `RISHI10` is
+the influencer code. `EARLY15` (migration 0027) is for early members only: everyone who had paid
+Pro time when 0027 first ran is marked `subscriptions.early_member`, sees the code on the plans
+card, and gets 15% off one payment at the new price, once. Anyone else typing it is refused.
 
 What makes people want Pro, without taking anything away:
 
