@@ -81,7 +81,8 @@ test('the chat answers, falls back when Gemini is down, and is kept on the phone
 
   // Cleared from Settings.
   await page.goto('/settings');
-  await page.getByRole('button', { name: 'Clear' }).click();
+  // Exact: demo accounts also have "Clear demo data" on this page.
+  await page.getByRole('button', { name: 'Clear', exact: true }).click();
   await page.goto('/coach');
   await expect(page.getByText('You asked: bench kyu nahi badh raha?')).toHaveCount(0);
 });
