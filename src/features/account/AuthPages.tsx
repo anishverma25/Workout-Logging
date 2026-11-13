@@ -26,6 +26,7 @@ import { useToast } from '@/components/ui/Toast';
 import { TRIAL_HOURS } from '@/domain/entitlement/entitlement';
 import { usePageMeta } from '@/app/usePageMeta';
 import { safeNext } from './next';
+import { AuthArt } from './AuthArt';
 
 const TRIAL_DAYS = Math.round(TRIAL_HOURS / 24);
 
@@ -38,13 +39,32 @@ function AuthLayout({
   intro,
   children,
   footer,
+  art = false,
 }: {
   /** Omitted when the content shows its own heading (the email sent state). */
   title?: string;
   intro?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
+  /** The picture: above the form on phones, beside it on wide screens (sign up and sign in). */
+  art?: boolean;
 }) {
+  if (art) {
+    return (
+      <div className="mx-auto grid w-full max-w-100 gap-6 pt-6 pb-8 lg:max-w-5xl lg:grid-cols-2 lg:items-stretch lg:gap-12 lg:pt-12">
+        <AuthArt className="lg:order-2" />
+        <div className="flex flex-col lg:justify-center">
+          <p className="type-title hidden text-text-1 lg:block">{APP_NAME}</p>
+          {title ? (
+            <h1 className="type-display text-text-1 [text-wrap:balance] lg:mt-4">{title}</h1>
+          ) : null}
+          {intro ? <p className="type-body mt-2 text-text-2 [text-wrap:balance]">{intro}</p> : null}
+          <div className="mt-6">{children}</div>
+          {footer ? <div className="mt-6 flex flex-col items-center gap-1">{footer}</div> : null}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="mx-auto flex w-full max-w-100 flex-col pt-8 pb-8 lg:pt-16">
       <p className="type-title text-text-1">{APP_NAME}</p>
@@ -164,6 +184,7 @@ export function SignInPage() {
 
   return (
     <AuthLayout
+      art
       title="Sign in"
       intro="Welcome back. Everything you logged is waiting."
       footer={
@@ -249,6 +270,7 @@ export function SignUpPage() {
 
   return (
     <AuthLayout
+      art
       title="Create account"
       intro={ACCOUNT_PITCH}
       footer={

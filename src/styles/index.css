@@ -302,6 +302,30 @@ html[data-landing] #landing {
   }
 }
 
+/* Sign-up and sign-in picture (release 2). */
+.auth-art-glow {
+  background:
+    radial-gradient(60% 55% at 50% 50%, color-mix(in oklab, var(--lime) 26%, transparent), transparent 70%),
+    radial-gradient(40% 40% at 85% 10%, color-mix(in oklab, var(--lime) 10%, transparent), transparent 70%);
+}
+.auth-art-rings {
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--lime) 30%, transparent);
+  box-shadow:
+    0 0 0 28px color-mix(in oklab, var(--lime) 5%, transparent),
+    0 0 0 56px color-mix(in oklab, var(--lime) 3%, transparent);
+}
+.auth-art-chip {
+  animation: auth-float 6s ease-in-out infinite;
+}
+@keyframes auth-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-art-chip { animation: none; }
+}
+
 @utility edge-fade {
   -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 1.5rem), transparent);
   mask-image: linear-gradient(90deg, #000 calc(100% - 1.5rem), transparent);
