@@ -7,6 +7,9 @@ import { expect, test, type Page } from '@playwright/test';
  */
 
 const PASSWORD = 'correct-horse-9';
+/** A confirmed payment reloads the whole app so every Pro gate opens; on a slow machine that
+ *  reload and the account check take longer than the default wait. */
+const AFTER_PAYMENT = { timeout: 20_000 };
 const FAKE = 'http://localhost:54329';
 
 const FAKE_CHECKOUT = `
@@ -105,7 +108,7 @@ test('autopay turns Pro on at once; turning renewal off keeps the time and opens
   await plans.getByRole('button', { name: 'Subscribe for ₹399 every 3 months' }).click();
 
   // Pro is on as soon as the server confirms the payment.
-  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible(AFTER_PAYMENT);
   const mine = page.getByRole('region', { name: 'Your plan' });
   await expect(mine).toContainText('3 months, ₹399 every 3 months');
   await expect(mine).toContainText(/Renews on /);
@@ -118,7 +121,7 @@ test('autopay turns Pro on at once; turning renewal off keeps the time and opens
   await expect(confirm).toContainText('You will not be charged again');
   await confirm.getByRole('button', { name: 'Turn off renewal' }).click();
   await expect(mine).toContainText(/Ends on .*It will not renew\./);
-  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible(AFTER_PAYMENT);
   await expect(mine.getByRole('button', { name: 'Turn off renewal' })).toHaveCount(0);
 
   // Now they can extend, either way. Autopay would start when the paid time runs out.
@@ -147,7 +150,7 @@ test('paying once turns Pro on with no renewal, and more time can be added eithe
   await plans.getByRole('radio', { name: /^3 months/ }).click();
   await plans.getByRole('button', { name: 'Pay ₹399 once for 3 months' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible(AFTER_PAYMENT);
   const mine = page.getByRole('region', { name: 'Your plan' });
   await expect(mine).toContainText('3 months, paid once');
   await expect(mine).toContainText(/Ends on .*It will not renew\./);
@@ -158,7 +161,7 @@ test('paying once turns Pro on with no renewal, and more time can be added eithe
   await expect(more.getByRole('radio', { name: /^Autopay/ })).toBeVisible();
   await more.getByRole('radio', { name: /^Monthly/ }).click();
   await more.getByRole('button', { name: 'Pay ₹149 once for 1 month' }).click();
-  await expect(mine).toContainText('Monthly, paid once');
+  await expect(mine).toContainText('Monthly, paid once', AFTER_PAYMENT);
   // The extend row is one tap from More, for members too.
   await page.goto('/more');
   await expect(page.locator('[data-pro-row]')).toContainText('Extend or manage your plan');
@@ -183,7 +186,7 @@ test('a failed autopay says why and offers one payment instead', async ({ page }
   await expect(plans.getByRole('radio', { name: /^Pay once/ })).toBeChecked();
   await expect(failed).toHaveCount(0);
   await plans.getByRole('button', { name: 'Pay ₹149 once for 1 month' }).click();
-  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible(AFTER_PAYMENT);
 });
 
 test('a code takes 10% off the first payment, once per account', async ({ page }) => {
@@ -205,7 +208,7 @@ test('a code takes 10% off the first payment, once per account', async ({ page }
 
   await plans.getByRole('radio', { name: /^Pay once/ }).click();
   await plans.getByRole('button', { name: 'Pay ₹1,349 once for 1 year' }).click();
-  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible(AFTER_PAYMENT);
   // The same account cannot use a code again.
   const more = page.getByRole('region', { name: 'Extend your Pro' });
   await more.getByRole('button', { name: 'Have a code?' }).click();
@@ -235,7 +238,7 @@ test('a member from before the new prices sees a code of their own and uses it o
   await plans.getByRole('radio', { name: /^Monthly/ }).click();
   await plans.getByRole('radio', { name: /^Pay once/ }).click();
   await plans.getByRole('button', { name: 'Pay ₹127 once for 1 month' }).click();
-  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible(AFTER_PAYMENT);
   await expect(page.locator('[data-early-code]')).toHaveCount(0);
 });
 

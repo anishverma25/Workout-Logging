@@ -84,15 +84,16 @@ test('read a menu: dish names from the photo, numbers from the library', async (
   );
 });
 
-test('free members keep eat next and see the plan and menu as Pro', async ({ page }) => {
+test('free members see eat next, the plan and the menu as Pro', async ({ page }) => {
   const email = await startWithDemo(page, { tag: 'solver-free' });
   await expireTrial(email);
   await page.goto('/food');
-  await expect(page.locator('[data-eat-next] [data-eat-next-item]').first()).toBeVisible({
-    timeout: 20_000,
-  });
-  await page.locator('[data-menu-open]').click();
-  await expect(page.locator('[data-menu-locked]')).toContainText('comes with Pro');
+  // Eat next is Pro: free members see how many foods fit, and the card leads to Pro.
+  const locked = page.locator('[data-eat-next-locked]');
+  await expect(locked).toContainText('With Pro', { timeout: 20_000 });
+  await expect(locked).toHaveAttribute('href', '/pro');
+  await expect(page.locator('[data-eat-next-item]')).toHaveCount(0);
+  await expect(page.locator('[data-menu-open]')).toHaveCount(0);
   await page.goto('/food/plan');
   await expect(page.locator('[data-pro-lock="meal_plan"]')).toBeVisible();
 });

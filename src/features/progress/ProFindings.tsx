@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { ChevronRight, Crown, Lock } from 'lucide-react';
 import type { ProgressModel } from '@/domain/analytics/progress';
-import { pluralize } from '@/lib/format';
+import { proFindings } from './proFindings';
 
 /**
  * For free members: what Pro has already found in their own logs, each as a real fact with the
@@ -9,25 +9,7 @@ import { pluralize } from '@/lib/format';
  * same engine as the Pro sections, and only the explanation and the next step are Pro.
  */
 export function ProFindings({ model }: { model: ProgressModel }) {
-  const findings: { fact: string; locked: string }[] = [];
-  if (model.progression.length > 0)
-    findings.push({
-      fact: `${pluralize(model.progression.length, 'lift is', 'lifts are')} ready for more weight or reps`,
-      locked: 'Which ones, and by how much',
-    });
-  if (model.plateaus.length > 0)
-    findings.push({
-      fact: `${pluralize(model.plateaus.length, 'lift has', 'lifts have')} stalled`,
-      locked: 'The cause, and what to change',
-    });
-  const off = model.balance.filter(
-    (b) => b.ratio !== null && (b.verdict === 'a_heavy' || b.verdict === 'b_heavy'),
-  );
-  if (off.length > 0)
-    findings.push({
-      fact: `${pluralize(off.length, 'part of your training is', 'parts of your training are')} out of balance`,
-      locked: 'Which muscles, and how many sets to add',
-    });
+  const findings = proFindings(model);
   if (findings.length === 0) return null;
   return (
     <Link
