@@ -13,6 +13,7 @@ import { warmAi } from '@/app/aiWarm';
 import { useFeature } from '@/app/entitlement';
 import { db } from '@/data/db';
 import { STARTER_FOODS } from '@/data/library/foods';
+import { loadSharedFoods } from '@/app/sharedFoods';
 import { loadMoreFoods, moreFoodsStore } from '@/data/library/moreFoods';
 import {
   copyFoodLogs,
@@ -109,6 +110,7 @@ function AddFoodBody({
   const pro = useFeature('ai_food');
   useEffect(() => {
     void loadMoreFoods();
+    void loadSharedFoods();
   }, []);
   // Pro may snap or type the meal: start the AI server while they choose.
   useEffect(() => {
@@ -675,6 +677,8 @@ function Quick({
   onCreate: () => void;
 }) {
   const { ctx } = rows;
+  // Logging a whole meal again in one tap is Pro; single foods stay one tap for everyone.
+  const usualPro = useFeature('usual_meals');
   const templates = useMemo(() => mealTemplates(ctx.logs, meal, date), [ctx.logs, meal, date]);
   const lists = useMemo(() => mealFoods(ctx.logs, meal, date), [ctx.logs, meal, date]);
   const foodsOf = (logs: { foodId: string }[]) =>
@@ -734,9 +738,20 @@ function Quick({
                         {t.items.map((i) => i.foodName).join(', ')} · {n.kcal} kcal
                       </p>
                     </div>
-                    <PrimaryButton compact onClick={() => onTemplate(t)}>
-                      Log
-                    </PrimaryButton>
+                    {usualPro ? (
+                      <PrimaryButton compact onClick={() => onTemplate(t)}>
+                        Log
+                      </PrimaryButton>
+                    ) : (
+                      <Link
+                        to="/pro"
+                        className="pressable type-subhead inline-flex shrink-0 items-center gap-1 font-semibold text-lime"
+                        data-template-locked
+                      >
+                        <Crown className="size-3.5" aria-hidden />
+                        Pro
+                      </Link>
+                    )}
                   </div>
                 </li>
               );

@@ -310,7 +310,9 @@ test('voice typing shows words while speaking, adds them, and explains a blocked
   await expect(sheet.locator('[data-voice-live]')).toContainText('2 aloo parathas');
   await expect(sheet.locator('#ai-food')).toHaveValue('2 aloo parathas with curd');
   // Listening ends by itself a few seconds after the words stop, with nothing added twice.
-  await expect(sheet.locator('[data-voice]')).toHaveAttribute('aria-pressed', 'false', { timeout: 10_000 });
+  await expect(sheet.locator('[data-voice]')).toHaveAttribute('aria-pressed', 'false', {
+    timeout: 10_000,
+  });
   await expect(sheet.locator('#ai-food')).toHaveValue('2 aloo parathas with curd');
   await page.evaluate(() => {
     (window as unknown as { __heard?: boolean }).__heard = false;

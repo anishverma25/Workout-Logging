@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { ChevronRight, Crown } from 'lucide-react';
-import { formatRupees, perMonth, usePlans } from '@/app/billing';
+import { formatRupees, usePlans } from '@/app/billing';
 import { useEntitlement } from '@/app/entitlement';
 import { CapsuleButton } from '@/components/kit';
 import { cn } from '@/lib/cn';
@@ -18,10 +18,9 @@ export function ProRow({ className }: { className?: string }) {
   const plans = usePlans();
   if (e.loading || e.plan === 'guest') return null;
 
-  // The same "from" price as the Pro page: the lowest per-month price of any plan.
-  const cheapest =
-    plans && plans.length > 0 ? Math.round(Math.min(...plans.map(perMonth)) * 100) / 100 : null;
-  const price = cheapest !== null ? `from ${formatRupees(cheapest)} a month` : null;
+  // The real monthly price, as the Pro page shows it.
+  const monthly = plans?.find((p) => p.id === 'monthly')?.priceInr ?? null;
+  const price = monthly !== null ? `${formatRupees(monthly)} a month` : null;
 
   const member = e.pro && e.plan !== 'trial';
   const trialDays =
@@ -35,7 +34,9 @@ export function ProRow({ className }: { className?: string }) {
       ? `Pro trial · ${trialDays} ${trialDays === 1 ? 'day' : 'days'} left`
       : 'Get Macrotrophy Pro';
   const detail = member
-    ? 'Active. Manage your plan'
+    ? e.renews
+      ? 'Active. Manage your plan'
+      : 'Active. Extend or manage your plan'
     : [price, 'cancel any time'].filter(Boolean).join(' · ') ||
       'Progress analysis, food insights and Macrotrophy AI';
 

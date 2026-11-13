@@ -1,7 +1,19 @@
 import { ActionMenu } from '@/components/kit/menu';
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { CalendarRange, Copy, Ellipsis, Plus, Share2, Star, Trash2 } from 'lucide-react';
+import {
+  CalendarRange,
+  ChevronRight,
+  Copy,
+  Crown,
+  Ellipsis,
+  Plus,
+  Share2,
+  Star,
+  Trash2,
+} from 'lucide-react';
+import { TemplateCover } from './TemplateCover';
+import { FREE_ROUTINES, useRoutineAllowance } from './allowance';
 import { useShareRoutine } from './useShareRoutine';
 import { ComingUpRow } from '../brain/ComingUpRow';
 import { PageHeader } from '@/app/layout/PageHeader';
@@ -35,6 +47,10 @@ import { cn } from '@/lib/cn';
 export function RoutinesPage() {
   const training = useTrainingData();
   const [creating, setCreating] = useState(false);
+  const allowance = useRoutineAllowance();
+  const navigateTo = useNavigate();
+  // Free keeps 2 routines: the + leads to Pro once both are used.
+  const startNew = () => (allowance.canAdd ? setCreating(true) : navigateTo('/pro'));
   const data = training.data;
   const routines = [...(data?.routines ?? [])].sort(
     (a, b) => Number(b.isActive) - Number(a.isActive) || b.updatedAt.localeCompare(a.updatedAt),
@@ -50,7 +66,7 @@ export function RoutinesPage() {
             <IconButton
               label="New routine"
               icon={<Plus className="size-5" aria-hidden />}
-              onClick={() => setCreating(true)}
+              onClick={startNew}
             />
           ) : undefined
         }
@@ -74,6 +90,23 @@ export function RoutinesPage() {
         />
       ) : null}
 
+      {data && !allowance.unlimited && routines.length > 0 ? (
+        <Link
+          to="/pro"
+          className="pressable mb-4 flex items-center gap-3 rounded-card bg-surface px-4 py-3"
+          data-routine-allowance
+        >
+          <Crown className="size-4 shrink-0 text-lime" aria-hidden />
+          <span className="type-subhead min-w-0 flex-1 text-text-2">
+            <span className="tabular font-semibold text-text-1">
+              {Math.min(allowance.count, FREE_ROUTINES)} of {FREE_ROUTINES}
+            </span>{' '}
+            routines on the free plan. Unlimited with Pro.
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-text-3" aria-hidden />
+        </Link>
+      ) : null}
+
       {data ? (
         <ul className="grid gap-4 md:grid-cols-2">
           {routines.map((r) => (
@@ -95,6 +128,7 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
   const toast = useToast();
   const sharing = useShareRoutine();
   const navigate = useNavigate();
+  const allowance = useRoutineAllowance();
   const today = useNow().getDay();
   const [menu, setMenu] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -191,11 +225,15 @@ function RoutineCard({ routine, data }: { routine: Routine; data: TrainingData }
             },
           },
           {
-            label: 'Duplicate',
+            label: allowance.canAdd ? 'Duplicate' : 'Duplicate · Pro',
             icon: <Copy className="size-5" aria-hidden />,
             onSelect: async () => {
-              const copy = await duplicateRoutine(db, routine.id);
               setMenu(false);
+              if (!allowance.canAdd) {
+                navigate('/pro');
+                return;
+              }
+              const copy = await duplicateRoutine(db, routine.id);
               navigate(`/routines/${copy.id}`);
             },
           },
@@ -309,6 +347,7 @@ function TemplatePicker({ onClose }: { onClose: () => void }) {
                   recommended ? 'ring-border-strong' : 'ring-transparent',
                 )}
               >
+                <TemplateCover template={t} highlight={recommended} />
                 {recommended ? (
                   <Badge tone="accent" className="mb-1">
                     Recommended for you

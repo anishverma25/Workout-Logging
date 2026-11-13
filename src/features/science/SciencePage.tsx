@@ -11,7 +11,34 @@ import {
   citationUrl,
   type Citation,
 } from '@/domain/analytics/citations';
+import { HeaderArt, type HeaderArtKind } from '@/features/public/HeaderArt';
 import { SCIENCE, type Topic } from './topics';
+
+/** The rule written on each part's picture. */
+const GROUP_CAPTION: Record<string, string> = {
+  strength: 'e1RM = w × (1 + r ⁄ 30)',
+  training: 'A hard set: 4 reps in reserve or closer',
+  body: 'Trend = the mean of the last 7 days',
+  app: 'Nothing invented to fill a chart',
+};
+
+/** Every paper the page cites, once. */
+function sourceStats() {
+  const ids = new Set<string>();
+  for (const g of SCIENCE)
+    for (const t of g.topics) {
+      const ev = t.evidence ? METRIC_EVIDENCE[t.evidence] : undefined;
+      for (const id of ev?.citations ?? []) ids.add(id);
+    }
+  const cited = [...ids].map((id) => CITATIONS[id]).filter((c): c is Citation => !!c);
+  const years = cited.map((c) => c.year).filter((y): y is number => !!y);
+  return {
+    sources: cited.length,
+    linked: cited.filter((c) => c.doi || c.url).length,
+    open: cited.filter((c) => c.openAccess).length,
+    newest: years.length ? Math.max(...years) : null,
+  };
+}
 
 /**
  * The science behind every number: what the app shows, the formula, why it is done that way,
@@ -30,6 +57,9 @@ export function SciencePage() {
     <PublicFrame path="/science">
       <h1 className="type-display text-text-1">{SCIENCE_HEADING}</h1>
       <p className="type-body mt-3 mb-6 text-text-2">{SCIENCE_INTRO}</p>
+
+      <HeaderArt kind="science" caption="Every number, with its source" className="mb-4" />
+      <ScienceStats />
 
       <Card className="mb-6">
         <p className="type-body text-text-2">
@@ -74,6 +104,15 @@ export function SciencePage() {
           <h2 id={`group-${g.id}`} className="type-section mb-2 px-1 text-text-1">
             {g.title}
           </h2>
+          <HeaderArt
+            kind={
+              (['strength', 'training', 'body', 'app'].includes(g.id)
+                ? g.id
+                : 'app') as HeaderArtKind
+            }
+            caption={GROUP_CAPTION[g.id]}
+            className="mb-4"
+          />
           <div className="flex flex-col gap-4">
             {g.topics.map((t) => (
               <TopicCard key={t.id} topic={t} />
@@ -88,6 +127,27 @@ export function SciencePage() {
         healthy adults and are not medical advice.
       </p>
     </PublicFrame>
+  );
+}
+
+/** How much research stands behind the page, counted from the sources it cites. */
+function ScienceStats() {
+  const s = sourceStats();
+  const items = [
+    { value: String(s.sources), label: 'published sources' },
+    { value: String(s.linked), label: 'with a link to the paper' },
+    { value: String(s.open), label: 'free to read' },
+    { value: s.newest ? String(s.newest) : '', label: 'newest research' },
+  ].filter((i) => i.value);
+  return (
+    <dl className="mb-6 grid grid-cols-2 gap-2 tab:grid-cols-4" data-science-stats>
+      {items.map((i) => (
+        <div key={i.label} className="flex flex-col-reverse rounded-card bg-surface px-4 py-3">
+          <dt className="type-caption text-text-2">{i.label}</dt>
+          <dd className="type-title num-glow tabular text-text-1">{i.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -167,11 +227,18 @@ function Source({ c }: { c: Citation }) {
   const authors = c.authors.split(',');
   const lead = authors.length > 2 ? `${authors[0]} et al.` : c.authors;
   return (
-    <li>
-      <span className="type-body block text-text-1">{c.title}</span>
-      <span className="type-meta block text-text-2">
-        {lead}
-        {c.year ? `, ${c.year}` : ''}. {c.journal}.{c.openAccess ? ' Open access.' : ''}
+    <li className="border-l-2 border-lime/40 pl-3">
+      <span className="block font-serif text-[1.0625rem] leading-snug text-text-1">{c.title}</span>
+      <span className="type-meta mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-text-2">
+        {c.year ? (
+          <span className="rounded-full bg-fill px-2 font-semibold text-text-1 tabular">
+            {c.year}
+          </span>
+        ) : null}
+        <span>
+          {lead}. <span className="italic">{c.journal}</span>.
+        </span>
+        {c.openAccess ? <span className="font-semibold text-lime">Open access</span> : null}
       </span>
       {url ? (
         <TextLink href={url} small className="-ml-0.5 break-all">

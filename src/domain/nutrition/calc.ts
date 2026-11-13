@@ -68,7 +68,9 @@ export interface Food {
     | 'off'
     | 'ai'
     | 'custom'
-    | 'custom_recipe';
+    | 'custom_recipe'
+    /** Suggested by a member and checked before it was shared (migration 0025). */
+    | 'community';
   /** The recipe as it was calculated, for the detail view. */
   recipe: { lines: { name: string; grams: number }[]; cookedG: number; makes: string } | null;
   /** For Macrotrophy AI estimates: whether a label or menu was found, and where. */

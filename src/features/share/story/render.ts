@@ -198,7 +198,17 @@ class Pen {
     return lines.length * o.size * lh;
   }
 
-  rect(x: number, y: number, w: number, h: number, r: number, fill: string | null, stroke?: string, lw = 3, dash?: number[]) {
+  rect(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    r: number,
+    fill: string | null,
+    stroke?: string,
+    lw = 3,
+    dash?: number[],
+  ) {
     if (this.dry) return;
     const c = this.ctx;
     c.save();
@@ -245,7 +255,13 @@ function valueUnit(
   unit: { scale: number; color?: string; alpha?: number; weight?: number; gap?: number },
   align: 'left' | 'right' = 'left',
 ) {
-  const uo = { ...o, size: o.size * unit.scale, color: unit.color ?? o.color, alpha: unit.alpha ?? o.alpha, weight: unit.weight ?? o.weight };
+  const uo = {
+    ...o,
+    size: o.size * unit.scale,
+    color: unit.color ?? o.color,
+    alpha: unit.alpha ?? o.alpha,
+    weight: unit.weight ?? o.weight,
+  };
   const vw = p.width(s.v, o);
   const gap = s.u ? (unit.gap ?? 0.5 * U) : 0;
   const uw = s.u ? p.width(s.u, uo) : 0;
@@ -255,7 +271,15 @@ function valueUnit(
   return vw + gap + uw;
 }
 
-function chips(p: Pen, list: string[], x: number, top: number, width: number, die: boolean, ink: string) {
+function chips(
+  p: Pen,
+  list: string[],
+  x: number,
+  top: number,
+  width: number,
+  die: boolean,
+  ink: string,
+) {
   const size = 2.5 * U;
   const padX = 2 * U;
   const h = size + 1.6 * U;
@@ -299,7 +323,18 @@ function s3(
   x: number,
   top: number,
   width: number,
-  o: { vSize: number; vWeight: number; vFamily: Family; lSize: number; lFamily: Family; lWeight?: number; lAlpha: number; lGap: number; unitScale: number; color: string },
+  o: {
+    vSize: number;
+    vWeight: number;
+    vFamily: Family;
+    lSize: number;
+    lFamily: Family;
+    lWeight?: number;
+    lAlpha: number;
+    lGap: number;
+    unitScale: number;
+    color: string;
+  },
 ) {
   const cols = 3;
   const gap = 2 * U;
@@ -308,10 +343,24 @@ function s3(
     const cx = x + i * (cw + gap);
     const vo = { size: o.vSize, weight: o.vWeight, family: o.vFamily, color: o.color };
     // A long value shrinks to fit its column.
-    const vw = p.width(s.v, vo) + (s.u ? p.width(s.u, { ...vo, size: o.vSize * o.unitScale }) + 0.5 * U : 0);
+    const vw =
+      p.width(s.v, vo) + (s.u ? p.width(s.u, { ...vo, size: o.vSize * o.unitScale }) + 0.5 * U : 0);
     const k = vw > cw ? cw / vw : 1;
-    valueUnit(p, s, cx, top + o.vSize * 0.85, { ...vo, size: o.vSize * k }, { scale: o.unitScale, alpha: 0.8, gap: 0.5 * U * k });
-    const lo = { size: o.lSize, weight: o.lWeight ?? 400, family: o.lFamily, color: o.color, alpha: o.lAlpha };
+    valueUnit(
+      p,
+      s,
+      cx,
+      top + o.vSize * 0.85,
+      { ...vo, size: o.vSize * k },
+      { scale: o.unitScale, alpha: 0.8, gap: 0.5 * U * k },
+    );
+    const lo = {
+      size: o.lSize,
+      weight: o.lWeight ?? 400,
+      family: o.lFamily,
+      color: o.color,
+      alpha: o.lAlpha,
+    };
     const lk = Math.min(1, cw / Math.max(1, p.width(s.l, lo)));
     p.text(s.l, cx, top + o.vSize + o.lGap + o.lSize * 0.85, { ...lo, size: o.lSize * lk });
   });
@@ -351,7 +400,15 @@ function extra(p: Pen, c: StoryContent, x: number, top: number, width: number, f
       if (label !== it.l) label = `${label.trimEnd()}…`;
       const lw = p.text(label, x, y, o);
       p.text(it.r, x + width, y, { ...o, align: 'right' });
-      p.line(x + lw + 1.4 * U, y + 0.2 * U, x + width - rw - 1.4 * U, y + 0.2 * U, rgba(t.wr, 0.4), 2, [3, 6]);
+      p.line(
+        x + lw + 1.4 * U,
+        y + 0.2 * U,
+        x + width - rw - 1.4 * U,
+        y + 0.2 * U,
+        rgba(t.wr, 0.4),
+        2,
+        [3, 6],
+      );
     });
     return e.items.length * rowH;
   }
@@ -433,17 +490,39 @@ interface DesignArgs {
 
 const bigCap = (c: StoryContent, cap: number) => cap * (c.rank ? 1.7 : 1) * U;
 
-function bigNumber(a: DesignArgs, top: number, width: number, cap: number, o: { weight: number; color: string; unitScale: number; unitColor: string; unitWeight: number; glow?: string | null }) {
+function bigNumber(
+  a: DesignArgs,
+  top: number,
+  width: number,
+  cap: number,
+  o: {
+    weight: number;
+    color: string;
+    unitScale: number;
+    unitColor: string;
+    unitWeight: number;
+    glow?: string | null;
+  },
+) {
   const { p, c } = a;
   const fam = a.p.main;
   const unitGap = 1.2 * U;
   const probe = (size: number) =>
     p.width(c.big.v, { size, weight: o.weight, family: fam }) +
-    (c.big.u ? unitGap + p.width(c.big.u, { size: size * o.unitScale, weight: o.unitWeight, family: fam }) : 0);
+    (c.big.u
+      ? unitGap + p.width(c.big.u, { size: size * o.unitScale, weight: o.unitWeight, family: fam })
+      : 0);
   let size = bigCap(c, cap);
   while (size > 8 && probe(size) > width) size *= 0.96;
   const y = top + size * 0.82;
-  valueUnit(p, c.big, 0, y, { size, weight: o.weight, family: fam, color: o.color, glow: o.glow }, { scale: o.unitScale, color: o.unitColor, weight: o.unitWeight, gap: unitGap });
+  valueUnit(
+    p,
+    c.big,
+    0,
+    y,
+    { size, weight: o.weight, family: fam, color: o.color, glow: o.glow },
+    { scale: o.unitScale, color: o.unitColor, weight: o.unitWeight, gap: unitGap },
+  );
   return size;
 }
 
@@ -455,13 +534,35 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
     const fam = p.main;
     let y = 0;
     const ts = 3.5 * U;
-    const tw = p.text(c.title, 0, y + baseline(ts, 1.45), { size: ts, weight: 600, family: fam, color: t.accent });
-    p.text(c.sub, tw + 1.6 * U, y + baseline(ts, 1.45), { size: ts, weight: 400, family: fam, color: t.tx, alpha: 0.75 });
+    const tw = p.text(c.title, 0, y + baseline(ts, 1.45), {
+      size: ts,
+      weight: 600,
+      family: fam,
+      color: t.accent,
+    });
+    p.text(c.sub, tw + 1.6 * U, y + baseline(ts, 1.45), {
+      size: ts,
+      weight: 400,
+      family: fam,
+      color: t.tx,
+      alpha: 0.75,
+    });
     y += ts * 1.45 + 1 * U;
-    const size = bigNumber(a, y, w - 2 * U, 12.5, { weight: 800, color: t.tx, unitScale: 0.34, unitColor: t.accent, unitWeight: 600 });
+    const size = bigNumber(a, y, w - 2 * U, 12.5, {
+      weight: 800,
+      color: t.tx,
+      unitScale: 0.34,
+      unitColor: t.accent,
+      unitWeight: 600,
+    });
     y += size;
     y += 0.8 * U;
-    y += p.para(`${c.big.l}. ${c.note}`, 0, y, w, 1.45, { size: 2.9 * U, family: 'tight', color: t.tx, alpha: 0.88 });
+    y += p.para(`${c.big.l}. ${c.note}`, 0, y, w, 1.45, {
+      size: 2.9 * U,
+      family: 'tight',
+      color: t.tx,
+      alpha: 0.88,
+    });
     y += 3 * U;
     p.line(0, y, w, y, rgba(t.wr, 0.35), 2);
     y += 3 * U;
@@ -471,8 +572,20 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
     four.forEach((st, i) => {
       const cx = (i % 2) * (colW + 4 * U);
       const cy = y + Math.floor(i / 2) * (cellH + 2.4 * U);
-      p.text(st.l, cx, cy + 2.5 * U * 0.9, { size: 2.5 * U, family: 'tight', color: t.tx, alpha: 0.72 });
-      valueUnit(p, st, cx, cy + 2.5 * U * 1.3 + 5.2 * U * 0.9, { size: 5.2 * U, weight: 600, family: fam, color: t.tx }, { scale: 0.5, alpha: 0.8 });
+      p.text(st.l, cx, cy + 2.5 * U * 0.9, {
+        size: 2.5 * U,
+        family: 'tight',
+        color: t.tx,
+        alpha: 0.72,
+      });
+      valueUnit(
+        p,
+        st,
+        cx,
+        cy + 2.5 * U * 1.3 + 5.2 * U * 0.9,
+        { size: 5.2 * U, weight: 600, family: fam, color: t.tx },
+        { scale: 0.5, alpha: 0.8 },
+      );
     });
     y += Math.ceil(four.length / 2) * cellH + (Math.ceil(four.length / 2) - 1) * 2.4 * U;
     if (a.s.tags && c.chips.length) {
@@ -495,25 +608,64 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
     const hs = 2.7 * U;
     const subW = p.width(c.sub, { size: hs, family: fam });
     let title = c.title;
-    while (title.length > 3 && p.width(title, { size: hs, weight: 700, family: fam }) > inner - subW - 2 * U) title = title.slice(0, -2);
+    while (
+      title.length > 3 &&
+      p.width(title, { size: hs, weight: 700, family: fam }) > inner - subW - 2 * U
+    )
+      title = title.slice(0, -2);
     if (title !== c.title) title = `${title.trimEnd()}…`;
-    p.text(title, pad, y + baseline(hs, 1.45), { size: hs, weight: 700, family: fam, color: t.accent });
-    p.text(c.sub, w - pad, y + baseline(hs, 1.45), { size: hs, family: fam, color: t.tx, alpha: 0.9, align: 'right' });
+    p.text(title, pad, y + baseline(hs, 1.45), {
+      size: hs,
+      weight: 700,
+      family: fam,
+      color: t.accent,
+    });
+    p.text(c.sub, w - pad, y + baseline(hs, 1.45), {
+      size: hs,
+      family: fam,
+      color: t.tx,
+      alpha: 0.9,
+      align: 'right',
+    });
     y += hs * 1.45 + gap;
     y += extra(p, c, pad, y, inner, fam) + gap;
     p.line(pad, y, w - pad, y, rgba(t.wr, 0.45), 2, [8, 6]);
     y += 2.4 * U;
     const totS = 5.6 * U;
     p.text(c.big.l, pad, y + totS * 0.85, { size: 2.8 * U, family: fam, color: t.tx });
-    valueUnit(p, c.big, w - pad, y + totS * 0.85, { size: totS, weight: 700, family: fam, color: t.tx }, { scale: 0.46, color: t.accent, gap: 0.8 * U }, 'right');
+    valueUnit(
+      p,
+      c.big,
+      w - pad,
+      y + totS * 0.85,
+      { size: totS, weight: 700, family: fam, color: t.tx },
+      { scale: 0.46, color: t.accent, gap: 0.8 * U },
+      'right',
+    );
     y += totS * 1.1 + gap;
-    y += p.para(c.note, pad, y, inner, 1.45, { size: 2.5 * U, family: fam, color: t.tx, alpha: 0.8 }) + gap;
+    y +=
+      p.para(c.note, pad, y, inner, 1.45, { size: 2.5 * U, family: fam, color: t.tx, alpha: 0.8 }) +
+      gap;
     p.line(pad, y, w - pad, y, rgba(t.wr, 0.45), 2, [8, 6]);
     y += 2.4 * U;
-    y += s3(p, c.stats, pad, y, inner, { vSize: 3.6 * U, vWeight: 700, vFamily: fam, lSize: 2.2 * U, lFamily: fam, lAlpha: 0.75, lGap: 0.5 * U, unitScale: 0.7, color: t.tx }) + gap;
+    y +=
+      s3(p, c.stats, pad, y, inner, {
+        vSize: 3.6 * U,
+        vWeight: 700,
+        vFamily: fam,
+        lSize: 2.2 * U,
+        lFamily: fam,
+        lAlpha: 0.75,
+        lGap: 0.5 * U,
+        unitScale: 0.7,
+        color: t.tx,
+      }) + gap;
     // Barcode: fixed stripes, only decoration.
     if (!p.dry) {
-      const bars = [1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 3, 1, 1, 2, 1, 3, 1, 1, 2, 1, 2, 1, 1, 3, 2, 1, 1, 2, 1, 3, 1, 1, 2, 1, 2, 1];
+      const bars = [
+        1, 2, 1, 1, 3, 1, 2, 1, 1, 2, 3, 1, 1, 2, 1, 3, 1, 1, 2, 1, 2, 1, 1, 3, 2, 1, 1, 2, 1, 3, 1,
+        1, 2, 1, 2, 1,
+      ];
       const total = bars.reduce((s, n) => s + n, 0);
       let bx = pad;
       bars.forEach((n, i) => {
@@ -524,7 +676,13 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
     }
     y += 6 * U + gap;
     const th = `${c.short}${c.time ? ` · ${c.time}` : ''} · thanks for lifting`;
-    p.text(th, w / 2, y + 2.3 * U * 0.9, { size: 2.3 * U, family: fam, color: t.tx, alpha: 0.7, align: 'center' });
+    p.text(th, w / 2, y + 2.3 * U * 0.9, {
+      size: 2.3 * U,
+      family: fam,
+      color: t.tx,
+      alpha: 0.7,
+      align: 'center',
+    });
     y += 2.3 * U * 1.3 + pad;
     return y;
   },
@@ -553,25 +711,75 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
     const ts = 3.2 * U;
     const subW = p.width(c.sub, { size: ts, family: fam });
     let title = c.title;
-    while (title.length > 3 && p.width(title, { size: ts, weight: 700, family: fam }) > inner - subW - 2 * U) title = title.slice(0, -2);
+    while (
+      title.length > 3 &&
+      p.width(title, { size: ts, weight: 700, family: fam }) > inner - subW - 2 * U
+    )
+      title = title.slice(0, -2);
     if (title !== c.title) title = `${title.trimEnd()}…`;
-    p.text(title, pad, y + baseline(ts, 1.45), { size: ts, weight: 700, family: fam, color: t.accent });
-    p.text(c.sub, w - pad, y + baseline(ts, 1.45), { size: ts, weight: 700, family: fam, color: t.tx, alpha: 0.8, align: 'right' });
+    p.text(title, pad, y + baseline(ts, 1.45), {
+      size: ts,
+      weight: 700,
+      family: fam,
+      color: t.accent,
+    });
+    p.text(c.sub, w - pad, y + baseline(ts, 1.45), {
+      size: ts,
+      weight: 700,
+      family: fam,
+      color: t.tx,
+      alpha: 0.8,
+      align: 'right',
+    });
     y += ts * 1.45 + 2 * U;
     const ctx = p.ctx;
     ctx.save();
     ctx.translate(pad, 0);
-    const size = bigNumber(a, y, inner, 13, { weight: 700, color: t.accent, unitScale: 0.38, unitColor: t.accent, unitWeight: 700, glow: t.accent });
+    const size = bigNumber(a, y, inner, 13, {
+      weight: 700,
+      color: t.accent,
+      unitScale: 0.38,
+      unitColor: t.accent,
+      unitWeight: 700,
+      glow: t.accent,
+    });
     ctx.restore();
     y += size + 1 * U;
-    y += p.para(`${c.big.l} · ${c.note}`, pad, y, inner, 1.45, { size: 3 * U, weight: 700, family: fam, color: t.tx, alpha: 0.9 });
+    y += p.para(`${c.big.l} · ${c.note}`, pad, y, inner, 1.45, {
+      size: 3 * U,
+      weight: 700,
+      family: fam,
+      color: t.tx,
+      alpha: 0.9,
+    });
     y += 3 * U;
     p.line(pad, y, w - pad, y, rgba(t.wr, 0.4), 2, [3, 6]);
     y += 3 * U;
-    y += s3(p, c.stats, pad, y, inner, { vSize: 5.4 * U, vWeight: 700, vFamily: fam, lSize: 2.5 * U, lFamily: fam, lWeight: 700, lAlpha: 0.8, lGap: 0.8 * U, unitScale: 0.55, color: t.tx });
+    y += s3(p, c.stats, pad, y, inner, {
+      vSize: 5.4 * U,
+      vWeight: 700,
+      vFamily: fam,
+      lSize: 2.5 * U,
+      lFamily: fam,
+      lWeight: 700,
+      lAlpha: 0.8,
+      lGap: 0.8 * U,
+      unitScale: 0.55,
+      color: t.tx,
+    });
     if (a.s.tags && c.chips.length) {
       y += 3 * U;
-      y += p.para(c.chips.slice(0, 2).map((x) => `[ ${x} ]`).join(' '), pad, y, inner, 1.45, { size: 2.8 * U, weight: 700, family: fam, color: t.accent, alpha: 0.95 });
+      y += p.para(
+        c.chips
+          .slice(0, 2)
+          .map((x) => `[ ${x} ]`)
+          .join(' '),
+        pad,
+        y,
+        inner,
+        1.45,
+        { size: 2.8 * U, weight: 700, family: fam, color: t.accent, alpha: 0.95 },
+      );
     }
     return y + pad;
   },
@@ -592,20 +800,54 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
     const head = p.wrap(c.ach.h, tw, { size: 4.2 * U, weight: 600, family: fam });
     const blockH = 2.5 * U * 1.4 + head.length * 4.2 * U * 1.15;
     const by = y + Math.max(0, (m - blockH) / 2);
-    p.text('Achievement unlocked', tx, by + 2.5 * U * 0.9, { size: 2.5 * U, weight: 500, family: 'tight', color: t.tx, alpha: 0.75 });
-    head.forEach((l, i) => p.text(l, tx, by + 2.5 * U * 1.4 + baseline(4.2 * U, 1.15) + i * 4.2 * U * 1.15, { size: 4.2 * U, weight: 600, family: fam, color: t.tx }));
+    p.text('Achievement unlocked', tx, by + 2.5 * U * 0.9, {
+      size: 2.5 * U,
+      weight: 500,
+      family: 'tight',
+      color: t.tx,
+      alpha: 0.75,
+    });
+    head.forEach((l, i) =>
+      p.text(l, tx, by + 2.5 * U * 1.4 + baseline(4.2 * U, 1.15) + i * 4.2 * U * 1.15, {
+        size: 4.2 * U,
+        weight: 600,
+        family: fam,
+        color: t.tx,
+      }),
+    );
     y += Math.max(m, blockH) + 3.4 * U;
     const ctx = p.ctx;
     ctx.save();
     ctx.translate(pad, 0);
-    const size = bigNumber(a, y, inner, 9, { weight: 600, color: t.tx, unitScale: 0.36, unitColor: t.accent, unitWeight: 600 });
+    const size = bigNumber(a, y, inner, 9, {
+      weight: 600,
+      color: t.tx,
+      unitScale: 0.36,
+      unitColor: t.accent,
+      unitWeight: 600,
+    });
     ctx.restore();
     y += size + 1 * U;
-    y += p.para(`${c.big.l}. ${c.ach.s}`, pad, y, inner, 1.45, { size: 2.8 * U, family: 'tight', color: t.tx, alpha: 0.85 });
+    y += p.para(`${c.big.l}. ${c.ach.s}`, pad, y, inner, 1.45, {
+      size: 2.8 * U,
+      family: 'tight',
+      color: t.tx,
+      alpha: 0.85,
+    });
     y += 3 * U;
     p.line(pad, y, w - pad, y, rgba(t.wr, 0.22), 2);
     y += 3 * U;
-    y += s3(p, c.stats, pad, y, inner, { vSize: 4 * U, vWeight: 600, vFamily: fam, lSize: 2.4 * U, lFamily: 'tight', lAlpha: 0.72, lGap: 1 * U, unitScale: 0.55, color: t.tx });
+    y += s3(p, c.stats, pad, y, inner, {
+      vSize: 4 * U,
+      vWeight: 600,
+      vFamily: fam,
+      lSize: 2.4 * U,
+      lFamily: 'tight',
+      lAlpha: 0.72,
+      lGap: 1 * U,
+      unitScale: 0.55,
+      color: t.tx,
+    });
     if (a.s.tags && c.chips.length) {
       y += 2.6 * U;
       y += chips(p, c.chips.slice(0, 2), pad, y, inner, false, t.tx);
@@ -633,29 +875,77 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
       ctx.restore();
       // The inside: clear (photo through) blended with the accent by the box opacity.
       glassInside(a, border, 5.4 * U - border);
-      p.rect(border, border, w - border * 2, a.h - border * 2, 5.4 * U - border, rgba(hexRgb(t.accent), t.bo));
+      p.rect(
+        border,
+        border,
+        w - border * 2,
+        a.h - border * 2,
+        5.4 * U - border,
+        rgba(hexRgb(t.accent), t.bo),
+      );
     }
     let y = border + padY;
     const ts = 3.2 * U;
     const glow = ink === '#10130a' ? null : undefined;
     const subW = p.width(c.sub, { size: ts, weight: 600, family: fam });
     let title = c.title;
-    while (title.length > 3 && p.width(title, { size: ts, weight: 600, family: fam }) > inner - subW - 2 * U) title = title.slice(0, -2);
+    while (
+      title.length > 3 &&
+      p.width(title, { size: ts, weight: 600, family: fam }) > inner - subW - 2 * U
+    )
+      title = title.slice(0, -2);
     if (title !== c.title) title = `${title.trimEnd()}…`;
-    p.text(title, x0, y + baseline(ts, 1.45), { size: ts, weight: 600, family: fam, color: ink, glow });
-    p.text(c.sub, x0 + inner, y + baseline(ts, 1.45), { size: ts, weight: 600, family: fam, color: ink, align: 'right', glow });
+    p.text(title, x0, y + baseline(ts, 1.45), {
+      size: ts,
+      weight: 600,
+      family: fam,
+      color: ink,
+      glow,
+    });
+    p.text(c.sub, x0 + inner, y + baseline(ts, 1.45), {
+      size: ts,
+      weight: 600,
+      family: fam,
+      color: ink,
+      align: 'right',
+      glow,
+    });
     y += ts * 1.45 + 1 * U;
     const ctx = p.ctx;
     ctx.save();
     ctx.translate(x0, 0);
-    const size = bigNumber(a, y, inner, 13, { weight: 800, color: ink, unitScale: 0.34, unitColor: ink, unitWeight: 800, glow });
+    const size = bigNumber(a, y, inner, 13, {
+      weight: 800,
+      color: ink,
+      unitScale: 0.34,
+      unitColor: ink,
+      unitWeight: 800,
+      glow,
+    });
     ctx.restore();
     y += size * 0.95 + 0.8 * U;
-    y += p.para(`${c.big.l}. ${c.note}`, x0, y, inner, 1.45, { size: 2.7 * U, weight: 600, family: 'tight', color: ink, glow });
+    y += p.para(`${c.big.l}. ${c.note}`, x0, y, inner, 1.45, {
+      size: 2.7 * U,
+      weight: 600,
+      family: 'tight',
+      color: ink,
+      glow,
+    });
     y += 2.6 * U;
     p.line(x0, y, x0 + inner, y, rgba(hexRgb(ink), 0.7), 0.5 * U);
     y += 2.4 * U;
-    y += s3(p, c.stats, x0, y, inner, { vSize: 4.6 * U, vWeight: 800, vFamily: fam, lSize: 2.3 * U, lFamily: 'tight', lWeight: 600, lAlpha: 0.8, lGap: 0.8 * U, unitScale: 0.55, color: ink });
+    y += s3(p, c.stats, x0, y, inner, {
+      vSize: 4.6 * U,
+      vWeight: 800,
+      vFamily: fam,
+      lSize: 2.3 * U,
+      lFamily: 'tight',
+      lWeight: 600,
+      lAlpha: 0.8,
+      lGap: 0.8 * U,
+      unitScale: 0.55,
+      color: ink,
+    });
     if (a.s.tags && c.chips.length) {
       y += 2.4 * U;
       y += chips(p, c.chips.slice(0, 2), x0, y, inner, true, ink);
@@ -675,22 +965,50 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
     const ms = Math.min(2.5 * U, p.fit(meta, w, 2.5 * U, { family: 'mono' }));
     p.text(meta, 0, y + ms * 0.9, { size: ms, family: 'mono', color: t.tx, alpha: 0.8 });
     y += ms * 1.4 + 1.4 * U;
-    const titleSize = p.fit(c.title, w, 9 * U * (c.rank ? 1.3 : 1), { family: fam, italic: fam === 'serif' });
-    p.text(c.title, 0, y + titleSize * 0.82, { size: titleSize, family: fam, italic: fam === 'serif', color: t.tx });
+    const titleSize = p.fit(c.title, w, 9 * U * (c.rank ? 1.3 : 1), {
+      family: fam,
+      italic: fam === 'serif',
+    });
+    p.text(c.title, 0, y + titleSize * 0.82, {
+      size: titleSize,
+      family: fam,
+      italic: fam === 'serif',
+      color: t.tx,
+    });
     y += titleSize + 0.6 * U;
     const big = `${c.big.v}${c.big.u ? ` ${c.big.u}` : ''}, ${c.big.l.toLowerCase()}. ${c.note}.`;
-    y += p.para(big, 0, y, w, 1.3, { size: 4 * U, family: fam, italic: fam === 'serif', color: t.tx, alpha: 0.9 });
+    y += p.para(big, 0, y, w, 1.3, {
+      size: 4 * U,
+      family: fam,
+      italic: fam === 'serif',
+      color: t.tx,
+      alpha: 0.9,
+    });
     y += 3 * U;
     p.line(0, y, w, y, rgba(t.wr, 0.5), 2);
     y += 2.8 * U;
     let cx = 0;
     const vs = 5.4 * U;
     c.stats.forEach((st) => {
-      const vw = p.width(st.v, { size: vs, family: fam }) + (st.u ? 0.5 * U + p.width(st.u, { size: vs * 0.55, family: fam }) : 0);
+      const vw =
+        p.width(st.v, { size: vs, family: fam }) +
+        (st.u ? 0.5 * U + p.width(st.u, { size: vs * 0.55, family: fam }) : 0);
       const lw = p.width(st.l, { size: 2 * U, family: 'mono' });
       const cw = Math.max(vw, lw);
-      valueUnit(p, st, cx, y + vs * 0.85, { size: vs, family: fam, color: t.tx }, { scale: 0.55, alpha: 0.8 });
-      p.text(st.l, cx, y + vs + 0.9 * U + 2 * U * 0.85, { size: 2 * U, family: 'mono', color: t.tx, alpha: 0.75 });
+      valueUnit(
+        p,
+        st,
+        cx,
+        y + vs * 0.85,
+        { size: vs, family: fam, color: t.tx },
+        { scale: 0.55, alpha: 0.8 },
+      );
+      p.text(st.l, cx, y + vs + 0.9 * U + 2 * U * 0.85, {
+        size: 2 * U,
+        family: 'mono',
+        color: t.tx,
+        alpha: 0.75,
+      });
       cx += cw + 3.4 * U;
     });
     y += vs + 0.9 * U + 2 * U * 1.2;
@@ -738,10 +1056,20 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
     const ts = 3.3 * U;
     const subW = p.width(c.sub, { size: ts, family: fam });
     let title = c.title;
-    while (title.length > 3 && p.width(title, { size: ts, weight: 600, family: fam }) > inner - subW - 2 * U) title = title.slice(0, -2);
+    while (
+      title.length > 3 &&
+      p.width(title, { size: ts, weight: 600, family: fam }) > inner - subW - 2 * U
+    )
+      title = title.slice(0, -2);
     if (title !== c.title) title = `${title.trimEnd()}…`;
     p.text(title, pad, y + baseline(ts, 1.45), { size: ts, weight: 600, family: fam, color: t.tx });
-    p.text(c.sub, w - pad, y + baseline(ts, 1.45), { size: ts, family: fam, color: t.tx, alpha: 0.7, align: 'right' });
+    p.text(c.sub, w - pad, y + baseline(ts, 1.45), {
+      size: ts,
+      family: fam,
+      color: t.tx,
+      alpha: 0.7,
+      align: 'right',
+    });
     y += ts * 1.45 + 2.6 * U;
     const rs = 21 * U;
     const op = [1, 0.7, 0.45];
@@ -776,9 +1104,18 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
     let ly = y + Math.max(0, (rs - legendH) / 2);
     c.rings.forEach((ring, i) => {
       const vo = { size: 4.4 * U, weight: 600, family: fam, color: t.tx };
-      const vw = p.width(ring.stat.v, vo) + (ring.stat.u ? 0.5 * U + p.width(ring.stat.u, { ...vo, size: 4.4 * U * 0.55 }) : 0);
+      const vw =
+        p.width(ring.stat.v, vo) +
+        (ring.stat.u ? 0.5 * U + p.width(ring.stat.u, { ...vo, size: 4.4 * U * 0.55 }) : 0);
       const k = vw > lw ? lw / vw : 1;
-      valueUnit(p, ring.stat, lx, ly + 4.4 * U * 0.85 * k, { ...vo, size: 4.4 * U * k }, { scale: 0.55, alpha: 0.8 });
+      valueUnit(
+        p,
+        ring.stat,
+        lx,
+        ly + 4.4 * U * 0.85 * k,
+        { ...vo, size: 4.4 * U * k },
+        { scale: 0.55, alpha: 0.8 },
+      );
       const dy = ly + 4.4 * U + 0.6 * U;
       if (!p.dry) {
         p.ctx.save();
@@ -795,7 +1132,14 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
       ly += itemH + 1.6 * U;
     });
     y += Math.max(rs, legendH) + 2.4 * U;
-    y += p.para(`Rings: ${c.ringsNote.charAt(0).toLowerCase()}${c.ringsNote.slice(1)}.`, pad, y, inner, 1.45, { size: 2.6 * U, family: 'tight', color: t.tx, alpha: 0.85 });
+    y += p.para(
+      `Rings: ${c.ringsNote.charAt(0).toLowerCase()}${c.ringsNote.slice(1)}.`,
+      pad,
+      y,
+      inner,
+      1.45,
+      { size: 2.6 * U, family: 'tight', color: t.tx, alpha: 0.85 },
+    );
     if (a.s.tags && c.chips.length) {
       y += 2.6 * U;
       y += chips(p, c.chips.slice(0, 2), pad, y, inner, false, t.tx);
@@ -823,7 +1167,13 @@ function handTag(p: Pen, s: string, right: number, top: number, deg: number) {
   ctx.save();
   ctx.translate(right - w / 2, top + h / 2);
   ctx.rotate((deg * Math.PI) / 180);
-  p.text(s, 0, size * 0.32, { size, family: 'marker', color: '#10130a', align: 'center', glow: null });
+  p.text(s, 0, size * 0.32, {
+    size,
+    family: 'marker',
+    color: '#10130a',
+    align: 'center',
+    glow: null,
+  });
   ctx.restore();
 }
 
@@ -986,7 +1336,13 @@ function shade(ctx: Ctx, style: StoryStyle) {
   ctx.fillRect(0, 0, CARD_W, CARD_H);
 }
 
-function brand(ctx: Ctx, style: StoryStyle, content: StoryContent, name: string | null, theme: Theme) {
+function brand(
+  ctx: Ctx,
+  style: StoryStyle,
+  content: StoryContent,
+  name: string | null,
+  theme: Theme,
+) {
   const bs = BRAND_SIZE[style.brandSize] * U;
   const top = style.brand === 'safe' ? 24.5 * U : 7 * U;
   const right = CARD_W - (style.brand === 'safe' ? 8.3 * U : 6 * U);
@@ -995,7 +1351,13 @@ function brand(ctx: Ctx, style: StoryStyle, content: StoryContent, name: string 
   const ms = bs * 1.55;
   const gap = bs * 0.4;
   const cy = top + ms / 2;
-  pen.text('Macrotrophy', right, cy + bs * 0.36, { size: bs, weight: 800, family: 'tight', color: theme.tx, align: 'right' });
+  pen.text('Macrotrophy', right, cy + bs * 0.36, {
+    size: bs,
+    weight: 800,
+    family: 'tight',
+    color: theme.tx,
+    align: 'right',
+  });
   ctx.save();
   ctx.translate(right - nameW - gap - ms / 2, cy);
   const k = ms / 104;
@@ -1008,7 +1370,14 @@ function brand(ctx: Ctx, style: StoryStyle, content: StoryContent, name: string 
   ctx.fill(new Path2D(MARK_LIME));
   ctx.restore();
   const date = `${style.showName && name ? `${name} · ` : ''}${content.date}`;
-  pen.text(date, right, top + ms + 1.2 * U + 3 * U * 0.9, { size: 3 * U, weight: 500, family: 'tight', color: theme.tx, alpha: 0.88, align: 'right' });
+  pen.text(date, right, top + ms + 1.2 * U + 3 * U * 0.9, {
+    size: 3 * U,
+    weight: 500,
+    family: 'tight',
+    color: theme.tx,
+    alpha: 0.88,
+    align: 'right',
+  });
 }
 
 function themeFor(style: StoryStyle): Theme {
@@ -1081,7 +1450,8 @@ export function renderStory(
   const w0 = design.width * U;
   const solid = theme.bo >= 0.7;
   const ink = style.design === 'E' && solid ? '#10130a' : theme.tx;
-  const textGlow = style.design === 'A' || style.design === 'F' ? rgba(theme.sh, 0.35) : rgba(theme.sh, 0.6);
+  const textGlow =
+    style.design === 'A' || style.design === 'F' ? rgba(theme.sh, 0.35) : rgba(theme.sh, 0.6);
   const args = (dry: boolean, h: number): DesignArgs => ({
     p: new Pen(ctx, dry, theme, main, textGlow),
     c: content,

@@ -284,6 +284,148 @@ html[data-landing] #landing {
   letter-spacing: -0.016em;
 }
 /* Horizontal scrollers fade at the trailing edge so a cut chip reads as "scroll" (G7). */
+/* A soft lime light behind key moments and numbers (release 2). Decorative only, never carries
+   meaning, and drawn behind content so text contrast is unchanged. */
+@utility glow-lime {
+  isolation: isolate;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -40% auto auto -20%;
+    width: 70%;
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklab, var(--lime) 22%, transparent),
+      transparent
+    );
+    filter: blur(8px);
+    pointer-events: none;
+    z-index: -1;
+  }
+}
+
+/* A soft lime light behind a key number (release 2): the day's calories left, a record. */
+@utility num-glow {
+  text-shadow:
+    0 0 26px color-mix(in oklab, var(--lime) 38%, transparent),
+    0 0 1px color-mix(in oklab, var(--lime) 20%, transparent);
+}
+
+/* Short loops (release 2): a record's medal catches the light now and then, an unlocked badge
+   breathes. Transform and opacity only; none of it runs with reduced motion. */
+@keyframes medal-shine {
+  0%,
+  80% {
+    transform: translateX(-120%) rotate(20deg);
+  }
+  100% {
+    transform: translateX(220%) rotate(20deg);
+  }
+}
+@utility shine {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -20% auto -20% 0;
+    width: 40%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--text-1) 45%, transparent),
+      transparent
+    );
+    transform: translateX(-120%) rotate(20deg);
+    animation: medal-shine 4.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      display: none;
+    }
+  }
+}
+@keyframes soft-pulse {
+  50% {
+    opacity: 0.55;
+    transform: scale(1.08);
+  }
+}
+@utility pulse-glow {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -12%;
+    border-radius: 9999px;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklab, var(--lime) 30%, transparent),
+      transparent
+    );
+    z-index: -1;
+    animation: soft-pulse 3.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    &::before {
+      animation: none;
+    }
+  }
+}
+
+/* Each page of the full-screen release walkthrough settles in from slightly below. */
+@keyframes release-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+}
+
+/* Sign-up and sign-in picture (release 2). */
+.auth-art-glow {
+  background:
+    radial-gradient(
+      60% 55% at 50% 50%,
+      color-mix(in oklab, var(--lime) 26%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      40% 40% at 85% 10%,
+      color-mix(in oklab, var(--lime) 10%, transparent),
+      transparent 70%
+    );
+}
+.auth-art-rings {
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--lime) 30%, transparent);
+  box-shadow:
+    0 0 0 28px color-mix(in oklab, var(--lime) 5%, transparent),
+    0 0 0 56px color-mix(in oklab, var(--lime) 3%, transparent);
+}
+.auth-art-chip {
+  animation: auth-float 6s ease-in-out infinite;
+}
+@keyframes auth-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-art-chip {
+    animation: none;
+  }
+}
+
 @utility edge-fade {
   -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 1.5rem), transparent);
   mask-image: linear-gradient(90deg, #000 calc(100% - 1.5rem), transparent);

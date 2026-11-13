@@ -33,7 +33,13 @@ export function RankShareSheet({
   );
 }
 
-function RankShare({ load, fileTag }: { load: () => Promise<StoryContent | null>; fileTag: string }) {
+function RankShare({
+  load,
+  fileTag,
+}: {
+  load: () => Promise<StoryContent | null>;
+  fileTag: string;
+}) {
   const profile = useProfile();
   const [content, setContent] = useState<StoryContent | null>(null);
   const [failed, setFailed] = useState(false);

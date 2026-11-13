@@ -34,6 +34,11 @@ export const SubscriptionSnapshot = z.object({
   billing_plan: z.string().nullable().optional().default(null),
   /** How Pro was bought: a renewing subscription, or a single payment ('once'). */
   billing_kind: z.string().nullable().optional().default(null),
+  /** The plan was bought at a price that has since changed (servers before 0024 leave it out). */
+  legacy_price: z.boolean().nullable().optional().default(null),
+  /** The code an early member can still use, and its percent (servers from 0027). */
+  early_code: z.string().nullable().optional().default(null),
+  early_percent: z.number().nullable().optional().default(null),
   /** Razorpay's state of that subscription: active, pending, halted, cancelled... */
   billing_status: z.string().nullable().optional().default(null),
   /** Renewal is off: Pro runs to the end of the paid period, then stops. */
@@ -69,6 +74,10 @@ export interface Entitlement {
   paidOnce: boolean;
   /** Razorpay could not take the last renewal (pending or halted). */
   paymentIssue: boolean;
+  /** The running plan was bought at a price that has since changed; it ends with its paid period. */
+  legacyPrice: boolean;
+  /** Paid before the November 2026 prices and has a code of their own still to use. */
+  earlyCode: { code: string; percent: number } | null;
   /** 1:1 coaching is on (it includes Pro), and when it ends. */
   coaching: boolean;
   coachingEndsAt: Date | null;
@@ -89,6 +98,8 @@ const GUEST: Entitlement = {
   renews: false,
   paidOnce: false,
   paymentIssue: false,
+  legacyPrice: false,
+  earlyCode: null,
   coaching: false,
   coachingEndsAt: null,
 };
@@ -126,6 +137,11 @@ export function resolveEntitlement(sub: SubscriptionSnapshot | null, now: Date):
       (sub.billing_status === 'active' || sub.billing_status === 'authenticated') &&
       !sub.cancel_at_period_end,
     paymentIssue: sub.billing_status === 'pending' || sub.billing_status === 'halted',
+    legacyPrice: plan === 'pro' && sub.legacy_price === true && sub.billing_kind !== 'once',
+    earlyCode:
+      !revoked && sub.early_code && sub.early_percent
+        ? { code: sub.early_code, percent: sub.early_percent }
+        : null,
     coaching: !revoked && !!sub.coaching_expires_at && t < sub.coaching_expires_at.getTime(),
     coachingEndsAt: sub.coaching_expires_at,
   };
@@ -155,12 +171,45 @@ export type ProFeature =
   | 'group_boards'
   | 'weekly_report'
   | 'adaptive_plan'
-  | 'meal_plan';
+  | 'meal_plan'
+  | 'copy_routines'
+  | 'story_designs'
+  | 'unlimited_routines'
+  | 'macro_tracking'
+  | 'gym_tools'
+  | 'body_measurements'
+  | 'usual_meals';
 
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
   long_range: {
-    title: '90-day and all-time trends',
-    description: 'See strength, volume and consistency across months, not just weeks.',
+    title: '30-day, 90-day and all-time trends',
+    description:
+      'Free shows your last 7 days. Pro shows strength, volume and consistency across months.',
+  },
+  unlimited_routines: {
+    title: 'Unlimited routines',
+    description:
+      'Free keeps 2 routines. Pro keeps as many as you like: a cut, a bulk, a travel plan.',
+  },
+  macro_tracking: {
+    title: 'Protein, carbs, fat and fibre',
+    description:
+      'Free counts calories. Pro tracks protein, carbs, fat and fibre against your targets, and tells you what to eat next.',
+  },
+  gym_tools: {
+    title: 'Gym tools',
+    description:
+      'Plate calculator, warm-up sets, supersets and smart exercise swaps in the logger.',
+  },
+  body_measurements: {
+    title: 'Body measurements and photo comparison',
+    description:
+      'Waist, chest, arms and more with a trend for each, a body-fat estimate, and progress photos side by side.',
+  },
+  usual_meals: {
+    title: 'Usual meals in one tap',
+    description:
+      'Log the breakfast or lunch you eat most days with one tap, from Home or the Food page.',
   },
   muscle_balance: {
     title: 'Sets per muscle group',
@@ -225,6 +274,16 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
     description:
       'Seven days of meals that hit your targets, built for home, hostel, mess or PG food, your diet and your budget, with one grocery list.',
   },
+  copy_routines: {
+    title: 'Copy routines from the leaderboard',
+    description:
+      'See what the people at the top of the board train, and copy their plan into your own routines in one tap.',
+  },
+  story_designs: {
+    title: 'Every story card design',
+    description:
+      'LED scoreboard, die-cut sticker, caption note and rings widget, on top of the free designs.',
+  },
   food_insights: {
     title: 'Food insights',
     description:
@@ -232,16 +291,18 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
   },
 };
 
-/** Always free, during and after the trial. History is never locked. */
+/**
+ * Always free, during and after the trial. History is never locked. Macrotrophy AI is Pro only
+ * (its services are on free tiers). Free is a complete logger; Pro is what tells you what to do.
+ */
 export const FREE_FEATURES = [
-  'Unlimited workout logging, routines and custom exercises',
+  'Unlimited workout logging with last time beside every set',
   'Your full workout history and every personal record',
-  'Profile setup, every routine template and personalised routines',
-  'Body weight, measurements, calories, protein, BMI and body fat',
-  'Food logging for Indian meals: thalis, katori portions, your usual meals and daily totals',
-  'Groups with friends, with weekly and monthly leaderboards',
-  'Goals, milestones and progress photos',
-  'Progress for the last 7 and 30 days, with insights',
+  '2 routines, from any template or built your own',
+  'Indian food logging with calories, by the katori, plate or roti',
+  'A group, a duel a week and the global leaderboard',
+  'Body weight, goals and progress photos',
+  'Progress for the last 7 days',
   'Backup and sync across your devices',
 ];
 

@@ -1,6 +1,7 @@
 import { ActionMenu } from '@/components/kit/menu';
 import { useState, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import { useRoutineAllowance } from './allowance';
 import {
   ArrowDown,
   ArrowDownUp,
@@ -81,6 +82,7 @@ export function RoutineEditorPage() {
   const { routineId } = useParams();
   const training = useTrainingData();
   const navigate = useNavigate();
+  const allowance = useRoutineAllowance();
   const toast = useToast();
   const prefs = usePreferences();
   const sharing = useShareRoutine();
@@ -238,9 +240,14 @@ export function RoutineEditorPage() {
             },
           },
           {
-            label: 'Duplicate routine',
+            label: allowance.canAdd ? 'Duplicate routine' : 'Duplicate routine · Pro',
             icon: <Copy className="size-5" aria-hidden />,
             onSelect: async () => {
+              if (!allowance.canAdd) {
+                setMenu(false);
+                navigate('/pro');
+                return;
+              }
               const copy = await duplicateRoutine(db, routine.id);
               setMenu(false);
               toast('Copy created');

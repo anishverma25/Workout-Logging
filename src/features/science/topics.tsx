@@ -1096,11 +1096,11 @@ export const SCIENCE: TopicGroup[] = [
           'The Macrotrophy Score on the global leaderboard and in your groups: points for showing up, training hard, beating your own best and eating enough protein, each with a weekly cap.',
         formulas: [
           {
-            tex: String.raw`\text{score} = 10\,W + H + 5\,R + 3\,P`,
+            tex: String.raw`\text{score} = 10\,W + H + 5\,R + 3\,P + 10\,C + G`,
             spoken:
-              'Score equals 10 times workouts, plus hard sets, plus 5 times records, plus 3 times protein days',
+              'Score equals 10 times workouts, plus hard sets, plus 5 times records, plus 3 times protein days, plus 10 times consistent weeks, plus progress points',
             where:
-              'W: workouts of 10 minutes or more with at least 3 working sets, logged live, at most 2 a day and 6 a week. H: working sets not logged as easy (4 or fewer reps in reserve, or RPE 6 or more), at most 25 a week. R: a new best estimated 1RM on an exercise done in at least 2 earlier workouts and no more than 40% above the old best, at most 5 a week. P: days your logged protein reaches 90% of your own target. Monthly caps grow with the length of the month.',
+              'W: workouts of 10 minutes or more with at least 3 working sets, logged live with the sets ticked over at least 2 minutes, one a day and 6 a week. H: working sets not logged as easy (4 or fewer reps in reserve, or RPE 6 or more), from every session, at most 25 a week. R: a new best estimated 1RM on an exercise done in at least 2 earlier workouts and no more than 40% above the old best, at most 5 a week. P: days your logged protein, over 2 or more meals, reaches 90% of your own target. C: Monday to Sunday weeks with 3 or more training days. G: 1 point per 1% that your best estimated 1RM rose on average against the 4 weeks before, across 3 or more lifts, each lift held between minus 50% and plus 40%, at most 10. Monthly caps grow with the length of the month.',
           },
         ],
         why: [
@@ -1113,8 +1113,9 @@ export const SCIENCE: TopicGroup[] = [
           </>,
           <>
             Caps stop anyone winning by logging hundreds of sets. Only workouts logged live count,
-            so imported history or workouts typed in days later never do, and a finished week is
-            locked the first time anyone views it.
+            with sets ticked as they are done, so imported history, workouts typed in days later or
+            ticked all at once never do. Nothing you only type in, like steps or body weight, earns
+            points. A finished week is locked the first time anyone views it.
           </>,
         ],
         forYou:

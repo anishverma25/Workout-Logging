@@ -25,10 +25,15 @@ export function MuscleMapCard({
   exercises,
   sex,
   className,
+  title = 'Muscles worked',
+  compact = false,
 }: {
   exercises: ExerciseLog[];
   sex: Sex | null | undefined;
   className?: string;
+  title?: string;
+  /** Home: a smaller body, the top four muscles and no footnote. */
+  compact?: boolean;
 }) {
   const id = useId();
   const sets = useMemo(() => setsPerArea(exercises, sharesFor), [exercises]);
@@ -38,15 +43,15 @@ export function MuscleMapCard({
   return (
     <Card as="section" aria-labelledby={id} className={cn('p-5', className)} data-muscle-map>
       <h2 id={id} className="type-headline text-text-1">
-        Muscles worked
+        {title}
       </h2>
-      <div className="mt-4">
+      <div className={cn('mt-4', compact && 'mx-auto max-w-[17rem]')}>
         <Suspense fallback={<div className="aspect-[2/1.9] w-full" aria-hidden />}>
           <BodyMap levels={levels} sex={sex === 'female' ? 'female' : 'male'} />
         </Suspense>
       </div>
       <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5" data-muscle-list>
-        {worked.slice(0, 8).map((w) => (
+        {worked.slice(0, compact ? 4 : 8).map((w) => (
           <li key={w.area} className="type-meta flex items-center gap-1.5 text-text-2">
             <span
               aria-hidden
@@ -58,10 +63,12 @@ export function MuscleMapCard({
           </li>
         ))}
       </ul>
-      <p className="type-caption mt-3 text-text-2">
-        Each set is split across the muscles it works, from research on each exercise. Warm-ups are
-        left out.
-      </p>
+      {compact ? null : (
+        <p className="type-caption mt-3 text-text-2">
+          Each set is split across the muscles it works, from research on each exercise. Warm-ups
+          are left out.
+        </p>
+      )}
     </Card>
   );
 }

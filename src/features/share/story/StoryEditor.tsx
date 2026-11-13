@@ -1,6 +1,23 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { Download, ImagePlus, RotateCcw, Share } from 'lucide-react';
-import { Chip, ChipGroup, PrimaryButton, SecondaryButton, SegmentedControl, Switch } from '@/components/kit';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react';
+import { Crown, Download, ImagePlus, RotateCcw, Share } from 'lucide-react';
+import { useFeature } from '@/app/entitlement';
+import { ButtonLink } from '@/components/ui/Button';
+import {
+  Chip,
+  ChipGroup,
+  PrimaryButton,
+  SecondaryButton,
+  SegmentedControl,
+  Switch,
+} from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import {
   boxGeometry,
@@ -19,6 +36,9 @@ import {
 } from '@/domain/share/layout';
 import type { StoryContent } from '@/domain/share/story';
 import { cn } from '@/lib/cn';
+
+/** Designs that need Pro to save or share: LED scoreboard, die-cut sticker, caption note, rings. */
+const PRO_DESIGNS = new Set<DesignId>(['C', 'E', 'F', 'G']);
 import { css, FONT_CHOICES, loadFamilies, type FontId } from './fonts';
 import {
   ACCENTS,
@@ -162,6 +182,9 @@ export function StoryEditor({
 }) {
   const toast = useToast();
   const [style, setStyleState] = useState<StoryStyle>(() => loadStyle());
+  // Four designs are Pro: free members can try them on their own card, and save the free ones.
+  const proDesigns = useFeature('story_designs');
+  const designLocked = !proDesigns && PRO_DESIGNS.has(style.design);
   const [photo, setPhoto] = useState<StoryPhoto | null>(null);
   const [thumb, setThumb] = useState<string | null>(null);
   const [fontsReady, setFontsReady] = useState(0);
@@ -205,7 +228,11 @@ export function StoryEditor({
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
-    last.current = renderStory(ctx, { content, style: styleRef.current, photo, name }, { editing: true, guides });
+    last.current = renderStory(
+      ctx,
+      { content, style: styleRef.current, photo, name },
+      { editing: true, guides },
+    );
     // The round resize handle follows the box's corner.
     const handle = handleRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -337,7 +364,8 @@ export function StoryEditor({
     return new Promise((r) => canvas.toBlob(r, 'image/png'));
   }
 
-  const canShare = typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
+  const canShare =
+    typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
 
   async function share() {
     setBusy(true);
@@ -447,7 +475,10 @@ export function StoryEditor({
           scroll
           value={style.design}
           onChange={(v: DesignId) => setStyle((s) => ({ ...s, design: v }))}
-          options={DESIGNS.map((d) => ({ value: d.id, label: d.name }))}
+          options={DESIGNS.map((d) => ({
+            value: d.id,
+            label: !proDesigns && PRO_DESIGNS.has(d.id) ? `${d.name} · Pro` : d.name,
+          }))}
         />
       </section>
 
@@ -457,7 +488,9 @@ export function StoryEditor({
           <label
             className={cn(
               'pressable chrome type-meta relative inline-flex h-11 cursor-pointer items-center gap-2 rounded-full px-4 font-semibold',
-              style.background === 'photo' && photo ? 'bg-lime text-on-lime' : 'bg-surface-2 text-text-1',
+              style.background === 'photo' && photo
+                ? 'bg-lime text-on-lime'
+                : 'bg-surface-2 text-text-1',
             )}
           >
             <ImagePlus className="size-4" aria-hidden />
@@ -502,7 +535,9 @@ export function StoryEditor({
             />
           ))}
         </div>
-        <p className="type-meta mt-2 text-text-2">Your photo stays on this phone. It is never uploaded.</p>
+        <p className="type-meta mt-2 text-text-2">
+          Your photo stays on this phone. It is never uploaded.
+        </p>
       </section>
 
       <section className="flex flex-col gap-4">
@@ -543,7 +578,10 @@ export function StoryEditor({
                 'size-9 rounded-full border-2',
                 style.accent === a.value ? 'border-text-1' : 'border-transparent',
               )}
-              style={{ background: a.value, boxShadow: style.accent === a.value ? 'inset 0 0 0 2px var(--bg)' : undefined }}
+              style={{
+                background: a.value,
+                boxShadow: style.accent === a.value ? 'inset 0 0 0 2px var(--bg)' : undefined,
+              }}
             />
           ))}
         </div>
@@ -563,11 +601,20 @@ export function StoryEditor({
           <section>
             <Label>Font</Label>
             <div className="flex flex-wrap gap-2">
-              <Chip selected={style.font === 'auto'} onClick={() => setStyle((s) => ({ ...s, font: 'auto' }))}>
+              <Chip
+                selected={style.font === 'auto'}
+                onClick={() => setStyle((s) => ({ ...s, font: 'auto' }))}
+              >
                 Design default
               </Chip>
               {FONT_CHOICES.map((f) => (
-                <FontChip key={f.id} id={f.id} label={f.label} selected={style.font === f.id} onPick={() => setStyle((s) => ({ ...s, font: f.id }))} />
+                <FontChip
+                  key={f.id}
+                  id={f.id}
+                  label={f.label}
+                  selected={style.font === f.id}
+                  onPick={() => setStyle((s) => ({ ...s, font: f.id }))}
+                />
               ))}
             </div>
           </section>
@@ -604,11 +651,19 @@ export function StoryEditor({
                   ['Bottom', 'y', 0.84],
                 ] as const
               ).map(([label, axis, v]) => (
-                <Chip key={label} toggle={false} onClick={() => setPlacement(presetBox(p, axis, v))}>
+                <Chip
+                  key={label}
+                  toggle={false}
+                  onClick={() => setPlacement(presetBox(p, axis, v))}
+                >
                   {label}
                 </Chip>
               ))}
-              <Chip toggle={false} leading={<RotateCcw className="size-3.5" aria-hidden />} onClick={() => setPlacement(DEFAULT_PLACEMENT)}>
+              <Chip
+                toggle={false}
+                leading={<RotateCcw className="size-3.5" aria-hidden />}
+                onClick={() => setPlacement(DEFAULT_PLACEMENT)}
+              >
                 Reset
               </Chip>
             </div>
@@ -656,9 +711,17 @@ export function StoryEditor({
             </div>
           </section>
           <section className="flex flex-col gap-3">
-            <Toggle label="Show tags and notes" checked={style.tags} onChange={(v) => setStyle((s) => ({ ...s, tags: v }))} />
+            <Toggle
+              label="Show tags and notes"
+              checked={style.tags}
+              onChange={(v) => setStyle((s) => ({ ...s, tags: v }))}
+            />
             {name ? (
-              <Toggle label="Show my name" checked={style.showName} onChange={(v) => setStyle((s) => ({ ...s, showName: v }))} />
+              <Toggle
+                label="Show my name"
+                checked={style.showName}
+                onChange={(v) => setStyle((s) => ({ ...s, showName: v }))}
+              />
             ) : null}
             <Toggle label="Show Instagram safe area" checked={guides} onChange={setGuides} />
           </section>
@@ -666,14 +729,39 @@ export function StoryEditor({
       ) : null}
 
       <div className="flex flex-col gap-2 pb-1">
-        {canShare ? (
-          <PrimaryButton block icon={<Share aria-hidden />} loading={busy} onClick={() => void share()}>
+        {designLocked ? (
+          <div className="flex flex-col gap-2" data-design-locked>
+            <ButtonLink to="/pro" size="lg" block>
+              <Crown className="size-4" aria-hidden /> Unlock this design with Pro
+            </ButtonLink>
+            <SecondaryButton
+              block
+              onClick={() => setStyle((s) => ({ ...s, design: DESIGNS[0]!.id }))}
+            >
+              Use a free design
+            </SecondaryButton>
+          </div>
+        ) : null}
+        {!designLocked && canShare ? (
+          <PrimaryButton
+            block
+            icon={<Share aria-hidden />}
+            loading={busy}
+            onClick={() => void share()}
+          >
             Share
           </PrimaryButton>
         ) : null}
-        <SecondaryButton block icon={<Download aria-hidden />} disabled={busy} onClick={() => void save()}>
-          Save image
-        </SecondaryButton>
+        {!designLocked ? (
+          <SecondaryButton
+            block
+            icon={<Download aria-hidden />}
+            disabled={busy}
+            onClick={() => void save()}
+          >
+            Save image
+          </SecondaryButton>
+        ) : null}
         <p className="type-meta text-center text-text-2">
           {canShare
             ? 'Pick Instagram and then Story, or WhatsApp and then My status.'
@@ -684,7 +772,15 @@ export function StoryEditor({
   );
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="type-body text-text-1">{label}</span>
@@ -694,7 +790,17 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
 }
 
 /** A font choice shown in its own face once that face has loaded. */
-function FontChip({ id, label, selected, onPick }: { id: FontId; label: string; selected: boolean; onPick: () => void }) {
+function FontChip({
+  id,
+  label,
+  selected,
+  onPick,
+}: {
+  id: FontId;
+  label: string;
+  selected: boolean;
+  onPick: () => void;
+}) {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     let live = true;

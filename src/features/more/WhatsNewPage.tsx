@@ -7,16 +7,18 @@ import { TextButton } from '@/components/kit';
 export function WhatsNewPage() {
   return (
     <>
-      <PageHeader back={{ to: '/more', label: 'More' }} title="What is new" subtitle="November 2026" />
+      <PageHeader
+        back={{ to: '/more', label: 'More' }}
+        title="What is new"
+        subtitle="November 2026"
+      />
       <div className="mx-auto flex max-w-xl flex-col gap-10 pb-10" data-whats-new-page>
         {RELEASE_STEPS.map((s) => (
           <section key={s.id}>
             <ReleaseStepView step={s} page />
-            {s.id !== 'brain' ? (
-              <TextButton to={s.where.to} className="mt-2">
-                {s.where.label}
-              </TextButton>
-            ) : null}
+            <TextButton to={s.where.to} className="mt-2">
+              {s.where.label}
+            </TextButton>
           </section>
         ))}
       </div>

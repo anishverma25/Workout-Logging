@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router';
 import { guide } from '@/app/marketing';
+import { GUIDE_ART as ART } from './guideArt';
+import { HeaderArt } from './HeaderArt';
 import { PublicFrame } from './PublicFrame';
 
 /**
@@ -13,6 +15,9 @@ export function GuidePage() {
   return (
     <PublicFrame path={g.path}>
       <article data-guide={g.path}>
+        {ART[g.path] ? (
+          <HeaderArt kind={ART[g.path]!.kind} caption={ART[g.path]!.caption} className="mb-6" />
+        ) : null}
         <h1 className="type-display text-text-1">{g.heading}</h1>
         <p className="type-body mt-4 text-[1.0625rem] leading-relaxed text-text-2">{g.intro}</p>
         {g.sections.map((s) => (

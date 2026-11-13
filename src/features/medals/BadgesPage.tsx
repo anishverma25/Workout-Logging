@@ -72,7 +72,12 @@ export function BadgesPage() {
           data-badge-collection
         >
           {latest ? (
-            <button type="button" onClick={() => setOpen(latest)} className="pressable shrink-0" aria-label={`Latest: ${latest.title}`}>
+            <button
+              type="button"
+              onClick={() => setOpen(latest)}
+              className="pressable pulse-glow shrink-0 rounded-full"
+              aria-label={`Latest: ${latest.title}`}
+            >
               <BadgeMedallion badge={latest} className="size-[72px]" />
             </button>
           ) : null}
@@ -82,9 +87,15 @@ export function BadgesPage() {
               <span className="type-headline text-text-2"> of {badges.length}</span>
             </p>
             <p className="type-footnote mt-1 text-text-2">
-              badges collected{latest ? `. Latest: ${latest.title}, ${formatCalendarDate(latest.earnedAt!)}` : ''}
+              badges collected
+              {latest ? `. Latest: ${latest.title}, ${formatCalendarDate(latest.earnedAt!)}` : ''}
             </p>
-            <ProgressBar value={earned.length} max={badges.length} label="Badges collected" className="mt-2.5" />
+            <ProgressBar
+              value={earned.length}
+              max={badges.length}
+              label="Badges collected"
+              className="mt-2.5"
+            />
           </div>
         </section>
       ) : null}
@@ -106,7 +117,9 @@ export function BadgesPage() {
                   <span className="min-w-0 flex-1">
                     <span className="type-headline block text-text-1">{b.title}</span>
                     <span className="type-meta block text-text-2">{b.goal}</span>
-                    <span className="type-meta tabular block font-semibold text-lime">{toGo(b)}</span>
+                    <span className="type-meta tabular block font-semibold text-lime">
+                      {toGo(b)}
+                    </span>
                     <ProgressBar
                       value={b.current}
                       max={b.target}
@@ -147,7 +160,9 @@ export function BadgesPage() {
                     >
                       {b.title}
                     </span>
-                    <span className={`type-caption tabular ${b.earnedAt ? 'text-text-3' : 'font-semibold text-lime'}`}>
+                    <span
+                      className={`type-caption tabular ${b.earnedAt ? 'text-text-3' : 'font-semibold text-lime'}`}
+                    >
                       {b.earnedAt ? TIER_LABEL[b.tier] : toGo(b)}
                     </span>
                   </button>

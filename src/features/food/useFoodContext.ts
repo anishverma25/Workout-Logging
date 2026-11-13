@@ -1,4 +1,5 @@
 import { useMemo, useSyncExternalStore } from 'react';
+import { useSharedFoods } from '@/app/sharedFoods';
 import { useFoodData, useTrainingData, type QueryState } from '@/data/hooks';
 import { customToFood, FOODS } from '@/data/library/foods';
 import { moreFoodsStore } from '@/data/library/moreFoods';
@@ -56,9 +57,10 @@ export function useFoodContextFrom(now: Date, training: QueryState<TrainingData>
   }, [data, profile, day]);
 
   const more = useSyncExternalStore(moreFoodsStore.subscribe, moreFoodsStore.get);
+  const shared = useSharedFoods();
   const foods = useMemo<Food[]>(
-    () => [...(food.data?.customFoods ?? []).map(customToFood), ...FOODS, ...more],
-    [food.data?.customFoods, more],
+    () => [...(food.data?.customFoods ?? []).map(customToFood), ...FOODS, ...shared, ...more],
+    [food.data?.customFoods, shared, more],
   );
   const foodById = useMemo(() => new Map(foods.map((f) => [f.id, f])), [foods]);
   const trainingDates = useMemo(

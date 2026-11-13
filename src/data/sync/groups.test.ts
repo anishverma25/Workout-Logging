@@ -89,7 +89,8 @@ async function workout(
           s.kg ?? 60,
           s.reps ?? 8,
           s.rir === undefined ? 2 : s.rir,
-          new Date(start.getTime() + (i + 1) * 60_000).toISOString(),
+          // Ticked as they are done, a few minutes apart (the server checks the sets span 2+ min).
+          new Date(start.getTime() + (i + 1) * 3 * 60_000).toISOString(),
           created,
         ],
       );
@@ -114,16 +115,25 @@ async function setProteinTarget(userId: string, grams: number) {
   );
 }
 
-async function food(userId: string, date: string, protein: number, createdAt?: string) {
+/** A day's food: the protein split over lunch and dinner (one meal alone is not a day). */
+async function food(
+  userId: string,
+  date: string,
+  protein: number,
+  createdAt?: string,
+  meals: string[] = ['lunch', 'dinner'],
+) {
   const created = createdAt ?? `${date}T08:00:00+05:30`;
-  await server.asUser(userId, (tx) =>
-    tx.query(
-      `insert into public.food_logs (id, date, meal, food_id, food_name, amount, unit, grams,
-        kcal, protein_g, carbs_g, fat_g, fibre_g, created_at, updated_at)
-       values ($1, $2, 'lunch', 'paneer', 'Paneer', 1, 'serving', 100, 300, $3, 5, 20, 0, $4, $4)`,
-      [uuid(), date, protein, created],
-    ),
-  );
+  for (const meal of meals) {
+    await server.asUser(userId, (tx) =>
+      tx.query(
+        `insert into public.food_logs (id, date, meal, food_id, food_name, amount, unit, grams,
+          kcal, protein_g, carbs_g, fat_g, fibre_g, created_at, updated_at)
+         values ($1, $2, $3, 'paneer', 'Paneer', 1, 'serving', 100, 300, $4, 5, 20, 0, $5, $5)`,
+        [uuid(), date, meal, protein / meals.length, created],
+      ),
+    );
+  }
 }
 
 interface Score {
@@ -132,6 +142,8 @@ interface Score {
   hard_sets: number;
   records: number;
   protein_days: number;
+  consistency_weeks: number;
+  progress_points: number;
   has_protein_target: boolean;
   active_days: number;
   volume_kg: string;
@@ -225,13 +237,16 @@ describe('groups', () => {
     await expect(as(b, 'public.join_group($1)', ['ZZZZZZ'])).rejects.toThrow(/No group/);
   });
 
-  it('need a username first, and free accounts can be in three', async () => {
+  it('need a username first, and free accounts can be in one', async () => {
     const nameless = await user();
     await expect(as(nameless, 'public.create_group($1)', ['X'])).rejects.toThrow(/username/);
     const a = await user('three.groups');
     await free(a);
-    for (const name of ['One', 'Two', 'Three']) await as(a, 'public.create_group($1)', [name]);
-    await expect(as(a, 'public.create_group($1)', ['Four'])).rejects.toThrow(/limit 3/);
+    await as(a, 'public.create_group($1)', ['One']);
+    await expect(as(a, 'public.create_group($1)', ['Two'])).rejects.toThrow(/limit 1/);
+    const other = await user('other.owner');
+    const g = await as<{ code: string }>(other, 'public.create_group($1)', ['Theirs']);
+    await expect(as(a, 'public.join_group($1)', [g.code])).rejects.toThrow(/limit 1/);
     // Pro allows ten.
     await server.pg.query(
       "update public.subscriptions set status = 'active', pro_started_at = now(), pro_expires_at = now() + interval '30 days' where user_id = $1",
@@ -342,7 +357,7 @@ describe('Macrotrophy Score', () => {
     expect((await scoreOf(a)).workouts).toBe(0);
   });
 
-  it('caps workouts at two a day and six a week, and hard sets at 25', async () => {
+  it('counts one workout a day and six a week, and hard sets at 25', async () => {
     const a = await user();
     for (const h of [6, 9, 12]) await workout(a, day(7, h), Array(10).fill({}));
     for (const d of [8, 9, 10, 11, 12]) await workout(a, day(d), Array(10).fill({}));
@@ -362,7 +377,9 @@ describe('Macrotrophy Score', () => {
     await workout(a, day(11), three(300, 8));
     const s = await scoreOf(a);
     expect(s.records).toBe(1);
-    expect(s.score).toBe(10 * 3 + 10 + 5);
+    // 3 workouts, the 3 days of the week also earn the consistency bonus, and 1 record.
+    expect(s.consistency_weeks).toBe(1);
+    expect(s.score).toBe(10 * 3 + 10 + 10 + 5);
   });
 
   it('gives protein points on days reaching 90% of the person’s own target', async () => {
@@ -429,7 +446,8 @@ describe('Macrotrophy Score', () => {
       b,
       'public.get_my_groups()',
     );
-    expect(mine[0]).toMatchObject({ rank: 2, above: 'week.leader', behind_by: 13 });
+    // A second session today adds its hard sets, not another 10 points: 16 against 13.
+    expect(mine[0]).toMatchObject({ rank: 2, above: 'week.leader', behind_by: 3 });
     const month = await as<{ rows: unknown[] }>(b, 'public.get_group_board($1, $2, $3)', [
       g.id,
       'month',
@@ -499,7 +517,13 @@ describe('duels', () => {
     const g = await as<{ id: string; code: string }>(a, 'public.create_group($1)', ['Duelists']);
     await as(b, 'public.join_group($1)', [g.code]);
     await as(c, 'public.join_group($1)', [g.code]);
-    return { a, b, c, group: g.id, names: { a: `duel_a${tag}`, b: `duel_b${tag}`, c: `duel_c${tag}` } };
+    return {
+      a,
+      b,
+      c,
+      group: g.id,
+      names: { a: `duel_a${tag}`, b: `duel_b${tag}`, c: `duel_c${tag}` },
+    };
   }
 
   it('one member challenges another, and both see the live points of the week', async () => {
@@ -509,7 +533,15 @@ describe('duels', () => {
     const mine = await duels(a, group);
     expect(mine.limit).toBe(3);
     expect(mine.duels).toMatchObject([
-      { live: true, challenger: names.a, opponent: names.b, challenger_score: 0, opponent_score: 13, mine: true, i_am_challenger: true },
+      {
+        live: true,
+        challenger: names.a,
+        opponent: names.b,
+        challenger_score: 0,
+        opponent_score: 13,
+        mine: true,
+        i_am_challenger: true,
+      },
     ]);
     // The whole group can watch; someone outside it cannot.
     expect((await duels(c, group)).duels).toMatchObject([{ mine: false, opponent_score: 13 }]);
@@ -522,26 +554,44 @@ describe('duels', () => {
   it('refuses a second duel with the same person, a duel with yourself, strangers, and a fourth in a week', async () => {
     const { a, b, group, names } = await trio();
     await as(a, 'public.create_duel($1, $2)', [group, names.b]);
-    await expect(as(a, 'public.create_duel($1, $2)', [group, names.b])).rejects.toThrow(/Duel exists/);
-    await expect(as(b, 'public.create_duel($1, $2)', [group, names.a])).rejects.toThrow(/Duel exists/);
-    await expect(as(a, 'public.create_duel($1, $2)', [group, names.a])).rejects.toThrow(/Duel yourself/);
-    await expect(as(a, 'public.create_duel($1, $2)', [group, 'nobody_here'])).rejects.toThrow(/No member/);
+    await expect(as(a, 'public.create_duel($1, $2)', [group, names.b])).rejects.toThrow(
+      /Duel exists/,
+    );
+    await expect(as(b, 'public.create_duel($1, $2)', [group, names.a])).rejects.toThrow(
+      /Duel exists/,
+    );
+    await expect(as(a, 'public.create_duel($1, $2)', [group, names.a])).rejects.toThrow(
+      /Duel yourself/,
+    );
+    await expect(as(a, 'public.create_duel($1, $2)', [group, 'nobody_here'])).rejects.toThrow(
+      /No member/,
+    );
     const tag = String(++n);
     const outsider = await user(`duel_out${tag}`);
-    await expect(as(outsider, 'public.create_duel($1, $2)', [group, names.a])).rejects.toThrow(/Not a member/);
+    await expect(as(outsider, 'public.create_duel($1, $2)', [group, names.a])).rejects.toThrow(
+      /Not a member/,
+    );
     await as(a, 'public.create_duel($1, $2)', [group, names.c]);
     const d = await user(`duel_d${tag}`);
     const e = await user(`duel_e${tag}`);
-    const code = (await server.pg.query<{ code: string }>('select code from public.groups where id = $1', [group])).rows[0]!.code;
+    const code = (
+      await server.pg.query<{ code: string }>('select code from public.groups where id = $1', [
+        group,
+      ])
+    ).rows[0]!.code;
     await as(d, 'public.join_group($1)', [code]);
     await as(e, 'public.join_group($1)', [code]);
     await as(a, 'public.create_duel($1, $2)', [group, `duel_d${tag}`]);
-    await expect(as(a, 'public.create_duel($1, $2)', [group, `duel_e${tag}`])).rejects.toThrow(/Duel limit 3/);
+    await expect(as(a, 'public.create_duel($1, $2)', [group, `duel_e${tag}`])).rejects.toThrow(
+      /Duel limit 3/,
+    );
     // Being challenged does not use up your own three.
     await as(e, 'public.create_duel($1, $2)', [group, names.a]);
     expect(b).toBeTruthy();
     // The table itself is closed.
-    await expect(server.asUser(a, (tx) => tx.query('select * from public.group_duels'))).rejects.toThrow(/permission denied/);
+    await expect(
+      server.asUser(a, (tx) => tx.query('select * from public.group_duels')),
+    ).rejects.toThrow(/permission denied/);
   });
 
   it('either of the two can call it off, nobody else, and leaving the group ends it', async () => {
@@ -560,16 +610,232 @@ describe('duels', () => {
     const { a, b, group, names } = await trio();
     const made = await as<{ id: string }>(a, 'public.create_duel($1, $2)', [group, names.b]);
     // The duel was last week's, and A trained in it.
-    await server.pg.query("update public.group_duels set week_start = week_start - 7 where id = $1", [made.id]);
+    await server.pg.query(
+      'update public.group_duels set week_start = week_start - 7 where id = $1',
+      [made.id],
+    );
     const lastWeek = new Date(Date.now() - 7 * 86_400_000);
     await workout(a, lastWeek, three(), { createdAt: lastWeek });
     const seen = await duels(b, group);
     expect(seen.duels).toMatchObject([{ live: false, challenger_score: 13, opponent_score: 0 }]);
-    const row = (await server.pg.query<{ winner: string; settled_at: string }>('select winner, settled_at from public.group_duels where id = $1', [made.id])).rows[0]!;
+    const row = (
+      await server.pg.query<{ winner: string; settled_at: string }>(
+        'select winner, settled_at from public.group_duels where id = $1',
+        [made.id],
+      )
+    ).rows[0]!;
     expect(row.winner).toBe(a);
     // A workout logged afterwards does not rewrite a finished duel.
     await workout(b, lastWeek, [...three(), ...three(), ...three()], { createdAt: lastWeek });
-    expect((await duels(b, group)).duels).toMatchObject([{ challenger_score: 13, opponent_score: 0 }]);
+    expect((await duels(b, group)).duels).toMatchObject([
+      { challenger_score: 13, opponent_score: 0 },
+    ]);
     expect(await as<boolean>(a, 'public.cancel_duel($1)', [made.id])).toBe(false);
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // Fairer points (migration 0026)
+  // -------------------------------------------------------------------------------------------
+
+  it('does not count a workout whose sets were all ticked at once', async () => {
+    const a = await user();
+    const w = await workout(a, day(8), three());
+    // Every set marked done in the same minute, as if ticked at the end.
+    await server.pg.query(
+      `update public.sets set completed_at = (select started_at + interval '40 minutes'
+         from public.workouts where id = $1) where workout_id = $1`,
+      [w],
+    );
+    const s = await scoreOf(a);
+    expect(s.workouts).toBe(0);
+    expect(s.hard_sets).toBe(0);
+  });
+
+  it('gives a consistency bonus for each week with 3 training days, and none for 2', async () => {
+    const two = await user();
+    await workout(two, day(7), three());
+    await workout(two, day(9), three());
+    expect((await scoreOf(two)).consistency_weeks).toBe(0);
+    const four = await user();
+    for (const d of [7, 9, 11, 12]) await workout(four, day(d), three());
+    const s = await scoreOf(four);
+    expect(s.consistency_weeks).toBe(1);
+    expect(s.score).toBe(4 * 10 + 4 * 3 + 10);
+    // A month counts each week on its own.
+    const m = await scores([four], '2026-09-01T00:00:00+05:30', '2026-10-01T00:00:00+05:30');
+    expect(m.get(four)!.consistency_weeks).toBe(1);
+  });
+
+  it('gives progress points for getting stronger on 3 or more lifts, up to 10', async () => {
+    const a = await user();
+    const lifts = [exerciseId, otherExerciseId];
+    const third = (
+      await server.pg.query<{ id: string }>(
+        'select id from public.exercises where id <> all($1) order by id limit 1',
+        [lifts],
+      )
+    ).rows[0]!.id;
+    const all = [...lifts, third];
+    const sessions = (kg: number) => all.map((exercise) => ({ kg, reps: 8, exercise }));
+    // The 4 weeks before: 60 kg on each lift.
+    await workout(a, new Date('2026-08-20T18:00:00+05:30'), sessions(60));
+    await workout(a, new Date('2026-08-27T18:00:00+05:30'), sessions(60));
+    // This week: 5% more on every lift.
+    await workout(a, day(8), sessions(63));
+    const s = await scoreOf(a);
+    expect(Number(s.progress_pct)).toBeCloseTo(5, 0);
+    expect(s.progress_points).toBe(5);
+    // Two lifts alone are not enough to judge.
+    const b = await user();
+    const pair = (kg: number) =>
+      lifts.flatMap((exercise) => [
+        { kg, reps: 8, exercise },
+        { kg, reps: 8, exercise },
+      ]);
+    await workout(b, new Date('2026-08-20T18:00:00+05:30'), pair(60));
+    await workout(b, new Date('2026-08-27T18:00:00+05:30'), pair(60));
+    await workout(b, day(8), pair(80));
+    expect((await scoreOf(b)).progress_points).toBe(0);
+  });
+
+  it('a protein day needs food at two meals', async () => {
+    const a = await user();
+    await setProteinTarget(a, 100);
+    await food(a, '2026-09-08', 150, undefined, ['lunch']);
+    await food(a, '2026-09-09', 150);
+    expect((await scoreOf(a)).protein_days).toBe(1);
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // Routines on the boards
+  // -------------------------------------------------------------------------------------------
+
+  async function giveRoutine(userId: string) {
+    const r = uuid();
+    const d1 = uuid();
+    const d2 = uuid();
+    const now = new Date().toISOString();
+    const own = uuid();
+    await server.asUser(userId, async (tx) => {
+      await tx.query(
+        `insert into public.user_exercises (id, name, primary_muscle, equipment, category,
+          tracking_type, load_mode, created_at, updated_at)
+         values ($1, 'Secret cable thing', 'chest', 'cable', 'isolation', 'weight_reps', 'total',
+          $2, $2)`,
+        [own, now],
+      );
+      await tx.query(
+        `insert into public.routines (id, name, is_active, created_at, updated_at)
+         values ($1, 'PPL', true, $2, $2)`,
+        [r, now],
+      );
+      for (const [i, [d, name]] of [
+        [d1, 'Push'],
+        [d2, 'Pull'],
+      ].entries()) {
+        await tx.query(
+          `insert into public.routine_days (id, routine_id, name, order_index, weekdays, created_at,
+            updated_at) values ($1, $2, $3, $4, $5, $6, $6)`,
+          [d, r, name, i, [1 + i * 2], now],
+        );
+      }
+      await tx.query(
+        `insert into public.routine_exercises (id, routine_day_id, exercise_id, order_index,
+          target_sets, rep_min, rep_max, target_rir, rest_seconds, created_at, updated_at)
+         values ($1, $2, $3, 0, 4, 6, 10, 2, 120, $4, $4),
+                ($5, $2, $9, 1, 3, 10, 15, null, 90, $4, $4),
+                ($6, $7, $8, 0, 3, 8, 12, null, 90, $4, $4)`,
+        [uuid(), d1, exerciseId, now, uuid(), uuid(), d2, otherExerciseId, own],
+      );
+    });
+  }
+
+  it('shows a ranked member’s routine plan to group members, never weights, and only while shared', async () => {
+    const a = await user('plan.owner');
+    const b = await user('plan.viewer');
+    const outsider = await user('plan.outsider');
+    const g = await as<{ id: string; code: string }>(a, 'public.create_group($1)', ['Plans']);
+    await as(b, 'public.join_group($1)', [g.code]);
+    await giveRoutine(a);
+
+    type Plan = {
+      name: string;
+      days: {
+        name: string;
+        weekdays: number[];
+        exercises: {
+          exercise_id: string | null;
+          name: string;
+          sets: number;
+          rep_min: number;
+          rep_max: number;
+        }[];
+      }[];
+    };
+    const plan = await as<Plan>(b, 'public.get_member_routine($1, $2)', [g.id, 'Plan.Owner ']);
+    expect(plan.name).toBe('PPL');
+    expect(plan.days.map((d) => d.name)).toEqual(['Push', 'Pull']);
+    expect(plan.days[0]!.weekdays).toEqual([1]);
+    expect(plan.days[0]!.exercises[0]).toMatchObject({
+      exercise_id: exerciseId,
+      sets: 4,
+      rep_min: 6,
+      rep_max: 10,
+    });
+    // An exercise of their own is named only vaguely and cannot be copied.
+    expect(plan.days[0]!.exercises[1]).toMatchObject({
+      exercise_id: null,
+      name: 'Their own exercise',
+    });
+    expect(JSON.stringify(plan)).not.toMatch(/weight|kg|user_id|rest|Secret/);
+
+    await expect(
+      as(outsider, 'public.get_member_routine($1, $2)', [g.id, 'plan.owner']),
+    ).rejects.toThrow(/Not a member/);
+
+    // Turned off: nothing is shown.
+    await as(a, 'public.set_share_routine($1)', [false]);
+    expect(await as(b, 'public.get_member_routine($1, $2)', [g.id, 'plan.owner'])).toBeNull();
+    await as(a, 'public.set_share_routine($1)', [true]);
+    expect(await as(b, 'public.get_member_routine($1, $2)', [g.id, 'plan.owner'])).not.toBeNull();
+  });
+
+  it('keeps routine plans closed to direct reads', async () => {
+    const a = await user();
+    await expect(as(a, `public.community_routine('${a}')`)).rejects.toThrow();
+  });
+
+  it('free accounts start one duel a week, Pro three; only paying members wear the crown', async () => {
+    const a = await user('limit.free');
+    const b = await user('limit.b');
+    const c = await user('limit.c');
+    const g = await as<{ id: string; code: string }>(a, 'public.create_group($1)', ['Limits']);
+    await as(b, 'public.join_group($1)', [g.code]);
+    await as(c, 'public.join_group($1)', [g.code]);
+    await free(a);
+    await as(a, 'public.create_duel($1, $2)', [g.id, 'limit.b']);
+    await expect(as(a, 'public.create_duel($1, $2)', [g.id, 'limit.c'])).rejects.toThrow(
+      /Duel limit 1/,
+    );
+    expect((await as<{ limit: number }>(a, 'public.get_group_duels($1)', [g.id])).limit).toBe(1);
+    // On the trial: three.
+    expect((await as<{ limit: number }>(b, 'public.get_group_duels($1)', [g.id])).limit).toBe(3);
+
+    // The crown: not for a trial, yes once paid.
+    await workout(b, new Date(), three());
+    const rowsFor = async () =>
+      (
+        await as<{ rows: { username: string; pro: boolean }[] }>(
+          a,
+          'public.get_group_board($1, $2, $3)',
+          [g.id, 'week', 0],
+        )
+      ).rows;
+    expect((await rowsFor()).find((r) => r.username === 'limit.b')?.pro).toBe(false);
+    await server.pg.query(
+      `update public.subscriptions set pro_expires_at = now() + interval '30 days' where user_id = $1`,
+      [b],
+    );
+    expect((await rowsFor()).find((r) => r.username === 'limit.b')?.pro).toBe(true);
   });
 });

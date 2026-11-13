@@ -193,7 +193,14 @@ test('a workout makes story cards the person arranges, saved as 1080 × 1920 ima
   await sheet.locator('#story-size').fill('60');
   const smaller = await where();
   expect(Math.abs(smaller.x - moved.x) + Math.abs(smaller.y - moved.y)).toBeGreaterThan(10);
-  for (const design of ['Receipt', 'LED scoreboard', 'Achievement', 'Die-cut sticker', 'Caption note', 'Rings widget']) {
+  for (const design of [
+    'Receipt',
+    'LED scoreboard',
+    'Achievement',
+    'Die-cut sticker',
+    'Caption note',
+    'Rings widget',
+  ]) {
     await sheet.getByRole('button', { name: design, exact: true }).click();
     await expect(sheet.getByRole('button', { name: design, exact: true })).toHaveAttribute(
       'aria-pressed',
@@ -206,8 +213,13 @@ test('a workout makes story cards the person arranges, saved as 1080 × 1920 ima
     'iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAIAAAA2iEnWAAAAEklEQVR4nGNwaDjg0HCAAYUCAFuVCQES9ecaAAAAAElFTkSuQmCC',
     'base64',
   );
-  await sheet.locator('[data-story-photo]').setInputFiles({ name: 'me.png', mimeType: 'image/png', buffer: png });
-  await expect(sheet.getByRole('button', { name: 'Use your photo' })).toHaveAttribute('aria-pressed', 'true');
+  await sheet
+    .locator('[data-story-photo]')
+    .setInputFiles({ name: 'me.png', mimeType: 'image/png', buffer: png });
+  await expect(sheet.getByRole('button', { name: 'Use your photo' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 
   const download = page.waitForEvent('download');
   await sheet.getByRole('button', { name: 'Save image' }).click();

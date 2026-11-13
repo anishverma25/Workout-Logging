@@ -1,3 +1,4 @@
+import { cn } from '@/lib/cn';
 import { Flame } from 'lucide-react';
 import type { DashboardModel } from '@/domain/analytics/dashboard';
 import { Rings, RingLegend, type RingSpec } from '@/components/ui/Rings';
@@ -31,7 +32,15 @@ export function WeekRings({ week }: { week: Week }) {
 
   return rings.length > 0 ? (
     <div className="mb-4 flex items-center gap-5" data-week-rings>
-      <Rings rings={rings} size={112} />
+      {/* A closed ring breathes a little light: the week's goal is met. */}
+      <span
+        className={cn(
+          'shrink-0 rounded-full',
+          rings.some((r) => r.value >= r.target) && 'pulse-glow',
+        )}
+      >
+        <Rings rings={rings} size={112} />
+      </span>
       <RingLegend rings={rings} className="min-w-0 flex-1" />
     </div>
   ) : (

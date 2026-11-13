@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { ChevronDown, Globe2 } from 'lucide-react';
+import { ChevronDown, Crown, Dumbbell, Globe2 } from 'lucide-react';
 import { useSyncStatus } from '@/app/account';
 import {
   CommunityError,
+  getBoardRoutine,
   getGlobalBoard,
   scoreParts,
+  setShareRoutine,
   setShowUsername,
   useRemote,
   type GlobalRow,
@@ -26,8 +28,9 @@ import { globalRankStory } from '@/domain/share/story';
 import { RankShareSheet } from '@/features/share/RankShareSheet';
 import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { BoardRoutineSheet } from './BoardRoutineSheet';
 import { HowPointsWork } from './GroupsPage';
-import { MemberAvatar } from './parts';
+import { MemberAvatar, ProCrown } from './parts';
 
 const dateLabel = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -52,6 +55,15 @@ export function GlobalPage() {
   const [saving, setSaving] = useState(false);
   const [shown, setShown] = useState<boolean | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [routineOf, setRoutineOf] = useState<GlobalRow | null>(null);
+  const [routineShown, setRoutineShown] = useState<boolean | null>(null);
+  const [routineNotice, setRoutineNotice] = useState(() => {
+    try {
+      return localStorage.getItem(ROUTINE_NOTICE_KEY) !== 'seen';
+    } catch {
+      return false;
+    }
+  });
   const sync = useSyncStatus();
   const board = useRemote(
     () => getGlobalBoard(period, offset),
@@ -59,6 +71,30 @@ export function GlobalPage() {
   );
   const b = board.data ?? null;
   const showUsername = shown ?? b?.showUsername ?? false;
+  const shareRoutine = routineShown ?? b?.shareRoutine ?? true;
+  const podium = b && offset === 0 && b.rows.length >= 3 ? b.rows.slice(0, 3) : null;
+  const listRows = b ? (podium ? b.rows.slice(3) : b.rows) : [];
+
+  const dismissNotice = () => {
+    setRoutineNotice(false);
+    try {
+      localStorage.setItem(ROUTINE_NOTICE_KEY, 'seen');
+    } catch {
+      // Storage blocked: the notice shows again next time.
+    }
+  };
+
+  const toggleRoutine = async (next: boolean) => {
+    setRoutineShown(next);
+    dismissNotice();
+    try {
+      await setShareRoutine(next);
+      toast(next ? 'Your routine plan shows on the boards' : 'Your routine is private now');
+    } catch (err) {
+      setRoutineShown(!next);
+      toast(err instanceof CommunityError ? err.message : 'Could not save. Try again.');
+    }
+  };
   const periodName = period === 'week' ? 'week' : 'month';
   const which = offset === 0 ? `This ${periodName}` : `Last ${periodName}`;
   const mineInTop = !!b?.rows.some((r) => r.me);
@@ -104,39 +140,6 @@ export function GlobalPage() {
 
         {b ? (
           <>
-            <section
-              className="rounded-panel bg-surface px-5 py-4"
-              aria-labelledby="global-privacy"
-              data-global-privacy
-            >
-              <div className="flex items-start gap-3">
-                <span className="min-w-0 flex-1">
-                  <span id="global-privacy" className="type-headline block text-text-1">
-                    Show my username
-                  </span>
-                  <span className="type-subhead block text-text-2">
-                    {b.hasUsername
-                      ? 'Your name always shows here. Turn this on to show your username next to it.'
-                      : 'Your name shows here. Pick a username in Groups to be able to show it too.'}
-                  </span>
-                </span>
-                <Switch
-                  checked={showUsername && b.hasUsername}
-                  onChange={(next) => void toggle(next)}
-                  disabled={!b.hasUsername || saving}
-                  aria-labelledby="global-privacy"
-                />
-              </div>
-              {!b.hasUsername ? (
-                <Link
-                  to="/groups"
-                  className="type-subhead mt-2 inline-block font-semibold text-lime"
-                >
-                  Pick a username
-                </Link>
-              ) : null}
-            </section>
-
             <div
               className="flex items-center gap-3 rounded-panel bg-lime-dim px-5 py-4"
               data-global-mine
@@ -200,6 +203,29 @@ export function GlobalPage() {
               ]}
             />
 
+            {routineNotice ? (
+              <InlineNotice
+                icon={<Dumbbell />}
+                action={
+                  <TextButton small onClick={dismissNotice}>
+                    Got it
+                  </TextButton>
+                }
+              >
+                <span data-routine-notice>
+                  New: tap anyone to see their routine and copy it. Yours shows too (the plan only,
+                  never weights). You can hide it under Your privacy.
+                </span>
+              </InlineNotice>
+            ) : null}
+
+            {podium ? (
+              <Podium
+                rows={podium}
+                onPick={(r) => setOpen((o) => (o === r.rank ? null : r.rank))}
+              />
+            ) : null}
+
             <Section
               title={`${which} · ${dateLabel(b.startsOn)} to ${dateLabel(b.endsOn)}`}
               id="global-board-title"
@@ -217,7 +243,7 @@ export function GlobalPage() {
               }
               footer={
                 offset === 0
-                  ? 'The top 100 by Macrotrophy Score. Updates every minute or so. Tap a name to see how the points add up.'
+                  ? 'The top 100 by Macrotrophy Score. Updates every minute or so. Tap a name for their points and routine.'
                   : 'Final result, locked when it ended.'
               }
             >
@@ -231,12 +257,25 @@ export function GlobalPage() {
                   aria-labelledby="global-board-title"
                   data-global-board
                 >
-                  {b.rows.map((r) => (
+                  {(podium && open !== null && open <= 3
+                    ? b.rows.slice(0, 3).filter((r) => r.rank === open)
+                    : []
+                  ).map((r) => (
+                    <GlobalRowView
+                      key={`p${r.rank}`}
+                      row={r}
+                      open
+                      onToggle={() => setOpen(null)}
+                      onRoutine={() => setRoutineOf(r)}
+                    />
+                  ))}
+                  {listRows.map((r) => (
                     <GlobalRowView
                       key={r.rank}
                       row={r}
                       open={open === r.rank}
                       onToggle={() => setOpen((o) => (o === r.rank ? null : r.rank))}
+                      onRoutine={() => setRoutineOf(r)}
                     />
                   ))}
                   {b.mine && !mineInTop ? (
@@ -248,6 +287,7 @@ export function GlobalPage() {
                         row={b.mine}
                         open={open === b.mine.rank}
                         onToggle={() => setOpen((o) => (o === b.mine!.rank ? null : b.mine!.rank))}
+                        onRoutine={() => setRoutineOf(b.mine)}
                       />
                     </>
                   ) : null}
@@ -255,10 +295,67 @@ export function GlobalPage() {
               )}
             </Section>
 
+            <Section title="Your privacy" id="global-privacy-title">
+              <div
+                className="divide-y-[0.5px] divide-divider overflow-hidden rounded-card bg-surface"
+                data-global-privacy
+              >
+                <div className="flex items-start gap-3 px-4 py-3">
+                  <span className="min-w-0 flex-1">
+                    <span id="global-privacy" className="type-headline block text-text-1">
+                      Show my username
+                    </span>
+                    <span className="type-subhead block text-text-2">
+                      {b.hasUsername
+                        ? 'Your name always shows. Turn this on to show your username next to it.'
+                        : 'Your name shows here. Pick a username in Groups to show it too.'}
+                    </span>
+                    {!b.hasUsername ? (
+                      <Link
+                        to="/groups"
+                        className="type-subhead mt-1 inline-block font-semibold text-lime"
+                      >
+                        Pick a username
+                      </Link>
+                    ) : null}
+                  </span>
+                  <Switch
+                    checked={showUsername && b.hasUsername}
+                    onChange={(next) => void toggle(next)}
+                    disabled={!b.hasUsername || saving}
+                    aria-labelledby="global-privacy"
+                  />
+                </div>
+                <div className="flex items-start gap-3 px-4 py-3">
+                  <span className="min-w-0 flex-1">
+                    <span id="routine-privacy" className="type-headline block text-text-1">
+                      Show my routine plan
+                    </span>
+                    <span className="type-subhead block text-text-2">
+                      People who tap you see your days, exercises, sets and reps. Never your
+                      weights, food or body.
+                    </span>
+                  </span>
+                  <Switch
+                    checked={shareRoutine}
+                    onChange={(next) => void toggleRoutine(next)}
+                    aria-labelledby="routine-privacy"
+                    data-share-routine-switch
+                  />
+                </div>
+              </div>
+            </Section>
+
             <HowPointsWork />
           </>
         ) : null}
       </div>
+      <BoardRoutineSheet
+        open={routineOf !== null}
+        onClose={() => setRoutineOf(null)}
+        owner={routineOf?.name ?? ''}
+        load={() => getBoardRoutine(period, offset, routineOf!.rank)}
+      />
       {b?.mine ? (
         <RankShareSheet
           open={sharing}
@@ -293,14 +390,61 @@ export function GlobalPage() {
   );
 }
 
+const ROUTINE_NOTICE_KEY = 'overload.routineNotice';
+
+/** The top three, side by side, first in the middle and raised. */
+function Podium({ rows, onPick }: { rows: GlobalRow[]; onPick: (r: GlobalRow) => void }) {
+  const order = [rows[1]!, rows[0]!, rows[2]!];
+  return (
+    <ol className="grid grid-cols-3 items-end gap-2" aria-label="Top three" data-podium>
+      {order.map((r) => {
+        const first = r.rank === 1;
+        return (
+          <li key={r.rank} className={first ? 'order-none' : ''}>
+            <button
+              type="button"
+              onClick={() => onPick(r)}
+              className={cn(
+                'pressable relative flex w-full flex-col items-center gap-2 overflow-hidden rounded-card bg-surface px-2 text-center',
+                first ? 'glow-lime pt-5 pb-4' : 'pt-4 pb-3',
+              )}
+              data-podium-rank={r.rank}
+            >
+              {first ? <Crown className="size-5 text-gold" aria-hidden /> : null}
+              <span className={first ? 'scale-125' : ''}>
+                <MemberAvatar username={r.name} avatar={r.avatar} />
+              </span>
+              <span className="type-subhead line-clamp-2 min-h-[2.5em] w-full break-words text-text-1">
+                {r.name}
+                {r.pro ? <ProCrown /> : null}
+                {r.me ? <span className="block text-text-2">You</span> : null}
+              </span>
+              <span
+                className={cn(
+                  'type-caption tabular rounded-full px-2 py-0.5 font-semibold',
+                  MEDAL[r.rank - 1],
+                )}
+              >
+                #{r.rank} · {formatNumber(r.score)}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function GlobalRowView({
   row: r,
   open,
   onToggle,
+  onRoutine,
 }: {
   row: GlobalRow;
   open: boolean;
   onToggle: () => void;
+  onRoutine: () => void;
 }) {
   return (
     <li className={cn(r.me && 'bg-lime-dim')} data-global-row={r.rank} data-me={r.me || undefined}>
@@ -323,6 +467,7 @@ function GlobalRowView({
         <span className="min-w-0 flex-1">
           <span className="type-headline block truncate text-text-1">
             {r.name}
+            {r.pro ? <ProCrown /> : null}
             {r.me ? <span className="type-subhead ml-1.5 text-text-2">You</span> : null}
           </span>
           {r.username ? (
@@ -352,6 +497,13 @@ function GlobalRowView({
               </li>
             ))}
           </ul>
+          {!r.me ? (
+            <div className="mt-3">
+              <TextButton onClick={onRoutine} data-see-routine>
+                See their routine
+              </TextButton>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </li>

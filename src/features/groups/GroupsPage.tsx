@@ -276,24 +276,34 @@ function GroupRow({ group: g }: { group: MyGroup }) {
 export function HowPointsWork() {
   const items = [
     {
-      points: POINTS.workout,
+      points: `+${POINTS.workout}`,
       what: 'a workout',
-      detail: `10 minutes or more, with at least 3 working sets. Up to ${WEEKLY_CAPS.workouts} a week, 2 a day.`,
+      detail: `10 minutes or more, at least 3 working sets ticked as you do them. One a day, up to ${WEEKLY_CAPS.workouts} a week.`,
     },
     {
-      points: POINTS.hardSet,
+      points: `+${POINTS.hardSet}`,
       what: 'a hard set',
       detail: `A working set close to failure. Warm-ups and easy sets (5+ reps left) do not count. Up to ${WEEKLY_CAPS.hardSets} a week.`,
     },
     {
-      points: POINTS.record,
+      points: `+${POINTS.record}`,
       what: 'a personal record',
       detail: `A new best on an exercise you have done at least twice before. Up to ${WEEKLY_CAPS.records} a week.`,
     },
     {
-      points: POINTS.proteinDay,
+      points: `+${POINTS.consistencyWeek}`,
+      what: 'a consistent week',
+      detail: 'Train on 3 or more days in a Monday to Sunday week.',
+    },
+    {
+      points: '+1',
+      what: 'each 1% stronger',
+      detail: `On average across 3 or more lifts, against the 4 weeks before. Up to ${WEEKLY_CAPS.progress} points.`,
+    },
+    {
+      points: `+${POINTS.proteinDay}`,
       what: 'a protein day',
-      detail: 'A day your logged protein reaches 90% of your own target.',
+      detail: 'A day your logged protein, over 2 or more meals, reaches 90% of your own target.',
     },
   ];
   return (
@@ -305,7 +315,7 @@ export function HowPointsWork() {
           The science
         </TextButton>
       }
-      footer="Everyone is measured against themselves, so a beginner can beat a strong lifter by showing up and pushing hard. Weeks run Monday to Sunday, India time."
+      footer="Everyone is measured against themselves, so a beginner can beat a strong lifter by showing up and pushing hard. Nothing typed in by hand alone (steps, body weight) earns points. Weeks run Monday to Sunday, India time."
     >
       <ul
         className="divide-y-[0.5px] divide-divider rounded-card bg-surface px-4"
@@ -314,7 +324,7 @@ export function HowPointsWork() {
         {items.map((i) => (
           <li key={i.what} className="flex gap-3 py-3">
             <span className="type-headline tabular flex h-8 min-w-12 shrink-0 items-center justify-center rounded-full bg-lime px-2 text-on-lime">
-              +{i.points}
+              {i.points}
             </span>
             <span className="min-w-0">
               <span className="type-headline block text-text-1">For {i.what}</span>

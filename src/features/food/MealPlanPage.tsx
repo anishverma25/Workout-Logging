@@ -49,7 +49,13 @@ interface SavedPlan {
   seed: number;
   targets: { kcal: number; proteinG: number };
   proteinShort: boolean;
-  days: { meals: { meal: Meal; kitchen: boolean; items: { id: string; amount: number; unit: UnitId }[] }[] }[];
+  days: {
+    meals: {
+      meal: Meal;
+      kitchen: boolean;
+      items: { id: string; amount: number; unit: UnitId }[];
+    }[];
+  }[];
 }
 
 const sum = (items: Portion[]): Nutrients =>
@@ -106,14 +112,27 @@ export function MealPlanPage() {
   const weekStart = startOfWeek(now, prefs.weekStartsOn);
   const weekKey = toDateKey(weekStart);
   const today = toDateKey(now);
-  const [day, setDay] = useState(() => Math.min(6, Math.max(0, Math.round((new Date(`${today}T12:00:00`).getTime() - new Date(`${weekKey}T12:00:00`).getTime()) / 86_400_000))));
+  const [day, setDay] = useState(() =>
+    Math.min(
+      6,
+      Math.max(
+        0,
+        Math.round(
+          (new Date(`${today}T12:00:00`).getTime() - new Date(`${weekKey}T12:00:00`).getTime()) /
+            86_400_000,
+        ),
+      ),
+    ),
+  );
 
   const item = items.status === 'success' ? mealPlanFrom(items.data, weekKey) : null;
   const saved = (item?.data as unknown as SavedPlan | undefined) ?? null;
   const days = saved && ctx.status === 'success' ? hydrate(saved, ctx) : null;
   const grocery = days && saved ? groceryList(days, saved.setting) : [];
   const targets =
-    ctx.targets.kcal && ctx.targets.proteinG ? { kcal: ctx.targets.kcal, proteinG: ctx.targets.proteinG } : null;
+    ctx.targets.kcal && ctx.targets.proteinG
+      ? { kcal: ctx.targets.kcal, proteinG: ctx.targets.proteinG }
+      : null;
 
   const choose = (next: typeof meal) => {
     setMeal(next);
@@ -155,7 +174,13 @@ export function MealPlanPage() {
     try {
       const logs = await logFoods(
         db,
-        m.items.map((p) => ({ food: p.food, amount: p.amount, unit: p.unit, size: p.size, oilLevel: null })),
+        m.items.map((p) => ({
+          food: p.food,
+          amount: p.amount,
+          unit: p.unit,
+          size: p.size,
+          oilLevel: null,
+        })),
         { date, meal: m.meal, katoriMl: ctx.katoriMl },
       );
       toast(`Logged ${MEAL_LABEL[m.meal].toLowerCase()}`, {
@@ -186,7 +211,11 @@ export function MealPlanPage() {
 
   return (
     <>
-      <PageHeader back={{ to: '/food', label: 'Food' }} title="Plan my week" subtitle="Meals that hit your targets" />
+      <PageHeader
+        back={{ to: '/food', label: 'Food' }}
+        title="Plan my week"
+        subtitle="Meals that hit your targets"
+      />
       {!pro ? (
         <ProLock feature="meal_plan" />
       ) : ctx.status === 'loading' || items.status === 'loading' ? (
@@ -209,7 +238,10 @@ export function MealPlanPage() {
                 label="Where you eat"
                 value={meal.setting}
                 onChange={(setting) => choose({ ...meal, setting })}
-                options={(Object.keys(SETTING_LABEL) as Setting[]).map((s) => ({ value: s, label: SETTING_LABEL[s] }))}
+                options={(Object.keys(SETTING_LABEL) as Setting[]).map((s) => ({
+                  value: s,
+                  label: SETTING_LABEL[s],
+                }))}
               />
               <p className="type-footnote text-text-2">{SETTING_HINT[meal.setting]}</p>
             </div>
@@ -219,18 +251,32 @@ export function MealPlanPage() {
                 label="Budget"
                 value={meal.budget}
                 onChange={(budget) => choose({ ...meal, budget })}
-                options={(Object.keys(BUDGET_LABEL) as Budget[]).map((b) => ({ value: b, label: BUDGET_LABEL[b] }))}
+                options={(Object.keys(BUDGET_LABEL) as Budget[]).map((b) => ({
+                  value: b,
+                  label: BUDGET_LABEL[b],
+                }))}
               />
               <p className="type-footnote text-text-2">{BUDGET_HINT[meal.budget]}</p>
             </div>
             <p className="type-subhead text-text-2">
               Aiming at{' '}
-              <span className="tabular font-semibold text-text-1">{targets.kcal.toLocaleString('en-IN')} kcal</span> and{' '}
-              <span className="tabular font-semibold text-text-1">{targets.proteinG} g protein</span> a day, your current
-              targets{ctx.diet ? `, ${ctx.diet === 'nonveg' ? 'non-veg' : ctx.diet}` : ''}.
+              <span className="tabular font-semibold text-text-1">
+                {targets.kcal.toLocaleString('en-IN')} kcal
+              </span>{' '}
+              and{' '}
+              <span className="tabular font-semibold text-text-1">
+                {targets.proteinG} g protein
+              </span>{' '}
+              a day, your current targets
+              {ctx.diet ? `, ${ctx.diet === 'nonveg' ? 'non-veg' : ctx.diet}` : ''}.
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <PrimaryButton block loading={busy} onClick={() => void make(saved ? saved.seed + 1 : 0)} data-meal-plan-make>
+              <PrimaryButton
+                block
+                loading={busy}
+                onClick={() => void make(saved ? saved.seed + 1 : 0)}
+                data-meal-plan-make
+              >
                 {saved ? 'Make another week' : 'Make my week'}
               </PrimaryButton>
             </div>
@@ -239,12 +285,19 @@ export function MealPlanPage() {
           {saved && days && shownDay ? (
             <>
               {saved.proteinShort ? (
-                <p className="type-footnote rounded-nested bg-surface-2 p-3 text-text-2" role="status">
-                  Your protein target could not be fully met with this kitchen and budget. A wider budget, or eggs or
-                  whey if you eat them, closes it.
+                <p
+                  className="type-footnote rounded-nested bg-surface-2 p-3 text-text-2"
+                  role="status"
+                >
+                  Your protein target could not be fully met with this kitchen and budget. A wider
+                  budget, or eggs or whey if you eat them, closes it.
                 </p>
               ) : null}
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Days">
+              <div
+                className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+                role="tablist"
+                aria-label="Days"
+              >
                 {days.map((d) => {
                   const date = addDays(weekStart, d.index);
                   const on = d.index === day;
@@ -266,13 +319,20 @@ export function MealPlanPage() {
                   );
                 })}
               </div>
-              <section className="flex flex-col divide-y-[0.5px] divide-divider rounded-panel bg-surface px-5" data-meal-plan-day={day}>
+              <section
+                className="flex flex-col divide-y-[0.5px] divide-divider rounded-panel bg-surface px-5"
+                data-meal-plan-day={day}
+              >
                 {shownDay.meals.map((m) => (
                   <div key={m.meal} className="py-4" data-plan-meal={m.meal}>
                     <div className="flex items-baseline justify-between gap-3">
                       <h2 className="type-headline text-text-1">
                         {MEAL_LABEL[m.meal]}
-                        {m.kitchen ? <span className="type-footnote ml-2 font-normal text-text-2">as served</span> : null}
+                        {m.kitchen ? (
+                          <span className="type-footnote ml-2 font-normal text-text-2">
+                            as served
+                          </span>
+                        ) : null}
                       </h2>
                       <span className="type-footnote tabular text-text-2">
                         {Math.round(sum(m.items).kcal)} kcal · {Math.round(sum(m.items).proteinG)} g
@@ -282,12 +342,20 @@ export function MealPlanPage() {
                       {m.items.map((p) => (
                         <li key={p.food.id} className="type-subhead text-text-2">
                           {p.food.name}
-                          <span className="text-text-2"> · {portionText(p.amount, p.unit, p.size, p.food.pieceName)}</span>
+                          <span className="text-text-2">
+                            {' '}
+                            · {portionText(p.amount, p.unit, p.size, p.food.pieceName)}
+                          </span>
                         </li>
                       ))}
                     </ul>
                     {dayDate <= today ? (
-                      <SecondaryButton compact className="mt-3" onClick={() => void logMeal(m, dayDate)} data-plan-log>
+                      <SecondaryButton
+                        compact
+                        className="mt-3"
+                        onClick={() => void logMeal(m, dayDate)}
+                        data-plan-log
+                      >
                         Log this meal
                       </SecondaryButton>
                     ) : null}
@@ -304,9 +372,15 @@ export function MealPlanPage() {
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="type-headline flex items-center gap-2 text-text-1">
                       <ShoppingBasket className="size-5 text-text-2" aria-hidden />
-                      {saved.setting === 'home' ? 'Grocery list for the week' : 'To keep in your room'}
+                      {saved.setting === 'home'
+                        ? 'Grocery list for the week'
+                        : 'To keep in your room'}
                     </h2>
-                    <SecondaryButton compact icon={copied ? <Check /> : <Copy />} onClick={() => void copy()}>
+                    <SecondaryButton
+                      compact
+                      icon={copied ? <Check /> : <Copy />}
+                      onClick={() => void copy()}
+                    >
                       {copied ? 'Copied' : 'Copy'}
                     </SecondaryButton>
                   </div>
@@ -314,13 +388,15 @@ export function MealPlanPage() {
                     {grocery.map((g) => (
                       <li key={g.name} className="flex items-baseline justify-between gap-3">
                         <span className="type-subhead text-text-1">{g.name}</span>
-                        <span className="type-subhead tabular shrink-0 text-text-2">{groceryText(g)}</span>
+                        <span className="type-subhead tabular shrink-0 text-text-2">
+                          {groceryText(g)}
+                        </span>
                       </li>
                     ))}
                   </ul>
                   <p className="type-footnote mt-3 text-text-2">
-                    Amounts are for one person for the seven days, rounded up to the nearest 50 g. Oil, salt and spices
-                    you already have are included where a recipe uses them.
+                    Amounts are for one person for the seven days, rounded up to the nearest 50 g.
+                    Oil, salt and spices you already have are included where a recipe uses them.
                   </p>
                 </section>
               ) : null}

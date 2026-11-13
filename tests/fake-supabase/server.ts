@@ -387,6 +387,7 @@ interface FakeRazorpaySub {
   current_end: number | null;
   notes: Record<string, string>;
   plan_id: string;
+  start_at: number | null;
 }
 const fakeOrders = new Map<string, { id: string; amount: number }>();
 const fakeSubs = new Map<string, FakeRazorpaySub>();
@@ -396,13 +397,14 @@ const billingDeps: BillingDeps = {
   config: FAKE_RAZORPAY,
   async razorpay(method, path, body) {
     if (method === 'POST' && path === '/subscriptions') {
-      const b = body as { plan_id: string; notes: Record<string, string> };
-      const sub = {
+      const b = body as { plan_id: string; notes: Record<string, string>; start_at?: number };
+      const sub: FakeRazorpaySub = {
         id: `sub_${randomBytes(6).toString('hex')}`,
         status: 'created',
         current_end: null,
         notes: b.notes,
         plan_id: b.plan_id,
+        start_at: b.start_at ?? null,
       };
       fakeSubs.set(sub.id, sub);
       return sub;
@@ -413,14 +415,34 @@ const billingDeps: BillingDeps = {
       fakeOrders.set(order.id, order);
       return order;
     }
+    const plan = /^\/plans\/(\w+)$/.exec(path);
+    if (plan) {
+      // A Razorpay plan carries the amount it was made with: here, the price on the server.
+      const row = await pg.query<{ price_inr: string }>(
+        'select price_inr from public.billing_plans where razorpay_plan_id = $1',
+        [plan[1]],
+      );
+      return row.rows[0]
+        ? { id: plan[1], item: { amount: Math.round(Number(row.rows[0].price_inr) * 100) } }
+        : null;
+    }
     const cancel = /^\/subscriptions\/(\w+)\/cancel$/.exec(path);
-    if (cancel) return fakeSubs.get(cancel[1]!) ?? null;
+    if (cancel) {
+      const sub = fakeSubs.get(cancel[1]!);
+      if (sub && (body as { cancel_at_cycle_end?: number }).cancel_at_cycle_end === 0) {
+        sub.status = 'cancelled';
+      }
+      return sub ?? null;
+    }
     const get = /^\/subscriptions\/(\w+)$/.exec(path);
     if (get) {
       // Checkout finished: the first charge went through for one period.
       const sub = fakeSubs.get(get[1]!);
       if (!sub) return null;
-      if (sub.status === 'created') {
+      if (sub.status === 'created' && sub.start_at && sub.start_at * 1000 > Date.now()) {
+        // The mandate is set up; the plan's own charges start later.
+        sub.status = 'authenticated';
+      } else if (sub.status === 'created') {
         const end = new Date();
         end.setMonth(end.getMonth() + (PLAN_MONTHS[sub.plan_id] ?? 1));
         sub.status = 'active';
@@ -499,7 +521,15 @@ function fakeCoachProvider(name: 'gemini' | 'groq'): CoachProvider {
       if (system === FOOD_PHOTO_PROMPT) return fakePhotoAnswer(name, last);
       if (system === FOOD_MENU_PROMPT)
         return JSON.stringify({
-          dishes: ['Paneer Butter Masala ₹240', 'Dal Tadka 120', 'Tandoori Roti', 'Jeera Rice', 'Chicken Tikka (6 pcs)', 'Gulab Jamun', 'Chef Special Zzyx'],
+          dishes: [
+            'Paneer Butter Masala ₹240',
+            'Dal Tadka 120',
+            'Tandoori Roti',
+            'Jeera Rice',
+            'Chicken Tikka (6 pcs)',
+            'Gulab Jamun',
+            'Chef Special Zzyx',
+          ],
         });
       if (system === FOOD_LABEL_PROMPT) {
         // The stronger label model is "over its free allowance", so the usual one answers.
@@ -712,6 +742,21 @@ const server = createServer(async (req, res) => {
            and user_id = (select id from auth.users where email = $1)`,
         [email],
       );
+      // And its sets ticked a couple of minutes apart through the session, as a real workout's
+      // are (the score needs the working sets to span 2 minutes or more).
+      await pg.query(
+        `with ordered as (
+           select s.id, w.started_at,
+             row_number() over (partition by s.workout_id order by s.order_index, s.id) as n
+           from public.sets s
+           join public.workouts w on w.id = s.workout_id and w.user_id = s.user_id
+           where s.completed_at is not null and w.status = 'completed'
+             and w.user_id = (select id from auth.users where email = $1)
+         )
+         update public.sets s set completed_at = o.started_at + make_interval(mins => 2 * o.n::int)
+         from ordered o where o.id = s.id`,
+        [email],
+      );
       return send(res, 200, { changed: result.affectedRows ?? 0 });
     }
     if (url.pathname === '/__test/early-access' && req.method === 'POST') {
@@ -732,6 +777,33 @@ const server = createServer(async (req, res) => {
           : 'update public.billing_plans set razorpay_plan_id = null',
       );
       return send(res, 200, { connected });
+    }
+    // Test control, standing in for the owner approving every waiting food in the SQL editor.
+    if (url.pathname === '/__test/approve-foods' && req.method === 'POST') {
+      const waiting = await pg.query<{ id: string }>(
+        `select id from public.food_submissions where status = 'pending'`,
+      );
+      for (const row of waiting.rows) await pg.query('select public.approve_food($1)', [row.id]);
+      return send(res, 200, { approved: waiting.rows.length });
+    }
+    // Test control, standing in for the owner making a coupon code in the SQL editor.
+    if (url.pathname === '/__test/coupon' && req.method === 'POST') {
+      const { code, percent } = (await readJson(req)) as { code: string; percent?: number };
+      await pg.query(
+        `insert into public.coupons (code, percent) values ($1, $2) on conflict (code) do nothing`,
+        [code, percent ?? 10],
+      );
+      return send(res, 200, { code });
+    }
+    // Test control: marks an account as a member from before the November 2026 prices.
+    if (url.pathname === '/__test/early-member' && req.method === 'POST') {
+      const { email } = (await readJson(req)) as { email: string };
+      await pg.query(
+        `update public.subscriptions set early_member = true
+         where user_id = (select id from auth.users where email = $1)`,
+        [email],
+      );
+      return send(res, 200, { email });
     }
     // Test control, standing in for Razorpay Checkout's signature on a finished payment.
     if (url.pathname === '/__test/razorpay-sign' && req.method === 'POST') {

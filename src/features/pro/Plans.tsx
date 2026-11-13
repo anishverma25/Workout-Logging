@@ -1,17 +1,17 @@
 import { useState } from 'react';
-import { AlertTriangle, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, Tag } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import {
   BillingError,
   cancelPlan,
+  checkCoupon,
   formatRupees,
-  perDay,
   perMonth,
-  regularPrice,
-  savingPercent,
   startCheckout,
   usePlans,
+  withCoupon,
   type BillingPlan,
+  type Coupon,
 } from '@/app/billing';
 import type { EntitlementView } from '@/app/entitlement';
 import { markProJustStarted } from './justPaid';
@@ -23,7 +23,10 @@ import {
   DestructiveButton,
   InlineNotice,
   PrimaryButton,
+  SecondaryButton,
   Skeleton,
+  TextButton,
+  TextField,
 } from '@/components/kit';
 import { useProfile } from '@/data/hooks';
 import { TRIAL_HOURS } from '@/domain/entitlement/entitlement';
@@ -57,40 +60,9 @@ function bestValue(plans: BillingPlan[]): BillingPlan['id'] | null {
   return perMonth(sorted[0]!) < perMonth(sorted[1]!) ? sorted[0]!.id : null;
 }
 
-/**
- * Early bird framing (November 2026): the server's prices are below the regular prices in
- * `REGULAR_PRICE_INR`, so say so plainly. No countdown and no invented stock. Renewing plans keep
- * the price they were bought at, so joining now really does keep it.
- */
-function EarlyBird({ plans, mode }: { plans: BillingPlan[]; mode: PayMode }) {
-  if (!plans.some((p) => regularPrice(p) !== null)) return null;
-  const monthly = plans.find((p) => p.id === 'monthly');
-  const daily = monthly ? perDay(monthly) : null;
-  return (
-    <div className="mb-4 rounded-nested bg-lime-dim px-4 py-3" data-testid="intro-offer">
-      <p className="flex flex-wrap items-center gap-2">
-        <span className="type-caption rounded-full bg-lime px-2 py-0.5 font-semibold text-on-lime">
-          Early bird offer
-        </span>
-        <span className="type-headline text-text-1">Pro for less, while Macrotrophy is new</span>
-      </p>
-      <p className="type-meta mt-1.5 text-text-1">
-        {mode === 'subscribe'
-          ? 'These are early bird prices, below our regular prices. Subscribe now and you keep your price for as long as your plan renews.'
-          : 'These are early bird prices, below our regular prices, which will apply later.'}
-      </p>
-      {monthly && daily !== null && daily < 1 ? (
-        <p className="type-meta tabular mt-1 text-text-1">
-          Monthly is just {formatRupees(monthly.priceInr)}, under ₹1 a day.
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
 function ModeChoice({ value, onChange }: { value: PayMode; onChange: (m: PayMode) => void }) {
   const options: { id: PayMode; title: string; note: string }[] = [
-    { id: 'subscribe', title: 'Auto-renew', note: 'Renews until you cancel' },
+    { id: 'subscribe', title: 'Autopay', note: 'Renews until you cancel' },
     { id: 'once', title: 'Pay once', note: 'No renewal, no mandate' },
   ];
   return (
@@ -134,7 +106,6 @@ function PlanChoice({
     <div role="radiogroup" aria-label="Pro plans" className="flex flex-col gap-2">
       {plans.map((p) => {
         const selected = p.id === value;
-        const saving = savingPercent(p, plans);
         return (
           <button
             key={p.id}
@@ -147,46 +118,168 @@ function PlanChoice({
               selected && 'ring-2 ring-lime ring-inset',
             )}
           >
-            <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-2">
-                <span className="type-headline">{p.label}</span>
-                {p.id === best ? (
-                  <span className="type-caption rounded-full bg-lime px-2 py-0.5 font-semibold text-on-lime">
-                    Best value
-                  </span>
-                ) : null}
-              </span>
-              <span className="type-meta tabular mt-0.5 block text-text-2">
-                {p.months > 1
-                  ? `${formatRupees(Math.round(perMonth(p) * 100) / 100)} a month`
-                  : 'Billed monthly'}
-                {saving ? ` · save ${saving}%` : ''}
-              </span>
+            <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <span className="type-headline">{p.label}</span>
+              {p.id === best ? (
+                <span className="type-caption rounded-full bg-lime px-2 py-0.5 font-semibold text-on-lime">
+                  Best value
+                </span>
+              ) : null}
             </span>
             <span className="text-right">
-              <span className="flex items-baseline justify-end gap-1.5">
-                {regularPrice(p) !== null ? (
-                  <>
-                    <span
-                      className="type-meta tabular text-text-2 line-through"
-                      aria-hidden
-                      data-regular-price
-                    >
-                      {formatRupees(regularPrice(p)!)}
-                    </span>
-                    <span className="sr-only">
-                      Regular price {formatRupees(regularPrice(p)!)}, early bird price
-                    </span>
-                  </>
-                ) : null}
-                <span className="type-title tabular">{formatRupees(p.priceInr)}</span>
-              </span>
+              <span className="type-title tabular block">{formatRupees(p.priceInr)}</span>
               <span className="type-meta block text-text-2">{periods[p.id]}</span>
             </span>
           </button>
         );
       })}
     </div>
+  );
+}
+
+/**
+ * "Have a code?": a quiet line that opens one field. The server decides whether the code works
+ * for this account, and checks it again when the payment starts.
+ */
+/** An early member's own code, shown to them only, with one tap to use it. */
+function EarlyCode({
+  code,
+  percent,
+  onApply,
+}: {
+  code: string;
+  percent: number;
+  onApply: (c: Coupon) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="mt-4 rounded-nested bg-surface-2 px-4 py-3" data-early-code>
+      <div className="flex items-center gap-3">
+        <Tag className="size-4 shrink-0 text-lime" aria-hidden />
+        <p className="type-meta min-w-0 flex-1 text-text-1 [text-wrap:pretty]">
+          You were with us before the new prices. Your code{' '}
+          <span className="font-semibold">{code}</span> takes {percent}% off your first payment.
+        </p>
+        <TextButton
+          data-use-early-code
+          onClick={() => {
+            if (busy) return;
+            setBusy(true);
+            setError(null);
+            checkCoupon(code)
+              .then(onApply)
+              .catch((err: unknown) =>
+                setError(
+                  err instanceof BillingError
+                    ? err.message
+                    : 'Could not check the code. Try again.',
+                ),
+              )
+              .finally(() => setBusy(false));
+          }}
+        >
+          Use code
+        </TextButton>
+      </div>
+      {error ? (
+        <p role="alert" className="type-caption mt-2 text-warning">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function CouponBox({
+  coupon,
+  onChange,
+}: {
+  coupon: Coupon | null;
+  onChange: (c: Coupon | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (coupon) {
+    return (
+      <div
+        className="mt-3 flex items-center gap-3 rounded-nested bg-lime-dim px-4 py-3"
+        data-coupon-applied
+      >
+        <Tag className="size-4 shrink-0 text-lime" aria-hidden />
+        <p className="type-meta min-w-0 flex-1 text-text-1">
+          <span className="font-semibold">{coupon.code}</span> applied: {coupon.percent}% off your
+          first payment.
+        </p>
+        <TextButton
+          onClick={() => {
+            onChange(null);
+            setCode('');
+          }}
+        >
+          Remove
+        </TextButton>
+      </div>
+    );
+  }
+  if (!open) {
+    return (
+      <div className="mt-3 text-center">
+        <TextButton onClick={() => setOpen(true)}>Have a code?</TextButton>
+      </div>
+    );
+  }
+  const apply = async () => {
+    const clean = code.trim();
+    if (!clean) return;
+    setBusy(true);
+    setError(null);
+    try {
+      onChange(await checkCoupon(clean));
+    } catch (err) {
+      setError(err instanceof BillingError ? err.message : 'Could not check the code. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form
+      className="mt-3 flex flex-col gap-2"
+      onSubmit={(ev) => {
+        ev.preventDefault();
+        void apply();
+      }}
+    >
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <TextField
+            label="Code"
+            value={code}
+            onChange={(ev) => {
+              setCode(ev.target.value.toUpperCase());
+              setError(null);
+            }}
+            maxLength={20}
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="off"
+            autoFocus
+          />
+        </div>
+        <SecondaryButton type="submit" loading={busy} disabled={!code.trim()}>
+          Apply
+        </SecondaryButton>
+      </div>
+      {error ? (
+        <p role="alert" className="type-footnote text-danger-text">
+          {error}
+        </p>
+      ) : null}
+    </form>
   );
 }
 
@@ -204,27 +297,19 @@ const PROMISES: Record<PayMode, string[]> = {
 };
 
 /**
- * Choosing and buying a plan, or managing the one you have. Prices come from the server. A plan
- * that is not connected to Razorpay yet shows its price with "Opening soon".
+ * Choosing and buying a plan, or managing the one you have. Prices come from the server. Both
+ * ways to pay are always offered: autopay and one payment. A member can always add time: after
+ * paying once, or once renewal is off, a new plan starts when the paid time runs out, so
+ * nothing is paid for twice.
  */
 export function PlansSection({ entitlement: e }: { entitlement: EntitlementView }) {
   const account = useAccount();
   const plans = usePlans();
   const signedIn = account.status === 'signedIn';
 
-  if (signedIn && e.billingPlan && e.plan === 'pro') {
-    if (!e.paidOnce) return <ManagePlan entitlement={e} />;
-    // Paid once: show what they have, and let them add more time.
-    return (
-      <div className="flex flex-col gap-4">
-        <ManagePlan entitlement={e} />
-        {plans && plans.length > 0 ? (
-          <BuyPlan plans={plans} entitlement={e} signedIn onceOnly />
-        ) : null}
-      </div>
-    );
-  }
   if (signedIn && e.plan === 'founding') return null;
+  const member = signedIn && e.plan === 'pro';
+  if (member && e.billingPlan && e.renews) return <ManagePlan entitlement={e} />;
   if (plans === null) {
     return (
       <div id="get-pro" aria-busy aria-label="Loading plans">
@@ -232,7 +317,19 @@ export function PlansSection({ entitlement: e }: { entitlement: EntitlementView 
       </div>
     );
   }
-  if (plans.length === 0) {
+  const buy =
+    plans.length > 0 ? (
+      <BuyPlan plans={plans} entitlement={e} signedIn={signedIn} extend={member} />
+    ) : null;
+  if (member && e.billingPlan) {
+    return (
+      <div className="flex flex-col gap-4">
+        <ManagePlan entitlement={e} />
+        {buy}
+      </div>
+    );
+  }
+  if (!buy) {
     return (
       <section id="get-pro" aria-labelledby="plans-title">
         <h2 id="plans-title" className="type-title mb-3 text-text-1">
@@ -244,20 +341,20 @@ export function PlansSection({ entitlement: e }: { entitlement: EntitlementView 
       </section>
     );
   }
-  return <BuyPlan plans={plans} entitlement={e} signedIn={signedIn} />;
+  return buy;
 }
 
 function BuyPlan({
   plans,
   entitlement: e,
   signedIn,
-  onceOnly = false,
+  extend = false,
 }: {
   plans: BillingPlan[];
   entitlement: EntitlementView;
   signedIn: boolean;
-  /** Adding time to Pro that was paid for once: no renewing option. */
-  onceOnly?: boolean;
+  /** The person has Pro time left: this adds to it. */
+  extend?: boolean;
 }) {
   const account = useAccount();
   const profile = useProfile().data;
@@ -265,30 +362,43 @@ function BuyPlan({
   const [choice, setChoice] = useState<BillingPlan['id']>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
   const [done, setDone] = useState(false);
-  const [mode, setMode] = useState<PayMode>(onceOnly ? 'once' : 'subscribe');
+  const [mode, setMode] = useState<PayMode>(extend ? 'once' : 'subscribe');
+  const [coupon, setCoupon] = useState<Coupon | null>(null);
   const shown = priced(plans, mode);
   const plan = shown.find((p) => p.id === choice) ?? shown[0]!;
   const periods = mode === 'once' ? PERIOD_ONCE : PERIOD;
   // A single payment needs no Razorpay plan, so every listed plan can be bought that way.
-  const open = (p: BillingPlan) => (mode === 'once' ? true : p.available);
-  const anyOpen = shown.some(open);
+  const open = mode === 'once' ? true : plan.available;
+  const first = withCoupon(plan.priceInr, coupon);
+  const until = extend && e.proEndsAt ? formatCalendarDate(e.proEndsAt) : null;
+
+  const pick = (m: PayMode) => {
+    setMode(m);
+    setError(null);
+    setFailed(null);
+  };
 
   const buy = async () => {
     setBusy(true);
     setError(null);
+    setFailed(null);
     try {
-      const result = await startCheckout(
+      const out = await startCheckout(
         plan.id,
         { email: account.user?.email, name: profile?.displayName },
         mode,
+        coupon?.code ?? null,
       );
-      if (result === 'paid') {
+      if (out.result === 'paid') {
         setDone(true);
         // A paid-for page should not keep selling: reload so the whole app, every Pro gate
         // included, comes back with the new plan, and the Pro page opens with the welcome.
         markProJustStarted();
         window.location.reload();
+      } else if (out.failed) {
+        setFailed(out.failed);
       }
     } catch (err) {
       setError(err instanceof BillingError ? err.message : 'Something went wrong. Try again.');
@@ -297,41 +407,43 @@ function BuyPlan({
     }
   };
 
+  const intro = extend
+    ? mode === 'once'
+      ? `One payment adds time on top of what you have${until ? `, after ${until}` : ''}. Nothing renews.`
+      : `Autopay starts ${until ? `on ${until}, ` : ''}when the time you paid for runs out, so you never pay twice.`
+    : !signedIn
+      ? `Create a free account and every Pro feature is on for ${TRIAL_DAYS} days, with no payment details. Then choose a plan if you want to keep it.`
+      : e.plan === 'trial' && e.trialEndsAt
+        ? `Your free trial runs until ${formatCalendarDate(e.trialEndsAt)}. Paying now starts your plan today.`
+        : mode === 'once'
+          ? 'Every Pro feature for the period you choose. One payment, and it does not renew.'
+          : 'Every Pro feature, renewed automatically until you cancel.';
+
+  const payOnceInstead = (
+    <TextButton onClick={() => pick('once')} data-pay-once-instead>
+      Pay once instead
+    </TextButton>
+  );
+
   return (
-    <Card emphasis as="section" aria-labelledby="plans-title" id="get-pro">
+    <Card emphasis as="section" aria-labelledby="plans-title" id="get-pro" data-buy-plan>
       <div className="flex items-start justify-between gap-3">
         <h2 id="plans-title" className="type-title text-text-1">
-          {onceOnly ? 'Add more Pro time' : 'Pro plans'}
+          {extend ? 'Extend your Pro' : 'Pro plans'}
         </h2>
         {!signedIn ? <Badge tone="lime">{TRIAL_DAYS} days free first</Badge> : null}
       </div>
-      <p className="type-meta mt-1 mb-4 text-text-2">
-        {onceOnly
-          ? 'Each payment adds time on top of what you have left. Nothing renews.'
-          : !signedIn
-            ? `Create a free account and every Pro feature is on for ${TRIAL_DAYS} days, with no payment details. Then choose a plan if you want to keep it.`
-            : e.plan === 'trial' && e.trialEndsAt
-              ? `Your free trial runs until ${formatCalendarDate(e.trialEndsAt)}. Subscribing now starts your plan today.`
-              : mode === 'once'
-                ? 'Every Pro feature for the period you choose. One payment, and it does not renew.'
-                : 'Every Pro feature, renewed automatically until you cancel.'}
-      </p>
+      <p className="type-meta mt-1 mb-4 text-text-2">{intro}</p>
 
-      {onceOnly ? null : <EarlyBird plans={shown} mode={mode} />}
-
-      {onceOnly ? null : <ModeChoice value={mode} onChange={setMode} />}
+      <ModeChoice value={mode} onChange={pick} />
 
       <PlanChoice plans={shown} value={choice} onChange={setChoice} periods={periods} />
 
-      {perDay(plan) < 1 ? (
-        <p className="type-meta tabular mt-3 text-center text-text-1">
-          {plan.label} works out to about{' '}
-          <span className="font-semibold">
-            {formatRupees(Math.floor(perDay(plan) * 100) / 100)}
-          </span>{' '}
-          a day. Less than ₹1 a day for every Pro feature.
-        </p>
+      {signedIn && e.earlyCode && !coupon ? (
+        <EarlyCode code={e.earlyCode.code} percent={e.earlyCode.percent} onApply={setCoupon} />
       ) : null}
+
+      {signedIn ? <CouponBox coupon={coupon} onChange={setCoupon} /> : null}
 
       <ul className="mt-4 flex flex-col gap-2">
         {PROMISES[mode].map((p) => (
@@ -342,8 +454,27 @@ function BuyPlan({
         ))}
       </ul>
 
+      {failed ? (
+        <InlineNotice
+          tone="warning"
+          icon={<AlertTriangle />}
+          className="mt-4"
+          action={mode === 'subscribe' ? payOnceInstead : undefined}
+        >
+          <span data-payment-failed>
+            The last try did not go through. Razorpay says: {failed} Nothing was charged.{' '}
+            {mode === 'subscribe'
+              ? 'Some UPI apps and wallets do not support autopay; one payment usually works.'
+              : 'Try again, or use another UPI app or card.'}
+          </span>
+        </InlineNotice>
+      ) : null}
       {error ? (
-        <InlineNotice tone="warning" className="mt-4">
+        <InlineNotice
+          tone="warning"
+          className="mt-4"
+          action={mode === 'subscribe' ? payOnceInstead : undefined}
+        >
           {error}
         </InlineNotice>
       ) : null}
@@ -358,23 +489,29 @@ function BuyPlan({
           <ButtonLink to="/sign-up?next=/pro" size="lg" block>
             Start {TRIAL_DAYS} days free
           </ButtonLink>
-        ) : open(plan) ? (
+        ) : open ? (
           <PrimaryButton block loading={busy} onClick={() => void buy()}>
             {mode === 'once'
-              ? `Pay ${formatRupees(plan.priceInr)} once ${PERIOD_ONCE[plan.id]}`
-              : `Subscribe for ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]}`}
+              ? `Pay ${formatRupees(first)} once ${PERIOD_ONCE[plan.id]}`
+              : coupon
+                ? `Start autopay, ${formatRupees(first)} today`
+                : `Subscribe for ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]}`}
           </PrimaryButton>
         ) : (
-          <PrimaryButton block disabled>
-            {anyOpen ? 'This plan opens soon' : 'Plans open soon'}
+          <PrimaryButton block onClick={() => pick('once')}>
+            Autopay opens soon. Pay once instead
           </PrimaryButton>
         )}
       </div>
-      {signedIn && open(plan) ? (
+      {signedIn && open ? (
         <p className="type-caption mt-3 text-center text-text-2">
           {mode === 'once'
-            ? `Charged once, ${formatRupees(plan.priceInr)}. `
-            : `Renews ${PERIOD[plan.id]} at ${formatRupees(plan.priceInr)} until you cancel. `}
+            ? `Charged once, ${formatRupees(first)}. `
+            : coupon
+              ? `${formatRupees(first)} today for the first ${PERIOD_ONCE[plan.id].replace('for ', '')}, then ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]} until you cancel. `
+              : until
+                ? `First charge on ${until}, then ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]} until you cancel. `
+                : `Renews ${PERIOD[plan.id]} at ${formatRupees(plan.priceInr)} until you cancel. `}
           Payments by Razorpay; Macrotrophy never sees your card or UPI PIN.
         </p>
       ) : null}
@@ -402,9 +539,11 @@ function ManagePlan({ entitlement: e }: { entitlement: EntitlementView }) {
             : '1:1 coaching with Pro, every month'
           : e.paidOnce
             ? `${plan ? plan.label : 'Pro'}, paid once`
-            : plan
+            : plan && !e.legacyPrice
               ? `${plan.label}, ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]}`
-              : 'Pro plan'}
+              : plan
+                ? `${plan.label} plan`
+                : 'Pro plan'}
       </p>
       <p className="type-meta mt-1 text-text-2">
         {e.renews && until
@@ -413,6 +552,18 @@ function ManagePlan({ entitlement: e }: { entitlement: EntitlementView }) {
             ? `Ends on ${until}. It will not renew.`
             : null}
       </p>
+      {e.legacyPrice ? (
+        <InlineNotice className="mt-4">
+          <span data-legacy-price>
+            Our prices have changed. Everything you paid for stays yours
+            {until ? ` until ${until}` : ''}, and you will not be charged again at the old price. To
+            keep Pro after that, choose a plan{e.renews ? ' once renewal is off' : ' below'}.
+            {e.earlyCode
+              ? ` Your code ${e.earlyCode.code} takes ${e.earlyCode.percent}% off your first payment at the new price.`
+              : ''}
+          </span>
+        </InlineNotice>
+      ) : null}
       {e.paymentIssue ? (
         <InlineNotice tone="warning" icon={<AlertTriangle />} className="mt-4">
           Razorpay could not take the last payment. Pro stays on until {until}; Razorpay will try
@@ -425,15 +576,21 @@ function ManagePlan({ entitlement: e }: { entitlement: EntitlementView }) {
         </InlineNotice>
       ) : null}
       {e.renews ? (
-        <DestructiveButton compact className="mt-5" onClick={() => setConfirming(true)}>
-          Cancel plan
-        </DestructiveButton>
+        <>
+          <p className="type-meta mt-4 text-text-2" data-extend-note>
+            Want a longer plan, or to pay once instead? Turn renewal off first. The time you paid
+            for stays, and you can then choose any plan to follow it.
+          </p>
+          <DestructiveButton compact className="mt-4" onClick={() => setConfirming(true)}>
+            Turn off renewal
+          </DestructiveButton>
+        </>
       ) : null}
       <ConfirmSheet
         open={confirming}
-        title="Cancel your plan?"
+        title="Turn off renewal?"
         body={`You will not be charged again. Pro stays on until ${until ?? 'the end of this period'}, and everything you logged stays yours.`}
-        confirmLabel="Cancel plan"
+        confirmLabel="Turn off renewal"
         cancelLabel="Keep my plan"
         destructive
         busy={busy}

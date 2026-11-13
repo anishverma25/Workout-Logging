@@ -1,7 +1,9 @@
 import { EatNextCard } from './EatNextCard';
+import { FoodThanks } from './FoodThanks';
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router';
-import { Plus, Settings2, Target, UtensilsCrossed } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router';
+import { useFeature } from '@/app/entitlement';
+import { Crown, Lock, Plus, Settings2, Target, UtensilsCrossed } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import {
   Card,
@@ -15,6 +17,7 @@ import {
   Skeleton,
   TextButton,
 } from '@/components/kit';
+import { loadSharedFoods } from '@/app/sharedFoods';
 import { loadMoreFoods } from '@/data/library/moreFoods';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
@@ -48,6 +51,7 @@ const n = (v: number) => Math.round(v).toLocaleString('en-GB');
 export function FoodPage() {
   useEffect(() => {
     void loadMoreFoods();
+    void loadSharedFoods();
   }, []);
   const now = useNow();
   const ctx = useFoodContext(now);
@@ -126,6 +130,7 @@ export function FoodPage() {
               </PrimaryButton>
             </Card>
           ) : null}
+          <FoodThanks />
           <DaySummary ctx={ctx} date={date} onTargets={() => setTargetsOpen(true)} />
           <EatNextCard ctx={ctx} date={date} today={today} now={now} />
           <DayAnalysisCard ctx={ctx} date={date} now={now} />
@@ -242,6 +247,8 @@ function DaySummary({
   const totals = dayTotals(ctx.logs, date);
   const { kcal, proteinG } = ctx.targets;
   const left = kcal !== null ? kcal - totals.kcal : null;
+  // Free counts calories; protein, carbs, fat and fibre are Pro.
+  const macros = useFeature('macro_tracking');
   const bars = [
     { label: 'Protein', value: totals.proteinG, target: proteinG },
     { label: 'Carbs', value: totals.carbsG, target: ctx.targets.carbsG },
@@ -264,7 +271,7 @@ function DaySummary({
               label={left >= 0 ? 'Left today' : 'Over today'}
               value={n(Math.abs(left))}
               unit="kcal"
-              className="[&_[data-metric]]:text-[3rem] [&_[data-metric]]:leading-[3.25rem]"
+              className="[&_[data-metric]]:num-glow [&_[data-metric]]:text-[3rem] [&_[data-metric]]:leading-[3.25rem]"
             >
               <p className="type-meta tabular mt-0.5 text-text-2">
                 of {n(kcal!)} kcal · {n(totals.kcal)} eaten
@@ -276,11 +283,31 @@ function DaySummary({
               label="Eaten today"
               value={n(totals.kcal)}
               unit="kcal"
-              className="[&_[data-metric]]:text-[3rem] [&_[data-metric]]:leading-[3.25rem]"
+              className="[&_[data-metric]]:num-glow [&_[data-metric]]:text-[3rem] [&_[data-metric]]:leading-[3.25rem]"
             />
           )}
         </div>
-        <ul className="mt-4 grid grid-cols-4 gap-3" data-macro-bars>
+        {!macros ? (
+          <Link
+            to="/pro"
+            className="pressable mt-4 flex items-center gap-3 rounded-nested bg-surface-2 px-4 py-3"
+            data-macros-locked
+          >
+            <span className="grid min-w-0 flex-1 grid-cols-4 gap-2">
+              {bars.map((b) => (
+                <span key={b.label} className="min-w-0">
+                  <span className="type-caption block font-semibold text-text-2">{b.label}</span>
+                  <Lock className="mt-1 size-3.5 text-text-3" aria-hidden />
+                </span>
+              ))}
+            </span>
+            <span className="type-caption shrink-0 font-semibold text-lime">
+              <Crown className="mr-1 inline size-3.5" aria-hidden />
+              Pro
+            </span>
+          </Link>
+        ) : null}
+        <ul className={cn('mt-4 grid grid-cols-4 gap-3', !macros && 'hidden')} data-macro-bars>
           {bars.map((b) => {
             const met = b.label === 'Protein' && b.target !== null && b.value >= b.target;
             return (
@@ -381,6 +408,7 @@ function MealCard({
   onEdit: (log: FoodLog) => void;
 }) {
   const toast = useToast();
+  const usualPro = useFeature('usual_meals');
   const items = mealsOn(ctx.logs, date)[meal];
   const total = roundNutrients(
     sumNutrients(
@@ -449,6 +477,20 @@ function MealCard({
             );
           })}
         </ul>
+      ) : offer && !usualPro ? (
+        <Link
+          to="/pro"
+          className="pressable chrome type-meta mt-2 inline-flex h-8 max-w-full items-center gap-1.5 rounded-full bg-fill px-3 text-text-1"
+          data-usual-locked={meal}
+        >
+          <span className="truncate">
+            {offerLabel} · {offer.items.map((i) => i.foodName).join(', ')}
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-lime">
+            <Crown className="size-3.5" aria-hidden />
+            Pro
+          </span>
+        </Link>
       ) : offer ? (
         <button
           type="button"

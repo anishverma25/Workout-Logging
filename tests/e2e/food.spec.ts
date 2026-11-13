@@ -192,6 +192,22 @@ test('Pro snaps a plate: foods from the photo, library values where known, then 
   await expect(lunch).toContainText('Mango pickle');
 });
 
+test('free accounts: usual meals in one tap and body measurements are Pro', async ({ page }) => {
+  const email = await startWithDemo(page, { tag: 'usual-free' });
+  await expireTrial(email);
+  await page.goto('/food');
+  // The usual breakfast is still named, and leads to Pro instead of logging.
+  const usual = page.locator('[data-usual-locked="breakfast"]');
+  await expect(usual).toContainText('Poha');
+  await expect(page.locator('[data-usual]')).toHaveCount(0);
+  await usual.click();
+  await expect(page).toHaveURL(/\/pro$/);
+  // Measurements already saved stay visible; measuring again is Pro.
+  await page.goto('/body');
+  await expect(page.locator('[data-measure-locked]')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add measurements' })).toHaveCount(0);
+});
+
 test('free accounts see photo logging as part of Pro', async ({ page }) => {
   const email = await signUpFresh(page, { tag: 'food-photo-free' });
   await expireTrial(email);

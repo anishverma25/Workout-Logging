@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { CalendarDays, Plus, ScanText } from 'lucide-react';
+import { CalendarDays, ChevronRight, Crown, Plus, ScanText } from 'lucide-react';
 import { useFeature } from '@/app/entitlement';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
@@ -23,10 +23,22 @@ const WHY: Record<Suggestion['why'], string> = {
  * Eat next (free): what is left of today's calories and protein, and up to three foods that
  * fit, each added with one tap. Quiet when the day is nearly full or has no targets.
  */
-export function EatNextCard({ ctx, date, today, now }: { ctx: FoodContext; date: string; today: string; now: Date }) {
+export function EatNextCard({
+  ctx,
+  date,
+  today,
+  now,
+}: {
+  ctx: FoodContext;
+  date: string;
+  today: string;
+  now: Date;
+}) {
   const toast = useToast();
   const menuPro = useFeature('ai_food');
   const planPro = useFeature('meal_plan');
+  // Eat next works from protein as well as calories, so it is part of Pro macro tracking.
+  const macros = useFeature('macro_tracking');
   const [menu, setMenu] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const meal = mealForHour(now.getHours());
@@ -53,12 +65,32 @@ export function EatNextCard({ ctx, date, today, now }: { ctx: FoodContext; date:
       budget: prefs.budget,
       katoriMl: ctx.katoriMl,
       eatenNow: new Set(
-        ctx.logs.filter((l) => !l.deletedAt && l.date === today && l.meal === meal).map((l) => l.foodId),
+        ctx.logs
+          .filter((l) => !l.deletedAt && l.date === today && l.meal === meal)
+          .map((l) => l.foodId),
       ),
     });
   }, [kcalTarget, date, today, remaining, meal, ctx.diet, ctx.foodById, ctx.logs, ctx.katoriMl]);
 
-  if (date !== today || !kcalTarget || remaining.kcal < EAT_NEXT_MIN_KCAL || picks.length === 0) return null;
+  if (date !== today || !kcalTarget || remaining.kcal < EAT_NEXT_MIN_KCAL || picks.length === 0)
+    return null;
+  if (!macros)
+    return (
+      <Link
+        to="/pro"
+        className="pressable flex items-center gap-3 rounded-card bg-surface px-4 py-3"
+        data-eat-next-locked
+      >
+        <Crown className="size-4 shrink-0 text-lime" aria-hidden />
+        <span className="min-w-0 flex-1">
+          <span className="type-headline block text-text-1">Eat next</span>
+          <span className="type-subhead block text-text-2">
+            {pluralizeFoods(picks.length)} that fit the rest of your day. With Pro.
+          </span>
+        </span>
+        <ChevronRight className="size-4 shrink-0 text-text-3" aria-hidden />
+      </Link>
+    );
 
   const add = async (p: Suggestion) => {
     setBusy(p.food.id);
@@ -92,23 +124,32 @@ export function EatNextCard({ ctx, date, today, now }: { ctx: FoodContext; date:
       <div className="rounded-card bg-surface px-4 pt-4 pb-2">
         <p className="type-subhead text-text-2" data-eat-next-left>
           You have{' '}
-          <span className="tabular font-semibold text-text-1">{remaining.kcal.toLocaleString('en-IN')} kcal</span>
+          <span className="tabular font-semibold text-text-1">
+            {remaining.kcal.toLocaleString('en-IN')} kcal
+          </span>
           {remaining.proteinG > 0 ? (
             <>
               {' '}
-              and <span className="tabular font-semibold text-text-1">{remaining.proteinG} g protein</span>
+              and{' '}
+              <span className="tabular font-semibold text-text-1">
+                {remaining.proteinG} g protein
+              </span>
             </>
           ) : null}{' '}
           left today.
         </p>
         <ul className="mt-2 divide-y-[0.5px] divide-divider">
           {picks.map((p) => (
-            <li key={p.food.id} className="flex items-center gap-3 py-3" data-eat-next-item={p.food.id}>
+            <li
+              key={p.food.id}
+              className="flex items-center gap-3 py-3"
+              data-eat-next-item={p.food.id}
+            >
               <div className="min-w-0 flex-1">
                 <p className="type-headline text-text-1">{p.food.name}</p>
                 <p className="type-footnote tabular text-text-2">
-                  {portionText(p.amount, p.unit, p.size, p.food.pieceName)} · {Math.round(p.nutrients.kcal)} kcal ·{' '}
-                  {Math.round(p.nutrients.proteinG)} g protein
+                  {portionText(p.amount, p.unit, p.size, p.food.pieceName)} ·{' '}
+                  {Math.round(p.nutrients.kcal)} kcal · {Math.round(p.nutrients.proteinG)} g protein
                 </p>
                 <p className="type-footnote text-text-2">{WHY[p.why]}</p>
               </div>
@@ -126,10 +167,16 @@ export function EatNextCard({ ctx, date, today, now }: { ctx: FoodContext; date:
           ))}
         </ul>
         <div className="flex flex-wrap gap-x-5 gap-y-1 border-t-[0.5px] border-divider py-3">
-          <Link to="/food/plan" className="pressable type-subhead inline-flex items-center gap-1.5 font-semibold text-lime" data-plan-week>
+          <Link
+            to="/food/plan"
+            className="pressable type-subhead inline-flex items-center gap-1.5 font-semibold text-lime"
+            data-plan-week
+          >
             <CalendarDays className="size-4" aria-hidden />
             Plan my week
-            {!planPro ? <span className="type-footnote rounded-full bg-fill px-1.5 text-text-2">Pro</span> : null}
+            {!planPro ? (
+              <span className="type-footnote rounded-full bg-fill px-1.5 text-text-2">Pro</span>
+            ) : null}
           </Link>
           <button
             type="button"
@@ -139,11 +186,22 @@ export function EatNextCard({ ctx, date, today, now }: { ctx: FoodContext; date:
           >
             <ScanText className="size-4" aria-hidden />
             Read a menu
-            {!menuPro ? <span className="type-footnote rounded-full bg-fill px-1.5 text-text-2">Pro</span> : null}
+            {!menuPro ? (
+              <span className="type-footnote rounded-full bg-fill px-1.5 text-text-2">Pro</span>
+            ) : null}
           </button>
         </div>
       </div>
-      <MenuSheet open={menu} onClose={() => setMenu(false)} ctx={ctx} remaining={remaining} date={date} meal={meal} />
+      <MenuSheet
+        open={menu}
+        onClose={() => setMenu(false)}
+        ctx={ctx}
+        remaining={remaining}
+        date={date}
+        meal={meal}
+      />
     </section>
   );
 }
+
+const pluralizeFoods = (n: number) => (n === 1 ? '1 food' : `${n} foods`);

@@ -39,6 +39,7 @@ export function NowCard({
   wrappedMonth?: string | null;
 }) {
   const pro = useFeature('adaptive_plan');
+  const macros = useFeature('macro_tracking');
   const brain = useBrain(now);
   const food = useFoodContextFrom(now, training);
   const active = useActiveWorkout();
@@ -57,14 +58,18 @@ export function NowCard({
       .slice(-8);
     const logs = food.logs.filter((l) => !l.deletedAt);
     const weekAgo = toDateKey(addDays(now, -7));
-    const foodDays7 = new Set(logs.filter((l) => l.date > weekAgo && l.date <= day).map((l) => l.date)).size;
+    const foodDays7 = new Set(
+      logs.filter((l) => l.date > weekAgo && l.date <= day).map((l) => l.date),
+    ).size;
     const eaten = dayTotals(logs, day);
     const kcalLeft = food.targets.kcal ? food.targets.kcal - eaten.kcal : null;
-    const proteinLeft = food.targets.proteinG ? food.targets.proteinG - eaten.proteinG : null;
+    // Protein and what fits the rest of the day are Pro macro tracking.
+    const proteinLeft =
+      macros && food.targets.proteinG ? food.targets.proteinG - eaten.proteinG : null;
     const mealNow = mealForHour(hour);
     const prefs = readMealPrefs();
     const fits =
-      kcalLeft !== null && hour >= 19
+      macros && kcalLeft !== null && hour >= 19
         ? eatNext({
             remaining: { kcal: kcalLeft, proteinG: proteinLeft ?? 0 },
             meal: mealNow,
@@ -96,7 +101,22 @@ export function NowCard({
     });
     // `now` is read through the hour and the day, so the card does not recompute every minute.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, food.status, food.logs, food.targets.kcal, food.targets.proteinG, hour, day, pro, brain.record, brain.decision, today, active.data, wrappedMonth]);
+  }, [
+    data,
+    food.status,
+    food.logs,
+    food.targets.kcal,
+    food.targets.proteinG,
+    hour,
+    day,
+    pro,
+    macros,
+    brain.record,
+    brain.decision,
+    today,
+    active.data,
+    wrappedMonth,
+  ]);
 
   if (!card) return null;
   const Icon = ICON[card.kind];

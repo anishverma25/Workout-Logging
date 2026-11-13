@@ -36,6 +36,7 @@ async function newPerson(page: Page, tag: string) {
   await page.getByRole('radio', { name: /Mostly sitting/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('button', { name: 'Create my routine' }).click();
+  await page.locator('[data-trial-start]').click();
   await expect(page).toHaveURL(/\/routines\/[\w-]+$/);
 }
 

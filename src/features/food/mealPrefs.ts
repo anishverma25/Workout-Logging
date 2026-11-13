@@ -12,8 +12,12 @@ export function readMealPrefs(): MealPrefs {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<MealPrefs> | null;
     return {
-      setting: ['home', 'hostel', 'mess', 'pg'].includes(raw?.setting ?? '') ? raw!.setting! : DEFAULT_MEAL_PREFS.setting,
-      budget: ['tight', 'medium', 'open'].includes(raw?.budget ?? '') ? raw!.budget! : DEFAULT_MEAL_PREFS.budget,
+      setting: ['home', 'hostel', 'mess', 'pg'].includes(raw?.setting ?? '')
+        ? raw!.setting!
+        : DEFAULT_MEAL_PREFS.setting,
+      budget: ['tight', 'medium', 'open'].includes(raw?.budget ?? '')
+        ? raw!.budget!
+        : DEFAULT_MEAL_PREFS.budget,
     };
   } catch {
     return DEFAULT_MEAL_PREFS;

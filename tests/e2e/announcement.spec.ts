@@ -2,21 +2,25 @@ import { expect, test } from '@playwright/test';
 import { signUpFresh } from './session';
 
 /**
- * The release walkthrough (the Macrotrophy Brain): seven parts, each with a drawing, shown once
- * after the update, and kept on the "What is new" page.
+ * The release walkthrough (the November revamp: the Brain and fair play together): eight parts,
+ * full screen, each with a drawing, shown once after the update, and kept on the "What is new"
+ * page.
  */
 
 const TITLES = [
-  'Macrotrophy now learns you',
+  'Macrotrophy, rebuilt',
   'Your week and next week',
   'Exams, travel, fasts and pain',
   'Eat next, meal plans and menus',
-  'Log a set by saying it',
-  'A Now card, and an AI that remembers',
-  'Duels and Wrapped',
+  'Say a set, see what matters now',
+  'Effort beats ego',
+  'Easier to read at a glance',
+  'Pro, your way',
 ];
 
-test('the walkthrough explains every part of the release and opens the weekly review', async ({ page }) => {
+test('the walkthrough explains every part of the release and ends on the plans', async ({
+  page,
+}) => {
   await signUpFresh(page, { tag: 'announce' });
   await page.evaluate(() => localStorage.removeItem('overload.whatsNew'));
   await page.goto('/');
@@ -31,10 +35,13 @@ test('the walkthrough explains every part of the release and opens the weekly re
       return body.scrollWidth - body.clientWidth;
     });
     expect(over).toBeLessThanOrEqual(1);
+    // Full screen, not a sheet.
+    const box = await dialog.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual((page.viewportSize()?.height ?? 0) - 1);
     if (i < TITLES.length - 1) await dialog.getByRole('button', { name: 'Next' }).click();
   }
-  await dialog.getByRole('button', { name: 'See your week' }).click();
-  await expect(page).toHaveURL(/\/report$/);
+  await dialog.getByRole('button', { name: 'See Pro' }).click();
+  await expect(page).toHaveURL(/\/pro$/);
   await page.goto('/');
   await expect(page.getByRole('dialog', { name: 'New in Macrotrophy' })).toHaveCount(0);
 });

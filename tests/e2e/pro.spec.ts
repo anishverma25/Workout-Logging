@@ -34,6 +34,27 @@ test.describe('after early access ends', () => {
     await expect(lock(page, 'long_range')).toContainText('Your history is all here');
     await expect(page.getByRole('heading', { name: 'Volume', exact: true })).toHaveCount(0);
 
+    // What Pro found: real facts from their own logs, with the answers locked.
+    // The demo's findings depend on the hour and weekday it is generated at (the facts are unit
+    // tested at fixed dates in proFindings.test.ts), so the card is checked whenever it shows.
+    await page.goto('/progress');
+    await expect(page.getByRole('heading', { name: 'Insights', exact: true })).toBeVisible();
+    const findings = page.locator('[data-pro-findings]');
+    if ((await findings.count()) > 0) {
+      await expect(findings).toContainText('What Pro found');
+      await expect(findings).toContainText(/ready for more weight|stalled|out of balance/);
+      await expect(findings).toHaveAttribute('href', '/pro');
+    }
+
+    // Free counts calories; macros and Eat next are Pro.
+    await page.goto('/food');
+    await expect(page.locator('[data-macros-locked]')).toBeVisible();
+    // Free keeps 2 routines: the demo athlete has more, so a new one leads to Pro.
+    await page.goto('/routines');
+    await expect(page.locator('[data-routine-allowance]')).toContainText(
+      'routines on the free plan',
+    );
+
     // History and records are never locked.
     await page.goto('/history');
     await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
@@ -47,7 +68,7 @@ test.describe('after early access ends', () => {
     await expect(page.getByRole('heading', { name: 'Your free trial has ended' })).toBeVisible();
     // The comparison says plainly what stays free.
     const table = page.getByRole('table', { name: 'What the free plan and Pro include' });
-    const history = table.getByRole('row', { name: /Full workout history/ });
+    const history = table.getByRole('row', { name: /full history/ });
     await expect(history.getByRole('img', { name: 'Included' })).toHaveCount(2);
     await expect(page.getByText('Your workout history always stays free.')).toBeVisible();
     // No founding member or early access wording is left.
@@ -154,15 +175,18 @@ test.describe('after early access ends', () => {
     await expect(page.getByRole('heading', { name: /^Free trial:/ })).toBeVisible();
   });
 
-  test('before Razorpay plans are connected, prices show and nothing can be bought', async ({
+  test('before Razorpay plans are connected, prices show and paying once still works', async ({
     page,
   }) => {
     await signUp(page);
     const plans = page.getByRole('region', { name: 'Pro plans' });
-    await expect(plans.getByRole('radio', { name: /^Monthly/ })).toContainText('₹29');
-    await expect(plans.getByRole('radio', { name: /^3 months/ })).toContainText('₹69');
-    await expect(plans.getByRole('radio', { name: /^Yearly/ })).toContainText('₹249');
-    await expect(plans.getByRole('button', { name: 'Plans open soon' })).toBeDisabled();
+    await expect(plans.getByRole('radio', { name: /^Monthly/ })).toContainText('₹149');
+    await expect(plans.getByRole('radio', { name: /^3 months/ })).toContainText('₹399');
+    await expect(plans.getByRole('radio', { name: /^Yearly/ })).toContainText('₹1,499');
+    // Autopay needs a Razorpay plan; one payment does not.
+    await plans.getByRole('button', { name: 'Autopay opens soon. Pay once instead' }).click();
+    await expect(plans.getByRole('radio', { name: /^Pay once/ })).toBeChecked();
+    await expect(plans.getByRole('button', { name: 'Pay ₹1,499 once for 1 year' })).toBeEnabled();
     // No payment details are ever typed into this page.
     await expect(page.getByRole('textbox')).toHaveCount(0);
   });

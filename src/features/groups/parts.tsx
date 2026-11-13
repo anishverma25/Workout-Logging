@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { AtSign } from 'lucide-react';
+import { AtSign, Crown } from 'lucide-react';
 import {
   checkUsername,
   cleanCode,
@@ -274,5 +274,18 @@ function JoinForm({
         Join group
       </PrimaryButton>
     </form>
+  );
+}
+
+/** A paying member's crown next to their name on a board. */
+export function ProCrown() {
+  return (
+    <span
+      className="ml-1.5 inline-flex size-4 translate-y-[1px] items-center justify-center text-gold"
+      title="Macrotrophy Pro"
+      data-pro-crown
+    >
+      <Crown className="size-3.5 fill-current" aria-label="Pro member" />
+    </span>
   );
 }

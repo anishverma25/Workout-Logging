@@ -24,23 +24,6 @@ export interface BillingPlan {
 
 export class BillingError extends Error {}
 
-/**
- * Regular Pro prices (November 2026). Until they apply, the server's lower prices are an early
- * bird offer, and the Pro page shows these crossed out. They are the owner's stated regular
- * prices, not invented anchors: once the server's price reaches them, nothing is crossed out.
- */
-export const REGULAR_PRICE_INR: Record<ProPlanId, number> = {
-  monthly: 59,
-  quarterly: 149,
-  yearly: 499,
-};
-
-/** The regular price to show crossed out, or null when this price is not below it. */
-export function regularPrice(plan: Pick<BillingPlan, 'id' | 'priceInr'>): number | null {
-  const regular = REGULAR_PRICE_INR[plan.id];
-  return regular > plan.priceInr ? regular : null;
-}
-
 /** The 1:1 coaching plan: a month of coaching with Pro included (November 2026). */
 export interface CoachingPlan extends Omit<BillingPlan, 'id'> {
   id: CoachingPlanId;
@@ -117,9 +100,6 @@ export function useCoachingPlan(): CoachingPlan | null | undefined {
 /** Price per month, for comparing plans honestly. */
 export const perMonth = (p: BillingPlan) => p.priceInr / p.months;
 
-/** Price per day, spread over the average length of the plan's months. */
-export const perDay = (p: BillingPlan) => p.priceInr / ((p.months * 365) / 12);
-
 /** Percent saved per month against the monthly plan, rounded down. Null when there is none. */
 export function savingPercent(plan: BillingPlan, plans: BillingPlan[]): number | null {
   const monthly = plans.find((p) => p.id === 'monthly');
@@ -138,8 +118,59 @@ export function formatRupees(amount: number): string {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Coupon codes
+// ---------------------------------------------------------------------------------------------
+
+export interface Coupon {
+  code: string;
+  percent: number;
+}
+
+const COUPON_REASONS: Record<string, string> = {
+  unknown: 'That code is not valid. Check the spelling.',
+  ended: 'That code has ended.',
+  used_up: 'That code has been used up.',
+  already_used: 'A code has already been used on this account. Each account gets one.',
+  early_only: 'That code is for members who joined before the new prices.',
+};
+
+/**
+ * Asks the server whether a code works for this account. This only shows the lower price; the
+ * server checks the code again when the payment starts and decides what is charged.
+ */
+export async function checkCoupon(code: string): Promise<Coupon> {
+  if (!supabase) throw new BillingError('Accounts are not set up in this version of the app.');
+  const { data, error } = await supabase.rpc('check_coupon', { p_code: code });
+  if (error) throw new BillingError('Could not check the code. Try again.');
+  const r = (data ?? {}) as { ok?: boolean; code?: string; percent?: number; reason?: string };
+  if (!r.ok || typeof r.code !== 'string' || typeof r.percent !== 'number') {
+    throw new BillingError(COUPON_REASONS[r.reason ?? 'unknown'] ?? COUPON_REASONS.unknown!);
+  }
+  return { code: r.code, percent: r.percent };
+}
+
+/** The price after a coupon, in whole rupees: the same rounding the server uses. */
+export const withCoupon = (priceInr: number, coupon: Coupon | null): number =>
+  coupon ? Math.round((priceInr * (100 - coupon.percent)) / 100) : priceInr;
+
+// ---------------------------------------------------------------------------------------------
 // Checkout
 // ---------------------------------------------------------------------------------------------
+
+/** The window was closed after a payment attempt failed; `reason` is Razorpay's own wording. */
+export interface CheckoutClosed {
+  result: 'closed';
+  failed: string | null;
+}
+export type CheckoutResult = { result: 'paid' } | CheckoutClosed;
+
+/** Razorpay's reason for a failed attempt, in words a person can act on. */
+export function failureReason(event: unknown): string {
+  const err = (event as { error?: { description?: unknown; reason?: unknown } } | null)?.error;
+  const text = typeof err?.description === 'string' ? err.description.trim() : '';
+  if (text && text.length <= 200) return text.endsWith('.') ? text : `${text}.`;
+  return 'The payment did not go through.';
+}
 
 interface RazorpayResponse {
   razorpay_payment_id: string;
@@ -210,11 +241,13 @@ export async function startCheckout(
   plan: ProPlanId | CoachingPlanId,
   prefill: { email?: string | null; name?: string | null },
   mode: 'subscribe' | 'once' = 'subscribe',
-): Promise<'paid' | 'closed'> {
+  coupon: string | null = null,
+): Promise<CheckoutResult> {
+  const body = coupon ? { plan, coupon } : { plan };
   const [started] = await Promise.all([
     mode === 'once'
-      ? call<{ order_id: string; amount: number; key_id: string }>('order', { plan })
-      : call<{ subscription_id: string; key_id: string }>('subscribe', { plan }),
+      ? call<{ order_id: string; amount: number; key_id: string }>('order', body)
+      : call<{ subscription_id: string; key_id: string }>('subscribe', body),
     loadCheckout(),
   ]);
   const { key_id } = started;
@@ -226,6 +259,7 @@ export async function startCheckout(
   const Razorpay = window.Razorpay;
   if (!Razorpay) throw new BillingError('Could not load the payment window. Try again.');
   return new Promise((resolve, reject) => {
+    let failed: string | null = null;
     const checkout = new Razorpay({
       key: key_id,
       ...target,
@@ -243,13 +277,15 @@ export async function startCheckout(
       handler: (response: RazorpayResponse) => {
         call('verify', { ...response })
           .then(() => refreshEntitlement())
-          .then(() => resolve('paid'))
+          .then(() => resolve({ result: 'paid' }))
           .catch(reject);
       },
-      modal: { ondismiss: () => resolve('closed'), confirm_close: true },
+      modal: { ondismiss: () => resolve({ result: 'closed', failed }), confirm_close: true },
     });
-    checkout.on('payment.failed', () => {
-      // Razorpay shows the failure and lets the person retry inside the window.
+    checkout.on('payment.failed', (event) => {
+      // Razorpay shows the failure and lets the person retry inside the window. If they close
+      // it instead, the page says why it failed and offers the other way to pay.
+      failed = failureReason(event);
     });
     checkout.open();
   });

@@ -3,7 +3,7 @@ import { startWithDemo } from './session';
 
 /** The public home page: what search engines and first-time visitors see at `/`. */
 
-const HEADING = 'Your workouts and your Indian meals, in one app.';
+const HEADING = 'Your gym and your thali, read together.';
 
 test('a first visit opens the public home page, which leads to the tour and an account', async ({
   page,
@@ -24,7 +24,7 @@ test('a first visit opens the public home page, which leads to the tour and an a
     'https://macrotrophy.in/',
   );
   // Real content to read, not an empty app shell.
-  await expect(page.getByRole('heading', { level: 2 })).toHaveCount(7);
+  await expect(page.getByRole('heading', { level: 2 })).toHaveCount(12);
   await expect(page.locator('[data-review]')).toHaveCount(8);
   await expect(page.locator('[data-plan-price]')).toHaveCount(3);
   const overflow = await page.evaluate(
@@ -32,6 +32,19 @@ test('a first visit opens the public home page, which leads to the tour and an a
   );
   expect(overflow).toBe(false);
   expect(await page.locator('body').innerText()).not.toContain('—');
+
+  // The thali counter adds up with the app's numbers.
+  const plate = page.locator('[data-lp-thali]');
+  await expect(plate.locator('[data-lp-kcal]')).toHaveText('581');
+  await plate.getByRole('button', { name: 'One more katori paneer bhurji' }).click();
+  await expect(plate.locator('[data-lp-kcal]')).toHaveText('850');
+  await expect(plate.locator('[data-lp-protein]')).toHaveText('38');
+  await plate.getByRole('button', { name: 'One less roti' }).click();
+  await plate.getByRole('button', { name: 'One less roti' }).click();
+  await plate.getByRole('button', { name: 'One less roti' }).click();
+  await expect(plate.locator('[data-food="roti"] output')).toHaveText('0');
+  await expect(plate.locator('[data-lp-kcal]')).toHaveText('646');
+  await expect(plate.locator('[data-lp-protein]')).toHaveText('30');
 
   await page.getByRole('link', { name: 'Take the tour' }).first().click();
   await expect(page).toHaveURL(/\/welcome$/);

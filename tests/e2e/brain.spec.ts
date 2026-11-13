@@ -22,7 +22,9 @@ async function addExams(page: Page) {
   await page.locator('[data-coming-up-save]').click();
 }
 
-test('next week: exams change the plan, nothing moves until Apply, and it is remembered', async ({ page }) => {
+test('next week: exams change the plan, nothing moves until Apply, and it is remembered', async ({
+  page,
+}) => {
   test.setTimeout(120_000);
   await startWithDemo(page, { tag: 'brain' });
   await page.goto('/report');
@@ -36,7 +38,10 @@ test('next week: exams change the plan, nothing moves until Apply, and it is rem
   const changes = page.locator('[data-plan-changes]');
   await expect(changes).toBeVisible();
   await expect(changes).toContainText(/Exams this week/);
-  await expect(changes.getByRole('link', { name: 'Why' }).first()).toHaveAttribute('href', '/science#adaptive-plan');
+  await expect(changes.getByRole('link', { name: 'Why' }).first()).toHaveAttribute(
+    'href',
+    '/science#adaptive-plan',
+  );
   await expect(changes).toContainText(/Until \d+ [A-Z][a-z]{2}/);
 
   // Try a different plan: the slider moves the projection.
@@ -73,10 +78,16 @@ test('something hurts: a red flag stops the plan, a mild one is answered', async
   test.setTimeout(120_000);
   await startWithDemo(page, { tag: 'brain-hurts' });
   await page.goto('/workout');
-  await page.getByRole('button', { name: /^Start Push/ }).first().click();
+  await page
+    .getByRole('button', { name: /^Start Push/ })
+    .first()
+    .click();
   const card = page.locator('section[aria-labelledby^="ex-"]').first();
   const open = async () => {
-    await card.getByRole('button', { name: /options|More/i }).first().click();
+    await card
+      .getByRole('button', { name: /options|More/i })
+      .first()
+      .click();
     await page.getByRole('menuitem', { name: 'Something hurts' }).click();
   };
 
@@ -129,7 +140,9 @@ test('the Now card points at the weekly review when changes are waiting', async 
   await expect(page.locator('[data-now-card="review"]')).toHaveCount(0);
 });
 
-test('what Macrotrophy AI knows: told, edited, deleted, and offered from the chat', async ({ page }) => {
+test('what Macrotrophy AI knows: told, edited, deleted, and offered from the chat', async ({
+  page,
+}) => {
   test.setTimeout(120_000);
   await startWithDemo(page, { tag: 'brain-memory' });
   await page.goto('/settings');
@@ -138,7 +151,9 @@ test('what Macrotrophy AI knows: told, edited, deleted, and offered from the cha
   const list = page.locator('[data-memory-list]');
   await page.getByLabel('Tell it something').fill('I train at 6 am before class');
   await page.locator('[data-memory-add]').click();
-  await expect(list.locator('[data-memory-item="note"]')).toContainText('I train at 6 am before class');
+  await expect(list.locator('[data-memory-item="note"]')).toContainText(
+    'I train at 6 am before class',
+  );
   await page.getByRole('button', { name: 'Edit: I train at 6 am before class' }).click();
   await page.getByLabel('Edit what it remembers').fill('I train at 7 am');
   await page.getByRole('button', { name: 'Save' }).click();

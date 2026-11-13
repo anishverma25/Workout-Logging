@@ -5,15 +5,24 @@ import { startWithDemo } from './session';
  * Voice sets: what is said goes through the same path as the microphone (the browser's speech
  * recognition cannot be driven in a test, so the words are handed over directly).
  */
-test('a clear sentence logs the set, "same again" repeats it, an unclear one waits for a tap', async ({ page }) => {
+test('a clear sentence logs the set, "same again" repeats it, an unclear one waits for a tap', async ({
+  page,
+}) => {
   test.setTimeout(90_000);
   await startWithDemo(page, { tag: 'voice' });
   await page.goto('/workout');
-  await page.getByRole('button', { name: /^Start Push/ }).first().click();
+  await page
+    .getByRole('button', { name: /^Start Push/ })
+    .first()
+    .click();
   const card = page.locator('section[aria-labelledby^="ex-"]').first();
   await expect(card).toBeVisible();
   const say = (text: string) =>
-    page.evaluate((t) => (window as unknown as { __overloadVoice: (t: string) => Promise<void> }).__overloadVoice(t), text);
+    page.evaluate(
+      (t) =>
+        (window as unknown as { __overloadVoice: (t: string) => Promise<void> }).__overloadVoice(t),
+      text,
+    );
   await page.waitForFunction(() => '__overloadVoice' in window);
   // The mic sits in the header, next to the rest timer, where it covers nothing.
   await expect(page.getByRole('button', { name: 'Log a set by voice' })).toBeVisible();

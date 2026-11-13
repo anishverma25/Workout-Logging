@@ -35,7 +35,7 @@ Monthly caps grow with the length of the month. Ties go to more hard sets, then 
 then whoever got there first. Weeks run Monday to Sunday, India time. A finished week or month is
 frozen in `group_results` the first time anyone views it.
 
-Limits: 30 people per group; 3 groups per person on the free plan, 10 with Pro. Free users see the
+Limits: 30 people per group; 1 group per person on the free plan, 10 with Pro (migration 0027; groups joined before stay). Free users see the
 Overload Score board; Pro adds Consistency, Effort, Progress and Volume.
 
 ## 3. Privacy

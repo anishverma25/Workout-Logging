@@ -43,4 +43,5 @@ export const SOURCE: Record<Food['source'], string> = {
   ai: 'Worked out by Macrotrophy AI. Check the portion.',
   custom: 'Your food, from its label.',
   custom_recipe: 'Your recipe.',
+  community: 'Added by a member from its label, and checked by Macrotrophy.',
 };

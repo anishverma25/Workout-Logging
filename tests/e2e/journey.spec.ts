@@ -60,7 +60,7 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     await expect(
       page.getByRole('heading', {
         level: 1,
-        name: 'Your workouts and your Indian meals, in one app.',
+        name: 'Your gym and your thali, read together.',
       }),
     ).toBeVisible();
     await page.goto('/sign-up?next=/');

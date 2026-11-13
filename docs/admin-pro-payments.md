@@ -72,3 +72,46 @@ A revoked account keeps every free feature and all of its data.
   `trial_started_at` and `trial_expires_at` fixed, even for the owner.
 - Users cannot read the table directly, cannot write to it at all, and never see `admin_note`.
   They can only call `get_my_subscription()` and `submit_payment_reference()`.
+
+## Free and Pro (November 2026, release 2)
+
+Macrotrophy AI is Pro only: the AI services are on free tiers and cannot carry free members.
+
+Free (after the trial): unlimited workout logging with last time beside every set, the full
+history and every record, 2 routines, Indian food logging with calories, 1 group, a duel a week
+and the global leaderboard, body weight, goals and photos, 7 days of Progress, backup and sync.
+History is never locked; routines and groups over the limit are kept, only new ones need Pro;
+measurements already saved stay visible and editable.
+
+Pro adds, on top of the list below: protein, carbs, fat and fibre with Eat next
+(`macro_tracking`), unlimited routines (`unlimited_routines`), 30 days and longer on Progress
+(`long_range`), the gym tools in the logger: plate calculator, warm-up sets, supersets and
+swaps (`gym_tools`), body measurements with their trends and photos side by side
+(`body_measurements`), and logging a usual or earlier meal in one tap (`usual_meals`). Groups:
+1 free, 10 with Pro (migration 0027).
+
+**Discounts need a code.** Nothing comes off a price by itself, except the food thank-you credit
+(`docs/food-logging.md`). Codes live in `public.coupons` (`docs/razorpay-setup.md`): `RISHI10` is
+the influencer code. `EARLY15` (migration 0027) is for early members only: everyone who had paid
+for Pro when 0027 first ran (a paid order, a Razorpay subscription paid at least once, or an
+approved UPI reference; `billing_mark_early_members`) is marked `subscriptions.early_member`,
+sees the code on the plans card, and gets 15% off one payment at the new price, once. Pro given
+by hand (gifts, giveaways, influencers) does not count. Anyone else typing it is refused. To add
+one person by hand: `update public.subscriptions set early_member = true where user_id = (select
+id from auth.users where email = 'person@example.com');`
+
+What makes people want Pro, without taking anything away:
+
+- **What Pro found** (Progress, free members): real facts from their own logs ("2 lifts are ready
+  for more weight", "1 lift has stalled", "a part of your training is out of balance"), with the
+  which, why and what to do behind Pro.
+- **Weekly check-in**: the good news is free (sessions, lifts up, records); what stalled and the
+  focus for this week are Pro.
+- **Leaderboards**: anyone can see the routine of a person on the board; copying it is Pro.
+  Paying members (a paid plan or coaching, not the trial) wear a gold crown on every board.
+- **Duels**: one a week on the free plan, three with Pro.
+- **Story cards**: three designs free; LED scoreboard, die-cut sticker, caption note and rings
+  widget are Pro. Free members can try them on their own card; saving needs Pro.
+- Everything Pro already had stays Pro: the plan that adapts, the meal plan, the weekly report,
+  Macrotrophy AI, food insights, plateaus, progression, strength levels, balance, 90-day and
+  all-time trends, goal dates, recaps and the extra group boards.

@@ -1,6 +1,6 @@
 // Macrotrophy Pro billing with Razorpay. Deployed as a Supabase Edge Function (Deno):
 //   supabase functions deploy billing --no-verify-jwt
-// Routes: POST /billing/subscribe, /billing/order (pay once), /billing/verify, /billing/cancel (signed-in user, checked
+// Routes: POST /billing/retire-legacy (owner, service role key), /billing/subscribe, /billing/order (pay once), /billing/verify, /billing/cancel (signed-in user, checked
 // here with the user's access token) and POST /billing/webhook (Razorpay, checked with the
 // webhook signature). Secrets: RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET.
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase.
@@ -8,6 +8,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 import {
   handleCancel,
   handleOrder,
+  handleRetireLegacy,
   handleSubscribe,
   handleVerify,
   handleWebhook,
@@ -103,6 +104,13 @@ Deno.serve(async (req) => {
       );
     }
     const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
+    // Owner only: stops autopay left at old prices at the end of each paid period. Called with
+    // the service role key, which never leaves the Supabase dashboard and the owner's terminal.
+    if (route === 'retire-legacy') {
+      const key = env('SUPABASE_SERVICE_ROLE_KEY');
+      if (!key || token !== key) return reply({ status: 401, body: { error: 'Not allowed' } }, origin);
+      return reply(await handleRetireLegacy(deps), origin);
+    }
     const { data, error } = await admin.auth.getUser(token);
     if (error || !data.user)
       return reply({ status: 401, body: { error: 'Sign in first.' } }, origin);

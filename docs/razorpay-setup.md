@@ -21,8 +21,8 @@ How it works:
 
 1. Test mode on.
 2. **Account & Settings > API Keys**: generate a test key. Keep the Key Secret private.
-3. **Subscriptions > Plans**: create Monthly (₹29, every 1 month), 3 months (₹69, every 3
-   months) and Yearly (₹249, every 1 year). Note the three `plan_...` ids.
+3. **Subscriptions > Plans**: create Monthly (₹149, every 1 month), 3 months (₹399, every 3
+   months) and Yearly (₹1,499, every 1 year). Note the three `plan_...` ids.
 
 ## 2. Apply the database migration
 
@@ -117,6 +117,77 @@ select * from public.billing_events order by received_at desc limit 50;
    new secret.
 3. Update the three `razorpay_plan_id` values with the live plan ids, and set the three secrets
    to the live values. No app release is needed.
+
+## New prices and coupons (November 2026, migration 0024)
+
+Prices are ₹149 a month, ₹399 for 3 months and ₹1,499 a year, shown as they are.
+
+1. Run `supabase/migrations/20261113000024_pricing_coupons.sql` in the SQL editor. It sets the
+   prices and disconnects the old Razorpay plans (a Razorpay plan has a fixed amount). From that
+   moment pay once works at the new prices and autopay says "opens soon".
+2. Deploy the function: `supabase functions deploy billing --no-verify-jwt`.
+3. In the Razorpay dashboard (live mode), **Subscriptions > Plans**, create three plans with
+   exactly these amounts: ₹149 every 1 month, ₹399 every 3 months, ₹1,499 every 1 year.
+4. Connect them:
+
+   ```sql
+   update public.billing_plans set razorpay_plan_id = 'plan_...' where id = 'monthly';
+   update public.billing_plans set razorpay_plan_id = 'plan_...' where id = 'quarterly';
+   update public.billing_plans set razorpay_plan_id = 'plan_...' where id = 'yearly';
+   ```
+
+   The function asks Razorpay for the plan's amount before every new autopay and refuses if it is
+   not the server's price, so a wrong plan id can never charge a wrong amount.
+
+5. Members on autopay at the old prices (Razorpay cannot raise the amount of a mandate): the
+   migration marks them, and this one call stops each old autopay at the end of its paid period.
+   Run it once, after step 2, with the service role key from Supabase (Project Settings > API):
+
+   ```
+   curl -X POST https://<project-ref>.supabase.co/functions/v1/billing/retire-legacy \
+     -H "Authorization: Bearer <service role key>"
+   ```
+
+   It answers `{"found": n, "stopped": n, "failed": []}` and is safe to run again. Each of those
+   members keeps Pro until the date they paid up to, sees "Our prices have changed" on their plan
+   with that date, and chooses a plan at the new prices (autopay then starts on that date, so they
+   never pay twice). If one is missed, its next renewal is its last.
+
+How paying works now:
+
+- Autopay and pay once are both offered every time.
+- Someone with paid time left (paid once, or renewal turned off) who starts autopay is first
+  charged when that time runs out (`start_at`), so nothing is paid twice.
+- A member whose plan renews must turn renewal off before changing plan or paying once.
+- A renewal stuck on a failed payment (pending or halted) is cancelled at Razorpay when the
+  person next tries to pay, so they are never locked out.
+- If a payment fails and the person closes the window, the page shows Razorpay's reason and
+  offers one payment instead.
+
+Coupons (a percent off the first payment of a Pro plan, one coupon per account, ever). The
+first code, `RISHI10` (10%), is made by the migration:
+
+```sql
+-- make a code (letters and digits, 3 to 20, upper case)
+insert into public.coupons (code, percent, note) values ('ANKIT10', 10, 'Ankit Instagram');
+-- optional: another percent (1 to 50), an end date, a limit on uses
+insert into public.coupons (code, percent, expires_at, max_uses)
+values ('DIWALI15', 15, '2026-12-01', 100);
+-- turn one off
+update public.coupons set active = false where code = 'ANKIT10';
+-- how every code is doing: times used, discount given, last use
+select * from public.coupon_report;
+-- who used what
+select u.code, u.discount_inr, u.used_at, a.email
+from public.coupon_uses u join auth.users a on a.id = u.user_id order by u.used_at desc;
+```
+
+With pay once the order is simply made for the lower amount. With autopay the first period is
+charged up front at the lower amount (a Razorpay add-on) and the plan's own charges start one
+period later at the normal price. A code counts as used only when its payment is confirmed.
+
+Before telling people about codes, make one real autopay payment with a code on your own account
+and check in the Razorpay dashboard that the first charge is the lower amount.
 
 ## Security notes
 

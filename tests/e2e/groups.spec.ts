@@ -124,7 +124,11 @@ test('two friends: username, create, join by code, points, home card and admin',
   await expect(friend.page.locator('[data-me]')).toContainText(`@${unique}.b`);
   await noSideScroll(friend.page);
 
-  // Anish trains: 1 workout (10) and 3 hard sets (3) = 13 points, top of the board.
+  // Anish follows a routine, and trains: 1 workout (10) and 3 hard sets (3) = 13 points.
+  await page.goto('/routines');
+  await page.getByRole('button', { name: 'Create a routine' }).click();
+  await page.getByRole('button', { name: /^Upper Lower 4 days a week/ }).click();
+  await expect(page.getByRole('heading', { level: 1, name: /Upper Lower/ })).toBeVisible();
   await logWorkout(page, anishEmail);
   await friend.page.reload();
   const top = friend.page.locator('[data-board-row]').first();
@@ -153,6 +157,18 @@ test('two friends: username, create, join by code, points, home card and admin',
   await expect(breakdown).toContainText('= 3 pts');
   await expect(top).not.toContainText('Pec deck');
   await expect(top).not.toContainText('40');
+
+  // The friend sees Anish's routine plan (no weights) and copies it.
+  await top.locator('[data-see-routine]').click();
+  const plan = friend.page.getByRole('dialog', { name: `@${unique}’s routine` });
+  await expect(plan.locator('[data-board-routine]')).toContainText('Upper');
+  await expect(plan).not.toContainText(/kg/);
+  await plan.locator('[data-copy-routine]').click();
+  await expect(friend.page).toHaveURL(/\/routines\/[^/]+$/);
+  await expect(
+    friend.page.getByRole('heading', { level: 1, name: new RegExp(`from @${unique}`) }),
+  ).toBeVisible();
+  await friend.page.goBack();
 
   // The friend's home card shows the chase.
   await friend.page.goto('/groups');
@@ -256,7 +272,13 @@ test('global leaderboard: everyone by name, the username only when they turn it 
   await expect(row).not.toContainText(`@${handle}`);
   await expect(other.page.locator('[data-global-mine]')).toContainText('Not on the board yet');
   // Without a username, the switch is off and explains why.
-  await expect(other.page.getByRole('switch')).toBeDisabled();
+  await expect(other.page.getByRole('switch', { name: 'Show my username' })).toBeDisabled();
+  // Their routine shows by default, and the board says so once.
+  await expect(other.page.getByRole('switch', { name: 'Show my routine plan' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await expect(other.page.locator('[data-routine-notice]')).toBeVisible();
   await noSideScroll(other.page);
 
   // The owner turns on their username; it shows for everyone.
@@ -264,7 +286,7 @@ test('global leaderboard: everyone by name, the username only when they turn it 
   await expect(page.locator('[data-global-mine]')).toContainText(/You are #\d+ of \d+/);
   await expect(page.locator('[data-global-row][data-me]')).toContainText(name);
   await shareRank(page, /^macrotrophy-rank-week\.png$/);
-  const toggle = page.getByRole('switch');
+  const toggle = page.getByRole('switch', { name: 'Show my username' });
   await expect(toggle).toHaveAttribute('aria-checked', 'false');
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-checked', 'true');
@@ -273,12 +295,29 @@ test('global leaderboard: everyone by name, the username only when they turn it 
     `@${handle}`,
   );
   // And off again.
-  await page.getByRole('switch').click();
-  await expect(page.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  // Hiding the routine plan: someone tapping them sees it is private.
+  const routineSwitch = page.getByRole('switch', { name: 'Show my routine plan' });
+  await routineSwitch.click();
+  await expect(routineSwitch).toHaveAttribute('aria-checked', 'false');
+  await expect(page.locator('[data-routine-notice]')).toHaveCount(0);
   await other.page.reload();
   await expect(other.page.locator('[data-global-row]', { hasText: name })).not.toContainText(
     `@${handle}`,
   );
+
+  const theirs = other.page
+    .locator('[data-global-row], [data-podium-rank]', { hasText: name })
+    .first();
+  await theirs.click();
+  await other.page
+    .locator('[data-global-row]', { hasText: name })
+    .locator('[data-see-routine]')
+    .click();
+  await expect(
+    other.page.getByRole('dialog', { name: `${name}’s routine` }).locator('[data-routine-private]'),
+  ).toBeVisible();
 
   // Home shows the global place.
   await page.goto('/');

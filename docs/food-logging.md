@@ -111,3 +111,31 @@ logs keep the numbers they were saved with.
   person's own foods.
 - **Measures.** Plate, bowl and ml by food type (`data/library/measures.ts`), with "half plate"
   and number words understood.
+
+## Foods added for everyone (November 2026, migration 0025)
+
+A member making a food "From a label" can turn on **Add it for everyone**. The food is saved for
+them at once and sent to `submit_food` for review. Nothing reaches other people until it is
+approved. The server refuses calories that do not match the macros (4, 4, 9 kcal a gram, within
+25% or 40 kcal), repeats of a name already waiting or shared, more than 5 a day and more than 15
+waiting.
+
+Reviewing, in the Supabase SQL editor:
+
+```sql
+select * from public.food_review;                         -- waiting first, with the sender's email
+select public.approve_food('<id>');                       -- publish and thank the author
+select public.approve_food('<id>', 'Sattu ladoo (1 piece)'); -- publish under a better name
+select public.reject_food('<id>', 'Numbers do not match the pack');
+select * from public.food_credits order by created_at desc;  -- thank-yous given and used
+```
+
+Approved foods reach every signed-in phone through `get_shared_foods` (cached on the phone, fresh
+every 3 hours, source "Added by a member from its label, and checked by Macrotrophy", never the
+author).
+
+The thank-you is deliberately quiet: nothing in the app mentions it before approval. Each approved
+food gives its author 5% off one Pro payment. The first is valid from approval to the end of next
+month; each further one covers the month after the last, so two foods in one month cover the next
+two months. It is applied by itself at payment (a typed coupon code wins and the credit waits).
+After approval, the author sees one thank-you card on Food that names the food and the 5%.

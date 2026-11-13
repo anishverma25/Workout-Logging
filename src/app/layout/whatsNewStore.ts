@@ -1,5 +1,5 @@
 /** Which release announcement this device has seen. Device-only, like other display state. */
-export const RELEASE_ID = '2026-11-brain';
+export const RELEASE_ID = '2026-11-fair-play';
 const KEY = 'overload.whatsNew';
 
 export function seenRelease(): boolean {

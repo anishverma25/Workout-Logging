@@ -437,26 +437,32 @@ function Pillars() {
   );
 }
 
-const COMPARE: { label: string; free: boolean }[] = [
-  { label: 'Unlimited logging, routines and custom exercises', free: true },
-  { label: 'Full workout history and every personal record', free: true },
-  { label: 'Body weight, measurements, calories and protein', free: true },
-  { label: 'Food logging for Indian meals, with daily totals', free: true },
-  { label: 'Goals, milestones and progress photos', free: true },
-  { label: 'Progress for the last 7 and 30 days', free: true },
-  { label: 'Backup and sync across your devices', free: true },
-  { label: PRO_FEATURES.long_range.title, free: false },
-  { label: PRO_FEATURES.progression.title, free: false },
-  { label: PRO_FEATURES.plateaus.title, free: false },
-  { label: PRO_FEATURES.muscle_balance.title, free: false },
-  { label: PRO_FEATURES.strength_levels.title, free: false },
-  { label: PRO_FEATURES.training_balance.title, free: false },
-  { label: PRO_FEATURES.weekly_checkin.title, free: false },
-  { label: PRO_FEATURES.goal_projection.title, free: false },
-  { label: PRO_FEATURES.recaps.title, free: false },
-  { label: PRO_FEATURES.ai_food.title, free: false },
+/** What each plan includes, as outcomes; a string in Free means a smaller amount. */
+const COMPARE: { label: string; free: boolean | string }[] = [
+  { label: 'Workout logging and full history', free: true },
+  { label: 'Routines', free: '2' },
+  { label: 'Indian food logging with calories', free: true },
+  { label: 'Protein, carbs, fat and fibre, and Eat next', free: false },
+  { label: PRO_FEATURES.usual_meals.title, free: false },
+  { label: 'Groups', free: '1 (Pro 10)' },
+  { label: 'The global leaderboard', free: true },
+  { label: 'Progress', free: 'Last 7 days' },
+  { label: PRO_FEATURES.gym_tools.title + ': plates, warm-ups, supersets, swaps', free: false },
+  { label: 'Duels a week', free: '1 (Pro 3)' },
+  { label: 'Story card designs', free: '3 of 7' },
+  { label: 'Body weight, goals and progress photos', free: true },
+  { label: PRO_FEATURES.body_measurements.title, free: false },
+  { label: 'See routines on the boards', free: true },
+  { label: PRO_FEATURES.copy_routines.title, free: false },
+  { label: 'A crown next to your name on every board', free: false },
+  { label: PRO_FEATURES.adaptive_plan.title, free: false },
+  { label: 'Macrotrophy AI: chat, food by text, photo, label and menu', free: false },
+  { label: PRO_FEATURES.meal_plan.title, free: false },
+  { label: PRO_FEATURES.weekly_report.title, free: false },
+  { label: PRO_FEATURES.plateaus.title + ' and progression suggestions', free: false },
+  { label: 'Strength levels, balance and sets per muscle', free: false },
   { label: PRO_FEATURES.food_insights.title, free: false },
-  { label: PRO_FEATURES.ai_coach.title, free: false },
+  { label: '90-day and all-time trends, goal projections', free: false },
 ];
 
 function Compare() {
@@ -466,7 +472,7 @@ function Compare() {
         Free and Pro
       </h2>
       <p className="type-meta mt-1 text-text-2">
-        The free plan is a complete logger. Pro adds the analysis on top.
+        Free is a complete logger. Pro thinks for you every week.
       </p>
       <Card flush className="mt-4 overflow-hidden">
         <table className="w-full border-collapse">
@@ -494,7 +500,9 @@ function Compare() {
                   {row.label}
                 </th>
                 <td className="text-center">
-                  {row.free ? (
+                  {typeof row.free === 'string' ? (
+                    <span className="type-caption text-text-2">{row.free}</span>
+                  ) : row.free ? (
                     <span role="img" aria-label="Included">
                       <Check className="mx-auto size-4 text-text-1" aria-hidden />
                     </span>

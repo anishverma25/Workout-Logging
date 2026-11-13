@@ -35,7 +35,7 @@ export const HOME_PAGE: PublicPage = {
   path: '/',
   title: 'Macrotrophy: Workout Tracker, Indian Food Calorie Counter',
   description:
-    'Log every set and every Indian meal in one app. Track strength, calories and protein, compete with friends, and trust every number. Free to start.',
+    'Log every set and every Indian meal in one app. Macrotrophy plans your next week from both, with an AI coach and a weekly report. 7 days of Pro free.',
   inSitemap: true,
 };
 

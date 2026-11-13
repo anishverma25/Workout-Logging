@@ -102,7 +102,8 @@ export function listenPatiently(
   let fatal: string | undefined;
   let current: SpeechRecognitionLike | null = null;
 
-  const join = (a: string, b: string) => [a, b].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  const join = (a: string, b: string) =>
+    [a, b].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
   const finish = () => {
     if (finished) return;
     finished = true;
@@ -141,7 +142,8 @@ export function listenPatiently(
       }
       if (t.final && t.final !== sessionFinal) {
         sessionFinal = t.final;
-        const last = e.results[e.results.length - 1] as unknown as ArrayLike<{ transcript?: string }> | undefined;
+        const last = e.results[e.results.length - 1] as unknown as
+          ArrayLike<{ transcript?: string }> | undefined;
         alternatives = [];
         for (let i = 1; last && i < last.length; i += 1) {
           const words = last[i]?.transcript?.replace(/\s+/g, ' ').trim();
