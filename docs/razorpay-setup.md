@@ -139,7 +139,19 @@ Prices are ₹149 a month, ₹399 for 3 months and ₹1,499 a year, shown as the
    The function asks Razorpay for the plan's amount before every new autopay and refuses if it is
    not the server's price, so a wrong plan id can never charge a wrong amount.
 
-People already on autopay keep their Razorpay subscription and the price they joined at.
+5. Members on autopay at the old prices (Razorpay cannot raise the amount of a mandate): the
+   migration marks them, and this one call stops each old autopay at the end of its paid period.
+   Run it once, after step 2, with the service role key from Supabase (Project Settings > API):
+
+   ```
+   curl -X POST https://<project-ref>.supabase.co/functions/v1/billing/retire-legacy \
+     -H "Authorization: Bearer <service role key>"
+   ```
+
+   It answers `{"found": n, "stopped": n, "failed": []}` and is safe to run again. Each of those
+   members keeps Pro until the date they paid up to, sees "Our prices have changed" on their plan
+   with that date, and chooses a plan at the new prices (autopay then starts on that date, so they
+   never pay twice). If one is missed, its next renewal is its last.
 
 How paying works now:
 
@@ -152,16 +164,19 @@ How paying works now:
 - If a payment fails and the person closes the window, the page shows Razorpay's reason and
   offers one payment instead.
 
-Coupons (10% off the first payment of a Pro plan, one coupon per account, ever):
+Coupons (a percent off the first payment of a Pro plan, one coupon per account, ever). The
+first code, `RISHI10` (10%), is made by the migration:
 
 ```sql
 -- make a code (letters and digits, 3 to 20, upper case)
-insert into public.coupons (code, note) values ('ANKIT10', 'Ankit Instagram');
+insert into public.coupons (code, percent, note) values ('ANKIT10', 10, 'Ankit Instagram');
 -- optional: another percent (1 to 50), an end date, a limit on uses
 insert into public.coupons (code, percent, expires_at, max_uses)
 values ('DIWALI15', 15, '2026-12-01', 100);
 -- turn one off
 update public.coupons set active = false where code = 'ANKIT10';
+-- how every code is doing: times used, discount given, last use
+select * from public.coupon_report;
 -- who used what
 select u.code, u.discount_inr, u.used_at, a.email
 from public.coupon_uses u join auth.users a on a.id = u.user_id order by u.used_at desc;

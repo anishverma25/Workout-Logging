@@ -34,6 +34,8 @@ export const SubscriptionSnapshot = z.object({
   billing_plan: z.string().nullable().optional().default(null),
   /** How Pro was bought: a renewing subscription, or a single payment ('once'). */
   billing_kind: z.string().nullable().optional().default(null),
+  /** The plan was bought at a price that has since changed (servers before 0024 leave it out). */
+  legacy_price: z.boolean().nullable().optional().default(null),
   /** Razorpay's state of that subscription: active, pending, halted, cancelled... */
   billing_status: z.string().nullable().optional().default(null),
   /** Renewal is off: Pro runs to the end of the paid period, then stops. */
@@ -69,6 +71,8 @@ export interface Entitlement {
   paidOnce: boolean;
   /** Razorpay could not take the last renewal (pending or halted). */
   paymentIssue: boolean;
+  /** The running plan was bought at a price that has since changed; it ends with its paid period. */
+  legacyPrice: boolean;
   /** 1:1 coaching is on (it includes Pro), and when it ends. */
   coaching: boolean;
   coachingEndsAt: Date | null;
@@ -89,6 +93,7 @@ const GUEST: Entitlement = {
   renews: false,
   paidOnce: false,
   paymentIssue: false,
+  legacyPrice: false,
   coaching: false,
   coachingEndsAt: null,
 };
@@ -126,6 +131,7 @@ export function resolveEntitlement(sub: SubscriptionSnapshot | null, now: Date):
       (sub.billing_status === 'active' || sub.billing_status === 'authenticated') &&
       !sub.cancel_at_period_end,
     paymentIssue: sub.billing_status === 'pending' || sub.billing_status === 'halted',
+    legacyPrice: plan === 'pro' && sub.legacy_price === true && sub.billing_kind !== 'once',
     coaching: !revoked && !!sub.coaching_expires_at && t < sub.coaching_expires_at.getTime(),
     coachingEndsAt: sub.coaching_expires_at,
   };

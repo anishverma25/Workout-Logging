@@ -7,7 +7,7 @@
 --   update public.billing_plans set razorpay_plan_id = 'plan_...' where id = 'monthly';
 --   update public.billing_plans set razorpay_plan_id = 'plan_...' where id = 'quarterly';
 --   update public.billing_plans set razorpay_plan_id = 'plan_...' where id = 'yearly';
--- Pay once works straight away. People already on autopay keep their Razorpay plan and price.
+-- Pay once works straight away.
 --
 -- Coupons: codes the owner makes, 10% off the first payment of a Pro plan, one coupon per
 -- account. Make one:
@@ -16,15 +16,113 @@
 --   update public.coupons set active = false where code = 'RISHABH10';
 -- Who used which code: select * from public.coupon_uses order by used_at desc;
 
-update public.billing_plans
-set price_inr = 149, once_price_inr = null, razorpay_plan_id = null, updated_at = now()
-where id = 'monthly' and price_inr <> 149;
-update public.billing_plans
-set price_inr = 399, once_price_inr = null, razorpay_plan_id = null, updated_at = now()
-where id = 'quarterly' and price_inr <> 399;
-update public.billing_plans
-set price_inr = 1499, once_price_inr = null, razorpay_plan_id = null, updated_at = now()
-where id = 'yearly' and price_inr <> 1499;
+-- Members on autopay at the old prices: Razorpay cannot raise a mandate's amount, so their
+-- paid period is honoured in full, their old autopay is stopped at the end of it (the billing
+-- function's `retire-legacy` call, docs/razorpay-setup.md), and they choose a plan at the new
+-- prices to continue. They are marked here, once, at the moment the prices change.
+alter table public.subscriptions add column if not exists legacy_price boolean not null default false;
+
+do $$
+begin
+  if exists (select 1 from public.billing_plans where id = 'monthly' and price_inr <> 149) then
+    update public.subscriptions s
+    set legacy_price = true
+    where s.billing_kind = 'subscription'
+      and s.razorpay_subscription_id is not null
+      and s.billing_plan in ('monthly', 'quarterly', 'yearly')
+      and s.razorpay_status in ('authenticated', 'active', 'pending', 'halted');
+    update public.billing_plans
+    set price_inr = case id when 'monthly' then 149 when 'quarterly' then 399 else 1499 end,
+        once_price_inr = null,
+        razorpay_plan_id = null,
+        updated_at = now()
+    where id in ('monthly', 'quarterly', 'yearly');
+  end if;
+end;
+$$;
+
+-- A new subscription or a single payment is at today's price: the mark comes off by itself.
+create or replace function public.subscriptions_clear_legacy()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.legacy_price and (
+    new.razorpay_subscription_id is distinct from old.razorpay_subscription_id
+    or new.billing_kind is distinct from 'subscription'
+  ) then
+    new.legacy_price := false;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists subscriptions_clear_legacy on public.subscriptions;
+create trigger subscriptions_clear_legacy before update on public.subscriptions
+  for each row execute function public.subscriptions_clear_legacy();
+
+-- Old-price subscriptions that would still renew: what `retire-legacy` stops. Service role only.
+create or replace function public.billing_legacy_renewing()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(s.razorpay_subscription_id), '[]'::jsonb)
+  from public.subscriptions s
+  where s.legacy_price
+    and s.billing_kind = 'subscription'
+    and s.razorpay_subscription_id is not null
+    and s.razorpay_status in ('authenticated', 'active', 'pending', 'halted')
+    and not s.cancel_at_period_end;
+$$;
+revoke all on function public.billing_legacy_renewing() from public, anon, authenticated;
+grant execute on function public.billing_legacy_renewing() to service_role;
+
+-- The app's own view of the account, now saying when the plan was bought at an old price.
+create or replace function public.get_my_subscription()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := auth.uid();
+  ended timestamptz := (select a.early_access_ended_at from public.app_settings a where a.id);
+  result jsonb;
+begin
+  if uid is null then
+    raise exception 'Not signed in' using errcode = '42501';
+  end if;
+  select jsonb_build_object(
+    'status', s.status,
+    'trial_started_at', s.trial_started_at,
+    'trial_expires_at', s.trial_expires_at,
+    'pro_started_at', s.pro_started_at,
+    'pro_expires_at', s.pro_expires_at,
+    'payment_reference', s.payment_reference,
+    'payment_submitted_at', s.payment_submitted_at,
+    'updated_at', s.updated_at,
+    'server_now', now(),
+    'early_access', ended is null or now() < ended,
+    'founding_member', ended is null or s.created_at < ended,
+    'billing_plan', s.billing_plan,
+    'billing_kind', s.billing_kind,
+    'billing_status', s.razorpay_status,
+    'cancel_at_period_end', s.cancel_at_period_end,
+    'coaching_expires_at', s.coaching_expires_at,
+    'legacy_price', s.legacy_price and s.billing_kind = 'subscription'
+  )
+  into result
+  from public.subscriptions s
+  where s.user_id = uid;
+  return result;
+end;
+$$;
+revoke all on function public.get_my_subscription() from public, anon;
+grant execute on function public.get_my_subscription() to authenticated;
 
 create table if not exists public.coupons (
   code text primary key check (code ~ '^[A-Z0-9]{3,20}$'),
@@ -87,6 +185,30 @@ end;
 $$;
 revoke all on function public.coupon_status(uuid, text) from public, anon, authenticated;
 grant execute on function public.coupon_status(uuid, text) to service_role;
+
+-- The first code, for an influencer. Add more the same way (see the top of this file).
+insert into public.coupons (code, percent, note) values ('RISHI10', 10, 'Influencer code')
+on conflict (code) do nothing;
+
+-- How each code is doing, for the owner: select * from public.coupon_report;
+create or replace view public.coupon_report
+with (security_invoker = true) as
+  select
+    c.code,
+    c.percent,
+    c.active,
+    c.note,
+    count(u.user_id)::int as times_used,
+    coalesce(sum(u.discount_inr), 0)::numeric(10, 2) as discount_given_inr,
+    max(u.used_at) as last_used_at,
+    c.max_uses,
+    c.expires_at,
+    c.created_at
+  from public.coupons c
+  left join public.coupon_uses u on u.code = c.code
+  group by c.code
+  order by times_used desc, c.created_at;
+revoke all on public.coupon_report from anon, authenticated;
 
 -- For the app: checks a code for the signed-in account. It never grants anything; the billing
 -- function checks the code again on the server when the payment starts.

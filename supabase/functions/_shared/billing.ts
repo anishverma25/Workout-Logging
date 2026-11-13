@@ -365,6 +365,35 @@ export async function handleSubscribe(
   });
 }
 
+/**
+ * Stops every autopay still running at an old price at the end of its paid period. The member
+ * keeps everything they paid for and chooses a plan at today's prices to continue. Called once by
+ * the owner after a price change, and safe to call again. Returns how many were stopped.
+ */
+export async function handleRetireLegacy(deps: BillingDeps): Promise<BillingResponse> {
+  const ids = ((await deps.rpc('billing_legacy_renewing', {})) ?? []) as string[];
+  let stopped = 0;
+  const failed: string[] = [];
+  for (const id of ids) {
+    if (await retireLegacy(deps, id)) stopped += 1;
+    else failed.push(id);
+  }
+  return ok({ found: ids.length, stopped, failed });
+}
+
+async function retireLegacy(deps: BillingDeps, id: string): Promise<boolean> {
+  const sub = asSubscription(
+    await deps.razorpay('POST', `/subscriptions/${id}/cancel`, { cancel_at_cycle_end: 1 }),
+  );
+  if (!sub) return false;
+  await deps.rpc('billing_set_status', {
+    p_subscription: id,
+    p_status: STATUSES.has(sub.status) ? sub.status : 'active',
+    p_cancel_at_period_end: true,
+  });
+  return true;
+}
+
 /** A subscription that starts later: when, and whether its first period was paid up front. */
 function laterStart(
   sub: RazorpaySubscription,
@@ -616,6 +645,9 @@ export async function handleWebhook(
         p_period_end: periodEnd(sub, months, deps.now?.() ?? new Date()).toISOString(),
         p_status: status ?? 'active',
       });
+      // An old-price plan the owner's one-time call missed renews no further than this period.
+      const legacy = ((await deps.rpc('billing_legacy_renewing', {})) ?? []) as string[];
+      if (legacy.includes(sub.id)) await retireLegacy(deps, sub.id);
       return ok({ applied: event });
     }
     case 'subscription.authenticated': {

@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   handleCancel,
   handleOrder,
+  handleRetireLegacy,
   handleSubscribe,
   handleVerify,
   handleWebhook,
@@ -697,5 +698,69 @@ describe('billing', () => {
     ]) {
       await expect(server.asUser(user, (tx) => tx.query(sql)), sql).rejects.toThrow();
     }
+  });
+
+  it('members on an old price keep what they paid for, stop renewing, and move to the new prices', async () => {
+    const user = await server.createUser('legacy@example.com');
+    const other = await server.createUser('current@example.com');
+    const oldSub = (await handleSubscribe(deps(), user, { plan: 'monthly' })).body
+      .subscription_id as string;
+    await activate(oldSub, 20, 'evt_lg1');
+    const otherSub = (await handleSubscribe(deps(), other, { plan: 'monthly' })).body
+      .subscription_id as string;
+    await activate(otherSub, 20, 'evt_lg2');
+    // What the prices migration does to subscriptions that were running when prices changed.
+    await server.pg.query('update public.subscriptions set legacy_price = true where user_id = $1', [
+      user,
+    ]);
+    const paidUntil = (await mine(user)).pro_expires_at;
+    expect((await mine(user)).legacy_price).toBe(true);
+
+    const out = await handleRetireLegacy(deps());
+    expect(out.body).toMatchObject({ found: 1, stopped: 1, failed: [] });
+    let s = await mine(user);
+    expect(s.cancel_at_period_end).toBe(true);
+    expect(s.pro_expires_at).toBe(paidUntil);
+    // Nobody at today's price is touched, and a second call finds nothing left.
+    expect((await mine(other)).cancel_at_period_end).toBe(false);
+    expect((await handleRetireLegacy(deps())).body).toMatchObject({ found: 0, stopped: 0 });
+
+    // They pick a plan at the new price, to start when the paid time ends; the mark comes off.
+    const next = await handleSubscribe(deps(), user, { plan: 'yearly' });
+    expect(next.status).toBe(200);
+    expect(next.body.starts_at).toBeTruthy();
+    s = await mine(user);
+    expect(s.legacy_price).toBe(false);
+    expect(s.pro_expires_at).toBe(paidUntil);
+  });
+
+  it('an old-price plan that was missed stops after the renewal that reveals it', async () => {
+    const user = await server.createUser('legacy-late@example.com');
+    const subId = (await handleSubscribe(deps(), user, { plan: 'monthly' })).body
+      .subscription_id as string;
+    await activate(subId, 2, 'evt_ll1');
+    await server.pg.query('update public.subscriptions set legacy_price = true where user_id = $1', [
+      user,
+    ]);
+    Object.assign(subs.get(subId)!, { current_end: Math.floor((Date.now() + 32 * DAY) / 1000) });
+    await webhook('subscription.charged', subs.get(subId)!, 'evt_ll2');
+    const s = await mine(user);
+    expect(near(s.pro_expires_at, Date.now() + 32 * DAY)).toBe(true);
+    expect(s.cancel_at_period_end).toBe(true);
+  });
+
+  it('the first code exists, and the owner can see how each code is doing', async () => {
+    const user = await server.createUser('rishi@example.com');
+    expect((await payOnce(user, 'quarterly', 'pay_r1', 'rishi10')).body.amount).toBe(35900);
+    const report = await server.pg.query<{ code: string; times_used: number; discount_given_inr: string }>(
+      `select code, times_used, discount_given_inr from public.coupon_report where code in ('RISHI10', 'OFF10') order by code`,
+    );
+    expect(report.rows).toEqual([
+      { code: 'OFF10', times_used: 0, discount_given_inr: '0.00' },
+      { code: 'RISHI10', times_used: 1, discount_given_inr: '40.00' },
+    ]);
+    await expect(
+      server.asUser(user, (tx) => tx.query('select * from public.coupon_report')),
+    ).rejects.toThrow();
   });
 });

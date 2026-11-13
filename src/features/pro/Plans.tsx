@@ -485,9 +485,11 @@ function ManagePlan({ entitlement: e }: { entitlement: EntitlementView }) {
             : '1:1 coaching with Pro, every month'
           : e.paidOnce
             ? `${plan ? plan.label : 'Pro'}, paid once`
-            : plan
+            : plan && !e.legacyPrice
               ? `${plan.label}, ${formatRupees(plan.priceInr)} ${PERIOD[plan.id]}`
-              : 'Pro plan'}
+              : plan
+                ? `${plan.label} plan`
+                : 'Pro plan'}
       </p>
       <p className="type-meta mt-1 text-text-2">
         {e.renews && until
@@ -496,6 +498,15 @@ function ManagePlan({ entitlement: e }: { entitlement: EntitlementView }) {
             ? `Ends on ${until}. It will not renew.`
             : null}
       </p>
+      {e.legacyPrice ? (
+        <InlineNotice className="mt-4">
+          <span data-legacy-price>
+            Our prices have changed. Everything you paid for stays yours
+            {until ? ` until ${until}` : ''}, and you will not be charged again at the old price.
+            To keep Pro after that, choose a plan{e.renews ? ' once renewal is off' : ' below'}.
+          </span>
+        </InlineNotice>
+      ) : null}
       {e.paymentIssue ? (
         <InlineNotice tone="warning" icon={<AlertTriangle />} className="mt-4">
           Razorpay could not take the last payment. Pro stays on until {until}; Razorpay will try
