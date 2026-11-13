@@ -11,7 +11,6 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { warmAi } from '@/app/aiWarm';
 import { useFeature } from '@/app/entitlement';
-import { freeAiLeft } from '@/app/foodAi';
 import { db } from '@/data/db';
 import { STARTER_FOODS } from '@/data/library/foods';
 import { loadSharedFoods } from '@/app/sharedFoods';
@@ -117,19 +116,6 @@ function AddFoodBody({
   useEffect(() => {
     if (pro) warmAi();
   }, [pro]);
-  // Free members get a few Ask AI food logs a week (null: the server cannot say, so Pro only).
-  const [freeLeft, setFreeLeft] = useState<number | null>(null);
-  useEffect(() => {
-    if (pro) return;
-    let alive = true;
-    void freeAiLeft().then((n) => {
-      if (alive) setFreeLeft(n);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [pro]);
-  const canAsk = pro || (freeLeft !== null && freeLeft > 0);
   const [meal, setMeal] = useState<Meal>(initialMeal);
   const [query, setQuery] = useState('');
   const [plate, setPlate] = useState<FoodPortion[]>([]);
@@ -395,7 +381,6 @@ function AddFoodBody({
         <AiFoodLog
           ctx={ctx}
           initialText={view.text}
-          onFreeLeft={setFreeLeft}
           onFill={(items) => {
             setPlate((p) => [...p, ...items]);
             setView({ kind: 'pick' });
@@ -441,8 +426,7 @@ function AddFoodBody({
           <Results
             rows={rows}
             query={query}
-            canAsk={canAsk}
-            freeLeft={pro ? null : freeLeft}
+            pro={pro}
             onCreate={() => onCreateFood(query.trim())}
             onAsk={() => leave({ kind: 'type', text: query.trim() })}
           />
@@ -452,8 +436,6 @@ function AddFoodBody({
             meal={meal}
             date={date}
             pro={pro}
-            canAsk={canAsk}
-            freeLeft={pro ? null : freeLeft}
             onTemplate={(t) => void logTemplate(t)}
             onType={() => leave({ kind: 'type' })}
             onPhoto={() => leave({ kind: 'photo' })}
@@ -582,15 +564,13 @@ const DIET_WORD = {
 function Results({
   rows,
   query,
-  canAsk,
-  freeLeft,
+  pro,
   onCreate,
   onAsk,
 }: {
   rows: RowProps;
   query: string;
-  canAsk: boolean;
-  freeLeft: number | null;
+  pro: boolean;
   onCreate: () => void;
   /** Opens Macrotrophy AI with the search already typed in. */
   onAsk: () => void;
@@ -633,12 +613,12 @@ function Results({
         <div className="rounded-nested bg-surface-2 p-4 text-center" data-food-not-found>
           <p className="type-headline text-text-1">“{query.trim()}” is not in our foods yet</p>
           <p className="type-meta mt-1 text-text-2">
-            {canAsk
-              ? `Macrotrophy AI can look it up and work out its numbers for you to check.${freeLeft !== null ? ` ${freeLeftText(freeLeft)}` : ''}`
+            {pro
+              ? 'Macrotrophy AI can look it up and work out its numbers for you to check.'
               : 'With Pro, Macrotrophy AI looks it up and works out its numbers for you to check.'}
           </p>
           <div className="mt-3 flex justify-center">
-            {canAsk ? (
+            {pro ? (
               <PrimaryButton
                 compact
                 onClick={onAsk}
@@ -680,8 +660,6 @@ function Quick({
   meal,
   date,
   pro,
-  canAsk,
-  freeLeft,
   onTemplate,
   onType,
   onPhoto,
@@ -692,8 +670,6 @@ function Quick({
   meal: Meal;
   date: string;
   pro: boolean;
-  canAsk: boolean;
-  freeLeft: number | null;
   onLabel: () => void;
   onTemplate: (t: MealTemplate) => void;
   onType: () => void;
@@ -716,14 +692,7 @@ function Quick({
 
   return (
     <div className="flex flex-col gap-5">
-      <AiQuick
-        pro={pro}
-        canAsk={canAsk}
-        freeLeft={freeLeft}
-        onType={onType}
-        onPhoto={onPhoto}
-        onLabel={onLabel}
-      />
+      <AiQuick pro={pro} onType={onType} onPhoto={onPhoto} onLabel={onLabel} />
       {recent.length ? (
         <FoodList id="recent-foods" title="Recently eaten" foods={recent} rows={rows} />
       ) : null}
@@ -825,24 +794,13 @@ function FoodList({
  * here without pushing the foods down. Free accounts see the same row; asking and snapping
  * lead to Pro, and typing a label's numbers stays free.
  */
-/** "2 free Ask AI logs left this week." */
-function freeLeftText(n: number): string {
-  return n > 0
-    ? `${n} free Ask AI ${n === 1 ? 'log' : 'logs'} left this week.`
-    : 'Your free Ask AI logs this week are used. They come back on Monday.';
-}
-
 function AiQuick({
   pro,
-  canAsk,
-  freeLeft,
   onType,
   onPhoto,
   onLabel,
 }: {
   pro: boolean;
-  canAsk: boolean;
-  freeLeft: number | null;
   onType: () => void;
   onPhoto: () => void;
   onLabel: () => void;
@@ -867,18 +825,11 @@ function AiQuick({
           </>
         ) : (
           <>
-            {canAsk ? (
-              <button type="button" onClick={onType} className={chip} data-type-meal>
-                <Sparkles className={icon} aria-hidden />
-                <span className="truncate">Ask AI</span>
-              </button>
-            ) : (
-              <Link to="/pro" className={chip} data-type-meal>
-                <Sparkles className={icon} aria-hidden />
-                <span className="truncate">Ask AI</span>
-                {lock}
-              </Link>
-            )}
+            <Link to="/pro" className={chip} data-type-meal>
+              <Sparkles className={icon} aria-hidden />
+              <span className="truncate">Ask AI</span>
+              {lock}
+            </Link>
             <Link to="/pro" className={chip} data-snap-locked>
               <Camera className={icon} aria-hidden />
               <span className="truncate">AI snap</span>
@@ -891,14 +842,6 @@ function AiQuick({
           <span className="truncate">Label</span>
         </button>
       </div>
-      {!pro && freeLeft !== null ? (
-        <p className="type-caption mt-2 text-text-2" data-free-ai-left>
-          {freeLeftText(freeLeft)}{' '}
-          <Link to="/pro" className="font-semibold text-lime">
-            Pro has no limit
-          </Link>
-        </p>
-      ) : null}
     </section>
   );
 }

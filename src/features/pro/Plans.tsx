@@ -502,8 +502,8 @@ function ManagePlan({ entitlement: e }: { entitlement: EntitlementView }) {
         <InlineNotice className="mt-4">
           <span data-legacy-price>
             Our prices have changed. Everything you paid for stays yours
-            {until ? ` until ${until}` : ''}, and you will not be charged again at the old price. To
-            keep Pro after that, choose a plan{e.renews ? ' once renewal is off' : ' below'}.
+            {until ? ` until ${until}` : ''}, and you will not be charged again at the old price.
+            To keep Pro after that, choose a plan{e.renews ? ' once renewal is off' : ' below'}.
           </span>
         </InlineNotice>
       ) : null}

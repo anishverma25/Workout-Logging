@@ -1,11 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  joinSaid,
-  listenPatiently,
-  speechProblem,
-  transcriptOf,
-  type SpeechRecognitionLike,
-} from './speech';
+import { joinSaid, listenPatiently, speechProblem, transcriptOf, type SpeechRecognitionLike } from './speech';
 
 const result = (transcript: string, isFinal: boolean) => ({
   0: { transcript },
@@ -66,16 +60,7 @@ describe('listening through pauses', () => {
     return { Speech: Speech as unknown as new () => SpeechRecognitionLike, sessions };
   }
   const hear = (s: SpeechRecognitionLike, words: string, alt?: string) =>
-    s.onresult?.({
-      results: [
-        {
-          0: { transcript: words },
-          ...(alt ? { 1: { transcript: alt } } : {}),
-          length: alt ? 2 : 1,
-          isFinal: true,
-        },
-      ] as never,
-    });
+    s.onresult?.({ results: [{ 0: { transcript: words }, ...(alt ? { 1: { transcript: alt } } : {}), length: alt ? 2 : 1, isFinal: true }] as never });
 
   it('keeps listening after a short pause and joins what was said', () => {
     vi.useFakeTimers();
@@ -89,12 +74,7 @@ describe('listening through pauses', () => {
       onEnd: (f, a) => ended.push([f, a]),
       onError: () => ended.push(['error', []]),
     });
-    expect(sessions[0]).toMatchObject({
-      lang: 'en-IN',
-      continuous: false,
-      interimResults: true,
-      started: true,
-    });
+    expect(sessions[0]).toMatchObject({ lang: 'en-IN', continuous: false, interimResults: true, started: true });
     hear(sessions[0]!, '80 kilo');
     // The phone stops at the pause; a new session starts by itself.
     sessions[0]!.onend?.();
@@ -114,39 +94,21 @@ describe('listening through pauses', () => {
     vi.useFakeTimers();
     const a = fake();
     const got: string[] = [];
-    const l = listenPatiently(a.Speech, {
-      patienceMs: 3000,
-      maxMs: 20_000,
-      onText: () => {},
-      onEnd: (f) => got.push(f),
-      onError: (c) => got.push(`error:${c}`),
-    });
+    const l = listenPatiently(a.Speech, { patienceMs: 3000, maxMs: 20_000, onText: () => {}, onEnd: (f) => got.push(f), onError: (c) => got.push(`error:${c}`) });
     hear(a.sessions[0]!, 'dal rice');
     l.stop();
     expect(got).toEqual(['dal rice']);
     expect(a.sessions).toHaveLength(1);
 
     const b = fake();
-    listenPatiently(b.Speech, {
-      patienceMs: 3000,
-      maxMs: 20_000,
-      onText: () => {},
-      onEnd: (f) => got.push(f),
-      onError: (c) => got.push(`error:${c}`),
-    });
+    listenPatiently(b.Speech, { patienceMs: 3000, maxMs: 20_000, onText: () => {}, onEnd: (f) => got.push(f), onError: (c) => got.push(`error:${c}`) });
     b.sessions[0]!.onerror?.({ error: 'no-speech' });
     b.sessions[0]!.onend?.();
     vi.advanceTimersByTime(7000);
     expect(got.at(-1)).toBe('error:no-speech');
 
     const c = fake();
-    listenPatiently(c.Speech, {
-      patienceMs: 3000,
-      maxMs: 20_000,
-      onText: () => {},
-      onEnd: (f) => got.push(f),
-      onError: (c2) => got.push(`error:${c2}`),
-    });
+    listenPatiently(c.Speech, { patienceMs: 3000, maxMs: 20_000, onText: () => {}, onEnd: (f) => got.push(f), onError: (c2) => got.push(`error:${c2}`) });
     c.sessions[0]!.onerror?.({ error: 'not-allowed' });
     c.sessions[0]!.onend?.();
     expect(got.at(-1)).toBe('error:not-allowed');

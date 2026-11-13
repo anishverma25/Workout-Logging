@@ -8,7 +8,7 @@ const FOOD_PATIENCE_MS = 4000;
 const FOOD_LISTEN_MAX_MS = 60_000;
 import { PrimaryButton, SecondaryButton } from '@/components/kit';
 import { useCoachStore } from '@/app/coach';
-import { askFoodLogWithAllowance, FOOD_LIMITS, FoodAiError } from '@/app/foodAi';
+import { askFoodLog, FOOD_LIMITS, FoodAiError } from '@/app/foodAi';
 import type { FoodPortion } from '@/data/repositories/food';
 import { parseMeal } from '@/domain/nutrition/parse';
 import { AiByline, CoachConsent, Thinking } from '../coach/CoachParts';
@@ -34,14 +34,11 @@ export function AiFoodLog({
   ctx,
   initialText,
   onFill,
-  onFreeLeft,
 }: {
   ctx: FoodContext;
   /** What the person searched for and did not find, typed in for them. */
   initialText?: string;
   onFill: (items: FoodPortion[]) => void;
-  /** Free members: how many Ask AI logs are left this week after this one. */
-  onFreeLeft?: (left: number) => void;
 }) {
   const store = useCoachStore();
   const [text, setText] = useState(initialText ?? '');
@@ -96,11 +93,9 @@ export function AiFoodLog({
     if (!words) return;
     setState({ kind: 'asking' });
     try {
-      const { items, freeLeft } = await askFoodLogWithAllowance(words, ctx.diet);
-      if (freeLeft !== null) onFreeLeft?.(freeLeft);
+      const items = await askFoodLog(words, ctx.diet);
       setState({ kind: 'done', portions: items.map((i) => portionForItem(i, ctx)) });
     } catch (e) {
-      if (e instanceof FoodAiError && e.code === 'free_used') onFreeLeft?.(0);
       // No connection or the AI is busy: the library still knows most everyday foods.
       // Only the curated library: the long tail matches stray words too easily.
       const curated = ctx.foods.filter((f) => f.source !== 'usda' && f.source !== 'indb');
@@ -108,7 +103,7 @@ export function AiFoodLog({
       setState({
         kind: 'fallback',
         message:
-          e instanceof FoodAiError && (e.code === 'not_pro' || e.code === 'free_used')
+          e instanceof FoodAiError && e.code === 'not_pro'
             ? e.message
             : 'Macrotrophy AI could not be reached, so these come from the food library.',
         portions: parsed.items.map((i) => {

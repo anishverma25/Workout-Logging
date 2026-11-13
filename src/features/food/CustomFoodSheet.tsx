@@ -362,10 +362,7 @@ function CustomFoodForm({
       )}
 
       {mode === 'label' && !editing ? (
-        <div
-          className="flex items-start gap-3 rounded-nested bg-surface-2 px-4 py-3"
-          data-share-food
-        >
+        <div className="flex items-start gap-3 rounded-nested bg-surface-2 px-4 py-3" data-share-food>
           <div className="min-w-0 flex-1">
             <p id="share-food-label" className="type-headline text-text-1">
               Add it for everyone
@@ -374,11 +371,7 @@ function CustomFoodForm({
               We check the numbers, then anyone can find it in search. Your name is never shown.
             </p>
           </div>
-          <Switch
-            checked={forEveryone}
-            onChange={setForEveryone}
-            aria-labelledby="share-food-label"
-          />
+          <Switch checked={forEveryone} onChange={setForEveryone} aria-labelledby="share-food-label" />
         </div>
       ) : null}
       {error ? (

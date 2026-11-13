@@ -354,46 +354,6 @@ describe('AI food logging on the server', () => {
     expect(r.body.code).toBe('not_pro');
   });
 
-  it('gives free members a few a week, counted on the server, and none once used', async () => {
-    let left = 2;
-    let released = 0;
-    const freeQuota = {
-      claim: async () => (left > 0 ? --left : -1),
-      release: async () => {
-        released += 1;
-        left += 1;
-      },
-    };
-    const { deps: d } = deps([JSON.stringify([good])], ROWS.trialOver);
-    const free = { ...d, freeQuota };
-    const r = await handleCoach(free, { kind: 'food', text: '2 aloo paratha' });
-    expect(r.status).toBe(200);
-    expect(r.body.free_left).toBe(1);
-    // Nothing usable back: the use is given back.
-    const { deps: empty } = deps(['[]'], ROWS.trialOver);
-    expect(
-      (await handleCoach({ ...empty, freeQuota }, { kind: 'food', text: 'water' })).status,
-    ).toBe(200);
-    expect(released).toBe(1);
-    await handleCoach(free, { kind: 'food', text: '2 aloo paratha' });
-    const used = await handleCoach(free, { kind: 'food', text: '2 aloo paratha' });
-    expect(used.status).toBe(403);
-    expect(used.body.code).toBe('free_used');
-    // A server without the allowance stays Pro only.
-    const broken = {
-      ...d,
-      freeQuota: {
-        claim: async () => Promise.reject(new Error('no fn')),
-        release: async () => undefined,
-      },
-    };
-    expect((await handleCoach(broken, { kind: 'food', text: 'roti' })).body.code).toBe('not_pro');
-    // Pro never touches the allowance.
-    const { deps: pro } = deps([JSON.stringify([good])]);
-    const proRes = await handleCoach({ ...pro, freeQuota }, { kind: 'food', text: 'roti' });
-    expect(proRes.body.free_left).toBeUndefined();
-  });
-
   it('asks with web search and returns checked items', async () => {
     const { deps: d, calls } = deps([JSON.stringify([good, { ...good, kcal: 9999 }])]);
     const r = await handleCoach(d, { kind: 'food', text: '2 aloo paratha', diet: 'veg' });

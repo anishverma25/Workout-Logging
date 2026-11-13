@@ -85,15 +85,7 @@ export interface CoachDeps {
    * when none are (the `claim_ai_use` function). `release` gives one back after a failure.
    */
   photoQuota?: { claim: () => Promise<number>; release: () => Promise<void> };
-  /**
-   * Free members' weekly Ask AI food allowance (migration 0027, `claim_free_ai`): returns how
-   * many are left after this one, or -1 when none are. Without it, Ask AI stays Pro only.
-   */
-  freeQuota?: { claim: () => Promise<number>; release: () => Promise<void> };
 }
-
-/** Ask AI food logs a free member gets each week, Monday to Sunday India time. */
-export const FREE_AI_PER_WEEK = 3;
 
 export interface CoachResponse {
   status: number;
@@ -895,27 +887,10 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
   if (!text || text.length > FOOD_LIMITS.text)
     return fail(400, 'That request could not be read.', 'bad_request');
   const diet = typeof b.diet === 'string' ? b.diet.slice(0, 10) : '';
+  if (!proFromSubscription(await deps.subscription()))
+    return fail(403, 'AI food logging is part of Pro.', 'not_pro');
   if (deps.providers.length === 0)
     return fail(503, 'AI food logging is not set up yet.', 'not_configured');
-  // Free members get a few a week; Pro has no weekly limit.
-  let freeLeft: number | null = null;
-  if (!proFromSubscription(await deps.subscription())) {
-    if (!deps.freeQuota) return fail(403, 'AI food logging is part of Pro.', 'not_pro');
-    let left: number;
-    try {
-      left = await deps.freeQuota.claim();
-    } catch {
-      // A server without the allowance yet: as before, Pro only.
-      return fail(403, 'AI food logging is part of Pro.', 'not_pro');
-    }
-    if (left < 0)
-      return fail(
-        403,
-        `Your ${FREE_AI_PER_WEEK} free AI food logs this week are used. They come back on Monday, and Pro has no weekly limit.`,
-        'free_used',
-      );
-    freeLeft = left;
-  }
 
   const messages: ProviderMessage[] = [
     {
@@ -969,14 +944,6 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
     },
     HEDGE_MS.food,
   );
-  if (result && result.length > 0) {
-    return {
-      status: 200,
-      body: { items: result, ...(freeLeft !== null ? { free_left: freeLeft } : {}) },
-    };
-  }
-  // Nothing usable: a free use is given back.
-  if (freeLeft !== null) await deps.freeQuota?.release().catch(() => undefined);
   if (result) return { status: 200, body: { items: result } };
   return fail(503, 'Macrotrophy AI is busy right now. Try again in a minute.', 'busy');
 }
@@ -1306,11 +1273,7 @@ export async function handleFoodMenu(deps: CoachDeps, body: unknown): Promise<Co
     return fail(503, 'Reading menus is not set up yet.', 'not_configured');
   const left = deps.photoQuota ? await deps.photoQuota.claim() : PHOTOS_PER_DAY;
   if (left < 0)
-    return fail(
-      429,
-      `You have used today's ${PHOTOS_PER_DAY} photos. Search for the dish instead.`,
-      'photo_limit',
-    );
+    return fail(429, `You have used today's ${PHOTOS_PER_DAY} photos. Search for the dish instead.`, 'photo_limit');
   const messages: ProviderMessage[] = [
     { role: 'user', text: 'List the dishes on this menu.', image: { mime, data: image } },
   ];
@@ -1335,14 +1298,6 @@ export async function handleFoodMenu(deps: CoachDeps, body: unknown): Promise<Co
   }
   await deps.photoQuota?.release().catch(() => undefined);
   if (notMenu)
-    return fail(
-      422,
-      'That does not look like a menu. Photograph the page with the dish names.',
-      'not_a_menu',
-    );
-  return fail(
-    503,
-    'The menu could not be read. Try a sharper photo, or search for the dish.',
-    'unreadable',
-  );
+    return fail(422, 'That does not look like a menu. Photograph the page with the dish names.', 'not_a_menu');
+  return fail(503, 'The menu could not be read. Try a sharper photo, or search for the dish.', 'unreadable');
 }

@@ -109,17 +109,6 @@ Deno.serve(async (req) => {
             await asUser.rpc('release_ai_use', { p_kind: 'photo' });
           },
         },
-        // Free members' weekly Ask AI food allowance (migration 0027).
-        freeQuota: {
-          async claim() {
-            const { data: left, error: claimError } = await asUser.rpc('claim_free_ai');
-            if (claimError) throw new Error(claimError.message);
-            return typeof left === 'number' ? left : -1;
-          },
-          async release() {
-            await asUser.rpc('release_free_ai');
-          },
-        },
       },
       body,
     );

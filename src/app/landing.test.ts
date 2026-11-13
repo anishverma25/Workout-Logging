@@ -123,11 +123,9 @@ describe('public home page', () => {
 
   it('shows the real prices, with nothing crossed out', () => {
     const seed = readFileSync('supabase/migrations/20261113000024_pricing_coupons.sql', 'utf8');
-    // The prices migration sets the same prices the server charges today.
-    expect(seed).toContain(
-      `price_inr = case id when 'monthly' then ${PUBLIC_PRICES.monthly} when 'quarterly' then ${PUBLIC_PRICES.quarterly} else ${PUBLIC_PRICES.yearly} end`,
-    );
     for (const [id, price] of Object.entries(PUBLIC_PRICES)) {
+      // The prices migration sets the same price the server charges today.
+      expect(seed).toMatch(new RegExp(`set price_inr = ${price},[^;]*where id = '${id}'`));
       const card = new RegExp(`data-plan-price="${id}">([\\s\\S]*?)</li>`).exec(LANDING)?.[1] ?? '';
       expect(card).toContain(`₹${price.toLocaleString('en-IN')}</span>`);
     }
