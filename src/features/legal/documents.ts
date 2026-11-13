@@ -204,7 +204,7 @@ export const REFUNDS: LegalDocument = {
     {
       heading: 'Cancel any time',
       items: [
-        'Open the Pro page in the app, find your plan and choose Cancel plan. A plan you paid for once does not renew, so there is nothing to cancel.',
+        'Open the Pro page in the app, find your plan and choose Turn off renewal. A plan you paid for once does not renew, so there is nothing to cancel.',
         'There is no cancellation fee.',
         'Pro stays on until the end of the period you have already paid for. After that it ends and you are not charged again.',
         'To avoid the next charge, cancel before your renewal date.',

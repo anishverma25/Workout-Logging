@@ -341,7 +341,7 @@ export interface Prices {
  * (billing_plans); these must match them, and landing.test.ts checks them against the plans
  * migration and the home page. Change them together with the SQL update.
  */
-export const PUBLIC_PRICES: Prices = { monthly: 29, quarterly: 69, yearly: 249 };
+export const PUBLIC_PRICES: Prices = { monthly: 149, quarterly: 399, yearly: 1499 };
 export const COACHING_PRICE = 999;
 
 /**

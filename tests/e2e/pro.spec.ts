@@ -154,15 +154,18 @@ test.describe('after early access ends', () => {
     await expect(page.getByRole('heading', { name: /^Free trial:/ })).toBeVisible();
   });
 
-  test('before Razorpay plans are connected, prices show and nothing can be bought', async ({
+  test('before Razorpay plans are connected, prices show and paying once still works', async ({
     page,
   }) => {
     await signUp(page);
     const plans = page.getByRole('region', { name: 'Pro plans' });
-    await expect(plans.getByRole('radio', { name: /^Monthly/ })).toContainText('₹29');
-    await expect(plans.getByRole('radio', { name: /^3 months/ })).toContainText('₹69');
-    await expect(plans.getByRole('radio', { name: /^Yearly/ })).toContainText('₹249');
-    await expect(plans.getByRole('button', { name: 'Plans open soon' })).toBeDisabled();
+    await expect(plans.getByRole('radio', { name: /^Monthly/ })).toContainText('₹149');
+    await expect(plans.getByRole('radio', { name: /^3 months/ })).toContainText('₹399');
+    await expect(plans.getByRole('radio', { name: /^Yearly/ })).toContainText('₹1,499');
+    // Autopay needs a Razorpay plan; one payment does not.
+    await plans.getByRole('button', { name: 'Autopay opens soon. Pay once instead' }).click();
+    await expect(plans.getByRole('radio', { name: /^Pay once/ })).toBeChecked();
+    await expect(plans.getByRole('button', { name: 'Pay ₹1,499 once for 1 year' })).toBeEnabled();
     // No payment details are ever typed into this page.
     await expect(page.getByRole('textbox')).toHaveCount(0);
   });

@@ -61,13 +61,10 @@ describe('chooseNudge', () => {
     const quiet = facts({ historyDays: 0, workoutsSince: 1, records: 0, monthlyInr: null });
     expect(chooseNudge(quiet, state(), NOW)).toBeNull();
     // The price is a fact too, once the server has sent it.
-    const priced = chooseNudge(facts({ ...quiet, monthlyInr: 29 }), state(), NOW);
+    const priced = chooseNudge(facts({ ...quiet, monthlyInr: 149 }), state(), NOW);
     expect(priced?.id).toBe('price');
-    expect(priced?.title).toContain('under ₹1 a day');
-    // A higher price makes no such claim.
-    expect(chooseNudge(facts({ ...quiet, monthlyInr: 99 }), state(), NOW)?.title).not.toContain(
-      'a day',
-    );
+    // The price as it is, with nothing to compare it against.
+    expect(priced?.title).toBe('Pro is ₹149 a month.');
     // The yearly saving is worked out from the real prices, and only offered when it is real.
     const both = state({ shownIds: ['price'], lastShownAt: ago(30) });
     const yearly = chooseNudge(facts({ ...quiet, monthlyInr: 99, yearlyInr: 899 }), both, NOW);

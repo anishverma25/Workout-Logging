@@ -5,7 +5,6 @@ import { SYSTEM_EXERCISES } from '@/data/library/exercises';
 import { ROUTINE_TEMPLATES } from '@/data/library/templates';
 import { FREE_FEATURES, PRO_FEATURES } from '@/domain/entitlement/entitlement';
 import { LANDING_ATTR, wantsLanding } from './landing';
-import { REGULAR_PRICE_INR } from './billing';
 import {
   COACHING_PRICE,
   FAQ,
@@ -122,21 +121,17 @@ describe('public home page', () => {
     }
   });
 
-  it('shows the real prices, with the regular ones crossed out', () => {
-    const seed = readFileSync('supabase/migrations/20261011000008_razorpay_billing.sql', 'utf8');
+  it('shows the real prices, with nothing crossed out', () => {
+    const seed = readFileSync('supabase/migrations/20261113000024_pricing_coupons.sql', 'utf8');
     for (const [id, price] of Object.entries(PUBLIC_PRICES)) {
-      // The plans migration seeds the same price the server charges today.
-      expect(seed).toMatch(new RegExp(`\\('${id}', '[^']+', \\d+, ${price},`));
+      // The prices migration sets the same price the server charges today.
+      expect(seed).toMatch(new RegExp(`set price_inr = ${price},[^;]*where id = '${id}'`));
       const card = new RegExp(`data-plan-price="${id}">([\\s\\S]*?)</li>`).exec(LANDING)?.[1] ?? '';
-      expect(card).toContain(`₹${price}</span>`);
-      expect(card).toContain(
-        `<s class="type-meta text-text-3">₹${REGULAR_PRICE_INR[id as keyof typeof REGULAR_PRICE_INR]}</s>`,
-      );
+      expect(card).toContain(`₹${price.toLocaleString('en-IN')}</span>`);
     }
-    expect(LANDING).toContain('₹23 a month');
-    expect(Math.round(PUBLIC_PRICES.quarterly / 3)).toBe(23);
-    expect(Math.round(PUBLIC_PRICES.yearly / 12)).toBe(21);
-    expect(LANDING).toContain('₹21 a month');
+    expect(LANDING).not.toMatch(/<s[ >]/);
+    expect(LANDING).not.toMatch(/early bird/i);
+    expect(LANDING).not.toMatch(/a day/);
     expect(LANDING).toContain(`<span data-price-from>${PUBLIC_PRICES.monthly}</span>`);
     expect(LANDING).toContain(`<span data-price-coaching>${COACHING_PRICE}</span>`);
     const coaching = readFileSync('supabase/migrations/20261031000018_coaching.sql', 'utf8');

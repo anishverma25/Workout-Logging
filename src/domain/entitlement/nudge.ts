@@ -96,13 +96,9 @@ function candidates(f: NudgeFacts): Nudge[] {
     });
   }
   if (f.monthlyInr !== null) {
-    const perDay = f.monthlyInr / (365 / 12);
     out.push({
       id: 'price',
-      title:
-        perDay < 1
-          ? `Pro is ₹${f.monthlyInr} a month, under ₹1 a day.`
-          : `Pro is ₹${f.monthlyInr} a month.`,
+      title: `Pro is ₹${f.monthlyInr} a month.`,
       body: 'Every analysis feature, Macrotrophy AI and your whole history open, and you can cancel any time.',
     });
   }

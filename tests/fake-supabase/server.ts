@@ -755,6 +755,15 @@ const server = createServer(async (req, res) => {
       );
       return send(res, 200, { connected });
     }
+    // Test control, standing in for the owner making a coupon code in the SQL editor.
+    if (url.pathname === '/__test/coupon' && req.method === 'POST') {
+      const { code, percent } = (await readJson(req)) as { code: string; percent?: number };
+      await pg.query(
+        `insert into public.coupons (code, percent) values ($1, $2) on conflict (code) do nothing`,
+        [code, percent ?? 10],
+      );
+      return send(res, 200, { code });
+    }
     // Test control, standing in for Razorpay Checkout's signature on a finished payment.
     if (url.pathname === '/__test/razorpay-sign' && req.method === 'POST') {
       const { payment_id, subscription_id, order_id } = (await readJson(req)) as Record<

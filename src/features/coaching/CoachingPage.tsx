@@ -122,7 +122,6 @@ function Sell({ entitlement: e }: { entitlement: EntitlementView }) {
   const workouts =
     training.data?.workouts.filter((w) => isAlive(w) && w.status === 'completed').length ?? 0;
   const proMonthly = proPlans?.find((p) => p.id === 'monthly')?.priceInr ?? null;
-  const perDay = plan ? Math.round(plan.priceInr / 30) : null;
   // A renewing Pro plan has to stop renewing before coaching can be bought (one plan renews at a
   // time); the server says so too, this only explains it up front.
   const blockedByPro = e.renews && e.billingPlan !== 'coach_monthly';
@@ -137,7 +136,7 @@ function Sell({ entitlement: e }: { entitlement: EntitlementView }) {
         { email: account.user?.email, name: profile?.displayName },
         mode,
       );
-      if (result === 'paid') {
+      if (result.result === 'paid') {
         // Reload so every gate and the coaching view come back with the new plan.
         window.location.replace('/coaching?joined=1');
       }
@@ -175,7 +174,7 @@ function Sell({ entitlement: e }: { entitlement: EntitlementView }) {
               <span className="type-body ml-1 font-normal text-text-2">a month</span>
             </p>
             <p className="type-meta mt-2 text-text-2">
-              About {formatRupees(perDay!)} a day · Pro included · cancel any time
+              Pro included · cancel any time
             </p>
           </div>
         ) : null}

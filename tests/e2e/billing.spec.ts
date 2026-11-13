@@ -11,7 +11,18 @@ const FAKE = 'http://localhost:54329';
 
 const FAKE_CHECKOUT = `
 window.Razorpay = function (options) {
+  const handlers = {};
+  this.on = function (event, cb) { handlers[event] = cb; };
   this.open = async function () {
+    window.__checkout = options;
+    if (window.__failPayment) {
+      // The person's UPI app declined; they then close the window.
+      const description = window.__failPayment;
+      window.__failPayment = null;
+      handlers['payment.failed']?.({ error: { description } });
+      options.modal.ondismiss();
+      return;
+    }
     const paymentId = 'pay_e2e' + Math.random().toString(36).slice(2, 8);
     const res = await fetch('${FAKE}/__test/razorpay-sign', {
       method: 'POST',
@@ -28,7 +39,6 @@ window.Razorpay = function (options) {
         : { razorpay_payment_id: paymentId, razorpay_subscription_id: options.subscription_id, razorpay_signature: signature },
     );
   };
-  this.on = function () {};
 };`;
 
 const control = (path: string, body: unknown) =>
@@ -61,87 +71,147 @@ async function signUp(page: Page) {
   await page.waitForURL((u) => u.pathname === '/pro');
 }
 
-test('the plans show early bird prices against the regular prices', async ({ page }) => {
+test('the plans show the prices as they are, with nothing to compare them against', async ({
+  page,
+}) => {
   await signUp(page);
   const plans = page.getByRole('region', { name: 'Pro plans' });
-  const yearly = plans.getByRole('radio', { name: /^Yearly/ });
-  await expect(yearly).toContainText('₹249');
-  const offer = plans.getByTestId('intro-offer');
-  await expect(offer).toContainText('Early bird offer');
-  await expect(offer).toContainText('keep your price for as long as your plan renews');
-  await expect(offer).toContainText('under ₹1 a day');
-  // Each plan's regular price, crossed out, next to its early bird price.
   const monthly = plans.getByRole('radio', { name: /^Monthly/ });
   const quarterly = plans.getByRole('radio', { name: /^3 months/ });
-  await expect(monthly.locator('[data-regular-price]')).toHaveText('₹59');
-  await expect(quarterly.locator('[data-regular-price]')).toHaveText('₹149');
-  await expect(yearly.locator('[data-regular-price]')).toHaveText('₹499');
-  await expect(yearly.locator('[data-regular-price]')).toHaveCSS(
-    'text-decoration-line',
-    'line-through',
-  );
-  await expect(monthly).toContainText('₹29');
-  await expect(quarterly).toContainText('₹69');
-  // Paying once shows the same offer.
-  await plans.getByRole('radio', { name: /^Pay once/ }).click();
-  await expect(offer).toContainText('Early bird offer');
-  await expect(yearly.locator('[data-regular-price]')).toHaveText('₹499');
-  await plans.getByRole('radio', { name: /^Auto-renew/ }).click();
+  const yearly = plans.getByRole('radio', { name: /^Yearly/ });
+  await expect(monthly).toContainText('₹149');
+  await expect(quarterly).toContainText('₹399');
+  await expect(yearly).toContainText('₹1,499');
   await expect(yearly).toContainText('Best value');
-  // 249 a year against 29 a month: 20.75 a month, 28% less.
-  await expect(yearly).toContainText('₹20.75 a month · save 28%');
-  await expect(plans.getByRole('radio', { name: /^3 months/ })).toContainText('₹23 a month');
+  // No offer box, no crossed-out price, no price per day and no percent saved.
+  await expect(plans.getByTestId('intro-offer')).toHaveCount(0);
+  await expect(plans.locator('[data-regular-price]')).toHaveCount(0);
+  await expect(plans).not.toContainText(/a day|save \d+%|early bird/i);
+  // Both ways to pay, every time.
+  await expect(plans.getByRole('radio', { name: /^Autopay/ })).toBeChecked();
+  await plans.getByRole('radio', { name: /^Pay once/ }).click();
+  await expect(yearly).toContainText('₹1,499');
+  await expect(yearly).toContainText('for 1 year');
 });
 
-test('subscribing turns Pro on at once, and cancelling keeps it to the end of the period', async ({
+test('autopay turns Pro on at once; turning renewal off keeps the time and opens both ways to extend', async ({
   page,
 }) => {
   await signUp(page);
   await expect(page.getByRole('heading', { name: /^Free trial:/ })).toBeVisible();
   const plans = page.getByRole('region', { name: 'Pro plans' });
-  await expect(plans).toContainText('Subscribing now starts your plan today');
+  await expect(plans).toContainText('Paying now starts your plan today');
   await plans.getByRole('radio', { name: /^3 months/ }).click();
-  await plans.getByRole('button', { name: 'Subscribe for ₹69 every 3 months' }).click();
+  await plans.getByRole('button', { name: 'Subscribe for ₹399 every 3 months' }).click();
 
   // Pro is on as soon as the server confirms the payment.
   await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
   const mine = page.getByRole('region', { name: 'Your plan' });
-  await expect(mine).toContainText('3 months, ₹69 every 3 months');
+  await expect(mine).toContainText('3 months, ₹399 every 3 months');
   await expect(mine).toContainText(/Renews on /);
+  // While it renews by itself there is nothing to buy on top, and the page says how to change.
+  await expect(page.locator('[data-buy-plan]')).toHaveCount(0);
+  await expect(mine.locator('[data-extend-note]')).toContainText('Turn renewal off first');
 
-  await mine.getByRole('button', { name: 'Cancel plan' }).click();
-  const confirm = page.getByRole('dialog', { name: 'Cancel your plan?' });
+  await mine.getByRole('button', { name: 'Turn off renewal' }).click();
+  const confirm = page.getByRole('dialog', { name: 'Turn off renewal?' });
   await expect(confirm).toContainText('You will not be charged again');
-  await confirm.getByRole('button', { name: 'Cancel plan' }).click();
+  await confirm.getByRole('button', { name: 'Turn off renewal' }).click();
   await expect(mine).toContainText(/Ends on .*It will not renew\./);
   await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
-  await expect(mine.getByRole('button', { name: 'Cancel plan' })).toHaveCount(0);
+  await expect(mine.getByRole('button', { name: 'Turn off renewal' })).toHaveCount(0);
+
+  // Now they can extend, either way. Autopay would start when the paid time runs out.
+  const more = page.getByRole('region', { name: 'Extend your Pro' });
+  await expect(more.getByRole('radio', { name: /^Pay once/ })).toBeChecked();
+  await more.getByRole('radio', { name: /^Autopay/ }).click();
+  await expect(more).toContainText(/Autopay starts on .* when the time you paid for runs out/);
+  await more.getByRole('radio', { name: /^Yearly/ }).click();
+  await expect(more).toContainText(/First charge on /);
+  await more.getByRole('button', { name: 'Subscribe for ₹1,499 a year' }).click();
+  await expect(mine).toContainText('Yearly, ₹1,499 a year');
+  await expect(mine).toContainText(/Renews on /);
 
   // Pro features are open.
   await page.goto('/progress?range=all');
   await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
 });
 
-test('paying once turns Pro on with no renewal, and more time can be added', async ({ page }) => {
+test('paying once turns Pro on with no renewal, and more time can be added either way', async ({
+  page,
+}) => {
   await signUp(page);
   const plans = page.getByRole('region', { name: 'Pro plans' });
   await plans.getByRole('radio', { name: /^Pay once/ }).click();
   await expect(plans).toContainText('No mandate and no automatic charge');
   await plans.getByRole('radio', { name: /^3 months/ }).click();
-  await plans.getByRole('button', { name: 'Pay ₹69 once for 3 months' }).click();
+  await plans.getByRole('button', { name: 'Pay ₹399 once for 3 months' }).click();
 
   await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
   const mine = page.getByRole('region', { name: 'Your plan' });
   await expect(mine).toContainText('3 months, paid once');
   await expect(mine).toContainText(/Ends on .*It will not renew\./);
-  await expect(mine.getByRole('button', { name: 'Cancel plan' })).toHaveCount(0);
+  await expect(mine.getByRole('button', { name: 'Turn off renewal' })).toHaveCount(0);
 
-  // More time can be added; it never offers a renewing plan here.
-  const more = page.getByRole('region', { name: 'Add more Pro time' });
-  await expect(more.getByRole('radio', { name: /^Auto-renew/ })).toHaveCount(0);
+  // More time can be added, with one payment or with autopay.
+  const more = page.getByRole('region', { name: 'Extend your Pro' });
+  await expect(more.getByRole('radio', { name: /^Autopay/ })).toBeVisible();
   await more.getByRole('radio', { name: /^Monthly/ }).click();
-  await more.getByRole('button', { name: 'Pay ₹29 once for 1 month' }).click();
-  await expect(mine).toContainText('Ends on');
+  await more.getByRole('button', { name: 'Pay ₹149 once for 1 month' }).click();
+  await expect(mine).toContainText('Monthly, paid once');
+  // The extend row is one tap from More, for members too.
+  await page.goto('/more');
+  await expect(page.locator('[data-pro-row]')).toContainText('Extend or manage your plan');
+});
+
+test('a failed autopay says why and offers one payment instead', async ({ page }) => {
+  await signUp(page);
+  const plans = page.getByRole('region', { name: 'Pro plans' });
+  await page.evaluate(() => {
+    (window as unknown as { __failPayment: string }).__failPayment =
+      'Payment was declined by your UPI app';
+  });
+  await plans.getByRole('radio', { name: /^Monthly/ }).click();
+  await plans.getByRole('button', { name: 'Subscribe for ₹149 a month' }).click();
+  const failed = plans.locator('[data-payment-failed]');
+  await expect(failed).toContainText('Payment was declined by your UPI app.');
+  await expect(failed).toContainText('Nothing was charged');
+  // Still on the trial: a failed try gives nothing.
+  await expect(page.getByRole('heading', { name: /^Free trial:/ })).toBeVisible();
+
+  await plans.locator('[data-pay-once-instead]').click();
+  await expect(plans.getByRole('radio', { name: /^Pay once/ })).toBeChecked();
+  await expect(failed).toHaveCount(0);
+  await plans.getByRole('button', { name: 'Pay ₹149 once for 1 month' }).click();
+  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
+});
+
+test('a code takes 10% off the first payment, once per account', async ({ page }) => {
+  await control('/__test/coupon', { code: 'GYM10' });
+  await signUp(page);
+  const plans = page.getByRole('region', { name: 'Pro plans' });
+  await plans.getByRole('button', { name: 'Have a code?' }).click();
+  await plans.getByLabel('Code').fill('nope');
+  await plans.getByRole('button', { name: 'Apply' }).click();
+  await expect(plans.getByRole('alert')).toContainText('That code is not valid');
+  await plans.getByLabel('Code').fill('gym10');
+  await plans.getByRole('button', { name: 'Apply' }).click();
+  await expect(plans.locator('[data-coupon-applied]')).toContainText(
+    'GYM10 applied: 10% off your first payment',
+  );
+  // Autopay: the first year at the lower price today, then the normal price.
+  await expect(plans.getByRole('button', { name: 'Start autopay, ₹1,349 today' })).toBeVisible();
+  await expect(plans).toContainText('₹1,349 today for the first 1 year, then ₹1,499 a year');
+
+  await plans.getByRole('radio', { name: /^Pay once/ }).click();
+  await plans.getByRole('button', { name: 'Pay ₹1,349 once for 1 year' }).click();
+  await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible();
+  // The same account cannot use a code again.
+  const more = page.getByRole('region', { name: 'Extend your Pro' });
+  await more.getByRole('button', { name: 'Have a code?' }).click();
+  await more.getByLabel('Code').fill('GYM10');
+  await more.getByRole('button', { name: 'Apply' }).click();
+  await expect(more.getByRole('alert')).toContainText('already been used on this account');
 });
 
 test('a webhook with a bad signature changes nothing', async () => {
