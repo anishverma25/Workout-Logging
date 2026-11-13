@@ -101,14 +101,17 @@ export function ProgressPage() {
   const [params, setParams] = useSearchParams();
   const [pickingExercise, setPickingExercise] = useState(false);
   const rangeParam = params.get('range');
-  const range: ProgressRange = isRange(rangeParam) ? rangeParam : '30d';
+  const longRangeIncludedEarly = useFeature('long_range');
+  // Free: the last 7 days. Pro: 30 days (the default), 90 days and all time.
+  const defaultRange: ProgressRange = longRangeIncludedEarly ? '30d' : '7d';
+  const range: ProgressRange = isRange(rangeParam) ? rangeParam : defaultRange;
   const exerciseId = params.get('exercise');
   const unit = prefs.weightUnit;
-  const longRangeIncluded = useFeature('long_range');
+  const longRangeIncluded = longRangeIncludedEarly;
   const muscleBalanceIncluded = useFeature('muscle_balance');
   const progressionIncluded = useFeature('progression');
   const food = useFoodContextFrom(now, training);
-  const rangeLocked = (range === '90d' || range === 'all') && !longRangeIncluded;
+  const rangeLocked = range !== '7d' && !longRangeIncluded;
   const view = initialView(params.get('view'));
   // Last week's check-in (moved here from Home, UI v3 B6) and the body weight summary.
   const dashboard = useMemo(
@@ -215,12 +218,10 @@ export function ProgressPage() {
                 longRangeIncluded
                   ? RANGES
                   : RANGES.map((r) =>
-                      r.value === '90d' || r.value === 'all'
-                        ? { ...r, ariaLabel: `${r.ariaLabel} · Pro` }
-                        : r,
+                      r.value !== '7d' ? { ...r, ariaLabel: `${r.ariaLabel} · Pro` } : r,
                     )
               }
-              onChange={(r) => setParam('range', r === '30d' ? null : r)}
+              onChange={(r) => setParam('range', r === defaultRange ? null : r)}
             />
           </div>
 
@@ -228,7 +229,7 @@ export function ProgressPage() {
             <ProLock
               feature="long_range"
               className="mt-6"
-              lead="Your history is all here. Trends over 90 days and all time are part of Pro."
+              lead="Your history is all here. Free shows the last 7 days; trends over 30 days, 90 days and all time are Pro."
             />
           ) : (
             <CoachBriefProvider

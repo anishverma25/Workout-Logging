@@ -163,12 +163,29 @@ export type ProFeature =
   | 'adaptive_plan'
   | 'meal_plan'
   | 'copy_routines'
-  | 'story_designs';
+  | 'story_designs'
+  | 'unlimited_routines'
+  | 'macro_tracking'
+  | 'gym_tools';
 
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
   long_range: {
-    title: '90-day and all-time trends',
-    description: 'See strength, volume and consistency across months, not just weeks.',
+    title: '30-day, 90-day and all-time trends',
+    description:
+      'Free shows your last 7 days. Pro shows strength, volume and consistency across months.',
+  },
+  unlimited_routines: {
+    title: 'Unlimited routines',
+    description: 'Free keeps 2 routines. Pro keeps as many as you like: a cut, a bulk, a travel plan.',
+  },
+  macro_tracking: {
+    title: 'Protein, carbs, fat and fibre',
+    description:
+      'Free counts calories. Pro tracks protein, carbs, fat and fibre against your targets, and tells you what to eat next.',
+  },
+  gym_tools: {
+    title: 'Gym tools',
+    description: 'Plate calculator, warm-up sets, supersets and smart exercise swaps in the logger.',
   },
   muscle_balance: {
     title: 'Sets per muscle group',
@@ -250,15 +267,18 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
   },
 };
 
-/** Always free, during and after the trial. History is never locked. Macrotrophy AI is Pro only. */
+/**
+ * Always free, during and after the trial. History is never locked. Macrotrophy AI is Pro only
+ * (its services are on free tiers). Free is a complete logger; Pro is what tells you what to do.
+ */
 export const FREE_FEATURES = [
-  'Unlimited workout logging, routines and custom exercises',
+  'Unlimited workout logging with last time beside every set',
   'Your full workout history and every personal record',
-  'Every routine template and personalised routines, and a look at the routines on the boards',
-  'Indian food logging with thalis, katoris and your usual meals, and Eat next',
+  '2 routines, from any template or built your own',
+  'Indian food logging with calories, by the katori, plate or roti',
   'Groups, a duel a week and the global leaderboard',
-  'Body weight, measurements, targets, goals and progress photos',
-  'Progress for the last 7 and 30 days, with insights',
+  'Body weight, goals and progress photos',
+  'Progress for the last 7 days',
   'Backup and sync across your devices',
 ];
 

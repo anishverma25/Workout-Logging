@@ -1,3 +1,4 @@
+import { useRoutineAllowance } from '@/features/routines/allowance';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
@@ -59,7 +60,9 @@ function Form({
   const mine = routines.filter((r) => r.deletedAt === null);
   const dayCount = (id: string) =>
     routineDays.filter((d) => d.routineId === id && d.deletedAt === null).length;
-  const [kind, setKind] = useState<'new' | 'day'>('new');
+  const allowance = useRoutineAllowance();
+  // At the free limit, a workout is added as a day of a routine they have; a new one is Pro.
+  const [kind, setKind] = useState<'new' | 'day'>(!allowance.canAdd && mine.length ? 'day' : 'new');
   const [name, setName] = useState(workoutName);
   const [routineId, setRoutineId] = useState<string | null>(
     mine.find((r) => r.isActive && dayCount(r.id) < MAX_DAYS)?.id ?? null,
@@ -68,6 +71,11 @@ function Form({
   const [error, setError] = useState<string | null>(null);
 
   async function save() {
+    if (kind === 'new' && !allowance.canAdd) {
+      onClose();
+      navigate('/pro');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -94,7 +102,7 @@ function Form({
           value={kind}
           onChange={setKind}
           options={[
-            { value: 'new', label: 'New routine' },
+            { value: 'new', label: allowance.canAdd ? 'New routine' : 'New routine · Pro' },
             { value: 'day', label: 'Add to a routine' },
           ]}
         />

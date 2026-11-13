@@ -77,9 +77,15 @@ A revoked account keeps every free feature and all of its data.
 
 Macrotrophy AI is Pro only: the AI services are on free tiers and cannot carry free members.
 
-Free is a complete logger: workouts, routines, every template, full history and records, Indian
-food logging and Eat next, body metrics and targets, groups and leaderboards, 30 days of
-Progress, backup and sync. History is never locked.
+Free (after the trial): unlimited workout logging with last time beside every set, the full
+history and every record, 2 routines, Indian food logging with calories, groups, a duel a week
+and the leaderboards, body weight, goals and photos, 7 days of Progress, backup and sync. History
+is never locked; routines over the limit are kept, only new ones need Pro.
+
+Pro adds, on top of the list below: protein, carbs, fat and fibre with Eat next
+(`macro_tracking`), unlimited routines (`unlimited_routines`), 30 days and longer on Progress
+(`long_range`), and the gym tools in the logger: plate calculator, warm-up sets, supersets and
+swaps (`gym_tools`).
 
 What makes people want Pro, without taking anything away:
 

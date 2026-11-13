@@ -39,6 +39,7 @@ export function NowCard({
   wrappedMonth?: string | null;
 }) {
   const pro = useFeature('adaptive_plan');
+  const macros = useFeature('macro_tracking');
   const brain = useBrain(now);
   const food = useFoodContextFrom(now, training);
   const active = useActiveWorkout();
@@ -62,11 +63,13 @@ export function NowCard({
     ).size;
     const eaten = dayTotals(logs, day);
     const kcalLeft = food.targets.kcal ? food.targets.kcal - eaten.kcal : null;
-    const proteinLeft = food.targets.proteinG ? food.targets.proteinG - eaten.proteinG : null;
+    // Protein and what fits the rest of the day are Pro macro tracking.
+    const proteinLeft =
+      macros && food.targets.proteinG ? food.targets.proteinG - eaten.proteinG : null;
     const mealNow = mealForHour(hour);
     const prefs = readMealPrefs();
     const fits =
-      kcalLeft !== null && hour >= 19
+      macros && kcalLeft !== null && hour >= 19
         ? eatNext({
             remaining: { kcal: kcalLeft, proteinG: proteinLeft ?? 0 },
             meal: mealNow,
@@ -107,6 +110,7 @@ export function NowCard({
     hour,
     day,
     pro,
+    macros,
     brain.record,
     brain.decision,
     today,

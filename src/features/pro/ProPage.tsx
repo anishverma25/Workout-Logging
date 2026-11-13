@@ -439,10 +439,13 @@ function Pillars() {
 
 /** What each plan includes, as outcomes; a string in Free means a smaller amount. */
 const COMPARE: { label: string; free: boolean | string }[] = [
-  { label: 'Workout logging, routines and full history', free: true },
-  { label: 'Indian food logging and Eat next', free: true },
+  { label: 'Workout logging and full history', free: true },
+  { label: 'Routines', free: '2' },
+  { label: 'Indian food logging with calories', free: true },
+  { label: 'Protein, carbs, fat and fibre, and Eat next', free: false },
   { label: 'Groups and leaderboards', free: true },
-  { label: 'Progress', free: 'Last 30 days' },
+  { label: 'Progress', free: 'Last 7 days' },
+  { label: PRO_FEATURES.gym_tools.title + ': plates, warm-ups, supersets, swaps', free: false },
   { label: 'Duels a week', free: '1 (Pro 3)' },
   { label: 'Story card designs', free: '3 of 7' },
   { label: 'See routines on the boards', free: true },

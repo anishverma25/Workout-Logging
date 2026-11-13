@@ -41,6 +41,15 @@ test.describe('after early access ends', () => {
       /ready for more weight|stalled|out of balance/,
     );
 
+    // Free counts calories; macros and Eat next are Pro.
+    await page.goto('/food');
+    await expect(page.locator('[data-macros-locked]')).toBeVisible();
+    // Free keeps 2 routines: the demo athlete has more, so a new one leads to Pro.
+    await page.goto('/routines');
+    await expect(page.locator('[data-routine-allowance]')).toContainText(
+      'routines on the free plan',
+    );
+
     // History and records are never locked.
     await page.goto('/history');
     await expect(page.locator('[data-pro-lock]')).toHaveCount(0);

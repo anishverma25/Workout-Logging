@@ -1,8 +1,9 @@
 import { EatNextCard } from './EatNextCard';
 import { FoodThanks } from './FoodThanks';
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router';
-import { Plus, Settings2, Target, UtensilsCrossed } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router';
+import { useFeature } from '@/app/entitlement';
+import { Crown, Lock, Plus, Settings2, Target, UtensilsCrossed } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import {
   Card,
@@ -246,6 +247,8 @@ function DaySummary({
   const totals = dayTotals(ctx.logs, date);
   const { kcal, proteinG } = ctx.targets;
   const left = kcal !== null ? kcal - totals.kcal : null;
+  // Free counts calories; protein, carbs, fat and fibre are Pro.
+  const macros = useFeature('macro_tracking');
   const bars = [
     { label: 'Protein', value: totals.proteinG, target: proteinG },
     { label: 'Carbs', value: totals.carbsG, target: ctx.targets.carbsG },
@@ -284,7 +287,27 @@ function DaySummary({
             />
           )}
         </div>
-        <ul className="mt-4 grid grid-cols-4 gap-3" data-macro-bars>
+        {!macros ? (
+          <Link
+            to="/pro"
+            className="pressable mt-4 flex items-center gap-3 rounded-nested bg-surface-2 px-4 py-3"
+            data-macros-locked
+          >
+            <span className="grid min-w-0 flex-1 grid-cols-4 gap-2">
+              {bars.map((b) => (
+                <span key={b.label} className="min-w-0">
+                  <span className="type-caption block font-semibold text-text-2">{b.label}</span>
+                  <Lock className="mt-1 size-3.5 text-text-3" aria-hidden />
+                </span>
+              ))}
+            </span>
+            <span className="type-caption shrink-0 font-semibold text-lime">
+              <Crown className="mr-1 inline size-3.5" aria-hidden />
+              Pro
+            </span>
+          </Link>
+        ) : null}
+        <ul className={cn('mt-4 grid grid-cols-4 gap-3', !macros && 'hidden')} data-macro-bars>
           {bars.map((b) => {
             const met = b.label === 'Protein' && b.target !== null && b.value >= b.target;
             return (

@@ -56,6 +56,7 @@ import { angleKind, angleStart, formatAngle, type AngleKind } from '@/domain/wor
 import { checkProgression, loadIncrement, progressionStyle } from '@/domain/analytics/progression';
 import { fromDisplayWeight, toDisplayWeight } from '@/lib/units';
 import { useFeature } from '@/app/entitlement';
+import { useNavigate } from 'react-router';
 import type { Experience, Preferences, WorkoutSet } from '@/domain/models/schemas';
 import { matchingPreviousSet, suggestFor } from '@/domain/workout/previous';
 import { differenceInCalendarDays, formatRelativeDayInline } from '@/lib/dates';
@@ -140,6 +141,13 @@ function ExerciseCardImpl({
   );
   // The same rule as the Progress page, applied to last time's sets with today's target.
   const progressionIncluded = useFeature('progression');
+  // Gym tools (plate calculator, warm-up sets, swaps, supersets) are Pro.
+  const tools = useFeature('gym_tools');
+  const navigate = useNavigate();
+  const toPro = () => {
+    setMenu(false);
+    navigate('/pro');
+  };
   const readyToProgress =
     progressionIncluded &&
     previous &&
@@ -471,11 +479,7 @@ function ExerciseCardImpl({
           workingKg !== null ? Math.round(toDisplayWeight(workingKg, unit) * 100) / 100 : null
         }
       />
-      <HurtsSheet
-        open={hurts}
-        onClose={() => setHurts(false)}
-        exerciseId={we.exerciseId}
-      />
+      <HurtsSheet open={hurts} onClose={() => setHurts(false)} exerciseId={we.exerciseId} />
       <ExercisePicker
         open={swapping}
         onClose={() => setSwapping(false)}
@@ -529,15 +533,17 @@ function ExerciseCardImpl({
           ...(loadTracked
             ? [
                 {
-                  label: 'Add warm-up sets',
+                  label: tools ? 'Add warm-up sets' : 'Add warm-up sets · Pro',
                   hint: barbell
                     ? 'Empty bar, then about 40%, 60% and 80% of your working weight.'
                     : 'About 40%, 60% and 80% of your working weight.',
                   icon: <Flame className="size-5" aria-hidden />,
-                  onSelect: async () => {
-                    setMenu(false);
-                    await addWarmups();
-                  },
+                  onSelect: tools
+                    ? async () => {
+                        setMenu(false);
+                        await addWarmups();
+                      }
+                    : toPro,
                 },
               ]
             : []),
@@ -553,27 +559,31 @@ function ExerciseCardImpl({
           ...(barbell
             ? [
                 {
-                  label: 'Plate calculator',
+                  label: tools ? 'Plate calculator' : 'Plate calculator · Pro',
                   icon: <Calculator className="size-5" aria-hidden />,
-                  onSelect: () => {
-                    setMenu(false);
-                    setPlates(true);
-                  },
+                  onSelect: tools
+                    ? () => {
+                        setMenu(false);
+                        setPlates(true);
+                      }
+                    : toPro,
                 },
               ]
             : []),
           {
-            label: 'Swap exercise',
+            label: tools ? 'Swap exercise' : 'Swap exercise · Pro',
             hint:
               doneCount > 0
                 ? 'Sets are already done. Add the other exercise instead.'
                 : 'Machine taken? Pick another exercise for the same muscle.',
             icon: <Replace className="size-5" aria-hidden />,
             disabled: doneCount > 0,
-            onSelect: () => {
-              setMenu(false);
-              setSwapping(true);
-            },
+            onSelect: tools
+              ? () => {
+                  setMenu(false);
+                  setSwapping(true);
+                }
+              : toPro,
           },
           {
             label: 'Something hurts',
@@ -586,16 +596,22 @@ function ExerciseCardImpl({
           {
             label: superset?.linkedNext
               ? 'Unlink from next exercise'
-              : 'Superset with next exercise',
+              : tools
+                ? 'Superset with next exercise'
+                : 'Superset with next exercise · Pro',
             hint: superset?.linkedNext
               ? undefined
               : 'Do the two back to back and rest after the round.',
             icon: <Link2 className="size-5" aria-hidden />,
             disabled: !hasNext,
-            onSelect: async () => {
-              setMenu(false);
-              await toggleSupersetWithNext(db, we.id);
-            },
+            // Unlinking is always allowed; making a new superset is Pro.
+            onSelect:
+              tools || superset?.linkedNext
+                ? async () => {
+                    setMenu(false);
+                    await toggleSupersetWithNext(db, we.id);
+                  }
+                : toPro,
           },
           ...(sideable
             ? [

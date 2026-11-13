@@ -1,3 +1,4 @@
+import { useFeature } from '@/app/entitlement';
 import { Link } from 'react-router';
 import { CapsuleButton } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
@@ -34,6 +35,7 @@ export function FoodCard({
 }) {
   const ctx = useFoodContextFrom(now, training);
   const toast = useToast();
+  const macros = useFeature('macro_tracking');
   if (ctx.status !== 'success') return null;
   const today = toDateKey(now);
   const totals = dayTotals(ctx.logs, today);
@@ -89,8 +91,9 @@ export function FoodCard({
                   )}
                 </span>
                 <span className="type-subhead block truncate text-text-2">
-                  Protein {totals.proteinG.toFixed(0)}
-                  {proteinG !== null ? ` of ${proteinG}` : ''} g
+                  {macros
+                    ? `Protein ${totals.proteinG.toFixed(0)}${proteinG !== null ? ` of ${proteinG}` : ''} g`
+                    : 'Protein and macros with Pro'}
                 </span>
               </span>
             </Link>
