@@ -62,17 +62,24 @@ export function WhatsNew() {
           </p>
           <div className="mt-3 flex w-full flex-col gap-2">
             {step < last ? (
-              <PrimaryButton block data-autofocus onClick={() => toStep(step + 1)} data-release-next>
+              <PrimaryButton
+                block
+                data-autofocus
+                onClick={() => toStep(step + 1)}
+                data-release-next
+              >
                 Next
               </PrimaryButton>
             ) : (
-              <PrimaryButton block data-autofocus onClick={() => go('/report')} data-release-open>
-                See your week
+              <PrimaryButton block data-autofocus onClick={() => go(s.where.to)} data-release-open>
+                {s.where.label}
               </PrimaryButton>
             )}
             <SecondaryButton
               block
-              onClick={step === 0 ? close : step === last ? () => go('/whats-new') : () => toStep(step - 1)}
+              onClick={
+                step === 0 ? close : step === last ? () => go('/whats-new') : () => toStep(step - 1)
+              }
               data-release-second
             >
               {step === 0 ? 'Later' : step === last ? 'Read it all again' : 'Back'}
@@ -91,7 +98,10 @@ export function WhatsNew() {
 /** One part of the release: drawing, what it does, who gets it. */
 export function ReleaseStepView({ step: s, page = false }: { step: ReleaseStep; page?: boolean }) {
   return (
-    <div className={cn('flex flex-col', page ? 'text-left' : 'items-center pt-1 text-center')} data-release-part={s.id}>
+    <div
+      className={cn('flex flex-col', page ? 'text-left' : 'items-center pt-1 text-center')}
+      data-release-part={s.id}
+    >
       <p className="type-subhead font-semibold text-lime">{s.kicker}</p>
       {page ? (
         <h2 className="type-title-1 mt-1 text-text-1">{s.title}</h2>

@@ -12,6 +12,7 @@ import {
   Star,
   Trash2,
 } from 'lucide-react';
+import { TemplateCover } from './TemplateCover';
 import { FREE_ROUTINES, useRoutineAllowance } from './allowance';
 import { useShareRoutine } from './useShareRoutine';
 import { ComingUpRow } from '../brain/ComingUpRow';
@@ -346,6 +347,7 @@ function TemplatePicker({ onClose }: { onClose: () => void }) {
                   recommended ? 'ring-border-strong' : 'ring-transparent',
                 )}
               >
+                <TemplateCover template={t} highlight={recommended} />
                 {recommended ? (
                   <Badge tone="accent" className="mb-1">
                     Recommended for you

@@ -6,11 +6,13 @@ import { Brain, Check, Flame, Mic, Plus, Sparkles, Swords, Utensils } from 'luci
  * same tokens as the app. Every figure in them is an example, and each frame says so.
  */
 
-function Frame({ children, label }: { children: ReactNode; label: string }) {
+export function Frame({ children, label }: { children: ReactNode; label: string }) {
   return (
     <div
       className="relative w-full overflow-hidden rounded-panel bg-surface-2 p-4"
-      style={{ backgroundImage: 'radial-gradient(90% 70% at 50% 0%, var(--lime-dim), transparent 70%)' }}
+      style={{
+        backgroundImage: 'radial-gradient(90% 70% at 50% 0%, var(--lime-dim), transparent 70%)',
+      }}
       role="img"
       aria-label={label}
     >
@@ -22,11 +24,15 @@ function Frame({ children, label }: { children: ReactNode; label: string }) {
   );
 }
 
-const Row = ({ children }: { children: ReactNode }) => (
-  <div className="flex items-center gap-3 rounded-nested bg-surface px-3 py-2.5 text-left">{children}</div>
+export const Row = ({ children }: { children: ReactNode }) => (
+  <div className="flex items-center gap-3 rounded-nested bg-surface px-3 py-2.5 text-left">
+    {children}
+  </div>
 );
-const Dot = ({ children }: { children: ReactNode }) => (
-  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-fill text-lime">{children}</span>
+export const Dot = ({ children }: { children: ReactNode }) => (
+  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-fill text-lime">
+    {children}
+  </span>
 );
 
 /** Learn, decide, explain: the three steps of the brain. */
@@ -71,7 +77,9 @@ export function PlanArt() {
           </Dot>
           <div className="min-w-0">
             <p className="type-subhead font-semibold text-text-1">Calories 2,300 to 2,200</p>
-            <p className="type-caption text-text-2">Your weight held steady; the plan is a slow cut.</p>
+            <p className="type-caption text-text-2">
+              Your weight held steady; the plan is a slow cut.
+            </p>
           </div>
         </Row>
         <Row>
@@ -84,8 +92,12 @@ export function PlanArt() {
           </div>
         </Row>
         <div className="mt-1 grid grid-cols-2 gap-2">
-          <span className="type-subhead rounded-full bg-lime py-2 text-center font-semibold text-on-lime">Apply changes</span>
-          <span className="type-subhead rounded-full bg-fill py-2 text-center font-semibold text-text-1">Keep my plan</span>
+          <span className="type-subhead rounded-full bg-lime py-2 text-center font-semibold text-on-lime">
+            Apply changes
+          </span>
+          <span className="type-subhead rounded-full bg-fill py-2 text-center font-semibold text-text-1">
+            Keep my plan
+          </span>
         </div>
       </div>
     </Frame>
@@ -118,7 +130,9 @@ export function LifeArt() {
             <Check className="size-4" />
           </Dot>
           <div className="min-w-0">
-            <p className="type-subhead font-semibold text-text-1">Overhead press to machine press</p>
+            <p className="type-subhead font-semibold text-text-1">
+              Overhead press to machine press
+            </p>
             <p className="type-caption text-text-2">Your shoulder hurt. Back in 2 weeks.</p>
           </div>
         </Row>
@@ -176,7 +190,11 @@ export function VoiceArt() {
           </span>
           <div className="flex h-10 items-center gap-1">
             {bars.map((h, i) => (
-              <span key={i} className="release-wave w-1 rounded-full bg-lime" style={{ height: h, animationDelay: `${i * 80}ms` }} />
+              <span
+                key={i}
+                className="release-wave w-1 rounded-full bg-lime"
+                style={{ height: h, animationDelay: `${i * 80}ms` }}
+              />
             ))}
           </div>
         </div>
@@ -207,16 +225,23 @@ export function NowArt() {
           <p className="type-subhead font-semibold text-text-1">40 g protein left</p>
           <p className="type-caption text-text-2">These fit: curd, boiled eggs, chana.</p>
         </div>
-        <span className="type-caption rounded-full bg-lime px-3 py-1.5 font-semibold text-on-lime">Add</span>
+        <span className="type-caption rounded-full bg-lime px-3 py-1.5 font-semibold text-on-lime">
+          Add
+        </span>
       </Row>
       <div className="mt-3 flex flex-col gap-1.5">
         <p className="type-caption text-left text-lime">What Macrotrophy AI knows</p>
-        {['Exams from 16 to 22 Nov', 'Shoulder hurt (mild)', 'I train at 6 am before class'].map((t) => (
-          <div key={t} className="flex items-center gap-2 rounded-nested bg-surface px-3 py-2 text-left">
-            <Sparkles className="size-3.5 shrink-0 text-lime" />
-            <p className="type-caption text-text-1">{t}</p>
-          </div>
-        ))}
+        {['Exams from 16 to 22 Nov', 'Shoulder hurt (mild)', 'I train at 6 am before class'].map(
+          (t) => (
+            <div
+              key={t}
+              className="flex items-center gap-2 rounded-nested bg-surface px-3 py-2 text-left"
+            >
+              <Sparkles className="size-3.5 shrink-0 text-lime" />
+              <p className="type-caption text-text-1">{t}</p>
+            </div>
+          ),
+        )}
       </div>
     </Frame>
   );
@@ -240,7 +265,10 @@ export function SocialArt() {
       </div>
       <div
         className="mt-2 rounded-nested px-3 py-4 text-left"
-        style={{ backgroundImage: 'linear-gradient(135deg, var(--lime-dim), transparent 75%)', backgroundColor: 'var(--surface)' }}
+        style={{
+          backgroundImage: 'linear-gradient(135deg, var(--lime-dim), transparent 75%)',
+          backgroundColor: 'var(--surface)',
+        }}
       >
         <p className="type-caption text-lime">October, wrapped</p>
         <p className="type-title text-text-1">

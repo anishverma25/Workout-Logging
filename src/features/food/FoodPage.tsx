@@ -271,7 +271,7 @@ function DaySummary({
               label={left >= 0 ? 'Left today' : 'Over today'}
               value={n(Math.abs(left))}
               unit="kcal"
-              className="[&_[data-metric]]:text-[3rem] [&_[data-metric]]:leading-[3.25rem]"
+              className="[&_[data-metric]]:num-glow [&_[data-metric]]:text-[3rem] [&_[data-metric]]:leading-[3.25rem]"
             >
               <p className="type-meta tabular mt-0.5 text-text-2">
                 of {n(kcal!)} kcal · {n(totals.kcal)} eaten
@@ -283,7 +283,7 @@ function DaySummary({
               label="Eaten today"
               value={n(totals.kcal)}
               unit="kcal"
-              className="[&_[data-metric]]:text-[3rem] [&_[data-metric]]:leading-[3.25rem]"
+              className="[&_[data-metric]]:num-glow [&_[data-metric]]:text-[3rem] [&_[data-metric]]:leading-[3.25rem]"
             />
           )}
         </div>

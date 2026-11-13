@@ -96,7 +96,7 @@ ${all}
  * Bumped by hand at the end of every UI redesign part (UI rules 3.1), so installed apps always
  * fetch a fresh shell even when only public files changed. Part of the cache name and hash.
  */
-export const CACHE_EPOCH = 'ui-19';
+export const CACHE_EPOCH = 'ui-20';
 
 /**
  * Fonts only the share sheet and the weekly report use (November 2026). They are fetched when

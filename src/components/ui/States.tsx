@@ -12,6 +12,23 @@ interface EmptyStateProps {
   className?: string;
 }
 
+/**
+ * The picture on an empty screen: the screen's own icon in lime, lit from behind and held in two
+ * quiet rings, so an empty page looks expected and finished rather than broken.
+ */
+function EmptyArt({ children }: { children: ReactNode }) {
+  return (
+    <div className="relative flex size-20 items-center justify-center" aria-hidden data-empty-art>
+      <span className="absolute inset-0 rounded-full bg-lime-dim blur-xl" />
+      <span className="absolute inset-0 rounded-full border border-lime/20" />
+      <span className="absolute inset-2.5 rounded-full border border-dashed border-lime/25" />
+      <span className="relative flex size-12 items-center justify-center rounded-full bg-surface-2 text-lime ring-1 ring-divider [&_svg]:size-6">
+        {children}
+      </span>
+    </div>
+  );
+}
+
 export function EmptyState({ icon, title, body, actions, className }: EmptyStateProps) {
   return (
     <div
@@ -20,9 +37,7 @@ export function EmptyState({ icon, title, body, actions, className }: EmptyState
         className,
       )}
     >
-      <div className="flex size-9 items-center justify-center rounded-tile bg-surface-2 text-text-2 [&_svg]:size-5">
-        {icon}
-      </div>
+      <EmptyArt>{icon}</EmptyArt>
       <div className="max-w-[46ch]">
         <h2 className="type-title text-text-1">{title}</h2>
         <div className="type-body mt-1 text-text-2 [text-wrap:balance]">{body}</div>

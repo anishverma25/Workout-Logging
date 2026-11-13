@@ -8,12 +8,13 @@ import { buildDashboard } from '@/domain/analytics/dashboard';
 import { usePreferences, useTrainingData } from '@/data/hooks';
 import { ButtonLink } from '@/components/ui/Button';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
-import { greetingFor } from '@/lib/dates';
+import { MuscleMapCard } from '@/features/shared/MuscleMapCard';
+import { greetingFor, startOfWeek } from '@/lib/dates';
 import { formatCalendarDate } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { ProNudgeCard } from '@/features/pro/ProNudgeCard';
-import { isAlive } from '@/domain/analytics/sessions';
+import { buildSessions, isAlive } from '@/domain/analytics/sessions';
 import { Highlights } from './Highlights';
 import { StrengthCard } from './StrengthCard';
 import { TodayCard } from './TodayCard';
@@ -41,6 +42,20 @@ export function HomePage() {
     [training.data],
   );
 
+  // This week's sets, spread over the muscles they work, for the small map at the end of Home.
+  const weekMuscles = useMemo(() => {
+    if (!training.data) return [];
+    const start = startOfWeek(now, prefs.weekStartsOn);
+    return buildSessions(training.data)
+      .filter((s) => s.workout.origin === 'user' && s.date >= start && s.date <= now)
+      .flatMap((s) =>
+        s.exercises.map((e) => ({
+          exerciseId: e.workoutExercise.exerciseId,
+          exercise: e.exercise,
+          sets: e.sets,
+        })),
+      );
+  }, [training.data, now, prefs.weekStartsOn]);
   const firstName = training.data?.profile?.displayName.split(' ')[0];
   const title = firstName ? `${greetingFor(now)}, ${firstName}` : greetingFor(now);
   const ownProfile = training.data?.profile?.origin === 'user';
@@ -136,6 +151,14 @@ export function HomePage() {
               unit={prefs.weightUnit}
             />
             <StrengthCard trends={model.strength.slice(0, 3)} unit={prefs.weightUnit} />
+            {weekMuscles.length > 0 ? (
+              <MuscleMapCard
+                exercises={weekMuscles}
+                sex={training.data?.profile?.sex}
+                title="Muscles this week"
+                compact
+              />
+            ) : null}
           </div>
         </div>
       ) : null}

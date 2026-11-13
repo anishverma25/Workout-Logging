@@ -267,8 +267,8 @@ export const GUIDES: Guide[] = [
         points: [
           'Portions in katoris, plates, bowls and rotis, not only grams.',
           'Light, normal or rich oil for home cooking, since oil changes calories the most.',
-          'Your usual breakfast, lunch and dinner in one tap.',
-          'Snap a photo of your plate or a nutrition label, or type what you ate in Hinglish.',
+          'With Pro, your usual breakfast, lunch and dinner in one tap.',
+          'With Pro, snap a photo of your plate or a nutrition label, or type what you ate in Hinglish.',
         ],
       },
       {

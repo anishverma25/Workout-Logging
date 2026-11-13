@@ -43,7 +43,7 @@ export function Highlights({
               className="pressable chrome flex items-center gap-3 py-3"
               data-home-record
             >
-              <span className="flex size-[1.875rem] shrink-0 items-center justify-center rounded-[0.5rem] bg-gold-dim text-gold">
+              <span className="shine flex size-[1.875rem] shrink-0 items-center justify-center rounded-[0.5rem] bg-gold-dim text-gold">
                 <Trophy className="size-4" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">
