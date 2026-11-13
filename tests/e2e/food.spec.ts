@@ -99,14 +99,31 @@ test('a family recipe is made once and each person logs a share', async ({ page 
   await expect(page.locator('[data-food-page]')).toContainText('Mum rajma');
 });
 
-test('free accounts see what Pro adds to food', async ({ page }) => {
+test('free accounts get 3 Ask AI food logs a week, then see Pro', async ({ page }) => {
   const email = await signUpFresh(page, { tag: 'food-locked' });
   await expireTrial(email);
   await page.goto('/food');
   await page.locator('[data-add-food]').click();
-  await expect(
-    page.getByRole('dialog').locator('[data-type-meal]').getByLabel('Pro'),
-  ).toBeVisible();
+  const sheet = page.getByRole('dialog');
+  // Photo logging stays Pro; typing gets a weekly taste.
+  await expect(sheet.locator('[data-snap-locked]').getByLabel('Pro')).toBeVisible();
+  await expect(sheet.locator('[data-free-ai-left]')).toContainText(
+    '3 free Ask AI logs left this week',
+  );
+  for (const left of [2, 1, 0]) {
+    await sheet.locator('[data-type-meal]').click();
+    const consent = sheet.getByRole('button', { name: 'Turn on' });
+    if (await consent.isVisible().catch(() => false)) await consent.click();
+    await sheet.locator('#ai-food').fill('2 roti and dal');
+    await sheet.getByRole('button', { name: 'Work it out' }).click();
+    await expect(sheet.locator('[data-ai-result]')).toContainText(/roti/i);
+    await sheet.getByRole('button', { name: 'Back' }).click();
+    await expect(sheet.locator('[data-free-ai-left]')).toContainText(
+      left ? `${left} free Ask AI` : 'used',
+    );
+  }
+  // All used: Ask AI leads to Pro.
+  await expect(sheet.locator('[data-type-meal]').getByLabel('Pro')).toBeVisible();
 });
 
 test('Pro tells Macrotrophy AI a meal and sees food on Progress', async ({ page }) => {

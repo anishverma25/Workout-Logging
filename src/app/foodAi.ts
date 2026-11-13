@@ -49,12 +49,34 @@ async function invoke(body: Record<string, unknown>): Promise<Record<string, unk
 }
 
 export async function askFoodLog(text: string, diet: DietType | null): Promise<FoodItem[]> {
+  return (await askFoodLogWithAllowance(text, diet)).items;
+}
+
+/** The same, with how many free Ask AI logs are left this week (null for Pro). */
+export async function askFoodLogWithAllowance(
+  text: string,
+  diet: DietType | null,
+): Promise<{ items: FoodItem[]; freeLeft: number | null }> {
   const data = await invoke({
     kind: 'food',
     text: text.trim().slice(0, FOOD_LIMITS.text),
     diet: diet ?? '',
   });
-  return Array.isArray(data.items) ? (data.items as FoodItem[]) : [];
+  return {
+    items: Array.isArray(data.items) ? (data.items as FoodItem[]) : [],
+    freeLeft: typeof data.free_left === 'number' ? data.free_left : null,
+  };
+}
+
+/** Free Ask AI logs left this week, or null when the server cannot say (older server, offline). */
+export async function freeAiLeft(): Promise<number | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.rpc('get_free_ai_left');
+    return error || typeof data !== 'number' ? null : data;
+  } catch {
+    return null;
+  }
 }
 
 /**

@@ -437,26 +437,21 @@ function Pillars() {
   );
 }
 
-const COMPARE: { label: string; free: boolean }[] = [
-  { label: 'Unlimited logging, routines and custom exercises', free: true },
-  { label: 'Full workout history and every personal record', free: true },
-  { label: 'Body weight, measurements, calories and protein', free: true },
-  { label: 'Food logging for Indian meals, with daily totals', free: true },
-  { label: 'Goals, milestones and progress photos', free: true },
-  { label: 'Progress for the last 7 and 30 days', free: true },
-  { label: 'Backup and sync across your devices', free: true },
-  { label: PRO_FEATURES.long_range.title, free: false },
-  { label: PRO_FEATURES.progression.title, free: false },
-  { label: PRO_FEATURES.plateaus.title, free: false },
-  { label: PRO_FEATURES.muscle_balance.title, free: false },
-  { label: PRO_FEATURES.strength_levels.title, free: false },
-  { label: PRO_FEATURES.training_balance.title, free: false },
-  { label: PRO_FEATURES.weekly_checkin.title, free: false },
-  { label: PRO_FEATURES.goal_projection.title, free: false },
-  { label: PRO_FEATURES.recaps.title, free: false },
-  { label: PRO_FEATURES.ai_food.title, free: false },
+/** What each plan includes, as outcomes; a string in Free means a smaller amount. */
+const COMPARE: { label: string; free: boolean | string }[] = [
+  { label: 'Workout logging, routines and full history', free: true },
+  { label: 'Indian food logging and Eat next', free: true },
+  { label: 'Groups, duels and leaderboards', free: true },
+  { label: 'Progress', free: 'Last 30 days' },
+  { label: 'Macrotrophy AI food logging', free: '3 a week' },
+  { label: PRO_FEATURES.adaptive_plan.title, free: false },
+  { label: PRO_FEATURES.meal_plan.title, free: false },
+  { label: PRO_FEATURES.weekly_report.title, free: false },
+  { label: 'Macrotrophy AI chat, photo, label and menu reading', free: false },
+  { label: PRO_FEATURES.plateaus.title + ' and progression suggestions', free: false },
+  { label: 'Strength levels, balance and sets per muscle', free: false },
   { label: PRO_FEATURES.food_insights.title, free: false },
-  { label: PRO_FEATURES.ai_coach.title, free: false },
+  { label: '90-day and all-time trends, goal projections', free: false },
 ];
 
 function Compare() {
@@ -466,7 +461,7 @@ function Compare() {
         Free and Pro
       </h2>
       <p className="type-meta mt-1 text-text-2">
-        The free plan is a complete logger. Pro adds the analysis on top.
+        Free is a complete logger with a taste of the AI. Pro thinks for you every week.
       </p>
       <Card flush className="mt-4 overflow-hidden">
         <table className="w-full border-collapse">
@@ -494,7 +489,9 @@ function Compare() {
                   {row.label}
                 </th>
                 <td className="text-center">
-                  {row.free ? (
+                  {typeof row.free === 'string' ? (
+                    <span className="type-caption text-text-2">{row.free}</span>
+                  ) : row.free ? (
                     <span role="img" aria-label="Included">
                       <Check className="mx-auto size-4 text-text-1" aria-hidden />
                     </span>

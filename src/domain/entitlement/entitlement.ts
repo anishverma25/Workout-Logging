@@ -242,11 +242,11 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
 export const FREE_FEATURES = [
   'Unlimited workout logging, routines and custom exercises',
   'Your full workout history and every personal record',
-  'Profile setup, every routine template and personalised routines',
-  'Body weight, measurements, calories, protein, BMI and body fat',
-  'Food logging for Indian meals: thalis, katori portions, your usual meals and daily totals',
-  'Groups with friends, with weekly and monthly leaderboards',
-  'Goals, milestones and progress photos',
+  'Every routine template, personalised routines and copying routines from the leaderboard',
+  'Indian food logging with thalis, katoris and your usual meals, and Eat next',
+  'Macrotrophy AI food logging 3 times a week',
+  'Groups, duels and the global leaderboard',
+  'Body weight, measurements, targets, goals and progress photos',
   'Progress for the last 7 and 30 days, with insights',
   'Backup and sync across your devices',
 ];

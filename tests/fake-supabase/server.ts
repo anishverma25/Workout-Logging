@@ -651,6 +651,17 @@ async function handleCoachRoute(req: IncomingMessage, res: ServerResponse) {
             await tx.query(`select public.release_ai_use('photo')`);
           }),
       },
+      freeQuota: {
+        claim: () =>
+          asRequester(req, async (tx) => {
+            const q = await tx.query<{ r: number }>('select public.claim_free_ai() as r');
+            return q.rows[0]?.r ?? -1;
+          }),
+        release: () =>
+          asRequester(req, async (tx) => {
+            await tx.query('select public.release_free_ai()');
+          }),
+      },
     },
     body,
   );

@@ -42,13 +42,29 @@ export function MenuSheet({
   meal: Meal;
 }) {
   return (
-    <BottomSheet open={open} onClose={onClose} title="Read a menu" subtitle="Dish names from the photo, numbers from the library" tall>
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="Read a menu"
+      subtitle="Dish names from the photo, numbers from the library"
+      tall
+    >
       {open ? <Body ctx={ctx} remaining={remaining} date={date} meal={meal} /> : null}
     </BottomSheet>
   );
 }
 
-function Body({ ctx, remaining, date, meal }: { ctx: FoodContext; remaining: { kcal: number; proteinG: number }; date: string; meal: Meal }) {
+function Body({
+  ctx,
+  remaining,
+  date,
+  meal,
+}: {
+  ctx: FoodContext;
+  remaining: { kcal: number; proteinG: number };
+  date: string;
+  meal: Meal;
+}) {
   const pro = useFeature('ai_food');
   const store = useCoachStore();
   const toast = useToast();
@@ -66,9 +82,15 @@ function Body({ ctx, remaining, date, meal }: { ctx: FoodContext; remaining: { k
       const photo = await preparePhoto(file, LABEL_MAX_SIDE, 0.9);
       URL.revokeObjectURL(photo.url);
       const { dishes } = await askFoodMenu({ image: photo.data, mime: photo.mime });
-      setMatches(rankMenu({ dishes, foods: ctx.foods, remaining, diet: ctx.diet, katoriMl: ctx.katoriMl }));
+      setMatches(
+        rankMenu({ dishes, foods: ctx.foods, remaining, diet: ctx.diet, katoriMl: ctx.katoriMl }),
+      );
     } catch (e) {
-      setError(e instanceof FoodAiError ? e.message : 'The menu could not be read. Try again, or search for the dish.');
+      setError(
+        e instanceof FoodAiError
+          ? e.message
+          : 'The menu could not be read. Try again, or search for the dish.',
+      );
     } finally {
       setState('idle');
     }
@@ -93,7 +115,9 @@ function Body({ ctx, remaining, date, meal }: { ctx: FoodContext; remaining: { k
   if (!pro)
     return (
       <div className="flex flex-col gap-3" data-menu-locked>
-        <p className="type-body text-text-1">Photograph any menu and see which dishes fit what you have left today.</p>
+        <p className="type-body text-text-1">
+          Photograph any menu and see which dishes fit what you have left today.
+        </p>
         <p className="type-subhead text-text-2">
           Reading menus comes with Pro.{' '}
           <Link to="/pro" className="font-semibold text-lime">
@@ -107,11 +131,15 @@ function Body({ ctx, remaining, date, meal }: { ctx: FoodContext; remaining: { k
   const add = async (m: MenuMatch) => {
     if (!m.portion) return;
     const p = m.portion;
-    const logs = await logFoods(db, [{ food: p.food, amount: p.amount, unit: p.unit, size: p.size, oilLevel: null }], {
-      date,
-      meal,
-      katoriMl: ctx.katoriMl,
-    });
+    const logs = await logFoods(
+      db,
+      [{ food: p.food, amount: p.amount, unit: p.unit, size: p.size, oilLevel: null }],
+      {
+        date,
+        meal,
+        katoriMl: ctx.katoriMl,
+      },
+    );
     toast(`Logged ${p.food.name} to ${MEAL_LABEL[meal].toLowerCase()}`, {
       label: 'Undo',
       onSelect: () =>
@@ -126,16 +154,26 @@ function Body({ ctx, remaining, date, meal }: { ctx: FoodContext; remaining: { k
     <div className="flex flex-col gap-4" data-menu>
       <p className="type-subhead text-text-2">
         {remaining.kcal.toLocaleString('en-IN')} kcal
-        {remaining.proteinG > 0 ? ` and ${remaining.proteinG} g protein` : ''} left today. Restaurant portions and oil
-        vary, so treat these as the usual home portion.
+        {remaining.proteinG > 0 ? ` and ${remaining.proteinG} g protein` : ''} left today.
+        Restaurant portions and oil vary, so treat these as the usual home portion.
       </p>
       <div className="grid grid-cols-2 gap-2">
         {input(camera, true)}
         {input(gallery, false)}
-        <PrimaryButton block icon={<Camera className="size-4" aria-hidden />} onClick={() => camera.current?.click()} loading={state === 'reading'}>
+        <PrimaryButton
+          block
+          icon={<Camera className="size-4" aria-hidden />}
+          onClick={() => camera.current?.click()}
+          loading={state === 'reading'}
+        >
           Take photo
         </PrimaryButton>
-        <SecondaryButton block icon={<ImageIcon className="size-4" aria-hidden />} onClick={() => gallery.current?.click()} disabled={state === 'reading'}>
+        <SecondaryButton
+          block
+          icon={<ImageIcon className="size-4" aria-hidden />}
+          onClick={() => gallery.current?.click()}
+          disabled={state === 'reading'}
+        >
           Choose photo
         </SecondaryButton>
       </div>
@@ -152,11 +190,24 @@ function Body({ ctx, remaining, date, meal }: { ctx: FoodContext; remaining: { k
                 <p className="type-headline text-text-1">{m.dish}</p>
                 {m.portion ? (
                   <p className="type-footnote tabular text-text-2">
-                    {m.portion.food.name}, {portionText(m.portion.amount, m.portion.unit, m.portion.size, m.portion.food.pieceName)} ·{' '}
-                    {Math.round(m.portion.nutrients.kcal)} kcal · {Math.round(m.portion.nutrients.proteinG)} g protein
+                    {m.portion.food.name},{' '}
+                    {portionText(
+                      m.portion.amount,
+                      m.portion.unit,
+                      m.portion.size,
+                      m.portion.food.pieceName,
+                    )}{' '}
+                    · {Math.round(m.portion.nutrients.kcal)} kcal ·{' '}
+                    {Math.round(m.portion.nutrients.proteinG)} g protein
                   </p>
                 ) : null}
-                <p className={m.verdict === 'best' ? 'type-footnote font-semibold text-lime' : 'type-footnote text-text-2'}>
+                <p
+                  className={
+                    m.verdict === 'best'
+                      ? 'type-footnote font-semibold text-lime'
+                      : 'type-footnote text-text-2'
+                  }
+                >
                   {VERDICT[m.verdict]}
                 </p>
               </div>
