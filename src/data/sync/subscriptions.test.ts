@@ -40,16 +40,39 @@ beforeAll(async () => {
 afterAll(() => server.close());
 
 describe('subscriptions', () => {
-  it('starts exactly 168 hours of trial when the account is created, on the server clock', async () => {
+  it('starts exactly 14 days (336 hours) of trial when the account is created, on the server clock', async () => {
     const sub = await mine(userA);
     expect(sub.status).toBe('trialing');
     const hours = (Date.parse(sub.trial_expires_at) - Date.parse(sub.trial_started_at)) / 3_600_000;
-    expect(hours).toBe(168);
+    expect(hours).toBe(336);
     expect(Math.abs(Date.parse(sub.server_now) - Date.parse(sub.trial_started_at))).toBeLessThan(
       60_000,
     );
     // Administrator notes never reach the app.
     expect(sub).not.toHaveProperty('admin_note');
+  });
+
+  it('keeps older 7-day trials as they were, and allows no other length (0033)', async () => {
+    const old = await server.createUser(`old-trial-${Date.now()}@example.com`);
+    await server.pg.exec(
+      `alter table public.subscriptions disable trigger subscriptions_touch;
+       update public.subscriptions set trial_expires_at = trial_started_at + interval '168 hours'
+        where user_id = '${old}';
+       alter table public.subscriptions enable trigger subscriptions_touch;`,
+    );
+    const sub = await mine(old);
+    expect((Date.parse(sub.trial_expires_at) - Date.parse(sub.trial_started_at)) / 3_600_000).toBe(
+      168,
+    );
+    await server.pg.exec('alter table public.subscriptions disable trigger subscriptions_touch');
+    await expect(
+      server.pg.query(
+        `update public.subscriptions set trial_expires_at = trial_started_at + interval '30 days'
+          where user_id = $1`,
+        [old],
+      ),
+    ).rejects.toThrow(/subscriptions_trial_length/);
+    await server.pg.exec('alter table public.subscriptions enable trigger subscriptions_touch');
   });
 
   it('never resets the trial when the person signs in again', async () => {
@@ -123,7 +146,7 @@ describe('subscriptions', () => {
     expect(sub.status).toBe('active');
     expect(Date.parse(sub.pro_expires_at!)).toBeGreaterThan(Date.now() + 29 * 86_400_000);
     const hours = (Date.parse(sub.trial_expires_at) - Date.parse(sub.trial_started_at)) / 3_600_000;
-    expect(hours).toBe(168);
+    expect(hours).toBe(336);
   });
 
   it('the queries in the administrator guide work as written', async () => {

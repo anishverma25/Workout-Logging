@@ -45,7 +45,7 @@ export const TERMS: LegalDocument = {
     {
       heading: 'Pro, trials and payments',
       items: [
-        'New accounts get a 7 day free trial of Pro. It needs no payment details.',
+        'New accounts get a 14 day free trial of Pro. It needs no payment details.',
         'Pro is sold as a monthly, 3 month or yearly plan. The prices in Indian rupees are shown on the Pro page when you subscribe.',
         'Prices on the Pro page can be introductory prices. We may change prices for new subscriptions in the future.',
         'A subscription renews automatically at the end of each period until you cancel it.',
@@ -225,7 +225,7 @@ export const REFUNDS: LegalDocument = {
     {
       heading: 'Free trial',
       paragraphs: [
-        'New accounts get 7 days of Pro for free, with no payment details. Nothing is charged, so there is nothing to refund.',
+        'New accounts get 14 days of Pro for free, with no payment details. Nothing is charged, so there is nothing to refund.',
       ],
     },
     {

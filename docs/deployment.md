@@ -131,7 +131,7 @@ synced comes back. Share previews use the tags and `public/og-image.png` in `ind
   "Synced to your account".
 - Turn on flight mode, reload: the app opens and logging works. Turn it off: it syncs.
 - Install it (Settings > Install the app) and open it from the home screen.
-- In Supabase, Table editor > subscriptions: the new account has a row with a 168-hour trial.
+- In Supabase, Table editor > subscriptions: the new account has a row with a 336-hour (14-day) trial.
 
 ## Releasing an update
 

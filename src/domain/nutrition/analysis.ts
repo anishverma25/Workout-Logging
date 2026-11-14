@@ -11,6 +11,12 @@ import {
   type Food,
 } from './calc';
 import { fitsDiet } from './search';
+
+/**
+ * A protein day: protein at least this share of the target. One definition for the food
+ * summary, the weekly report and Macrotrophy AI (science topic `day-analysis`).
+ */
+export const PROTEIN_DAY_SHARE = 0.9;
 import { ZERO, type DietType, type Meal, type Nutrients, type UnitId } from './types';
 
 /**
@@ -279,7 +285,7 @@ export function nutritionSummary(input: {
     proteinHitDays:
       input.proteinTargetG === null
         ? 0
-        : done.filter((s) => s.proteinG >= input.proteinTargetG!).length,
+        : done.filter((s) => s.proteinG >= input.proteinTargetG! * PROTEIN_DAY_SHARE).length,
     proteinTraining: mean(
       done.filter((s) => input.trainingDates.has(s.date)).map((s) => s.proteinG),
     ),

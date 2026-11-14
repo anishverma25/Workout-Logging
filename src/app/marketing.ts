@@ -91,10 +91,10 @@ export interface Faq {
 export const FAQ: Faq[] = [
   {
     q: 'Is Macrotrophy free?',
-    a: 'Yes. Workout logging, your full history, every personal record, 2 routines and Indian food logging with calories are free forever. Pro adds the weekly plan, protein and macros, Macrotrophy AI, the weekly report and longer trends. Every new account gets 7 days of Pro free.',
+    a: 'Yes. Workout logging, your full history, every personal record, 2 routines and Indian food logging with calories are free forever. Pro adds the weekly plan, protein and macros, Macrotrophy AI, the weekly report and longer trends. Every new account gets 14 days of Pro free.',
   },
   {
-    q: 'What happens after the 7-day trial?',
+    q: 'What happens after the 14-day trial?',
     a: 'Nothing is charged, because we never ask for a card to start. You move to the Free plan and keep everything you logged. Choose a Pro plan whenever you like.',
   },
   {

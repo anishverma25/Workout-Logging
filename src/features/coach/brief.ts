@@ -1,3 +1,4 @@
+import { toDateKey } from '@/lib/dates';
 import type { WeeklyCheckin } from '@/domain/analytics/checkin';
 import { buildSessions, isWorkingSet, type TrainingData } from '@/domain/analytics/sessions';
 import { activeRoutine } from '@/domain/analytics/schedule';
@@ -57,7 +58,8 @@ const MAX_LINES = 12;
 /** The server takes briefs up to 12,000 characters; memory never pushes one past this. */
 export const BRIEF_ROOM = 11_000;
 
-const day = (d: Date) => d.toISOString().slice(0, 10);
+/** The local day (an IST evening is still today), never the UTC date. */
+const day = (d: Date) => toDateKey(d);
 const words = (v: string) => v.replace(/_/g, ' ');
 const round1 = (v: number) => Math.round(v * 10) / 10;
 const pct = (v: number) => `${Math.round(v * 100)}%`;
@@ -398,7 +400,9 @@ function nutritionLines(n: NonNullable<BriefInput['nutrition']>): string[] {
       `Food log, last ${s.days} days: ${s.loggedDays} fully logged days. Average ${s.avg.kcal} kcal, ${s.avg.proteinG} g protein, ${s.avg.carbsG} g carbs, ${s.avg.fatG} g fat, ${s.avg.fibreG} g fibre a day.`,
     );
     if (n.targets.proteinG !== null)
-      lines.push(`Protein target met on ${s.proteinHitDays} of ${s.loggedDays} logged days.`);
+      lines.push(
+        `Protein days (90% of the target or more): ${s.proteinHitDays} of ${s.loggedDays} logged days.`,
+      );
     if (s.proteinTraining !== null && s.proteinRest !== null)
       lines.push(
         `Protein on training days ${s.proteinTraining} g, on rest days ${s.proteinRest} g.`,

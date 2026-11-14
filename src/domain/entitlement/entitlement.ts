@@ -8,7 +8,12 @@ import { z } from 'zod';
  * server's own clock, so changing the device clock, local storage or the URL changes nothing.
  */
 
-export const TRIAL_HOURS = 168;
+/**
+ * The trial for accounts made from migration 0033 on (14 days). Older accounts had 168 hours;
+ * `Entitlement.trialHours` is each account's own length, read from its row.
+ */
+export const TRIAL_HOURS = 336;
+export const TRIAL_DAYS = TRIAL_HOURS / 24;
 
 const ts = z
   .string()
@@ -64,6 +69,8 @@ export interface Entitlement {
   paymentReference: string | null;
   /** Time left in the current trial or Pro period. */
   remainingMs: number | null;
+  /** This account's trial length in hours (168 before 15 November 2026, 336 after). */
+  trialHours: number | null;
   /** Joined during early access. */
   foundingMember: boolean;
   /** The paid plan, when Pro comes from a Razorpay subscription. */
@@ -93,6 +100,7 @@ const GUEST: Entitlement = {
   paymentPending: false,
   paymentReference: null,
   remainingMs: null,
+  trialHours: null,
   foundingMember: false,
   billingPlan: null,
   renews: false,
@@ -128,6 +136,10 @@ export function resolveEntitlement(sub: SubscriptionSnapshot | null, now: Date):
     paymentPending: sub.status === 'payment_pending' && !proActive && !founding,
     paymentReference: sub.payment_reference,
     remainingMs: endsAt ? Math.max(0, endsAt.getTime() - t) : null,
+    trialHours:
+      sub.trial_started_at && sub.trial_expires_at
+        ? Math.round((sub.trial_expires_at.getTime() - sub.trial_started_at.getTime()) / 3_600_000)
+        : null,
     foundingMember: sub.founding_member,
     billingPlan: sub.billing_plan,
     paidOnce: !!sub.billing_plan && sub.billing_kind === 'once',

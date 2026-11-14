@@ -35,19 +35,19 @@ export function planLines(brain: Brain, exerciseName: (id: string) => string): s
     if (f.confidence !== 'personal' || !f.best) continue;
     if (f.kind === 'sets')
       lines.push(
-        `- Their own logs show ${muscleName(f.subject).toLowerCase()} lifts progress best at ${BAND_TEXT[f.best as SetBand]}.`,
+        `- In their logs, ${muscleName(f.subject).toLowerCase()} lifts moved faster in weeks at ${BAND_TEXT[f.best as SetBand]} (an observation, not proof of cause).`,
       );
     if (f.kind === 'reps')
       lines.push(
-        `- Their own logs show ${muscleName(f.subject).toLowerCase()} lifts progress best with ${f.best === 'heavy' ? 'heavy top sets of 1 to 5 reps' : 'top sets of 6 to 10 reps'}.`,
+        `- In their logs, ${muscleName(f.subject).toLowerCase()} lifts moved faster in weeks with ${f.best === 'heavy' ? 'heavy top sets of 1 to 5 reps' : 'top sets of 6 to 10 reps'} (an observation, not proof of cause).`,
       );
     if (f.kind === 'recovery')
       lines.push(
-        `- Their own logs show ${muscleName(f.subject).toLowerCase()} lifts do better after ${f.best === 'long' ? '3 or more days of rest' : '2 days of rest or fewer'}.`,
+        `- In their logs, ${muscleName(f.subject).toLowerCase()} lifts did better after ${f.best === 'long' ? '3 or more days of rest' : '2 days of rest or fewer'} (an observation, not proof of cause).`,
       );
     if (f.kind === 'energy' && f.best === 'fed')
       lines.push(
-        '- Their own logs show their lifts progress better in weeks they eat near maintenance than in weeks well under it.',
+        '- In their logs, lifts moved faster in weeks eating near maintenance than in weeks well under it (an observation, not proof of cause).',
       );
   }
   const trends = Object.entries(model.lifts)

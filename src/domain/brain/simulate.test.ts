@@ -212,7 +212,9 @@ describe('the response model finds the weekly sets a muscle answers to', () => {
       }
     }
     // The gate is strict on purpose: it would rather stay quiet than name the wrong range.
-    expect(claimed / N).toBeGreaterThan(0.35);
+    // Batch 8 made the gate stricter (lifts' own trends removed, two weeks in a row, CLEAR_GAP
+    // 2.3 to 3.4): it names a range for about 11% of these people (was over 35%), and is right.
+    expect(claimed / N).toBeGreaterThan(0.08);
     expect(right / claimed).toBeGreaterThan(0.97);
   });
 
@@ -237,6 +239,80 @@ describe('the response model finds the weekly sets a muscle answers to', () => {
     expect(model.stage.learning).toBe(true);
     expect(model.findings.every((f) => f.confidence === 'learning' && f.best === null)).toBe(true);
     expect(setBand(8)).toBe('low');
+  });
+});
+
+describe('the response model is honest about what logs can show (batch 8)', () => {
+  /** A beginner whose real gain slows from 1.5% to 0.3% a week while sets rise from 8 to 18. */
+  function slowingBeginner(seed: number) {
+    const r = rng(seed);
+    const weeks: WeekFacts[] = [];
+    let e1rm = 60;
+    const W = 24;
+    for (let w = 0; w < W; w++) {
+      const sets = Math.round(8 + (10 * w) / (W - 1));
+      weeks.push(
+        week(w, {
+          muscles: { quads: sets },
+          lifts: { squat: { muscle: 'quads', e1rm, topReps: 8, sessions: 2 } },
+        }),
+      );
+      const gain = 0.015 - (0.012 * w) / (W - 1) + 0.006 * r.normal();
+      e1rm *= 1 + gain;
+    }
+    return responseModel({ weeks, recovery: [], researchMaintenance: 2400 });
+  }
+
+  /** Twelve muscles, sets, reps, rest and food that make no real difference. */
+  const MUSCLES12 = [
+    'chest',
+    'back',
+    'shoulders',
+    'biceps',
+    'triceps',
+    'quads',
+    'hamstrings',
+    'glutes',
+    'calves',
+    'abs',
+    'forearms',
+    'traps',
+  ];
+  function noEffect(seed: number) {
+    const r = rng(seed);
+    const weeks: WeekFacts[] = [];
+    const e1rm = Object.fromEntries(MUSCLES12.map((m) => [m, r.between(30, 140)]));
+    const recovery = [];
+    for (let w = 0; w < 24; w++) {
+      const muscles: Record<string, number> = {};
+      const lifts: WeekFacts['lifts'] = {};
+      for (const m of MUSCLES12) {
+        muscles[m] = r.int(5, 22);
+        lifts[`${m}-lift`] = { muscle: m, e1rm: e1rm[m]!, topReps: r.int(3, 10), sessions: 2 };
+        e1rm[m]! *= 1 + 0.003 + 0.01 * r.normal();
+        recovery.push({ muscle: m, gapDays: r.int(1, 6), change: 0.003 + 0.02 * r.normal() });
+      }
+      weeks.push(week(w, { muscles, lifts, meanKcal: r.between(1700, 2700) }));
+    }
+    return responseModel({ weeks, recovery, researchMaintenance: 2200 });
+  }
+
+  it('never tells a slowing beginner that fewer sets work best (under 2% of 300)', () => {
+    let told = 0;
+    for (let p = 0; p < 300; p++) {
+      const f = findingFor(slowingBeginner(20_000 + p), 'sets', 'quads')!;
+      if (f.confidence === 'personal') told += 1;
+    }
+    expect(told / 300).toBeLessThan(0.02);
+  });
+
+  it('claims nothing personal for 90% or more of people with no real effect', () => {
+    let quiet = 0;
+    for (let p = 0; p < 300; p++) {
+      const model = noEffect(30_000 + p);
+      if (model.findings.every((f) => f.confidence !== 'personal')) quiet += 1;
+    }
+    expect(quiet / 300).toBeGreaterThanOrEqual(0.9);
   });
 });
 

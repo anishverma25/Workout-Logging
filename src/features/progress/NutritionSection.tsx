@@ -116,7 +116,7 @@ export function NutritionSection({
               value={summary.avg ? `${n(summary.avg.proteinG)} g` : null}
               detail={
                 ctx.targets.proteinG !== null
-                  ? `Target met on ${summary.proteinHitDays} of ${summary.loggedDays} days`
+                  ? `90% of target on ${summary.proteinHitDays} of ${summary.loggedDays} days`
                   : 'No protein target set'
               }
             />

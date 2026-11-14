@@ -46,6 +46,8 @@ export interface RecoverySample {
   gapDays: number;
   /** Change in the lift's best estimated 1RM against its previous session. */
   change: number;
+  /** The session's day (yyyy-mm-dd), so a model can be read as it stood a week earlier. */
+  date?: string;
 }
 
 export interface FoodDay {
@@ -223,7 +225,12 @@ export function recoverySamples(sessions: Session[]): RecoverySample[] {
       if (best && before && rested && !trainedNow.has(exercise.primaryMuscle)) {
         const gapDays = Math.round((session.date.getTime() - rested.getTime()) / 86_400_000);
         if (gapDays >= 1 && gapDays <= 10)
-          out.push({ muscle: exercise.primaryMuscle, gapDays, change: best.e1rm / before - 1 });
+          out.push({
+            muscle: exercise.primaryMuscle,
+            gapDays,
+            change: best.e1rm / before - 1,
+            date: toDateKey(session.date),
+          });
       }
       if (best) lastBest.set(exercise.id, best.e1rm);
       trainedNow.add(exercise.primaryMuscle);

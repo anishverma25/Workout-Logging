@@ -271,6 +271,17 @@ describe('the training brief', () => {
     expect(brief).toContain('Today: 2026-10-20. Weights in kg.');
     expect(brief).toMatch(/Person: goal /);
   });
+  it('dates by the local day: 2 am in India is already the next day', () => {
+    const before = process.env.TZ;
+    process.env.TZ = 'Asia/Kolkata';
+    try {
+      // 20:30 UTC on 20 October is 02:00 on 21 October in India.
+      const late = buildBrief('chat', { ...input, now: new Date('2026-10-20T20:30:00Z') });
+      expect(late).toContain('Today: 2026-10-21.');
+    } finally {
+      process.env.TZ = before;
+    }
+  });
   it('lists stalled lifts with the cause the app found', () => {
     const brief = buildBrief('plateaus', input);
     if (model.plateaus.length) expect(brief).toContain('Likely cause:');

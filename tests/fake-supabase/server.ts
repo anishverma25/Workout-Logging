@@ -45,7 +45,7 @@ for (const file of readdirSync(join(root, 'supabase/migrations')).sort()) {
     await pg.exec(readFileSync(join(root, 'supabase/migrations', file), 'utf8'));
 }
 await pg.exec('grant all on all tables in schema public to service_role;');
-// The launch state: early access has ended, so new accounts get the 7-day trial and then the
+// The launch state: early access has ended, so new accounts get the 14-day trial and then the
 // free plan. Early access itself is covered against real Postgres in subscriptions.test.ts.
 // Keeping one fixed state here also means no test flips a setting every other test shares.
 await pg.exec(

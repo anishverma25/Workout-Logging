@@ -1,3 +1,4 @@
+import { PROTEIN_DAY_SHARE } from '../nutrition/analysis';
 import { addDays, startOfDay, toDateKey } from '@/lib/dates';
 import type { BodyMeasurement, Exercise, FoodLog, Goal, TrainingGoal } from '../models/schemas';
 import { estimateOneRepMax, supportsE1rm } from './e1rm';
@@ -19,7 +20,8 @@ export const KCAL_PER_KG = 7700;
 export const LOGGED_DAY_KCAL = 1000;
 /** A calorie day is within 10% of the target; a protein day reaches 90% of it. */
 export const CALORIE_TOLERANCE = 0.1;
-export const PROTEIN_DAY_SHARE = 0.9;
+/** A protein day: at least this share of the target (one definition, in nutrition/analysis). */
+export { PROTEIN_DAY_SHARE };
 /** A strength change is real at 5% or more over 4 weeks (Grgic et al. 2020). */
 export const REAL_CHANGE = 0.05;
 export const PROTEIN_PER_MEAL_G_PER_KG = 0.4;

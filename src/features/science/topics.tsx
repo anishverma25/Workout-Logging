@@ -1,3 +1,4 @@
+import { PROTEIN_DAY_SHARE } from '@/domain/nutrition/analysis';
 import {
   CUT_BAND,
   DELOAD_SHARE,
@@ -1014,6 +1015,11 @@ export const SCIENCE: TopicGroup[] = [
             {TRAINING_CARBS_G_PER_KG[1]} g of carbohydrate per kg for strength sports. Energy is on
             target within {Math.round(ENERGY_TOLERANCE * 100)}% of your daily target.
           </>,
+          <>
+            A protein day, everywhere in the app (the food summary, the weekly report, leaderboards
+            and Macrotrophy AI), is a logged day that reaches {Math.round(PROTEIN_DAY_SHARE * 100)}%
+            of your protein target.
+          </>,
         ],
         forYou:
           'Look at the whole day, not one meal. If protein per kg is low, spread it: a dose at each meal is easier than one large one.',
@@ -1221,10 +1227,14 @@ export const SCIENCE: TopicGroup[] = [
             rule, not a threshold from research.
           </>,
           <>
-            A personal finding, such as the weekly sets a muscle answers to best, is named only when
-            your own logs separate the options clearly. A statistical test decides that, and no
-            probability is shown to you. Until then the plan says it is learning and uses research
-            defaults.
+            A personal finding, such as the weekly sets your lifts moved fastest at, is named only
+            when your own logs separate the options clearly, and on two weekly reviews in a row.
+            Each lift&apos;s own trend is taken out first (a curve that slows down, as gains do), so
+            a beginner&apos;s fast early weeks are not credited to whatever they did then. A
+            statistical test decides, strict enough that people whose training makes no difference
+            almost never hear a finding, and no probability is shown to you. A finding is what
+            happened in your logs, not proof of cause. Until then the plan says it is learning and
+            uses research defaults.
           </>,
         ],
         forYou:
@@ -1235,7 +1245,8 @@ export const SCIENCE: TopicGroup[] = [
         id: 'trial',
         title: 'Trial length',
         evidence: 'trialLength',
-        shows: 'The Pro trial is exactly 168 hours, counted on the server.',
+        shows:
+          'The Pro trial is exactly 14 days (336 hours) from when the account is made, counted on the server. Accounts made before 15 November 2026 had 7 days.',
       },
     ],
   },

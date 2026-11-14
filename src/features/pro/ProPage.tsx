@@ -265,7 +265,7 @@ function PlanCard({ entitlement: e }: { entitlement: EntitlementView }) {
     badge = <Badge tone="lime">Trial</Badge>;
     title = `Free trial: ${formatRemaining(e.remainingMs ?? 0)} left`;
     detail = `Every Pro feature is on until ${formatCalendarDate(e.trialEndsAt)}, ${time(e.trialEndsAt)}. After that, everything you logged stays and every free feature keeps working.`;
-    progress = 1 - (e.remainingMs ?? 0) / (TRIAL_HOURS * 3_600_000);
+    progress = 1 - (e.remainingMs ?? 0) / ((e.trialHours ?? TRIAL_HOURS) * 3_600_000);
   } else if (e.proEnded && e.proEndsAt) {
     badge = <Badge>Pro ended</Badge>;
     title = 'Your Pro has ended';

@@ -112,10 +112,10 @@ test.describe('after early access ends', () => {
     await expect(page.getByTestId('pro-nudge')).toHaveCount(0);
   });
 
-  test('a new account gets exactly 7 days of Pro from the server', async ({ page }) => {
+  test('a new account gets exactly 14 days of Pro from the server', async ({ page }) => {
     await signUp(page);
     await expect(
-      page.getByRole('heading', { name: /^Free trial: (7 days|6 days 23 hours) left$/ }),
+      page.getByRole('heading', { name: /^Free trial: (14 days|13 days 23 hours) left$/ }),
     ).toBeVisible();
     await expect(page.getByRole('progressbar', { name: 'Trial used' })).toBeVisible();
     // Signing in again does not restart it: reload reads the same server record.

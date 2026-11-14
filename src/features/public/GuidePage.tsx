@@ -38,7 +38,7 @@ export function GuidePage() {
           </section>
         ))}
         <div className="mt-10 flex flex-col gap-3 rounded-panel bg-surface p-6 tab:flex-row tab:items-center tab:justify-between">
-          <p className="type-headline text-text-1">Try it free, with 7 days of Pro.</p>
+          <p className="type-headline text-text-1">Try it free, with 14 days of Pro.</p>
           <Link
             to="/sign-up"
             className="pressable chrome inline-flex h-12 items-center justify-center rounded-nested bg-lime px-6 type-headline text-on-lime"

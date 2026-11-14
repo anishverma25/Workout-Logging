@@ -178,6 +178,23 @@ describe('public home page', () => {
     }
   });
 
+  it('says the trial length the server gives new accounts, everywhere', async () => {
+    const { TRIAL_DAYS, TRIAL_HOURS } = await import('@/domain/entitlement/entitlement');
+    const latest = readFileSync('supabase/migrations/20261115000033_trial_14_days.sql', 'utf8');
+    expect(latest).toContain(`set default now() + interval '${TRIAL_HOURS} hours'`);
+    const text = INDEX.replace(/<[^>]+>/g, ' ');
+    // Every mention of the trial on the page names the same number of days.
+    const mentions = [...text.matchAll(/(\w+) days (?:of Pro|free first)|Pro for (\w+) days/g)].map(
+      (m) => m[1] ?? m[2],
+    );
+    expect(mentions.length).toBeGreaterThanOrEqual(4);
+    const words: Record<string, number> = { Fourteen: 14, Seven: 7 };
+    for (const m of mentions) expect(words[m!] ?? Number(m)).toBe(TRIAL_DAYS);
+    // The head's description and share text too.
+    for (const m of INDEX.matchAll(/content="[^"]*?(\d+) days of Pro free/g))
+      expect(Number(m[1])).toBe(TRIAL_DAYS);
+  });
+
   it('shows the real prices, with nothing crossed out', () => {
     const seed = readFileSync('supabase/migrations/20261113000024_pricing_coupons.sql', 'utf8');
     // The prices migration sets the same prices the server charges today.

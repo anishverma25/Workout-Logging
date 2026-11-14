@@ -179,7 +179,7 @@ test('a new person’s first week, end to end', async ({ page, context }) => {
     await expect(workouts).toHaveText('2');
     await page.getByRole('radio', { name: '7 days' }).click();
     await expect(workouts).toHaveText('2');
-    // A new account is on its 7-day trial, so long ranges are open.
+    // A new account is on its 14-day trial, so long ranges are open.
     await page.getByRole('radio', { name: 'All time', exact: true }).click();
     await expect(page.locator('[data-pro-lock]')).toHaveCount(0);
     // Insights are on the overview; the exercise picker is in the Strength section (UI v3).

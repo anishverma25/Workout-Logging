@@ -788,8 +788,9 @@ export function decideWeek(input: DecideInput): Decision {
         candidates.push({
           score: 2,
           change: setsChange(muscle, planned, planned - MAX_SET_STEP, 'personal', {
-            en: `Your own logs show your ${name.toLowerCase()} lifts move best at fewer weekly sets than this.`,
-            hi: `Aapke apne logs dikhate hain ki ${name} ki lifts isse kam weekly sets par behtar chalti hain.`,
+            // An observation from their logs, never a claim about cause (batch 8).
+            en: `In your logs, your ${name.toLowerCase()} lifts moved faster in weeks with fewer sets than this.`,
+            hi: `Aapke logs mein, ${name} ki lifts un hafton mein tez badhi jab sets isse kam the.`,
           }),
         });
         continue;

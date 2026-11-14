@@ -104,7 +104,7 @@ export function TrialWelcomePage() {
             {trial
               ? ends
                 ? `Pro is on until ${ends}`
-                : `Your ${TRIAL_DAYS} days of Pro are on`
+                : `Your ${e.trialHours ? Math.round(e.trialHours / 24) : TRIAL_DAYS} days of Pro are on`
               : 'Macrotrophy Pro'}
           </p>
           <h1 className="type-display mt-1 text-text-1 [text-wrap:balance]">
