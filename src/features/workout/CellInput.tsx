@@ -4,7 +4,8 @@ import { isValidDraft, parseDraft, toDraft } from '@/lib/numberInput';
 
 export interface CellInputHandle {
   /** Saves whatever is typed right now. Awaited before a set is marked done. */
-  flush: () => Promise<void>;
+  /** Saves what is typed; false when it cannot be saved (out of range), so a tick waits. */
+  flush: () => Promise<boolean>;
 }
 
 interface Props {
@@ -82,9 +83,11 @@ export const CellInput = forwardRef<CellInputHandle, Props>(function CellInput(
     const parsed = parseDraft(raw, { allowDecimal, min, max });
     const bad = raw.trim() !== '' && parsed === null;
     setInvalid(bad);
-    if (bad || parsed === lastCommitted.current) return;
+    if (bad) return false;
+    if (parsed === lastCommitted.current) return true;
     lastCommitted.current = parsed;
     await commitRef.current(parsed);
+    return true;
   };
 
   useImperativeHandle(ref, () => ({ flush: () => commit(draftRef.current) }));

@@ -185,7 +185,9 @@ const FILLER = new Set([
 const clean = (text: string) =>
   text
     .toLowerCase()
-    .replace(/(\d),(\d)/g, '$1$2')
+    // "17,5" is 17.5 (a decimal comma, T9); "1,200" is 1200.
+    .replace(/(\d),(\d{1,2})(?!\d)/g, '$1.$2')
+    .replace(/(\d),(\d{3})/g, '$1$2')
     .replace(/(\d)\s*(kgs?|kilos?|lbs?)\b/g, '$1 $2')
     .replace(/(\d)\s*[x×*]\s*(\d)/g, '$1 x $2')
     // Hindi digits, when the phone writes them.

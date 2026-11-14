@@ -1,10 +1,17 @@
 import { Link, useLocation } from 'react-router';
 import { ChevronRight, Dumbbell } from 'lucide-react';
-import { useActiveWorkout, useRestTimer } from '@/data/hooks';
-import { elapsedMs } from '@/data/repositories/workouts';
+import { useState } from 'react';
+import { db } from '@/data/db';
+import { useActiveWorkout, useLastSetAt, usePreferences, useRestTimer } from '@/data/hooks';
+import { elapsedMs, finishWorkout } from '@/data/repositories/workouts';
+import { CapsuleButton } from '@/components/kit';
+import { useToast } from '@/components/ui/Toast';
 import { isFinished, remainingMs } from '@/domain/workout/restTimer';
 import { formatClock } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
+
+/** A workout whose last set is older than this is offered a tidy finish. */
+export const FORGOTTEN_MS = 6 * 3_600_000;
 
 /**
  * While a workout is running and you are on another screen, a bar above the tab bar leads
@@ -28,6 +35,48 @@ function Dock({
   const now = useNow(1000);
   const timer = useRestTimer().data ?? null;
   const resting = timer && timer.workoutId === workout.id && !isFinished(timer, now);
+  const lastSetAt = useLastSetAt(workout.id).data ?? null;
+  const prefs = usePreferences();
+  const toast = useToast();
+  const [kept, setKept] = useState(false);
+  const [busy, setBusy] = useState(false);
+  // A workout left open for hours (batch 11, T3): offer to finish it as of its last set,
+  // never by itself.
+  const stale = !kept && lastSetAt !== null && now.getTime() - Date.parse(lastSetAt) > FORGOTTEN_MS;
+  if (stale) {
+    const endAt = new Date(Date.parse(lastSetAt) + (prefs.defaultRestSeconds ?? 90) * 1000);
+    const time = endAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    return (
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--tabbar-h)+1rem+env(safe-area-inset-bottom))] z-30 px-4 lg:bottom-6 lg:left-60">
+        <div
+          role="status"
+          className="pointer-events-auto mx-auto flex max-w-md flex-col gap-2 rounded-card bg-surface p-4"
+          data-forgotten-workout
+        >
+          <p className="type-headline text-text-1">{workoutName} is still open</p>
+          <p className="type-subhead text-text-2">
+            Your last set was a while ago. Finish it as of then, or keep going.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <CapsuleButton
+              tone="lime"
+              disabled={busy}
+              onClick={() => {
+                setBusy(true);
+                void finishWorkout(db, workout.id, { now: endAt, keepUnconfirmed: false })
+                  .then(() => toast(`Finished as of ${time}`))
+                  .catch(() => toast('Could not finish it. Open the workout to finish it.'))
+                  .finally(() => setBusy(false));
+              }}
+            >
+              Finish it as of {time}
+            </CapsuleButton>
+            <CapsuleButton onClick={() => setKept(true)}>Keep going</CapsuleButton>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--tabbar-h)+1rem+env(safe-area-inset-bottom))] z-30 px-4 lg:bottom-6 lg:left-60">
       <Link

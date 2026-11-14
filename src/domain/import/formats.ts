@@ -158,7 +158,7 @@ export function readHevyWorkouts(
     const distance = num(distanceInMiles ? row.distance_miles : row.distance_km);
     const set: ImportedSet = {
       setType: HEVY_SET_TYPES[(row.set_type ?? '').toLowerCase()] ?? 'working',
-      weightKg: weight === null ? null : round(inLb ? weight * LB_TO_KG : weight),
+      weightKg: weight === null ? null : round(inLb ? weight * LB_TO_KG : weight, 4),
       reps: num(row.reps) === null ? null : Math.round(num(row.reps)!),
       durationSec:
         num(row.duration_seconds) === null ? null : Math.round(num(row.duration_seconds)!),
@@ -230,7 +230,7 @@ export function readHevyMeasurements(
     const weight = num(inLb ? row.weight_lbs : row.weight_kg);
     const entry: ImportedBodyEntry = {
       measuredAt,
-      weightKg: weight === null || weight <= 0 ? null : round(inLb ? weight * LB_TO_KG : weight),
+      weightKg: weight === null || weight <= 0 ? null : round(inLb ? weight * LB_TO_KG : weight, 4),
       enteredUnit: inLb ? 'lb' : 'kg',
       bodyFatPct: num(row.fat_percent),
       neckCm: one(row, 'neck'),
@@ -290,7 +290,9 @@ export function readStrongWorkouts(
     const set: ImportedSet = {
       setType,
       weightKg:
-        weight === null || weight === 0 ? null : round(unit === 'lb' ? weight * LB_TO_KG : weight),
+        weight === null || weight === 0
+          ? null
+          : round(unit === 'lb' ? weight * LB_TO_KG : weight, 4),
       reps: reps === null || reps === 0 ? null : Math.round(reps),
       durationSec: seconds === null || seconds === 0 ? null : Math.round(seconds),
       distanceM:

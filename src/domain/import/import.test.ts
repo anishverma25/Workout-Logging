@@ -123,11 +123,13 @@ describe('Strong', () => {
     expect(evening.notes).toBe('Good session');
     const squat = evening.exercises[0]!;
     // The rest timer row is not a set.
+    // Kilograms kept to 4 decimals (T4), so 95 lb comes back as 95.0 lb, not 94.99.
     expect(squat.sets.map((s) => [s.setType, s.weightKg, s.reps])).toEqual([
-      ['warmup', 43.09, 5],
-      ['working', 102.06, 5],
-      ['working', 102.06, 5],
+      ['warmup', 43.0913, 5],
+      ['working', 102.0583, 5],
+      ['working', 102.0583, 5],
     ]);
+    expect(Math.round((102.0583 / 0.45359237) * 20) / 20).toBe(225);
     expect(squat.sets[1]).toMatchObject({ rpe: 8.5, notes: 'Belt' });
     expect(evening.exercises[1]!.sets[0]).toMatchObject({ weightKg: null, reps: 10 });
     // Miles with pounds, as Strong does.
@@ -335,5 +337,18 @@ describe('the routine rebuilt from recent workouts', () => {
     expect(
       inferRoutine(readExport([fixture('strong.csv')], { strongUnit: 'kg' }), 'strong'),
     ).toBeNull();
+  });
+});
+
+describe('muscles of unknown exercises (batch 11, T8)', () => {
+  it('arms and shoulders are read before glutes and chest', async () => {
+    const { inferExercise } = await import('./match');
+    const m = (n: string) => inferExercise(n, []).primaryMuscle;
+    expect(m('Triceps Kickback (Dumbbell)')).toBe('triceps');
+    expect(m('Rear Delt Fly Cable')).toBe('shoulders');
+    expect(m('Face Pull Rope')).toBe('shoulders');
+    expect(m('Cable Glute Kickback Wide')).toBe('glutes');
+    expect(m('Incline Chest Fly Machine')).toBe('chest');
+    expect(m('Decline Crunch Weighted')).toBe('abs');
   });
 });

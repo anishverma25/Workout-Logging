@@ -74,7 +74,10 @@ function SetRowImpl({
       : round2(set.durationSec / 60)
     : set.weightKg === null
       ? null
-      : round2(toDisplayWeight(set.weightKg, unit));
+      : // Pounds to the nearest 0.05 lb, so an imported 135 lb never shows as 134.99 (T4).
+        unit === 'lb'
+        ? Math.round(toDisplayWeight(set.weightKg, unit) * 20) / 20
+        : round2(toDisplayWeight(set.weightKg, unit));
   const amount = cardio
     ? set.distanceM === null
       ? null
@@ -92,12 +95,17 @@ function SetRowImpl({
         return;
       }
       // Save anything still being typed before reading the set back.
-      await Promise.all([
+      const flushed = await Promise.all([
         loadRef.current?.flush(),
         amountRef.current?.flush(),
         rightRef.current?.flush(),
         effortRef.current?.flush(),
       ]);
+      // A number out of range blocks the tick, never completes the set with the old value (T9).
+      if (flushed.some((ok) => ok === false)) {
+        toast('Fix the number in red first.');
+        return;
+      }
       // A tap in the first moment after opening still uses last time's numbers.
       const fill = loadSuggestion ? await loadSuggestion() : suggestion;
       const result = await completeSet(db, set.id, fill);

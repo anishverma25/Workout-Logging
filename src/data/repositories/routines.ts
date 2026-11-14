@@ -410,6 +410,11 @@ export async function updateTargets(
   targets: RoutineTargets,
 ): Promise<void> {
   const parsed = RoutineTargets.parse(targets);
+  // Seconds go to 600 for timed exercises; reps stay at 100 for everything else (T1).
+  const slot = await db.routineExercises.get(slotId);
+  const exercise = slot ? await db.exercises.get(slot.exerciseId) : undefined;
+  const timed = exercise?.trackingType === 'duration' || exercise?.trackingType === 'cardio';
+  if (!timed && parsed.repMax > 100) throw new Error('Reps go up to 100.');
   await patchRecord<RoutineExercise>(db, 'routineExercises', slotId, {
     ...parsed,
     notes: parsed.notes?.trim() || null,

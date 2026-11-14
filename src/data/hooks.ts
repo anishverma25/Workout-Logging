@@ -155,6 +155,18 @@ export const useWorkoutView = (workoutId: string | undefined) =>
 /** Only the id and start of the workout in progress: cheap enough for the app shell. */
 export const useActiveWorkout = () => useLiveData(() => getActiveWorkout(db));
 
+/** When the last set of a workout was ticked, or null: for the forgotten-workout prompt (T3). */
+export const useLastSetAt = (workoutId: string | null) =>
+  useLiveData(async () => {
+    if (!workoutId) return null;
+    const sets = await db.sets.where('workoutId').equals(workoutId).toArray();
+    const times = sets
+      .filter((s) => s.deletedAt === null && s.completedAt !== null)
+      .map((s) => s.completedAt!)
+      .sort();
+    return times.at(-1) ?? null;
+  }, [workoutId]);
+
 export const useRestTimer = () => useLiveData(() => getRestTimer(db));
 
 export function useDismissedSuggestions(): Set<string> {

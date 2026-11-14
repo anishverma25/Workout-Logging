@@ -74,10 +74,17 @@ function SlotEditor({
   const unitLabel = timed ? 'seconds' : distance ? 'metres' : 'reps';
 
   const [savedTick, setSavedTick] = useState(0);
+  // Saved for real before it says so (T1): a refused change shows why and goes back.
   const save = (next: RoutineTargets) => {
+    const before = targets;
     setTargets(next);
-    setSavedTick((t) => t + 1);
-    void updateTargets(db, slot.id, { ...next, notes: notes || null });
+    void updateTargets(db, slot.id, { ...next, notes: notes || null }).then(
+      () => setSavedTick((t) => t + 1),
+      (err: unknown) => {
+        setTargets(before);
+        toast(err instanceof Error ? err.message : 'Could not save. Try again.');
+      },
+    );
   };
   const angle = angleKind(exercise);
   const effortTracked = !timed && !distance;

@@ -27,6 +27,7 @@ describe('voice sets', () => {
     ['one hundred and ten kg 3 reps', set(110, 3, true, { unit: 'kg' })],
     ['pachees ke pandrah', set(25, 15, true)],
     ['82.5 for 6', set(82.5, 6, true)],
+    ['17,5 kg 10', set(17.5, 10, true, { unit: 'kg' })],
     ['eighty two point five kilo six', set(82.5, 6, true, { unit: 'kg' })],
     ['135 pounds 10 reps', set(135, 10, true, { unit: 'lb' })],
     ['8 reps 80 kilo', set(80, 8, true, { unit: 'kg' })],

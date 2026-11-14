@@ -140,8 +140,11 @@ const ALIASES: Record<string, string> = {
   'cable crunch': 'Cable crunch',
   crunch: 'Crunch',
   'ab wheel': 'Ab wheel rollout',
-  'decline crunch': 'Decline sit-up',
+  // A decline crunch is not a sit-up (T8): it imports as its own exercise.
   'sit up': 'Decline sit-up',
+  'rear delt fly': 'Rear delt fly',
+  'rear delt fly (dumbbell)': 'Rear delt fly',
+  'face pull': 'Face pull',
   plank: 'Plank',
   'side plank': 'Side plank',
   'pallof press (cable)': 'Pallof press',
@@ -228,6 +231,13 @@ const MUSCLE_RULES: [RegExp, MuscleGroup][] = [
     'cardio',
   ],
   [/calf|calves/, 'calves'],
+  // Arms and shoulders before glutes and chest (T8): "Triceps kickback" is triceps, "Rear delt
+  // fly" is shoulders, "Face pull" is shoulders.
+  [/tricep|pushdown|push down|skull/, 'triceps'],
+  [
+    /lateral raise|front raise|rear delt|reverse fly|reverse pec|face pull|upright row|shoulder|overhead press|military|arnold|delt/,
+    'shoulders',
+  ],
   [/adduct/, 'adductors'],
   [/abduct|glute|hip thrust|kickback|bridge/, 'glutes'],
   [/leg curl|hamstring|nordic|romanian|\brdl\b|stiff|straight leg dead|good morning/, 'hamstrings'],
@@ -235,11 +245,7 @@ const MUSCLE_RULES: [RegExp, MuscleGroup][] = [
   [/crunch|plank|sit up|\bab\b|abs|leg raise|knee raise|oblique|pallof|wood ?chop|hollow/, 'abs'],
   [/pec|chest|bench|fly|flye|push up|pushup|dip/, 'chest'],
   [/curl|brachialis/, 'biceps'],
-  [/tricep|pushdown|push down|skull|kickback|extension/, 'triceps'],
-  [
-    /lateral raise|front raise|rear delt|reverse fly|shoulder|overhead press|military|arnold|face pull|upright row|delt/,
-    'shoulders',
-  ],
+  [/extension/, 'triceps'],
   [
     /shrug|deadlift|row|pulldown|pull down|pull up|pullup|chin|pullover|lat\b|lats|sagg?ittal|back/,
     'back',
