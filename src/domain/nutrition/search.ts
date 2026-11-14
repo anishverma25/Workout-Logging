@@ -105,9 +105,17 @@ function wordScore(word: string, food: Food): number {
 }
 
 /** Relevance of a food for a query; 0 means no match. */
+/**
+ * Something was typed, but nothing in it can be searched (Hindi script, symbols): no food
+ * matches it, and the search says to use English letters (batch 10, D3).
+ */
+export function unreadableQuery(query: string): boolean {
+  return query.trim() !== '' && normalize(query).trim() === '';
+}
+
 export function foodScore(food: Food, query: string): number {
   const words = normalize(query).split(' ').filter(Boolean);
-  if (words.length === 0) return 1;
+  if (words.length === 0) return unreadableQuery(query) ? 0 : 1;
   let total = 0;
   for (const w of words) {
     const s = wordScore(w, food);

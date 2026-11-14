@@ -44,10 +44,13 @@ export function PortionEditor({
   katoriMl,
   showSource = true,
   showTotals = true,
+  onInvalid,
 }: {
   portion: FoodPortion;
   onChange: (next: FoodPortion) => void;
   katoriMl: number | null;
+  /** The typed amount is out of range (D5): the screen's Add or Save waits until it is fixed. */
+  onInvalid?: (invalid: boolean) => void;
   /** Off when the screen already shows where the numbers come from and the totals. */
   showSource?: boolean;
   showTotals?: boolean;
@@ -136,6 +139,7 @@ export function PortionEditor({
         grams={grams}
         gramsText={measured && portion.unit !== 'g' ? `${Math.round(measured.grams)} g` : null}
         onChange={set}
+        onInvalid={onInvalid}
       />
 
       {food.fatPer100 ? (
@@ -208,11 +212,13 @@ function AmountInput({
   grams,
   gramsText,
   onChange,
+  onInvalid,
 }: {
   portion: FoodPortion;
   grams: boolean;
   gramsText: string | null;
   onChange: (changes: Partial<FoodPortion>) => void;
+  onInvalid?: (invalid: boolean) => void;
 }) {
   const { food } = portion;
   const [draft, setDraft] = useState<string | null>(null);
@@ -231,10 +237,20 @@ function AmountInput({
   const btn =
     'pressable chrome inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text-1 select-none disabled:text-text-3';
 
+  const draftValue = draft === null ? null : Number(draft.replace(',', '.'));
+  // A typed amount outside the range is shown as wrong and blocks Add, never logged as the old
+  // amount behind the person's back (batch 10, D5).
+  const outOfRange =
+    draft !== null &&
+    draft !== '' &&
+    !(Number.isFinite(draftValue) && draftValue! >= min && draftValue! <= max);
+
   function typeAmount(text: string) {
     setDraft(text);
     const v = Number(text.replace(',', '.'));
-    if (text !== '' && Number.isFinite(v) && v >= min && v <= max) onChange({ amount: v });
+    const ok = text !== '' && Number.isFinite(v) && v >= min && v <= max;
+    if (ok) onChange({ amount: v });
+    onInvalid?.(text !== '' && !ok);
   }
 
   function applyTyped() {
@@ -246,6 +262,7 @@ function AmountInput({
     }
     setTypedState('ok');
     setDraft(null);
+    onInvalid?.(false);
     onChange({
       amount: q.amount,
       unit: q.unit,
@@ -263,6 +280,7 @@ function AmountInput({
           disabled={portion.amount <= min}
           onClick={() => {
             setDraft(null);
+            onInvalid?.(false);
             onChange({ amount: stepValue(portion.amount, -step, min, max, grams ? 1 : 0.25) });
           }}
         >
@@ -279,13 +297,22 @@ function AmountInput({
             data-amount-input
             onFocus={(e) => e.currentTarget.select()}
             onChange={(e) => typeAmount(e.target.value.replace(/[^\d.,]/g, ''))}
-            onBlur={() => setDraft(null)}
+            aria-invalid={outOfRange || undefined}
+            onBlur={() => {
+              if (!outOfRange) setDraft(null);
+            }}
             className="type-headline tabular w-full min-w-0 rounded-nested bg-surface-2 px-3 py-2 text-center text-text-1 outline-none focus-visible:ring-2 focus-visible:ring-lime"
           />
-          <span className="type-caption tabular mt-1 text-text-2">
-            {label}
-            {gramsText ? ` · ${gramsText}` : ''}
-          </span>
+          {outOfRange ? (
+            <span className="type-caption mt-1 text-danger-text" role="alert" data-amount-error>
+              {min} to {max} {label}
+            </span>
+          ) : (
+            <span className="type-caption tabular mt-1 text-text-2">
+              {label}
+              {gramsText ? ` · ${gramsText}` : ''}
+            </span>
+          )}
         </label>
         <button
           type="button"
@@ -294,6 +321,7 @@ function AmountInput({
           disabled={portion.amount >= max}
           onClick={() => {
             setDraft(null);
+            onInvalid?.(false);
             onChange({ amount: stepValue(portion.amount, step, min, max, grams ? 1 : 0.25) });
           }}
         >

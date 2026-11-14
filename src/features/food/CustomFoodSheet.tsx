@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { RECIPE_INGREDIENTS, recipePer100 } from '@/data/library/foods';
 import { FoodError, saveCustomFood } from '@/data/repositories/food';
+import { dietFromName } from '@/domain/nutrition/label';
 import type { CustomFood } from '@/domain/models/schemas';
 import { normalize } from '@/domain/exercises/search';
 import { phonetic } from '@/domain/nutrition/search';
@@ -80,6 +81,11 @@ function CustomFoodForm({
   const [mode, setMode] = useState<Mode>(editing?.kind === 'food' ? 'label' : 'recipe');
   const [name, setName] = useState(editing?.name ?? initialName);
   const [busy, setBusy] = useState(false);
+  // Own label foods say their diet (batch 10, D12): from the name until the person picks.
+  const [pickedDiet, setPickedDiet] = useState<CustomFood['diet'] | null>(
+    editing?.kind === 'food' ? editing.diet : null,
+  );
+  const diet = pickedDiet ?? dietFromName(name);
   const [error, setError] = useState<string | null>(null);
 
   // Recipe
@@ -156,6 +162,7 @@ function CustomFoodForm({
           : {
               name,
               pieceG,
+              diet,
               per100: {
                 kcal: per100(label.kcal) ?? NaN,
                 proteinG: per100(label.proteinG) ?? 0,
@@ -215,6 +222,19 @@ function CustomFoodForm({
         onChange={(e) => setName(e.target.value)}
         placeholder={mode === 'recipe' ? 'Mum’s rajma' : 'Protein bar'}
       />
+      {mode === 'label' ? (
+        <SegmentedControl<CustomFood['diet']>
+          label="Diet"
+          block
+          value={diet}
+          onChange={setPickedDiet}
+          options={[
+            { value: 'veg', label: 'Veg' },
+            { value: 'egg', label: 'Egg' },
+            { value: 'nonveg', label: 'Non-veg' },
+          ]}
+        />
+      ) : null}
 
       {mode === 'recipe' ? (
         <>

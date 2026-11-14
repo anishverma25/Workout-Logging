@@ -16,6 +16,8 @@ export interface ParsedQuantity {
 
 type Measured = Pick<Food, 'units' | 'pieceName' | 'density'>;
 
+const ROTI_WORDS = ['roti', 'rotis', 'chapati', 'chapatis', 'chapatti', 'phulka', 'phulkas'];
+
 /** A bowl is the food's own bowl when it has one, else a katori. */
 const BOWL_WORDS = ['bowl', 'bowls', 'katora'];
 
@@ -79,6 +81,9 @@ function unitFor(word: string, food: Measured): UnitId | 'kg' | 'ml' | 'l' | nul
   // What the food's own pieces are called ("roti", "rotis", "egg", "scoop") counts as pieces
   // when the food has pieces, and as servings when it only has servings.
   if (names.includes(w)) return food.units.includes('piece') ? 'piece' : 'serving';
+  // A roti, a chapati and a phulka are the same piece on roti foods.
+  if (ROTI_WORDS.includes(w) && names.some((n) => ROTI_WORDS.includes(n)))
+    return food.units.includes('piece') ? 'piece' : 'serving';
   if (BOWL_WORDS.includes(w) && food.units.includes('bowl')) return 'bowl';
   for (const [unit, words] of WORDS) if (words.includes(w)) return unit;
   return null;
@@ -93,9 +98,16 @@ export function parseQuantity(
   const spoken = text
     .trim()
     .toLowerCase()
-    .replace(/^(half|aadha|adha)\b/, '0.5')
-    .replace(/^(quarter|paav|pav)\b/, '0.25')
-    .replace(/^(one|ek)\b/, '1')
+    // Hindi fractions (batch 10, D4): sava 1¼, dedh 1½, paune 1¾ (paune do), dhai 2½.
+    .replace(/^paune\s+(do|2)\b/, '1.75')
+    .replace(/^paune\s+(teen|3)\b/, '2.75')
+    .replace(/^(sava|sawa)\b/, '1.25')
+    .replace(/^(dedh|derh|dhedh)\b/, '1.5')
+    .replace(/^(dhai|dhaai|adhai|dhaee)\b/, '2.5')
+    .replace(/^one and a half\b/, '1.5')
+    .replace(/^(half an?|half|aadha|adha)\b/, '0.5')
+    .replace(/^(a quarter|quarter|paav|pav)\b/, '0.25')
+    .replace(/^(one|ek|an?)\b/, '1')
     .replace(/^(two|do)\b/, '2')
     .replace(/^(three|teen)\b/, '3')
     .replace(/^(four|char|chaar)\b/, '4');

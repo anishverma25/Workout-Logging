@@ -269,6 +269,14 @@ export function energyPlan(input: EnergyInput): EnergyPlan | null {
  */
 export const TREND_DAYS = 7;
 
+/** Live weigh-ins, oldest first, one per local day: the latest of the day wins. */
+export function dailyWeighIns(entries: BodyWeightEntry[]): BodyWeightEntry[] {
+  const byDay = new Map<number, BodyWeightEntry>();
+  for (const e of entries.filter(isAlive).sort((a, b) => a.measuredAt.localeCompare(b.measuredAt)))
+    byDay.set(startOfDay(new Date(e.measuredAt)).getTime(), e);
+  return [...byDay.values()];
+}
+
 export interface TrendPoint {
   date: Date;
   kg: number;
@@ -276,8 +284,13 @@ export interface TrendPoint {
   trendKg: number;
 }
 
+/**
+ * The one weight trend (batch 10, D12): one weigh-in a day (the latest that day wins), each
+ * point the mean of the weigh-ins in the 7 calendar days ending on it. Body, Progress, Food,
+ * the report and the Brain all read weight through this rule.
+ */
 export function weightTrend(entries: BodyWeightEntry[]): TrendPoint[] {
-  const sorted = entries.filter(isAlive).sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
+  const sorted = dailyWeighIns(entries);
   const dated = sorted.map((e) => ({ date: new Date(e.measuredAt), kg: e.weightKg }));
   return dated.map((p, i) => {
     const from = startOfDay(p.date).getTime() - (TREND_DAYS - 1) * 86_400_000;

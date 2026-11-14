@@ -98,3 +98,24 @@ describe('plates, bowls and ml', () => {
     expect(parseQuantity('2 plates', roti, 'piece')).toBeNull();
   });
 });
+
+describe('amounts as people say them (batch 10, D4)', () => {
+  const amount = (t: string, food = dal, unit: UnitId = 'katori') =>
+    parseQuantity(t, food, unit)?.amount;
+  it('Hindi fractions', () => {
+    expect(amount('dedh katori')).toBe(1.5);
+    expect(amount('dhai katori')).toBe(2.5);
+    expect(amount('sava katori')).toBe(1.25);
+    expect(amount('paune do katori')).toBe(1.75);
+  });
+  it('English words', () => {
+    expect(amount('half a katori')).toBe(0.5);
+    expect(amount('a katori')).toBe(1);
+    expect(amount('one and a half katori')).toBe(1.5);
+  });
+  it('chapati and phulka are rotis', () => {
+    expect(parseQuantity('3 chapati', roti, 'g')).toMatchObject({ amount: 3, unit: 'piece' });
+    expect(parseQuantity('2 phulka', roti, 'g')).toMatchObject({ amount: 2, unit: 'piece' });
+    expect(parseQuantity('2 chapati', whey, 'serving')).toBeNull();
+  });
+});

@@ -29,6 +29,8 @@ export class FoodAiError extends Error {
   }
 }
 
+export const AI_TIMEOUT_MS = 30_000;
+
 async function invoke(body: Record<string, unknown>): Promise<Record<string, unknown>> {
   if (!supabase)
     throw new FoodAiError('Accounts are not set up in this version of the app.', 'off');
@@ -37,7 +39,25 @@ async function invoke(body: Record<string, unknown>): Promise<Record<string, unk
     body.kind === 'food_photo' || body.kind === 'food_label' || body.kind === 'food_menu';
   if (body.kind !== 'warm' && !(photo ? f.ai_photo : f.ai_food))
     throw new FoodAiError(PAUSED, 'paused');
-  const { data, error } = await supabase.functions.invoke('coach', { body });
+  // Never "Thinking" forever (batch 10, D7): 30 s, then a plain message.
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new FoodAiError('That took too long. Try again.', 'timeout'));
+    }, AI_TIMEOUT_MS);
+  });
+  let result: Awaited<ReturnType<NonNullable<typeof supabase>['functions']['invoke']>>;
+  try {
+    result = await Promise.race([
+      supabase.functions.invoke('coach', { body, signal: controller.signal }),
+      timeout,
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+  const { data, error } = result;
   if (error) {
     let message = 'Macrotrophy AI could not be reached. Check your connection and try again.';
     let code = 'network';

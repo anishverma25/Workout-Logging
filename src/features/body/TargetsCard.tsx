@@ -11,7 +11,7 @@ import { e1rmRate } from '@/domain/analytics/standards';
 import { targetInsights, type TargetInsight } from '@/domain/analytics/targets';
 import { GOAL_ENERGY } from '@/domain/analytics/body';
 import { dayTotals, nutritionSummary, realMaintenance } from '@/domain/nutrition/analysis';
-import { dailyTargets } from '@/domain/nutrition/targets';
+import { dailyTargets, TOO_LOW_FOR_PROTEIN } from '@/domain/nutrition/targets';
 import { useFoodData } from '@/data/hooks';
 import { useFeature } from '@/app/entitlement';
 import { toDateKey } from '@/lib/dates';
@@ -180,6 +180,11 @@ export function TargetsCard({
           ) : null}
         </div>
       </dl>
+      {daily.tooLowForProtein ? (
+        <p className="type-meta mt-3 text-text-2" data-too-low-for-protein>
+          {TOO_LOW_FOR_PROTEIN} Carbohydrate is at zero and fat at its lowest healthy level.
+        </p>
+      ) : null}
 
       {insights.length > 0 ? (
         <ul className="mt-4 flex flex-col gap-3">

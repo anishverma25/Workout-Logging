@@ -1,3 +1,4 @@
+import { useOnce } from '@/lib/useOnce';
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import {
@@ -75,7 +76,11 @@ function Form({ entry, unit: startUnit, sex, onClose }: Props) {
       ? ['waistCm', 'neckCm', 'hipCm', 'chestCm', 'armCm', 'thighCm', 'calfCm']
       : ['waistCm', 'neckCm', 'chestCm', 'armCm', 'thighCm', 'calfCm', 'hipCm'];
 
-  async function save() {
+  // A double tap saves once (batch 10, D6).
+  const [saving, once] = useOnce();
+  const save = () => once(saveNow);
+
+  async function saveNow() {
     setError(null);
     try {
       const input = { values, unit, bodyFatPct: bodyFat, date, note };
@@ -108,7 +113,7 @@ function Form({ entry, unit: startUnit, sex, onClose }: Props) {
             ) : (
               <span />
             )}
-            <PrimaryButton onClick={save}>
+            <PrimaryButton onClick={save} disabled={saving}>
               {entry ? 'Save changes' : 'Save measurements'}
             </PrimaryButton>
           </div>

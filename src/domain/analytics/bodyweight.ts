@@ -1,4 +1,5 @@
-import { addDays } from '@/lib/dates';
+import { addDays, startOfDay } from '@/lib/dates';
+import { dailyWeighIns } from './body';
 import type { BodyWeightEntry } from '../models/schemas';
 import { isAlive } from './sessions';
 
@@ -58,14 +59,15 @@ export interface BodyWeightPoint {
 
 /** Every entry with the rolling average at that point, oldest first. */
 export function bodyWeightSeries(entries: BodyWeightEntry[]): BodyWeightPoint[] {
-  const sorted = entries.filter(isAlive).sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
+  // The same rule as weightTrend (body.ts): one weigh-in a day, 7 calendar days (D12).
+  const sorted = dailyWeighIns(entries);
   return sorted.map((entry, i) => {
     const date = new Date(entry.measuredAt);
-    const windowStart = addDays(date, -ROLLING_WINDOW_DAYS);
+    const windowStart = addDays(startOfDay(date), -(ROLLING_WINDOW_DAYS - 1)).getTime();
     const window: BodyWeightEntry[] = [];
     for (let j = i; j >= 0; j--) {
       const e = sorted[j]!;
-      if (new Date(e.measuredAt) <= windowStart) break;
+      if (new Date(e.measuredAt).getTime() < windowStart) break;
       window.push(e);
     }
     return {

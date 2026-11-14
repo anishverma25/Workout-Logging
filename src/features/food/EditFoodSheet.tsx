@@ -60,10 +60,25 @@ function EditBody({ log, ctx, onDone }: { log: FoodLog; ctx: FoodContext; onDone
   const newName = name.replace(/\s+/g, ' ').trim();
   const renamed = own && newName !== '' && newName !== log.foodName;
 
+  const [invalid, setInvalid] = useState(false);
+  // Only the meal changed: the log keeps its stored numbers and name, never re-read from
+  // today's version of the food (batch 10, D9).
+  const amountChanged =
+    !!portion &&
+    (portion.amount !== log.amount ||
+      portion.unit !== log.unit ||
+      portion.size !== log.size ||
+      portion.oilLevel !== log.oilLevel);
+
   async function save() {
     if (!portion) return;
     setBusy(true);
     try {
+      if (!amountChanged && !renamed) {
+        await moveFoodLog(db, log.id, meal);
+        onDone();
+        return;
+      }
       if (renamed && food) await renameOwnFood(db, food.id, log.id, newName);
       const named = renamed ? { ...portion, food: { ...portion.food, name: newName } } : portion;
       await updateFoodLog(db, log.id, named, meal, ctx.katoriMl);
@@ -110,6 +125,7 @@ function EditBody({ log, ctx, onDone }: { log: FoodLog; ctx: FoodContext; onDone
             onChange={setPortion}
             katoriMl={ctx.katoriMl}
             showTotals={false}
+            onInvalid={setInvalid}
           />
         </>
       ) : (
@@ -132,7 +148,7 @@ function EditBody({ log, ctx, onDone }: { log: FoodLog; ctx: FoodContext; onDone
         <PrimaryButton
           block
           loading={busy}
-          disabled={own && portion !== null && newName === ''}
+          disabled={invalid || (own && portion !== null && newName === '')}
           onClick={() => (portion ? void save() : void moveFoodLog(db, log.id, meal).then(onDone))}
         >
           Save

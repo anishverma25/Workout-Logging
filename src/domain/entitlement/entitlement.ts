@@ -200,7 +200,7 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
   macro_tracking: {
     title: 'Protein, carbs, fat and fibre',
     description:
-      'Free counts calories. Pro tracks protein, carbs, fat and fibre against your targets, and tells you what to eat next.',
+      "Every food shows its protein, carbs, fat and fibre. Pro tracks your day's protein, carbs and fat against your targets, and tells you what to eat next.",
   },
   gym_tools: {
     title: 'Gym tools',

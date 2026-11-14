@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Camera, Check, Globe, ScanText, Sparkles } from 'lucide-react';
 import { PrimaryButton } from '@/components/kit';
 import { measurePortion, type FoodPortion } from '@/data/repositories/food';
@@ -30,6 +31,7 @@ export function FoodProfile({
   actionLabel: string;
   onDone: () => void;
 }) {
+  const [invalid, setInvalid] = useState(false);
   let measured: ReturnType<typeof measurePortion> | null;
   try {
     measured = measurePortion(portion, katoriMl);
@@ -64,10 +66,11 @@ export function FoodProfile({
           katoriMl={katoriMl}
           showSource={false}
           showTotals={false}
+          onInvalid={setInvalid}
         />
       </section>
       <div className="sticky -bottom-5 z-10 -mx-5 -mb-5 border-t-[0.5px] border-divider bg-surface px-5 pt-3 pb-5">
-        <PrimaryButton block disabled={!measured} onClick={onDone} data-profile-action>
+        <PrimaryButton block disabled={!measured || invalid} onClick={onDone} data-profile-action>
           {measured ? `${actionLabel} · ${Math.round(measured.nutrients.kcal)} kcal` : actionLabel}
         </PrimaryButton>
       </div>

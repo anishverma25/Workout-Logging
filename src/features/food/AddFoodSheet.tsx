@@ -1,5 +1,14 @@
+import { useOnce } from '@/lib/useOnce';
 import { reportFirst } from '@/app/errorReport';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  useDeferredValue,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { Camera, ChevronLeft, Crown, Minus, Plus, ScanText, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router';
 import {
@@ -33,7 +42,7 @@ import {
   type MealTemplate,
 } from '@/domain/nutrition/analysis';
 import { portionText, roundNutrients, sumNutrients, type Food } from '@/domain/nutrition/calc';
-import { fitsDiet, searchFoods } from '@/domain/nutrition/search';
+import { fitsDiet, searchFoods, unreadableQuery } from '@/domain/nutrition/search';
 import { MEALS, ZERO, type Meal } from '@/domain/nutrition/types';
 import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
@@ -119,6 +128,8 @@ function AddFoodBody({
   }, [pro]);
   const [meal, setMeal] = useState<Meal>(initialMeal);
   const [query, setQuery] = useState('');
+  // Typing stays smooth on slow phones: the list follows a moment behind (D12).
+  const searchQuery = useDeferredValue(query);
   const [plate, setPlate] = useState<FoodPortion[]>([]);
   const [view, setView] = useState<View>({ kind: 'pick' });
   const [busy, setBusy] = useState(false);
@@ -253,7 +264,10 @@ function AddFoodBody({
     }
   }
 
-  async function logTemplate(t: MealTemplate) {
+  const [, onceTemplate] = useOnce();
+  const logTemplate = (t: MealTemplate) => onceTemplate(() => logTemplateNow(t));
+
+  async function logTemplateNow(t: MealTemplate) {
     const logs = await copyFoodLogs(db, t.items, { date, meal });
     haptic('medium');
     toast(
@@ -427,7 +441,7 @@ function AddFoodBody({
         {query.trim() ? (
           <Results
             rows={rows}
-            query={query}
+            query={searchQuery}
             pro={pro}
             onCreate={() => onCreateFood(query.trim())}
             onAsk={() => leave({ kind: 'type', text: query.trim() })}
@@ -598,7 +612,7 @@ function Results({
             <FoodRow key={f.id} food={f} rows={rows} />
           ))}
         </ul>
-      ) : stillLoading ? (
+      ) : stillLoading && !unreadableQuery(query) ? (
         <p
           className="type-meta rounded-nested bg-surface-2 p-4 text-center text-text-2"
           aria-live="polite"
@@ -613,7 +627,11 @@ function Results({
         </p>
       ) : (
         <div className="rounded-nested bg-surface-2 p-4 text-center" data-food-not-found>
-          <p className="type-headline text-text-1">“{query.trim()}” is not in our foods yet</p>
+          <p className="type-headline text-text-1">
+            {unreadableQuery(query)
+              ? 'Search in English letters for now, for example dal'
+              : `“${query.trim()}” is not in our foods yet`}
+          </p>
           <p className="type-meta mt-1 text-text-2">
             {pro
               ? 'Macrotrophy AI can look it up and work out its numbers for you to check.'

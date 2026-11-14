@@ -153,3 +153,16 @@ describe('macros for typed calories', () => {
     expect(m.carbsG).toBeGreaterThan(0);
   });
 });
+
+describe('macros never pass the calories (batch 10, D11)', () => {
+  it('a heavy person on low calories: no carbs, fat down to 0.6 g/kg, and it says so', async () => {
+    const { macrosForCalories, FAT_FLOOR_G_PER_KG } = await import('./targets');
+    const m = macrosForCalories({ kcal: 1400, weightKg: 140, goal: 'fat_loss' });
+    expect(m.carbsG).toBe(0);
+    expect(m.fatG).toBeGreaterThanOrEqual(Math.floor(FAT_FLOOR_G_PER_KG * 140));
+    expect(m.tooLowForProtein).toBe(true);
+    const ok = macrosForCalories({ kcal: 2400, weightKg: 75, goal: 'fat_loss' });
+    expect(ok.tooLowForProtein).toBe(false);
+    expect(ok.proteinG * 4 + ok.carbsG * 4 + ok.fatG * 9).toBeLessThanOrEqual(2400 + 20);
+  });
+});

@@ -1,3 +1,4 @@
+import { useOnce } from '@/lib/useOnce';
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import {
@@ -49,7 +50,11 @@ function Form({ entry, defaultUnit, lastKg, onClose }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const today = toDateKey(new Date());
 
-  async function save() {
+  // A double tap saves once (batch 10, D6).
+  const [saving, once] = useOnce();
+  const save = () => once(saveNow);
+
+  async function saveNow() {
     setError(null);
     try {
       const input = { weight: weight ?? NaN, unit, date, note };
@@ -81,7 +86,9 @@ function Form({ entry, defaultUnit, lastKg, onClose }: Props) {
             ) : (
               <span />
             )}
-            <PrimaryButton onClick={save}>{entry ? 'Save changes' : 'Save weigh-in'}</PrimaryButton>
+            <PrimaryButton onClick={save} disabled={saving}>
+              {entry ? 'Save changes' : 'Save weigh-in'}
+            </PrimaryButton>
           </div>
         }
       >
