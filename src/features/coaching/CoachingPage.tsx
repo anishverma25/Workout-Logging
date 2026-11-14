@@ -139,6 +139,11 @@ function Sell({ entitlement: e }: { entitlement: EntitlementView }) {
       if (result.result === 'paid') {
         // Reload so every gate and the coaching view come back with the new plan.
         window.location.replace('/coaching?joined=1');
+      } else if (result.result === 'pending') {
+        // Paid, not yet confirmed: never "try again". Razorpay tells the server shortly.
+        setError(
+          `Payment received. Coaching starts within a few minutes. If it has not, write to team@macrotrophy.in with this id: ${result.paymentId}`,
+        );
       }
     } catch (err) {
       setError(err instanceof BillingError ? err.message : 'Something went wrong. Try again.');
@@ -173,9 +178,7 @@ function Sell({ entitlement: e }: { entitlement: EntitlementView }) {
               {formatRupees(plan.priceInr)}
               <span className="type-body ml-1 font-normal text-text-2">a month</span>
             </p>
-            <p className="type-meta mt-2 text-text-2">
-              Pro included · cancel any time
-            </p>
+            <p className="type-meta mt-2 text-text-2">Pro included · cancel any time</p>
           </div>
         ) : null}
       </section>

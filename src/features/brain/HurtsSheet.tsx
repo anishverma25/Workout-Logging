@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { TriangleAlert } from 'lucide-react';
 import { useFeature } from '@/app/entitlement';
-import { BottomSheet, ChipGroup, OptionCard, PrimaryButton, SecondaryButton } from '@/components/kit';
+import {
+  BottomSheet,
+  ChipGroup,
+  OptionCard,
+  PrimaryButton,
+  SecondaryButton,
+} from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { usePreferences } from '@/data/hooks';
@@ -54,7 +60,12 @@ export function HurtsSheet({
   exerciseId: string | null;
 }) {
   return (
-    <BottomSheet open={open} onClose={onClose} title="Something hurts" subtitle="Training guidance, not medical advice">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="Something hurts"
+      subtitle="Training guidance, not medical advice"
+    >
       {open ? <Form onClose={onClose} exerciseId={exerciseId} /> : null}
     </BottomSheet>
   );
@@ -102,7 +113,11 @@ function Form({ onClose, exerciseId }: { onClose: () => void; exerciseId: string
         plan: { ...brain.input.plan, kcal: null, proteinG: null },
       });
       const changes = decision.changes.filter((c) => c.cause === 'pain');
-      setStep(changes.length ? { kind: 'plan', decision: { ...decision, changes } } : { kind: 'noted', pro });
+      setStep(
+        changes.length
+          ? { kind: 'plan', decision: { ...decision, changes } }
+          : { kind: 'noted', pro },
+      );
     } catch (e) {
       setError(e instanceof PlanError ? e.message : 'Could not save. Try again.');
     } finally {
@@ -116,8 +131,9 @@ function Form({ onClose, exerciseId }: { onClose: () => void; exerciseId: string
         <div className="flex gap-3 rounded-nested bg-danger-soft p-4" role="alert">
           <TriangleAlert className="mt-0.5 size-5 shrink-0 text-danger-text" aria-hidden />
           <p className="type-body text-text-1">
-            Stop training your {PAIN_LABEL[area!].en.toLowerCase()} and see a doctor or physiotherapist before you
-            load it again. The plan is not changed around this. Skip anything that brings the pain on.
+            Stop training your {PAIN_LABEL[area!].en.toLowerCase()} and see a doctor or
+            physiotherapist before you load it again. The plan is not changed around this. Skip
+            anything that brings the pain on.
           </p>
         </div>
         <PrimaryButton block onClick={onClose}>
@@ -130,15 +146,18 @@ function Form({ onClose, exerciseId }: { onClose: () => void; exerciseId: string
     return (
       <div className="flex flex-col gap-4" data-hurts-noted>
         <p className="type-body text-text-1">
-          Noted. Go easy on your {PAIN_LABEL[area!].en.toLowerCase()} today: stop any set that brings the pain on.
+          Noted. Go easy on your {PAIN_LABEL[area!].en.toLowerCase()} today: stop any set that
+          brings the pain on.
         </p>
         {step.pro ? (
           <p className="type-subhead text-text-2">
-            Nothing in your routine needs changing for it. If it gets worse or lasts, see a professional.
+            Nothing in your routine needs changing for it. If it gets worse or lasts, see a
+            professional.
           </p>
         ) : (
           <p className="type-subhead text-text-2">
-            With Pro, your plan swaps the lifts that load it and trims the work for a few weeks, then builds back.{' '}
+            With Pro, your plan swaps the lifts that load it and trims the work for a few weeks,
+            then builds back.{' '}
             <Link to="/pro" className="font-semibold text-lime">
               See Pro
             </Link>
@@ -165,8 +184,8 @@ function Form({ onClose, exerciseId }: { onClose: () => void; exerciseId: string
     return (
       <div className="flex flex-col gap-4" data-hurts-plan>
         <p className="type-subhead text-text-2">
-          For the next {weeks} weeks, then your plan goes back. These go into your routine, not the workout that is
-          open.
+          For the next {weeks} weeks, then your plan goes back. These go into your routine, not the
+          workout that is open.
         </p>
         <ul className="flex flex-col gap-3">
           {step.decision.changes.map((c) => (
@@ -177,7 +196,8 @@ function Form({ onClose, exerciseId }: { onClose: () => void; exerciseId: string
           ))}
         </ul>
         <p className="type-footnote text-text-2">
-          If the pain is sharp, lasts, or comes with swelling or numbness, stop and see a professional.
+          If the pain is sharp, lasts, or comes with swelling or numbness, stop and see a
+          professional.
         </p>
         <div className="flex flex-col gap-2">
           <PrimaryButton block loading={busy} onClick={() => void apply()} data-hurts-apply>
@@ -222,7 +242,13 @@ function Form({ onClose, exerciseId }: { onClose: () => void; exerciseId: string
       </div>
       <div className="flex flex-col gap-2">
         <p className="type-footnote text-text-2">Any of these?</p>
-        <ChipGroup label="Warning signs" multiple value={flags} onChange={setFlags} options={FLAGS} />
+        <ChipGroup
+          label="Warning signs"
+          multiple
+          value={flags}
+          onChange={setFlags}
+          options={FLAGS}
+        />
       </div>
       {error ? (
         <p role="alert" className="type-footnote text-danger-text">

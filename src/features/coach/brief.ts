@@ -570,10 +570,18 @@ export function buildBrief(topic: CoachTopic, input: BriefInput): string {
   const head = () =>
     [
       ...(memory.length
-        ? ['What this person has told us about their life (use it, do not repeat it back):', ...memory, '']
+        ? [
+            'What this person has told us about their life (use it, do not repeat it back):',
+            ...memory,
+            '',
+          ]
         : []),
       ...(plan.length
-        ? ["This week's plan, decided by the app's fixed rules (explain it, never change its numbers):", ...plan, '']
+        ? [
+            "This week's plan, decided by the app's fixed rules (explain it, never change its numbers):",
+            ...plan,
+            '',
+          ]
         : []),
     ].join('\n');
   while ((memory.length || plan.length) && head().length + brief.length > BRIEF_ROOM)

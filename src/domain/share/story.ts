@@ -325,7 +325,10 @@ export function streakStory(s: StreakCard, now: Date): StoryContent {
     tier: null,
     rings: [
       { frac: weeksTrained(0) / 12, stat: { v: String(weeksTrained(0)), u: '/12', l: 'Weeks' } },
-      { frac: weeksTrained(8) / 4, stat: { v: String(weeksTrained(8)), u: '/4', l: 'Last 4 weeks' } },
+      {
+        frac: weeksTrained(8) / 4,
+        stat: { v: String(weeksTrained(8)), u: '/4', l: 'Last 4 weeks' },
+      },
       { frac: daysThisWeek / 7, stat: { v: String(daysThisWeek), u: '/7', l: 'Days this week' } },
     ],
     ringsNote: 'Weeks and days you trained',

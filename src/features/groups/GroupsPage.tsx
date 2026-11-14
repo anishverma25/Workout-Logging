@@ -1,3 +1,4 @@
+import { useAppFlags } from '@/app/flags';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ChevronRight, Globe2, KeyRound, Plus, Trophy, UsersRound } from 'lucide-react';
@@ -37,6 +38,18 @@ export function GroupsPage() {
   const [sheet, setSheet] = useState<'create' | 'join' | 'username' | null>(null);
   const sync = useSyncStatus();
   const unsynced = sync.pending - sync.rejected;
+  const flags = useAppFlags();
+
+  if (!flags.groups)
+    return (
+      <>
+        <PageHeader back={{ to: '/more', label: 'More' }} title="Groups" />
+        <p className="type-body mt-4 text-text-2" data-groups-paused>
+          Groups and leaderboards are paused for a short while. Your points are safe. Try again
+          later.
+        </p>
+      </>
+    );
 
   return (
     <>

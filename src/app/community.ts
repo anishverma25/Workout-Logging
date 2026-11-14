@@ -191,7 +191,8 @@ export function messageFor(error: { message?: string; code?: string } | null): s
   if (/1 to 40/i.test(m)) return 'Group names are 1 to 40 characters.';
   if (/Duel exists/i.test(m)) return 'You two already have a duel this week.';
   if (/Duel limit (\d+)/i.test(m)) return 'You can start 3 duels a week.';
-  if (/Duel yourself|No member with that username/i.test(m)) return 'Choose another member of this group.';
+  if (/Duel yourself|No member with that username/i.test(m))
+    return 'Choose another member of this group.';
   // The server has not been updated yet (migration 0019 not run).
   if (error?.code === 'PGRST202' || /does not exist|Could not find the function/i.test(m))
     return 'Groups are not available yet. Please try again later.';
@@ -304,7 +305,13 @@ export function useRemote<T>(load: (() => Promise<T>) | null, key: string) {
 }
 
 /** Points for each part of the Macrotrophy Score: the same numbers as the server. */
-export const POINTS = { workout: 10, hardSet: 1, record: 5, proteinDay: 3, consistencyWeek: 10 } as const;
+export const POINTS = {
+  workout: 10,
+  hardSet: 1,
+  record: 5,
+  proteinDay: 3,
+  consistencyWeek: 10,
+} as const;
 export const WEEKLY_CAPS = { workouts: 6, hardSets: 25, records: 5, progress: 10 } as const;
 
 type ScoreFields = Pick<
@@ -330,11 +337,14 @@ export function scoreParts(r: ScoreFields) {
       count: r.consistencyWeeks,
       points: r.consistencyWeeks * POINTS.consistencyWeek,
     },
-    { key: 'progress', label: 'Getting stronger', count: r.progressPoints, points: r.progressPoints },
+    {
+      key: 'progress',
+      label: 'Getting stronger',
+      count: r.progressPoints,
+      points: r.progressPoints,
+    },
   ];
-  return parts.filter(
-    (p) => !(p.key === 'consistency' || p.key === 'progress') || p.points > 0,
-  );
+  return parts.filter((p) => !(p.key === 'consistency' || p.key === 'progress') || p.points > 0);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -364,7 +374,9 @@ export function parseBoardRoutine(v: unknown): BoardRoutine | null {
     days: days.map((d) => ({
       name: str(d.name) || 'Day',
       weekdays: Array.isArray(d.weekdays)
-        ? (d.weekdays as unknown[]).map(Number).filter((n) => Number.isInteger(n) && n >= 0 && n <= 6)
+        ? (d.weekdays as unknown[])
+            .map(Number)
+            .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6)
         : [],
       exercises: (Array.isArray(d.exercises) ? (d.exercises as Record<string, unknown>[]) : []).map(
         (e) => ({
@@ -382,7 +394,11 @@ export function parseBoardRoutine(v: unknown): BoardRoutine | null {
 }
 
 export const getBoardRoutine = (period: Period, offset: 0 | -1, rank: number) =>
-  call('get_board_routine', { p_period: period, p_offset: offset, p_rank: rank }, parseBoardRoutine);
+  call(
+    'get_board_routine',
+    { p_period: period, p_offset: offset, p_rank: rank },
+    parseBoardRoutine,
+  );
 
 export const getMemberRoutine = (groupId: string, username: string) =>
   call('get_member_routine', { p_group: groupId, p_username: username }, parseBoardRoutine);

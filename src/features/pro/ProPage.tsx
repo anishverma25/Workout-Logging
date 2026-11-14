@@ -248,7 +248,12 @@ function PlanCard({ entitlement: e }: { entitlement: EntitlementView }) {
   let title: string;
   let detail: string;
   let progress: number | null = null;
-  if (e.plan === 'founding') {
+  if (e.unknown) {
+    badge = <Badge>Offline</Badge>;
+    title = 'Your plan could not be checked';
+    detail =
+      'Connect to the internet and your plan shows here. Nothing about it has changed, and everything you logged is safe.';
+  } else if (e.plan === 'founding') {
     badge = <Badge tone="lime">Pro</Badge>;
     title = 'Pro is active';
     detail = 'Every Pro feature is on for your account.';

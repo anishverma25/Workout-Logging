@@ -14,8 +14,26 @@ export interface SvgNode {
   text: string;
 }
 
-const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", '#x27': "'", '#39': "'" };
-const decode = (s: string) => s.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (m, e: string) => ENTITIES[e.toLowerCase()] ?? (e.startsWith('#x') ? String.fromCodePoint(parseInt(e.slice(2), 16)) : e.startsWith('#') ? String.fromCodePoint(Number(e.slice(1))) : m));
+const ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  '#x27': "'",
+  '#39': "'",
+};
+const decode = (s: string) =>
+  s.replace(
+    /&(#x?[0-9a-f]+|[a-z]+);/gi,
+    (m, e: string) =>
+      ENTITIES[e.toLowerCase()] ??
+      (e.startsWith('#x')
+        ? String.fromCodePoint(parseInt(e.slice(2), 16))
+        : e.startsWith('#')
+          ? String.fromCodePoint(Number(e.slice(1)))
+          : m),
+  );
 
 /** Parses the markup React renders for a chart. */
 export function parseSvg(markup: string): SvgNode {
@@ -79,7 +97,13 @@ function roundedRect(x: number, y: number, w: number, h: number, r: number) {
  * Draws `svg` with its top left at (x, top) in PDF points (top measured down from the page top),
  * `width` wide. Returns the drawn height.
  */
-export function drawSvg(page: PDFPage, svg: SvgNode, at: { x: number; top: number; width: number }, theme: PdfTheme, fonts: SvgFonts): number {
+export function drawSvg(
+  page: PDFPage,
+  svg: SvgNode,
+  at: { x: number; top: number; width: number },
+  theme: PdfTheme,
+  fonts: SvgFonts,
+): number {
   const [vx, vy, vw, vh] = viewBox(svg);
   const s = at.width / vw;
   const H = page.getHeight();
@@ -94,7 +118,10 @@ export function drawSvg(page: PDFPage, svg: SvgNode, at: { x: number; top: numbe
     const fill = colour(theme, a.fill);
     const stroke = colour(theme, a.stroke);
     const sw = num(a['stroke-width'] ?? a.strokeWidth, 1);
-    const dash = (a['stroke-dasharray'] ?? '').split(/[\s,]+/).filter(Boolean).map((d) => Number(d) * s);
+    const dash = (a['stroke-dasharray'] ?? '')
+      .split(/[\s,]+/)
+      .filter(Boolean)
+      .map((d) => Number(d) * s);
     switch (n.tag) {
       case 'svg':
       case 'g':
@@ -102,7 +129,13 @@ export function drawSvg(page: PDFPage, svg: SvgNode, at: { x: number; top: numbe
         return;
       case 'rect': {
         const d = roundedRect(num(a.x), num(a.y), num(a.width), num(a.height), num(a.rx));
-        page.drawSvgPath(d, { ...origin, color: fill ?? undefined, opacity, borderColor: stroke ?? undefined, borderWidth: stroke ? sw : 0 });
+        page.drawSvgPath(d, {
+          ...origin,
+          color: fill ?? undefined,
+          opacity,
+          borderColor: stroke ?? undefined,
+          borderWidth: stroke ? sw : 0,
+        });
         return;
       }
       case 'circle': {
@@ -133,9 +166,7 @@ export function drawSvg(page: PDFPage, svg: SvgNode, at: { x: number; top: numbe
       case 'path':
       case 'polygon': {
         const d =
-          n.tag === 'path'
-            ? (a.d ?? '')
-            : `M${(a.points ?? '').trim().split(/\s+/).join(' L')} Z`;
+          n.tag === 'path' ? (a.d ?? '') : `M${(a.points ?? '').trim().split(/\s+/).join(' L')} Z`;
         if (!d) return;
         page.drawSvgPath(d, {
           ...origin,
@@ -144,7 +175,8 @@ export function drawSvg(page: PDFPage, svg: SvgNode, at: { x: number; top: numbe
           borderColor: stroke ?? undefined,
           borderWidth: stroke ? sw : 0,
           borderOpacity: opacity,
-          borderLineCap: (a['stroke-linecap'] ?? a.strokeLinecap) === 'round' ? LineCapStyle.Round : undefined,
+          borderLineCap:
+            (a['stroke-linecap'] ?? a.strokeLinecap) === 'round' ? LineCapStyle.Round : undefined,
           borderDashArray: dash.length ? dash.map((d2) => d2 / s) : undefined,
         });
         return;
@@ -152,14 +184,27 @@ export function drawSvg(page: PDFPage, svg: SvgNode, at: { x: number; top: numbe
       case 'text': {
         const style = a.style ?? '';
         const weight = num(a['font-weight'] ?? a.fontWeight, 400);
-        const font = /Bricolage/.test(style) ? fonts.display : /Mono/.test(style) ? (weight >= 500 ? fonts.monoBold : fonts.mono) : fonts.sans;
+        const font = /Bricolage/.test(style)
+          ? fonts.display
+          : /Mono/.test(style)
+            ? weight >= 500
+              ? fonts.monoBold
+              : fonts.mono
+            : fonts.sans;
         const size = num(a['font-size'] ?? a.fontSize, 11) * s;
         const text = fonts.clean(font, collectText(n));
         if (!text) return;
         const w = font.widthOfTextAtSize(text, size);
         const anchor = a['text-anchor'] ?? a.textAnchor;
         const x = X(num(a.x)) - (anchor === 'end' ? w : anchor === 'middle' ? w / 2 : 0);
-        page.drawText(text, { x, y: Y(num(a.y)), size, font, color: fill ?? colour(theme, 'var(--text-1)')!, opacity });
+        page.drawText(text, {
+          x,
+          y: Y(num(a.y)),
+          size,
+          font,
+          color: fill ?? colour(theme, 'var(--text-1)')!,
+          opacity,
+        });
         return;
       }
       default:
@@ -176,6 +221,7 @@ function collectText(n: SvgNode): string {
 
 function pickInherited(a: Record<string, string>) {
   const out: Record<string, string> = {};
-  for (const k of ['fill', 'stroke', 'style', 'font-size', 'font-weight', 'text-anchor']) if (a[k] !== undefined) out[k] = a[k];
+  for (const k of ['fill', 'stroke', 'style', 'font-size', 'font-weight', 'text-anchor'])
+    if (a[k] !== undefined) out[k] = a[k];
   return out;
 }

@@ -70,8 +70,14 @@ export function PhotosSection() {
       await addPhoto(owner, file, pose);
       void requestPersistentStorage();
       toast('Photo saved on this device');
-    } catch {
-      toast('Could not read that photo. Try another one.');
+    } catch (err) {
+      // A full phone is not a bad photo: say what is really wrong.
+      const full = err instanceof Error && /quota/i.test(`${err.name} ${err.message}`);
+      toast(
+        full
+          ? 'Your phone is out of space. Free some up, then try again.'
+          : 'Could not read that photo. Try another one.',
+      );
     } finally {
       setBusy(false);
       if (input.current) input.current.value = '';

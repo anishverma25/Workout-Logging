@@ -637,21 +637,25 @@ describe('row level security', () => {
     );
   });
 
-  it('photo allowance: 15 a day per person, counted only through the functions', async () => {
+  it('photo allowance: 15 a day per person, counted only by the server (0028, 0029)', async () => {
     const claim = (user: string) =>
-      server.asUser(user, (tx) =>
-        tx.query<{ left: number }>(`select public.claim_ai_use('photo') as left`),
-      );
+      server.pg.transaction(async (tx) => {
+        await tx.exec('set local role service_role');
+        return tx.query<{ left: number }>(`select public.ai_claim($1, 'photo') as left`, [user]);
+      });
     const first = await claim(userA);
     expect(first.rows[0]!.left).toBe(14);
     for (let i = 0; i < 14; i++) await claim(userA);
     expect((await claim(userA)).rows[0]!.left).toBe(-1);
     // Giving one back after a failure lets one more through.
-    await server.asUser(userA, (tx) => tx.query(`select public.release_ai_use('photo')`));
+    await server.pg.transaction(async (tx) => {
+      await tx.exec('set local role service_role');
+      await tx.query(`select public.ai_release($1, 'photo')`, [userA]);
+    });
     expect((await claim(userA)).rows[0]!.left).toBe(0);
     // Each person has their own allowance.
     expect((await claim(userB)).rows[0]!.left).toBe(14);
-    // Nobody reads or changes the counts directly, and visitors cannot claim.
+    // Nobody reads or changes the counts directly, and nobody in the app can claim.
     await expectError(
       server.asUser(userA, (tx) => tx.query('select * from public.ai_usage')),
       /permission denied/,
@@ -667,10 +671,8 @@ describe('row level security', () => {
       /permission denied/,
     );
     await expectError(
-      claim(userA).then(() =>
-        server.asUser(userA, (tx) => tx.query(`select public.claim_ai_use('chat')`)),
-      ),
-      /Unknown kind/,
+      server.asUser(userA, (tx) => tx.query(`select public.claim_ai_use('photo')`)),
+      /permission denied/,
     );
   });
 });

@@ -536,7 +536,14 @@ export const METRIC_EVIDENCE: Record<
   groupScore: { kind: 'definition', citations: ['acsm2026', 'zourdos2016', 'morton2018'] },
   weeklyReport: {
     kind: 'evidence',
-    citations: ['morton2018', 'helms2014', 'orsama2014', 'grgic2020', 'pelland2026', 'schoenfeld2019freq'],
+    citations: [
+      'morton2018',
+      'helms2014',
+      'orsama2014',
+      'grgic2020',
+      'pelland2026',
+      'schoenfeld2019freq',
+    ],
   },
   adaptivePlan: {
     kind: 'evidence',

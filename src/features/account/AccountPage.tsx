@@ -18,7 +18,7 @@ import {
 } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import { db, guestDatabase } from '@/data/db';
-import { useGuestImport } from '@/data/hooks';
+import { useGuestImport, useUnsyncedCount } from '@/data/hooks';
 import { syncController } from '@/data/sync/controller';
 import { retryRejected } from '@/data/sync/engine';
 import { copyGuestData, hasGuestData, markMigrationHandled } from '@/data/sync/migrate';
@@ -210,11 +210,12 @@ function GuestImportCard({ userId }: { userId: string }) {
 }
 
 function SignOutRow() {
-  const sync = useSyncStatus();
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const waiting = sync.pending;
+  // Counted live from this phone, not from the last sync.
+  const unsynced = useUnsyncedCount();
+  const waiting = unsynced.data ?? 0;
   const confirm = async () => {
     setBusy(true);
     try {
@@ -238,7 +239,7 @@ function SignOutRow() {
         open={open}
         onClose={() => setOpen(false)}
         title="Sign out?"
-        busy={busy}
+        busy={busy || unsynced.status !== 'success'}
         destructive
         confirmLabel="Sign out"
         onConfirm={confirm}
@@ -278,8 +279,8 @@ function DeleteAccountCard() {
       </h2>
       <p className="type-meta mt-1 text-text-2">
         Removes your account and every workout, routine, measurement and goal in it, from the server
-        and from this device. Export your data first if you want a copy (Settings). Photos on this
-        device are not affected.
+        and from this device. Any autopay is stopped first, so nothing is charged again. Export your
+        data first if you want a copy (Settings). Photos on this device are not affected.
       </p>
       <DestructiveButton
         compact

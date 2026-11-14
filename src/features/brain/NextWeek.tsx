@@ -184,7 +184,11 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
                         ) : (
                           <X className="mt-0.5 size-4 shrink-0 text-text-2" aria-hidden />
                         )}
-                        <span className={c.applied ? 'type-subhead text-text-1' : 'type-subhead text-text-2'}>
+                        <span
+                          className={
+                            c.applied ? 'type-subhead text-text-1' : 'type-subhead text-text-2'
+                          }
+                        >
                           {t(c.title)}
                           {c.applied ? '' : ` (${t(COPY.notApplied).toLowerCase()})`}
                         </span>
@@ -193,7 +197,8 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
                   </ul>
                   {skipped.length ? (
                     <p className="type-footnote mt-3 text-text-2" role="status">
-                      {skipped.length === 1 ? 'One change' : `${skipped.length} changes`} {t(COPY.skipped)}
+                      {skipped.length === 1 ? 'One change' : `${skipped.length} changes`}{' '}
+                      {t(COPY.skipped)}
                     </p>
                   ) : null}
                 </>
@@ -201,7 +206,10 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
             </div>
           ) : changes.length ? (
             <>
-              <ul className="flex flex-col overflow-hidden rounded-panel bg-surface" data-plan-changes>
+              <ul
+                className="flex flex-col overflow-hidden rounded-panel bg-surface"
+                data-plan-changes
+              >
                 {changes.map((c, i) => {
                   const Icon = ICON[c.kind];
                   return (
@@ -237,10 +245,22 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
                 })}
               </ul>
               <div className="flex flex-col gap-2 sm:flex-row">
-                <PrimaryButton block loading={busy === 'apply'} disabled={!!busy} onClick={() => void apply()} data-plan-apply>
+                <PrimaryButton
+                  block
+                  loading={busy === 'apply'}
+                  disabled={!!busy}
+                  onClick={() => void apply()}
+                  data-plan-apply
+                >
                   {t(COPY.apply)}
                 </PrimaryButton>
-                <SecondaryButton block loading={busy === 'keep'} disabled={!!busy} onClick={() => void keep()} data-plan-keep>
+                <SecondaryButton
+                  block
+                  loading={busy === 'keep'}
+                  disabled={!!busy}
+                  onClick={() => void keep()}
+                  data-plan-keep
+                >
                   {t(COPY.keep)}
                 </SecondaryButton>
               </div>
@@ -277,7 +297,12 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
           <div className="rounded-panel bg-surface p-5" data-coming-up>
             <div className="flex items-center justify-between gap-3">
               <p className="type-headline text-text-1">{t(COPY.comingUp)}</p>
-              <SecondaryButton compact icon={<CalendarPlus />} onClick={() => setComingUp(true)} data-coming-up-add>
+              <SecondaryButton
+                compact
+                icon={<CalendarPlus />}
+                onClick={() => setComingUp(true)}
+                data-coming-up-add
+              >
                 {t(COPY.add)}
               </SecondaryButton>
             </div>
@@ -289,7 +314,10 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
                       {t(EVENT_LABEL[e.kind])}
                       <span className="text-text-2">
                         {' '}
-                        · {e.start === e.end ? dayMonth(e.start) : `${dayMonth(e.start)} to ${dayMonth(e.end)}`}
+                        ·{' '}
+                        {e.start === e.end
+                          ? dayMonth(e.start)
+                          : `${dayMonth(e.start)} to ${dayMonth(e.end)}`}
                       </span>
                     </span>
                     <button
@@ -309,7 +337,11 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
           </div>
 
           {brain.model?.maintenance && brain.input?.person.weightKg ? (
-            <TextButton icon={<SlidersHorizontal />} onClick={() => setWhatIf(true)} data-what-if-open>
+            <TextButton
+              icon={<SlidersHorizontal />}
+              onClick={() => setWhatIf(true)}
+              data-what-if-open
+            >
               {t(COPY.tryPlan)}
             </TextButton>
           ) : null}

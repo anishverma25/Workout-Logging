@@ -1,5 +1,6 @@
+import { useAppFlags } from '@/app/flags';
 import { useLocation } from 'react-router';
-import { CloudOff, RefreshCw } from 'lucide-react';
+import { CloudOff, Info, RefreshCw } from 'lucide-react';
 import { InlineNotice, SecondaryButton } from '@/components/kit';
 import { useActiveWorkout } from '@/data/hooks';
 import { cn } from '@/lib/cn';
@@ -15,9 +16,15 @@ import { applyUpdate, useOnline, usePwa } from '../pwa';
 export function AppNotices() {
   const online = useOnline();
   const { updateReady } = usePwa();
-  if (online && !updateReady) return null;
+  const { notice } = useAppFlags();
+  if (online && !updateReady && !notice) return null;
   return (
     <>
+      {notice ? (
+        <InlineNotice icon={<Info />} className="mt-3">
+          <span data-app-notice>{notice}</span>
+        </InlineNotice>
+      ) : null}
       {!online ? (
         <InlineNotice icon={<CloudOff />} className="mt-3">
           Offline. Everything you log is saved on this device.

@@ -27,7 +27,10 @@ export function ComingUpRow() {
   if (!pro || items.status !== 'success') return null;
   const next = eventsFrom(items.data, toDateKey(now))[0];
   return (
-    <div className="mt-4 flex items-center justify-between gap-3 rounded-card bg-surface p-4" data-coming-up-row>
+    <div
+      className="mt-4 flex items-center justify-between gap-3 rounded-card bg-surface p-4"
+      data-coming-up-row
+    >
       <div className="min-w-0">
         <p className="type-headline text-text-1">Coming up</p>
         <p className="type-subhead mt-0.5 text-text-2">

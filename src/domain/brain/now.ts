@@ -105,7 +105,14 @@ export function nowCard(input: NowInput): NowCard | null {
       to: '/food',
     };
   const [from, to] = MEAL_HOURS[input.mealNow];
-  if (logsFood && !input.mealLogged && hour >= from && hour <= to && input.kcalLeft !== null && input.kcalLeft > 0)
+  if (
+    logsFood &&
+    !input.mealLogged &&
+    hour >= from &&
+    hour <= to &&
+    input.kcalLeft !== null &&
+    input.kcalLeft > 0
+  )
     return {
       kind: 'meal',
       title: `Log ${MEAL_NAME[input.mealNow]}`,

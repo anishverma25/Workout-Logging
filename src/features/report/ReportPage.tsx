@@ -92,11 +92,14 @@ export function ReportPage() {
   const previousActions = useMemo(() => previous?.report.actions ?? null, [previous]);
   const draft = useWeeklyReport(pro && !savedOpen ? win.open : null, now, previousActions);
 
-  const ordered = useMemo(() => [...saved].sort((a, b) => a.weekStart.localeCompare(b.weekStart)), [saved]);
+  const ordered = useMemo(
+    () => [...saved].sort((a, b) => a.weekStart.localeCompare(b.weekStart)),
+    [saved],
+  );
   const selectedKey = params.get('week');
   const shown =
     (selectedKey ? saved.find((r) => r.weekStart === selectedKey) : null) ??
-    (selectedKey ? null : savedOpen ?? ordered[ordered.length - 1] ?? null);
+    (selectedKey ? null : (savedOpen ?? ordered[ordered.length - 1] ?? null));
   const number = shown ? ordered.findIndex((r) => r.id === shown.id) + 1 : 0;
 
   const make = async () => {
@@ -151,8 +154,13 @@ export function ReportPage() {
             data-report-generate={generate.kind}
           >
             <span className="type-meta text-lime">Week of {weekRange(win.open)}</span>
-            <h2 className="text-[26px] leading-[1.1] font-bold tracking-[-0.02em] text-text-1" style={DISPLAY}>
-              {generate.kind === 'ready' ? 'Your report is ready to make' : 'Not enough logged this week'}
+            <h2
+              className="text-[26px] leading-[1.1] font-bold tracking-[-0.02em] text-text-1"
+              style={DISPLAY}
+            >
+              {generate.kind === 'ready'
+                ? 'Your report is ready to make'
+                : 'Not enough logged this week'}
             </h2>
             <p className="type-body text-text-2">
               {generate.kind === 'ready'
@@ -180,7 +188,11 @@ export function ReportPage() {
         ) : null}
 
         {ordered.length > 1 ? (
-          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Your reports">
+          <div
+            className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+            role="tablist"
+            aria-label="Your reports"
+          >
             {[...ordered].reverse().map((r) => {
               const on = shown?.id === r.id;
               return (
@@ -214,7 +226,12 @@ export function ReportPage() {
             onLang={setLang}
             actions={
               <div className="mt-5 flex flex-wrap gap-2">
-                <SecondaryButton compact icon={<Download />} onClick={() => setDownload(true)} data-report-download>
+                <SecondaryButton
+                  compact
+                  icon={<Download />}
+                  onClick={() => setDownload(true)}
+                  data-report-download
+                >
                   Download
                 </SecondaryButton>
               </div>
@@ -227,7 +244,13 @@ export function ReportPage() {
 
       <NextWeek lang={lang} now={now} />
 
-      <DownloadSheet open={download && !!shown} onClose={() => setDownload(false)} saved={shown} number={number} lang={lang} />
+      <DownloadSheet
+        open={download && !!shown}
+        onClose={() => setDownload(false)}
+        saved={shown}
+        number={number}
+        lang={lang}
+      />
     </>
   );
 }

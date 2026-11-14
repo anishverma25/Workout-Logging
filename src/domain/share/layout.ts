@@ -51,7 +51,11 @@ const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 export function boxGeometry(p: BoxPlacement, w0: number, h0: number): BoxGeometry {
   const nw = Math.max(1, w0);
   const nh = Math.max(1, h0);
-  const scale = Math.min((BASE_SCALE * clamp(p.size, SIZE_MIN, SIZE_MAX)) / 100, CARD_W / nw, CARD_H / nh);
+  const scale = Math.min(
+    (BASE_SCALE * clamp(p.size, SIZE_MIN, SIZE_MAX)) / 100,
+    CARD_W / nw,
+    CARD_H / nh,
+  );
   const w = nw * scale;
   const h = nh * scale;
   const rx = Math.max(CARD_W - w, CARD_W * 0.25);
@@ -63,7 +67,13 @@ const clampLeft = (l: number, g: BoxGeometry) => clamp(l, -(1 - KEEP) * g.w, CAR
 const clampTop = (t: number, g: BoxGeometry) => clamp(t, -(1 - KEEP) * g.h, CARD_H - KEEP * g.h);
 
 /** Moves the box by `dx`, `dy` card pixels from where `from` had it. */
-export function moveBox(from: BoxPlacement, dx: number, dy: number, w0: number, h0: number): BoxPlacement {
+export function moveBox(
+  from: BoxPlacement,
+  dx: number,
+  dy: number,
+  w0: number,
+  h0: number,
+): BoxPlacement {
   const g = boxGeometry(from, w0, h0);
   return {
     ...from,
@@ -131,5 +141,8 @@ export function handlePoint(g: BoxGeometry, tilt: number): { x: number; y: numbe
   const a = (tilt * Math.PI) / 180;
   const dx = g.w / 2;
   const dy = g.h / 2;
-  return { x: cx + dx * Math.cos(a) - dy * Math.sin(a), y: cy + dx * Math.sin(a) + dy * Math.cos(a) };
+  return {
+    x: cx + dx * Math.cos(a) - dy * Math.sin(a),
+    y: cy + dx * Math.sin(a) + dy * Math.cos(a),
+  };
 }

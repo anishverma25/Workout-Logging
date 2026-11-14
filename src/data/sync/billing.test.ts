@@ -1063,9 +1063,8 @@ describe('billing', () => {
     }
     const rows = (await orphans()).filter((o) => o.razorpay_id === 'pay_refund_me');
     expect(rows.map((o) => o.kind)).toEqual(['refund', 'dispute']);
-    const { server_now: _a, ...was } = before;
-    const { server_now: _b, ...now } = await mine(user);
-    expect(now).toEqual(was);
+    const after = await mine(user);
+    expect({ ...after, server_now: null }).toEqual({ ...before, server_now: null });
   });
 
   it('cancel works for a plan that has not started yet: stopped now, paid time kept', async () => {

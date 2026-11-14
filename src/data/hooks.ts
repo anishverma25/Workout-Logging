@@ -72,6 +72,8 @@ export function useLiveData<T>(
 export const useTrainingData = () => useLiveData<TrainingData>(() => loadTrainingData(db));
 /** Just the profile: cheap enough for headers on every page. */
 export const useProfile = () => useLiveData(async () => pickProfile(await db.profiles.toArray()));
+/** Changes on this phone still waiting to reach the server, counted live. */
+export const useUnsyncedCount = () => useLiveData(() => db.outbox.count());
 export const useDemoStatus = () => useLiveData<DemoStatus>(() => getDemoStatus(db));
 
 export function usePreferences(): Preferences {

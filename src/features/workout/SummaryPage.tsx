@@ -90,7 +90,10 @@ export function SummaryPage() {
     const seen = seenBadges(accountId);
     const fresh = unlocked.filter((b) => !seen.has(b.id));
     if (!fresh.length) return;
-    markBadgesSeen(accountId, fresh.map((b) => b.id));
+    markBadgesSeen(
+      accountId,
+      fresh.map((b) => b.id),
+    );
     const order = { legend: 0, gold: 1, silver: 2, bronze: 3 } as const;
     // Effects may set state from data the page just read; this runs once per new badge set.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -191,7 +194,12 @@ export function SummaryPage() {
       </dl>
       <ShareSheet workoutId={session.workout.id} open={sharing} onClose={() => setSharing(false)} />
       {shareBadge ? (
-        <ShareSheet workoutId={session.workout.id} badgeId={shareBadge.id} open onClose={() => setShareBadge(null)} />
+        <ShareSheet
+          workoutId={session.workout.id}
+          badgeId={shareBadge.id}
+          open
+          onClose={() => setShareBadge(null)}
+        />
       ) : null}
       {celebrate?.length ? (
         <BadgeUnlock

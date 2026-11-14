@@ -67,6 +67,11 @@ export function memoryLines(items: PlanItem[], today: string): string[] {
 export function looksLikeFact(text: string): boolean {
   const t = text.trim();
   if (t.length < 12 || t.length > 160 || /\?/.test(t)) return false;
-  if (/^(what|why|how|when|which|should|can|could|is|are|do|does|kya|kyu|kyun|kaise|kab|kitna)\b/i.test(t)) return false;
+  if (
+    /^(what|why|how|when|which|should|can|could|is|are|do|does|kya|kyu|kyun|kaise|kab|kitna)\b/i.test(
+      t,
+    )
+  )
+    return false;
   return /^(i|i'm|im|i am|my|mera|meri|mere|main|mai|mujhe)\b/i.test(t);
 }

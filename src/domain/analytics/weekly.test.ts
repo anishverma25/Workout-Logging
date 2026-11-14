@@ -3,10 +3,21 @@ import type { FoodLog } from '../models/schemas';
 import { buildSessions } from './sessions';
 import { fisherExact, weeklyReport, type WeeklyInput } from './weekly';
 
-const meta = { createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', deletedAt: null, origin: 'user' as const };
+const meta = {
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z',
+  deletedAt: null,
+  origin: 'user' as const,
+};
 
 let n = 0;
-const log = (date: string, meal: FoodLog['meal'], kcal: number, proteinG: number, carbsG = kcal / 8): FoodLog => ({
+const log = (
+  date: string,
+  meal: FoodLog['meal'],
+  kcal: number,
+  proteinG: number,
+  carbsG = kcal / 8,
+): FoodLog => ({
   id: `00000000-0000-4000-9000-${String(++n).padStart(12, '0')}`,
   ...meta,
   date,
@@ -38,7 +49,21 @@ function data() {
     ] as const) {
       const day = new Date(Date.UTC(2026, 8, 7 + w * 7 + d, 18, 0));
       const w0 = key === 'barbell-bench-press' ? 80 + w * 1.5 : 120;
-      specs.push({ at: day.toISOString(), name, minutes: 60, exercises: [{ key, sets: [{ w: w0, r: 5, rir: 2 }, { w: w0, r: 5, rir: 2 }, { w: w0, r: 5, rir: 1 }] }] });
+      specs.push({
+        at: day.toISOString(),
+        name,
+        minutes: 60,
+        exercises: [
+          {
+            key,
+            sets: [
+              { w: w0, r: 5, rir: 2 },
+              { w: w0, r: 5, rir: 2 },
+              { w: w0, r: 5, rir: 1 },
+            ],
+          },
+        ],
+      });
     }
   }
   return buildData(specs);
@@ -147,6 +172,13 @@ describe('weekly report', () => {
   it('lists optional inputs honestly', () => {
     const r = weeklyReport(input());
     const has = Object.fromEntries(r.inputs.map((i) => [i.key, i.has]));
-    expect(has).toMatchObject({ targets: true, meals: true, plan: true, effort: true, waist: false, goal: false });
+    expect(has).toMatchObject({
+      targets: true,
+      meals: true,
+      plan: true,
+      effort: true,
+      waist: false,
+      goal: false,
+    });
   });
 });

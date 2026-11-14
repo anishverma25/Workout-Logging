@@ -24,10 +24,7 @@ export function WhatsNew() {
   const [open, setOpen] = useState(() => !seenRelease());
   // A new account: remember it, so the walkthrough never appears on this phone for it later.
   useEffect(() => {
-    if (brandNew && open) {
-      markReleaseSeen();
-      setOpen(false);
-    }
+    if (brandNew && open) markReleaseSeen();
   }, [brandNew, open]);
   const [step, setStep] = useState(0);
   const busy =

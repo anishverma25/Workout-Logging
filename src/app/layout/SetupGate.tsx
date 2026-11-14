@@ -50,21 +50,22 @@ export function SetupGate() {
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
   const userId = account.user?.id ?? null;
-  const go =
-    userId !== null &&
-    !pathname.startsWith('/workout') &&
-    needsSetup({
-      createdAt: account.user?.createdAt,
+  const synced = sync.lastSyncedAt !== null;
+  const hasProfile = profile.status === 'success' ? profile.data !== null : null;
+  const createdAt = account.user?.createdAt;
+  useEffect(() => {
+    if (!userId || pathname.startsWith('/workout')) return;
+    const go = needsSetup({
+      createdAt,
       now: Date.now(),
-      synced: sync.lastSyncedAt !== null,
-      hasProfile: profile.status === 'success' ? profile.data !== null : null,
+      synced,
+      hasProfile,
       asked: alreadyAsked(userId),
     });
-  useEffect(() => {
-    if (!go || !userId) return;
+    if (!go) return;
     markAsked(userId);
     navigate(`/setup?next=${encodeURIComponent(`${pathname}${search}`)}`, { replace: true });
-  }, [go, userId, navigate, pathname, search]);
+  }, [userId, createdAt, synced, hasProfile, navigate, pathname, search]);
   return null;
 }
 

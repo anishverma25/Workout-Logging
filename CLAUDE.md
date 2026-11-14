@@ -473,3 +473,30 @@ Read README.md for setup, architecture and calculation rules.
     week", science sources band and `HeaderArt` on science groups and guides, `num-glow`, `shine`,
     `pulse-glow`. Tour shows the Brain after food. Release `2026-11-fair-play`, `CACHE_EPOCH`
     `ui-20`.
+- Launch safety, stages A and B (November 2026, migrations `20261114000028_launch_safety.sql`
+  and `20261114000029_retire_old_ai_claim.sql` (run 0029 only after the coach function is
+  deployed), Dexie unchanged, Fable review batches 1, 2, 7, 17 and three items of 10, 13, 14):
+  - First impressions: "What's new" never shows to accounts made after `RELEASE_AT`; the tour has
+    Skip (to sign up) on every slide; sign up always opens setup; `SetupGate` sends a new,
+    never set up account to setup once (email-confirm flow). Setup asks diet, waist and body fat
+    (optional), then `BuildingPlan` (full screen, real numbers), then the plan, then the Pro
+    offer page `/trial` (`TrialWelcomePage`: what Pro does, Free and Pro, reviews, `PlansSection`
+    checkout) for everyone not already paying. Sign-in art is real screens (`AuthArt`); reviews
+    are `RatingLaurel` and `QuoteSpotlight` (`features/tour/Reviews.tsx`).
+  - Safe targets: no plan, typed intake or Brain week cuts toward a BMI under 18.5 or for anyone
+    under 18 (`unsafeTarget` in `goalPlan.ts`, `energyPlan` age guard).
+  - AI limits by kind (`ai_claim`/`ai_release`, service role only; chat 60, food 80, photo 15 a
+    day; `app_settings.ai_daily_budget` for everyone, -2 means busy). Brand usernames reserved.
+  - Billing: failed webhooks are forgotten so retries apply (`billing_forget_event`); a stored
+    unpaid checkout is reused, found paid (`already_paid`) or cancelled before a new one
+    (`settleCreated`); payments for a subscription no account stores are adopted
+    (`billing_adopt`) or cancelled and recorded (`billing_orphans`, with refunds and disputes);
+    no full period without Razorpay's end date except on a charge; cancel works for every live
+    state; `delete_my_account` refuses while autopay can charge and the app cancels first.
+  - App: sign-out counts the real outbox; deleting clears the account's device keys; a paid but
+    unconfirmed checkout shows "Payment received" and blocks paying again for 30 minutes
+    (`pendingPayment`); `unknown` entitlement (offline, nothing cached) never shows ended or
+    reminders; switches in `app_settings.flags` (`get_app_flags`, `app/flags.ts`).
+  - Report crash fixed (`repaired` for saved reports); label servings with no weight log as
+    servings; temporary plan changes restore themselves for everyone (`restoreExpired`,
+    `RestoreExpired` in AppShell); logged food rows show calories only.

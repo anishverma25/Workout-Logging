@@ -1,3 +1,4 @@
+import { getFlags, PAUSED } from './flags';
 import { useSyncExternalStore } from 'react';
 import { supabase } from '@/data/sync/supabase';
 import { LIMITS, type CoachTopic, type CoachTurn } from '../../supabase/functions/_shared/coach.ts';
@@ -140,6 +141,7 @@ async function call(body: {
   history: CoachTurn[];
 }): Promise<string> {
   if (!supabase) throw new CoachError('Accounts are not set up in this version of the app.', 'off');
+  if (!getFlags().ai_chat) throw new CoachError(PAUSED, 'paused');
   const { data, error } = await supabase.functions.invoke('coach', { body });
   if (error) {
     let message = 'Macrotrophy AI could not be reached. Check your connection and try again.';

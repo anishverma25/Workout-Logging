@@ -67,7 +67,9 @@ export function ProNudgeCard({
   }, [workoutDates, records, e.pro, e.now, endedAt, plans]);
 
   // Waits for the plans, so the price reminder can be offered with a real price.
-  const resolved = state && plans !== null && !e.loading ? chooseNudge(facts, state, e.now) : null;
+  // Never while the plan is unknown: a paying member offline must not be asked to pay.
+  const resolved =
+    state && plans !== null && !e.loading && !e.unknown ? chooseNudge(facts, state, e.now) : null;
 
   // The state it was chosen from is read once, on mount, so recording that this reminder was
   // shown cannot change what is on screen while it is being read. The next visit to Home reads

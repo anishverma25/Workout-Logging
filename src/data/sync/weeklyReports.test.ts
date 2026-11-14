@@ -98,7 +98,10 @@ describe('weekly reports', () => {
     const owner = await server.createUser(`${uuid()}@example.com`);
     const other = await server.createUser(`${uuid()}@example.com`);
     const week = await monday(-1);
-    await as(owner, `public.claim_weekly_report($1, $2::date, '{"mine":true}'::jsonb)`, [uuid(), week]);
+    await as(owner, `public.claim_weekly_report($1, $2::date, '{"mine":true}'::jsonb)`, [
+      uuid(),
+      week,
+    ]);
     // Nobody reads the table directly; the list only ever holds the caller's own.
     await expectError(
       server.asUser(other, (tx) => tx.query('select * from public.weekly_reports')),
@@ -110,7 +113,9 @@ describe('weekly reports', () => {
       /permission denied/,
     );
     // Once early access ends, an account with no trial or plan cannot save.
-    await server.pg.query(`update public.app_settings set early_access_ended_at = now() - interval '1 day'`);
+    await server.pg.query(
+      `update public.app_settings set early_access_ended_at = now() - interval '1 day'`,
+    );
     try {
       const free = await server.createUser(`${uuid()}@example.com`);
       // New accounts start a trial; this one has used it up.

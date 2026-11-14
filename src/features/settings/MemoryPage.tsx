@@ -5,14 +5,24 @@ import { PrimaryButton, SecondaryButton } from '@/components/kit';
 import { Skeleton } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
-import { addMemory, editMemory, MEMORY_MAX_CHARS, PlanError, removePlanItem } from '@/data/repositories/plan';
+import {
+  addMemory,
+  editMemory,
+  MEMORY_MAX_CHARS,
+  PlanError,
+  removePlanItem,
+} from '@/data/repositories/plan';
 import { toDateKey } from '@/lib/dates';
 import { useNow } from '@/lib/useNow';
 import { usePlanItems } from '../brain/useBrain';
 import { knownFacts, type KnownFact } from '../coach/memory';
 
 const ICON = { note: StickyNote, event: CalendarDays, pain: HeartPulse } as const;
-const SOURCE = { note: 'You told it', event: 'From Coming up', pain: 'From Something hurts' } as const;
+const SOURCE = {
+  note: 'You told it',
+  event: 'From Coming up',
+  pain: 'From Something hurts',
+} as const;
 const fieldClass =
   'min-h-12 w-full rounded-field bg-surface-2 px-3 py-3 text-[16px] text-text-1 placeholder:text-text-2';
 
@@ -62,9 +72,10 @@ export function MemoryPage() {
       />
       <div className="flex max-w-2xl flex-col gap-5" data-memory-page>
         <p className="type-subhead text-text-2">
-          Besides your logged numbers, Macrotrophy AI is told these things when you ask it something, so you never
-          have to repeat yourself. They are kept with your own data and sent only with your question, never with
-          your name or email. Your goal, diet and schedule come from your profile.
+          Besides your logged numbers, Macrotrophy AI is told these things when you ask it
+          something, so you never have to repeat yourself. They are kept with your own data and sent
+          only with your question, never with your name or email. Your goal, diet and schedule come
+          from your profile.
         </p>
 
         <section className="flex flex-col gap-2 rounded-panel bg-surface p-5">
@@ -85,17 +96,27 @@ export function MemoryPage() {
               {error}
             </p>
           ) : null}
-          <PrimaryButton compact disabled={!draft.trim()} onClick={() => void add()} data-memory-add>
+          <PrimaryButton
+            compact
+            disabled={!draft.trim()}
+            onClick={() => void add()}
+            data-memory-add
+          >
             Remember this
           </PrimaryButton>
         </section>
 
         {items.status === 'loading' ? <Skeleton className="h-40 rounded-panel" /> : null}
         {items.status === 'success' && facts.length === 0 ? (
-          <p className="type-subhead px-1 text-text-2">Nothing yet beyond your profile and your logs.</p>
+          <p className="type-subhead px-1 text-text-2">
+            Nothing yet beyond your profile and your logs.
+          </p>
         ) : null}
         {facts.length ? (
-          <ul className="flex flex-col divide-y-[0.5px] divide-divider rounded-panel bg-surface px-5" data-memory-list>
+          <ul
+            className="flex flex-col divide-y-[0.5px] divide-divider rounded-panel bg-surface px-5"
+            data-memory-list
+          >
             {facts.map((f) => {
               const Icon = ICON[f.kind];
               const isEditing = editing?.id === f.id;

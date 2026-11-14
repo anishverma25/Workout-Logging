@@ -88,26 +88,93 @@ export const ADD_ONS = [
 
 const POOL: Record<Meal, string[]> = {
   breakfast: [
-    'poha', 'upma', 'idli', 'dosa', 'besan-chilla', 'moong-chilla', 'oats-milk', 'omelette',
-    'egg-bhurji', 'paneer-paratha', 'aloo-paratha', 'peanut-butter-toast', 'overnight-oats',
-    'boiled-egg', 'sprouts-chaat', 'banana', 'milk', 'curd', 'protein-shake', 'tofu-bhurji',
+    'poha',
+    'upma',
+    'idli',
+    'dosa',
+    'besan-chilla',
+    'moong-chilla',
+    'oats-milk',
+    'omelette',
+    'egg-bhurji',
+    'paneer-paratha',
+    'aloo-paratha',
+    'peanut-butter-toast',
+    'overnight-oats',
+    'boiled-egg',
+    'sprouts-chaat',
+    'banana',
+    'milk',
+    'curd',
+    'protein-shake',
+    'tofu-bhurji',
     'paneer-bhurji',
   ],
   lunch: [
-    'phulka', 'rice', 'dal-tadka', 'moong-dal', 'rajma', 'chole', 'khichdi', 'curd',
-    'paneer-bhurji', 'palak-paneer', 'soya-curry', 'egg-curry', 'chicken-curry', 'chicken-plain',
-    'fish-curry', 'mix-veg', 'green-salad', 'curd-rice', 'chicken-breast', 'tofu',
-    'kala-chana-boiled', 'boiled-egg',
+    'phulka',
+    'rice',
+    'dal-tadka',
+    'moong-dal',
+    'rajma',
+    'chole',
+    'khichdi',
+    'curd',
+    'paneer-bhurji',
+    'palak-paneer',
+    'soya-curry',
+    'egg-curry',
+    'chicken-curry',
+    'chicken-plain',
+    'fish-curry',
+    'mix-veg',
+    'green-salad',
+    'curd-rice',
+    'chicken-breast',
+    'tofu',
+    'kala-chana-boiled',
+    'boiled-egg',
   ],
   snacks: [
-    'roasted-chana', 'peanuts', 'sprouts-chaat', 'chana-chaat', 'roasted-makhana', 'banana',
-    'apple', 'curd', 'greek-yogurt', 'milk', 'protein-shake', 'boiled-egg', 'paneer',
-    'sattu-drink', 'chaas', 'peanut-butter-toast', 'soya-chunks-boiled',
+    'roasted-chana',
+    'peanuts',
+    'sprouts-chaat',
+    'chana-chaat',
+    'roasted-makhana',
+    'banana',
+    'apple',
+    'curd',
+    'greek-yogurt',
+    'milk',
+    'protein-shake',
+    'boiled-egg',
+    'paneer',
+    'sattu-drink',
+    'chaas',
+    'peanut-butter-toast',
+    'soya-chunks-boiled',
   ],
   dinner: [
-    'phulka', 'rice', 'dal-tadka', 'moong-dal', 'masoor-dal', 'khichdi', 'curd', 'paneer-bhurji',
-    'palak-paneer', 'soya-curry', 'egg-curry', 'egg-bhurji', 'chicken-curry', 'chicken-plain',
-    'fish-curry', 'mix-veg', 'green-salad', 'chicken-breast', 'tofu', 'boiled-egg', 'milk',
+    'phulka',
+    'rice',
+    'dal-tadka',
+    'moong-dal',
+    'masoor-dal',
+    'khichdi',
+    'curd',
+    'paneer-bhurji',
+    'palak-paneer',
+    'soya-curry',
+    'egg-curry',
+    'egg-bhurji',
+    'chicken-curry',
+    'chicken-plain',
+    'fish-curry',
+    'mix-veg',
+    'green-salad',
+    'chicken-breast',
+    'tofu',
+    'boiled-egg',
+    'milk',
   ],
 };
 
@@ -134,7 +201,14 @@ export function portionOf(
   const one = unitGrams(food, unit, size, katoriMl);
   if (!one || !(amount > 0)) return null;
   const grams = round1(one * amount);
-  return { food, amount, unit, size, grams, nutrients: roundNutrients(portionNutrients(food, grams)) };
+  return {
+    food,
+    amount,
+    unit,
+    size,
+    grams,
+    nutrients: roundNutrients(portionNutrients(food, grams)),
+  };
 }
 
 const usual = (food: Food, katoriMl?: number | null) =>
@@ -167,7 +241,12 @@ export function habitsFrom(logs: FoodLog[], today: string): Map<string, Habit> {
     const set = days.get(l.foodId) ?? new Set<string>();
     set.add(l.date);
     days.set(l.foodId, set);
-    const h = out.get(l.foodId) ?? { days: 0, meals: new Set<Meal>(), amount: l.amount, unit: l.unit as UnitId };
+    const h = out.get(l.foodId) ?? {
+      days: 0,
+      meals: new Set<Meal>(),
+      amount: l.amount,
+      unit: l.unit as UnitId,
+    };
     h.meals.add(l.meal);
     h.amount = l.amount;
     h.unit = l.unit as UnitId;
@@ -237,13 +316,18 @@ export function eatNext(input: EatNextInput): Suggestion[] {
     const tries: (Portion | null)[] = [own ?? usual(food, input.katoriMl)];
     for (const p of tries) {
       if (!p || p.nutrients.kcal < 30) continue;
-      if (p.nutrients.kcal > Math.min(remaining.kcal * 1.05, Math.max(aim.kcal * 1.6, 200))) continue;
+      if (p.nutrients.kcal > Math.min(remaining.kcal * 1.05, Math.max(aim.kcal * 1.6, 200)))
+        continue;
       const density = (p.nutrients.proteinG * 4) / Math.max(1, p.nutrients.kcal);
       // A cup of chai is not an answer to "what should I eat".
       if (p.nutrients.kcal < aim.kcal * 0.15 && density < 0.25) continue;
-      const closes = aim.proteinG > 0 ? Math.min(p.nutrients.proteinG, aim.proteinG) / aim.proteinG : 0;
+      const closes =
+        aim.proteinG > 0 ? Math.min(p.nutrients.proteinG, aim.proteinG) / aim.proteinG : 0;
       const kcalShare = p.nutrients.kcal / Math.max(150, aim.kcal);
-      let score = 100 * closes * proteinShare + 30 * density - 35 * Math.max(0, kcalShare - Math.max(closes, 0.35));
+      let score =
+        100 * closes * proteinShare +
+        30 * density -
+        35 * Math.max(0, kcalShare - Math.max(closes, 0.35));
       if (habit) score += 12 + Math.min(8, habit.days);
       if (habit?.meals.has(meal)) score += 10;
       if (food.meals.includes(meal)) score += 14;
@@ -298,14 +382,24 @@ export function rankMenu(input: {
     if (!food || !portion) return { dish, portion: null, verdict: 'unknown' as const, score: -1e6 };
     const over = portion.nutrients.kcal > Math.max(input.remaining.kcal, 0) * 1.05;
     const density = (portion.nutrients.proteinG * 4) / Math.max(1, portion.nutrients.kcal);
-    const closes = input.remaining.proteinG > 0 ? Math.min(portion.nutrients.proteinG, input.remaining.proteinG) / input.remaining.proteinG : 0;
-    const score = (fitsDiet(food, input.diet) ? 0 : -500) + (over ? -200 : 0) + 100 * closes + 60 * density;
+    const closes =
+      input.remaining.proteinG > 0
+        ? Math.min(portion.nutrients.proteinG, input.remaining.proteinG) / input.remaining.proteinG
+        : 0;
+    const score =
+      (fitsDiet(food, input.diet) ? 0 : -500) + (over ? -200 : 0) + 100 * closes + 60 * density;
     return { dish, portion, verdict: over ? ('over' as const) : ('fits' as const), score };
   });
   matched.sort((a, b) => b.score - a.score);
   let best = 0;
   return matched.map(({ score: _score, ...m }) => {
-    if (m.verdict === 'fits' && best < 3 && m.portion && fitsDiet(m.portion.food, input.diet) && m.portion.nutrients.proteinG >= 8) {
+    if (
+      m.verdict === 'fits' &&
+      best < 3 &&
+      m.portion &&
+      fitsDiet(m.portion.food, input.diet) &&
+      m.portion.nutrients.proteinG >= 8
+    ) {
       best += 1;
       return { ...m, verdict: 'best' as const };
     }
@@ -334,8 +428,20 @@ interface Template {
   lines: Line[];
 }
 
-const T = (key: string, meal: Meal, diet: Template['diet'], cost: Cost, lines: Line[], kitchen = false): Template => ({
-  key, meal, diet, cost, lines, kitchen,
+const T = (
+  key: string,
+  meal: Meal,
+  diet: Template['diet'],
+  cost: Cost,
+  lines: Line[],
+  kitchen = false,
+): Template => ({
+  key,
+  meal,
+  diet,
+  cost,
+  lines,
+  kitchen,
 });
 const carb = (id: string, amount?: number): Line => ({ id, amount, scale: 'carb' });
 
@@ -345,48 +451,155 @@ const HOME: Template[] = [
   T('chilla-chaas', 'breakfast', 'veg', 1, [{ id: 'besan-chilla', amount: 2 }, { id: 'chaas' }]),
   T('oats-banana', 'breakfast', 'veg', 1, [{ id: 'oats-milk' }, { id: 'banana' }]),
   T('idli-sambar', 'breakfast', 'veg', 1, [carb('idli', 3), { id: 'sambar' }]),
-  T('moong-chilla-curd', 'breakfast', 'veg', 1, [{ id: 'moong-chilla', amount: 2 }, { id: 'curd' }]),
-  T('paneer-paratha-curd', 'breakfast', 'veg', 2, [{ id: 'paneer-paratha', amount: 1 }, { id: 'curd' }]),
+  T('moong-chilla-curd', 'breakfast', 'veg', 1, [
+    { id: 'moong-chilla', amount: 2 },
+    { id: 'curd' },
+  ]),
+  T('paneer-paratha-curd', 'breakfast', 'veg', 2, [
+    { id: 'paneer-paratha', amount: 1 },
+    { id: 'curd' },
+  ]),
   T('upma-milk', 'breakfast', 'veg', 1, [{ id: 'upma' }, { id: 'milk' }]),
-  T('omelette-toast', 'breakfast', 'egg', 1, [{ id: 'omelette' }, carb('bread-slice', 2), { id: 'milk' }]),
+  T('omelette-toast', 'breakfast', 'egg', 1, [
+    { id: 'omelette' },
+    carb('bread-slice', 2),
+    { id: 'milk' },
+  ]),
   T('bhurji-phulka', 'breakfast', 'egg', 1, [{ id: 'egg-bhurji' }, carb('phulka', 2)]),
-  T('eggs-banana-milk', 'breakfast', 'egg', 1, [{ id: 'boiled-egg', amount: 3 }, { id: 'banana' }, { id: 'milk' }]),
+  T('eggs-banana-milk', 'breakfast', 'egg', 1, [
+    { id: 'boiled-egg', amount: 3 },
+    { id: 'banana' },
+    { id: 'milk' },
+  ]),
 
-  T('roti-dal-sabzi', 'lunch', 'veg', 1, [carb('phulka', 3), { id: 'dal-tadka' }, { id: 'mix-veg' }, { id: 'curd' }]),
+  T('roti-dal-sabzi', 'lunch', 'veg', 1, [
+    carb('phulka', 3),
+    { id: 'dal-tadka' },
+    { id: 'mix-veg' },
+    { id: 'curd' },
+  ]),
   T('rajma-rice', 'lunch', 'veg', 1, [carb('rice', 1.5), { id: 'rajma' }, { id: 'green-salad' }]),
   T('chole-roti', 'lunch', 'veg', 1, [carb('phulka', 3), { id: 'chole' }, { id: 'curd' }]),
-  T('khichdi-curd', 'lunch', 'veg', 1, [carb('khichdi', 1.5), { id: 'curd' }, { id: 'green-salad' }]),
-  T('sambar-rice', 'lunch', 'veg', 1, [carb('rice', 1.5), { id: 'sambar' }, { id: 'beans-poriyal' }, { id: 'curd' }]),
-  T('palak-paneer-roti', 'lunch', 'veg', 2, [carb('phulka', 3), { id: 'palak-paneer' }, { id: 'green-salad' }]),
+  T('khichdi-curd', 'lunch', 'veg', 1, [
+    carb('khichdi', 1.5),
+    { id: 'curd' },
+    { id: 'green-salad' },
+  ]),
+  T('sambar-rice', 'lunch', 'veg', 1, [
+    carb('rice', 1.5),
+    { id: 'sambar' },
+    { id: 'beans-poriyal' },
+    { id: 'curd' },
+  ]),
+  T('palak-paneer-roti', 'lunch', 'veg', 2, [
+    carb('phulka', 3),
+    { id: 'palak-paneer' },
+    { id: 'green-salad' },
+  ]),
   T('soya-roti', 'lunch', 'veg', 1, [carb('phulka', 3), { id: 'soya-curry' }, { id: 'curd' }]),
-  T('egg-curry-roti', 'lunch', 'egg', 1, [carb('phulka', 3), { id: 'egg-curry' }, { id: 'green-salad' }]),
-  T('chicken-rice', 'lunch', 'nonveg', 2, [carb('rice', 1.5), { id: 'chicken-curry' }, { id: 'green-salad' }]),
-  T('chicken-roti', 'lunch', 'nonveg', 2, [carb('phulka', 3), { id: 'chicken-curry' }, { id: 'curd' }]),
-  T('fish-rice', 'lunch', 'nonveg', 3, [carb('rice', 1.5), { id: 'fish-curry' }, { id: 'green-salad' }]),
+  T('egg-curry-roti', 'lunch', 'egg', 1, [
+    carb('phulka', 3),
+    { id: 'egg-curry' },
+    { id: 'green-salad' },
+  ]),
+  T('chicken-rice', 'lunch', 'nonveg', 2, [
+    carb('rice', 1.5),
+    { id: 'chicken-curry' },
+    { id: 'green-salad' },
+  ]),
+  T('chicken-roti', 'lunch', 'nonveg', 2, [
+    carb('phulka', 3),
+    { id: 'chicken-curry' },
+    { id: 'curd' },
+  ]),
+  T('fish-rice', 'lunch', 'nonveg', 3, [
+    carb('rice', 1.5),
+    { id: 'fish-curry' },
+    { id: 'green-salad' },
+  ]),
 
   T('moong-bhindi', 'dinner', 'veg', 1, [carb('phulka', 3), { id: 'moong-dal' }, { id: 'bhindi' }]),
-  T('paneer-bhurji-roti', 'dinner', 'veg', 2, [carb('phulka', 3), { id: 'paneer-bhurji' }, { id: 'green-salad' }]),
-  T('dal-aloo-gobhi', 'dinner', 'veg', 1, [carb('rice', 1), { id: 'dal-fry' }, { id: 'aloo-gobhi' }]),
+  T('paneer-bhurji-roti', 'dinner', 'veg', 2, [
+    carb('phulka', 3),
+    { id: 'paneer-bhurji' },
+    { id: 'green-salad' },
+  ]),
+  T('dal-aloo-gobhi', 'dinner', 'veg', 1, [
+    carb('rice', 1),
+    { id: 'dal-fry' },
+    { id: 'aloo-gobhi' },
+  ]),
   T('masoor-lauki', 'dinner', 'veg', 1, [carb('phulka', 3), { id: 'masoor-dal' }, { id: 'lauki' }]),
-  T('kadai-paneer-roti', 'dinner', 'veg', 2, [carb('phulka', 3), { id: 'kadai-paneer' }, { id: 'green-salad' }]),
-  T('chana-dal-cabbage', 'dinner', 'veg', 1, [carb('phulka', 3), { id: 'chana-dal' }, { id: 'cabbage-sabzi' }]),
-  T('egg-bhurji-dal', 'dinner', 'egg', 1, [carb('phulka', 3), { id: 'egg-bhurji' }, { id: 'dal-tadka' }]),
-  T('grilled-chicken-roti', 'dinner', 'nonveg', 2, [carb('phulka', 3), { id: 'chicken-plain' }, { id: 'green-salad' }]),
-  T('chicken-dal', 'dinner', 'nonveg', 2, [carb('phulka', 2), { id: 'chicken-curry' }, { id: 'moong-dal' }]),
+  T('kadai-paneer-roti', 'dinner', 'veg', 2, [
+    carb('phulka', 3),
+    { id: 'kadai-paneer' },
+    { id: 'green-salad' },
+  ]),
+  T('chana-dal-cabbage', 'dinner', 'veg', 1, [
+    carb('phulka', 3),
+    { id: 'chana-dal' },
+    { id: 'cabbage-sabzi' },
+  ]),
+  T('egg-bhurji-dal', 'dinner', 'egg', 1, [
+    carb('phulka', 3),
+    { id: 'egg-bhurji' },
+    { id: 'dal-tadka' },
+  ]),
+  T('grilled-chicken-roti', 'dinner', 'nonveg', 2, [
+    carb('phulka', 3),
+    { id: 'chicken-plain' },
+    { id: 'green-salad' },
+  ]),
+  T('chicken-dal', 'dinner', 'nonveg', 2, [
+    carb('phulka', 2),
+    { id: 'chicken-curry' },
+    { id: 'moong-dal' },
+  ]),
 
   // Without onion, garlic or roots, so a Jain week has as much choice as any other.
   T('idli-curd', 'breakfast', 'veg', 1, [carb('idli', 3), { id: 'curd' }]),
   T('dhokla-chaas', 'breakfast', 'veg', 1, [carb('dhokla', 3), { id: 'chaas' }]),
   T('thepla-curd', 'breakfast', 'veg', 1, [carb('thepla', 2), { id: 'curd' }]),
   T('pongal-milk', 'breakfast', 'veg', 1, [{ id: 'pongal' }, { id: 'milk' }]),
-  T('moong-lauki-roti', 'lunch', 'veg', 1, [carb('phulka', 3), { id: 'moong-dal' }, { id: 'lauki' }, { id: 'curd' }]),
-  T('moong-cabbage-rice', 'lunch', 'veg', 1, [carb('rice', 1.5), { id: 'moong-dal' }, { id: 'cabbage-sabzi' }, { id: 'curd' }]),
-  T('chana-kaddu-roti', 'lunch', 'veg', 1, [carb('phulka', 3), { id: 'kala-chana-boiled' }, { id: 'kaddu' }, { id: 'chaas' }]),
-  T('rajma-plain-rice', 'lunch', 'veg', 1, [carb('jeera-rice', 1.5), { id: 'rajma-boiled' }, { id: 'curd' }]),
+  T('moong-lauki-roti', 'lunch', 'veg', 1, [
+    carb('phulka', 3),
+    { id: 'moong-dal' },
+    { id: 'lauki' },
+    { id: 'curd' },
+  ]),
+  T('moong-cabbage-rice', 'lunch', 'veg', 1, [
+    carb('rice', 1.5),
+    { id: 'moong-dal' },
+    { id: 'cabbage-sabzi' },
+    { id: 'curd' },
+  ]),
+  T('chana-kaddu-roti', 'lunch', 'veg', 1, [
+    carb('phulka', 3),
+    { id: 'kala-chana-boiled' },
+    { id: 'kaddu' },
+    { id: 'chaas' },
+  ]),
+  T('rajma-plain-rice', 'lunch', 'veg', 1, [
+    carb('jeera-rice', 1.5),
+    { id: 'rajma-boiled' },
+    { id: 'curd' },
+  ]),
   T('khichdi-chaas', 'dinner', 'veg', 1, [carb('khichdi', 1.5), { id: 'curd' }]),
-  T('paneer-beans-roti', 'dinner', 'veg', 2, [carb('phulka', 3), { id: 'paneer', amount: 100 }, { id: 'beans-poriyal' }]),
-  T('soya-lauki-roti', 'dinner', 'veg', 1, [carb('phulka', 3), { id: 'soya-chunks-boiled' }, { id: 'lauki' }]),
-  T('moong-kaddu-rice', 'dinner', 'veg', 1, [carb('rice', 1), { id: 'moong-dal' }, { id: 'kaddu' }]),
+  T('paneer-beans-roti', 'dinner', 'veg', 2, [
+    carb('phulka', 3),
+    { id: 'paneer', amount: 100 },
+    { id: 'beans-poriyal' },
+  ]),
+  T('soya-lauki-roti', 'dinner', 'veg', 1, [
+    carb('phulka', 3),
+    { id: 'soya-chunks-boiled' },
+    { id: 'lauki' },
+  ]),
+  T('moong-kaddu-rice', 'dinner', 'veg', 1, [
+    carb('rice', 1),
+    { id: 'moong-dal' },
+    { id: 'kaddu' },
+  ]),
 
   T('chana', 'snacks', 'veg', 1, [{ id: 'roasted-chana' }]),
   T('sprouts', 'snacks', 'veg', 1, [{ id: 'sprouts-chaat' }]),
@@ -404,31 +617,133 @@ const KITCHEN: Template[] = [
   T('mess-paratha', 'breakfast', 'veg', 1, [carb('aloo-paratha', 2), { id: 'curd' }], true),
   T('mess-idli', 'breakfast', 'veg', 1, [carb('idli', 3), { id: 'sambar' }], true),
   T('mess-upma', 'breakfast', 'veg', 1, [{ id: 'upma' }, { id: 'masala-chai' }], true),
-  T('mess-dal-sabzi', 'lunch', 'veg', 1, [carb('phulka', 3), carb('rice', 1), { id: 'dal-tadka' }, { id: 'mix-veg' }], true),
-  T('mess-rajma', 'lunch', 'veg', 1, [carb('phulka', 2), carb('rice', 1), { id: 'rajma' }, { id: 'aloo-sabzi' }], true),
-  T('mess-chole', 'lunch', 'veg', 1, [carb('phulka', 3), carb('rice', 1), { id: 'chole' }, { id: 'cabbage-sabzi' }], true),
-  T('mess-kadhi', 'lunch', 'veg', 1, [carb('phulka', 2), carb('rice', 1), { id: 'kadhi' }, { id: 'aloo-gobhi' }], true),
+  T(
+    'mess-dal-sabzi',
+    'lunch',
+    'veg',
+    1,
+    [carb('phulka', 3), carb('rice', 1), { id: 'dal-tadka' }, { id: 'mix-veg' }],
+    true,
+  ),
+  T(
+    'mess-rajma',
+    'lunch',
+    'veg',
+    1,
+    [carb('phulka', 2), carb('rice', 1), { id: 'rajma' }, { id: 'aloo-sabzi' }],
+    true,
+  ),
+  T(
+    'mess-chole',
+    'lunch',
+    'veg',
+    1,
+    [carb('phulka', 3), carb('rice', 1), { id: 'chole' }, { id: 'cabbage-sabzi' }],
+    true,
+  ),
+  T(
+    'mess-kadhi',
+    'lunch',
+    'veg',
+    1,
+    [carb('phulka', 2), carb('rice', 1), { id: 'kadhi' }, { id: 'aloo-gobhi' }],
+    true,
+  ),
   T('mess-idli-curd', 'breakfast', 'veg', 1, [carb('idli', 3), { id: 'curd' }], true),
   T('mess-thepla', 'breakfast', 'veg', 1, [carb('thepla', 2), { id: 'curd' }], true),
   T('mess-pongal', 'breakfast', 'veg', 1, [{ id: 'pongal' }, { id: 'milk' }], true),
-  T('mess-moong-lauki', 'lunch', 'veg', 1, [carb('phulka', 3), carb('rice', 1), { id: 'moong-dal' }, { id: 'lauki' }], true),
-  T('mess-moong-cabbage', 'lunch', 'veg', 1, [carb('phulka', 2), carb('rice', 1), { id: 'moong-dal' }, { id: 'cabbage-sabzi' }], true),
-  T('mess-chana-kaddu', 'lunch', 'veg', 1, [carb('phulka', 3), carb('rice', 1), { id: 'kala-chana-boiled' }, { id: 'kaddu' }], true),
+  T(
+    'mess-moong-lauki',
+    'lunch',
+    'veg',
+    1,
+    [carb('phulka', 3), carb('rice', 1), { id: 'moong-dal' }, { id: 'lauki' }],
+    true,
+  ),
+  T(
+    'mess-moong-cabbage',
+    'lunch',
+    'veg',
+    1,
+    [carb('phulka', 2), carb('rice', 1), { id: 'moong-dal' }, { id: 'cabbage-sabzi' }],
+    true,
+  ),
+  T(
+    'mess-chana-kaddu',
+    'lunch',
+    'veg',
+    1,
+    [carb('phulka', 3), carb('rice', 1), { id: 'kala-chana-boiled' }, { id: 'kaddu' }],
+    true,
+  ),
   T('mess-dinner-khichdi', 'dinner', 'veg', 1, [carb('khichdi', 1.5), { id: 'curd' }], true),
-  T('mess-dinner-moong-beans', 'dinner', 'veg', 1, [carb('phulka', 3), { id: 'moong-dal' }, { id: 'beans-poriyal' }], true),
-  T('mess-dinner-lauki', 'dinner', 'veg', 1, [carb('phulka', 3), { id: 'moong-dal' }, { id: 'lauki' }], true),
-  T('mess-dinner-dal', 'dinner', 'veg', 1, [carb('phulka', 3), { id: 'dal-fry' }, { id: 'aloo-matar' }], true),
-  T('mess-dinner-moong', 'dinner', 'veg', 1, [carb('phulka', 3), { id: 'moong-dal' }, { id: 'bhindi' }], true),
-  T('mess-dinner-paneer', 'dinner', 'veg', 1, [carb('phulka', 3), { id: 'matar-paneer' }, { id: 'dal-tadka' }], true),
-  T('mess-dinner-egg', 'dinner', 'egg', 1, [carb('phulka', 3), { id: 'egg-curry' }, { id: 'dal-tadka' }], true),
-  T('mess-dinner-chicken', 'dinner', 'nonveg', 1, [carb('phulka', 3), { id: 'chicken-curry' }, { id: 'dal-tadka' }], true),
+  T(
+    'mess-dinner-moong-beans',
+    'dinner',
+    'veg',
+    1,
+    [carb('phulka', 3), { id: 'moong-dal' }, { id: 'beans-poriyal' }],
+    true,
+  ),
+  T(
+    'mess-dinner-lauki',
+    'dinner',
+    'veg',
+    1,
+    [carb('phulka', 3), { id: 'moong-dal' }, { id: 'lauki' }],
+    true,
+  ),
+  T(
+    'mess-dinner-dal',
+    'dinner',
+    'veg',
+    1,
+    [carb('phulka', 3), { id: 'dal-fry' }, { id: 'aloo-matar' }],
+    true,
+  ),
+  T(
+    'mess-dinner-moong',
+    'dinner',
+    'veg',
+    1,
+    [carb('phulka', 3), { id: 'moong-dal' }, { id: 'bhindi' }],
+    true,
+  ),
+  T(
+    'mess-dinner-paneer',
+    'dinner',
+    'veg',
+    1,
+    [carb('phulka', 3), { id: 'matar-paneer' }, { id: 'dal-tadka' }],
+    true,
+  ),
+  T(
+    'mess-dinner-egg',
+    'dinner',
+    'egg',
+    1,
+    [carb('phulka', 3), { id: 'egg-curry' }, { id: 'dal-tadka' }],
+    true,
+  ),
+  T(
+    'mess-dinner-chicken',
+    'dinner',
+    'nonveg',
+    1,
+    [carb('phulka', 3), { id: 'chicken-curry' }, { id: 'dal-tadka' }],
+    true,
+  ),
 ];
 
 /** Snacks kept in a room, for people who do not cook. */
 const ROOM: Template[] = HOME.filter((t) => t.meal === 'snacks' && t.key !== 'sprouts');
 
 export const TEMPLATE_FOOD_IDS = [
-  ...new Set([...HOME, ...KITCHEN].flatMap((t) => t.lines.map((l) => l.id)).concat(ADD_ONS, ...Object.values(POOL))),
+  ...new Set(
+    [...HOME, ...KITCHEN]
+      .flatMap((t) => t.lines.map((l) => l.id))
+      .concat(ADD_ONS, ...Object.values(POOL)),
+  ),
 ];
 
 export interface PlanMeal {
@@ -491,7 +806,14 @@ function stepOf(food: Food): { step: number; min: number; max: number } {
 }
 
 /** The dish of a meal that carries its protein: it can be served larger. */
-const MAIN_CATEGORIES = new Set<Food['category']>(['dal', 'paneer', 'chicken', 'egg', 'fish', 'meat']);
+const MAIN_CATEGORIES = new Set<Food['category']>([
+  'dal',
+  'paneer',
+  'chicken',
+  'egg',
+  'fish',
+  'meat',
+]);
 /** Where a protein add-on is eaten, so no meal is stuffed with all of them. */
 const ADD_ON_MEAL: Record<string, Meal> = {
   milk: 'breakfast',
@@ -536,7 +858,9 @@ export function planWeek(input: PlanInput): MealPlan {
     .filter((f): f is Food => !!f && fitsDiet(f, input.diet) && costOf(f) <= maxCost)
     .map((f) => usual(f, input.katoriMl))
     .filter((p): p is Portion => !!p && p.nutrients.proteinG >= 5)
-    .sort((a, b) => b.nutrients.proteinG / b.nutrients.kcal - a.nutrients.proteinG / a.nutrients.kcal);
+    .sort(
+      (a, b) => b.nutrients.proteinG / b.nutrients.kcal - a.nutrients.proteinG / a.nutrients.kcal,
+    );
 
   let proteinShort = false;
   const days: PlanDay[] = [];
@@ -554,18 +878,25 @@ export function planWeek(input: PlanInput): MealPlan {
       ['snacks', pick('snacks', snacks, 2)],
       ['dinner', pick('dinner', mains, 3)],
     ];
-    const meals: (PlanMeal & { scalable: { i: number; food: Food }[] })[] = chosen.map(([meal, t]) => {
-      const items: Portion[] = [];
-      const scalable: { i: number; food: Food }[] = [];
-      for (const line of t?.lines ?? []) {
-        const food = foods.get(line.id)!;
-        const p = portionOf(food, line.amount ?? food.defaultAmount, food.units[0], input.katoriMl);
-        if (!p) continue;
-        if (line.scale === 'carb') scalable.push({ i: items.length, food });
-        items.push(p);
-      }
-      return { meal, kitchen: !!t?.kitchen, items, scalable };
-    });
+    const meals: (PlanMeal & { scalable: { i: number; food: Food }[] })[] = chosen.map(
+      ([meal, t]) => {
+        const items: Portion[] = [];
+        const scalable: { i: number; food: Food }[] = [];
+        for (const line of t?.lines ?? []) {
+          const food = foods.get(line.id)!;
+          const p = portionOf(
+            food,
+            line.amount ?? food.defaultAmount,
+            food.units[0],
+            input.katoriMl,
+          );
+          if (!p) continue;
+          if (line.scale === 'carb') scalable.push({ i: items.length, food });
+          items.push(p);
+        }
+        return { meal, kitchen: !!t?.kitchen, items, scalable };
+      },
+    );
     const total = () => sum(meals.flatMap((m) => m.items));
     const setAmount = (m: (typeof meals)[number], i: number, food: Food, amount: number) => {
       const p = portionOf(food, amount, food.units[0], input.katoriMl);
@@ -603,7 +934,9 @@ export function planWeek(input: PlanInput): MealPlan {
       if (Math.abs(gap) <= targets.kcal * 0.03) break;
       const up = gap > 0;
       let moved = false;
-      const order = [...meals].sort((a, b) => (up ? 1 : -1) * (sum(a.items).kcal - sum(b.items).kcal));
+      const order = [...meals].sort(
+        (a, b) => (up ? 1 : -1) * (sum(a.items).kcal - sum(b.items).kcal),
+      );
       for (const m of order) {
         for (const sc of m.scalable) {
           const { step, min, max } = stepOf(sc.food);
@@ -627,7 +960,11 @@ export function planWeek(input: PlanInput): MealPlan {
       let moved = false;
       for (const m of [...meals].sort((a, b) => sum(b.items).kcal - sum(a.items).kcal)) {
         const i = m.items.findIndex(
-          (p, k) => !m.scalable.some((sc) => sc.i === k) && p.amount - stepOf(p.food).step >= stepOf(p.food).min && p.nutrients.kcal > 60 && !MAIN_CATEGORIES.has(p.food.category),
+          (p, k) =>
+            !m.scalable.some((sc) => sc.i === k) &&
+            p.amount - stepOf(p.food).step >= stepOf(p.food).min &&
+            p.nutrients.kcal > 60 &&
+            !MAIN_CATEGORIES.has(p.food.category),
         );
         if (i < 0) continue;
         const p = m.items[i]!;
@@ -642,10 +979,16 @@ export function planWeek(input: PlanInput): MealPlan {
       const options = meals.flatMap((m) =>
         m.items
           .map((p, k) => ({ m, k, p }))
-          .filter(({ m: meal, k, p }) => meal.items.length > 1 && !meal.scalable.some((sc) => sc.i === k) && !MAIN_CATEGORIES.has(p.food.category)),
+          .filter(
+            ({ m: meal, k, p }) =>
+              meal.items.length > 1 &&
+              !meal.scalable.some((sc) => sc.i === k) &&
+              !MAIN_CATEGORIES.has(p.food.category),
+          ),
       );
       const drop = options.sort(
-        (a, b) => a.p.nutrients.proteinG / a.p.nutrients.kcal - b.p.nutrients.proteinG / b.p.nutrients.kcal,
+        (a, b) =>
+          a.p.nutrients.proteinG / a.p.nutrients.kcal - b.p.nutrients.proteinG / b.p.nutrients.kcal,
       )[0];
       if (!drop) break;
       drop.m.items.splice(drop.k, 1);
@@ -657,7 +1000,11 @@ export function planWeek(input: PlanInput): MealPlan {
       const food = foods.get(id);
       const p = food && fitsDiet(food, input.diet) ? usual(food, input.katoriMl) : null;
       const m = meals.find((x) => x.meal === (ADD_ON_MEAL[id] ?? 'snacks'))!;
-      if (p && !meals.some((x) => x.items.some((y) => y.food.id === id)) && total().kcal + p.nutrients.kcal <= targets.kcal * 1.04)
+      if (
+        p &&
+        !meals.some((x) => x.items.some((y) => y.food.id === id)) &&
+        total().kcal + p.nutrients.kcal <= targets.kcal * 1.04
+      )
         m.items.push(p);
     }
     for (let guard = 0; guard < 16 && targets.kcal - total().kcal > targets.kcal * 0.04; guard++) {
@@ -713,7 +1060,10 @@ export function groceryList(days: PlanDay[], setting: Setting): GroceryItem[] {
       addCount('Eggs', g / 50, 'eggs');
       return;
     }
-    const clean = name.replace(/\s*\(.*?\)/g, '').replace(/,.*$/, '').trim();
+    const clean = name
+      .replace(/\s*\(.*?\)/g, '')
+      .replace(/,.*$/, '')
+      .trim();
     const cur = grams.get(key) ?? { name: clean, g: 0 };
     cur.g += g;
     grams.set(key, cur);
@@ -729,7 +1079,8 @@ export function groceryList(days: PlanDay[], setting: Setting): GroceryItem[] {
       for (const p of meal.items) {
         const recipe = p.food.recipe;
         if (recipe && recipe.cookedG > 0 && recipe.lines.length > 0) {
-          for (const line of recipe.lines) addGrams(line.name, (line.grams * p.grams) / recipe.cookedG);
+          for (const line of recipe.lines)
+            addGrams(line.name, (line.grams * p.grams) / recipe.cookedG);
         } else if (keyOf(p.food.name) === 'egg') {
           addCount('Eggs', p.unit === 'piece' ? p.amount : p.grams / 50, 'eggs');
         } else if (p.food.pieceG && p.food.pieceName && p.unit === 'piece') {

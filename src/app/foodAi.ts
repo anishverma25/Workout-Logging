@@ -1,3 +1,4 @@
+import { getFlags, PAUSED } from './flags';
 import { supabase } from '@/data/sync/supabase';
 import type { Food } from '@/domain/nutrition/calc';
 import type { DietType } from '@/domain/nutrition/types';
@@ -31,6 +32,11 @@ export class FoodAiError extends Error {
 async function invoke(body: Record<string, unknown>): Promise<Record<string, unknown>> {
   if (!supabase)
     throw new FoodAiError('Accounts are not set up in this version of the app.', 'off');
+  const f = getFlags();
+  const photo =
+    body.kind === 'food_photo' || body.kind === 'food_label' || body.kind === 'food_menu';
+  if (body.kind !== 'warm' && !(photo ? f.ai_photo : f.ai_food))
+    throw new FoodAiError(PAUSED, 'paused');
   const { data, error } = await supabase.functions.invoke('coach', { body });
   if (error) {
     let message = 'Macrotrophy AI could not be reached. Check your connection and try again.';

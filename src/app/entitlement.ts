@@ -154,6 +154,11 @@ export interface EntitlementView extends Entitlement {
   loading: boolean;
   /** Showing the last known answer because the server could not be reached. */
   offline: boolean;
+  /**
+   * Signed in, nothing saved from before, and the server could not be reached: the plan is not
+   * known. Screens show a neutral state, never "ended" or a Pro reminder.
+   */
+  unknown: boolean;
   /** The server's time, as best known. Use this for countdowns. */
   now: Date;
 }
@@ -169,6 +174,7 @@ export function useEntitlement(): EntitlementView {
     ...entitlement,
     loading: s.loading && !s.snapshot,
     offline: s.source === 'cache' && !!s.error,
+    unknown: !override && !!s.userId && !s.snapshot && !s.loading && !!s.error,
     now,
   };
 }

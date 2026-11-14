@@ -18,7 +18,8 @@ export const SHAPES: Record<BadgeShape, string> = {
   medals: 'M50 3 L61 30 L91 32 L68 51 L76 81 L50 65 L24 81 L32 51 L9 32 L39 30 Z',
   round: 'M50 3 A47 47 0 1 1 49.9 3 Z',
   bodyweight: 'M50 3 L88 16 L88 50 C88 73 71 89 50 97 C29 89 12 73 12 50 L12 16 Z',
-  habits: 'M28 6 H72 C85 6 94 15 94 28 V72 C94 85 85 94 72 94 H28 C15 94 6 85 6 72 V28 C6 15 15 6 28 6 Z',
+  habits:
+    'M28 6 H72 C85 6 94 15 94 28 V72 C94 85 85 94 72 94 H28 C15 94 6 85 6 72 V28 C6 15 15 6 28 6 Z',
 };
 
 /** A small mark above the number, per family (stars carry none: no room). */
@@ -64,7 +65,10 @@ export function badgeShape(b: Pick<Badge, 'group' | 'id'>): BadgeShape {
 export function stampLayout(shape: BadgeShape, big: string, small: string) {
   const f = FIT[shape];
   const word = shape === 'medals' ? '' : small;
-  const bigSize = Math.min(shape === 'medals' ? 21 : 28, f.w / (Math.max(1, [...big].length) * 0.62));
+  const bigSize = Math.min(
+    shape === 'medals' ? 21 : 28,
+    f.w / (Math.max(1, [...big].length) * 0.62),
+  );
   const smallSize = Math.min(7.6, (f.w * 1.15) / (Math.max(1, word.length) * 0.56));
   const bigY = f.cy + bigSize * 0.36 - (word ? 3 : 0);
   const smallY = f.cy + bigSize * 0.36 + smallSize + 0.5;
@@ -97,7 +101,12 @@ export function BadgeMedallion({
   const plates = earned && shape === 'round';
 
   return (
-    <svg viewBox="0 0 100 100" className={cn('shrink-0 overflow-visible', className)} aria-hidden data-badge-shape={shape}>
+    <svg
+      viewBox="0 0 100 100"
+      className={cn('shrink-0 overflow-visible', className)}
+      aria-hidden
+      data-badge-shape={shape}
+    >
       <defs>
         <linearGradient id={`m${id}`} x1="0" y1="0" x2="1" y2="1">
           {holo ? (
@@ -144,7 +153,14 @@ export function BadgeMedallion({
       ) : null}
 
       <g transform={earned ? undefined : 'translate(50 50) scale(0.8) translate(-50 -50)'}>
-        {earned ? <path d={outline} fill={`var(--tier-${tier}-b)`} opacity="0.35" transform="translate(0 3)" /> : null}
+        {earned ? (
+          <path
+            d={outline}
+            fill={`var(--tier-${tier}-b)`}
+            opacity="0.35"
+            transform="translate(0 3)"
+          />
+        ) : null}
         <path
           d={outline}
           fill={earned ? `url(#m${id})` : 'var(--fill)'}
@@ -156,7 +172,15 @@ export function BadgeMedallion({
         {earned ? <path d={outline} fill={`url(#h${id})`} /> : null}
         {plates ? (
           <g fill={`var(--tier-${tier}-ink)`} fillOpacity="0.35">
-            <circle cx="50" cy="50" r="36" fill="none" stroke={`var(--tier-${tier}-ink)`} strokeOpacity="0.28" strokeWidth="2" />
+            <circle
+              cx="50"
+              cy="50"
+              r="36"
+              fill="none"
+              stroke={`var(--tier-${tier}-ink)`}
+              strokeOpacity="0.28"
+              strokeWidth="2"
+            />
             <circle cx="91" cy="50" r="2.4" />
             <circle cx="50" cy="91" r="2.4" />
             <circle cx="9" cy="50" r="2.4" />
@@ -165,7 +189,15 @@ export function BadgeMedallion({
         ) : null}
         {shine ? (
           <g clipPath={`url(#c${id})`}>
-            <rect className="badge-sheen" x="20" y="-20" width="16" height="140" fill="var(--text-1)" opacity="0.45" />
+            <rect
+              className="badge-sheen"
+              x="20"
+              y="-20"
+              width="16"
+              height="140"
+              fill="var(--text-1)"
+              opacity="0.45"
+            />
           </g>
         ) : null}
         {GLYPH[shape] ? (

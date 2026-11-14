@@ -423,7 +423,11 @@ export function fromServerRow(spec: TableSpec, row: ServerRow): Record<string, u
     // `date` columns stay plain YYYY-MM-DD strings.
     if (
       typeof value === 'string' &&
-      (f === 'birthDate' || f === 'targetDate' || f === 'date' || f === 'startDate' || f === 'endDate')
+      (f === 'birthDate' ||
+        f === 'targetDate' ||
+        f === 'date' ||
+        f === 'startDate' ||
+        f === 'endDate')
     )
       value = value.slice(0, 10);
     if (value !== null && NUMERIC_FIELDS.has(f)) value = Number(value);

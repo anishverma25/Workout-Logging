@@ -31,6 +31,20 @@ export function ProLock({
       : { to: '/pro', label: 'Try Pro free' }
     : { to: '/pro', label: entitlement.trialEnded ? 'See Pro' : 'See your plan' };
 
+  if (!guest && entitlement.unknown)
+    return (
+      <div
+        className={cn('rounded-[var(--radius-card)] bg-surface p-5', className)}
+        data-pro-lock={feature}
+        data-plan-unknown
+      >
+        <p className="type-headline text-text-1">{title}</p>
+        <p className="type-meta mt-1 text-text-2">
+          Your plan could not be checked right now. Connect to the internet and it will open.
+        </p>
+      </div>
+    );
+
   return (
     <div
       className={cn(

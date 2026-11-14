@@ -147,6 +147,16 @@ const EQUIPMENT: { value: GymAccess; label: string; detail: string; icon: Lucide
   },
 ];
 
+/** The goal as people say it, for the building screen. */
+const GOAL_WORDS: Record<Goal, string> = {
+  hypertrophy: 'build muscle',
+  strength: 'get stronger',
+  strength_hypertrophy: 'stronger and bigger',
+  fat_loss: 'lose fat',
+  recomposition: 'lose fat, keep muscle',
+  general_fitness: 'get fit',
+};
+
 const DIETS: { value: DietType; label: string; detail: string; icon: LucideIcon }[] = [
   { value: 'veg', label: DIET_LABEL.veg.title, detail: DIET_LABEL.veg.description, icon: Leaf },
   { value: 'egg', label: DIET_LABEL.egg.title, detail: DIET_LABEL.egg.description, icon: Egg },
@@ -344,7 +354,7 @@ function SetupFlow({
       ? Math.round((energy.proteinG[0] + energy.proteinG[1]) / 2)
       : null;
   const buildingLines = [
-    `Reading your goal: ${GOAL_LABEL[goal].toLowerCase()}`,
+    `Reading your goal: ${GOAL_WORDS[goal]}`,
     draft.trainingDays
       ? `Fitting ${draft.trainingDays} days a week, ${draft.sessionMinutes ?? DEFAULT_SESSION} minutes each`
       : 'Fitting your week',

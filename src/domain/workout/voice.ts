@@ -20,35 +20,167 @@ export interface SpokenSet {
 export type Spoken = SpokenSet | { kind: 'same' };
 
 const ONES: Record<string, number> = {
-  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
-  ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16,
-  seventeen: 17, eighteen: 18, nineteen: 19,
+  zero: 0,
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  eleven: 11,
+  twelve: 12,
+  thirteen: 13,
+  fourteen: 14,
+  fifteen: 15,
+  sixteen: 16,
+  seventeen: 17,
+  eighteen: 18,
+  nineteen: 19,
   // How a phone often writes a spoken number.
-  ate: 8, won: 1,
+  ate: 8,
+  won: 1,
   // Hindi, as people say it in the gym.
-  ek: 1, do: 2, teen: 3, tin: 3, char: 4, chaar: 4, paanch: 5, panch: 5, che: 6, chhe: 6, chhah: 6,
-  saat: 7, sat: 7, aath: 8, aat: 8, nau: 9, das: 10, dus: 10, gyarah: 11, gyara: 11, barah: 12,
-  bara: 12, terah: 13, chaudah: 14, pandrah: 15, solah: 16, satrah: 17, atharah: 18, unnis: 19,
+  ek: 1,
+  do: 2,
+  teen: 3,
+  tin: 3,
+  char: 4,
+  chaar: 4,
+  paanch: 5,
+  panch: 5,
+  che: 6,
+  chhe: 6,
+  chhah: 6,
+  saat: 7,
+  sat: 7,
+  aath: 8,
+  aat: 8,
+  nau: 9,
+  das: 10,
+  dus: 10,
+  gyarah: 11,
+  gyara: 11,
+  barah: 12,
+  bara: 12,
+  terah: 13,
+  chaudah: 14,
+  pandrah: 15,
+  solah: 16,
+  satrah: 17,
+  atharah: 18,
+  unnis: 19,
 };
 const TENS: Record<string, number> = {
-  twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
-  bees: 20, bis: 20, tees: 30, tis: 30, chalis: 40, chaalis: 40, pachas: 50, pachaas: 50,
-  saath: 60, sattar: 70, assi: 80, nabbe: 90,
+  twenty: 20,
+  thirty: 30,
+  forty: 40,
+  fifty: 50,
+  sixty: 60,
+  seventy: 70,
+  eighty: 80,
+  ninety: 90,
+  bees: 20,
+  bis: 20,
+  tees: 30,
+  tis: 30,
+  chalis: 40,
+  chaalis: 40,
+  pachas: 50,
+  pachaas: 50,
+  saath: 60,
+  sattar: 70,
+  assi: 80,
+  nabbe: 90,
 };
 /** Hindi numbers that are a single word: 25, 35, 45 ... and the hundreds people load. */
 const WHOLE: Record<string, number> = {
-  pachees: 25, pachis: 25, paintees: 35, paintis: 35, paintalis: 45, pachpan: 55, painsath: 65,
-  pachattar: 75, pachasi: 85, pachanve: 95, sau: 100, hundred: 100,
+  pachees: 25,
+  pachis: 25,
+  paintees: 35,
+  paintis: 35,
+  paintalis: 45,
+  pachpan: 55,
+  painsath: 65,
+  pachattar: 75,
+  pachasi: 85,
+  pachanve: 95,
+  sau: 100,
+  hundred: 100,
 };
 const UNIT: Record<string, 'kg' | 'lb'> = {
-  kg: 'kg', kgs: 'kg', kilo: 'kg', kilos: 'kg', killo: 'kg', kilogram: 'kg', kilograms: 'kg', kilogramme: 'kg', k: 'kg', kay: 'kg',
-  lb: 'lb', lbs: 'lb', pound: 'lb', pounds: 'lb',
+  kg: 'kg',
+  kgs: 'kg',
+  kilo: 'kg',
+  kilos: 'kg',
+  killo: 'kg',
+  kilogram: 'kg',
+  kilograms: 'kg',
+  kilogramme: 'kg',
+  k: 'kg',
+  kay: 'kg',
+  lb: 'lb',
+  lbs: 'lb',
+  pound: 'lb',
+  pounds: 'lb',
 };
-const REP_WORDS = new Set(['rep', 'reps', 'raps', 'rap', 'wraps', 'repetition', 'repetitions', 'baar', 'bar', 'times']);
+const REP_WORDS = new Set([
+  'rep',
+  'reps',
+  'raps',
+  'rap',
+  'wraps',
+  'repetition',
+  'repetitions',
+  'baar',
+  'bar',
+  'times',
+]);
 /** Words that sit between a weight and its reps: "80 ke 8", "80 into 8", "80 for 8". */
-const JOINERS = new Set(['ke', 'k', 'ka', 'ki', 'kay', 'key', 'into', 'x', 'by', 'for', 'pe', 'par', 'se', 'cross', 'times']);
-const SAME = [/^same( again| set| as (before|last))?$/, /^(wahi|vahi|wohi)( wala| set)?$/, /^phir se$/, /^(again|repeat)$/, /^ek (aur|baar aur)$/];
-const FILLER = new Set(['and', 'aur', 'a', 'the', 'of', 'with', 'at', 'set', 'did', 'done', 'kiya', 'kiye', 'ho', 'gaya', 'hua']);
+const JOINERS = new Set([
+  'ke',
+  'k',
+  'ka',
+  'ki',
+  'kay',
+  'key',
+  'into',
+  'x',
+  'by',
+  'for',
+  'pe',
+  'par',
+  'se',
+  'cross',
+  'times',
+]);
+const SAME = [
+  /^same( again| set| as (before|last))?$/,
+  /^(wahi|vahi|wohi)( wala| set)?$/,
+  /^phir se$/,
+  /^(again|repeat)$/,
+  /^ek (aur|baar aur)$/,
+];
+const FILLER = new Set([
+  'and',
+  'aur',
+  'a',
+  'the',
+  'of',
+  'with',
+  'at',
+  'set',
+  'did',
+  'done',
+  'kiya',
+  'kiye',
+  'ho',
+  'gaya',
+  'hua',
+]);
 
 const clean = (text: string) =>
   text
@@ -141,7 +273,7 @@ export function parseSpokenSet(text: string): Spoken | null {
   if (SAME.some((r) => r.test(said))) return { kind: 'same' };
   const words = said.split(' ');
   const numbers: { value: number; at: number; next: number }[] = [];
-  for (let i = 0; i < words.length; ) {
+  for (let i = 0; i < words.length;) {
     const n = readNumber(words, i);
     if (n) {
       numbers.push({ value: n.value, at: i, next: n.next });
@@ -202,7 +334,10 @@ export function parseSpokenSet(text: string): Spoken | null {
 }
 
 /** The exercise of the workout that the words point at, when exactly one fits. */
-export function matchSpokenExercise<T extends { name: string }>(spoken: string, exercises: T[]): T | null {
+export function matchSpokenExercise<T extends { name: string }>(
+  spoken: string,
+  exercises: T[],
+): T | null {
   const want = clean(spoken).split(' ').filter(Boolean);
   if (want.length === 0) return null;
   const hits = exercises.filter((e) => {

@@ -439,7 +439,6 @@ export const PlanItem = z.object({
 });
 export type PlanItem = z.infer<typeof PlanItem>;
 
-
 /**
  * A food the person added: from a label (per 100 g) or their own recipe, such as the family
  * pot. Recipes keep their ingredients so they can be edited; the per 100 g values are worked

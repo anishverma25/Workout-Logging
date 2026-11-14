@@ -17,7 +17,12 @@ export function DownloadSheet(props: {
   lang: ReportLang;
 }) {
   return (
-    <BottomSheet open={props.open} onClose={props.onClose} title="Download your report" subtitle="A PDF made on your phone">
+    <BottomSheet
+      open={props.open}
+      onClose={props.onClose}
+      title="Download your report"
+      subtitle="A PDF made on your phone"
+    >
       {props.open && props.saved ? <DownloadForm {...props} saved={props.saved} /> : null}
     </BottomSheet>
   );
@@ -39,17 +44,33 @@ async function fontBytes() {
       return res.arrayBuffer();
     }),
   );
-  const [display600, display800, sans400, sans600, mono400, mono500] = bytes as [ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer, ArrayBuffer];
+  const [display600, display800, sans400, sans600, mono400, mono500] = bytes as [
+    ArrayBuffer,
+    ArrayBuffer,
+    ArrayBuffer,
+    ArrayBuffer,
+    ArrayBuffer,
+    ArrayBuffer,
+  ];
   return { display600, display800, sans400, sans600, mono400, mono500 };
 }
 
-function DownloadForm({ saved, number, lang }: { saved: SavedReport; number: number; lang: ReportLang }) {
+function DownloadForm({
+  saved,
+  number,
+  lang,
+}: {
+  saved: SavedReport;
+  number: number;
+  lang: ReportLang;
+}) {
   const [mode, setMode] = useState<ReportMode>('full');
   const [theme, setTheme] = useState<PdfThemeName>('dark');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
-  const canShare = typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
+  const canShare =
+    typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
   const fileName = `macrotrophy-report-${saved.weekStart}${mode === 'quick' ? '-quick' : ''}.pdf`;
 
   async function make(): Promise<File> {
@@ -131,16 +152,33 @@ function DownloadForm({ saved, number, lang }: { saved: SavedReport; number: num
       ) : null}
       <div className="flex flex-col gap-2">
         {canShare ? (
-          <PrimaryButton block icon={<Share aria-hidden />} loading={busy} onClick={() => void run(true)}>
+          <PrimaryButton
+            block
+            icon={<Share aria-hidden />}
+            loading={busy}
+            onClick={() => void run(true)}
+          >
             Share PDF
           </PrimaryButton>
         ) : null}
         {canShare ? (
-          <SecondaryButton block icon={<Download aria-hidden />} disabled={busy} onClick={() => void run(false)} data-report-save-pdf>
+          <SecondaryButton
+            block
+            icon={<Download aria-hidden />}
+            disabled={busy}
+            onClick={() => void run(false)}
+            data-report-save-pdf
+          >
             Save PDF
           </SecondaryButton>
         ) : (
-          <PrimaryButton block icon={<Download aria-hidden />} loading={busy} onClick={() => void run(false)} data-report-save-pdf>
+          <PrimaryButton
+            block
+            icon={<Download aria-hidden />}
+            loading={busy}
+            onClick={() => void run(false)}
+            data-report-save-pdf
+          >
             Save PDF
           </PrimaryButton>
         )}

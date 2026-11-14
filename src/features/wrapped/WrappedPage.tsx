@@ -37,7 +37,11 @@ export function WrappedPage() {
 
   return (
     <>
-      <PageHeader back={{ to: '/', label: 'Home' }} title="Wrapped" subtitle="Your training in numbers" />
+      <PageHeader
+        back={{ to: '/', label: 'Home' }}
+        title="Wrapped"
+        subtitle="Your training in numbers"
+      />
       {training.status === 'loading' ? <Skeleton className="h-96 rounded-panel" /> : null}
       {training.status === 'error' ? <ErrorState /> : null}
       {data && !shown ? (

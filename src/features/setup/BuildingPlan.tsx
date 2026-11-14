@@ -34,7 +34,9 @@ export function BuildingPlan({
   const [done, setDone] = useState(() => (still ? lines.length : 0));
   const finished = done >= lines.length;
   const doneRef = useRef(onDone);
-  doneRef.current = onDone;
+  useEffect(() => {
+    doneRef.current = onDone;
+  }, [onDone]);
 
   useEffect(() => {
     if (finished) {
@@ -58,7 +60,11 @@ export function BuildingPlan({
     >
       <div className="relative size-48">
         <div className="build-glow absolute -inset-10 rounded-full" aria-hidden />
-        <svg viewBox="0 0 160 160" className="relative size-full -rotate-90 overflow-visible" aria-hidden>
+        <svg
+          viewBox="0 0 160 160"
+          className="relative size-full -rotate-90 overflow-visible"
+          aria-hidden
+        >
           <circle cx="80" cy="80" r={R} fill="none" strokeWidth="8" className="build-ring-track" />
           <circle
             cx="80"

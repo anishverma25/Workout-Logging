@@ -29,7 +29,22 @@ import {
   type ReportMode,
 } from '../ReportView';
 import { packPages } from './pack';
-import { box, chart, colorOf, custom, fillRect, grid, row, rule, spacer, text, vstack, type Ctx, type Node, type Run } from './layout';
+import {
+  box,
+  chart,
+  colorOf,
+  custom,
+  fillRect,
+  grid,
+  row,
+  rule,
+  spacer,
+  text,
+  vstack,
+  type Ctx,
+  type Node,
+  type Run,
+} from './layout';
 import type { SvgFonts } from './svg';
 import { PDF_THEMES, type PdfTheme, type PdfThemeName } from './theme';
 
@@ -81,7 +96,8 @@ function cleaner(fonts: PDFFont[]) {
     let out = '';
     for (const ch of s) {
       if (ch === '\n' || set.has(ch.codePointAt(0)!)) out += ch;
-      else if (SWAPS[ch] !== undefined) out += [...SWAPS[ch]!].filter((c) => set.has(c.codePointAt(0)!)).join('');
+      else if (SWAPS[ch] !== undefined)
+        out += [...SWAPS[ch]!].filter((c) => set.has(c.codePointAt(0)!)).join('');
     }
     return out;
   };
@@ -92,14 +108,17 @@ const svgOf = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStatic
 function ringMarkup(value: number, of: number, color: string) {
   const arc = ringArc(40, 40, 30, of > 0 ? value / of : 0);
   return `<svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="30" fill="none" stroke="var(--track)" stroke-width="7"></circle>${
-    arc ? `<path d="${arc}" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"></path>` : ''
+    arc
+      ? `<path d="${arc}" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"></path>`
+      : ''
   }<text x="40" y="47" text-anchor="middle" font-size="19" style="font-family:Bricolage">${value}/${of}</text></svg>`;
 }
 
 export async function makeReportPdf(o: PdfOptions): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  const embed = (b: ArrayBuffer | Uint8Array) => doc.embedFont(b instanceof Uint8Array ? b : new Uint8Array(b), { subset: true });
+  const embed = (b: ArrayBuffer | Uint8Array) =>
+    doc.embedFont(b instanceof Uint8Array ? b : new Uint8Array(b), { subset: true });
   const [display600, display800, sans400, sans600, mono400, mono500] = await Promise.all([
     embed(o.fonts.display600),
     embed(o.fonts.display800),
@@ -129,7 +148,12 @@ export async function makeReportPdf(o: PdfOptions): Promise<Uint8Array> {
 
   const blocks = buildBlocks(r, o, t, fonts);
   const pages = packPages(
-    blocks.map((b) => ({ height: b.node.height(CONTENT_W), section: b.section, heading: b.heading, breakBefore: b.breakBefore })),
+    blocks.map((b) => ({
+      height: b.node.height(CONTENT_W),
+      section: b.section,
+      heading: b.heading,
+      breakBefore: b.breakBefore,
+    })),
     { pageHeight: CONTENT_H, gap: 12, sectionGap: SECTION_GAP },
   );
 
@@ -164,11 +188,28 @@ function header(c: Ctx, range: string, f: Fonts) {
   const top = 22;
   drawMark(c, MARGIN, top, 18);
   const H = c.page.getHeight();
-  c.page.drawText('Macrotrophy', { x: MARGIN + 25, y: H - top - 13.5, size: 12.5, font: f.display, color: colorOf(c.theme.text1) });
+  c.page.drawText('Macrotrophy', {
+    x: MARGIN + 25,
+    y: H - top - 13.5,
+    size: 12.5,
+    font: f.display,
+    color: colorOf(c.theme.text1),
+  });
   const right = f.clean(f.mono, `Weekly report, ${range}`);
   const w = f.mono.widthOfTextAtSize(right, 9);
-  c.page.drawText(right, { x: A4.w - MARGIN - w, y: H - top - 12.5, size: 9, font: f.mono, color: colorOf(c.theme.text2) });
-  c.page.drawLine({ start: { x: MARGIN, y: H - 50 }, end: { x: A4.w - MARGIN, y: H - 50 }, thickness: 0.8, color: colorOf(c.theme.divider) });
+  c.page.drawText(right, {
+    x: A4.w - MARGIN - w,
+    y: H - top - 12.5,
+    size: 9,
+    font: f.mono,
+    color: colorOf(c.theme.text2),
+  });
+  c.page.drawLine({
+    start: { x: MARGIN, y: H - 50 },
+    end: { x: A4.w - MARGIN, y: H - 50 },
+    thickness: 0.8,
+    color: colorOf(c.theme.divider),
+  });
 }
 
 function footer(c: Ctx, n: number, total: number, r: WeeklyReport, f: Fonts) {
@@ -177,7 +218,13 @@ function footer(c: Ctx, n: number, total: number, r: WeeklyReport, f: Fonts) {
   c.page.drawText(left, { x: MARGIN, y, size: 9, font: f.mono, color: colorOf(c.theme.text3) });
   const right = `Page ${n} of ${total}`;
   const w = f.mono.widthOfTextAtSize(right, 9);
-  c.page.drawText(right, { x: A4.w - MARGIN - w, y, size: 9, font: f.mono, color: colorOf(c.theme.text2) });
+  c.page.drawText(right, {
+    x: A4.w - MARGIN - w,
+    y,
+    size: 9,
+    font: f.mono,
+    color: colorOf(c.theme.text2),
+  });
 }
 
 interface Block {
@@ -192,21 +239,37 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
   const copy = sectionCopy(r);
   const c = r.counts;
   const range = rangeLabel(r);
-  const run = (s: string, font: PDFFont, size: number, color: string): Run => ({ text: s, font, size, color });
-  const T = (s: string, font: PDFFont, size: number, color: string, extra?: { align?: 'left' | 'center' | 'right'; lineHeight?: number }) =>
-    text([run(s, font, size, color)], { fonts: f, ...extra });
+  const run = (s: string, font: PDFFont, size: number, color: string): Run => ({
+    text: s,
+    font,
+    size,
+    color,
+  });
+  const T = (
+    s: string,
+    font: PDFFont,
+    size: number,
+    color: string,
+    extra?: { align?: 'left' | 'center' | 'right'; lineHeight?: number },
+  ) => text([run(s, font, size, color)], { fonts: f, ...extra });
   const body = (s: string, color = t.text2) => T(s, f.sans, 10, color);
   const small = (s: string) => T(s, f.sans, 9, t.text3);
   const panel = (child: Node, fill = t.surface) => box(child, { fill, radius: 14, pad: 16 });
   const out: Block[] = [];
-  const add = (section: string, node: Node, extra?: Partial<Block>) => out.push({ node, section, ...extra });
+  const add = (section: string, node: Node, extra?: Partial<Block>) =>
+    out.push({ node, section, ...extra });
   // A caption or footnote travels with the block above it, never alone on a page.
   const note = (section: string, node: Node) => {
     const last = out[out.length - 1];
-    if (last && last.section === section && !last.heading) last.node = vstack([last.node, node], 10);
+    if (last && last.section === section && !last.heading)
+      last.node = vstack([last.node, node], 10);
     else add(section, node);
   };
-  const heading = (section: string, h: { eyebrow: string; title: string; intro?: string }, breakBefore = false) =>
+  const heading = (
+    section: string,
+    h: { eyebrow: string; title: string; intro?: string },
+    breakBefore = false,
+  ) =>
     add(
       section,
       vstack(
@@ -220,16 +283,35 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
       { heading: true, breakBefore },
     );
   const dot = (color: string, size = 6): Node =>
-    custom(size, (cx, x, top) => cx.page.drawCircle({ x: x + size / 2, y: cx.page.getHeight() - top - size / 2, size: size / 2, color: colorOf(color) }));
+    custom(size, (cx, x, top) =>
+      cx.page.drawCircle({
+        x: x + size / 2,
+        y: cx.page.getHeight() - top - size / 2,
+        size: size / 2,
+        color: colorOf(color),
+      }),
+    );
   const pillWidth = (label: string) => f.mono.widthOfTextAtSize(f.clean(f.mono, label), 9) + 26;
-  const liftTag = (l: WeeklyReport['lifts'][number]) => `${l.pct > 0 ? '+' : ''}${l.pct}% ${l.real ? (l.pct > 0 ? 'gain' : 'drop') : 'noise'}`;
+  const liftTag = (l: WeeklyReport['lifts'][number]) =>
+    `${l.pct > 0 ? '+' : ''}${l.pct}% ${l.real ? (l.pct > 0 ? 'gain' : 'drop') : 'noise'}`;
   const pill = (label: string, color: string): Node => {
     const size = 9;
     const w = pillWidth(label);
     return custom(17, (cx, x, top) => {
       fillRect(cx, x, top, w, 17, 8.5, cx.theme.surface, cx.theme.divider);
-      cx.page.drawCircle({ x: x + 9, y: cx.page.getHeight() - top - 8.5, size: 2.5, color: colorOf(color) });
-      cx.page.drawText(f.clean(f.mono, label), { x: x + 16, y: cx.page.getHeight() - top - 12, size, font: f.mono, color: colorOf(color) });
+      cx.page.drawCircle({
+        x: x + 9,
+        y: cx.page.getHeight() - top - 8.5,
+        size: 2.5,
+        color: colorOf(color),
+      });
+      cx.page.drawText(f.clean(f.mono, label), {
+        x: x + 16,
+        y: cx.page.getHeight() - top - 12,
+        size,
+        font: f.mono,
+        color: colorOf(color),
+      });
     });
   };
   const tick = (done: boolean): Node =>
@@ -237,31 +319,75 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
       const H = cx.page.getHeight();
       cx.page.drawCircle({ x: x + 9, y: H - top - 9, size: 9, color: colorOf(cx.theme.surface2) });
       const col = colorOf(done ? cx.theme.up : cx.theme.danger);
-      if (done) cx.page.drawSvgPath('M-3.6 0.2 L-1.1 2.8 L3.8 -2.6', { x: x + 9, y: H - top - 9, borderColor: col, borderWidth: 1.6 });
-      else cx.page.drawSvgPath('M-3 -3 L3 3 M3 -3 L-3 3', { x: x + 9, y: H - top - 9, borderColor: col, borderWidth: 1.6 });
+      if (done)
+        cx.page.drawSvgPath('M-3.6 0.2 L-1.1 2.8 L3.8 -2.6', {
+          x: x + 9,
+          y: H - top - 9,
+          borderColor: col,
+          borderWidth: 1.6,
+        });
+      else
+        cx.page.drawSvgPath('M-3 -3 L3 3 M3 -3 L-3 3', {
+          x: x + 9,
+          y: H - top - 9,
+          borderColor: col,
+          borderWidth: 1.6,
+        });
     });
   const numberDot = (n: number, size = 22): Node =>
     custom(size, (cx, x, top) => {
       const H = cx.page.getHeight();
-      cx.page.drawCircle({ x: x + size / 2, y: H - top - size / 2, size: size / 2, color: colorOf(cx.theme.lime) });
+      cx.page.drawCircle({
+        x: x + size / 2,
+        y: H - top - size / 2,
+        size: size / 2,
+        color: colorOf(cx.theme.lime),
+      });
       const s = String(n);
       const fs = size * 0.52;
       const w = f.display.widthOfTextAtSize(s, fs);
-      cx.page.drawText(s, { x: x + (size - w) / 2, y: H - top - size / 2 - fs * 0.36, size: fs, font: f.display, color: colorOf(cx.theme.onLime) });
+      cx.page.drawText(s, {
+        x: x + (size - w) / 2,
+        y: H - top - size / 2 - fs * 0.36,
+        size: fs,
+        font: f.display,
+        color: colorOf(cx.theme.onLime),
+      });
     });
   const keyRows = (rows: [string, string][]) =>
     vstack(
-      rows.flatMap(([k, v]) => [rule('divider', 4), row([{ node: T(k, f.mono, 9, t.text3), width: 96 }, { node: body(v), width: 'flex' }], 10)]),
+      rows.flatMap(([k, v]) => [
+        rule('divider', 4),
+        row(
+          [
+            { node: T(k, f.mono, 9, t.text3), width: 96 },
+            { node: body(v), width: 'flex' },
+          ],
+          10,
+        ),
+      ]),
       2,
     );
 
   // Cover ------------------------------------------------------------------------------------
   const brand = custom(34, (cx, x, top) => {
     drawMark(cx, x, top, 34);
-    cx.page.drawText('Macrotrophy', { x: x + 44, y: cx.page.getHeight() - top - 24, size: 21, font: f.display, color: colorOf(cx.theme.text1) });
+    cx.page.drawText('Macrotrophy', {
+      x: x + 44,
+      y: cx.page.getHeight() - top - 24,
+      size: 21,
+      font: f.display,
+      color: colorOf(cx.theme.text1),
+    });
     const label = 'Weekly intelligence';
     const w = f.mono.widthOfTextAtSize(label, 9.5);
-    cx.page.drawText(label, { x: x + CONTENT_W - w, y: cx.page.getHeight() - top - 21, size: 9.5, font: f.mono, color: colorOf(cx.theme.text2) });
+    cx.page.drawText(label, {
+      x: x + CONTENT_W - w,
+      y: cx.page.getHeight() - top - 21,
+      size: 9.5,
+      font: f.mono,
+      color: colorOf(cx.theme.text2),
+    });
   });
   const pillars = grid(
     (
@@ -274,7 +400,14 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
       box(
         vstack(
           [
-            row([{ node: dot(col, 7), width: 7 }, { node: T(k, f.sans, 9.5, t.text2), width: 'flex' }], 6, 'center'),
+            row(
+              [
+                { node: dot(col, 7), width: 7 },
+                { node: T(k, f.sans, 9.5, t.text2), width: 'flex' },
+              ],
+              6,
+              'center',
+            ),
             T(p.label, f.display, 15, t.text1, { lineHeight: 1.15 }),
             T(p.detail, f.sans, 9, t.text3),
           ],
@@ -301,7 +434,9 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
           t.text2,
         ),
         spacer(8),
-        T(o.lang === 'hi' ? r.verdict.hi : r.verdict.en, f.display600, 19, t.text1, { lineHeight: 1.25 }),
+        T(o.lang === 'hi' ? r.verdict.hi : r.verdict.en, f.display600, 19, t.text1, {
+          lineHeight: 1.25,
+        }),
         spacer(8),
         pillars,
       ],
@@ -316,7 +451,13 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
           [
             T('Win of the week', f.mono, 9.5, t.limeText),
             T(r.win.big, f.display, 40, t.limeText, { lineHeight: 1.05 }),
-            text([run(`${r.win.title}. `, f.sans600, 10.5, t.text1), run(r.win.detail, f.sans, 10.5, t.text2)], { fonts: f }),
+            text(
+              [
+                run(`${r.win.title}. `, f.sans600, 10.5, t.text1),
+                run(r.win.detail, f.sans, 10.5, t.text2),
+              ],
+              { fonts: f },
+            ),
           ],
           5,
         ),
@@ -338,7 +479,13 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
                     [
                       { node: numberDot(i + 1, 20), width: 20 },
                       {
-                        node: vstack([T(o.lang === 'hi' ? a.titleHi : a.title, f.sans600, 10.5, t.text1), small(firstSentence(a.detail))], 2),
+                        node: vstack(
+                          [
+                            T(o.lang === 'hi' ? a.titleHi : a.title, f.sans600, 10.5, t.text1),
+                            small(firstSentence(a.detail)),
+                          ],
+                          2,
+                        ),
                         width: 'flex',
                       },
                     ],
@@ -362,9 +509,20 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
         {
           node: vstack(
             [
-              T(o.lang === 'hi' ? a.titleHi : a.title, f.display600, 13.5, t.text1, { lineHeight: 1.2 }),
+              T(o.lang === 'hi' ? a.titleHi : a.title, f.display600, 13.5, t.text1, {
+                lineHeight: 1.2,
+              }),
               body(a.detail),
-              box(text([run('We will check: ', f.sans600, 9.5, t.text1), run(a.checkText, f.sans, 9.5, t.text2)], { fonts: f }), { fill: t.surface2, radius: 8, pad: 8 }),
+              box(
+                text(
+                  [
+                    run('We will check: ', f.sans600, 9.5, t.text1),
+                    run(a.checkText, f.sans, 9.5, t.text2),
+                  ],
+                  { fonts: f },
+                ),
+                { fill: t.surface2, radius: 8, pad: 8 },
+              ),
             ],
             5,
           ),
@@ -377,22 +535,43 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
     if (!r.actions.length) return;
     heading('next', copy.next, breakBefore);
     if (full) r.actions.forEach((a, i) => add('next', panel(actionNode(a, i))));
-    else add('next', panel(vstack(r.actions.map((a, i) => vstack([i ? rule('divider', 6) : null, actionNode(a, i)], 4)), 6)));
+    else
+      add(
+        'next',
+        panel(
+          vstack(
+            r.actions.map((a, i) => vstack([i ? rule('divider', 6) : null, actionNode(a, i)], 4)),
+            6,
+          ),
+        ),
+      );
   };
   if (!full) nextWeek(true);
 
   // Numbers -----------------------------------------------------------------------------------
   heading('numbers', copy.numbers, full);
   const ring = (value: number, of: number, label: string, col: string) =>
-    vstack([chart(ringMarkup(value, of, col), 64), T(label, f.sans, 9.5, t.text2, { align: 'center' })], 4);
+    vstack(
+      [chart(ringMarkup(value, of, col), 64), T(label, f.sans, 9.5, t.text2, { align: 'center' })],
+      4,
+    );
   add(
     'numbers',
     panel(
       grid(
         [
-          ring(c.sessions, Math.max(c.planned ?? c.sessions, c.sessions, 1), 'Sessions', 'var(--lime)'),
-          c.calorieDays !== null ? ring(c.calorieDays, 7, 'Calorie days', 'var(--report-food)') : ring(c.foodDays, 7, 'Food days', 'var(--report-food)'),
-          c.proteinDays !== null ? ring(c.proteinDays, 7, 'Protein days', 'var(--report-food)') : ring(c.records, Math.max(c.records, 1), 'Records', 'var(--report-food)'),
+          ring(
+            c.sessions,
+            Math.max(c.planned ?? c.sessions, c.sessions, 1),
+            'Sessions',
+            'var(--lime)',
+          ),
+          c.calorieDays !== null
+            ? ring(c.calorieDays, 7, 'Calorie days', 'var(--report-food)')
+            : ring(c.foodDays, 7, 'Food days', 'var(--report-food)'),
+          c.proteinDays !== null
+            ? ring(c.proteinDays, 7, 'Protein days', 'var(--report-food)')
+            : ring(c.records, Math.max(c.records, 1), 'Records', 'var(--report-food)'),
           ring(c.weighIns, 7, 'Weigh-ins', 'var(--report-body)'),
         ],
         4,
@@ -412,11 +591,20 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
                 text(
                   [
                     run(TILE[tile.key].fmt(tile.value), f.display, 20, t.text1),
-                    ...(TILE[tile.key].unit ? [run(` ${TILE[tile.key].unit}`, f.sans600, 10, t.text2)] : []),
+                    ...(TILE[tile.key].unit
+                      ? [run(` ${TILE[tile.key].unit}`, f.sans600, 10, t.text2)]
+                      : []),
                   ],
                   { fonts: f, lineHeight: 1.2 },
                 ),
-                T(tileNote(tile), f.sans, 9, tile.usual !== null && tile.value > tile.usual * 1.03 && tile.key !== 'kcal' ? t.up : t.text3),
+                T(
+                  tileNote(tile),
+                  f.sans,
+                  9,
+                  tile.usual !== null && tile.value > tile.usual * 1.03 && tile.key !== 'kcal'
+                    ? t.up
+                    : t.text3,
+                ),
               ],
               3,
             ),
@@ -427,7 +615,12 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
         8,
       ),
     );
-    note('numbers', small('Compared with your average of the 4 weeks before, when your history covers them. A calorie day lands within 10% of your target; a protein day reaches 90% of it.'));
+    note(
+      'numbers',
+      small(
+        'Compared with your average of the 4 weeks before, when your history covers them. A calorie day lands within 10% of your target; a protein day reaches 90% of it.',
+      ),
+    );
   }
 
   // Last week ---------------------------------------------------------------------------------
@@ -444,8 +637,16 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
                 row(
                   [
                     { node: tick(x.done), width: 18 },
-                    { node: vstack([T(x.title, f.sans600, 10.5, t.text1), body(x.result)], 2), width: 'flex' },
-                    { node: T(x.done ? 'Done' : 'Missed', f.mono, 9, x.done ? t.up : t.danger, { align: 'right' }), width: 46 },
+                    {
+                      node: vstack([T(x.title, f.sans600, 10.5, t.text1), body(x.result)], 2),
+                      width: 'flex',
+                    },
+                    {
+                      node: T(x.done ? 'Done' : 'Missed', f.mono, 9, x.done ? t.up : t.danger, {
+                        align: 'right',
+                      }),
+                      width: 46,
+                    },
                   ],
                   10,
                   'center',
@@ -465,7 +666,14 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
   const legend = (items: [string, string][]) =>
     row(
       items.map(([label, col]) => ({
-        node: row([{ node: dot(col, 7), width: 7 }, { node: T(label, f.sans, 9, t.text2), width: 'flex' }], 5, 'center'),
+        node: row(
+          [
+            { node: dot(col, 7), width: 7 },
+            { node: T(label, f.sans, 9, t.text2), width: 'flex' },
+          ],
+          5,
+          'center',
+        ),
         width: 'flex' as const,
       })),
       10,
@@ -477,8 +685,12 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
         [
           legend([
             ['Calories eaten', t.food],
-            ...(r.targets.kcal ? ([[`Target ${fmt(r.targets.kcal)}`, t.lime]] as [string, string][]) : []),
-            ...(r.targets.maintenance ? ([[`Est. maintenance ${fmt(r.targets.maintenance)}`, t.body]] as [string, string][]) : []),
+            ...(r.targets.kcal
+              ? ([[`Target ${fmt(r.targets.kcal)}`, t.lime]] as [string, string][])
+              : []),
+            ...(r.targets.maintenance
+              ? ([[`Est. maintenance ${fmt(r.targets.maintenance)}`, t.body]] as [string, string][])
+              : []),
           ]),
           chart(svgOf(createElement(Timeline, { r })), 300),
         ],
@@ -488,21 +700,40 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
   );
 
   // Findings ----------------------------------------------------------------------------------
-  const label = (l: 'established' | 'early') => pill(l === 'established' ? 'Established' : 'Early signal', l === 'established' ? t.up : t.text2);
+  const label = (l: 'established' | 'early') =>
+    pill(
+      l === 'established' ? 'Established' : 'Early signal',
+      l === 'established' ? t.up : t.text2,
+    );
   if (!full && r.findings.length) {
     heading('short', copy.short);
     add(
       'short',
       panel(
         vstack(
-          r.findings.slice(0, 3).map((fd, i) =>
-            vstack([i ? rule('divider', 4) : null, label(fd.label), T(fd.title, f.sans600, 11, t.text1), body(fd.saw)], 4),
-          ),
+          r.findings
+            .slice(0, 3)
+            .map((fd, i) =>
+              vstack(
+                [
+                  i ? rule('divider', 4) : null,
+                  label(fd.label),
+                  T(fd.title, f.sans600, 11, t.text1),
+                  body(fd.saw),
+                ],
+                4,
+              ),
+            ),
           6,
         ),
       ),
     );
-    note('short', small('The full report adds the 8 week strength charts, muscle volume, body and energy, nutrition detail and the evidence behind each number.'));
+    note(
+      'short',
+      small(
+        'The full report adds the 8 week strength charts, muscle volume, body and energy, nutrition detail and the evidence behind each number.',
+      ),
+    );
   }
   if (full && r.findings.length) {
     heading('find', copy.find);
@@ -517,7 +748,9 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
               keyRows([
                 ['What we saw', fd.saw],
                 [fd.label === 'early' ? 'How sure we are' : 'Why it matters', fd.why],
-                ...(fd.evidence.length ? ([['Evidence', fd.evidence.join(', ')]] as [string, string][]) : []),
+                ...(fd.evidence.length
+                  ? ([['Evidence', fd.evidence.join(', ')]] as [string, string][])
+                  : []),
               ]),
             ],
             6,
@@ -535,8 +768,14 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
           T(l.name, f.display600, 12.5, t.text1),
           row(
             [
-              { node: T(`${l.now} kg now, ${l.base} kg 4 weeks ago`, f.sans, 9.5, t.text2), width: 'flex' },
-              { node: pill(liftTag(l), l.real ? (l.pct > 0 ? t.up : t.warning) : t.text2), width: pillWidth(liftTag(l)) },
+              {
+                node: T(`${l.now} kg now, ${l.base} kg 4 weeks ago`, f.sans, 9.5, t.text2),
+                width: 'flex',
+              },
+              {
+                node: pill(liftTag(l), l.real ? (l.pct > 0 ? t.up : t.warning) : t.text2),
+                width: pillWidth(liftTag(l)),
+              },
             ],
             6,
             'center',
@@ -549,7 +788,12 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
     for (let i = 0; i < r.lifts.length; i += 4) {
       add('strength', panel(grid(r.lifts.slice(i, i + 4).map(liftNode), 2, 20)));
     }
-    note('strength', small('Epley estimate from sets of up to 10 reps; an estimate, not a tested max. The shaded strip is the 5% band around the level 4 weeks ago.'));
+    note(
+      'strength',
+      small(
+        'Epley estimate from sets of up to 10 reps; an estimate, not a tested max. The shaded strip is the 5% band around the level 4 weeks ago.',
+      ),
+    );
   }
 
   // Volume ------------------------------------------------------------------------------------
@@ -566,7 +810,9 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
               ['Your 4 week average (line)', t.text1],
             ]),
             chart(svgOf(createElement(MuscleChart, { rows: r.muscles })), 300),
-            body('What matters most is enough hard sets for each muscle across the week, usually spread over about 2 sessions. We compare you with your own average, not a fixed number.'),
+            body(
+              'What matters most is enough hard sets for each muscle across the week, usually spread over about 2 sessions. We compare you with your own average, not a fixed number.',
+            ),
           ],
           8,
         ),
@@ -594,14 +840,26 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
                         {
                           node: text(
                             [
-                              run(b.projection.weeksLo === b.projection.weeksHi ? `${b.projection.weeksLo}` : `${b.projection.weeksLo} to ${b.projection.weeksHi}`, f.display, 24, t.bodyText),
+                              run(
+                                b.projection.weeksLo === b.projection.weeksHi
+                                  ? `${b.projection.weeksLo}`
+                                  : `${b.projection.weeksLo} to ${b.projection.weeksHi}`,
+                                f.display,
+                                24,
+                                t.bodyText,
+                              ),
                               run(' weeks', f.sans600, 10, t.text2),
                             ],
                             { fonts: f },
                           ),
                           width: 120,
                         },
-                        { node: body(`Estimate: if your recent pace holds, ${b.projection.targetKg} kg lands in this range. It moves as your trend moves.`), width: 'flex' },
+                        {
+                          node: body(
+                            `Estimate: if your recent pace holds, ${b.projection.targetKg} kg lands in this range. It moves as your trend moves.`,
+                          ),
+                          width: 'flex',
+                        },
                       ],
                       12,
                       'center',
@@ -616,20 +874,53 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
                     rule('divider', 4),
                     row(
                       [
-                        { node: vstack([T(fmt(e.meanIntake), f.display, 17, t.text1, { align: 'center' }), T('Eaten a day, average kcal', f.sans, 9, t.text2, { align: 'center' })], 2), width: 'flex' },
-                        { node: T(e.actualDeficit >= 0 ? '+' : '-', f.mono, 15, t.text3, { align: 'center' }), width: 14 },
                         {
                           node: vstack(
                             [
-                              T(fmt(Math.abs(e.actualDeficit)), f.display, 17, t.text1, { align: 'center' }),
-                              T(`${e.actualDeficit >= 0 ? 'From your body' : 'Stored by your body'}, ${Math.abs(e.changeKgPerWeek)} kg a week`, f.sans, 9, t.text2, { align: 'center' }),
+                              T(fmt(e.meanIntake), f.display, 17, t.text1, { align: 'center' }),
+                              T('Eaten a day, average kcal', f.sans, 9, t.text2, {
+                                align: 'center',
+                              }),
+                            ],
+                            2,
+                          ),
+                          width: 'flex',
+                        },
+                        {
+                          node: T(e.actualDeficit >= 0 ? '+' : '-', f.mono, 15, t.text3, {
+                            align: 'center',
+                          }),
+                          width: 14,
+                        },
+                        {
+                          node: vstack(
+                            [
+                              T(fmt(Math.abs(e.actualDeficit)), f.display, 17, t.text1, {
+                                align: 'center',
+                              }),
+                              T(
+                                `${e.actualDeficit >= 0 ? 'From your body' : 'Stored by your body'}, ${Math.abs(e.changeKgPerWeek)} kg a week`,
+                                f.sans,
+                                9,
+                                t.text2,
+                                { align: 'center' },
+                              ),
                             ],
                             2,
                           ),
                           width: 'flex',
                         },
                         { node: T('=', f.mono, 15, t.text3, { align: 'center' }), width: 14 },
-                        { node: vstack([T(fmt(e.maintenance), f.display, 17, t.bodyText, { align: 'center' }), T('Estimated maintenance', f.sans, 9, t.text2, { align: 'center' })], 2), width: 'flex' },
+                        {
+                          node: vstack(
+                            [
+                              T(fmt(e.maintenance), f.display, 17, t.bodyText, { align: 'center' }),
+                              T('Estimated maintenance', f.sans, 9, t.text2, { align: 'center' }),
+                            ],
+                            2,
+                          ),
+                          width: 'flex',
+                        },
                       ],
                       6,
                     ),
@@ -643,7 +934,12 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
         ),
       ),
     );
-    note('body', small('One kilogram of body weight is treated as 7,700 kcal. Sources: Orsama 2014, Helms 2014.'));
+    note(
+      'body',
+      small(
+        'One kilogram of body weight is treated as 7,700 kcal. Sources: Orsama 2014, Helms 2014.',
+      ),
+    );
   }
 
   // Nutrition ---------------------------------------------------------------------------------
@@ -661,7 +957,16 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
                 row(
                   [
                     { node: vstack([T(k, f.sans600, 10.5, t.text1), body(d)], 2), width: 'flex' },
-                    { node: vstack([T(v, f.display, 15, t.text1, { align: 'right' }), T(u, f.mono, 9, t.text3, { align: 'right' })], 1), width: 110 },
+                    {
+                      node: vstack(
+                        [
+                          T(v, f.display, 15, t.text1, { align: 'right' }),
+                          T(u, f.mono, 9, t.text3, { align: 'right' }),
+                        ],
+                        1,
+                      ),
+                      width: 110,
+                    },
                   ],
                   10,
                   'center',
@@ -681,7 +986,9 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
           vstack(
             [
               T('Protein at each meal', f.display600, 13, t.text1),
-              n.mealAim ? body(`Aim for about ${n.mealAim} g a meal, which is 0.4 g per kg of your weight.`) : null,
+              n.mealAim
+                ? body(`Aim for about ${n.mealAim} g a meal, which is 0.4 g per kg of your weight.`)
+                : null,
               chart(svgOf(createElement(MealChart, { meals: n.meals, aim: n.mealAim })), 330),
               body(MEAL_SUMMARY(n)),
             ],
@@ -706,7 +1013,12 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
             row(
               [
                 { node: T('Optional tracking inputs', f.display600, 13, t.text1), width: 'flex' },
-                { node: T(`${have} of ${r.inputs.length} available`, f.mono, 9, t.text3, { align: 'right' }), width: 140 },
+                {
+                  node: T(`${have} of ${r.inputs.length} available`, f.mono, 9, t.text3, {
+                    align: 'right',
+                  }),
+                  width: 140,
+                },
               ],
               8,
               'center',
@@ -720,7 +1032,16 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
                 row(
                   [
                     { node: tick(i.has), width: 18 },
-                    { node: vstack([T(i.label, f.sans, 10, i.has ? t.text1 : t.text2), i.has ? null : small(i.unlock)], 1), width: 'flex' },
+                    {
+                      node: vstack(
+                        [
+                          T(i.label, f.sans, 10, i.has ? t.text1 : t.text2),
+                          i.has ? null : small(i.unlock),
+                        ],
+                        1,
+                      ),
+                      width: 'flex',
+                    },
                   ],
                   8,
                 ),
@@ -738,7 +1059,13 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
       'method',
       panel(
         vstack(
-          [body(METHOD_TEXT), spacer(2), ...SOURCES.map((s) => T(s, f.mono, 9, t.text2)), spacer(2), small(DISCLAIMER)],
+          [
+            body(METHOD_TEXT),
+            spacer(2),
+            ...SOURCES.map((s) => T(s, f.mono, 9, t.text2)),
+            spacer(2),
+            small(DISCLAIMER),
+          ],
           5,
         ),
       ),

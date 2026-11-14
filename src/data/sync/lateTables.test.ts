@@ -39,7 +39,9 @@ afterEach(() => db.delete());
 
 it('recognises a missing table', () => {
   expect(isMissingTable({ code: 'PGRST205', message: '' })).toBe(true);
-  expect(isMissingTable({ code: '42P01', message: 'relation "public.plan_items" does not exist' })).toBe(true);
+  expect(
+    isMissingTable({ code: '42P01', message: 'relation "public.plan_items" does not exist' }),
+  ).toBe(true);
   expect(isMissingTable({ code: '23514', message: 'check constraint' })).toBe(false);
 });
 
@@ -60,6 +62,8 @@ it('keeps syncing everything else, and sends the waiting rows once the table exi
 
   server.hasPlanItems = true;
   await syncOnce(db, server, 'user-1');
-  expect(server.rows.get('plan_items')).toMatchObject([{ id: event.id, kind: 'event', data: { event: 'exams' } }]);
+  expect(server.rows.get('plan_items')).toMatchObject([
+    { id: event.id, kind: 'event', data: { event: 'exams' } },
+  ]);
   expect(await outboxCounts(db)).toEqual({ pending: 0, rejected: 0 });
 });

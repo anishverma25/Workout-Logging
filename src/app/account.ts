@@ -327,7 +327,9 @@ export async function updatePassword(password: string): Promise<void> {
 export async function signOut(): Promise<{ removedLocalCopy: boolean }> {
   const client = requireClient();
   const user = state.user;
-  const { pending } = syncController.getState();
+  // The real number of changes still waiting, counted now, never the last sync's figure (which
+  // is 0 before the first count and would delete unsynced work). Unknown counts as waiting.
+  const pending = user ? await unsyncedChanges(user.id) : 0;
   const { error } = await client.auth.signOut({ scope: 'local' });
   if (error) throw new AccountError(friendly(error.message));
   await applySession(null);
@@ -338,18 +340,61 @@ export async function signOut(): Promise<{ removedLocalCopy: boolean }> {
   return { removedLocalCopy: false };
 }
 
+/** Changes on this phone not yet on the server for this account, or -1 when it cannot tell. */
+export async function unsyncedChanges(userId: string): Promise<number> {
+  try {
+    if (db.name !== accountDbName(userId)) return -1;
+    return await db.outbox.count();
+  } catch {
+    return -1;
+  }
+}
+
+/** Removes what this phone kept for one account outside its database (chat, reports, badges). */
+function forgetDeviceKeys(userId: string) {
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('overload.') && k.includes(userId)) keys.push(k);
+    }
+    for (const k of keys) localStorage.removeItem(k);
+  } catch {
+    // Nothing more to remove.
+  }
+}
+
 /**
  * Deletes the account on the server (every row it owns goes with it) and then this device's
- * copy. Photos and guest data on the device are not touched. Cannot be undone.
+ * copy. Autopay is stopped at Razorpay first: the server refuses to delete an account that can
+ * still be charged, so a deleted account never keeps paying. Photos and guest data on the
+ * device are not touched. Cannot be undone.
  */
 export async function deleteAccount(): Promise<void> {
   const client = requireClient();
   const user = state.user;
   if (!user) throw new AccountError('Sign in first.');
-  const { error } = await client.rpc('delete_my_account');
-  if (error) throw new AccountError(friendly(error.message));
+  let { error } = await client.rpc('delete_my_account');
+  if (error && /cancel_autopay_first/.test(error.message)) {
+    try {
+      const { cancelPlan } = await import('./billing');
+      await cancelPlan();
+    } catch {
+      throw new AccountError(
+        'Your autopay could not be stopped, so your account was not deleted. Check your connection and try again.',
+      );
+    }
+    ({ error } = await client.rpc('delete_my_account'));
+  }
+  if (error)
+    throw new AccountError(
+      /cancel_autopay_first/.test(error.message)
+        ? 'Your autopay is still on, so your account was not deleted. Turn renewal off on the Pro page, then try again.'
+        : friendly(error.message),
+    );
   syncController.stop();
   await client.auth.signOut({ scope: 'local' });
   await applySession(null);
   await Dexie.delete(accountDbName(user.id));
+  forgetDeviceKeys(user.id);
 }
