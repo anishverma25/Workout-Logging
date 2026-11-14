@@ -190,7 +190,8 @@ export function messageFor(error: { message?: string; code?: string } | null): s
   if (/Not a member/i.test(m)) return 'You are not in this group any more.';
   if (/1 to 40/i.test(m)) return 'Group names are 1 to 40 characters.';
   if (/different group name/i.test(m)) return 'Choose a different group name.';
-  if (/removed from this group/i.test(m)) return 'You were removed from this group, so you cannot join it again.';
+  if (/removed from this group/i.test(m))
+    return 'You were removed from this group, so you cannot join it again.';
   if (/Too many reports/i.test(m)) return 'You have sent a lot of reports today. We are on them.';
   if (/Duel exists/i.test(m)) return 'You two already have a duel this week.';
   if (/Duel limit (\d+)/i.test(m)) return 'You can start 3 duels a week.';

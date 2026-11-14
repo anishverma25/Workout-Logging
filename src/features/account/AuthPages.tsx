@@ -1,3 +1,4 @@
+import { reportStep } from '@/app/errorReport';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { CloudOff, Crown, MailCheck } from 'lucide-react';
@@ -246,6 +247,7 @@ export function SignUpPage() {
       if (err instanceof AccountExistsError) setExists(true);
       throw err;
     }
+    reportStep('signed_up');
     markTourSeen();
     // A new account has never used the old app: no notes on what changed in it.
     markReleaseSeen();

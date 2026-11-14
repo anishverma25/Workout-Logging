@@ -1,3 +1,4 @@
+import { reportFirst } from '@/app/errorReport';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Camera, ChevronLeft, Crown, Minus, Plus, ScanText, Sparkles, X } from 'lucide-react';
 import { Link } from 'react-router';
@@ -232,6 +233,7 @@ function AddFoodBody({
     try {
       const kept = await keepPlateFoods(db, plate);
       const logs = await logFoods(db, kept, { date, meal, katoriMl: ctx.katoriMl });
+      reportFirst('first_food');
       haptic('medium');
       toast(
         `Logged ${logs.length === 1 ? logs[0]!.foodName : `${logs.length} foods`} to ${MEAL_LABEL[meal].toLowerCase()}`,

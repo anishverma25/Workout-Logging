@@ -140,9 +140,9 @@ export function GroupPage() {
   const [version, setVersion] = useState(0);
   const [open, setOpen] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
-  const [sheet, setSheet] = useState<
-    'rename' | 'members' | 'code' | 'leave' | 'report' | null
-  >(null);
+  const [sheet, setSheet] = useState<'rename' | 'members' | 'code' | 'leave' | 'report' | null>(
+    null,
+  );
   const [sharing, setSharing] = useState(false);
   const [routineOf, setRoutineOf] = useState<string | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);

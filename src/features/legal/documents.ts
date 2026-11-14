@@ -119,6 +119,8 @@ export const PRIVACY: LegalDocument = {
         'Your food log, the foods you create, your nutrition targets, and your plan changes (for example a lighter week, or something that hurts that you told the app about).',
         'Your weekly reports.',
         'Messages you send us through the feedback page.',
+        // Added November 2026.
+        'Technical error reports when something in the app breaks, and which first steps you reached (finished the tour, set up, first workout, first food day): the screen, the app version and the error text. Never your food, notes, Macrotrophy AI messages or email.',
         'Your Pro status and the plan you chose.',
       ],
     },
@@ -174,7 +176,7 @@ export const PRIVACY: LegalDocument = {
         'You can export your data as CSV files from Settings.',
         'You can delete your account from the Account page. This removes your account and the data stored with it on our servers. If you pay with autopay, it is stopped first, so you are not charged again.',
         // Added November 2026.
-        'While your account exists we keep its data so it stays backed up. Feedback and reports are kept until they are dealt with. Error reports from the app (which contain no personal data) are kept for 30 days.',
+        'While your account exists we keep its data so it stays backed up. Feedback and reports are kept until they are dealt with. Error reports and first-step counts from the app (technical details only) are kept for 30 days.',
         'We may keep limited payment records for as long as the law requires.',
       ],
     },

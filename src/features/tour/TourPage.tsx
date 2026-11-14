@@ -30,6 +30,7 @@ import type { StallCause } from '@/domain/analytics/stalls';
 import { Rings, RingLegend, type RingSpec } from '@/components/ui/Rings';
 import { useAccount } from '@/app/account';
 import { markTourSeen } from '@/app/seenTour';
+import { reportStep } from '@/app/errorReport';
 import { markReleaseSeen } from '@/app/layout/whatsNewStore';
 import { ReviewsShowcase } from './Reviews';
 import { usePageMeta } from '@/app/usePageMeta';
@@ -121,6 +122,7 @@ export function TourPage() {
   /** Leaves the tour, and does not show it again on this device. */
   function finish(path: '/sign-up' | '/sign-in' | 'app') {
     markTourSeen();
+    reportStep('tour_done');
     // Someone new to the app has no use for notes on what changed in it.
     if (!signedIn) markReleaseSeen();
     if (path === 'app') navigate(next, { replace: true });

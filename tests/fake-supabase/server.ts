@@ -716,6 +716,16 @@ const server = createServer(async (req, res) => {
       );
       return send(res, 200, {});
     }
+    // Test control, standing in for the administrator's SQL in docs/admin-errors.md.
+    if (url.pathname === '/__test/client-errors' && req.method === 'POST') {
+      const { email } = (await readJson(req)) as { email: string };
+      const result = await pg.query(
+        `select kind, fingerprint, message, route, count from public.client_errors
+          where user_id = (select id from auth.users where email = $1) order by first_at`,
+        [email],
+      );
+      return send(res, 200, result.rows);
+    }
     // Test control, standing in for time passing: an account's trial ended some days ago.
     if (url.pathname === '/__test/expire-trial' && req.method === 'POST') {
       const { email, daysAgo = 1 } = (await readJson(req)) as { email: string; daysAgo?: number };

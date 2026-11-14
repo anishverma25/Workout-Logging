@@ -101,5 +101,4 @@ update public.content_reports set seen_at = now() where seen_at is null;
 ```
 
 Words nobody may use in usernames or group names are in `public.community_blocked`. To add a word,
-run `create or replace function public.community_blocked` with the longer list from migration
-0030.
+run `create or replace function public.community_blocked` with the longer list from migration 0030.

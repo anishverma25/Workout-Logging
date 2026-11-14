@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { reportError } from '../errorReport';
 import { markStarted, repairAndReload } from '../startup';
 import { isChunkLoadError, reloadOnceForNewVersion } from './chunkReload';
 
@@ -16,6 +17,7 @@ export class AppCrash extends Component<{ children: ReactNode }, { error: Error 
 
   override componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('The app crashed', error, info.componentStack);
+    reportError(isChunkLoadError(error) ? 'chunk' : 'crash', error);
     // A code file from an older version is gone: one reload picks up the new version.
     if (isChunkLoadError(error) && reloadOnceForNewVersion()) return;
     markStarted();

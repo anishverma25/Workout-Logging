@@ -255,7 +255,12 @@ for (const [id, name, ndb, note] of PICK) {
  */
 const IFCT_PICK = [
   ['ragi', 'Finger millet (ragi)', 'A010'],
-  ['little-millet', 'Little millet (samai, samak)', 'A016', 'Little millet values; barnyard millet (samak) is close.'],
+  [
+    'little-millet',
+    'Little millet (samai, samak)',
+    'A016',
+    'Little millet values; barnyard millet (samak) is close.',
+  ],
   ['kodo-millet', 'Kodo millet (varagu)', 'A017'],
   ['rice-flakes', 'Rice flakes (poha), IFCT', 'A011'],
   ['dalia', 'Broken wheat (dalia)', 'A021', 'Bulgur values.'],

@@ -1,3 +1,4 @@
+import { reportStep } from '@/app/errorReport';
 import { SYSTEM_EXERCISES, SYSTEM_EXERCISE_KEYS } from '@/data/library/exercises';
 import { shortDayName } from '@/lib/format/dates';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -400,6 +401,7 @@ function SetupFlow({
         dailyActivity: draft.dailyActivity,
         ...(draft.dietType ? { dietType: draft.dietType } : {}),
       });
+      reportStep('setup_done');
       if (draft.waistCm !== null || draft.bodyFatPct !== null) {
         await addMeasurement(db, {
           date: toDateKey(new Date()),

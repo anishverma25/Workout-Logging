@@ -24,12 +24,12 @@ select public.community_board(gen_random_uuid(), now() - interval '7 days', now(
 
 Worked out on the server from synced workouts and food logs, never sent by the phone.
 
-| Part | Points | Cap per week |
-| --- | --- | --- |
-| Workout: completed, 10+ minutes, 3+ working sets, logged live (created within 2 days of starting) | 10 | 2 a day, 6 a week |
-| Hard set: working, back-off or drop set not logged as easy (RIR 5+ or RPE under 6) | 1 | 25 |
-| Record: best estimated 1RM (Epley, 1 to 10 reps) on an exercise done in 2+ earlier workouts, at most 40% above the old best | 5 | 5 |
-| Protein day: logged protein reaches 90% of the person's target (logs made by the end of the next day) | 3 | 7 |
+| Part                                                                                                                        | Points | Cap per week      |
+| --------------------------------------------------------------------------------------------------------------------------- | ------ | ----------------- |
+| Workout: completed, 10+ minutes, 3+ working sets, logged live (created within 2 days of starting)                           | 10     | 2 a day, 6 a week |
+| Hard set: working, back-off or drop set not logged as easy (RIR 5+ or RPE under 6)                                          | 1      | 25                |
+| Record: best estimated 1RM (Epley, 1 to 10 reps) on an exercise done in 2+ earlier workouts, at most 40% above the old best | 5      | 5                 |
+| Protein day: logged protein reaches 90% of the person's target (logs made by the end of the next day)                       | 3      | 7                 |
 
 Monthly caps grow with the length of the month. Ties go to more hard sets, then more workouts,
 then whoever got there first. Weeks run Monday to Sunday, India time. A finished week or month is
@@ -106,4 +106,3 @@ delete from public.global_results where not final;
 
 Hiding takes effect at the next refresh. A frozen past period keeps the hidden person until it is
 recomputed: `delete from public.global_results where period = 'week' and starts_on = '2026-11-02';`.
-

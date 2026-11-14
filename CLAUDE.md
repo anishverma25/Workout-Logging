@@ -500,3 +500,28 @@ Read README.md for setup, architecture and calculation rules.
   - Report crash fixed (`repaired` for saved reports); label servings with no weight log as
     servings; temporary plan changes restore themselves for everyone (`restoreExpired`,
     `RestoreExpired` in AppShell); logged food rows show calories only.
+- Launch safety, stage C (November 2026, migrations `20261114000030_privacy_community.sql`,
+  `20261114000031_sync_pull.sql`, `20261114000032_client_errors.sql`, Dexie unchanged, Fable
+  review batches 19, 12, 3, 18, 4):
+  - AI safety in code (`_shared/coach.ts` Safety section): `unsafeAnswer` drops crash diets,
+    fast loss, big deficits, risky doses, long fasts, water cuts and drugs (English, Hinglish,
+    Devanagari numbers), and any cut or supplement for under 18s; `questionSafety` answers
+    self-harm (Tele-MANAS 14416), eating disorder and weight-cut questions itself, without AI.
+    Only server-signed AI turns go back into the history (`signAnswer`, `COACH_SIGNING_KEY`,
+    else the service role key). Cases in `features/coach/safety.test.ts`.
+  - Privacy and community: "Show me as" on the global board (name, username, initials, hidden),
+    reports (`report_content`), group bans, blocked words; account JSON export; CSV cells
+    starting `= + - @` are neutralised.
+  - Sync: one request pull (`sync_pull`, `remote.pullAll`, per-table fallback); a round after a
+    local change pushes only unless the last pull is older than `PULL_INTERVAL_MS`; refused
+    changes and skipped rows get one more try per app version; "Download my account again" on
+    Account (only with an empty outbox, never deletes); another tab upgrading the database shows
+    a Reload notice (`onUpgradedElsewhere`); guest data is offered once per phone.
+  - Rule: a new synced table is `late: true` unless listed in `tableRules.test.ts`
+    `APPLIED_EVERYWHERE` (only once its migration is live and every app version knows it).
+    Database history is pinned in `db.upgrade.test.ts`: add each new Dexie version there.
+  - Error reports and the onboarding funnel (`app/errorReport.ts`, `report_client_error`, 20
+    rows a person a day, kept 30 days, read with `docs/admin-errors.md`); scrubbed of food,
+    notes, AI text, emails, tokens, queries and hashes. `/__crash` exists only in dev and e2e.
+  - Source maps are hidden and moved to `sourcemaps/` by `verify-build` (never deployed).
+    Daily encrypted database backup (`.github/workflows/backup.yml`, `docs/backup-restore.md`).

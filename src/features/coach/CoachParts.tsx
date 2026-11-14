@@ -322,10 +322,10 @@ export function CoachConsent({ onDone }: { onDone?: () => void }) {
       <h3 className="type-headline text-text-1">Turn on Macrotrophy AI</h3>
       <ul className="type-meta mt-3 flex list-disc flex-col gap-2 pl-5 text-text-2">
         <li>
-          To answer, what it needs is sent to a third-party AI service: your question, your sets
-          and records, body weight, goals, sex, age and height, your food log and food names, your
-          plan, anything you told it to remember and any pain you reported. Your name and email
-          are never sent.
+          To answer, what it needs is sent to a third-party AI service: your question, your sets and
+          records, body weight, goals, sex, age and height, your food log and food names, your plan,
+          anything you told it to remember and any pain you reported. Your name and email are never
+          sent.
         </li>
         <li>
           That service may keep what is sent and use it to improve its products, so do not type

@@ -24,19 +24,19 @@ steps outside a limit. Change a limit and the science topic in the same commit.
 
 ## Where each part lives
 
-| What the person sees | Code |
-| --- | --- |
-| Next week, Apply or Keep, in the weekly review | `features/brain/NextWeek.tsx`, `useBrain.ts` |
-| Try a different plan | `domain/brain/whatIf.ts`, `features/brain/WhatIfSheet.tsx` |
-| Coming up (review and Routines) | `ComingUpSheet.tsx`, `ComingUpRow.tsx` |
-| Something hurts (logger exercise menu) | `HurtsSheet.tsx` |
-| Programme rewrite | `domain/brain/rewrite.ts`, `data/repositories/plan.ts` (`applyDecision`) |
-| Now card | `domain/brain/now.ts`, `features/home/NowCard.tsx` |
-| Eat next, Plan my week, Read a menu | `domain/nutrition/solver.ts`, `features/food/EatNextCard.tsx`, `MealPlanPage.tsx`, `MenuSheet.tsx` |
-| Voice sets | `domain/workout/voice.ts`, `features/workout/VoiceSets.tsx`, `features/food/speech.ts` (`listenPatiently`) |
-| What Macrotrophy AI knows | `features/coach/memory.ts`, `features/settings/MemoryPage.tsx` |
-| Wrapped | `domain/share/wrapped.ts`, `features/wrapped` |
-| Duels | migration `20261112000023_duels.sql`, `features/groups/DuelsCard.tsx` |
+| What the person sees                           | Code                                                                                                       |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Next week, Apply or Keep, in the weekly review | `features/brain/NextWeek.tsx`, `useBrain.ts`                                                               |
+| Try a different plan                           | `domain/brain/whatIf.ts`, `features/brain/WhatIfSheet.tsx`                                                 |
+| Coming up (review and Routines)                | `ComingUpSheet.tsx`, `ComingUpRow.tsx`                                                                     |
+| Something hurts (logger exercise menu)         | `HurtsSheet.tsx`                                                                                           |
+| Programme rewrite                              | `domain/brain/rewrite.ts`, `data/repositories/plan.ts` (`applyDecision`)                                   |
+| Now card                                       | `domain/brain/now.ts`, `features/home/NowCard.tsx`                                                         |
+| Eat next, Plan my week, Read a menu            | `domain/nutrition/solver.ts`, `features/food/EatNextCard.tsx`, `MealPlanPage.tsx`, `MenuSheet.tsx`         |
+| Voice sets                                     | `domain/workout/voice.ts`, `features/workout/VoiceSets.tsx`, `features/food/speech.ts` (`listenPatiently`) |
+| What Macrotrophy AI knows                      | `features/coach/memory.ts`, `features/settings/MemoryPage.tsx`                                             |
+| Wrapped                                        | `domain/share/wrapped.ts`, `features/wrapped`                                                              |
+| Duels                                          | migration `20261112000023_duels.sql`, `features/groups/DuelsCard.tsx`                                      |
 
 ## Data
 

@@ -35,7 +35,9 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       target: 'es2022',
-      sourcemap: true,
+      // Hidden: maps are made for reading error reports, but the files never ship (verify-build
+      // moves them out of dist) and no bundle points to them.
+      sourcemap: 'hidden',
       // Fonts stay files: the Content Security Policy allows fonts from this site only, so a
       // small KaTeX font inlined as a data: address would be refused on the science page.
       assetsInlineLimit: (file: string) => (/\.(woff2?|ttf|otf)$/.test(file) ? false : undefined),

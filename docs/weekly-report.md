@@ -21,6 +21,7 @@ Design and decisions: Project docs `claude/weekly-intelligence-spec.md` and
   - 7,700 kcal is treated as 1 kg.
 
   The Fisher exact test (checked against scipy) only gates early signals. No probability is shown.
+
 - **Thin weeks.** A report needs 2 workouts or 3 food days. Parts with too little data are
   left out.
 - **Words.** The words come from fixed templates (English and Hinglish), never from AI.

@@ -1,6 +1,7 @@
 import { requestPersistentStorage } from '@/data/storage';
 import { initAccount } from './account';
 import { startEntitlement } from './entitlement';
+import { startErrorReports } from './errorReport';
 import { startFeedback } from './feedback';
 import { startFlags } from './flags';
 
@@ -10,6 +11,8 @@ export async function bootstrap(): Promise<void> {
   startEntitlement();
   startFeedback();
   startFlags();
+  // After start-up, so a failure while opening is shown by the start-up check, not lost here.
+  startErrorReports();
   // Ask the browser not to evict local data. Silently ignored where unsupported.
   void requestPersistentStorage();
 }

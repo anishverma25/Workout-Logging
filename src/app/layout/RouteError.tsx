@@ -1,5 +1,6 @@
 import { isRouteErrorResponse, useRouteError } from 'react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { reportError } from '../errorReport';
 import { AlertTriangle } from 'lucide-react';
 import { IconTile, PrimaryButton } from '@/components/kit';
 import { buttonClasses } from '@/components/ui/buttonStyles';
@@ -13,6 +14,10 @@ import { isChunkLoadError, reloadOnceForNewVersion } from './chunkReload';
 export function RouteError() {
   const error = useRouteError();
   const [reloading] = useState(() => isChunkLoadError(error) && reloadOnceForNewVersion());
+  useEffect(() => {
+    if (isRouteErrorResponse(error) && error.status === 404) return;
+    reportError(isChunkLoadError(error) ? 'chunk' : 'route', error);
+  }, [error]);
   if (reloading)
     return (
       <main className="flex min-h-dvh items-center justify-center bg-bg px-6 text-center" aria-busy>

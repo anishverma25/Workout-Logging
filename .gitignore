@@ -25,3 +25,6 @@ dist-e2e
 # Local Cloudflare Pages emulation (wrangler pages dev)
 .wrangler
 .update-check/
+
+# Hidden source maps from the build (scripts/verify-build.mjs), never deployed
+sourcemaps

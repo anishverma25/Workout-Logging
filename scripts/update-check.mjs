@@ -298,7 +298,8 @@ async function interrupted(fromBuild, toBuild) {
     await page.reload();
     await page.waitForTimeout(4000);
     const stuck = await state(page);
-    if (!stuck.drawn || stuck.help) throw new Error('the app stopped opening after a failed update');
+    if (!stuck.drawn || stuck.help)
+      throw new Error('the app stopped opening after a failed update');
     if (stuck.main !== old) throw new Error('a half-downloaded version took over');
     await ctx.setOffline(true);
     const off = await ctx.newPage();
@@ -326,7 +327,8 @@ async function interrupted(fromBuild, toBuild) {
     const after = await state(page);
     const want =
       (await (await fetch(`${BASE}/`)).text()).match(/\/assets\/index-[^"]+\.js/)?.[0] ?? '';
-    if (!after.drawn || after.help) throw new Error('the app did not open after the retried update');
+    if (!after.drawn || after.help)
+      throw new Error('the app did not open after the retried update');
     if (!after.main.endsWith(want)) throw new Error('the retried update did not take over');
     console.log(`PASS ${name}`);
   } catch (err) {

@@ -429,9 +429,10 @@ describe('Macrotrophy Score', () => {
          from public.community_bounds('week', 0)`,
       )
     ).rows[0]!.t;
-    await workout(a, new Date(start), three());
+    // Same length for all, so near midnight both of a's sessions still fall on one day.
+    await workout(a, new Date(start), three(), { minutes: 15 });
     await workout(a, new Date(new Date(start).getTime() + 1000), three(), { minutes: 15 });
-    await workout(b, new Date(start), three());
+    await workout(b, new Date(start), three(), { minutes: 15 });
     const board = await as<{
       rows: { username: string; rank: number; me: boolean; score: number }[];
       trained_today: string[];

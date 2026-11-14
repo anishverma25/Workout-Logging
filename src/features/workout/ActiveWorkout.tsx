@@ -1,3 +1,4 @@
+import { reportFirst } from '@/app/errorReport';
 import { restIntervals } from '@/domain/analytics/rest';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -213,6 +214,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
     try {
       if (effort !== null) await updateWorkoutFeel(db, workout.id, { sessionRpe: effort });
       await finishWorkout(db, workout.id, { keepUnconfirmed });
+      reportFirst('first_workout');
       haptic('success');
       await restActions.clear();
       navigate(`/workouts/${workout.id}/summary`, { replace: true });
