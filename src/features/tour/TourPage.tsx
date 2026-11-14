@@ -882,7 +882,7 @@ function Reviews({ active }: SlideProps) {
         icon={<Star className="size-4" aria-hidden />}
         kicker="From members"
         title="Loved by the people who train with it"
-        body="Real ratings and reviews from people who log their training and food in Macrotrophy."
+        body="Real members, in their own words."
       />
       <ReviewsShowcase active={active} />
     </>

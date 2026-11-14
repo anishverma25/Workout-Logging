@@ -136,13 +136,21 @@ function asSubscription(value: unknown): RazorpaySubscription | null {
   };
 }
 
-/** The end of the paid period: Razorpay's current_end, else now plus the plan's months. */
-export function periodEnd(sub: RazorpaySubscription, months: number, now: Date): Date {
+/** Pro granted when Razorpay has not said yet when the paid period ends. */
+export const PROVISIONAL_DAYS = 3;
+
+/**
+ * The end of the paid period: Razorpay's current_end. Without one, a full period is given only
+ * when a charge is certain (`months`, from subscription.charged); otherwise a few days, and the
+ * charge event then sets the real end. A period is never invented from a plan's length alone.
+ */
+export function periodEnd(sub: RazorpaySubscription, months: number | null, now: Date): Date {
   if (sub.current_end && sub.current_end * 1000 > now.getTime()) {
     return new Date(sub.current_end * 1000);
   }
   const end = new Date(now);
-  end.setMonth(end.getMonth() + months);
+  if (months === null) end.setDate(end.getDate() + PROVISIONAL_DAYS);
+  else end.setMonth(end.getMonth() + months);
   return end;
 }
 
@@ -288,6 +296,85 @@ async function checkoutInfo(
     null) as CheckoutInfo | null;
 }
 
+/** Turns Pro on for a subscription that Razorpay says was paid (checkout or a later look). */
+async function activatePaid(
+  deps: BillingDeps,
+  userId: string,
+  subscriptionId: string,
+  sub: RazorpaySubscription,
+  info: CheckoutInfo,
+): Promise<{ starts_at: string | null; pro_expires_at: string | null }> {
+  const now = deps.now?.() ?? new Date();
+  const later = laterStart(sub, now);
+  if (later) {
+    await applyLaterStart(deps, subscriptionId, userId, later);
+    return {
+      starts_at: later.at.toISOString(),
+      pro_expires_at: later.upfront ? later.at.toISOString() : info.pro_expires_at,
+    };
+  }
+  const status = STATUSES.has(sub.status) ? sub.status : 'active';
+  const end = periodEnd(sub, null, now);
+  await deps.rpc('billing_activate', {
+    p_subscription: subscriptionId,
+    p_period_end: end.toISOString(),
+    p_status: status === 'created' ? 'authenticated' : status,
+  });
+  return { starts_at: null, pro_expires_at: end.toISOString() };
+}
+
+/**
+ * The account still stores a subscription that was created for a checkout and never confirmed
+ * (the window closed, the confirmation failed, a second tap). Before anything new is created:
+ * - Razorpay says it was paid: Pro is turned on for it and the app is told `already_paid`.
+ * - It is still waiting, for the same plan and code: the same one is offered again.
+ * - Otherwise it is cancelled at Razorpay, so it can never charge later.
+ * Returns a response to send, or null to go on and create a new one.
+ */
+async function settleCreated(
+  deps: BillingDeps,
+  userId: string,
+  info: CheckoutInfo,
+  plan: PlanId | null,
+  coupon: Coupon | null,
+): Promise<BillingResponse | null> {
+  const stored = info.current_subscription_id;
+  if (!stored || info.current_kind === 'once' || info.current_status !== 'created') return null;
+  const sub = asSubscription(await deps.razorpay('GET', `/subscriptions/${stored}`));
+  if (!sub) return fail(502, 'Could not reach Razorpay. Try again in a minute.');
+  if (sub.status === 'authenticated' || sub.status === 'active') {
+    const done = await activatePaid(deps, userId, stored, sub, info);
+    return ok({ already_paid: true, active: true, ...done });
+  }
+  if (
+    sub.status === 'created' &&
+    plan !== null &&
+    sub.notes?.plan === plan &&
+    (sub.notes?.coupon ?? null) === (coupon?.code ?? null) &&
+    (sub.notes?.credit ?? null) === (coupon?.credit ?? null)
+  ) {
+    const startAt = Number(sub.notes?.start_at);
+    return ok({
+      subscription_id: stored,
+      key_id: deps.config.keyId,
+      starts_at:
+        Number.isFinite(startAt) && startAt > 0 ? new Date(startAt * 1000).toISOString() : null,
+      first_charge_paise:
+        coupon && info.price_inr ? discountedPaise(Number(info.price_inr), coupon.percent) : null,
+      reused: true,
+    });
+  }
+  if (sub.status === 'created') {
+    await deps.razorpay('POST', `/subscriptions/${stored}/cancel`, { cancel_at_cycle_end: 0 });
+  }
+  await deps.rpc('billing_set_status', {
+    p_subscription: stored,
+    p_status: STATUSES.has(sub.status) ? sub.status : 'cancelled',
+    p_cancel_at_period_end: true,
+  });
+  return null;
+}
+
 /**
  * Creates a Razorpay subscription for the chosen plan and returns what Checkout needs.
  *
@@ -323,6 +410,10 @@ export async function handleSubscribe(
   }
   const coupon = await couponFrom(deps, userId, body, info);
   if (isResponse(coupon)) return coupon;
+  // A checkout started before and never finished: paid after all, the same one again, or
+  // stopped, so one account never has two subscriptions that can charge.
+  const earlier = await settleCreated(deps, userId, info, plan as PlanId, coupon);
+  if (earlier) return earlier;
 
   const price = Number(info.price_inr ?? 0);
   if (price > 0) {
@@ -505,24 +596,12 @@ export async function handleVerify(
   const sub = asSubscription(await deps.razorpay('GET', `/subscriptions/${stored}`));
   if (!sub)
     return fail(502, 'Could not reach Razorpay. Your payment is safe; Pro will start shortly.');
-  const now = deps.now?.() ?? new Date();
-  const later = laterStart(sub, now);
-  if (later) {
-    await applyLaterStart(deps, stored, userId, later);
-    return ok({
-      active: true,
-      starts_at: later.at.toISOString(),
-      pro_expires_at: later.upfront ? later.at.toISOString() : info.pro_expires_at,
-    });
-  }
-  const status = STATUSES.has(sub.status) ? sub.status : 'active';
-  const end = periodEnd(sub, info.current_months ?? 1, now);
-  await deps.rpc('billing_activate', {
-    p_subscription: stored,
-    p_period_end: end.toISOString(),
-    p_status: status === 'created' ? 'authenticated' : status,
-  });
-  return ok({ active: true, pro_expires_at: end.toISOString() });
+  const done = await activatePaid(deps, userId, stored, sub, info);
+  return ok(
+    done.starts_at
+      ? { active: true, starts_at: done.starts_at, pro_expires_at: done.pro_expires_at }
+      : { active: true, pro_expires_at: done.pro_expires_at },
+  );
 }
 
 /** Creates a one-time Razorpay order for the chosen plan: one payment, no mandate. */
@@ -548,6 +627,9 @@ export async function handleOrder(
   }
   const coupon = await couponFrom(deps, userId, body, info);
   if (isResponse(coupon)) return coupon;
+  // Paying once instead of a checkout left open: that one is settled first.
+  const earlier = await settleCreated(deps, userId, info, null, coupon);
+  if (earlier) return earlier;
   const full = Math.round(Number(info.once_price_inr) * 100);
   const paise = coupon ? discountedPaise(Number(info.once_price_inr), coupon.percent) : full;
   const receipt = `ov_${userId.replaceAll('-', '').slice(0, 12)}_${Date.now().toString(36)}`;
@@ -610,22 +692,46 @@ async function verifyOrder(
   return ok({ active: true, pro_expires_at: done.pro_expires_at ?? null });
 }
 
-/** Stops renewal. Pro stays on until the end of the period already paid for. */
+/**
+ * Stops renewal. Pro stays on until the end of the period already paid for. Safe for every
+ * state that could still charge: a checkout never finished and a plan that has not started yet
+ * (an up-front first period, or a start after paid time) are cancelled at once at Razorpay, so
+ * nothing is charged later; a running plan stops at the end of its period.
+ */
 export async function handleCancel(deps: BillingDeps, userId: string): Promise<BillingResponse> {
   const info = await checkoutInfo(deps, userId, null);
   const stored = info?.current_subscription_id;
-  if (!stored || !info?.current_status || !LIVE.has(info.current_status)) {
+  if (
+    !stored ||
+    !info?.current_status ||
+    info.current_kind === 'once' ||
+    !(LIVE.has(info.current_status) || info.current_status === 'halted')
+  ) {
     return fail(409, 'There is no plan to cancel.');
   }
-  if (info.current_status === 'created') {
+  // Not charging yet, or stuck on a failed renewal: stop it now. Paid Pro time stays.
+  const sub =
+    info.current_status === 'active'
+      ? null
+      : asSubscription(await deps.razorpay('GET', `/subscriptions/${stored}`));
+  if (sub && sub.status !== 'active') {
+    if (sub.status !== 'cancelled' && sub.status !== 'completed' && sub.status !== 'expired') {
+      const cancelled = await deps.razorpay('POST', `/subscriptions/${stored}/cancel`, {
+        cancel_at_cycle_end: 0,
+      });
+      if (!cancelled) return fail(502, 'Could not reach Razorpay. Try again in a minute.');
+    }
     await deps.rpc('billing_set_status', {
       p_subscription: stored,
       p_status: 'cancelled',
-      p_cancel_at_period_end: false,
+      p_cancel_at_period_end: true,
     });
-    return ok({ cancelled: true });
+    return ok({ cancelled: true, pro_expires_at: info.pro_expires_at });
   }
-  await deps.razorpay('POST', `/subscriptions/${stored}/cancel`, { cancel_at_cycle_end: 1 });
+  const stopped = await deps.razorpay('POST', `/subscriptions/${stored}/cancel`, {
+    cancel_at_cycle_end: 1,
+  });
+  if (!stopped) return fail(502, 'Could not reach Razorpay. Try again in a minute.');
   await deps.rpc('billing_set_status', {
     p_subscription: stored,
     p_status: info.current_status,
@@ -645,6 +751,14 @@ const MONTHS_FALLBACK: Record<string, number> = {
   coach_monthly: 1,
 };
 
+/** Payment events about money going back: recorded for the owner, never acted on by themselves. */
+const MONEY_BACK: Record<string, 'refund' | 'dispute'> = {
+  'refund.processed': 'refund',
+  'payment.refunded': 'refund',
+  'payment.dispute.created': 'dispute',
+  'payment.dispute.lost': 'dispute',
+};
+
 export async function handleWebhook(
   deps: BillingDeps,
   rawBody: string,
@@ -659,7 +773,9 @@ export async function handleWebhook(
     payload?: {
       subscription?: { entity?: unknown };
       order?: { entity?: { id?: unknown } };
-      payment?: { entity?: { id?: unknown } };
+      payment?: { entity?: { id?: unknown; amount?: unknown; notes?: unknown } };
+      refund?: { entity?: { id?: unknown; payment_id?: unknown; amount?: unknown } };
+      dispute?: { entity?: { id?: unknown; payment_id?: unknown; amount?: unknown } };
     };
   };
   try {
@@ -668,50 +784,99 @@ export async function handleWebhook(
     return fail(400, 'Bad body');
   }
   const event = payload.event ?? '';
+  const sub = asSubscription(payload.payload?.subscription?.entity);
+  const known =
+    event === 'order.paid' || event in MONEY_BACK || (event.startsWith('subscription.') && !!sub);
+  if (!known) return ok({ ignored: true });
+  if (eventId && !(await deps.rpc('billing_record_event', { p_id: eventId, p_event: event }))) {
+    return ok({ duplicate: true });
+  }
+  try {
+    return await applyEvent(deps, event, (payload.payload ?? {}) as EventPayload, sub);
+  } catch (err) {
+    // The event was marked as seen but not applied: forget it, so Razorpay's retry is applied.
+    if (eventId) await deps.rpc('billing_forget_event', { p_id: eventId }).catch(() => undefined);
+    throw err;
+  }
+}
+
+type EventPayload = Record<string, { entity?: Record<string, unknown> } | undefined>;
+
+async function applyEvent(
+  deps: BillingDeps,
+  event: string,
+  body: EventPayload,
+  sub: RazorpaySubscription | null,
+): Promise<BillingResponse> {
   if (event === 'order.paid') {
-    const orderId = payload.payload?.order?.entity?.id;
-    const paymentId = payload.payload?.payment?.entity?.id;
+    const orderId = body.order?.entity?.id;
+    const paymentId = body.payment?.entity?.id;
     if (typeof orderId !== 'string' || typeof paymentId !== 'string') return ok({ ignored: true });
-    if (eventId && !(await deps.rpc('billing_record_event', { p_id: eventId, p_event: event }))) {
-      return ok({ duplicate: true });
-    }
     // Unknown orders (subscription charges also send order.paid) come back null and are ignored.
     const done = await deps.rpc('billing_order_paid', { p_order: orderId, p_payment: paymentId });
     return ok(done ? { applied: event } : { ignored: true });
   }
-  const sub = asSubscription(payload.payload?.subscription?.entity);
-  if (!event.startsWith('subscription.') || !sub) return ok({ ignored: true });
-  if (eventId && !(await deps.rpc('billing_record_event', { p_id: eventId, p_event: event }))) {
-    return ok({ duplicate: true });
+  const back = MONEY_BACK[event];
+  if (back) {
+    const e =
+      (back === 'refund' ? body.refund?.entity : body.dispute?.entity) ?? body.payment?.entity;
+    const paymentId = e?.payment_id ?? body.payment?.entity?.id ?? e?.id;
+    const amount = Number(e?.amount ?? body.payment?.entity?.amount);
+    const notes = (body.payment?.entity?.notes ?? null) as Record<string, unknown> | null;
+    const user = typeof notes?.user_id === 'string' ? notes.user_id : null;
+    await deps.rpc('billing_record_orphan', {
+      p_kind: back,
+      p_razorpay_id: typeof paymentId === 'string' ? paymentId : 'unknown',
+      p_user: user,
+      p_event: event,
+      p_amount: Number.isFinite(amount) ? amount / 100 : null,
+      p_action: 'recorded',
+    });
+    return ok({ recorded: event });
   }
+  if (!sub) return ok({ ignored: true });
   const status = STATUSES.has(sub.status) ? sub.status : null;
+  const now = deps.now?.() ?? new Date();
   switch (event) {
     case 'subscription.activated':
     case 'subscription.charged': {
-      const months = MONTHS_FALLBACK[sub.notes?.plan ?? ''] ?? 1;
-      await deps.rpc('billing_activate', {
-        p_subscription: sub.id,
-        p_period_end: periodEnd(sub, months, deps.now?.() ?? new Date()).toISOString(),
-        p_status: status ?? 'active',
-      });
+      // Only a charge makes a full period certain when Razorpay leaves out the end.
+      const months =
+        event === 'subscription.charged' ? (MONTHS_FALLBACK[sub.notes?.plan ?? ''] ?? 1) : null;
+      const activate = () =>
+        deps.rpc('billing_activate', {
+          p_subscription: sub.id,
+          p_period_end: periodEnd(sub, months, now).toISOString(),
+          p_status: status ?? 'active',
+        });
+      const user = await activate();
+      if (!user) return orphan(deps, event, sub, activate);
       // An old-price plan the owner's one-time call missed renews no further than this period.
       const legacy = ((await deps.rpc('billing_legacy_renewing', {})) ?? []) as string[];
       if (legacy.includes(sub.id)) await retireLegacy(deps, sub.id);
       return ok({ applied: event });
     }
     case 'subscription.authenticated': {
-      const later = laterStart(sub, deps.now?.() ?? new Date());
+      const later = laterStart(sub, now);
       const user = sub.notes?.user_id;
       if (later && typeof user === 'string') {
         await applyLaterStart(deps, sub.id, user, later);
         return ok({ applied: event });
       }
       if (status) {
-        await deps.rpc('billing_set_status', {
+        const owner = await deps.rpc('billing_set_status', {
           p_subscription: sub.id,
           p_status: status,
           p_cancel_at_period_end: null,
         });
+        if (!owner)
+          return orphan(deps, event, sub, () =>
+            deps.rpc('billing_set_status', {
+              p_subscription: sub.id,
+              p_status: status,
+              p_cancel_at_period_end: null,
+            }),
+          );
       }
       return ok({ applied: event });
     }
@@ -733,4 +898,40 @@ export async function handleWebhook(
     default:
       return ok({ ignored: true });
   }
+}
+
+/**
+ * Razorpay took a payment for a subscription no account stores (a second checkout replaced it on
+ * the account). If the account in its notes has nothing live, the subscription is attached back
+ * and applied. Otherwise it is recorded for the owner and cancelled at once, so it never charges
+ * again; the owner refunds it from the list in docs/admin-pro-payments.md.
+ */
+async function orphan(
+  deps: BillingDeps,
+  event: string,
+  sub: RazorpaySubscription,
+  apply: () => Promise<unknown>,
+): Promise<BillingResponse> {
+  const user = sub.notes?.user_id;
+  const plan = sub.notes?.plan;
+  if (typeof user === 'string' && typeof plan === 'string') {
+    const adopted = await deps.rpc('billing_adopt', {
+      p_user: user,
+      p_plan: plan,
+      p_subscription: sub.id,
+    });
+    if (adopted && (await apply())) return ok({ applied: event, adopted: true });
+  }
+  if (sub.status !== 'cancelled' && sub.status !== 'completed' && sub.status !== 'expired') {
+    await deps.razorpay('POST', `/subscriptions/${sub.id}/cancel`, { cancel_at_cycle_end: 0 });
+  }
+  await deps.rpc('billing_record_orphan', {
+    p_kind: 'orphan',
+    p_razorpay_id: sub.id,
+    p_user: typeof user === 'string' ? user : null,
+    p_event: event,
+    p_amount: null,
+    p_action: 'cancelled',
+  });
+  return ok({ orphan: true });
 }

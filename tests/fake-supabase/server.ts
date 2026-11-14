@@ -648,16 +648,14 @@ async function handleCoachRoute(req: IncomingMessage, res: ServerResponse) {
           const q = await tx.query<{ r: unknown }>('select public.get_my_subscription() as r');
           return q.rows[0]?.r ?? null;
         }),
-      photoQuota: {
-        claim: () =>
-          asRequester(req, async (tx) => {
-            const q = await tx.query<{ r: number }>(`select public.claim_ai_use('photo') as r`);
-            return q.rows[0]?.r ?? -1;
-          }),
-        release: () =>
-          asRequester(req, async (tx) => {
-            await tx.query(`select public.release_ai_use('photo')`);
-          }),
+      quota: {
+        claim: async (kind) => {
+          const left = await billingDeps.rpc('ai_claim', { p_user: claims.sub, p_kind: kind });
+          return typeof left === 'number' ? left : -1;
+        },
+        release: async (kind) => {
+          await billingDeps.rpc('ai_release', { p_user: claims.sub, p_kind: kind });
+        },
       },
     },
     body,

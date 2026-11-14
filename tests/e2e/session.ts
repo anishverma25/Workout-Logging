@@ -36,6 +36,10 @@ export async function signUpFresh(page: Page, { at = '/', tag = 'e2e' } = {}): P
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page).not.toHaveURL(/sign-up/);
+  // A new account always opens setup first; tests that are not about setup leave it.
+  await expect(page).toHaveURL(/\/setup/);
+  await page.getByRole('button', { name: 'Not now' }).click();
+  await expect(page).not.toHaveURL(/\/setup/);
   return email;
 }
 

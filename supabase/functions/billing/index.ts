@@ -12,6 +12,7 @@ import {
   handleSubscribe,
   handleVerify,
   handleWebhook,
+  safeEqual,
   type BillingDeps,
   type BillingResponse,
 } from '../_shared/billing.ts';
@@ -57,14 +58,24 @@ const deps: BillingDeps = {
 // the site's address, for example https://macrotrophy.in.
 // A comma-separated list is allowed, for example during a move to a new domain:
 // https://macrotrophy.in,https://overloadgym.in
-const allowedOrigins = (env('APP_ORIGIN') ?? '')
+// Without APP_ORIGIN set, only the app's own addresses (and a local build) are allowed, never
+// any site at all.
+const DEFAULT_ORIGINS = [
+  'https://macrotrophy.in',
+  'https://www.macrotrophy.in',
+  'https://overloadgym.in',
+  'https://overload-gym.pages.dev',
+];
+const configuredOrigins = (env('APP_ORIGIN') ?? '')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);
+const allowedOrigins = configuredOrigins.length ? configuredOrigins : DEFAULT_ORIGINS;
+const isLocal = (origin: string) => /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 
 function cors(origin: string | null): Record<string, string> {
   const allow =
-    origin && (allowedOrigins.includes(origin) || !allowedOrigins.length)
+    origin && (allowedOrigins.includes(origin) || (!configuredOrigins.length && isLocal(origin)))
       ? origin
       : allowedOrigins[0];
   return {
@@ -108,7 +119,8 @@ Deno.serve(async (req) => {
     // the service role key, which never leaves the Supabase dashboard and the owner's terminal.
     if (route === 'retire-legacy') {
       const key = env('SUPABASE_SERVICE_ROLE_KEY');
-      if (!key || token !== key) return reply({ status: 401, body: { error: 'Not allowed' } }, origin);
+      if (!key || !safeEqual(token, key))
+        return reply({ status: 401, body: { error: 'Not allowed' } }, origin);
       return reply(await handleRetireLegacy(deps), origin);
     }
     const { data, error } = await admin.auth.getUser(token);

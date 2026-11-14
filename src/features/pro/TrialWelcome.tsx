@@ -12,11 +12,10 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useEntitlement } from '@/app/entitlement';
-import { averageRating, REVIEWS, SURVEY_RATINGS } from '@/app/marketing';
 import { SecondaryButton, TextButton } from '@/components/kit';
 import { TRIAL_HOURS } from '@/domain/entitlement/entitlement';
 import { safeNext } from '@/features/account/next';
-import { StarRow } from '@/features/tour/Reviews';
+import { QuoteSpotlight, RatingLaurel } from '@/features/tour/Reviews';
 import { formatCalendarDate } from '@/lib/format';
 import { PlansSection } from './Plans';
 
@@ -81,7 +80,6 @@ export function TrialWelcomePage() {
   const e = useEntitlement();
   const trial = e.plan === 'trial';
   const ends = trial && e.trialEndsAt ? formatCalendarDate(e.trialEndsAt) : null;
-  const review = REVIEWS[1] ?? REVIEWS[0]!;
   const onward = () => navigate(next, { replace: true });
 
   if (e.plan === 'pro' || e.plan === 'founding') return <Navigate to={next} replace />;
@@ -189,16 +187,10 @@ export function TrialWelcomePage() {
           </table>
         </div>
 
-        <figure className="review-hero mt-8 rounded-card p-5">
-          <div className="flex items-center justify-between gap-3">
-            <StarRow value={averageRating()} />
-            <span className="type-caption text-text-2">
-              {averageRating()} from {SURVEY_RATINGS.length} members
-            </span>
-          </div>
-          <blockquote className="type-subhead mt-3 text-text-1">“{review.quote}”</blockquote>
-          <figcaption className="type-caption mt-2 text-text-2">{review.name}</figcaption>
-        </figure>
+        <section className="mt-10 flex flex-col gap-6" aria-label="What members say">
+          <RatingLaurel />
+          <QuoteSpotlight active />
+        </section>
 
         <div className="mt-8" data-trial-prices>
           <PlansSection entitlement={e} />

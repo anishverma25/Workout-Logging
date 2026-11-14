@@ -7,33 +7,16 @@ const reduceMotion = () =>
   typeof window !== 'undefined' &&
   !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-/** Counts up to a number once, in about 0.9 s; shows it at once with reduced motion. */
-function useCountUp(to: number, run: boolean, decimals = 1): string {
-  const [value, setValue] = useState(() => (run && !reduceMotion() ? 0 : to));
-  useEffect(() => {
-    if (!run || reduceMotion()) {
-      setValue(to);
-      return;
-    }
-    let frame = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / 900);
-      // Ease out: quick at first, settling on the number like a dial.
-      setValue(to * (1 - (1 - t) ** 3));
-      if (t < 1) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [to, run]);
-  return value.toFixed(decimals);
-}
+/** How long each quote stays before the next one. */
+const QUOTE_MS = 5200;
+/** Quotes short enough to read at a glance in the large size. */
+const SPOTLIGHT = REVIEWS.filter((r) => r.quote.length <= 190).slice(0, 5);
 
 /** Five stars, filled to any fraction (4.9 fills the last one 90%). */
 export function StarRow({ value, size = 'md' }: { value: number; size?: 'sm' | 'md' | 'lg' }) {
-  const cls = size === 'lg' ? 'size-6' : size === 'md' ? 'size-4' : 'size-3.5';
+  const cls = size === 'lg' ? 'size-5' : size === 'md' ? 'size-4' : 'size-3.5';
   return (
-    <span className="inline-flex gap-0.5" role="img" aria-label={`${value} out of 5 stars`}>
+    <span className="inline-flex gap-1" role="img" aria-label={`${value} out of 5 stars`}>
       {Array.from({ length: 5 }, (_, i) => {
         const fill = Math.max(0, Math.min(1, value - i));
         return (
@@ -49,125 +32,160 @@ export function StarRow({ value, size = 'md' }: { value: number; size?: 'sm' | '
   );
 }
 
-/** The person's initial in a soft coloured disc: no photos, first names only. */
-function Initial({ name, tone }: { name: string; tone: 'lime' | 'gold' }) {
+/**
+ * One laurel branch: leaves in pairs along an arc, larger at the base. The right one is the
+ * left mirrored, so together they frame the rating like an award.
+ */
+function Laurel({ side }: { side: 'left' | 'right' }) {
+  // The stem is an arc of a circle centred to the right of the branch.
+  const cx = 62;
+  const cy = 46;
+  const r = 44;
+  const from = (150 * Math.PI) / 180;
+  const to = (232 * Math.PI) / 180;
+  const at = (a: number) => ({ x: cx + r * Math.cos(a), y: cy - r * Math.sin(a) });
+  const stemFrom = at(from);
+  const stemTo = at(to);
+  const leaves: { x: number; y: number; rot: number; s: number }[] = [];
+  const count = 7;
+  for (let i = 0; i < count; i++) {
+    const a = to - ((to - from) * (i + 0.5)) / count;
+    const p = at(a);
+    // Tangent direction of the arc, pointing up the branch.
+    const tangent = (-a * 180) / Math.PI - 90;
+    const s = 1 - (i / count) * 0.45;
+    leaves.push({ x: p.x, y: p.y, rot: tangent - 38, s });
+    leaves.push({ x: p.x, y: p.y, rot: tangent + 38, s: s * 0.9 });
+  }
   return (
-    <span
+    <svg
+      viewBox="-6 -4 50 100"
+      className={cn('h-24 w-12 shrink-0 text-gold', side === 'right' && '-scale-x-100')}
       aria-hidden
-      className={cn(
-        'flex size-9 shrink-0 items-center justify-center rounded-full font-display text-[0.95rem] font-bold',
-        tone === 'lime' ? 'bg-lime-dim text-lime' : 'bg-gold-dim text-gold',
-      )}
     >
-      {name.slice(0, 1)}
-    </span>
+      <path
+        d={`M ${stemFrom.x} ${stemFrom.y} A ${r} ${r} 0 0 0 ${stemTo.x} ${stemTo.y}`}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        opacity="0.7"
+        transform="translate(0 0)"
+      />
+      {leaves.map((l, i) => (
+        <path
+          key={i}
+          d="M0 0 C 3.2 -3, 3.2 -9, 0 -12 C -3.2 -9, -3.2 -3, 0 0 Z"
+          transform={`translate(${l.x} ${l.y}) rotate(${l.rot}) scale(${l.s * 1.45})`}
+          fill="currentColor"
+          opacity={0.6 + 0.4 * l.s}
+        />
+      ))}
+    </svg>
   );
 }
 
-/** Average, stars and how the ratings spread, from the survey answers. */
-export function RatingSummary({ active = true }: { active?: boolean }) {
+/** The award-style rating: the average between two laurels, the stars, and how many rated. */
+export function RatingLaurel({ active = true }: { active?: boolean }) {
   const avg = averageRating();
-  const shown = useCountUp(avg, active);
-  const counts = [5, 4, 3, 2, 1].map((stars) => ({
-    stars,
-    n: SURVEY_RATINGS.filter((r) => r === stars).length,
-  }));
-  const most = Math.max(...counts.map((c) => c.n), 1);
+  const fives = SURVEY_RATINGS.filter((r) => r === 5).length;
   return (
     <div
-      className="review-hero relative isolate overflow-hidden rounded-panel bg-surface p-5"
+      className={cn('flex flex-col items-center text-center', active && 'laurel-in')}
       data-rating-summary
     >
-      <div className="flex items-center gap-5">
-        <div className="shrink-0 text-center">
+      <div className="flex items-center gap-2">
+        <Laurel side="left" />
+        <div>
           <p
-            className="font-display text-[3.5rem] leading-none font-bold tracking-[-0.03em] text-text-1 tabular"
+            className="font-display text-[3.75rem] leading-none font-bold tracking-[-0.04em] text-text-1 tabular"
             aria-label={`${avg} out of 5`}
           >
-            {shown}
+            {avg}
           </p>
-          <div className="mt-2">
-            <StarRow value={avg} size="sm" />
+          <div className="mt-2 flex justify-center">
+            <StarRow value={avg} size="md" />
           </div>
-          <p className="type-caption mt-1.5 text-text-2">{SURVEY_RATINGS.length} ratings</p>
         </div>
-        <ul className="flex min-w-0 flex-1 flex-col gap-1.5" aria-label="How members rated it">
-          {counts.map((c, i) => (
-            <li key={c.stars} className="flex items-center gap-2">
-              <span className="type-caption w-3 text-right text-text-2 tabular">{c.stars}</span>
-              <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-track">
-                <span
-                  className={cn('block h-full rounded-full bg-gold', active && 'review-bar')}
-                  style={{ width: `${(c.n / most) * 100}%`, animationDelay: `${i * 70}ms` }}
-                />
-              </span>
-              <span className="type-caption w-4 text-text-2 tabular">{c.n}</span>
-            </li>
-          ))}
-        </ul>
+        <Laurel side="right" />
       </div>
+      <p className="type-caption mt-3 font-semibold tracking-[0.02em] text-text-1">
+        {SURVEY_RATINGS.length} member ratings · {fives} gave five stars
+      </p>
     </div>
   );
 }
 
-/** One member's words: the first is shown large, the rest as compact cards. */
-export function ReviewCard({
-  review,
-  featured = false,
-  index = 0,
+/**
+ * One member's words at a time, large, the way a magazine pulls a quote. It moves on by itself
+ * with a story-style bar for each quote, and a tap shows the next. Still with reduced motion
+ * (tap to move on), and paused while the page is not on screen.
+ */
+export function QuoteSpotlight({
+  active,
+  reviews = SPOTLIGHT,
 }: {
-  review: Review;
-  featured?: boolean;
-  index?: number;
+  active: boolean;
+  reviews?: Review[];
 }) {
+  const [at, setAt] = useState(0);
+  const still = reduceMotion();
+  useEffect(() => {
+    if (!active || still || reviews.length < 2) return;
+    const t = window.setTimeout(() => setAt((i) => (i + 1) % reviews.length), QUOTE_MS);
+    return () => window.clearTimeout(t);
+  }, [active, at, still, reviews.length]);
+  const r = reviews[at];
+  if (!r) return null;
   return (
     <figure
-      className={cn(
-        'pro-rise relative overflow-hidden rounded-panel bg-surface',
-        featured ? 'p-5' : 'p-4',
-      )}
-      style={{ animationDelay: `${120 + index * 90}ms` }}
-      data-review={review.name}
+      className="quote-spot relative isolate overflow-hidden rounded-panel px-6 pt-5 pb-6"
+      data-tour-quote
     >
-      {featured ? (
-        <Quote
-          aria-hidden
-          className="absolute -top-1 right-3 size-16 rotate-180 fill-lime/10 text-lime/10"
-          strokeWidth={0}
-        />
-      ) : null}
-      <blockquote
-        className={cn('relative text-text-1', featured ? 'type-body' : 'type-subhead line-clamp-4')}
+      <div className="flex gap-1.5" aria-hidden>
+        {reviews.map((q, i) => (
+          <span key={q.name} className="h-[3px] flex-1 overflow-hidden rounded-full bg-text-1/15">
+            <span
+              key={i === at ? `run-${at}` : 'idle'}
+              className={cn(
+                'block h-full rounded-full bg-text-1',
+                i < at && 'w-full',
+                i > at && 'w-0',
+                i === at && (active && !still ? 'quote-run' : 'w-full'),
+              )}
+              style={i === at ? { animationDuration: `${QUOTE_MS}ms` } : undefined}
+            />
+          </span>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => setAt((i) => (i + 1) % reviews.length)}
+        className="mt-6 block min-h-[16.5rem] w-full text-left outline-none"
+        aria-label="Show another review"
       >
-        {review.quote}
-      </blockquote>
-      <figcaption className="mt-3.5 flex items-center gap-3">
-        <Initial name={review.name} tone={index % 2 === 0 ? 'lime' : 'gold'} />
-        <span className="min-w-0 flex-1">
-          <span className="type-headline block text-text-1">{review.name}</span>
-          <span className="type-caption block text-text-2">Macrotrophy member</span>
+        <span key={at} className="quote-in block">
+          <Quote aria-hidden className="size-8 rotate-180 fill-gold text-gold" strokeWidth={0} />
+          <blockquote className="mt-2 font-display text-[1.375rem] leading-[1.3] font-semibold tracking-[-0.015em] text-text-1 [text-wrap:pretty]">
+            {r.quote}
+          </blockquote>
+          <figcaption className="mt-5 flex items-center justify-between gap-3">
+            <span className="type-headline text-text-1">{r.name}</span>
+            <StarRow value={r.rating} size="sm" />
+          </figcaption>
         </span>
-        <StarRow value={review.rating} size="sm" />
-      </figcaption>
+      </button>
     </figure>
   );
 }
 
-/** The tour's reviews page: the rating at a glance, then members in their own words. */
-export function ReviewsShowcase({ active, count = 4 }: { active: boolean; count?: number }) {
-  const [first, ...rest] = REVIEWS;
-  if (!first) return null;
+/** The tour's reviews page: the rating as an award, then members in their own words. */
+export function ReviewsShowcase({ active }: { active: boolean }) {
   return (
-    // Keyed on being shown, so the count-up and the cards play when the page comes into view.
-    <div key={active ? 'on' : 'off'} className="flex flex-col gap-3" data-tour-reviews>
-      <RatingSummary active={active} />
-      <ReviewCard review={first} featured />
-      <div className="grid gap-3 sm:grid-cols-2">
-        {rest.slice(0, count - 1).map((r, i) => (
-          <ReviewCard key={r.name} review={r} index={i + 1} />
-        ))}
-      </div>
-      <p className="type-caption text-center text-text-3">
+    <div className="flex flex-1 flex-col gap-7" data-tour-reviews>
+      <RatingLaurel active={active} />
+      <QuoteSpotlight active={active} />
+      <p className="type-caption mt-auto text-center text-text-3">
         From our November member survey. First names only, nothing edited but spelling.
       </p>
     </div>

@@ -442,7 +442,7 @@ describe('photo food logging on the server', () => {
           return a;
         },
       })),
-      photoQuota: {
+      quota: {
         claim: async () => left.shift() ?? -1,
         release: async () => {
           released++;
@@ -594,5 +594,73 @@ describe('hedged requests', () => {
     );
     expect(value).toBe('general answer');
     expect(await hedged(0, async () => ({ ok: true, value: 1 }), 10)).toBeNull();
+  });
+});
+
+describe('AI limits for every kind (migration 0028)', () => {
+  const brief = 'Bench press e1RM 100 kg, up from 95 kg. Weekly sets chest 12.';
+  function deps(answers: (string | Error)[], left: number) {
+    const claims: string[] = [];
+    const releases: string[] = [];
+    const d: CoachDeps = {
+      subscription: async () => ROWS.pro,
+      providers: answers.map((a, i) => ({
+        name: `p${i}`,
+        async generate() {
+          if (a instanceof Error) throw a;
+          return a;
+        },
+      })),
+      quota: {
+        claim: async (kind) => {
+          claims.push(kind);
+          return left;
+        },
+        release: async (kind) => {
+          releases.push(kind);
+        },
+      },
+    };
+    return { d, claims, releases };
+  }
+  const ask = { topic: 'chat', question: 'How is my bench going?', brief, history: [] };
+
+  it('chat claims once per question, even when a second provider is asked', async () => {
+    const { d, claims } = deps(
+      [new Error('down'), 'Your bench press e1RM is 100 kg, up from 95 kg.'],
+      10,
+    );
+    const r = await handleCoach(d, ask);
+    expect(r.status).toBe(200);
+    expect(claims).toEqual(['chat']);
+  });
+
+  it('chat over its limit says so, and makes no AI call', async () => {
+    const { d } = deps([new Error('should not be called')], -1);
+    const r = await handleCoach(d, ask);
+    expect(r.status).toBe(429);
+    expect(r.body.code).toBe('chat_limit');
+  });
+
+  it('the whole app over its daily budget answers busy', async () => {
+    const { d } = deps(['x'], -2);
+    const r = await handleCoach(d, ask);
+    expect(r.status).toBe(429);
+    expect(r.body.code).toBe('busy_today');
+  });
+
+  it('a chat with no answer gives its use back', async () => {
+    const { d, releases } = deps([new Error('a'), new Error('b')], 5);
+    const r = await handleCoach(d, ask);
+    expect(r.status).toBeGreaterThanOrEqual(500);
+    expect(releases).toEqual(['chat']);
+  });
+
+  it('typed food counts against its own kind', async () => {
+    const { d, claims } = deps([new Error('a'), new Error('b')], -1);
+    const r = await handleCoach(d, { kind: 'food', text: '2 rotis and dal' });
+    expect(r.status).toBe(429);
+    expect(r.body.code).toBe('food_limit');
+    expect(claims).toEqual(['food']);
   });
 });

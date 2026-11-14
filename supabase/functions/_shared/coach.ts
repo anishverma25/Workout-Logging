@@ -81,11 +81,38 @@ export interface CoachDeps {
   subscription: () => Promise<unknown>;
   providers: CoachProvider[];
   /**
-   * Takes one of today's photo analyses for this account and returns how many are left, or -1
-   * when none are (the `claim_ai_use` function). `release` gives one back after a failure.
+   * Takes one of today's AI uses of a kind for this account and returns how many are left, -1
+   * when none are, or -2 when everyone's AI for today is used up (the `ai_claim` function,
+   * migration 0028). `release` gives one back after a failure. Without it nothing is counted.
    */
-  photoQuota?: { claim: () => Promise<number>; release: () => Promise<void> };
+  quota?: AiQuota;
 }
+
+/** What a request counts against: chat and Explain, typed food, or a photo (plates, labels, menus). */
+export type AiKind = 'chat' | 'food' | 'photo';
+
+export interface AiQuota {
+  claim: (kind: AiKind) => Promise<number>;
+  release: (kind: AiKind) => Promise<void>;
+}
+
+/** Uses a day per account and kind (migration 0028 keeps the same numbers). */
+export const AI_PER_DAY: Record<AiKind, number> = { chat: 60, food: 80, photo: 15 };
+
+/** Today's limit for this kind is reached, or the whole app's AI budget for today is. */
+function limitReached(kind: AiKind, left: number, photoText: string): CoachResponse {
+  if (left === -2)
+    return fail(429, 'Macrotrophy AI is busy right now. Try again in a while.', 'busy_today');
+  if (kind === 'photo') return fail(429, photoText, 'photo_limit');
+  return fail(
+    429,
+    'You have used today’s AI answers. They reset at midnight.',
+    kind === 'chat' ? 'chat_limit' : 'food_limit',
+  );
+}
+
+const release = (deps: CoachDeps, kind: AiKind) =>
+  deps.quota?.release(kind).catch(() => undefined) ?? Promise.resolve();
 
 export interface CoachResponse {
   status: number;
@@ -406,6 +433,9 @@ export async function handleCoach(deps: CoachDeps, body: unknown): Promise<Coach
     return fail(403, 'The AI coach is part of Pro.', 'not_pro');
   if (deps.providers.length === 0)
     return fail(503, 'The AI coach is not set up yet.', 'not_configured');
+  // One use per question, whichever providers answer it.
+  const left = deps.quota ? await deps.quota.claim('chat') : AI_PER_DAY.chat;
+  if (left < 0) return limitReached('chat', left, '');
 
   const messages = buildMessages(req);
   const reference = [req.brief, req.question, ...req.history.map((t) => t.text)].join('\n');
@@ -446,6 +476,8 @@ export async function handleCoach(deps: CoachDeps, body: unknown): Promise<Coach
   );
   // Every provider answered only in general terms: better a general answer than none.
   if (answer) return { status: 200, body: { answer } };
+  // Nothing came back: the question does not count against today.
+  await release(deps, 'chat');
   return unreliable
     ? fail(
         502,
@@ -891,6 +923,8 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
     return fail(403, 'AI food logging is part of Pro.', 'not_pro');
   if (deps.providers.length === 0)
     return fail(503, 'AI food logging is not set up yet.', 'not_configured');
+  const left = deps.quota ? await deps.quota.claim('food') : AI_PER_DAY.food;
+  if (left < 0) return limitReached('food', left, '');
 
   const messages: ProviderMessage[] = [
     {
@@ -945,6 +979,7 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
     HEDGE_MS.food,
   );
   if (result) return { status: 200, body: { items: result } };
+  await release(deps, 'food');
   return fail(503, 'Macrotrophy AI is busy right now. Try again in a minute.', 'busy');
 }
 
@@ -955,7 +990,7 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
 /** About 1.1 MB of JPEG once decoded; the app sends photos resized to 1,280 px, well under. */
 export const PHOTO_LIMITS = { base64: 1_500_000, note: 300, known: 160, knownName: 60 } as const;
 /** Photo analyses per account per day, so a few people cannot use up everyone's AI allowance. */
-export const PHOTOS_PER_DAY = 15;
+export const PHOTOS_PER_DAY = AI_PER_DAY.photo;
 
 export const FOOD_PHOTO_PROMPT = `You are Macrotrophy AI inside Macrotrophy, a food logging app used in India. You get one photo of food someone is about to eat or has eaten. Work out each food in it and how much of it there is, as accurately as you can.
 
@@ -989,17 +1024,17 @@ export async function handleFoodPhoto(deps: CoachDeps, body: unknown): Promise<C
   // Pro is given back.
   const [sub, left] = await Promise.all([
     deps.subscription(),
-    deps.photoQuota ? deps.photoQuota.claim() : Promise.resolve(PHOTOS_PER_DAY),
+    deps.quota ? deps.quota.claim('photo') : Promise.resolve(PHOTOS_PER_DAY),
   ]);
   if (!proFromSubscription(sub)) {
-    if (left >= 0) await deps.photoQuota?.release().catch(() => undefined);
+    if (left >= 0) await release(deps, 'photo');
     return fail(403, 'Photo food logging is part of Pro.', 'not_pro');
   }
   if (left < 0)
-    return fail(
-      429,
+    return limitReached(
+      'photo',
+      left,
       `You have used today's ${PHOTOS_PER_DAY} photos. Type or say the meal instead, or try again tomorrow.`,
-      'photo_limit',
     );
 
   const text = [
@@ -1046,7 +1081,7 @@ export async function handleFoodPhoto(deps: CoachDeps, body: unknown): Promise<C
   );
   if (result) return { status: 200, body: { items: result, left: Math.max(0, left) } };
   // Nothing usable came back, so the photo does not count against today's allowance.
-  await deps.photoQuota?.release().catch(() => undefined);
+  await release(deps, 'photo');
   return fail(503, 'Macrotrophy AI is busy right now. Try again in a minute.', 'busy');
 }
 
@@ -1170,12 +1205,12 @@ export async function handleFoodLabel(deps: CoachDeps, body: unknown): Promise<C
     return fail(403, 'Reading labels is part of Pro.', 'not_pro');
   if (deps.providers.length === 0)
     return fail(503, 'Reading labels is not set up yet.', 'not_configured');
-  const left = deps.photoQuota ? await deps.photoQuota.claim() : PHOTOS_PER_DAY;
+  const left = deps.quota ? await deps.quota.claim('photo') : PHOTOS_PER_DAY;
   if (left < 0)
-    return fail(
-      429,
+    return limitReached(
+      'photo',
+      left,
       `You have used today's ${PHOTOS_PER_DAY} photos. Type the numbers from the label instead.`,
-      'photo_limit',
     );
   const messages: ProviderMessage[] = [
     { role: 'user', text: 'Read this nutrition label.', image: { mime, data: image } },
@@ -1208,7 +1243,7 @@ export async function handleFoodLabel(deps: CoachDeps, body: unknown): Promise<C
     if (!label) continue;
     return { status: 200, body: { label, left: Math.max(0, left) } };
   }
-  await deps.photoQuota?.release().catch(() => undefined);
+  await release(deps, 'photo');
   if (notLabel)
     return fail(
       422,
@@ -1271,9 +1306,13 @@ export async function handleFoodMenu(deps: CoachDeps, body: unknown): Promise<Co
     return fail(403, 'Reading menus is part of Pro.', 'not_pro');
   if (deps.providers.length === 0)
     return fail(503, 'Reading menus is not set up yet.', 'not_configured');
-  const left = deps.photoQuota ? await deps.photoQuota.claim() : PHOTOS_PER_DAY;
+  const left = deps.quota ? await deps.quota.claim('photo') : PHOTOS_PER_DAY;
   if (left < 0)
-    return fail(429, `You have used today's ${PHOTOS_PER_DAY} photos. Search for the dish instead.`, 'photo_limit');
+    return limitReached(
+      'photo',
+      left,
+      `You have used today's ${PHOTOS_PER_DAY} photos. Search for the dish instead.`,
+    );
   const messages: ProviderMessage[] = [
     { role: 'user', text: 'List the dishes on this menu.', image: { mime, data: image } },
   ];
@@ -1296,8 +1335,16 @@ export async function handleFoodMenu(deps: CoachDeps, body: unknown): Promise<Co
     if (!dishes) continue;
     return { status: 200, body: { dishes, left: Math.max(0, left) } };
   }
-  await deps.photoQuota?.release().catch(() => undefined);
+  await release(deps, 'photo');
   if (notMenu)
-    return fail(422, 'That does not look like a menu. Photograph the page with the dish names.', 'not_a_menu');
-  return fail(503, 'The menu could not be read. Try a sharper photo, or search for the dish.', 'unreadable');
+    return fail(
+      422,
+      'That does not look like a menu. Photograph the page with the dish names.',
+      'not_a_menu',
+    );
+  return fail(
+    503,
+    'The menu could not be read. Try a sharper photo, or search for the dish.',
+    'unreadable',
+  );
 }

@@ -355,7 +355,9 @@ function SetupFlow({
         : 'Choosing your exercises',
     planKcal !== null && planProtein !== null
       ? `Setting ${planKcal.toLocaleString('en-GB')} kcal and ${planProtein} g protein a day`
-      : 'Leaving calories until you log your weight',
+      : weightKg
+        ? 'Calories wait for your birth date and height'
+        : 'Calories wait for your weight',
     draft.dietType
       ? `Matching foods to a ${DIET_LABEL[draft.dietType].title.toLowerCase()} diet`
       : 'Matching foods to Indian meals',

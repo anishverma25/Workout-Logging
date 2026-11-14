@@ -1206,3 +1206,50 @@ html[data-landing] #landing {
     ),
     radial-gradient(40% 50% at 90% 10%, var(--gold-dim), transparent 70%);
 }
+
+/* Reviews, premium: a quote panel lit from one corner, story bars, a soft change of quote. */
+.quote-spot {
+  background:
+    radial-gradient(90% 70% at 0% 0%, var(--gold-dim), transparent 60%),
+    radial-gradient(70% 60% at 100% 100%, var(--lime-dim), transparent 65%),
+    var(--surface);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--text-1) 10%, transparent),
+    0 30px 60px -30px rgb(0 0 0 / 0.8);
+}
+@keyframes quote-run {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+.quote-run {
+  animation: quote-run linear both;
+}
+@keyframes quote-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(4px);
+  }
+}
+.quote-in {
+  animation: quote-in 520ms var(--ease-standard) both;
+}
+@keyframes laurel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+.laurel-in {
+  animation: laurel-in 600ms var(--ease-snap) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .quote-in,
+  .laurel-in {
+    animation: none;
+  }
+}

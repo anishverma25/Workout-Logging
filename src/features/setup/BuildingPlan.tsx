@@ -58,7 +58,7 @@ export function BuildingPlan({
     >
       <div className="relative size-48">
         <div className="build-glow absolute -inset-10 rounded-full" aria-hidden />
-        <svg viewBox="0 0 160 160" className="relative size-full -rotate-90" aria-hidden>
+        <svg viewBox="0 0 160 160" className="relative size-full -rotate-90 overflow-visible" aria-hidden>
           <circle cx="80" cy="80" r={R} fill="none" strokeWidth="8" className="build-ring-track" />
           <circle
             cx="80"
