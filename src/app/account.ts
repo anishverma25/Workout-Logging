@@ -21,6 +21,8 @@ import { markStage, startupFailed, withTimeout } from './startup';
 export interface AccountUser {
   id: string;
   email: string | null;
+  /** When the account was made (from the server), so new accounts can be told apart. */
+  createdAt?: string | null;
 }
 
 export interface AccountState {
@@ -73,6 +75,7 @@ export function useSyncStatus(): SyncState {
 const userOf = (session: Session): AccountUser => ({
   id: session.user.id,
   email: session.user.email ?? null,
+  createdAt: session.user.created_at ?? null,
 });
 
 /**
@@ -165,11 +168,16 @@ export function storedUser(
       const key = storage.key(i) ?? '';
       if (!/^sb-.+-auth-token$/.test(key)) continue;
       const saved = JSON.parse(storage.getItem(key) ?? 'null') as {
-        user?: { id?: unknown; email?: unknown };
+        user?: { id?: unknown; email?: unknown; created_at?: unknown };
       } | null;
       const id = saved?.user?.id;
       if (typeof id === 'string' && id)
-        return { id, email: typeof saved?.user?.email === 'string' ? saved.user.email : null };
+        return {
+          id,
+          email: typeof saved?.user?.email === 'string' ? saved.user.email : null,
+          createdAt:
+            typeof saved?.user?.created_at === 'string' ? saved.user.created_at : undefined,
+        };
     }
   } catch {
     // Storage blocked or unreadable: wait for the session as before.

@@ -125,6 +125,13 @@ function Timeline({
     case 'too_low':
       main = `Under ${kcalText(MIN_DAILY_KCAL)} kcal a day is too little to train on safely.`;
       break;
+    case 'target_too_low':
+      main = `That target is under a healthy weight for your height.${plan.healthyMinKg ? ` A healthy weight for you starts at about ${w(plan.healthyMinKg)},` : ''} so the plan holds your weight.`;
+      break;
+    case 'under_18':
+      main =
+        'Under 18, your body is still growing, so the plan holds your weight and builds strength instead of cutting.';
+      break;
     case 'no_change':
       main = `At ${kcalText(kcal)} kcal your weight would hold, so you would not reach ${target}.`;
       break;

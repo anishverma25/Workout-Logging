@@ -226,7 +226,11 @@ export function energyPlan(input: EnergyInput): EnergyPlan | null {
   const dailyKcal = round(bmr * pal, 10);
   const trainingKcal = round(trainingKcalPerDay(trainingDays, sessionMinutes, weightKg), 10);
   const tdee = dailyKcal + trainingKcal;
-  const adjustment = GOAL_ENERGY[input.goal];
+  // Nobody under 18 is given a deficit: growing bodies need at least maintenance.
+  const adjustment =
+    input.age !== null && input.age < 18
+      ? Math.max(0, GOAL_ENERGY[input.goal])
+      : GOAL_ENERGY[input.goal];
   const targetKcal = round(tdee * (1 + adjustment), 50);
   const [pLo, pHi] = GOAL_PROTEIN[input.goal];
   // Exact to one decimal: g/kg × the smoothed body weight, no rounding to 5.

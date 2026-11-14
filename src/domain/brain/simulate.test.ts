@@ -528,3 +528,56 @@ describe('no decision for anyone steps outside the limits', () => {
     expect(broken.slice(0, 10)).toEqual([]);
   });
 });
+
+describe('the brain never cuts toward an unsafe target', () => {
+  // Steady weight at maintenance: a normal cut would lower calories; an unsafe target must not.
+  function decide(p: number, unsafe: boolean) {
+    const r = rng(9000 + p);
+    const truth = Math.round(r.between(1900, 3000) / 50) * 50;
+    const heightCm = r.between(155, 190);
+    const m = heightCm / 100;
+    const weight = r.between(19.5, 23) * m * m;
+    const under18 = unsafe && p % 4 === 0;
+    const targetKg = !unsafe
+      ? r.between(19, 19.4) * m * m
+      : under18
+        ? weight - r.between(2, 6)
+        : r.between(15.5, 18.3) * m * m;
+    const weeks: WeekFacts[] = [];
+    for (let w = 0; w < 10; w++)
+      weeks.push(week(w, { meanKcal: truth, meanWeightKg: weight, foodDays: 7, weighIns: 6 }));
+    const decision = decideWeek(
+      baseInput(weeks, {
+        model: responseModel({ weeks, recovery: [], researchMaintenance: truth }),
+        person: {
+          goal: 'fat_loss',
+          experience: 'intermediate',
+          weightKg: weight,
+          bmrKcal: truth / 1.6,
+          targetKg,
+          ownProtein: false,
+          heightCm: under18 ? null : heightCm,
+          age: under18 ? 16 : 25,
+        },
+        plan: {
+          kcal: truth,
+          proteinG: Math.round(weight * 1.8),
+          muscleSets: {},
+          exerciseIds: [],
+          sessionMinutes: 60,
+        },
+      }),
+    );
+    return decision.changes.filter((c) => c.kind === 'calories' && c.to < c.from);
+  }
+
+  it('holds people whose target is under BMI 18.5, and anyone under 18', () => {
+    const cuts = Array.from({ length: 200 }, (_, p) => decide(p, true).length);
+    expect(cuts.filter((n) => n > 0)).toEqual([]);
+  });
+
+  it('still cuts the same people toward a healthy target (the check is real)', () => {
+    const cuts = Array.from({ length: 200 }, (_, p) => decide(p, false).length);
+    expect(cuts.filter((n) => n > 0).length).toBeGreaterThan(150);
+  });
+});

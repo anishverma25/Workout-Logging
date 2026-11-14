@@ -1,3 +1,4 @@
+import { ageFromBirthDate } from '@/lib/dates';
 import { useMemo } from 'react';
 import { reportWindow } from '@/app/weeklyReport';
 import { db } from '@/data/db';
@@ -57,9 +58,13 @@ export function useBrain(now: Date) {
     const weights = data.bodyWeights.filter(isAlive);
     const firstDates = [
       sessions[0]?.date,
-      logs.length ? new Date(`${[...logs].sort((a, b) => a.date.localeCompare(b.date))[0]!.date}T12:00:00`) : undefined,
+      logs.length
+        ? new Date(`${[...logs].sort((a, b) => a.date.localeCompare(b.date))[0]!.date}T12:00:00`)
+        : undefined,
       weights.length
-        ? new Date([...weights].sort((a, b) => a.measuredAt.localeCompare(b.measuredAt))[0]!.measuredAt)
+        ? new Date(
+            [...weights].sort((a, b) => a.measuredAt.localeCompare(b.measuredAt))[0]!.measuredAt,
+          )
         : undefined,
     ].filter((d): d is Date => !!d);
     const earliest = firstDates.length
@@ -105,6 +110,8 @@ export function useBrain(now: Date) {
             bmrKcal: energy?.bmr ?? null,
             targetKg: bodyGoal?.targetValue ?? null,
             ownProtein: ownsProtein(profile, decisions),
+            heightCm: profile.heightCm ?? null,
+            age: profile.birthDate ? ageFromBirthDate(profile.birthDate) : null,
           },
           plan: {
             kcal: food.targets.kcal ?? null,
@@ -142,7 +149,17 @@ export function useBrain(now: Date) {
       events: eventsFrom(items.data, toDateKey(at)),
       hasRoutine: !!routine,
     };
-  }, [ready, data, items.data, hour, prefs.weekStartsOn, food.logs, food.snapshot, food.targets.kcal, food.targets.proteinG]);
+  }, [
+    ready,
+    data,
+    items.data,
+    hour,
+    prefs.weekStartsOn,
+    food.logs,
+    food.snapshot,
+    food.targets.kcal,
+    food.targets.proteinG,
+  ]);
 
   return {
     status:

@@ -111,8 +111,15 @@ export async function askFoodMenu(input: {
     data = await invoke({ kind: 'food_menu', image: input.image, mime: input.mime });
   } catch (e) {
     // A server from before menus were added does not know the request.
-    if (e instanceof FoodAiError && e.code === 'bad_request' && /request could not be read/i.test(e.message))
-      throw new FoodAiError('Reading menus is being set up. Search for the dish for now.', 'not_configured');
+    if (
+      e instanceof FoodAiError &&
+      e.code === 'bad_request' &&
+      /request could not be read/i.test(e.message)
+    )
+      throw new FoodAiError(
+        'Reading menus is being set up. Search for the dish for now.',
+        'not_configured',
+      );
     throw e;
   }
   return {
@@ -182,10 +189,13 @@ export interface EditedNumbers {
  * A food with the person's own numbers for the amount they ate: logged as "1 serving" of that
  * many grams, marked as theirs, and adjustable on the plate like any other food.
  */
+/** Numbers for a portion counted in servings, when no gram weight is known. */
+export type ServingNumbers = Omit<EditedNumbers, 'grams'> & { grams: null; servings: number };
+
 export function editedPortion(
   name: string,
   diet: Food['diet'],
-  n: EditedNumbers,
+  n: EditedNumbers | ServingNumbers,
   basis: 'yours' | 'label' = 'yours',
   ref = 'Your numbers',
 ): {
@@ -195,6 +205,30 @@ export function editedPortion(
   size: null;
   oilLevel: null;
 } {
+  if (n.grams === null) {
+    // No weight on the pack: one serving is the unit, with the label's per-serving numbers,
+    // and the amount is the servings they ate. The serving's weight is only bookkeeping, set so
+    // the numbers per 100 g stay inside the library's limits; it is never shown as grams.
+    const servings = n.servings > 0 ? n.servings : 1;
+    const each = (v: number) => Math.round((v / servings) * 10) / 10;
+    const kcal = Math.round(n.kcal / servings);
+    const macroG = each(n.proteinG) + each(n.carbsG) + each(n.fatG) + each(n.fibreG);
+    const nominalG = Math.max(100, Math.ceil(kcal / 8), Math.ceil(macroG));
+    const food = foodFromItem({
+      name,
+      portion: '1 serving',
+      grams: nominalG,
+      kcal,
+      proteinG: each(n.proteinG),
+      carbsG: each(n.carbsG),
+      fatG: each(n.fatG),
+      fibreG: each(n.fibreG),
+      diet: diet === 'egg' || diet === 'nonveg' ? diet : 'veg',
+      basis,
+      ref,
+    });
+    return { food, unit: 'serving', amount: servings, size: null, oilLevel: null };
+  }
   const food = foodFromItem({
     name,
     portion: `${Math.round(n.grams)} g`,

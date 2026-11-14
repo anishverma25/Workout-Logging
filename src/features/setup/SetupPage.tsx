@@ -6,13 +6,22 @@ import {
   Armchair,
   Briefcase,
   ChevronLeft,
+  Drumstick,
   Dumbbell,
+  Egg,
   Footprints,
   Hammer,
   Home,
+  Leaf,
+  Sprout,
   Warehouse,
   type LucideIcon,
 } from 'lucide-react';
+import { useAccount } from '@/app/account';
+import { markSetupAsked } from '@/app/layout/SetupGate';
+import { addMeasurement } from '@/data/repositories/measurements';
+import { DIET_LABEL } from '@/features/food/foodText';
+import { BuildingPlan } from './BuildingPlan';
 import { APP_NAME } from '@/app/navigation';
 import { useEntitlement } from '@/app/entitlement';
 import {
@@ -43,7 +52,7 @@ import { energyPlan } from '@/domain/analytics/body';
 import { intakeOutcome, targetPlan, type TargetInput } from '@/domain/analytics/goalPlan';
 import { addGoal } from '@/data/repositories/goals';
 import { GoalTargets } from './GoalTargets';
-import { Personalising, PictureOptions, RoadmapTimeline } from './Roadmap';
+import { PictureOptions, RoadmapTimeline } from './Roadmap';
 import { milestonesFor } from './roadmapPlan';
 import { GoalArt, LevelArt } from './SetupArt';
 import { EXPERIENCE_LABEL, GOAL_DETAIL, GOAL_LABEL } from '@/domain/models/labels';
@@ -78,7 +87,15 @@ interface Draft {
   /** The body weight they want to reach, in their unit. */
   targetWeight: number | null;
   dailyActivity: DailyActivity | null;
+  /** What they eat: shapes food suggestions and the meal plan. */
+  dietType: DietType | null;
+  /** Optional, from a tape: waist in cm. */
+  waistCm: number | null;
+  /** Optional, from a scan or a smart scale. */
+  bodyFatPct: number | null;
 }
+
+type DietType = NonNullable<Profile['dietType']>;
 
 const STEPS = [
   'name',
@@ -88,6 +105,8 @@ const STEPS = [
   'equipment',
   'body',
   'activity',
+  'food',
+  'building',
   'plan',
 ] as const;
 type Step = (typeof STEPS)[number];
@@ -128,6 +147,23 @@ const EQUIPMENT: { value: GymAccess; label: string; detail: string; icon: Lucide
   },
 ];
 
+const DIETS: { value: DietType; label: string; detail: string; icon: LucideIcon }[] = [
+  { value: 'veg', label: DIET_LABEL.veg.title, detail: DIET_LABEL.veg.description, icon: Leaf },
+  { value: 'egg', label: DIET_LABEL.egg.title, detail: DIET_LABEL.egg.description, icon: Egg },
+  {
+    value: 'nonveg',
+    label: DIET_LABEL.nonveg.title,
+    detail: 'Chicken, fish, eggs and everything else',
+    icon: Drumstick,
+  },
+  {
+    value: 'jain',
+    label: DIET_LABEL.jain.title,
+    detail: DIET_LABEL.jain.description,
+    icon: Sprout,
+  },
+];
+
 const ACTIVITY: { value: DailyActivity; label: string; detail: string; icon: LucideIcon }[] = [
   {
     value: 'sitting',
@@ -164,6 +200,8 @@ const USED_FOR: Record<Step, string> = {
   equipment: 'Swaps exercises for ones you can do with what you have.',
   body: 'Used by the energy, BMI and strength formulas. Optional: skip anything you prefer not to share.',
   activity: 'Sets the activity factor in your daily energy.',
+  food: 'Shapes what to eat next, the meal plan and food suggestions. Change it any time on Food.',
+  building: '',
   plan: '',
 };
 
@@ -198,10 +236,16 @@ function SetupFlow({
   const [params] = useSearchParams();
   const next = params.get('next') ?? '/';
   const entitlement = useEntitlement();
-  // First setup during the trial: show what the trial includes once, then go on.
-  const firstTrial = !own && entitlement.plan === 'trial';
+  const account = useAccount();
+  // A first setup ends on one page about Pro (what it does, the prices), then the app. Members
+  // who already pay never see it.
+  const firstSetup = !own && entitlement.plan !== 'pro' && entitlement.plan !== 'founding';
   const navigate = (to: string, opts?: { replace?: boolean }) =>
-    firstTrial ? rawNavigate(`/trial?next=${encodeURIComponent(to)}`, opts) : rawNavigate(to, opts);
+    firstSetup ? rawNavigate(`/trial?next=${encodeURIComponent(to)}`, opts) : rawNavigate(to, opts);
+  // Being here counts as being asked, so the new-account gate never sends them back.
+  useEffect(() => {
+    if (account.user) markSetupAsked(account.user.id);
+  }, [account.user]);
   const toast = useToast();
   const prefs = usePreferences();
   const [index, setIndex] = useState(0);
@@ -223,6 +267,9 @@ function SetupFlow({
     weight: null,
     targetWeight: null,
     dailyActivity: own?.dailyActivity ?? null,
+    dietType: own?.dietType ?? null,
+    waistCm: null,
+    bodyFatPct: null,
   }));
   // Their own calories and protein for the target, null while they keep the suggestion.
   const [ownTargets, setOwnTargets] = useState<{ kcal: number | null; proteinG: number | null }>({
@@ -261,7 +308,7 @@ function SetupFlow({
     age: draft.birthDate ? ageFromBirthDate(draft.birthDate) : null,
     heightCm: draft.heightCm,
     weightKg,
-    bodyFatPct: null,
+    bodyFatPct: draft.bodyFatPct,
     goal,
     dailyActivity: draft.dailyActivity,
     plannedDays: draft.trainingDays,
@@ -281,14 +328,47 @@ function SetupFlow({
           maintenanceKcal: energy.tdee,
           bmrKcal: energy.bmr,
           today: toDateKey(new Date()),
+          heightCm: draft.heightCm,
+          age: draft.birthDate ? ageFromBirthDate(draft.birthDate) : null,
         }
       : null;
   const goalPlan = targetInput ? targetPlan(targetInput) : null;
 
   const canContinue = step !== 'name' || draft.name.trim().length > 0;
+
+  // Each line is a real step with their answers; the numbers are the ones the plan will show.
+  const planKcal = goalPlan ? (ownTargets.kcal ?? goalPlan.kcal) : (energy?.targetKcal ?? null);
+  const planProtein = goalPlan
+    ? (ownTargets.proteinG ?? goalPlan.proteinG)
+    : energy
+      ? Math.round((energy.proteinG[0] + energy.proteinG[1]) / 2)
+      : null;
+  const buildingLines = [
+    `Reading your goal: ${GOAL_LABEL[goal].toLowerCase()}`,
+    draft.trainingDays
+      ? `Fitting ${draft.trainingDays} days a week, ${draft.sessionMinutes ?? DEFAULT_SESSION} minutes each`
+      : 'Fitting your week',
+    imported
+      ? `Keeping your ${imported.name} routine`
+      : draft.equipment
+        ? `Choosing exercises for ${EQUIPMENT.find((e) => e.value === draft.equipment)!.label.toLowerCase()}`
+        : 'Choosing your exercises',
+    planKcal !== null && planProtein !== null
+      ? `Setting ${planKcal.toLocaleString('en-GB')} kcal and ${planProtein} g protein a day`
+      : 'Leaving calories until you log your weight',
+    draft.dietType
+      ? `Matching foods to a ${DIET_LABEL[draft.dietType].title.toLowerCase()} diet`
+      : 'Matching foods to Indian meals',
+    'Mapping your first weeks',
+  ];
   const go = (delta: 1 | -1) => {
     setError(null);
-    setIndex((i) => Math.min(Math.max(i + delta, 0), STEPS.length - 1));
+    setIndex((i) => {
+      let to = Math.min(Math.max(i + delta, 0), STEPS.length - 1);
+      // Going back from the plan skips the building screen: it only plays on the way in.
+      if (delta === -1 && STEPS[to] === 'building') to -= 1;
+      return to;
+    });
   };
 
   async function finish(createRoutine: boolean | 'blank') {
@@ -306,7 +386,17 @@ function SetupFlow({
         sessionMinutes: draft.sessionMinutes,
         equipment: draft.equipment,
         dailyActivity: draft.dailyActivity,
+        ...(draft.dietType ? { dietType: draft.dietType } : {}),
       });
+      if (draft.waistCm !== null || draft.bodyFatPct !== null) {
+        await addMeasurement(db, {
+          date: toDateKey(new Date()),
+          unit: 'cm',
+          values: { waistCm: draft.waistCm },
+          bodyFatPct: draft.bodyFatPct,
+          note: null,
+        }).catch(() => undefined);
+      }
       if (targetInput && goalPlan) {
         const kcal = ownTargets.kcal ?? goalPlan.kcal;
         const proteinG = ownTargets.proteinG ?? goalPlan.proteinG;
@@ -365,7 +455,12 @@ function SetupFlow({
   return (
     <div className="flex min-h-dvh flex-col bg-bg pt-safe">
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-safe">
-        <header className="chrome flex h-14 items-center justify-between gap-3">
+        <header
+          className={cn(
+            'chrome flex h-14 items-center justify-between gap-3',
+            step === 'building' && 'invisible',
+          )}
+        >
           {index > 0 ? (
             <button
               type="button"
@@ -423,6 +518,17 @@ function SetupFlow({
                   if (e.key === 'Enter' && canContinue) go(1);
                 }}
               />
+              {!own && !imported ? (
+                <p className="type-subhead mt-6 text-text-2">
+                  Coming from Hevy or Strong?{' '}
+                  <TextLink
+                    small
+                    to={`/import?welcome=1&next=${encodeURIComponent(`/setup?next=${encodeURIComponent(next)}`)}`}
+                  >
+                    Bring your history first
+                  </TextLink>
+                </p>
+              ) : null}
             </Question>
           ) : null}
 
@@ -588,6 +694,30 @@ function SetupFlow({
                     The weight you want to reach. You get daily calories, protein and a date for it.
                   </p>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <NumberField
+                    label="Waist (optional)"
+                    unit="cm"
+                    value={draft.waistCm}
+                    min={40}
+                    max={200}
+                    onValueChange={(v) => set('waistCm', v)}
+                    data-waist
+                  />
+                  <NumberField
+                    label="Body fat (optional)"
+                    unit="%"
+                    value={draft.bodyFatPct}
+                    min={3}
+                    max={60}
+                    onValueChange={(v) => set('bodyFatPct', v)}
+                    data-body-fat
+                  />
+                </div>
+                <p className="type-caption -mt-3 text-text-2">
+                  Waist at the navel, relaxed. Body fat only if you know it from a scan or a smart
+                  scale: it makes your calories more exact. Both start your body progress.
+                </p>
               </div>
             </Question>
           ) : null}
@@ -603,50 +733,55 @@ function SetupFlow({
             </Question>
           ) : null}
 
+          {step === 'food' ? (
+            <Question title="How do you eat?" usedFor={USED_FOR.food}>
+              <Options
+                label="Diet"
+                value={draft.dietType}
+                onChange={(v) => set('dietType', v)}
+                options={DIETS}
+              />
+            </Question>
+          ) : null}
+
+          {step === 'building' ? (
+            <BuildingPlan
+              name={draft.name.trim()}
+              lines={buildingLines}
+              onDone={() => setIndex(STEPS.indexOf('plan'))}
+            />
+          ) : null}
+
           {step === 'plan' ? (
             <PlanSummary
               roadmap={
-                <Personalising
-                  lines={[
-                    `Reading your goal: ${GOAL_LABEL[goal].toLowerCase()}`,
-                    draft.trainingDays
-                      ? `Fitting ${draft.trainingDays} days a week, ${draft.sessionMinutes ?? DEFAULT_SESSION} minutes each`
-                      : 'Fitting your week',
-                    'Choosing exercises for your equipment',
-                    energy
-                      ? 'Setting your calories and protein'
-                      : 'Leaving calories until you log your weight',
-                    'Mapping your first weeks',
-                  ]}
-                >
-                  <RoadmapTimeline
-                    milestones={milestonesFor({
-                      days: draft.trainingDays,
-                      programme: imported ? imported.name : (recommendation?.template.name ?? null),
-                      kcal: goalPlan
-                        ? (ownTargets.kcal ?? goalPlan.kcal)
-                        : (energy?.targetKcal ?? null),
-                      proteinG: goalPlan
-                        ? (ownTargets.proteinG ?? goalPlan.proteinG)
-                        : energy
-                          ? Math.round((energy.proteinG[0] + energy.proteinG[1]) / 2)
-                          : null,
-                      target:
-                        goalPlan && targetKg !== null
-                          ? {
-                              kg: targetKg,
-                              date: intakeOutcome({
-                                ...targetInput!,
-                                kcal: ownTargets.kcal ?? goalPlan.kcal,
-                                proteinG: ownTargets.proteinG ?? goalPlan.proteinG,
-                              }).date,
-                              direction: goalPlan.direction,
-                            }
-                          : null,
-                      unit: prefs.weightUnit,
-                    })}
-                  />
-                </Personalising>
+                <RoadmapTimeline
+                  milestones={milestonesFor({
+                    days: draft.trainingDays,
+                    programme: imported ? imported.name : (recommendation?.template.name ?? null),
+                    kcal: goalPlan
+                      ? (ownTargets.kcal ?? goalPlan.kcal)
+                      : (energy?.targetKcal ?? null),
+                    proteinG: goalPlan
+                      ? (ownTargets.proteinG ?? goalPlan.proteinG)
+                      : energy
+                        ? Math.round((energy.proteinG[0] + energy.proteinG[1]) / 2)
+                        : null,
+                    target:
+                      goalPlan && targetKg !== null
+                        ? {
+                            kg: targetKg,
+                            date: intakeOutcome({
+                              ...targetInput!,
+                              kcal: ownTargets.kcal ?? goalPlan.kcal,
+                              proteinG: ownTargets.proteinG ?? goalPlan.proteinG,
+                            }).date,
+                            direction: goalPlan.direction,
+                          }
+                        : null,
+                    unit: prefs.weightUnit,
+                  })}
+                />
               }
               name={draft.name.trim()}
               goal={goal}
@@ -685,7 +820,12 @@ function SetupFlow({
             </p>
           ) : null}
 
-          <div className="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 bg-bg pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+          <div
+            className={cn(
+              'sticky bottom-0 z-10 mt-auto flex flex-col gap-2 bg-bg pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]',
+              step === 'building' && 'hidden',
+            )}
+          >
             {step === 'plan' && imported ? (
               <PrimaryButton block disabled={busy} onClick={() => void finish(false)}>
                 {busy ? 'Saving...' : 'Save and start training'}

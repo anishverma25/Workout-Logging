@@ -1,5 +1,5 @@
 import type { Experience, Goal } from '../models/schemas';
-import { GOAL_PROTEIN, targetRate } from './body';
+import { bmi, GOAL_PROTEIN, targetRate } from './body';
 import { kcalForRate, rateForKcal } from './targets';
 
 /**
@@ -17,7 +17,15 @@ import { kcalForRate, rateForKcal } from './targets';
  *   when losing weight.
  * - Timeline: the weight to change ÷ the weekly rate. The 7,700 kcal rule is a first-weeks
  *   guide; the body adapts as weight changes (Hall 2008), so the date is an estimate.
+ * - Safety: a target under a BMI of 18.5 for the person's height (WHO 2004) is never planned
+ *   for, and nobody under 18 is given a deficit. In both cases the plan holds their weight at
+ *   maintenance and says why.
  */
+
+/** Under this BMI a weight is underweight (WHO 2004): no plan aims below it. */
+export const MIN_TARGET_BMI = 18.5;
+/** Under this age no plan cuts calories. */
+export const ADULT_AGE = 18;
 
 /** Within this of the target, the person is already there. */
 export const AT_TARGET_KG = 0.5;
@@ -38,6 +46,10 @@ export interface TargetInput {
   bmrKcal: number;
   /** yyyy-mm-dd. */
   today: string;
+  /** When known, a target under a healthy weight for this height is refused. */
+  heightCm?: number | null;
+  /** When known and under 18, the plan never cuts calories. */
+  age?: number | null;
 }
 
 export interface TargetPlan {
@@ -51,10 +63,20 @@ export interface TargetPlan {
   /** True when the calorie floor made the plan slower than the evidence rate. */
   floored: boolean;
   outcome: IntakeOutcome;
+  /** The lowest healthy weight for their height (BMI 18.5), when the height is known. */
+  healthyMinKg: number | null;
 }
 
 export type IntakeStatus =
-  'at_target' | 'on_track' | 'too_fast' | 'slow' | 'no_change' | 'wrong_way' | 'too_low';
+  | 'at_target'
+  | 'on_track'
+  | 'too_fast'
+  | 'slow'
+  | 'no_change'
+  | 'wrong_way'
+  | 'too_low'
+  | 'target_too_low'
+  | 'under_18';
 
 export interface IntakeOutcome {
   status: IntakeStatus;
@@ -72,6 +94,27 @@ export interface IntakeOutcome {
 }
 
 const round = (v: number, step: number) => Math.round(v / step) * step;
+
+/** The lowest healthy weight for a height: BMI 18.5, rounded up to 0.5 kg. */
+export function healthyMinKg(heightCm: number | null | undefined): number | null {
+  if (!heightCm || heightCm < 100) return null;
+  const m = heightCm / 100;
+  return Math.ceil(MIN_TARGET_BMI * m * m * 2) / 2;
+}
+
+/** Why a weight-loss target is not planned for, or null when it is safe to plan. */
+export function unsafeTarget(input: {
+  weightKg: number;
+  targetKg: number;
+  heightCm?: number | null;
+  age?: number | null;
+}): 'target_too_low' | 'under_18' | null {
+  if (direction(input.weightKg, input.targetKg) !== 'lose') return null;
+  if (input.age != null && input.age < ADULT_AGE) return 'under_18';
+  if (input.heightCm && bmi(input.targetKg, input.heightCm) < MIN_TARGET_BMI)
+    return 'target_too_low';
+  return null;
+}
 
 export function direction(weightKg: number, targetKg: number): Direction {
   const diff = targetKg - weightKg;
@@ -112,7 +155,8 @@ export function intakeOutcome(
   input: TargetInput & { kcal: number; proteinG: number | null },
 ): IntakeOutcome {
   const { weightKg, targetKg, maintenanceKcal, kcal, proteinG, today, experience } = input;
-  const dir = direction(weightKg, targetKg);
+  const unsafe = unsafeTarget(input);
+  const dir = unsafe ? 'hold' : direction(weightKg, targetKg);
   const eff = effectiveGoal(input.goal, dir).goal;
   const [pLo] = GOAL_PROTEIN[eff];
   const proteinPerKg = proteinG !== null ? Math.round((proteinG / weightKg) * 10) / 10 : null;
@@ -124,6 +168,7 @@ export function intakeOutcome(
     proteinLow,
     proteinMinG: Math.round(pLo * weightKg),
   };
+  if (unsafe) return { ...base, status: unsafe, weeks: null, date: null };
   if (dir === 'hold') return { ...base, status: 'at_target', weeks: null, date: null };
   if (kcal < MIN_DAILY_KCAL) return { ...base, status: 'too_low', weeks: null, date: null };
   const towards = dir === 'lose' ? -rate : rate;
@@ -146,7 +191,8 @@ export function intakeOutcome(
 /** The suggested calories and protein for the target, with the timeline they give. */
 export function targetPlan(input: TargetInput): TargetPlan {
   const { weightKg, targetKg, experience, maintenanceKcal, bmrKcal } = input;
-  const dir = direction(weightKg, targetKg);
+  // A target under a healthy weight, or anyone under 18, is held at maintenance.
+  const dir = unsafeTarget(input) ? 'hold' : direction(weightKg, targetKg);
   const { goal: eff, overridden } = effectiveGoal(input.goal, dir);
   const [lo, hi] = targetRate(eff, experience);
   let rateKg = planShare(dir, lo, hi) * weightKg;
@@ -167,5 +213,6 @@ export function targetPlan(input: TargetInput): TargetPlan {
     goalOverridden: overridden,
     floored,
     outcome: intakeOutcome({ ...input, kcal, proteinG }),
+    healthyMinKg: healthyMinKg(input.heightCm),
   };
 }

@@ -1,4 +1,6 @@
 import { WhatsNew } from './WhatsNew';
+import { SetupGate } from './SetupGate';
+import { RestoreExpired } from '@/features/brain/RestoreExpired';
 import { Suspense, useEffect, type MouseEvent } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { FlaskConical } from 'lucide-react';
@@ -48,6 +50,8 @@ export function AppShell() {
         >
           <AppNotices />
           <WhatsNew />
+          <SetupGate />
+          <RestoreExpired />
           <StartWorkoutProvider>
             <Suspense fallback={null}>
               <div key={pathname} className="page-in">

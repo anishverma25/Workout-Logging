@@ -20,7 +20,6 @@ import {
   Dumbbell,
   Star,
 } from 'lucide-react';
-import { averageRating, REVIEWS, SURVEY_RATINGS } from '@/app/marketing';
 import { APP_NAME } from '@/app/navigation';
 import { LineChart } from '@/components/charts/LineChart';
 import { Button } from '@/components/ui/Button';
@@ -31,6 +30,8 @@ import type { StallCause } from '@/domain/analytics/stalls';
 import { Rings, RingLegend, type RingSpec } from '@/components/ui/Rings';
 import { useAccount } from '@/app/account';
 import { markTourSeen } from '@/app/seenTour';
+import { markReleaseSeen } from '@/app/layout/whatsNewStore';
+import { ReviewsShowcase } from './Reviews';
 import { usePageMeta } from '@/app/usePageMeta';
 import { safeNext } from '@/features/account/next';
 import { generateDemoDataset } from '@/data/demo/generate';
@@ -120,6 +121,8 @@ export function TourPage() {
   /** Leaves the tour, and does not show it again on this device. */
   function finish(path: '/sign-up' | '/sign-in' | 'app') {
     markTourSeen();
+    // Someone new to the app has no use for notes on what changed in it.
+    if (!signedIn) markReleaseSeen();
     if (path === 'app') navigate(next, { replace: true });
     // Nowhere in particular to go: the account screens then lead into setup themselves.
     else if (next === '/') navigate(path, { replace: true });
@@ -133,8 +136,9 @@ export function TourPage() {
       <header className="mx-auto flex h-14 w-full max-w-xl shrink-0 items-center justify-between px-safe">
         <span className="type-headline text-text-1">{APP_NAME}</span>
         <Badge icon={<FlaskConical />}>Sample data</Badge>
-        <TextLink onClick={() => finish(signedIn ? 'app' : '/sign-in')}>
-          {signedIn ? 'Skip' : 'Sign in'}
+        {/* Skip leads a visitor straight to creating an account; the tour is never a wall. */}
+        <TextLink onClick={() => finish(signedIn ? 'app' : '/sign-up')} className="px-1">
+          Skip
         </TextLink>
       </header>
 
@@ -197,14 +201,22 @@ export function TourPage() {
             </div>
           )
         ) : (
-          <Button
-            size="lg"
-            block
-            icon={<ArrowRight className="size-5" aria-hidden />}
-            onClick={() => go(index + 1)}
-          >
-            {index === 0 ? 'Take the tour' : 'Next'}
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button
+              size="lg"
+              block
+              icon={<ArrowRight className="size-5" aria-hidden />}
+              onClick={() => go(index + 1)}
+            >
+              {index === 0 ? 'Take the tour' : 'Next'}
+            </Button>
+            {index === 0 && !signedIn ? (
+              <p className="type-subhead text-center text-text-2">
+                Already have an account?{' '}
+                <TextLink onClick={() => finish('/sign-in')}>Sign in</TextLink>
+              </p>
+            ) : null}
+          </div>
         )}
       </footer>
     </div>
@@ -862,33 +874,17 @@ function Leaderboards({ sample }: SlideProps) {
   );
 }
 
-/** What members say: their own words from the November survey, first names only. */
-function Reviews() {
+/** What members say: the rating at a glance, then their own words, first names only. */
+function Reviews({ active }: SlideProps) {
   return (
     <>
       <Title
         icon={<Star className="size-4" aria-hidden />}
         kicker="From members"
-        title={`${averageRating()} out of 5, in their words`}
-        body={`From ${SURVEY_RATINGS.length} member reviews. First names only, nothing edited but spelling.`}
+        title="Loved by the people who train with it"
+        body="Real ratings and reviews from people who log their training and food in Macrotrophy."
       />
-      <ul className="flex flex-col gap-2.5" data-tour-reviews>
-        {REVIEWS.slice(0, 3).map((r, i) => (
-          <li
-            key={r.name}
-            className="pro-rise rounded-panel bg-surface p-4"
-            style={{ animationDelay: `${i * 90}ms` }}
-          >
-            <div className="flex gap-0.5 text-gold" aria-label={`${r.rating} out of 5`}>
-              {Array.from({ length: r.rating }, (_, k) => (
-                <Star key={k} className="size-3.5 fill-current" aria-hidden />
-              ))}
-            </div>
-            <p className="type-subhead mt-2 line-clamp-4 text-text-1">“{r.quote}”</p>
-            <p className="type-caption mt-1.5 text-text-2">{r.name}</p>
-          </li>
-        ))}
-      </ul>
+      <ReviewsShowcase active={active} />
     </>
   );
 }

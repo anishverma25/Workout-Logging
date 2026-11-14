@@ -1,4 +1,5 @@
 import { GOAL_PROTEIN, targetRate } from '../analytics/body';
+import { unsafeTarget } from '../analytics/goalPlan';
 import { muscleName } from '../analytics/weekly';
 import type { Experience, Goal } from '../models/schemas';
 import type { WeekFacts } from './facts';
@@ -135,6 +136,9 @@ export interface DecideInput {
     targetKg: number | null;
     /** The person typed their own protein target: it is theirs to keep. */
     ownProtein: boolean;
+    /** When known: a target under a healthy weight, or anyone under 18, is held, never cut. */
+    heightCm?: number | null;
+    age?: number | null;
   };
   plan: {
     kcal: number | null;
@@ -177,9 +181,12 @@ function paceBand(person: DecideInput['person']): { dir: Direction; lo: number; 
   if (targetKg !== null && weightKg !== null) {
     const diff = targetKg - weightKg;
     dir = Math.abs(diff) < 0.5 ? 'hold' : diff < 0 ? 'lose' : 'gain';
+    // Same rule as setup: never cut towards an underweight target, or for anyone under 18.
+    if (unsafeTarget({ weightKg, targetKg, heightCm: person.heightCm, age: person.age }))
+      dir = 'hold';
   } else {
     dir =
-      goal === 'fat_loss'
+      goal === 'fat_loss' && !(person.age != null && person.age < 18)
         ? 'lose'
         : goal === 'hypertrophy' || goal === 'strength_hypertrophy'
           ? 'gain'

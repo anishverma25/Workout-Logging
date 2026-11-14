@@ -15,6 +15,7 @@ import {
   dietFromName,
   labelAddsUp,
   labelPortion,
+  MIN_SERVINGS,
   type LabelColumn,
   type LabelNumbers,
 } from '@/domain/nutrition/label';
@@ -361,8 +362,16 @@ function LabelForm({
         ) : null}
       </div>
 
+      {unit === 'serving' && amount !== null && amount > 0 && amount < MIN_SERVINGS ? (
+        <p className="type-meta text-text-2" data-label-min>
+          Enter at least a quarter of a serving.
+        </p>
+      ) : null}
       {portion ? (
         <p className="type-headline tabular text-text-1" data-label-result>
+          {portion.servings !== null
+            ? `${portion.servings} ${portion.servings === 1 ? 'serving' : 'servings'}: `
+            : ''}
           {portion.kcal} kcal · {portion.proteinG} g protein
           <span className="type-meta ml-2 text-text-2">
             {portion.carbsG} g carbs · {portion.fatG} g fat
@@ -378,7 +387,9 @@ function LabelForm({
             editedPortion(
               name.trim(),
               dietFromName(name),
-              portion,
+              portion.grams !== null
+                ? { ...portion, grams: portion.grams }
+                : { ...portion, grams: null, servings: portion.servings ?? 1 },
               'label',
               !reading
                 ? 'Typed from the label'

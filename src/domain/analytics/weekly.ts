@@ -88,7 +88,12 @@ export interface Finding {
 export type CheckSpec =
   | { kind: 'sessions'; min: number }
   | { kind: 'muscleSessions'; muscle: string; min: number }
-  | { kind: 'mealProtein'; meal: 'breakfast' | 'lunch' | 'snacks' | 'dinner'; minG: number; days: number }
+  | {
+      kind: 'mealProtein';
+      meal: 'breakfast' | 'lunch' | 'snacks' | 'dinner';
+      minG: number;
+      days: number;
+    }
   | { kind: 'proteinDays'; min: number }
   | { kind: 'calorieDays'; min: number }
   | { kind: 'trainingCarbs'; minGPerKg: number };
@@ -139,9 +144,20 @@ export interface WeeklyReport {
     ratePct: number | null;
     fatLoss: boolean;
     band: { start: string; startKg: number } | null;
-    projection: { targetKg: number; weeksLo: number; weeksHi: number; goalDate: string | null } | null;
+    projection: {
+      targetKg: number;
+      weeksLo: number;
+      weeksHi: number;
+      goalDate: string | null;
+    } | null;
   } | null;
-  energy: { meanIntake: number; changeKgPerWeek: number; maintenance: number; plannedDeficit: number | null; actualDeficit: number } | null;
+  energy: {
+    meanIntake: number;
+    changeKgPerWeek: number;
+    maintenance: number;
+    plannedDeficit: number | null;
+    actualDeficit: number;
+  } | null;
   nutrition: {
     proteinAvg: number;
     proteinTarget: number | null;
@@ -190,8 +206,18 @@ const round1 = (v: number) => Math.round(v * 10) / 10;
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 const plural = (n: number, one: string, many = `${one}s`) => (n === 1 ? one : many);
 const MEALS = ['breakfast', 'lunch', 'snacks', 'dinner'] as const;
-const MEAL_WORD = { breakfast: 'breakfast', lunch: 'lunch', snacks: 'snacks', dinner: 'dinner' } as const;
-const MEAL_HI = { breakfast: 'breakfast', lunch: 'lunch', snacks: 'snacks', dinner: 'dinner' } as const;
+const MEAL_WORD = {
+  breakfast: 'breakfast',
+  lunch: 'lunch',
+  snacks: 'snacks',
+  dinner: 'dinner',
+} as const;
+const MEAL_HI = {
+  breakfast: 'breakfast',
+  lunch: 'lunch',
+  snacks: 'snacks',
+  dinner: 'dinner',
+} as const;
 const MUSCLE_NAME: Record<string, string> = {
   chest: 'Chest',
   back: 'Back',
@@ -232,7 +258,15 @@ export function fisherExact(a: number, b: number, c: number, d: number): number 
   const c1 = a + c;
   const n = r1 + r2;
   const logP = (x: number) =>
-    lf(r1) + lf(r2) + lf(c1) + lf(n - c1) - lf(n) - lf(x) - lf(r1 - x) - lf(c1 - x) - lf(r2 - c1 + x);
+    lf(r1) +
+    lf(r2) +
+    lf(c1) +
+    lf(n - c1) -
+    lf(n) -
+    lf(x) -
+    lf(r1 - x) -
+    lf(c1 - x) -
+    lf(r2 - c1 + x);
   const observed = logP(a);
   let p = 0;
   for (let x = Math.max(0, c1 - r2); x <= Math.min(r1, c1); x++) {
@@ -328,7 +362,9 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
   for (const w of weights) byDay.set(keyOf(w.at), w.kg);
   const weekWeights = weekKeys.filter((k) => byDay.has(k));
   const meanOf = (from: Date) => {
-    const ks = Array.from({ length: 7 }, (_, i) => keyOf(addDays(from, i))).filter((k) => byDay.has(k));
+    const ks = Array.from({ length: 7 }, (_, i) => keyOf(addDays(from, i))).filter((k) =>
+      byDay.has(k),
+    );
     return ks.length >= 3 ? mean(ks.map((k) => byDay.get(k)!)) : null;
   };
   const weightNow = meanOf(start) ?? (weights.length ? weights[weights.length - 1]!.kg : null);
@@ -343,14 +379,43 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
   const pws = prevWeeks.map(weekStats);
   const tiles: Tile[] = [];
   if (enough.training) {
-    tiles.push({ key: 'hardSets', value: ws.hard, usual: usualOf(pws.map((p) => p.hard), covered4) });
-    tiles.push({ key: 'volume', value: ws.volume, usual: usualOf(pws.map((p) => p.volume), covered4) });
-    tiles.push({ key: 'minutes', value: ws.minutes, usual: usualOf(pws.map((p) => p.minutes), covered4) });
+    tiles.push({
+      key: 'hardSets',
+      value: ws.hard,
+      usual: usualOf(
+        pws.map((p) => p.hard),
+        covered4,
+      ),
+    });
+    tiles.push({
+      key: 'volume',
+      value: ws.volume,
+      usual: usualOf(
+        pws.map((p) => p.volume),
+        covered4,
+      ),
+    });
+    tiles.push({
+      key: 'minutes',
+      value: ws.minutes,
+      usual: usualOf(
+        pws.map((p) => p.minutes),
+        covered4,
+      ),
+    });
     if (ws.rirs.length) tiles.push({ key: 'effort', value: round1(mean(ws.rirs)!), usual: null });
   }
   if (enough.food) {
-    tiles.push({ key: 'kcal', value: Math.round(mean(logged.map((k) => totals.get(k)!.kcal))!), usual: null });
-    tiles.push({ key: 'protein', value: Math.round(mean(logged.map((k) => totals.get(k)!.proteinG))!), usual: null });
+    tiles.push({
+      key: 'kcal',
+      value: Math.round(mean(logged.map((k) => totals.get(k)!.kcal))!),
+      usual: null,
+    });
+    tiles.push({
+      key: 'protein',
+      value: Math.round(mean(logged.map((k) => totals.get(k)!.proteinG))!),
+      usual: null,
+    });
   }
 
   // Days --------------------------------------------------------------------------------------
@@ -388,7 +453,10 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
     const weeks = Array.from({ length: 8 }, (_, w) => {
       const a = addDays(start, -7 * (7 - w));
       const b = addDays(a, 7);
-      const vals = recent.filter((s) => inRange(s, a, b)).map((s) => bestE1rm(s, id)).filter((v): v is number => v !== null);
+      const vals = recent
+        .filter((s) => inRange(s, a, b))
+        .map((s) => bestE1rm(s, id))
+        .filter((v): v is number => v !== null);
       return vals.length ? round1(Math.max(...vals)) : null;
     });
     const nowV = weeks[7] ?? weeks[6];
@@ -408,11 +476,15 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
 
   // Muscles -----------------------------------------------------------------------------------
   const work = muscleWorkload(week);
-  const prevWork = prevWeeks.map((p) => new Map(muscleWorkload(p).map((m) => [m.muscle, m.weighted])));
+  const prevWork = prevWeeks.map(
+    (p) => new Map(muscleWorkload(p).map((m) => [m.muscle, m.weighted])),
+  );
   const sessionsFor = (muscle: string) =>
     week.filter((s) =>
       s.exercises.some(
-        (e) => e.exercise?.primaryMuscle === muscle && e.sets.some((x) => isWorkingSet(x) && isHardSet(x)),
+        (e) =>
+          e.exercise?.primaryMuscle === muscle &&
+          e.sets.some((x) => isWorkingSet(x) && isHardSet(x)),
       ),
     ).length;
   const muscles: MuscleRow[] = enough.training
@@ -442,12 +514,15 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
     });
     const weekMean = meanOf(start);
     const lastWeekMean = meanOf(addDays(start, -7));
-    const changeKg = weekMean !== null && lastWeekMean !== null ? round1(weekMean - lastWeekMean) : null;
-    const ratePct = changeKg !== null && lastWeekMean ? round1((changeKg / lastWeekMean) * 100) : null;
+    const changeKg =
+      weekMean !== null && lastWeekMean !== null ? round1(weekMean - lastWeekMean) : null;
+    const ratePct =
+      changeKg !== null && lastWeekMean ? round1((changeKg / lastWeekMean) * 100) : null;
     const means = [0, 1, 2, 3].map((k) => meanOf(addDays(start, -7 * k)));
     const startMean = means[3];
     // A goal weight gives a projected range from the last 3 weekly changes, widened 20%.
-    const weightGoal = input.goals.find((g) => g.kind === 'body_weight' && !g.deletedAt && !g.achievedAt) ?? null;
+    const weightGoal =
+      input.goals.find((g) => g.kind === 'body_weight' && !g.deletedAt && !g.achievedAt) ?? null;
     let projection: NonNullable<WeeklyReport['body']>['projection'] = null;
     if (weightGoal && means.every((m) => m !== null) && weekMean !== null) {
       const changes = [0, 1, 2].map((k) => means[k]! - means[k + 1]!);
@@ -464,16 +539,21 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
         };
       }
     }
-    body = {
-      points,
-      weekMean: weekMean !== null ? round1(weekMean) : null,
-      lastWeekMean: lastWeekMean !== null ? round1(lastWeekMean) : null,
-      changeKg,
-      ratePct,
-      fatLoss,
-      band: fatLoss && startMean != null ? { start: keyOf(addDays(start, -21)), startKg: round1(startMean) } : null,
-      projection,
-    };
+    // Weigh-ins long ago but fewer than two in this window: there is nothing to draw.
+    if (points.length >= 2)
+      body = {
+        points,
+        weekMean: weekMean !== null ? round1(weekMean) : null,
+        lastWeekMean: lastWeekMean !== null ? round1(lastWeekMean) : null,
+        changeKg,
+        ratePct,
+        fatLoss,
+        band:
+          fatLoss && startMean != null
+            ? { start: keyOf(addDays(start, -21)), startKg: round1(startMean) }
+            : null,
+        projection,
+      };
   }
 
   // Energy balance over 4 weeks: intake plus what the body gave up ------------------------
@@ -503,18 +583,26 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
     const weekLogs = input.logs.filter((l) => !l.deletedAt && logged.includes(l.date));
     const meals = MEALS.map((meal) => {
       const perDay = logged
-        .map((k) => weekLogs.filter((l) => l.date === k && l.meal === meal).reduce((n, l) => n + l.proteinG, 0))
+        .map((k) =>
+          weekLogs
+            .filter((l) => l.date === k && l.meal === meal)
+            .reduce((n, l) => n + l.proteinG, 0),
+        )
         .filter((g) => g > 0);
       return { meal, avgG: Math.round(mean(perDay) ?? 0), days: perDay.length };
     }).filter((m) => m.days >= 2);
     const trainingKeys = new Set(week.map((s) => keyOf(s.date)));
     const carbsPerKg = (ks: string[]) =>
-      weightNow && ks.length >= 2 ? round1(mean(ks.map((k) => totals.get(k)!.carbsG))! / weightNow) : null;
+      weightNow && ks.length >= 2
+        ? round1(mean(ks.map((k) => totals.get(k)!.carbsG))! / weightNow)
+        : null;
     const kcalAvg = mean(logged.map((k) => totals.get(k)!.kcal))!;
     nutrition = {
       proteinAvg: Math.round(mean(logged.map((k) => totals.get(k)!.proteinG))!),
       proteinTarget,
-      proteinPerKg: weightNow ? round1(mean(logged.map((k) => totals.get(k)!.proteinG))! / weightNow) : null,
+      proteinPerKg: weightNow
+        ? round1(mean(logged.map((k) => totals.get(k)!.proteinG))! / weightNow)
+        : null,
       loggedDays: logged.length,
       calorieAvg: Math.round(kcalAvg),
       calorieDays,
@@ -550,7 +638,11 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
       evidence: ['Grgic 2020'],
     });
   }
-  if (nutrition?.carbsTraining != null && nutrition.carbsTraining < TRAINING_CARBS_G_PER_KG && enough.training) {
+  if (
+    nutrition?.carbsTraining != null &&
+    nutrition.carbsTraining < TRAINING_CARBS_G_PER_KG &&
+    enough.training
+  ) {
     findings.push({
       id: 'training-carbs',
       label: 'established',
@@ -560,7 +652,8 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
       evidence: ['Science: day analysis'],
     });
   }
-  const low = nutrition?.meals.filter((m) => nutrition.mealAim && m.avgG < nutrition.mealAim * 0.75) ?? [];
+  const low =
+    nutrition?.meals.filter((m) => nutrition.mealAim && m.avgG < nutrition.mealAim * 0.75) ?? [];
   if (low.length && nutrition?.mealAim) {
     const m = low.sort((a, b) => a.avgG - b.avgG)[0]!;
     findings.push({
@@ -631,7 +724,11 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
       checkText: 'Calories within 10% on 5 days.',
       check: { kind: 'calorieDays', min: 5 },
     });
-  if (nutrition?.carbsTraining != null && nutrition.carbsTraining < TRAINING_CARBS_G_PER_KG && enough.training)
+  if (
+    nutrition?.carbsTraining != null &&
+    nutrition.carbsTraining < TRAINING_CARBS_G_PER_KG &&
+    enough.training
+  )
     add({
       id: 'training-carbs',
       title: 'Move some carbs to your training days',
@@ -643,13 +740,29 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
 
   // Last week's plan, ticked from this week's logs -----------------------------------------
   const lastWeek = input.previousActions?.length
-    ? input.previousActions.map((a) => evaluate(a, { week, totals, logged, proteinTarget, kcalTarget, weightNow, weekLogs: input.logs }))
+    ? input.previousActions.map((a) =>
+        evaluate(a, {
+          week,
+          totals,
+          logged,
+          proteinTarget,
+          kcalTarget,
+          weightNow,
+          weekLogs: input.logs,
+        }),
+      )
     : null;
 
   // Pillars and verdict -----------------------------------------------------------------------
   const pillars = {
     training: trainingPillar(week.length, input.planned),
-    nutrition: nutritionPillar(enough.food, proteinTarget, nutrition?.proteinAvg ?? null, calorieDays, logged.length),
+    nutrition: nutritionPillar(
+      enough.food,
+      proteinTarget,
+      nutrition?.proteinAvg ?? null,
+      calorieDays,
+      logged.length,
+    ),
     body: bodyPillar(body, fatLoss),
   };
   const verdict = verdictText(pillars, actions);
@@ -658,12 +771,24 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
   let win: WeeklyReport['win'] = null;
   if (realGains.length) {
     const l = realGains.sort((a, b) => b.pct - a.pct)[0]!;
-    win = { big: `+${l.pct}%`, title: `${l.name} strength in 4 weeks`, detail: `From ${l.base} to ${l.now} kg estimated. Past the 5% line where a change stops being noise.` };
+    win = {
+      big: `+${l.pct}%`,
+      title: `${l.name} strength in 4 weeks`,
+      detail: `From ${l.base} to ${l.now} kg estimated. Past the 5% line where a change stops being noise.`,
+    };
   } else if (records.length) {
     const ex = new Set(records.map((r) => r.exerciseId)).size;
-    win = { big: String(records.length), title: `${plural(records.length, 'personal record')} this week`, detail: `Across ${ex} ${plural(ex, 'exercise')}.` };
+    win = {
+      big: String(records.length),
+      title: `${plural(records.length, 'personal record')} this week`,
+      detail: `Across ${ex} ${plural(ex, 'exercise')}.`,
+    };
   } else if (input.planned && week.length >= input.planned) {
-    win = { big: `${week.length}/${input.planned}`, title: 'Every planned session done', detail: 'Consistency is what moves everything else.' };
+    win = {
+      big: `${week.length}/${input.planned}`,
+      title: 'Every planned session done',
+      detail: 'Consistency is what moves everything else.',
+    };
   }
 
   // Optional inputs ---------------------------------------------------------------------------
@@ -673,13 +798,48 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
     (m) => !m.deletedAt && m.waistCm != null && new Date(m.measuredAt) >= addDays(start, -14),
   );
   const inputs = [
-    { key: 'goal', label: 'Goal weight and date', has: input.goals.some((g) => g.kind === 'body_weight' && !g.deletedAt), unlock: 'A projected range for reaching your goal weight.' },
-    { key: 'targets', label: 'Your own calorie and protein targets', has: input.ownTargets, unlock: 'Calorie and protein days checked against your own numbers.' },
-    { key: 'meals', label: 'Meals logged by meal', has: enough.food, unlock: 'Protein at each meal, not just the day.' },
-    { key: 'plan', label: 'Training plan with planned days', has: input.planned !== null, unlock: 'Sessions done against sessions planned.' },
-    { key: 'effort', label: 'Effort logged on 80% of sets', has: rirShare >= 0.8, unlock: `You logged effort on ${Math.round(rirShare * 100)}% of sets. At 80% your strength estimates and hard sets get much tighter.` },
-    { key: 'readiness', label: 'Readiness check before workouts', has: readinessUsed, unlock: 'Tells whether weak days follow poor recovery or low food.' },
-    { key: 'waist', label: 'Waist measurement every 2 weeks', has: waistRecent, unlock: 'On a cut, weight alone cannot separate fat loss from water.' },
+    {
+      key: 'goal',
+      label: 'Goal weight and date',
+      has: input.goals.some((g) => g.kind === 'body_weight' && !g.deletedAt),
+      unlock: 'A projected range for reaching your goal weight.',
+    },
+    {
+      key: 'targets',
+      label: 'Your own calorie and protein targets',
+      has: input.ownTargets,
+      unlock: 'Calorie and protein days checked against your own numbers.',
+    },
+    {
+      key: 'meals',
+      label: 'Meals logged by meal',
+      has: enough.food,
+      unlock: 'Protein at each meal, not just the day.',
+    },
+    {
+      key: 'plan',
+      label: 'Training plan with planned days',
+      has: input.planned !== null,
+      unlock: 'Sessions done against sessions planned.',
+    },
+    {
+      key: 'effort',
+      label: 'Effort logged on 80% of sets',
+      has: rirShare >= 0.8,
+      unlock: `You logged effort on ${Math.round(rirShare * 100)}% of sets. At 80% your strength estimates and hard sets get much tighter.`,
+    },
+    {
+      key: 'readiness',
+      label: 'Readiness check before workouts',
+      has: readinessUsed,
+      unlock: 'Tells whether weak days follow poor recovery or low food.',
+    },
+    {
+      key: 'waist',
+      label: 'Waist measurement every 2 weeks',
+      has: waistRecent,
+      unlock: 'On a cut, weight alone cannot separate fat loss from water.',
+    },
   ];
 
   return {
@@ -702,7 +862,11 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
     win,
     tiles,
     days,
-    targets: { kcal: kcalTarget, proteinG: proteinTarget, maintenance: energy?.maintenance ?? null },
+    targets: {
+      kcal: kcalTarget,
+      proteinG: proteinTarget,
+      maintenance: energy?.maintenance ?? null,
+    },
     lifts,
     muscles,
     body,
@@ -716,7 +880,8 @@ export function weeklyReport(input: WeeklyInput): WeeklyReport {
 }
 
 /** Whether a report can be made for this week at all. */
-export const canMakeReport = (r: Pick<WeeklyReport, 'enough'>) => r.enough.training || r.enough.food;
+export const canMakeReport = (r: Pick<WeeklyReport, 'enough'>) =>
+  r.enough.training || r.enough.food;
 
 function fuelPattern(
   sessions: Session[],
@@ -756,7 +921,8 @@ function fuelPattern(
   const rateB = low.done / low.n;
   if (rateA - rateB < 0.2) return null;
   const p = fisherExact(fed.done, fed.n - fed.done, low.done, low.n - low.done);
-  const established = fed.n >= PATTERN_ESTABLISHED_N && low.n >= PATTERN_ESTABLISHED_N && p < PATTERN_ESTABLISHED_P;
+  const established =
+    fed.n >= PATTERN_ESTABLISHED_N && low.n >= PATTERN_ESTABLISHED_N && p < PATTERN_ESTABLISHED_P;
   return {
     id: 'fuel-pattern',
     label: established ? 'established' : 'early',
@@ -790,9 +956,15 @@ function evaluate(
     }
     case 'muscleSessions': {
       const n = ctx.week.filter((s) =>
-        s.exercises.some((e) => e.exercise?.primaryMuscle === c.muscle && e.sets.some(isWorkingSet)),
+        s.exercises.some(
+          (e) => e.exercise?.primaryMuscle === c.muscle && e.sets.some(isWorkingSet),
+        ),
       ).length;
-      return { title: a.title, done: n >= c.min, result: `${muscleName(c.muscle)} in ${n} ${plural(n, 'session')}` };
+      return {
+        title: a.title,
+        done: n >= c.min,
+        result: `${muscleName(c.muscle)} in ${n} ${plural(n, 'session')}`,
+      };
     }
     case 'mealProtein': {
       const n = ctx.logged.filter(
@@ -805,34 +977,50 @@ function evaluate(
     }
     case 'proteinDays': {
       const n = ctx.proteinTarget
-        ? ctx.logged.filter((k) => ctx.totals.get(k)!.proteinG >= ctx.proteinTarget! * PROTEIN_DAY_SHARE).length
+        ? ctx.logged.filter(
+            (k) => ctx.totals.get(k)!.proteinG >= ctx.proteinTarget! * PROTEIN_DAY_SHARE,
+          ).length
         : 0;
       return { title: a.title, done: n >= c.min, result: `Reached on ${n} ${plural(n, 'day')}` };
     }
     case 'calorieDays': {
       const n = ctx.kcalTarget
-        ? ctx.logged.filter((k) => Math.abs(ctx.totals.get(k)!.kcal / ctx.kcalTarget! - 1) <= CALORIE_TOLERANCE).length
+        ? ctx.logged.filter(
+            (k) => Math.abs(ctx.totals.get(k)!.kcal / ctx.kcalTarget! - 1) <= CALORIE_TOLERANCE,
+          ).length
         : 0;
       return { title: a.title, done: n >= c.min, result: `${n} of ${c.min} days` };
     }
     case 'trainingCarbs': {
       const keys = new Set(ctx.week.map((s) => toDateKey(s.date)));
       const ks = ctx.logged.filter((k) => keys.has(k));
-      const v = ctx.weightNow && ks.length ? round1(mean(ks.map((k) => ctx.totals.get(k)!.carbsG))! / ctx.weightNow) : null;
-      return { title: a.title, done: v !== null && v >= c.minGPerKg, result: v !== null ? `${v} g per kg` : 'Not enough logged' };
+      const v =
+        ctx.weightNow && ks.length
+          ? round1(mean(ks.map((k) => ctx.totals.get(k)!.carbsG))! / ctx.weightNow)
+          : null;
+      return {
+        title: a.title,
+        done: v !== null && v >= c.minGPerKg,
+        result: v !== null ? `${v} g per kg` : 'Not enough logged',
+      };
     }
   }
 }
 
 function trainingPillar(done: number, planned: number | null): Pillar {
-  if (done === 0) return { status: 'none', label: 'No sessions', detail: 'Nothing logged this week' };
+  if (done === 0)
+    return { status: 'none', label: 'No sessions', detail: 'Nothing logged this week' };
   if (planned) {
     const detail = `${done} of ${planned} sessions`;
     if (done >= planned) return { status: 'good', label: 'On plan', detail };
     if (done >= planned - 1) return { status: 'close', label: 'Close', detail };
     return { status: 'off', label: 'Behind', detail };
   }
-  return { status: 'good', label: `${done} ${plural(done, 'session')}`, detail: 'No plan set to compare with' };
+  return {
+    status: 'good',
+    label: `${done} ${plural(done, 'session')}`,
+    detail: 'No plan set to compare with',
+  };
 }
 
 function nutritionPillar(
@@ -842,11 +1030,14 @@ function nutritionPillar(
   calorieDays: number | null,
   logged: number,
 ): Pillar {
-  if (!enough) return { status: 'none', label: 'Not logged', detail: 'Log food on 3 days to see this' };
-  if (!target || avg === null) return { status: 'close', label: 'Logged', detail: `${logged} days logged, no protein target` };
+  if (!enough)
+    return { status: 'none', label: 'Not logged', detail: 'Log food on 3 days to see this' };
+  if (!target || avg === null)
+    return { status: 'close', label: 'Logged', detail: `${logged} days logged, no protein target` };
   const pct = Math.round((avg / target) * 100);
   const detail = `Protein ${pct}% of target`;
-  if (pct >= 95 && (calorieDays === null || calorieDays >= Math.min(5, logged))) return { status: 'good', label: 'On target', detail };
+  if (pct >= 95 && (calorieDays === null || calorieDays >= Math.min(5, logged)))
+    return { status: 'good', label: 'On target', detail };
   if (pct >= 85) return { status: 'close', label: 'Close', detail };
   return { status: 'off', label: 'Off target', detail };
 }
@@ -858,13 +1049,20 @@ function bodyPillar(body: WeeklyReport['body'], fatLoss: boolean): Pillar {
   const rate = Math.abs(body.ratePct);
   if (fatLoss) {
     const detail = `Weight ${down ? 'down' : 'up'} ${rate}% a week, goal 0.5 to 1%`;
-    if (down && rate >= LOSS_BAND[0] && rate <= LOSS_BAND[1]) return { status: 'good', label: 'On pace', detail };
-    if (down && rate > LOSS_BAND[1]) return { status: 'close', label: 'Faster than planned', detail };
+    if (down && rate >= LOSS_BAND[0] && rate <= LOSS_BAND[1])
+      return { status: 'good', label: 'On pace', detail };
+    if (down && rate > LOSS_BAND[1])
+      return { status: 'close', label: 'Faster than planned', detail };
     if (down) return { status: 'close', label: 'Slower than planned', detail };
     return { status: 'off', label: 'Not dropping yet', detail };
   }
-  if (Math.abs(body.changeKg) < 0.2) return { status: 'good', label: 'Steady', detail: 'Weight within 0.2 kg of last week' };
-  return { status: 'close', label: `${down ? 'Down' : 'Up'} ${Math.abs(body.changeKg)} kg`, detail: 'Against last week\'s 7 day average' };
+  if (Math.abs(body.changeKg) < 0.2)
+    return { status: 'good', label: 'Steady', detail: 'Weight within 0.2 kg of last week' };
+  return {
+    status: 'close',
+    label: `${down ? 'Down' : 'Up'} ${Math.abs(body.changeKg)} kg`,
+    detail: "Against last week's 7 day average",
+  };
 }
 
 function verdictText(p: WeeklyReport['pillars'], actions: Action[]): { en: string; hi: string } {
@@ -877,7 +1075,8 @@ function verdictText(p: WeeklyReport['pillars'], actions: Action[]): { en: strin
         : good === 1
           ? { en: 'A mixed week.', hi: 'Mila-jula hafta.' }
           : { en: 'A slow week, and that is fine.', hi: 'Thoda slow hafta, koi baat nahi.' };
-  if (!actions.length) return { en: `${head.en} Keep doing what you did.`, hi: `${head.hi} Aise hi chalte raho.` };
+  if (!actions.length)
+    return { en: `${head.en} Keep doing what you did.`, hi: `${head.hi} Aise hi chalte raho.` };
   const fix = actions.slice(0, 2);
   return {
     en: `${head.en} ${fix.length === 1 ? 'One thing' : 'Two things'} to work on: ${fix.map((a) => a.title.charAt(0).toLowerCase() + a.title.slice(1)).join(', and ')}.`,

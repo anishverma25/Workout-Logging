@@ -803,6 +803,9 @@ export const SCIENCE: TopicGroup[] = [
             {KCAL_PER_KG} kcal per kg, never under 1,200 kcal or your resting energy; protein is the
             middle of your goal&apos;s range, the cutting range when losing. The date is the weight
             to change divided by the weekly rate, worked out again whenever you change the calories.
+            A target under a BMI of 18.5 for your height (the World Health Organization&apos;s
+            underweight line) is never planned for, and nobody under 18 is given a deficit: the plan
+            holds your weight at maintenance instead and tells you why.
           </>,
         ],
         forYou:
@@ -1157,10 +1160,10 @@ export const SCIENCE: TopicGroup[] = [
             equal (Schoenfeld and colleagues, 2019).
           </>,
           <>
-            Patterns between food and training are labelled Established only when a fixed rule
-            holds on your own numbers. Others are Early signals, which never change your advice; an
-            exact statistical test decides whether one is shown at all, and no probability is shown
-            to you.
+            Patterns between food and training are labelled Established only when a fixed rule holds
+            on your own numbers. Others are Early signals, which never change your advice; an exact
+            statistical test decides whether one is shown at all, and no probability is shown to
+            you.
           </>,
         ],
         forYou:
@@ -1192,15 +1195,15 @@ export const SCIENCE: TopicGroup[] = [
           <>
             Maintenance is read from what you ate and how your weight moved over 4 weeks, then
             blended with the body formula by how many complete weeks you have logged. The 7,700 kcal
-            per kg rule is a first-weeks guide: the body adapts as weight changes (Hall, 2008), which
-            is why the plan re-reads it every week instead of trusting one calculation.
+            per kg rule is a first-weeks guide: the body adapts as weight changes (Hall, 2008),
+            which is why the plan re-reads it every week instead of trusting one calculation.
           </>,
           <>
             On a cut the plan aims for {CUT_BAND[0] * 100} to {CUT_BAND[1] * 100}% of body weight a
             week, the pace that best keeps muscle (Helms and colleagues, 2014). It is always called
             weight, because a scale cannot tell fat from water. Protein stays between{' '}
-            {PROTEIN_RANGE[0]} and {PROTEIN_RANGE[1]} g per kg (Morton and colleagues, 2018), or your
-            goal's range when that is higher, unless you typed your own target.
+            {PROTEIN_RANGE[0]} and {PROTEIN_RANGE[1]} g per kg (Morton and colleagues, 2018), or
+            your goal's range when that is higher, unless you typed your own target.
           </>,
           <>
             Sets follow the dose and response of weekly hard sets (Pelland and colleagues, 2026). A
@@ -1226,7 +1229,7 @@ export const SCIENCE: TopicGroup[] = [
         ],
         forYou:
           'Log food on 5 days and weigh in on 4 each week. Without that the plan holds your calories and tells you why.',
-        limits: `Limits the plan cannot cross: calories never under ${MIN_DAILY_KCAL.toLocaleString('en-IN')} kcal or your resting energy; at most ${MAX_KCAL_STEP} kcal and ${MAX_SET_STEP} sets per muscle of change a week; no deficit and nothing added through a fast, an illness or exams. Something hurts is training guidance, not medical advice: sharp or lasting pain, swelling or numbness means stop and see a professional. The step sizes and cut-offs are app rules built on the research, not numbers from it.`,
+        limits: `Limits the plan cannot cross: calories never under ${MIN_DAILY_KCAL.toLocaleString('en-IN')} kcal or your resting energy; at most ${MAX_KCAL_STEP} kcal and ${MAX_SET_STEP} sets per muscle of change a week; no deficit and nothing added through a fast, an illness or exams; no cut toward a target under a BMI of 18.5 for your height, and none for anyone under 18. Something hurts is training guidance, not medical advice: sharp or lasting pain, swelling or numbness means stop and see a professional. The step sizes and cut-offs are app rules built on the research, not numbers from it.`,
       },
       {
         id: 'trial',

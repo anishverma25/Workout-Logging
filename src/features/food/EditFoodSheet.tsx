@@ -21,7 +21,7 @@ import {
 import type { FoodLog } from '@/domain/models/schemas';
 import { portionText } from '@/domain/nutrition/calc';
 import { MEALS, type Meal } from '@/domain/nutrition/types';
-import { NutritionPanel } from './FoodProfile';
+import { NutritionPanel, servingOnly } from './FoodProfile';
 import { NutrientLine, PortionEditor } from './PortionEditor';
 import { MEAL_LABEL, type FoodContext } from './useFoodContext';
 
@@ -156,6 +156,7 @@ function EditTotals({ portion, ctx }: { portion: FoodPortion; ctx: FoodContext }
       grams={m.grams}
       portionLabel={portionText(portion.amount, portion.unit, portion.size, portion.food.pieceName)}
       per100={portion.food.per100}
+      weightKnown={!servingOnly(portion.food)}
       targets={ctx.targets}
     />
   );

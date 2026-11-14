@@ -1,20 +1,33 @@
-import { Link, useNavigate, useSearchParams } from 'react-router';
-import { BrainCircuit, CalendarCheck2, FileBarChart2, Salad, Sparkles, Star } from 'lucide-react';
-import { formatRupees, usePlans } from '@/app/billing';
+import { Navigate, useNavigate, useSearchParams } from 'react-router';
+import {
+  BrainCircuit,
+  Check,
+  ChartSpline,
+  Crown,
+  FileBarChart2,
+  Minus,
+  Salad,
+  Sparkles,
+  Target,
+  type LucideIcon,
+} from 'lucide-react';
 import { useEntitlement } from '@/app/entitlement';
 import { averageRating, REVIEWS, SURVEY_RATINGS } from '@/app/marketing';
-import { PrimaryButton, TextButton } from '@/components/kit';
+import { SecondaryButton, TextButton } from '@/components/kit';
+import { TRIAL_HOURS } from '@/domain/entitlement/entitlement';
+import { safeNext } from '@/features/account/next';
+import { StarRow } from '@/features/tour/Reviews';
 import { formatCalendarDate } from '@/lib/format';
-import { cn } from '@/lib/cn';
+import { PlansSection } from './Plans';
 
-const PERIOD = { monthly: 'a month', quarterly: 'every 3 months', yearly: 'a year' } as const;
+const TRIAL_DAYS = Math.round(TRIAL_HOURS / 24);
 
-/** The four things Pro does that free does not, each in one line, in the order people use them. */
-const FLAGSHIP = [
+/** What Pro does that free does not, as outcomes, in the order people meet them. */
+const WHAT_PRO_DOES: { icon: LucideIcon; title: string; detail: string }[] = [
   {
     icon: BrainCircuit,
-    title: 'A plan that adapts every week',
-    detail: 'Calories, protein and sets for next week, from your own numbers.',
+    title: 'A plan that adapts',
+    detail: 'Next week’s calories, protein and sets, from your own numbers.',
   },
   {
     icon: Sparkles,
@@ -22,30 +35,56 @@ const FLAGSHIP = [
     detail: 'Snap a plate, read a label or a menu, ask about your training.',
   },
   {
+    icon: Target,
+    title: 'Protein and macros',
+    detail: 'Protein, carbs, fat and fibre tracked against your targets.',
+  },
+  {
     icon: Salad,
-    title: 'Indian meal plan and grocery list',
-    detail: 'A week of meals for home, hostel or mess, at your targets.',
+    title: 'Indian meal plan',
+    detail: 'A week of meals at your targets, with one grocery list.',
   },
   {
     icon: FileBarChart2,
-    title: 'Weekly intelligence report',
-    detail: 'Training and food read together, with three things to do next.',
+    title: 'Weekly report',
+    detail: 'Training and food read together, with what to do next.',
   },
-] as const;
+  {
+    icon: ChartSpline,
+    title: 'All-time progress',
+    detail: 'Strength levels, stalled lifts and sets for every muscle.',
+  },
+];
+
+/** The short version of Free and Pro: a string in Free means a smaller amount. */
+const COMPARE: { label: string; free: boolean | string }[] = [
+  { label: 'Workout logging and full history', free: true },
+  { label: 'Indian food logging with calories', free: true },
+  { label: 'Routines', free: '2' },
+  { label: 'Progress', free: '7 days' },
+  { label: 'Protein, carbs, fat and fibre', free: false },
+  { label: 'Plan that adapts every week', free: false },
+  { label: 'Macrotrophy AI', free: false },
+  { label: 'Meal plan and weekly report', free: false },
+];
 
 /**
- * Right after setup, once: Pro is already on for 7 days. It tells the truth plainly (when it
- * ends, what it costs, that nothing is charged unless they choose), shows what they now have,
- * and lets them start training straight away. No countdown timers, no fake scarcity.
+ * One page, right after a first setup: everything Pro does, Free next to Pro, what members say,
+ * and the real prices with checkout right here. It tells the truth plainly (when the trial ends,
+ * that nothing is charged unless they choose) and always lets them go straight to training.
+ * No countdowns, no fake scarcity. Members who already pay are sent on at once.
  */
 export function TrialWelcomePage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const next = params.get('next') ?? '/';
+  const next = safeNext(params.get('next'), '/');
   const e = useEntitlement();
-  const plans = usePlans();
-  const ends = e.plan === 'trial' && e.trialEndsAt ? formatCalendarDate(e.trialEndsAt) : null;
-  const review = REVIEWS[0]!;
+  const trial = e.plan === 'trial';
+  const ends = trial && e.trialEndsAt ? formatCalendarDate(e.trialEndsAt) : null;
+  const review = REVIEWS[1] ?? REVIEWS[0]!;
+  const onward = () => navigate(next, { replace: true });
+
+  if (e.plan === 'pro' || e.plan === 'founding') return <Navigate to={next} replace />;
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg pt-safe">
@@ -53,104 +92,124 @@ export function TrialWelcomePage() {
         className="mx-auto flex w-full max-w-xl flex-1 flex-col px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
         data-trial-welcome
       >
-        <section className="glow-lime relative mt-10 overflow-hidden rounded-panel bg-surface px-6 pt-8 pb-7 text-center">
-          <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-lime text-on-lime">
-            <CalendarCheck2 className="size-7" aria-hidden />
+        <div className="flex h-14 items-center justify-end">
+          <TextButton onClick={onward} data-trial-skip>
+            Not now
+          </TextButton>
+        </div>
+
+        <section className="offer-hero relative -mx-5 px-5 pt-4 pb-2 text-center">
+          <span className="glow-lime mx-auto flex size-16 items-center justify-center rounded-[1.4rem] bg-lime text-on-lime">
+            <Crown className="size-8" aria-hidden />
           </span>
-          <h1 className="type-display mt-5 text-text-1">Your 7 days of Pro are on</h1>
-          <p className="type-body mt-2 text-text-2 [text-wrap:balance]">
-            Everything below is already unlocked{ends ? ` until ${ends}` : ''}. No card, no payment
-            details, nothing charged unless you choose a plan.
+          <p className="type-caption mt-5 font-semibold text-lime">
+            {trial
+              ? ends
+                ? `Pro is on until ${ends}`
+                : `Your ${TRIAL_DAYS} days of Pro are on`
+              : 'Macrotrophy Pro'}
+          </p>
+          <h1 className="type-display mt-1 text-text-1 [text-wrap:balance]">
+            {trial ? 'Everything is unlocked' : 'Train and eat with a plan'}
+          </h1>
+          <p className="type-body mx-auto mt-2 max-w-[34ch] text-text-2 [text-wrap:balance]">
+            {trial
+              ? 'No card and nothing to cancel. Keep Pro after the trial only if it is worth it to you.'
+              : 'Pro reads every set and every meal, and tells you what to do next.'}
           </p>
         </section>
 
-        <h2 className="type-section mt-8 text-text-1">Now yours to use</h2>
-        <ul className="mt-3 divide-y-[0.5px] divide-divider rounded-card bg-surface px-4">
-          {FLAGSHIP.map(({ icon: Icon, title, detail }) => (
-            <li key={title} className="flex items-start gap-3 py-3.5">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-lime-dim text-lime">
-                <Icon className="size-5" aria-hidden />
+        <h2 className="type-section mt-8 text-text-1">What Pro does</h2>
+        <ul className="mt-3 grid grid-cols-2 gap-2.5" data-offer-features>
+          {WHAT_PRO_DOES.map(({ icon: Icon, title, detail }, i) => (
+            <li
+              key={title}
+              className="pro-rise rounded-card bg-surface p-4"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <span className="flex size-9 items-center justify-center rounded-full bg-lime-dim text-lime">
+                <Icon className="size-[1.125rem]" aria-hidden />
               </span>
-              <span className="min-w-0">
-                <span className="type-headline block text-text-1">{title}</span>
-                <span className="type-subhead block text-text-2">{detail}</span>
-              </span>
+              <p className="type-headline mt-3 text-text-1">{title}</p>
+              <p className="type-caption mt-0.5 text-text-2">{detail}</p>
             </li>
           ))}
         </ul>
 
-        <figure className="mt-6 rounded-card bg-surface p-5">
-          <div className="flex items-center gap-1 text-gold" aria-hidden>
-            {Array.from({ length: 5 }, (_, i) => (
-              <Star key={i} className="size-4 fill-current" />
-            ))}
+        <h2 className="type-section mt-8 text-text-1">Free and Pro</h2>
+        <div className="mt-3 overflow-hidden rounded-card bg-surface">
+          <table className="w-full border-collapse">
+            <caption className="sr-only">What the free plan and Pro include</caption>
+            <thead>
+              <tr className="type-caption text-text-2">
+                <th scope="col" className="px-4 py-2.5 text-left font-semibold">
+                  <span className="sr-only">Feature</span>
+                </th>
+                <th scope="col" className="w-16 py-2.5 text-center font-semibold">
+                  Free
+                </th>
+                <th
+                  scope="col"
+                  className="w-16 bg-lime-dim py-2.5 text-center font-semibold text-text-1"
+                >
+                  Pro
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {COMPARE.map((row) => (
+                <tr key={row.label} className="border-t-[0.5px] border-divider">
+                  <th
+                    scope="row"
+                    className="type-meta px-4 py-2.5 text-left font-medium text-text-1"
+                  >
+                    {row.label}
+                  </th>
+                  <td className="text-center">
+                    {typeof row.free === 'string' ? (
+                      <span className="type-caption text-text-2">{row.free}</span>
+                    ) : row.free ? (
+                      <span role="img" aria-label="Included">
+                        <Check className="mx-auto size-4 text-text-1" aria-hidden />
+                      </span>
+                    ) : (
+                      <span role="img" aria-label="Not included">
+                        <Minus className="mx-auto size-4 text-text-3" aria-hidden />
+                      </span>
+                    )}
+                  </td>
+                  <td className="bg-lime-dim text-center">
+                    <span role="img" aria-label="Included">
+                      <Check className="mx-auto size-4 text-lime" aria-hidden />
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <figure className="review-hero mt-8 rounded-card p-5">
+          <div className="flex items-center justify-between gap-3">
+            <StarRow value={averageRating()} />
+            <span className="type-caption text-text-2">
+              {averageRating()} from {SURVEY_RATINGS.length} members
+            </span>
           </div>
-          <blockquote className="type-subhead mt-2 text-text-1">“{review.quote}”</blockquote>
-          <figcaption className="type-caption mt-2 text-text-2">
-            {review.name}, Macrotrophy member · {averageRating()} out of 5 from{' '}
-            {SURVEY_RATINGS.length} member reviews
-          </figcaption>
+          <blockquote className="type-subhead mt-3 text-text-1">“{review.quote}”</blockquote>
+          <figcaption className="type-caption mt-2 text-text-2">{review.name}</figcaption>
         </figure>
 
-        {plans && plans.length ? (
-          <section className="mt-8" aria-labelledby="trial-prices-title" data-trial-prices>
-            <h2 id="trial-prices-title" className="type-section text-text-1">
-              To keep Pro after{ends ? ` ${ends}` : ' the trial'}
-            </h2>
-            <ul className="mt-3 grid grid-cols-3 gap-2">
-              {plans.map((p) => {
-                const best = p.id === 'yearly';
-                return (
-                  <li
-                    key={p.id}
-                    className={cn(
-                      'relative flex flex-col items-center rounded-card px-2 pt-4 pb-3 text-center',
-                      best
-                        ? 'glow-lime overflow-hidden bg-lime-dim ring-1 ring-lime/60'
-                        : 'bg-surface',
-                    )}
-                    data-trial-price={p.id}
-                  >
-                    <span
-                      className={cn(
-                        'type-caption font-semibold',
-                        best ? 'text-lime' : 'text-text-2',
-                      )}
-                    >
-                      {p.label}
-                    </span>
-                    <span className="mt-1 font-display text-[1.6rem] leading-none font-bold tabular text-text-1">
-                      {formatRupees(p.priceInr)}
-                    </span>
-                    <span className="type-caption mt-1 text-text-2">{PERIOD[p.id]}</span>
-                    {best ? (
-                      <span className="type-caption mt-2 rounded-full bg-lime px-2 py-0.5 font-semibold text-on-lime">
-                        Best value
-                      </span>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-            <p className="type-caption mt-3 text-center text-text-2">
-              Autopay or pay once, cancel any time. Free stays free, with your whole history.
-            </p>
-          </section>
-        ) : null}
+        <div className="mt-8" data-trial-prices>
+          <PlansSection entitlement={e} />
+        </div>
 
-        <div className="mt-auto flex flex-col gap-2 pt-8">
-          <PrimaryButton block onClick={() => navigate(next, { replace: true })} data-trial-start>
-            Start training
-          </PrimaryButton>
-          <div className="text-center">
-            <TextButton to="/pro#get-pro" data-trial-plans>
-              See plans
-            </TextButton>
-          </div>
-          <p className="type-caption text-center text-text-3">
-            <Link to="/science" className="underline">
-              How every number is worked out
-            </Link>
+        <div className="mt-6 flex flex-col gap-2 pt-2">
+          <SecondaryButton block onClick={onward} data-trial-start>
+            {trial ? 'Start training with Pro' : 'Continue with Free'}
+          </SecondaryButton>
+          <p className="type-caption text-center text-text-2">
+            Free stays free, with your whole history, whatever you choose.
           </p>
         </div>
       </main>

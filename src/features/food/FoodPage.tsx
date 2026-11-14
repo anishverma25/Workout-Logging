@@ -437,8 +437,7 @@ function MealCard({
         </h3>
         {items.length ? (
           <span className="type-subhead tabular shrink-0 text-text-2">
-            <strong className="type-metric-sm text-text-1">{n(total.kcal)}</strong> kcal ·{' '}
-            {total.proteinG.toFixed(0)} g protein
+            <strong className="type-metric-sm text-text-1">{n(total.kcal)}</strong> kcal
           </span>
         ) : null}
         <button
@@ -462,14 +461,8 @@ function MealCard({
                   title={<span className="font-normal">{l.foodName}</span>}
                   subtitle={`${portion}${oil}`}
                   wrap
-                  value={
-                    <span className="flex flex-col items-end">
-                      <span className="type-subhead tabular text-text-1">{n(l.kcal)} kcal</span>
-                      <span className="type-caption tabular text-text-2">
-                        {l.proteinG.toFixed(0)} g protein
-                      </span>
-                    </span>
-                  }
+                  // A logged food shows its calories only; tapping it shows every nutrient.
+                  value={<span className="type-subhead tabular text-text-1">{n(l.kcal)} kcal</span>}
                   onClick={() => onEdit(l)}
                   className="pl-3"
                 />

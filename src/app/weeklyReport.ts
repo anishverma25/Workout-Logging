@@ -47,6 +47,18 @@ function messageFor(error: { message?: string; code?: string }): string {
   return 'Could not reach Macrotrophy. Check your connection and try again.';
 }
 
+/**
+ * Reports saved before November 2026 could hold a body section with fewer than two points
+ * (weigh-ins long ago, none in the chart window), which crashed the Full report and its PDF.
+ * Such a section has nothing to show, so it is dropped when the report is read.
+ */
+export function repaired(report: WeeklyReport): WeeklyReport {
+  const points = report.body?.points;
+  if (report.body && (!Array.isArray(points) || points.length < 2))
+    return { ...report, body: null };
+  return report;
+}
+
 function parse(v: unknown): SavedReport | null {
   if (!v || typeof v !== 'object') return null;
   const o = v as Record<string, unknown>;
@@ -56,7 +68,7 @@ function parse(v: unknown): SavedReport | null {
     id: String(o.id ?? ''),
     weekStart: String(o.week_start ?? report.weekStart),
     createdAt: String(o.created_at ?? report.madeAt),
-    report,
+    report: repaired(report),
   };
 }
 
@@ -90,13 +102,18 @@ export async function fetchReports(account: string): Promise<SavedReport[]> {
   if (!supabase) throw new ReportError('Accounts are not set up in this version of the app.');
   const { data, error } = await supabase.rpc('get_my_weekly_reports', { p_limit: 12 });
   if (error) throw new ReportError(messageFor(error));
-  const list = (Array.isArray(data) ? data : []).map(parse).filter((r): r is SavedReport => r !== null);
+  const list = (Array.isArray(data) ? data : [])
+    .map(parse)
+    .filter((r): r is SavedReport => r !== null);
   cache(account, list);
   return list;
 }
 
 /** Saves the week's report; when one was saved already, that one comes back unchanged. */
-export async function claimReport(account: string, report: WeeklyReport): Promise<{ saved: SavedReport; created: boolean }> {
+export async function claimReport(
+  account: string,
+  report: WeeklyReport,
+): Promise<{ saved: SavedReport; created: boolean }> {
   if (!supabase) throw new ReportError('Accounts are not set up in this version of the app.');
   const { data, error } = await supabase.rpc('claim_weekly_report', {
     p_id: crypto.randomUUID(),
@@ -107,7 +124,10 @@ export async function claimReport(account: string, report: WeeklyReport): Promis
   const saved = parse(data);
   if (!saved) throw new ReportError('Could not save the report. Try again.');
   const others = cachedReports(account).filter((r) => r.weekStart !== saved.weekStart);
-  cache(account, [saved, ...others].sort((a, b) => b.weekStart.localeCompare(a.weekStart)));
+  cache(
+    account,
+    [saved, ...others].sort((a, b) => b.weekStart.localeCompare(a.weekStart)),
+  );
   return { saved, created: (data as { created?: boolean }).created === true };
 }
 
