@@ -13,7 +13,7 @@ import { ProLock } from '../pro/ProLock';
 import type { CoachTopic } from '@/app/coach';
 import { ExplainButton } from '../coach/CoachParts';
 import { EvidenceLink } from '../science/EvidenceLink';
-import { stallBest, stallCopy } from './stallCopy';
+import { holdingCopy, stallBest, stallCopy } from './stallCopy';
 import {
   COMPOUND_SHORT,
   ISOLATION_SHORT,
@@ -249,16 +249,32 @@ export function PlateausSection({
               : undefined
           }
         />
-      ) : plateaus.length === 0 ? (
-        <p className="rounded-panel border border-border bg-surface p-5 text-sm text-muted">
-          Nothing has stalled. Every lift you train regularly set a best in the last 3 weeks.
-        </p>
       ) : (
-        <ul className="flex flex-col gap-2.5">
-          {plateaus.map((p) => (
-            <StallCard key={p.exerciseId} stall={p} unit={unit} names={names} />
-          ))}
-        </ul>
+        <>
+          {plateaus.length === 0 ? (
+            <p className="rounded-panel border border-border bg-surface p-5 text-sm text-muted">
+              Nothing has stalled. Every lift you train regularly is still moving.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2.5">
+              {plateaus.map((p) => (
+                <StallCard key={p.exerciseId} stall={p} unit={unit} names={names} />
+              ))}
+            </ul>
+          )}
+          {model.holding.length > 0 ? (
+            <ul className="mt-3 flex flex-col gap-2" data-holding>
+              {model.holding.map((h) => (
+                <li
+                  key={h.exerciseId}
+                  className="type-subhead rounded-panel bg-surface p-4 text-text-1"
+                >
+                  {holdingCopy(h, unit, names.get(h.exerciseId) ?? 'This lift')}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </>
       )}
     </Block>
   );

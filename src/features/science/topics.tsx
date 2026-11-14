@@ -55,7 +55,9 @@ import {
   EFFORT_RIR,
   MIN_PER_WEEK,
   STALL_MIN_SESSIONS,
-  STALL_WEEKS,
+  STALL_WEEKS_BY_EXPERIENCE,
+  HOLD_WEEKS,
+  DEFICIT_KCAL as STALL_DEFICIT_KCAL,
   VOLUME_DROP,
 } from '@/domain/analytics/stalls';
 import { REST_PRESETS } from '@/domain/workout/restTimer';
@@ -333,9 +335,19 @@ export const SCIENCE: TopicGroup[] = [
             Progress is judged on what you lifted, not an estimate: a session counts when a set
             beats every earlier set with more weight for the same reps or more, or more reps at the
             same weight or more. Only sets within 80% of your heaviest weight count, so a light pump
-            set cannot hide a stall. A lift has stalled when nothing has moved for {STALL_WEEKS}{' '}
-            weeks or more, across at least {STALL_MIN_SESSIONS} sessions of it, and you trained it
-            in the last 2 weeks.
+            set cannot hide a stall. A lift has stalled when nothing has moved for{' '}
+            {STALL_WEEKS_BY_EXPERIENCE.beginner} weeks or more for a beginner (
+            {STALL_WEEKS_BY_EXPERIENCE.intermediate} intermediate,{' '}
+            {STALL_WEEKS_BY_EXPERIENCE.advanced} advanced: progress slows as you get stronger),
+            across at least {STALL_MIN_SESSIONS} sessions of it, and you trained it in the last 2
+            weeks.
+          </>,
+          <>
+            While you are eating in a deficit (your goal is fat loss and your weight trend is
+            falling, or you log at least {STALL_DEFICIT_KCAL} kcal a day under maintenance), keeping
+            your strength is the goal. A lift that has not moved is shown as holding, not stalled,
+            for up to {HOLD_WEEKS} weeks, and holding never triggers a lighter week or counts as a
+            stall anywhere.
           </>,
           <>
             The reason is the first of these that fits. A break of {BREAK_DAYS / 7} weeks or more:

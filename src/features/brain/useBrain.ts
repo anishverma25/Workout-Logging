@@ -16,7 +16,8 @@ import {
 } from '@/data/repositories/plan';
 import { activeRoutine, daysForRoutine } from '@/domain/analytics/schedule';
 import { buildSessions, isAlive } from '@/domain/analytics/sessions';
-import { detectStalls } from '@/domain/analytics/stalls';
+import { detectStalls, inDeficit } from '@/domain/analytics/stalls';
+import { equipmentFits } from '@/domain/workout/equipment';
 import { decideWeek, type DecideInput, type Decision } from '@/domain/brain/engine';
 import { buildWeekFacts, foodDays, recoverySamples } from '@/domain/brain/facts';
 import { responseModel, type ResponseModel } from '@/domain/brain/response';
@@ -95,6 +96,7 @@ export function useBrain(now: Date) {
     const view = routineSlots(data.routineExercises, data.exercises, days);
     const decisions = decisionsFrom(items.data);
     const names = new Map(data.exercises.map((e) => [e.id, e.name]));
+    const exerciseById = new Map(data.exercises.map((e) => [e.id, e]));
     const bodyGoal = data.goals
       .filter((g) => isAlive(g) && g.kind === 'body_weight' && !g.achievedAt)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
@@ -122,17 +124,33 @@ export function useBrain(now: Date) {
           },
           events: eventsFrom(items.data, toDateKey(at)),
           pains: painsFrom(items.data),
-          stalls: detectStalls(sessions, at, profile.experience, data.exercises).map((s) => ({
-            exerciseId: s.exerciseId,
-            cause: s.cause,
-            variationId: s.facts.variationId,
-          })),
+          stalls: detectStalls(sessions, at, profile.experience, data.exercises, {
+            deficit: inDeficit({
+              goal: profile.goal,
+              weights: weights,
+              now: at,
+              intakeKcal: weeks.at(-1)?.meanKcal ?? null,
+              maintenanceKcal: model.maintenance?.value ?? null,
+            }),
+            fits: (e) => equipmentFits(e.equipment, profile.equipment, KEY_BY_ID.get(e.id)),
+          })
+            // Holding strength in a deficit never triggers a lighter week or a swap.
+            .filter((s) => s.status === 'stalled')
+            .map((s) => ({
+              exerciseId: s.exerciseId,
+              cause: s.cause,
+              variationId: s.facts.variationId,
+            })),
           temporaries: temporariesFrom(items.data),
           lastDeload: lastDeloadFrom(items.data),
           exercise: {
             name: (id) => names.get(id) ?? 'Exercise',
             keyOf: (id) => KEY_BY_ID.get(id) ?? null,
             idOf: (key) => exerciseIdFor(key),
+            fits: (id) => {
+              const e = exerciseById.get(id);
+              return !!e && equipmentFits(e.equipment, profile.equipment, KEY_BY_ID.get(id));
+            },
           },
         }
       : null;

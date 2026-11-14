@@ -35,7 +35,8 @@ import {
 } from './progression';
 import { detectPersonalRecords, type PersonalRecord } from './prs';
 import { activeRoutine, adherence, daysForRoutine, type Adherence } from './schedule';
-import { detectStalls, type Stall } from './stalls';
+import { detectStalls, inDeficit, type Stall } from './stalls';
+import { equipmentFits } from '../workout/equipment';
 import { restAnalysis, type RestAnalysis } from './rest';
 import { buildSessions, isWorkingSet, type Session, type TrainingData } from './sessions';
 import { strengthTrends } from './strength';
@@ -145,7 +146,10 @@ export interface ProgressModel {
   progression: ProgressionSuggestion[];
   /** Current state, whatever the date range: levels, plateaus, balance. */
   strength: StrengthProfile;
+  /** Lifts that have stalled (never the ones holding in a deficit). */
   plateaus: Stall[];
+  /** Lifts holding their strength while the person cuts: the goal, not a problem. */
+  holding: Stall[];
   /** Rest between sets in the window, against the evidence and your own reps. */
   rest: RestAnalysis;
   balance: BalanceRatio[];
@@ -587,7 +591,12 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
       data.profile?.sex,
       now,
     ),
-    plateaus: detectStalls(sessions, now, data.profile?.experience, data.exercises),
+    ...splitStalls(
+      detectStalls(sessions, now, data.profile?.experience, data.exercises, {
+        deficit: inDeficit({ goal: data.profile?.goal, weights: data.bodyWeights, now }),
+        fits: (e) => equipmentFits(e.equipment, data.profile?.equipment),
+      }),
+    ),
     balance: balanceRatios(sessions, now),
     rest: restAnalysis(sessions, window.start, window.end),
   };
@@ -600,3 +609,10 @@ export function joinList(items: string[]): string {
 }
 
 const formatPct = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v * 100).toFixed(1)}%`;
+
+function splitStalls(all: Stall[]): { plateaus: Stall[]; holding: Stall[] } {
+  return {
+    plateaus: all.filter((s) => s.status === 'stalled'),
+    holding: all.filter((s) => s.status === 'holding'),
+  };
+}

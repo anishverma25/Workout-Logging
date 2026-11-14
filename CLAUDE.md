@@ -88,7 +88,7 @@ Read README.md for setup, architecture and calculation rules.
   covers the whole previous period; partial periods are labelled.
 - Phase 6: Supabase schema with RLS, local-first sync (outbox, push, pull, conflicts, retry),
   auth (sign up, sign in, sign out, reset), per-account local databases, guest data import.
-- Phase 7: 168-hour server trial, `subscriptions` table with RPCs, central entitlement, Pro
+- Phase 7: server trial (168 hours; 336 hours, 14 days, for accounts from migration 0033), `subscriptions` table with RPCs, central entitlement, Pro
   gates on Progress and the logger, admin guide in `docs/admin-pro-payments.md`,
   development-only access states. Manual UPI was removed (October 2026).
 - Billing (migration 0008): Razorpay subscriptions. Plans and prices in `billing_plans`; logic in
@@ -115,7 +115,7 @@ Read README.md for setup, architecture and calculation rules.
 - Early access (migration 0005): `app_settings.early_access_ended_at` null means every account
   has Pro (plan `founding`, shown simply as "Pro is active"). Ending it is one SQL update
   (`docs/admin-pro-payments.md`). No founding member or early access copy remains in the app; the
-  Pro page sells with a 7-day trial, a Free and Pro table and the person's own counts.
+  Pro page sells with a 14-day trial, a Free and Pro table and the person's own counts.
 - Feedback (migration 0006): `submit_feedback` / `get_my_feedback` RPCs only, 10 a day, ids
   made on the phone so offline feedback is sent once (`src/app/feedback.ts`). Page `/feedback`,
   one-time prompt on the 3rd workout summary, links from Pro and the error screen. Reading and
@@ -525,3 +525,25 @@ Read README.md for setup, architecture and calculation rules.
     notes, AI text, emails, tokens, queries and hashes. `/__crash` exists only in dev and e2e.
   - Source maps are hidden and moved to `sourcemaps/` by `verify-build` (never deployed).
     Daily encrypted database backup (`.github/workflows/backup.yml`, `docs/backup-restore.md`).
+- Launch safety, stage D (November 2026, migration `20261115000033_trial_14_days.sql`, Dexie
+  unchanged, Fable review batches 9, 8, 13):
+  - First 14 days (`domain/onboarding/firstDays.ts`, in `NowCard` when the Now card has
+    nothing): first workout, first food, first weight, then sets or protein against the
+    research ranges, then the learning meter (also in the weekly review notes). First workout
+    card on the summary (`FirstWorkoutCard`); `TrialEndingCard` on Home in the last 3 days
+    (`domain/entitlement/trialEnding.ts`, `URGENCY` words tested out of it and the nudges).
+  - Trial: 14 days for new accounts (`TRIAL_HOURS` 336, `TRIAL_DAYS`); each account's own
+    length is `Entitlement.trialHours`. `landing.test.ts` checks every trial line on the home
+    page against the migration. Run 0033 before deploying code that says 14 days.
+  - Honest Brain (`domain/brain/response.ts`): each lift's own trend (log e1RM against the
+    square root of weeks) is removed first, a finding must also hold on the review a week
+    earlier, `CLEAR_GAP` 3.4; findings are worded as what happened in the logs. Simulation
+    families in `simulate.test.ts` (slowing beginners, 12 muscles with no effect).
+  - One protein day: `PROTEIN_DAY_SHARE` (90%) in `nutrition/analysis.ts`. The AI brief dates
+    by the local day (`toDateKey`).
+  - Stalls: weeks by experience (`STALL_WEEKS_BY_EXPERIENCE` 3, 4, 6); in a deficit
+    (`inDeficit`) a lift is `holding`, not stalled, for up to `HOLD_WEEKS` (8), and holding
+    never counts as a stall (`ProgressModel.holding` is separate from `plateaus`).
+  - Equipment (`domain/workout/equipment.ts`, `equipmentFits`): programmes, stall variations,
+    Brain swaps (`exercise.fits`, a `swap` hold when nothing fits) and the swap picker
+    ("Needs other equipment" last) use one rule.

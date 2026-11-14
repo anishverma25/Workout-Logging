@@ -90,3 +90,11 @@ export function stallCopy(
     }
   }
 }
+
+/**
+ * A lift holding its strength while the person cuts (batch 13): "Holding 100 kg × 5 while you
+ * cut. That is the goal." Never framed as a stall.
+ */
+export function holdingCopy(s: Stall, unit: WeightUnit, name: string): string {
+  return `${name}: holding ${kgText(s.best.weightKg, unit)} × ${s.best.reps} while you cut. That is the goal.`;
+}

@@ -94,7 +94,7 @@ export type Change = ChangeBase &
   );
 
 export interface Hold {
-  kind: 'calories' | 'protein' | 'volume';
+  kind: 'calories' | 'protein' | 'volume' | 'swap';
   reason: Text;
 }
 
@@ -162,6 +162,8 @@ export interface DecideInput {
     name: (id: string) => string;
     keyOf: (id: string) => string | null;
     idOf: (key: string) => string | null;
+    /** The person's equipment allows it (setup). Missing: everything is allowed. */
+    fits?: (id: string) => boolean;
   };
 }
 
@@ -591,6 +593,8 @@ export function decideWeek(input: DecideInput): Decision {
 
   // 2. Something hurts.
   const routine = new Set(plan.exerciseIds);
+  /** Lifts a swap was due for, with nothing that fits the person's equipment. */
+  const unfit: string[] = [];
   for (const pain of input.pains) {
     const label = PAIN_LABEL[pain.area];
     if (needsProfessional(pain)) {
@@ -611,6 +615,11 @@ export function decideWeek(input: DecideInput): Decision {
       const gentler = key ? GENTLER[pain.area][key] : undefined;
       const toId = gentler ? input.exercise.idOf(gentler) : null;
       if (!toId || routine.has(toId)) continue;
+      // Never a swap the person's equipment cannot do (batch 13): the lift stays, with a reason.
+      if (input.exercise.fits && !input.exercise.fits(toId)) {
+        unfit.push(id);
+        continue;
+      }
       routine.add(toId);
       changes.push({
         id: `swap:${id}`,
@@ -827,8 +836,12 @@ export function decideWeek(input: DecideInput): Decision {
     let swaps = 0;
     for (const stall of input.stalls) {
       if (swaps >= 2) break;
-      if (stall.cause !== 'variation' || !stall.variationId) continue;
-      if (!plan.exerciseIds.includes(stall.exerciseId) || routine.has(stall.variationId)) continue;
+      if (stall.cause !== 'variation' || !plan.exerciseIds.includes(stall.exerciseId)) continue;
+      if (!stall.variationId || (input.exercise.fits && !input.exercise.fits(stall.variationId))) {
+        unfit.push(stall.exerciseId);
+        continue;
+      }
+      if (routine.has(stall.variationId)) continue;
       if (changes.some((c) => c.kind === 'swap' && c.fromExerciseId === stall.exerciseId)) continue;
       routine.add(stall.variationId);
       swaps += 1;
@@ -856,6 +869,17 @@ export function decideWeek(input: DecideInput): Decision {
       reason: {
         en: 'Training stays as it is this week, with nothing added.',
         hi: 'Is hafte training wahi rahegi, kuch joda nahi jayega.',
+      },
+    });
+  }
+
+  if (unfit.length) {
+    const names = [...new Set(unfit)].map((id) => input.exercise.name(id));
+    holds.push({
+      kind: 'swap',
+      reason: {
+        en: `${names.join(', ')} ${names.length === 1 ? 'stays' : 'stay'} as planned: no close swap fits your equipment. Change it in setup if you have more now.`,
+        hi: `${names.join(', ')} wahi rahega: aapke equipment mein koi close swap nahi hai. Agar ab zyada equipment hai to setup mein badliye.`,
       },
     });
   }

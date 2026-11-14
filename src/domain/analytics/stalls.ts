@@ -30,7 +30,26 @@ import { isLoadEligible, type Session } from './sessions';
  *    variation of the lift (6 weeks or more; Kassiano 2022).
  */
 
+/** Weeks without progress before a lift counts as stalled, for beginners (and unknown). */
 export const STALL_WEEKS = 3;
+/**
+ * By experience (batch 13): beginners progress week to week, advanced lifters over months,
+ * so the same three weeks would call an advanced lifter stalled far too early.
+ */
+export const STALL_WEEKS_BY_EXPERIENCE: Record<Experience, number> = {
+  beginner: 3,
+  intermediate: 4,
+  advanced: 6,
+};
+export const stallWeeksFor = (experience: Experience | null | undefined) =>
+  experience ? STALL_WEEKS_BY_EXPERIENCE[experience] : STALL_WEEKS;
+/**
+ * In a deficit, holding strength is the goal: a lift that has not improved is 'holding', not
+ * stalled, until this many weeks.
+ */
+export const HOLD_WEEKS = 8;
+/** Eating at least this far under maintenance counts as a deficit. */
+export const DEFICIT_KCAL = 250;
 export const STALL_MIN_SESSIONS = 3;
 export const BREAK_DAYS = 21;
 export const MIN_PER_WEEK = 0.75;
@@ -44,6 +63,12 @@ export type StallCause =
 
 export interface Stall {
   exerciseId: string;
+  /**
+   * stalled: nothing moved for the person's stall weeks. holding: the same, but while eating in
+   * a deficit and for under HOLD_WEEKS, which is success, not a stall. Holding never counts in
+   * "What Pro found", the Brain's lighter-week trigger or the check-in.
+   */
+  status: 'stalled' | 'holding';
   /** The last set that moved the lift forward. */
   best: { weightKg: number; reps: number; date: Date };
   /** Whole weeks since that set. */
@@ -185,7 +210,13 @@ export function detectStalls(
   experience: Experience | null | undefined,
   /** Every exercise the person can pick, for variations and names. */
   catalog: Exercise[] = [],
+  options: {
+    deficit?: boolean;
+    /** The person's equipment allows this exercise: variations only from those (batch 13). */
+    fits?: (exercise: Exercise) => boolean;
+  } = {},
 ): Stall[] {
+  const stallWeeks = stallWeeksFor(experience);
   const byLift = new Map<string, { exercise: Exercise; list: SessionOfLift[] }>();
   for (const session of sessions) {
     if (session.date > now) continue;
@@ -220,7 +251,7 @@ export function detectStalls(
     const since = list.slice(progress.index + 1);
     const days = (now.getTime() - best.date.getTime()) / DAY;
     const weeks = Math.floor(days / 7);
-    if (weeks < STALL_WEEKS || since.length < STALL_MIN_SESSIONS) continue;
+    if (weeks < stallWeeks || since.length < STALL_MIN_SESSIONS) continue;
 
     const base = {
       exerciseId,
@@ -229,7 +260,14 @@ export function detectStalls(
       sessionsSince: since.length,
       lastTrained: last.date,
     };
-    const push = (cause: StallCause, facts: Stall['facts']) => out.push({ ...base, cause, facts });
+    const push = (cause: StallCause, facts: Stall['facts']) =>
+      out.push({
+        ...base,
+        // Back after a break is about the break; anything else in a deficit is holding.
+        status: options.deficit && weeks < HOLD_WEEKS && cause !== 'break' ? 'holding' : 'stalled',
+        cause,
+        facts,
+      });
 
     // 1. A break.
     let gap = 0;
@@ -319,8 +357,12 @@ export function detectStalls(
             Number(a.equipment === exercise.equipment) - Number(b.equipment === exercise.equipment),
         )
         .map((e) => e.id);
-      const options = [...curated, ...similar];
-      const variationId = options.find((id) => !recentIds.has(id)) ?? options[0];
+      const fitting = (id: string) => {
+        const e = alive.get(id) ?? catalog.find((c) => c.id === id);
+        return !options.fits || (!!e && options.fits(e));
+      };
+      const candidates = [...curated, ...similar].filter(fitting);
+      const variationId = candidates.find((id) => !recentIds.has(id)) ?? candidates[0];
       push('variation', variationId ? { variationId } : {});
       continue;
     }
@@ -336,4 +378,36 @@ export function detectStalls(
     });
   }
   return out.sort((a, b) => b.weeks - a.weeks);
+}
+
+/**
+ * Whether the person is eating in a deficit, for stalls: the goal is fat loss and the weight
+ * trend is falling (last 4 weeks), or logged intake is at least DEFICIT_KCAL under maintenance.
+ */
+export function inDeficit(input: {
+  goal: string | null | undefined;
+  weights: { measuredAt: string; weightKg: number; deletedAt?: string | null }[];
+  now: Date;
+  intakeKcal?: number | null;
+  maintenanceKcal?: number | null;
+}): boolean {
+  if (
+    input.intakeKcal != null &&
+    input.maintenanceKcal != null &&
+    input.intakeKcal <= input.maintenanceKcal - DEFICIT_KCAL
+  )
+    return true;
+  if (input.goal !== 'fat_loss') return false;
+  const from = input.now.getTime() - 28 * DAY;
+  const points = input.weights
+    .filter((w) => !w.deletedAt)
+    .map((w) => ({ t: Date.parse(w.measuredAt), kg: w.weightKg }))
+    .filter((p) => p.t >= from && p.t <= input.now.getTime());
+  if (points.length < 3) return false;
+  const mt = points.reduce((a, p) => a + p.t, 0) / points.length;
+  const mk = points.reduce((a, p) => a + p.kg, 0) / points.length;
+  const den = points.reduce((a, p) => a + (p.t - mt) ** 2, 0);
+  if (den === 0) return false;
+  const perDay = points.reduce((a, p) => a + (p.t - mt) * (p.kg - mk), 0) / den / (1 / DAY);
+  return perDay * 7 < -0.1;
 }

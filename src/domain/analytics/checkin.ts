@@ -33,6 +33,8 @@ export function weeklyCheckin(input: {
   experience: Experience | null | undefined;
   now: Date;
   weekStartsOn: WeekStartsOn;
+  /** Eating in a deficit: lifts holding their strength are not stalls (`inDeficit`). */
+  deficit?: boolean;
 }): WeeklyCheckin | null {
   const { sessions, exercises, target, now, weekStartsOn } = input;
   const thisWeek = startOfWeek(now, weekStartsOn);
@@ -61,11 +63,15 @@ export function weeklyCheckin(input: {
     (r) => r.date >= weekStart && r.date < thisWeek,
   ).length;
   const lastDay = addDays(thisWeek, -1);
-  const stalled = detectStalls(upToWeekEnd, lastDay, input.experience, exercises).map((p) => ({
-    exerciseId: p.exerciseId,
-    name: names.get(p.exerciseId) ?? 'Exercise',
-    weeks: p.weeks,
-  }));
+  const stalled = detectStalls(upToWeekEnd, lastDay, input.experience, exercises, {
+    deficit: input.deficit,
+  })
+    .filter((p) => p.status === 'stalled')
+    .map((p) => ({
+      exerciseId: p.exerciseId,
+      name: names.get(p.exerciseId) ?? 'Exercise',
+      weeks: p.weeks,
+    }));
   const spike = loadSpike(upToWeekEnd, lastDay);
   const lopsided = balanceRatios(upToWeekEnd, lastDay).find(
     (b) => b.verdict === 'a_heavy' || b.verdict === 'b_heavy',

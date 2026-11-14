@@ -377,6 +377,26 @@ describe('training', () => {
     ]);
   });
 
+  it('never swaps to an exercise the person’s equipment cannot do (batch 13)', () => {
+    const d = decideWeek(
+      input(riya(-0.45), {
+        plan: {
+          kcal: 1800,
+          proteinG: 130,
+          muscleSets: {},
+          exerciseIds: ['back-squat'],
+          sessionMinutes: 60,
+        },
+        stalls: [{ exerciseId: 'back-squat', cause: 'variation', variationId: 'front-squat' }],
+        exercise: { ...exercise, fits: (id) => id !== 'front-squat' },
+      }),
+    );
+    expect(d.changes.filter((c) => c.kind === 'swap')).toEqual([]);
+    expect(d.holds.find((h) => h.kind === 'swap')?.reason.en).toBe(
+      'back-squat stays as planned: no close swap fits your equipment. Change it in setup if you have more now.',
+    );
+  });
+
   it('keeps protein inside the range unless the target is the person’s own', () => {
     const low = decideWeek(
       input(riya(-0.45), {

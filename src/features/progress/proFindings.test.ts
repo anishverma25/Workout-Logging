@@ -26,8 +26,12 @@ describe('what Pro found', () => {
   });
 
   it('names stalls when there are some', () => {
-    const found = proFindings(modelAt('2026-11-15T20:00:00Z'));
-    expect(found.map((f) => f.fact)).toContain('2 lifts have stalled');
+    const model = modelAt('2026-11-15T20:00:00Z');
+    expect(model.plateaus.length).toBeGreaterThan(0);
+    const n = model.plateaus.length;
+    expect(proFindings(model).map((f) => f.fact)).toContain(
+      n === 1 ? '1 lift has stalled' : `${n} lifts have stalled`,
+    );
   });
 
   it('says nothing when nothing was found', () => {
