@@ -37,10 +37,15 @@ export interface CoachMessage extends CoachTurn {
 
 interface CoachStore {
   consent: boolean;
+  /** Which consent text they agreed to; an older one is asked again. */
+  consentVersion?: number;
   messages: CoachMessage[];
   /** Explain answers for today, by topic and the brief they answered. */
   explained: Record<string, { answer: string; at: number }>;
 }
+
+/** Raised when the consent text lists more of what is sent (November 2026: food, pain, notes). */
+export const CONSENT_VERSION = 2;
 
 const EMPTY: CoachStore = { consent: false, messages: [], explained: {} };
 
@@ -54,7 +59,8 @@ function prune(store: CoachStore, now = Date.now()): CoachStore {
   const cutoff = now - HISTORY_DAYS * DAY_MS;
   const today = new Date(now).toDateString();
   return {
-    consent: store.consent,
+    consent: store.consent && store.consentVersion === CONSENT_VERSION,
+    consentVersion: store.consentVersion,
     messages: store.messages.filter((m) => m.at >= cutoff).slice(-200),
     explained: Object.fromEntries(
       Object.entries(store.explained).filter(([, v]) => new Date(v.at).toDateString() === today),
@@ -106,7 +112,7 @@ export function useCoachStore(): CoachStore {
 export const getCoachStore = read;
 
 export function setCoachConsent(on: boolean) {
-  write({ ...read(), consent: on });
+  write({ ...read(), consent: on, consentVersion: CONSENT_VERSION });
 }
 
 /** Clears the chat and saved explanations on this phone. Consent stays as it is. */

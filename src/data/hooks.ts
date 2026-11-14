@@ -1,3 +1,4 @@
+import { accountJson } from '@/data/repositories/exportAll';
 import { liveQuery } from 'dexie';
 import { useEffect, useState } from 'react';
 import {
@@ -72,6 +73,9 @@ export function useLiveData<T>(
 export const useTrainingData = () => useLiveData<TrainingData>(() => loadTrainingData(db));
 /** Just the profile: cheap enough for headers on every page. */
 export const useProfile = () => useLiveData(async () => pickProfile(await db.profiles.toArray()));
+/** Downloads everything this account keeps on the phone as one JSON file. */
+export const exportAccountJson = () => accountJson(db);
+
 /** Changes on this phone still waiting to reach the server, counted live. */
 export const useUnsyncedCount = () => useLiveData(() => db.outbox.count());
 export const useDemoStatus = () => useLiveData<DemoStatus>(() => getDemoStatus(db));

@@ -69,3 +69,37 @@ where id = 'paste-the-id-here';
 
 Keep replies short and kind; the person reads them in the app. Nobody can send a reply but you:
 users cannot change feedback, theirs or anyone else's.
+
+## Reports of people and groups (migration 0030)
+
+People report a person or a group from the leaderboard or a group's menu. Read new ones:
+
+```sql
+select r.id, r.created_at, r.kind, r.target, r.reason, r.note
+from public.content_reports r
+where r.seen_at is null
+order by r.created_at desc;
+```
+
+`target` is `@username` for a person (or their shown name, place and week when they have no
+username), and the group id for a group. Find who a username belongs to:
+
+```sql
+select user_id from public.usernames where username = 'their.username';
+```
+
+Take someone off the public leaderboard (they still see their own place):
+
+```sql
+insert into public.leaderboard_hidden (user_id, reason) values ('paste-user-id', 'report');
+```
+
+Mark reports as handled:
+
+```sql
+update public.content_reports set seen_at = now() where seen_at is null;
+```
+
+Words nobody may use in usernames or group names are in `public.community_blocked`. To add a word,
+run `create or replace function public.community_blocked` with the longer list from migration
+0030.

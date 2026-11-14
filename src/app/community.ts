@@ -189,6 +189,9 @@ export function messageFor(error: { message?: string; code?: string } | null): s
   if (/group admin/i.test(m)) return 'Only the group admin can do that.';
   if (/Not a member/i.test(m)) return 'You are not in this group any more.';
   if (/1 to 40/i.test(m)) return 'Group names are 1 to 40 characters.';
+  if (/different group name/i.test(m)) return 'Choose a different group name.';
+  if (/removed from this group/i.test(m)) return 'You were removed from this group, so you cannot join it again.';
+  if (/Too many reports/i.test(m)) return 'You have sent a lot of reports today. We are on them.';
   if (/Duel exists/i.test(m)) return 'You two already have a duel this week.';
   if (/Duel limit (\d+)/i.test(m)) return 'You can start 3 duels a week.';
   if (/Duel yourself|No member with that username/i.test(m))
@@ -441,7 +444,14 @@ export interface GlobalBoard {
   hasUsername: boolean;
   /** Whether the caller's routine plan shows to people who tap them on a board. */
   shareRoutine: boolean;
+  /** How the caller appears on the public board (migration 0030). */
+  nameStyle: NameStyle;
+  /** They have answered "Show me as" once. Servers before 0030 do not ask: true. */
+  styleChosen: boolean;
 }
+
+export type NameStyle = 'name' | 'username' | 'initials' | 'hidden';
+export const NAME_STYLES: NameStyle[] = ['name', 'username', 'initials', 'hidden'];
 
 function parseGlobalRow(v: Record<string, unknown>): GlobalRow {
   const avatar =
@@ -482,6 +492,12 @@ function parseGlobal(v: Record<string, unknown>): GlobalBoard {
     hasUsername: v.has_username === true,
     // On unless the person turned it off (servers before 0026 do not say: treat as on).
     shareRoutine: v.share_routine !== false,
+    nameStyle: NAME_STYLES.includes(v.name_style as NameStyle)
+      ? (v.name_style as NameStyle)
+      : v.show_username === true
+        ? 'username'
+        : 'name',
+    styleChosen: v.style_chosen !== false,
   };
 }
 
@@ -498,6 +514,25 @@ export const getMyStanding = () =>
 
 export const setShowUsername = (show: boolean) =>
   call('set_show_username', { p_show: show }, (v) => v === true);
+
+/** How the caller appears on the public board: by name, username, initials, or not at all. */
+export const setLeaderboardStyle = (style: NameStyle) =>
+  call('set_leaderboard_style', { p_style: style }, (v) => v as NameStyle);
+
+export type ReportReason = 'name' | 'photo' | 'cheating' | 'harassment' | 'other';
+
+/** Reports a person (by what the board shows) or a group, for the team to review. */
+export const reportContent = (
+  kind: 'person' | 'group',
+  target: string,
+  reason: ReportReason,
+  note: string,
+) =>
+  call(
+    'report_content',
+    { p_kind: kind, p_target: target.slice(0, 80), p_reason: reason, p_note: note.slice(0, 500) },
+    (v) => v === true,
+  );
 
 export const __test = { parseBoard, parseGroup, parseRow, parseGlobal };
 

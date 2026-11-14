@@ -31,6 +31,7 @@ import {
   usePreferences,
   useTrainingData,
   useWaterData,
+  exportAccountJson,
 } from '@/data/hooks';
 import { updatePreferences } from '@/data/repositories/meta';
 import { getStorageState, requestPersistentStorage, type StorageState } from '@/data/storage';
@@ -411,6 +412,24 @@ function ExportSection() {
           disabled={!food.data}
           icon={<Download className="size-4" aria-hidden />}
           onClick={() => food.data && downloadText(foodCsv(food.data.logs), `food-${date}.csv`)}
+        >
+          Export
+        </Button>
+      </PanelRow>
+      <PanelRow
+        title="Everything"
+        detail="Your whole account in one file: profile, routines, workouts, body, goals, food, own foods and plan."
+      >
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={<Download className="size-4" aria-hidden />}
+          onClick={() =>
+            void exportAccountJson().then((json) =>
+              downloadText(json, `macrotrophy-${date}.json`, 'application/json'),
+            )
+          }
+          data-export-all
         >
           Export
         </Button>

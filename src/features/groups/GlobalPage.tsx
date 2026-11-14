@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
 import { ChevronDown, Crown, Dumbbell, Globe2 } from 'lucide-react';
 import { useSyncStatus } from '@/app/account';
 import {
@@ -8,9 +7,9 @@ import {
   getGlobalBoard,
   scoreParts,
   setShareRoutine,
-  setShowUsername,
   useRemote,
   type GlobalRow,
+  type NameStyle,
   type Period,
 } from '@/app/community';
 import { PageHeader } from '@/app/layout/PageHeader';
@@ -29,6 +28,7 @@ import { RankShareSheet } from '@/features/share/RankShareSheet';
 import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { BoardRoutineSheet } from './BoardRoutineSheet';
+import { ReportSheet, ShowAsSheet } from './PrivacySheets';
 import { HowPointsWork } from './GroupsPage';
 import { MemberAvatar, ProCrown } from './parts';
 
@@ -52,8 +52,10 @@ export function GlobalPage() {
   const [offset, setOffset] = useState<0 | -1>(0);
   const [version, setVersion] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [shown, setShown] = useState<boolean | null>(null);
+  const [style, setStyle] = useState<NameStyle | null>(null);
+  const [showAsOpen, setShowAsOpen] = useState(false);
+  const [askedOnce, setAskedOnce] = useState(false);
+  const [reporting, setReporting] = useState<GlobalRow | null>(null);
   const [sharing, setSharing] = useState(false);
   const [routineOf, setRoutineOf] = useState<GlobalRow | null>(null);
   const [routineShown, setRoutineShown] = useState<boolean | null>(null);
@@ -70,7 +72,9 @@ export function GlobalPage() {
     `global:${period}:${offset}:${version}`,
   );
   const b = board.data ?? null;
-  const showUsername = shown ?? b?.showUsername ?? false;
+  const nameStyle = style ?? b?.nameStyle ?? 'name';
+  // Asked once: the first time the board opens for someone who has never chosen.
+  const firstAsk = !!b && !b.styleChosen && style === null && !askedOnce;
   const shareRoutine = routineShown ?? b?.shareRoutine ?? true;
   const podium = b && offset === 0 && b.rows.length >= 3 ? b.rows.slice(0, 3) : null;
   const listRows = b ? (podium ? b.rows.slice(3) : b.rows) : [];
@@ -98,23 +102,6 @@ export function GlobalPage() {
   const periodName = period === 'week' ? 'week' : 'month';
   const which = offset === 0 ? `This ${periodName}` : `Last ${periodName}`;
   const mineInTop = !!b?.rows.some((r) => r.me);
-
-  const toggle = async (next: boolean) => {
-    setSaving(true);
-    setShown(next);
-    try {
-      await setShowUsername(next);
-      toast(
-        next ? 'Your username now shows on the global leaderboard' : 'Only your name shows now',
-      );
-      setVersion((v) => v + 1);
-    } catch (err) {
-      setShown(!next);
-      toast(err instanceof CommunityError ? err.message : 'Could not save. Try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <>
@@ -159,6 +146,7 @@ export function GlobalPage() {
                     <span className="type-subhead tabular block text-text-2">
                       {formatNumber(b.mine.score)} {b.mine.score === 1 ? 'point' : 'points'}{' '}
                       {offset === 0 ? `this ${periodName}` : `last ${periodName}`}
+                      {nameStyle === 'hidden' ? '. Only you see this.' : ''}
                     </span>
                   </>
                 ) : (
@@ -267,6 +255,7 @@ export function GlobalPage() {
                       open
                       onToggle={() => setOpen(null)}
                       onRoutine={() => setRoutineOf(r)}
+                      onReport={() => setReporting(r)}
                     />
                   ))}
                   {listRows.map((r) => (
@@ -276,6 +265,7 @@ export function GlobalPage() {
                       open={open === r.rank}
                       onToggle={() => setOpen((o) => (o === r.rank ? null : r.rank))}
                       onRoutine={() => setRoutineOf(r)}
+                      onReport={() => setReporting(r)}
                     />
                   ))}
                   {b.mine && !mineInTop ? (
@@ -288,6 +278,7 @@ export function GlobalPage() {
                         open={open === b.mine.rank}
                         onToggle={() => setOpen((o) => (o === b.mine!.rank ? null : b.mine!.rank))}
                         onRoutine={() => setRoutineOf(b.mine)}
+                        onReport={() => undefined}
                       />
                     </>
                   ) : null}
@@ -300,32 +291,20 @@ export function GlobalPage() {
                 className="divide-y-[0.5px] divide-divider overflow-hidden rounded-card bg-surface"
                 data-global-privacy
               >
-                <div className="flex items-start gap-3 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAsOpen(true)}
+                  className="pressable flex w-full items-center gap-3 px-4 py-3 text-left"
+                  data-show-as-row
+                >
                   <span className="min-w-0 flex-1">
                     <span id="global-privacy" className="type-headline block text-text-1">
-                      Show my username
+                      Show me as
                     </span>
-                    <span className="type-subhead block text-text-2">
-                      {b.hasUsername
-                        ? 'Your name always shows. Turn this on to show your username next to it.'
-                        : 'Your name shows here. Pick a username in Groups to show it too.'}
-                    </span>
-                    {!b.hasUsername ? (
-                      <Link
-                        to="/groups"
-                        className="type-subhead mt-1 inline-block font-semibold text-lime"
-                      >
-                        Pick a username
-                      </Link>
-                    ) : null}
+                    <span className="type-subhead block text-text-2">{STYLE_LABEL[nameStyle]}</span>
                   </span>
-                  <Switch
-                    checked={showUsername && b.hasUsername}
-                    onChange={(next) => void toggle(next)}
-                    disabled={!b.hasUsername || saving}
-                    aria-labelledby="global-privacy"
-                  />
-                </div>
+                  <ChevronDown className="size-4 shrink-0 -rotate-90 text-text-3" aria-hidden />
+                </button>
                 <div className="flex items-start gap-3 px-4 py-3">
                   <span className="min-w-0 flex-1">
                     <span id="routine-privacy" className="type-headline block text-text-1">
@@ -350,6 +329,35 @@ export function GlobalPage() {
           </>
         ) : null}
       </div>
+      <ShowAsSheet
+        open={showAsOpen || firstAsk}
+        first={firstAsk}
+        current={nameStyle}
+        hasUsername={!!b?.hasUsername}
+        onClose={() => {
+          setShowAsOpen(false);
+          setAskedOnce(true);
+        }}
+        onSaved={(s) => {
+          setStyle(s);
+          setShowAsOpen(false);
+          setAskedOnce(true);
+          setVersion((v) => v + 1);
+        }}
+      />
+      <ReportSheet
+        open={reporting !== null}
+        kind="person"
+        target={
+          reporting
+            ? reporting.username
+              ? `@${reporting.username}`
+              : `${reporting.name}, #${reporting.rank} ${period} ${b?.startsOn ?? ''}`
+            : ''
+        }
+        label={reporting?.name ?? ''}
+        onClose={() => setReporting(null)}
+      />
       <BoardRoutineSheet
         open={routineOf !== null}
         onClose={() => setRoutineOf(null)}
@@ -391,6 +399,13 @@ export function GlobalPage() {
 }
 
 const ROUTINE_NOTICE_KEY = 'overload.routineNotice';
+
+const STYLE_LABEL: Record<NameStyle, string> = {
+  name: 'My name and photo',
+  username: 'My username and photo',
+  initials: 'Initials only, no photo',
+  hidden: 'Not shown on the public board',
+};
 
 /** The top three, side by side, first in the middle and raised. */
 function Podium({ rows, onPick }: { rows: GlobalRow[]; onPick: (r: GlobalRow) => void }) {
@@ -440,11 +455,13 @@ function GlobalRowView({
   open,
   onToggle,
   onRoutine,
+  onReport,
 }: {
   row: GlobalRow;
   open: boolean;
   onToggle: () => void;
   onRoutine: () => void;
+  onReport: () => void;
 }) {
   return (
     <li className={cn(r.me && 'bg-lime-dim')} data-global-row={r.rank} data-me={r.me || undefined}>
@@ -498,9 +515,12 @@ function GlobalRowView({
             ))}
           </ul>
           {!r.me ? (
-            <div className="mt-3">
+            <div className="mt-3 flex items-center justify-between gap-3">
               <TextButton onClick={onRoutine} data-see-routine>
                 See their routine
+              </TextButton>
+              <TextButton small onClick={onReport} data-report-person>
+                Report
               </TextButton>
             </div>
           ) : null}

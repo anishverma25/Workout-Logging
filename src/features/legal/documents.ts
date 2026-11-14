@@ -114,10 +114,21 @@ export const PRIVACY: LegalDocument = {
       ],
       items: [
         'Your email address and your password. The password is stored in scrambled form by our sign in provider, so we cannot read it.',
-        'Your profile: name, sex, height, goal, experience, training days, session length, equipment and activity level.',
+        'Your profile: name, sex, date of birth, height, goal, experience, training days, session length, equipment, activity level, diet and, if you add one, your profile photo.',
         'Your routines, workouts, sets, body weight, body measurements and goals.',
+        'Your food log, the foods you create, your nutrition targets, and your plan changes (for example a lighter week, or something that hurts that you told the app about).',
+        'Your weekly reports.',
         'Messages you send us through the feedback page.',
         'Your Pro status and the plan you chose.',
+      ],
+    },
+    // TODO(owner): have a lawyer check every section added in November 2026 (marked below).
+    {
+      // Added November 2026.
+      heading: 'Groups and leaderboards',
+      paragraphs: [
+        'If you choose a username or join a group, members of that group see your username, your points and, if you allow it, your routine plan (days, exercises, sets and reps; never your weights, food or body). On the public leaderboard you choose how you appear: by name, by username, by initials, or not at all. Photos show only for name or username. You can change this any time on the leaderboard.',
+        'You can report a person or a group from the app. Reports go only to the Macrotrophy team. A group admin can remove a member, who then cannot rejoin that group.',
       ],
     },
     {
@@ -133,7 +144,10 @@ export const PRIVACY: LegalDocument = {
     {
       heading: 'Macrotrophy AI, the AI assistant (Pro, only if you turn it on)',
       paragraphs: [
-        'Macrotrophy AI is off until you turn it on. When you ask it a question or tap Explain, the app sends the numbers needed for that answer (for example your sets, records, rest times, body weight, goal, targets and food totals), your question and your recent Macrotrophy AI messages to a third-party AI service that writes the answer. Your name, email and account details are never sent.',
+        'Macrotrophy AI is off until you turn it on. When you ask it a question or tap Explain, the app sends what is needed for that answer to a third-party AI service that writes it: your question, your recent Macrotrophy AI messages, your sets and records, body weight, height, age and sex, goals and targets, your food log and food names, your plan, any pain you reported and anything you asked it to remember. Your name, email and account details are never sent.',
+        // Added November 2026.
+        'When you log food with Macrotrophy AI (typing, a photo of your plate, a pack label or a menu), the text or photo is sent to a third-party AI service to work out the food. We do not store the photo. The AI service may keep what is sent.',
+        'Notes you ask Macrotrophy AI to remember are kept on your phone and sent with your questions. You can see and delete them in Settings.',
         'The AI service may keep what is sent and use it to improve its products, so please do not include private details in your questions. We do not store your questions or the answers on our servers. Your Macrotrophy AI chat is kept only on your phone, for 7 days, and you can turn it off or clear the chat in Settings at any time.',
       ],
     },
@@ -157,8 +171,10 @@ export const PRIVACY: LegalDocument = {
     {
       heading: 'Keeping and deleting your data',
       items: [
-        'You can export your workouts and body data as CSV files from Settings.',
-        'You can delete your account from the Account page. This removes your account and the data stored with it on our servers.',
+        'You can export your data as CSV files from Settings.',
+        'You can delete your account from the Account page. This removes your account and the data stored with it on our servers. If you pay with autopay, it is stopped first, so you are not charged again.',
+        // Added November 2026.
+        'While your account exists we keep its data so it stays backed up. Feedback and reports are kept until they are dealt with. Error reports from the app (which contain no personal data) are kept for 30 days.',
         'We may keep limited payment records for as long as the law requires.',
       ],
     },
@@ -166,6 +182,14 @@ export const PRIVACY: LegalDocument = {
       heading: 'Your choices',
       paragraphs: [
         `You can see and correct your data in the app. You can ask us for a copy, a correction or a deletion by writing to ${SUPPORT_EMAIL}. We will reply as soon as we can.`,
+      ],
+    },
+    {
+      // Added November 2026. TODO(owner): confirm with a lawyer what the DPDP Act and its rules
+      // require here (for example a named grievance officer and response time).
+      heading: 'Grievances (Digital Personal Data Protection Act, 2023)',
+      paragraphs: [
+        `For any complaint about how your personal data is handled, write to our grievance contact, ${OWNER_NAME}, at ${SUPPORT_EMAIL}. We will acknowledge it and reply as soon as we can.`,
       ],
     },
     {
@@ -177,7 +201,8 @@ export const PRIVACY: LegalDocument = {
     {
       heading: 'Children',
       paragraphs: [
-        `Macrotrophy is not aimed at children. If you believe a child has given us data without a parent's permission, write to ${SUPPORT_EMAIL} and we will delete it.`,
+        // TODO(owner): confirm the minimum age with a lawyer.
+        `Macrotrophy is for people aged 18 and over, or 13 and over with a parent's permission. The app never plans a calorie deficit for anyone under 18. If you believe a child has given us data without a parent's permission, write to ${SUPPORT_EMAIL} and we will delete it.`,
       ],
     },
     {

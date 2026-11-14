@@ -401,7 +401,7 @@ test('Macrotrophy AI opens at the latest message', async ({ page }) => {
     }));
     localStorage.setItem(
       `overload.coach.${uid}`,
-      JSON.stringify({ consent: true, messages, explained: {} }),
+      JSON.stringify({ consent: true, consentVersion: 2, messages, explained: {} }),
     );
   }, id);
   await page.goto('/coach');
