@@ -1,8 +1,9 @@
-import { addDays, startOfWeek, type WeekStartsOn } from '@/lib/dates';
+import { addDays, type WeekStartsOn } from '@/lib/dates';
 import { stableId } from '@/lib/ids';
 import { detectPersonalRecords } from '../analytics/prs';
 import { isAlive, isLoadEligible, type Session } from '../analytics/sessions';
 import { sessionVolumeLoad } from '../analytics/volume';
+import { streakReached, weeklyStreak } from '../analytics/week';
 import type { BodyWeightEntry, Exercise } from '../models/schemas';
 
 /**
@@ -123,12 +124,17 @@ function weightOn(entries: BodyWeightEntry[], date: Date): number | null {
     : null;
 }
 
+/** Streak badges reached before this day keep the old rule (one workout a week). */
+export const STREAK_RULE_FROM = new Date('2026-11-16T00:00:00+05:30');
+
 export function computeBadges(input: {
   sessions: Session[];
   exercises: Exercise[];
   bodyWeights: BodyWeightEntry[];
   now: Date;
   weekStartsOn: WeekStartsOn;
+  /** Sessions a week that keep a streak going: the same as Home (`streakTarget`). */
+  minSessions?: number | null;
 }): Badge[] {
   const { now, weekStartsOn } = input;
   const sessions = input.sessions.filter((s) => s.date <= now);
@@ -151,20 +157,24 @@ export function computeBadges(input: {
     });
   });
 
-  // Weeks in a row with at least one workout; the best run ever, and when each length was hit.
-  const weekOf = (d: Date) => startOfWeek(d, weekStartsOn).getTime();
-  const weeks = [...new Set(sessions.map((s) => weekOf(s.date)))].sort((a, b) => a - b);
+  // Weeks in a row: the same rule as Home's streak (batch 20), the best run ever and when each
+  // length was first hit. Streak badges earned before the rule changed (one workout a week was
+  // enough) are kept: those weeks still count the old way.
   const reachedAt = new Map<number, { date: Date; workoutId: string }>();
-  let run = 0;
   let best = 0;
-  weeks.forEach((w, i) => {
-    run = i > 0 && w - weeks[i - 1]! <= 8 * 86_400_000 ? run + 1 : 1;
-    best = Math.max(best, run);
-    if (!reachedAt.has(run)) {
-      const first = sessions.find((s) => weekOf(s.date) === w)!;
-      reachedAt.set(run, { date: first.date, workoutId: first.workout.id });
+  const note = (runs: ReturnType<typeof streakReached>, before?: Date) => {
+    for (const [run, at] of runs) {
+      if (before && at.weekEnd > before) continue;
+      best = Math.max(best, run);
+      const prev = reachedAt.get(run);
+      if (!prev || at.firstSession.date < prev.date)
+        reachedAt.set(run, { date: at.firstSession.date, workoutId: at.firstSession.workout.id });
     }
-  });
+  };
+  note(streakReached(sessions, input.minSessions ?? 1, now, weekStartsOn));
+  note(streakReached(sessions, 1, now, weekStartsOn), STREAK_RULE_FROM);
+  // The best run counts the current one too, for progress on locked badges.
+  best = Math.max(best, weeklyStreak(sessions, input.minSessions ?? 1, now, weekStartsOn).weeks);
   STREAKS.forEach(([n, title], i) => {
     const hit = reachedAt.get(n);
     out.push({

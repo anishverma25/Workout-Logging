@@ -130,7 +130,7 @@ export function NutritionSection({
               }
             />
             <Tile
-              label="Real maintenance"
+              label="Your maintenance"
               value={maintenance ? n(maintenance.kcal) : null}
               detail={
                 maintenance

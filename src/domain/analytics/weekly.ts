@@ -1,4 +1,4 @@
-import { PROTEIN_DAY_SHARE } from '../nutrition/analysis';
+import { LOGGED_DAY_KCAL, PROTEIN_DAY_SHARE } from '../nutrition/analysis';
 import { addDays, startOfDay, toDateKey } from '@/lib/dates';
 import type { BodyMeasurement, Exercise, FoodLog, Goal, TrainingGoal } from '../models/schemas';
 import { estimateOneRepMax, supportsE1rm } from './e1rm';
@@ -17,7 +17,7 @@ import { sessionVolumeLoad } from './volume';
 
 export const KCAL_PER_KG = 7700;
 /** A day counts as logged when it has at least this much food in it. */
-export const LOGGED_DAY_KCAL = 1000;
+export { LOGGED_DAY_KCAL };
 /** A calorie day is within 10% of the target; a protein day reaches 90% of it. */
 export const CALORIE_TOLERANCE = 0.1;
 /** A protein day: at least this share of the target (one definition, in nutrition/analysis). */

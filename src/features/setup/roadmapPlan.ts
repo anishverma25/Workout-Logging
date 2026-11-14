@@ -19,7 +19,7 @@ export function milestonesFor(input: {
   const food =
     input.kcal && input.proteinG
       ? `Eat about ${input.kcal.toLocaleString('en-IN')} kcal and ${input.proteinG} g protein a day.`
-      : 'Log what you eat, and the app starts learning your real maintenance.';
+      : 'Log what you eat, and the app starts learning your maintenance.';
   out.push({
     when: 'This week',
     title: input.programme
@@ -35,7 +35,7 @@ export function milestonesFor(input: {
   });
   out.push({
     when: 'Week 4',
-    title: 'Your real maintenance',
+    title: 'Your maintenance',
     detail: 'With food and weigh-ins logged, your calories come from your own body, not a formula.',
   });
   if (input.target && input.target.direction !== 'hold') {

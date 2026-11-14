@@ -1,3 +1,4 @@
+import { toDateKey } from '@/lib/dates';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import {
@@ -174,7 +175,7 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
               ) : (
                 <>
                   <p className="type-headline text-text-1">
-                    {t(COPY.applied)} {dayMonth(record.at.slice(0, 10))}
+                    {t(COPY.applied)} {dayMonth(toDateKey(new Date(record.at)))}
                   </p>
                   <ul className="mt-3 flex flex-col gap-2.5">
                     {record.changes.map((c) => (

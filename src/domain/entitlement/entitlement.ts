@@ -1,3 +1,4 @@
+import { FREE_PROGRESS_DAYS, FREE_ROUTINES } from './limits';
 import { z } from 'zod';
 
 /**
@@ -8,12 +9,7 @@ import { z } from 'zod';
  * server's own clock, so changing the device clock, local storage or the URL changes nothing.
  */
 
-/**
- * The trial for accounts made from migration 0033 on (14 days). Older accounts had 168 hours;
- * `Entitlement.trialHours` is each account's own length, read from its row.
- */
-export const TRIAL_HOURS = 336;
-export const TRIAL_DAYS = TRIAL_HOURS / 24;
+export { TRIAL_DAYS, TRIAL_HOURS } from './limits';
 
 const ts = z
   .string()
@@ -195,13 +191,11 @@ export type ProFeature =
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
   long_range: {
     title: '30-day, 90-day and all-time trends',
-    description:
-      'Free shows your last 7 days. Pro shows strength, volume and consistency across months.',
+    description: `Free shows your last ${FREE_PROGRESS_DAYS} days. Pro shows strength, volume and consistency across months.`,
   },
   unlimited_routines: {
     title: 'Unlimited routines',
-    description:
-      'Free keeps 2 routines. Pro keeps as many as you like: a cut, a bulk, a travel plan.',
+    description: `Free keeps ${FREE_ROUTINES} routines. Pro keeps as many as you like: a cut, a bulk, a travel plan.`,
   },
   macro_tracking: {
     title: 'Protein, carbs, fat and fibre',
@@ -310,11 +304,11 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
 export const FREE_FEATURES = [
   'Unlimited workout logging with last time beside every set',
   'Your full workout history and every personal record',
-  '2 routines, from any template or built your own',
+  `${FREE_ROUTINES} routines, from any template or built your own`,
   'Indian food logging with calories, by the katori, plate or roti',
   'A group, a duel a week and the global leaderboard',
   'Body weight, goals and progress photos',
-  'Progress for the last 7 days',
+  `Progress for the last ${FREE_PROGRESS_DAYS} days`,
   'Backup and sync across your devices',
 ];
 

@@ -672,7 +672,7 @@ function Coach({ sample }: SlideProps) {
       <Title
         icon={<MessageCircle className="size-4" aria-hidden />}
         kicker="Macrotrophy AI"
-        title="An AI coach that knows your numbers"
+        title="Macrotrophy AI knows your numbers"
         body="Ask about your training and food in English, Hinglish or Hindi. It answers from your own logs and the numbers the app has already worked out, never guesses of its own."
       />
       <ul className="flex flex-col gap-2" data-tour-coach>

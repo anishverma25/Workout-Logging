@@ -1,3 +1,4 @@
+import { weeklyStreak } from '../analytics/week';
 import type { Badge } from '../achievements/badges';
 import { addDays, startOfDay, startOfWeek, type WeekStartsOn } from '@/lib/dates';
 import { estimateOneRepMax, supportsE1rm } from '../analytics/e1rm';
@@ -217,21 +218,15 @@ export function streakCard(
   data: TrainingData,
   now: Date,
   weekStartsOn: WeekStartsOn = 1,
+  /** Sessions a week that keep the streak (`streakTarget`), so the card matches Home. */
+  minSessions: number | null = null,
 ): StreakCard | null {
   const sessions = buildSessions(data).filter((s) => s.date <= now);
   if (sessions.length === 0) return null;
-  const weekOf = (d: Date) => startOfWeek(d, weekStartsOn).getTime();
-  const trainedWeeks = new Set(sessions.map((s) => weekOf(s.date)));
-  // This week counts once trained; an empty week so far does not break the streak yet.
-  let cursor = startOfWeek(now, weekStartsOn);
-  if (!trainedWeeks.has(cursor.getTime())) cursor = addDays(cursor, -7);
-  let weeks = 0;
-  let since = cursor;
-  while (trainedWeeks.has(cursor.getTime())) {
-    weeks++;
-    since = cursor;
-    cursor = addDays(cursor, -7);
-  }
+  // The same streak as Home (batch 20): weeks in a row that met the session target.
+  const { weeks, currentWeekMet } = weeklyStreak(sessions, minSessions, now, weekStartsOn);
+  const thisWeek = startOfWeek(now, weekStartsOn);
+  const since = addDays(thisWeek, -7 * (weeks - (currentWeekMet ? 1 : 0)));
   if (weeks === 0) return null;
   const inStreak = sessions.filter((s) => s.date >= since);
   const records = detectPersonalRecords(buildSessions(data), data.exercises).filter(

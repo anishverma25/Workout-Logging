@@ -1,3 +1,4 @@
+import { streakTargetOf } from '@/domain/analytics/week';
 import { formatDate } from '@/lib/format';
 import { useMemo, useState } from 'react';
 import { Award, Flame, Medal, Share2, Weight, CalendarHeart, Dumbbell } from 'lucide-react';
@@ -44,7 +45,8 @@ export function JourneyPage() {
     if (!data) return null;
     const sessions = buildSessions(data);
     const history = performanceByExercise(sessions);
-    const target = data.profile?.trainingDays ?? null;
+    // The same streak target as Home (batch 20).
+    const target = streakTargetOf(data);
     return {
       sessions,
       history,

@@ -740,6 +740,13 @@ export const SCIENCE: TopicGroup[] = [
             Activities. One MET is about 1 kcal per kg per hour, and the resting MET is taken off
             because the day level already covers that time.
           </>,
+          <>
+            The app names three maintenance numbers, each for one job. The formula estimate (this
+            one) is used until you have logged enough. Your maintenance, on Body, Food and Progress,
+            comes from at least 14 logged days in 4 weeks with your weight trend (Food values). The
+            plan&apos;s estimate, in the weekly report and the Brain, blends 4 weeks of your logs
+            with this formula by how many full weeks you have, so it moves more slowly.
+          </>,
         ],
         forYou:
           'If your trend moves the wrong way for 2 to 3 weeks, change intake by 100 to 200 kcal.',
@@ -1121,7 +1128,7 @@ export const SCIENCE: TopicGroup[] = [
             spoken:
               'Score equals 10 times workouts, plus hard sets, plus 5 times records, plus 3 times protein days, plus 10 times consistent weeks, plus progress points',
             where:
-              'W: workouts of 10 minutes or more with at least 3 working sets, logged live with the sets ticked over at least 2 minutes, one a day and 6 a week. H: working sets not logged as easy (4 or fewer reps in reserve, or RPE 6 or more), from every session, at most 25 a week. R: a new best estimated 1RM on an exercise done in at least 2 earlier workouts and no more than 40% above the old best, at most 5 a week. P: days your logged protein, over 2 or more meals, reaches 90% of your own target. C: Monday to Sunday weeks with 3 or more training days. G: 1 point per 1% that your best estimated 1RM rose on average against the 4 weeks before, across 3 or more lifts, each lift held between minus 50% and plus 40%, at most 10. Monthly caps grow with the length of the month.',
+              'W: workouts of 10 minutes or more, not counting pauses, with at least 3 working sets, logged within two days of the workout with the sets ticked over at least 2 minutes, one a day and 6 a week. H: working sets not logged as easy (4 or fewer reps in reserve, or RPE 6 or more), from every session, at most 25 a week. R: a new best estimated 1RM (Epley, 2 to 10 reps; a single counts as its weight; reps in reserve not used) on a compound weight and reps lift done in at least 2 earlier workouts, no more than 40% above the old best, at most 5 a week. P: days your logged protein, over 2 or more meals, reaches 90% of your own target. C: Monday to Sunday weeks with 3 or more training days. G: 1 point per 1% that your best estimated 1RM rose on average against the 4 weeks before, across 3 or more lifts, each lift held between minus 50% and plus 40%, at most 10. Monthly caps grow with the length of the month.',
           },
         ],
         why: [
@@ -1133,16 +1140,16 @@ export const SCIENCE: TopicGroup[] = [
             Morton and colleagues (2018) found adds to the gains from training.
           </>,
           <>
-            Caps stop anyone winning by logging hundreds of sets. Only workouts logged live count,
-            with sets ticked as they are done, so imported history, workouts typed in days later or
-            ticked all at once never do. Nothing you only type in, like steps or body weight, earns
-            points. A finished week is locked the first time anyone views it.
+            Caps stop anyone winning by logging hundreds of sets. Only workouts logged within two
+            days count, with sets ticked as they are done, so imported history, workouts typed in
+            days later or ticked all at once never do. Nothing you only type in, like steps or body
+            weight, earns points. A finished week is locked the first time anyone views it.
           </>,
         ],
         forYou:
           'Train most days your plan says, push working sets close to failure, and log your food: that is how to win.',
         limits:
-          'The score is worked out on the server from synced data, so a workout counts once it has synced. The global leaderboard refreshes about once a minute. Records need a weight and 1 to 10 reps.',
+          'The score is worked out on the server from synced data, so a workout counts once it has synced. Leaderboard days and weeks use India time, Monday to Sunday, whatever your own week start. The global leaderboard refreshes about once a minute. Records need a weight and 1 to 10 reps.',
       },
       {
         id: 'weekly-report',

@@ -279,7 +279,7 @@ function FoodLogBlock({
         maintenance ? (
           <>
             <p className="type-meta mt-2 text-text-2">
-              Your real maintenance is about{' '}
+              Your maintenance is about{' '}
               <span className="tabular font-semibold text-text-1">{n(maintenance.kcal)} kcal</span>:
               you ate {n(maintenance.meanIntake)} kcal a day while your trend weight moved{' '}
               {maintenance.changeKg >= 0 ? '+' : '−'}
@@ -293,13 +293,13 @@ function FoodLogBlock({
           </>
         ) : (
           <p className="type-meta mt-2 text-text-2">
-            Real maintenance shows after 14 fully logged days in 4 weeks, with weigh-ins at both
+            Your maintenance shows after 14 fully logged days in 4 weeks, with weigh-ins at both
             ends.
           </p>
         )
       ) : (
         <TextLink to="/pro" small className="mt-2" data-pro-lock="food_insights">
-          Pro works out your real maintenance from this
+          Pro works out your maintenance from this
         </TextLink>
       )}
     </div>

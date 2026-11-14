@@ -1,3 +1,4 @@
+import { streakTargetOf } from '@/domain/analytics/week';
 import { badgesEarnedIn, computeBadges, type Badge } from '@/domain/achievements/badges';
 import { BadgeUnlock, markBadgesSeen, seenBadges } from '@/features/medals/BadgeUnlock';
 import { BadgeMedallion } from '@/features/medals/BadgeMedallion';
@@ -70,6 +71,7 @@ export function SummaryPage() {
       bodyWeights: training.data.bodyWeights,
       now: new Date(),
       weekStartsOn: prefs.weekStartsOn,
+      minSessions: streakTargetOf(training.data),
     });
   }, [training.data, prefs.weekStartsOn]);
   const unlocked = useMemo(

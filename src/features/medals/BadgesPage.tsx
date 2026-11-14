@@ -1,3 +1,4 @@
+import { streakTargetOf } from '@/domain/analytics/week';
 import { useMemo, useState } from 'react';
 import { Share } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
@@ -41,6 +42,7 @@ export function BadgesPage() {
             bodyWeights: data.bodyWeights,
             now,
             weekStartsOn: prefs.weekStartsOn,
+            minSessions: streakTargetOf(data),
           })
         : [],
     [data, now, prefs.weekStartsOn],

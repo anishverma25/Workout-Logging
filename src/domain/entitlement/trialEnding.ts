@@ -1,3 +1,4 @@
+import { FREE_ROUTINES } from './limits';
 /**
  * The calm trial ending (Fable review batch 9): in the last 3 days of the trial, one Home card
  * says when it ends, what Pro found in the person's own logs, and what stays free. No
@@ -13,8 +14,7 @@ export interface TrialEndingCopy {
 }
 
 /** What every free account keeps, in the app's own words (Free and Pro table). */
-export const STAYS_FREE =
-  'Workout logging, your full history, every record, 2 routines and food logging with calories stay free.';
+export const STAYS_FREE = `Workout logging, your full history, every record, ${FREE_ROUTINES} routines and food logging with calories stay free.`;
 
 export function trialEndingDue(remainingMs: number | null): boolean {
   return remainingMs !== null && remainingMs > 0 && remainingMs <= TRIAL_ENDING_DAYS * 86_400_000;

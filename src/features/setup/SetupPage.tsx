@@ -1044,7 +1044,7 @@ function PlanSummary({
             caption={
               energy.adjustment === 0
                 ? 'Your maintenance'
-                : `Maintenance ${energy.tdee.toLocaleString('en-GB')}, ${energy.adjustment > 0 ? '+' : '−'}${Math.round(Math.abs(energy.adjustment) * 100)}% for your goal`
+                : `Formula estimate ${energy.tdee.toLocaleString('en-GB')}, ${energy.adjustment > 0 ? '+' : '−'}${Math.round(Math.abs(energy.adjustment) * 100)}% for your goal`
             }
           />
           <StatTile

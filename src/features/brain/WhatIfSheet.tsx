@@ -70,10 +70,10 @@ function Sliders({ brain }: { brain: Brain }) {
   const hi = roundTo(maintenance + 600, KCAL_ROUND);
   const basis =
     model.maintenance!.confidence === 'personal'
-      ? `Based on your own maintenance of about ${maintenance.toLocaleString('en-IN')} kcal, from ${model.maintenance!.n} logged weeks.`
+      ? `Based on the plan's estimate of maintenance, about ${maintenance.toLocaleString('en-IN')} kcal, from ${model.maintenance!.n} logged weeks.`
       : model.maintenance!.confidence === 'learning'
-        ? `Based on a maintenance of about ${maintenance.toLocaleString('en-IN')} kcal, part your logs and part the body formula. The range is wider until more weeks are logged.`
-        : `Based on the body formula's maintenance of about ${maintenance.toLocaleString('en-IN')} kcal. Log food and weigh in for a few weeks to make this yours.`;
+        ? `Based on the plan's estimate of maintenance, about ${maintenance.toLocaleString('en-IN')} kcal, part your logs and part the body formula. The range is wider until more weeks are logged.`
+        : `Based on the formula estimate of maintenance, about ${maintenance.toLocaleString('en-IN')} kcal. Log food and weigh in for a few weeks to make this yours.`;
 
   return (
     <div className="flex flex-col gap-6" data-what-if>

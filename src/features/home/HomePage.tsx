@@ -1,3 +1,5 @@
+import { isHardSet } from '@/domain/analytics/muscles';
+import { isWorkingSet } from '@/domain/analytics/sessions';
 import { wrapped, wrappedDue } from '@/domain/share/wrapped';
 import { wrappedSeen } from '../wrapped/seen';
 import { NowCard } from './NowCard';
@@ -43,7 +45,8 @@ export function HomePage() {
     [training.data],
   );
 
-  // This week's sets, spread over the muscles they work, for the small map at the end of Home.
+  // This week's hard sets (the same sets Progress, the report and the Brain count, batch 20),
+  // spread over the muscles they work, for the small map at the end of Home.
   const weekMuscles = useMemo(() => {
     if (!training.data) return [];
     const start = startOfWeek(now, prefs.weekStartsOn);
@@ -53,7 +56,7 @@ export function HomePage() {
         s.exercises.map((e) => ({
           exerciseId: e.workoutExercise.exerciseId,
           exercise: e.exercise,
-          sets: e.sets,
+          sets: e.sets.filter((set) => isWorkingSet(set) && isHardSet(set)),
         })),
       );
   }, [training.data, now, prefs.weekStartsOn]);
@@ -157,7 +160,7 @@ export function HomePage() {
               <MuscleMapCard
                 exercises={weekMuscles}
                 sex={training.data?.profile?.sex}
-                title="Muscles this week"
+                title="Hard sets this week"
                 compact
               />
             ) : null}

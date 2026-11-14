@@ -177,7 +177,12 @@ export function mealFoods(logs: FoodLog[], meal: Meal, today: string): MealFoods
 export const MAINTENANCE_WINDOW_DAYS = 28;
 export const MAINTENANCE_MIN_DAYS = 14;
 /** A day under this is treated as not fully logged and left out of the average. */
-export const LOGGED_DAY_MIN_KCAL = 1000;
+/**
+ * A food day counts as logged at this many kcal: one definition for maintenance, the weekly
+ * report, the Brain and Home (batch 20).
+ */
+export const LOGGED_DAY_KCAL = 1000;
+export const LOGGED_DAY_MIN_KCAL = LOGGED_DAY_KCAL;
 
 export interface RealMaintenance {
   kcal: number;

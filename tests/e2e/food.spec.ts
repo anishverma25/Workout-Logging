@@ -145,7 +145,7 @@ test('Pro tells Macrotrophy AI a meal and sees food on Progress', async ({ page 
   const section = page.locator('#nutrition');
   await section.scrollIntoViewIfNeeded();
   await expect(section.locator('[data-nutrition-section]')).toBeVisible();
-  await expect(section).toContainText('Real maintenance');
+  await expect(section).toContainText('Your maintenance');
 });
 
 test('Home shows food today and the coach brief includes food', async ({ page }) => {

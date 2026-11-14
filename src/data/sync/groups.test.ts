@@ -171,7 +171,7 @@ beforeAll(async () => {
   // The launch state: early access has ended, so only paying or trial accounts are Pro.
   await server.pg.query('update public.app_settings set early_access_ended_at = now()');
   const ex = await server.pg.query<{ id: string }>(
-    "select id from public.exercises where load_mode = 'total' order by id limit 2",
+    "select id from public.exercises where load_mode = 'total' and category = 'compound' and tracking_type = 'weight_reps' order by id limit 2",
   );
   exerciseId = ex.rows[0]!.id;
   otherExerciseId = ex.rows[1]!.id;
@@ -672,7 +672,7 @@ describe('duels', () => {
     const lifts = [exerciseId, otherExerciseId];
     const third = (
       await server.pg.query<{ id: string }>(
-        'select id from public.exercises where id <> all($1) order by id limit 1',
+        "select id from public.exercises where id <> all($1) and category = 'compound' and tracking_type = 'weight_reps' and load_mode = 'total' order by id limit 1",
         [lifts],
       )
     ).rows[0]!.id;
@@ -838,5 +838,24 @@ describe('duels', () => {
       [b],
     );
     expect((await rowsFor()).find((r) => r.username === 'limit.b')?.pro).toBe(true);
+  });
+});
+
+describe('leaderboards follow the app rules (0034)', () => {
+  it('paused time does not count toward the 10 minutes', async () => {
+    const a = await user();
+    const w = await workout(a, day(8), three(60, 8), { minutes: 14 });
+    await server.pg.query('update public.workouts set paused_ms = $2 where id = $1', [
+      w,
+      6 * 60_000,
+    ]);
+    expect((await scoreOf(a)).workouts).toBe(0);
+  });
+  it('a single counts as its own weight, and isolation lifts make no records', async () => {
+    const e1rm = await server.pg.query<{ one: string; five: string }>(
+      'select public.community_e1rm(100, 1) as one, public.community_e1rm(100, 5) as five',
+    );
+    expect(Number(e1rm.rows[0]!.one)).toBe(100);
+    expect(Number(e1rm.rows[0]!.five)).toBeCloseTo(116.67, 1);
   });
 });

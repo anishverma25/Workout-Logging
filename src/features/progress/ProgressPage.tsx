@@ -1,3 +1,4 @@
+import { FREE_PROGRESS_DAYS } from '@/domain/entitlement/limits';
 import { COPY } from '@/domain/analytics/thresholdCopy';
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -229,7 +230,7 @@ export function ProgressPage() {
             <ProLock
               feature="long_range"
               className="mt-6"
-              lead="Your history is all here. Free shows the last 7 days; trends over 30 days, 90 days and all time are Pro."
+              lead={`Your history is all here. Free shows the last ${FREE_PROGRESS_DAYS} days; trends over 30 days, 90 days and all time are Pro.`}
             />
           ) : (
             <CoachBriefProvider

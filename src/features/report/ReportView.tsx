@@ -789,7 +789,7 @@ export function energyNote(e: NonNullable<WeeklyReport['energy']>): string {
     e.plannedDeficit !== null
       ? `Your target plans a ${fmt(Math.abs(e.plannedDeficit))} kcal ${balance(e.plannedDeficit)} a day; your intake and weight show about a ${fmt(Math.abs(e.actualDeficit))} kcal ${balance(e.actualDeficit)}. `
       : '';
-  return `${planned}Maintenance is estimated from 4 weeks of your intake and weight, which usually beats a formula but is still an estimate.`;
+  return `${planned}This is the plan's estimate of maintenance, from 4 weeks of your intake and weight. It can differ from your maintenance on Food, which uses 14 logged days; the science page explains why.`;
 }
 
 export type ReportMode = 'quick' | 'full';

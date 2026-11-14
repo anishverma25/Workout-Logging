@@ -92,7 +92,7 @@ export function DayAnalysisCard({ ctx, date, now }: { ctx: FoodContext; date: st
               {energy.vsMaintenance > 0 ? '+' : ''}
               {energy.vsMaintenance.toLocaleString('en-IN')} kcal
             </strong>{' '}
-            against your real maintenance
+            against your maintenance
           </p>
         ) : null}
       </Block>

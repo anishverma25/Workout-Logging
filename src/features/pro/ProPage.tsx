@@ -1,3 +1,4 @@
+import { FREE_PROGRESS_DAYS } from '@/domain/entitlement/limits';
 import { CoachingRow } from '@/features/coaching/CoachingRow';
 import { useMemo, type ReactNode } from 'react';
 import {
@@ -561,7 +562,7 @@ function Faq({ plans }: { plans: BillingPlan[] | null }) {
   const items: [string, string][] = [
     [
       'What happens when the trial or Pro ends?',
-      'Nothing you logged is lost or locked. Logging, routines, your full history, records, body metrics and the last 30 days of progress keep working. Only the Pro analysis pauses, and it comes back the moment Pro is on again.',
+      `Nothing you logged is lost or locked. Logging, routines, your full history, records, body metrics and the last ${FREE_PROGRESS_DAYS} days of progress keep working. Only the Pro analysis pauses, and it comes back the moment Pro is on again.`,
     ],
     [
       'Do I need to enter payment details for the trial?',

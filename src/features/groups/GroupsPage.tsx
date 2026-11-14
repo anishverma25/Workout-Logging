@@ -291,7 +291,7 @@ export function HowPointsWork() {
     {
       points: `+${POINTS.workout}`,
       what: 'a workout',
-      detail: `10 minutes or more, at least 3 working sets ticked as you do them. One a day, up to ${WEEKLY_CAPS.workouts} a week.`,
+      detail: `10 minutes or more not counting pauses, at least 3 working sets ticked as you do them. One a day, up to ${WEEKLY_CAPS.workouts} a week.`,
     },
     {
       points: `+${POINTS.hardSet}`,
@@ -301,7 +301,7 @@ export function HowPointsWork() {
     {
       points: `+${POINTS.record}`,
       what: 'a personal record',
-      detail: `A new best on an exercise you have done at least twice before. Up to ${WEEKLY_CAPS.records} a week.`,
+      detail: `A new best estimated 1RM on a compound lift you have done at least twice before. Up to ${WEEKLY_CAPS.records} a week.`,
     },
     {
       points: `+${POINTS.consistencyWeek}`,

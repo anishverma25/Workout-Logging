@@ -14,7 +14,7 @@ export const KCAL_ROUND = 50;
 export const MIN_FOOD_DAYS = 5;
 export const MIN_WEIGH_INS = 4;
 /** A food day counts when it has at least this much logged. */
-export const LOGGED_DAY_KCAL = 1000;
+export { LOGGED_DAY_KCAL } from '../nutrition/analysis';
 /** Eating within this share of the target counts as following it. */
 export const INTAKE_TOLERANCE = 0.1;
 /** Weight pace on a cut, share of body weight a week (Helms 2014). Called weight, never fat. */

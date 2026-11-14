@@ -63,9 +63,11 @@ export function performanceFor(
   let chartLow: number | null = null;
   for (const set of sets) {
     if (isLoadEligible(set, exercise)) {
-      const e1rm = supportsE1rm(exercise)
-        ? estimateOneRepMax(set.weightKg, set.reps, set.rir)
-        : null;
+      // Drop sets count for volume, never for load or e1RM records (batch 20, O7): the same rule
+      // as stalls, the Brain and the leaderboards.
+      const drop = set.setType === 'drop';
+      const e1rm =
+        !drop && supportsE1rm(exercise) ? estimateOneRepMax(set.weightKg, set.reps, set.rir) : null;
       if (e1rm !== null && (perf.bestE1rm === null || e1rm > perf.bestE1rm)) {
         perf.bestE1rm = e1rm;
         perf.bestE1rmSet = set;
@@ -77,7 +79,7 @@ export function performanceFor(
         if (low && (chartLow === null || e1rm > chartLow)) chartLow = e1rm;
       }
       const w = set.weightKg ?? 0;
-      if (perf.heaviestLoad === null || w > perf.heaviestLoad) {
+      if (!drop && (perf.heaviestLoad === null || w > perf.heaviestLoad)) {
         perf.heaviestLoad = w;
         perf.heaviestLoadSet = set;
       }

@@ -1,5 +1,6 @@
 import { addDays, startOfWeek, type WeekStartsOn } from '@/lib/dates';
-import type { Profile, RoutineDay, RoutineExercise } from '../models/schemas';
+import type { Profile, Routine, RoutineDay, RoutineExercise } from '../models/schemas';
+import { activeRoutine, daysForRoutine } from './schedule';
 import {
   isAlive,
   sessionDurationMinutes,
@@ -82,13 +83,35 @@ export function weekRings(
  * is no target), counting back from last week. The current week joins the streak once it
  * meets the target, so a streak never breaks mid-week.
  */
+/**
+ * The sessions a week that keep the streak going (batch 20, one rule everywhere): the days the
+ * person said they train, else the routine's planned days, else 1.
+ */
+export function streakTarget(profile: Profile | null | undefined, days: RoutineDay[]): number {
+  const planned = days.reduce((n, d) => n + d.weekdays.length, 0) || null;
+  return Math.max(1, profile?.trainingDays ?? planned ?? 1);
+}
+
+/** `streakTarget` from the person's own data: their profile and their active routine. */
+export function streakTargetOf(data: {
+  profile: Profile | null | undefined;
+  routines: Routine[];
+  routineDays: RoutineDay[];
+}): number {
+  return streakTarget(data.profile, daysForRoutine(activeRoutine(data.routines), data.routineDays));
+}
+
+/**
+ * Weeks in a row that met `minSessions`, the one streak used on Home, milestones, badges and
+ * story cards. This week counts once met; until then it does not break the run.
+ */
 export function weeklyStreak(
   sessions: Session[],
-  target: number | null,
+  minSessions: number | null,
   now: Date,
   weekStartsOn: WeekStartsOn,
 ): { weeks: number; currentWeekMet: boolean } {
-  const need = Math.max(1, target ?? 1);
+  const need = Math.max(1, minSessions ?? 1);
   const current = startOfWeek(now, weekStartsOn);
   const countIn = (start: Date) => sessionsBetween(sessions, start, addDays(start, 7)).length;
   const currentWeekMet = countIn(current) >= need;
@@ -132,4 +155,30 @@ export function loggedDaysPerWeek(sessions: Session[], now: Date): number | null
     sessions.filter((s) => s.date > start && s.date <= now).map((s) => s.date.toDateString()),
   );
   return days.size / 4;
+}
+
+/**
+ * Every run of weeks in a row that met `minSessions`, oldest first, with the week each length
+ * was first reached (for badges and milestones).
+ */
+export function streakReached(
+  sessions: Session[],
+  minSessions: number | null,
+  now: Date,
+  weekStartsOn: WeekStartsOn,
+): Map<number, { weekEnd: Date; firstSession: Session }> {
+  const need = Math.max(1, minSessions ?? 1);
+  const reached = new Map<number, { weekEnd: Date; firstSession: Session }>();
+  const first = sessions[0];
+  if (!first) return reached;
+  let run = 0;
+  for (let w = startOfWeek(first.date, weekStartsOn); w <= now; w = addDays(w, 7)) {
+    const end = addDays(w, 7);
+    const inWeek = sessionsBetween(sessions, w, end);
+    if (inWeek.length >= need) {
+      run += 1;
+      if (!reached.has(run)) reached.set(run, { weekEnd: end, firstSession: inWeek[0]! });
+    } else if (end <= now) run = 0;
+  }
+  return reached;
 }
