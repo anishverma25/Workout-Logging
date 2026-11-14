@@ -140,8 +140,9 @@ function planShare(dir: Direction, lo: number, hi: number) {
   return dir === 'hold' ? 0 : (lo + hi) / 2;
 }
 
+/** Never under resting energy: the floor rounds up, like the Brain's `calorieFloor` (S8). */
 function floorKcal(bmrKcal: number) {
-  return Math.max(MIN_DAILY_KCAL, round(bmrKcal, 50));
+  return Math.max(MIN_DAILY_KCAL, Math.ceil(bmrKcal / 50) * 50);
 }
 
 function addDaysKey(today: string, days: number) {

@@ -9,6 +9,9 @@ import {
   MAX_SET_STEP,
   MIN_DAILY_KCAL,
   PROTEIN_RANGE,
+  SETS_CEILING,
+  SETS_FLOOR,
+  SETS_LOW,
   SHRINK_K,
 } from '@/domain/brain/limits';
 import type { ReactNode } from 'react';
@@ -159,7 +162,7 @@ export const SCIENCE: TopicGroup[] = [
         forYou:
           'You can watch strength rise without testing a max. Heavy sets of about 5 reps or fewer give the most trustworthy estimate.',
         limits:
-          'Accuracy falls as reps rise and differs between exercises. It is always labelled an estimate and only used on weight and reps exercises.',
+          'Accuracy falls as reps rise and differs between exercises. It is always labelled an estimate and only used on compound weight and reps exercises: for isolation lifts the app tracks the top weight and reps instead.',
       },
       {
         id: 'effort',
@@ -219,7 +222,7 @@ export const SCIENCE: TopicGroup[] = [
         forYou:
           'The plain ratio is easy to read. The adjusted index stops a heavier body from making you look weaker when you are actually stronger.',
         limits:
-          'The exponent is a population average. Body weight is your latest weigh-in on or before the day, so without one this is not shown.',
+          'The exponent is a population average. Body weight is your latest weigh-in on or before the day, else the first one within 8 days after it; without either, and for weigh-ins older than 90 days, this is not shown.',
       },
       {
         id: 'insights',
@@ -422,9 +425,12 @@ export const SCIENCE: TopicGroup[] = [
           </>,
           <>
             More volume kept producing more growth across the range studied, with strength
-            flattening sooner than size. So the app shows your count and its change against the
-            previous period, on one shared scale for every muscle, with no target range and no ideal
-            number.
+            flattening sooner than size. So this chart shows your count and its change against the
+            previous period, on one shared scale for every muscle, with no target band drawn on it.
+            The adaptive plan does use a range when it moves your sets: it keeps each muscle between{' '}
+            {SETS_FLOOR} and {SETS_CEILING} hard sets a week and calls under {SETS_LOW} low, from
+            the dose and response in Pelland and colleagues (2026); the exact cut-offs are app
+            rules.
           </>,
           <>
             Baz-Valle and colleagues found counting sets near failure is a valid volume measure for
@@ -981,8 +987,9 @@ export const SCIENCE: TopicGroup[] = [
           </>,
           <>
             Every food is tested: its calories must match its protein, carbs and fat (4, 4, 9 and 2
-            for fibre) within 12%, portions must be realistic, and light oil must be below normal
-            and rich.
+            for fibre) within 12% for our recipes and ingredients, and within 20% for pack labels
+            and chain servings (printed values are rounded); portions must be realistic, and light
+            oil must be below normal and rich.
           </>,
           <>
             Real maintenance uses what you logged, so if you always miss a little, the number
@@ -1185,10 +1192,10 @@ export const SCIENCE: TopicGroup[] = [
             equal (Schoenfeld and colleagues, 2019).
           </>,
           <>
-            Patterns between food and training are labelled Established only when a fixed rule holds
-            on your own numbers. Others are Early signals, which never change your advice; an exact
-            statistical test decides whether one is shown at all, and no probability is shown to
-            you.
+            Patterns between food and training are labelled Established when an exact statistical
+            test on your own numbers is clear enough; weaker ones are Early signals, which never
+            change your advice. The same test decides whether one is shown at all, and no
+            probability is shown to you.
           </>,
         ],
         forYou:
@@ -1236,7 +1243,10 @@ export const SCIENCE: TopicGroup[] = [
             doing the planned work; one whose lifts drop while you eat under maintenance gets{' '}
             {MAX_SET_STEP} fewer. A lift counts as moved at {LIFT_UP * 100}% up or{' '}
             {Math.abs(LIFT_DOWN) * 100}% down, set against day to day noise in a tested max of about
-            4% (Grgic and colleagues, 2020).
+            4% (Grgic and colleagues, 2020). That is smaller than the 5% Progress calls a real
+            change on purpose: the plan reads the lift&apos;s trend across sessions and needs
+            several lifts or two sessions in a row to agree before it acts, which a single noisy
+            test cannot.
           </>,
           <>
             A lighter week (about {DELOAD_SHARE * 100}% of your sets, same weights) is proposed only

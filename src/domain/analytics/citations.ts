@@ -355,6 +355,7 @@ export const CITATIONS: Record<string, Citation> = {
     authors: 'McArdle WD, Katch FI, Katch VL',
     title: 'Exercise Physiology: Nutrition, Energy, and Human Performance',
     journal: 'Textbook (Lippincott Williams & Wilkins / Wolters Kluwer), multiple editions',
+    // TODO(owner): add the ISBN of the edition used.
     openAccess: false,
   },
   dots2019: {
@@ -362,7 +363,8 @@ export const CITATIONS: Record<string, Citation> = {
     authors: 'Konertz T (BVDK, German Powerlifting Federation)',
     year: 2019,
     title: 'DOTS (Dynamic Objective Team Scoring) bodyweight coefficient',
-    journal: '',
+    // TODO(owner): no federation publication of the formula was found; this is a calculator.
+    journal: 'Formula as published in a public calculator, not a paper',
     url: 'https://inchcalculator.com/lifting-strength-calculator',
     openAccess: true,
   },
@@ -508,6 +510,7 @@ export const CITATIONS: Record<string, Citation> = {
     year: 1973,
     title: 'Energy Value of Foods: Basis and Derivation',
     journal: 'Agriculture Handbook No. 74, USDA',
+    // TODO(owner): add a stable link to the USDA ARS copy of Handbook 74.
     openAccess: true,
   },
 };
@@ -553,7 +556,8 @@ export const METRIC_EVIDENCE: Record<
   bmr: { kind: 'evidence', citations: ['mifflin1990', 'frankenfield2005', 'mcardleKatch'] },
   maintenance: { kind: 'evidence', citations: ['fao2004', 'compendium2024'] },
   protein: { kind: 'evidence', citations: ['morton2018', 'helms2014protein'] },
-  bodyFat: { kind: 'evidence', citations: ['hodgdon1984'] },
+  // The composition topic shows BMI and lean mass too (batch 15).
+  bodyFat: { kind: 'evidence', citations: ['hodgdon1984', 'who2004bmi', 'kouri1995'] },
   bmi: { kind: 'evidence', citations: ['who2004bmi'] },
   ffmi: { kind: 'evidence', citations: ['kouri1995'] },
   strengthLevels: { kind: 'evidence', citations: ['rippetoe2009', 'dots2019'] },
@@ -564,6 +568,7 @@ export const METRIC_EVIDENCE: Record<
     citations: [
       'bosquet2013',
       'schoenfeld2019freq',
+      'pelland2026',
       'robinson2024',
       'plotkin2022',
       'bell2023',
@@ -572,7 +577,7 @@ export const METRIC_EVIDENCE: Record<
   },
   nutritionTargets: {
     kind: 'evidence',
-    citations: ['hall2008', 'helms2014', 'iraki2019', 'morton2018'],
+    citations: ['hall2008', 'helms2014', 'iraki2019', 'morton2018', 'mifflin1990'],
   },
   foodValues: {
     kind: 'evidence',
