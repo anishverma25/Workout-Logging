@@ -1,7 +1,7 @@
 import { liveQuery, type Subscription } from 'dexie';
 import type { WorkoutDatabase } from '../db';
 import { getMeta, META_KEYS } from '../repositories/meta';
-import { asRemoteError, MAX_ATTEMPTS, syncOnce } from './engine';
+import { asRemoteError, MAX_ATTEMPTS, retryRejectedOncePerVersion, syncOnce } from './engine';
 import type { RemoteStore } from './remote';
 
 /**
@@ -53,7 +53,11 @@ export class SyncController {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private running: Promise<void> | null = null;
   private again = false;
+  /** The queued round must pull too (any caller but a local change asked for it). */
+  private againFull = false;
   private failures = 0;
+  /** When the last round that pulled finished (ms), so a burst of edits only pushes. */
+  private lastPullAt = 0;
 
   getState = () => this.state;
 
@@ -74,6 +78,16 @@ export class SyncController {
     const lastSyncedAt = (await getMeta<string>(db, META_KEYS.lastSyncedAt)) ?? null;
     this.set({ phase: 'idle', pending: 0, rejected: 0, lastSyncedAt, error: null });
     this.failures = 0;
+    this.lastPullAt = 0;
+    // A new app version may have fixed what made the server refuse a change: try those once.
+    try {
+      await retryRejectedOncePerVersion(
+        db,
+        typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'local',
+      );
+    } catch {
+      // Never blocks sync starting.
+    }
 
     // Every local write lands in the outbox; watching it is how sync hears about changes.
     let first = true;
@@ -83,7 +97,8 @@ export class SyncController {
         this.set({ pending: entries.length, rejected });
         if (first) first = false;
         // While backing off after a failure, new changes wait for the retry (or `online`).
-        else if (entries.length > rejected && this.failures === 0) this.schedule(PUSH_DEBOUNCE_MS);
+        else if (entries.length > rejected && this.failures === 0)
+          this.schedule(PUSH_DEBOUNCE_MS, 'push');
       },
     });
 
@@ -128,20 +143,35 @@ export class SyncController {
     this.set(OFF_STATE);
   }
 
-  private schedule(delay: number) {
+  private timerKind: 'push' | 'full' = 'full';
+
+  private schedule(delay: number, kind: 'push' | 'full' = 'full') {
     if (!this.session) return;
-    if (this.timer) clearTimeout(this.timer);
+    // A waiting full round (a retry) is never downgraded to a push-only one.
+    if (this.timer) {
+      clearTimeout(this.timer);
+      if (this.timerKind === 'full') kind = 'full';
+    }
+    this.timerKind = kind;
     this.timer = setTimeout(() => {
       this.timer = null;
-      this.syncNow();
+      void this.run(kind === 'push');
     }, delay);
   }
 
-  /** Runs a sync round now (or right after the one in progress). Resolves when done. */
-  syncNow = (): Promise<void> => {
+  /** Runs a full sync round (push, then pull) now, or right after the one in progress. */
+  syncNow = (): Promise<void> => this.run(false);
+
+  /**
+   * A round after a local change pushes only, unless the last pull is older than the regular
+   * pull interval: other devices' changes still arrive on start, online, visible and the
+   * interval, but a burst of edits no longer asks every table each time.
+   */
+  private run(pushOnly: boolean): Promise<void> {
     if (!this.session) return Promise.resolve();
     if (this.running) {
       this.again = true;
+      if (!pushOnly) this.againFull = true;
       return this.running;
     }
     const session = this.session;
@@ -150,11 +180,13 @@ export class SyncController {
       this.set({ phase: 'offline' });
       return Promise.resolve();
     }
+    const pull = !pushOnly || Date.now() - this.lastPullAt >= PULL_INTERVAL_MS;
     this.running = (async () => {
       this.set({ phase: 'syncing' });
       try {
-        await syncOnce(session.db, session.remote, session.userId);
+        await syncOnce(session.db, session.remote, session.userId, { pull });
         if (this.session !== session) return;
+        if (pull) this.lastPullAt = Date.now();
         this.failures = 0;
         const lastSyncedAt = (await getMeta<string>(session.db, META_KEYS.lastSyncedAt)) ?? null;
         this.set({ phase: 'idle', error: null, lastSyncedAt });
@@ -168,13 +200,15 @@ export class SyncController {
       } finally {
         this.running = null;
         if (this.again && this.session === session) {
+          const full = this.againFull;
           this.again = false;
-          void this.syncNow();
+          this.againFull = false;
+          void this.run(!full);
         }
       }
     })();
     return this.running;
-  };
+  }
 }
 
 export const syncController = new SyncController();

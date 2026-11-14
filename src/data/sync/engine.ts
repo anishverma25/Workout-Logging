@@ -256,61 +256,142 @@ async function mergePreferences(db: WorkoutDatabase, row: ServerRow) {
   });
 }
 
-/** Fetches changes from the server, table by table, and merges them into the local database. */
-export async function pull(db: WorkoutDatabase, remote: RemoteStore): Promise<number> {
+/** Merges one page of a table's rows and moves its cursor on. Returns how many were saved. */
+async function applyPage(
+  db: WorkoutDatabase,
+  table: SyncTable,
+  rows: ServerRow[],
+): Promise<{ pulled: number; cursor: PullCursor | null }> {
+  const target = remoteTableOf(table);
+  const key = keyColumn(target);
   let pulled = 0;
-  for (const table of PUSH_ORDER) {
-    const target = remoteTableOf(table);
-    const key = keyColumn(target);
-    let cursor = await readCursor(db, target);
-    let after = withOverlap(cursor);
-    for (;;) {
-      let rows: ServerRow[];
-      try {
-        rows = await remote.pull(target, after, PULL_PAGE);
-      } catch (err) {
-        // The server does not have this newer table yet: there is nothing to fetch from it.
-        if (LATE_TABLES.has(target) && isMissingTable(asRemoteError(err))) break;
-        throw err;
-      }
-      for (const row of rows) {
-        if (table === 'preferences') {
-          if (await mergePreferences(db, row)) pulled++;
-          continue;
-        }
-        const record = fromServerRow(
-          TABLE_SPECS.find((s) => s.local === table)!,
-          row,
-        );
-        if (!record) {
-          console.warn(`Skipped an invalid ${target} row from the server`, row[key]);
-          continue;
-        }
-        if (await mergeRecord(db, table, record)) pulled++;
-      }
-      const last = rows.at(-1);
-      if (last) {
-        // Keep the server's own timestamp text: it has microseconds that a JS Date would drop.
-        cursor = { ts: String(last.server_updated_at), id: String(last[key]) };
-        await setMeta(db, `${META_KEYS.syncCursor}${target}`, cursor);
-        after = cursor;
-      }
-      if (rows.length < PULL_PAGE) break;
+  for (const row of rows) {
+    if (table === 'preferences') {
+      if (await mergePreferences(db, row)) pulled++;
+      continue;
     }
+    const record = fromServerRow(
+      TABLE_SPECS.find((s) => s.local === table)!,
+      row,
+    );
+    if (!record) {
+      console.warn(`Skipped an invalid ${target} row from the server`, row[key]);
+      continue;
+    }
+    if (await mergeRecord(db, table, record)) pulled++;
+  }
+  const last = rows.at(-1);
+  if (!last) return { pulled, cursor: null };
+  // Keep the server's own timestamp text: it has microseconds that a JS Date would drop.
+  const cursor = { ts: String(last.server_updated_at), id: String(last[key]) };
+  await setMeta(db, `${META_KEYS.syncCursor}${target}`, cursor);
+  return { pulled, cursor };
+}
+
+/** Pulls one table page by page, the way every table was pulled before `sync_pull`. */
+async function pullTable(
+  db: WorkoutDatabase,
+  remote: RemoteStore,
+  table: SyncTable,
+  start: PullCursor | null,
+): Promise<number> {
+  const target = remoteTableOf(table);
+  let after = start;
+  let pulled = 0;
+  for (;;) {
+    let rows: ServerRow[];
+    try {
+      rows = await remote.pull(target, after, PULL_PAGE);
+    } catch (err) {
+      // The server does not have this newer table yet: there is nothing to fetch from it.
+      if (LATE_TABLES.has(target) && isMissingTable(asRemoteError(err))) break;
+      throw err;
+    }
+    const page = await applyPage(db, table, rows);
+    pulled += page.pulled;
+    if (page.cursor) after = page.cursor;
+    if (rows.length < PULL_PAGE) break;
   }
   return pulled;
 }
 
-/** One full round: send local changes, then fetch everything newer from the server. */
+/** Rows a table asks for at a time through `sync_pull`, every table in one request. */
+export const PULL_ALL_PAGE = 200;
+
+/**
+ * Fetches changes from the server and merges them into the local database. With `sync_pull`
+ * (migration 0031) every table comes back in one request, and only tables that filled a page
+ * are asked again; tables it does not return, or a server without it, are pulled table by
+ * table as before. Rows, order, merging and cursors are the same either way.
+ */
+export async function pull(db: WorkoutDatabase, remote: RemoteStore): Promise<number> {
+  let pulled = 0;
+  const after = new Map<SyncTable, PullCursor | null>();
+  for (const table of PUSH_ORDER)
+    after.set(table, withOverlap(await readCursor(db, remoteTableOf(table))));
+  let open: SyncTable[] = [...PUSH_ORDER];
+  const oneByOne: SyncTable[] = [];
+  if (remote.pullAll) {
+    while (open.length > 0) {
+      const cursors = Object.fromEntries(open.map((t) => [remoteTableOf(t), after.get(t) ?? null]));
+      const answer = await remote.pullAll(cursors, PULL_ALL_PAGE);
+      // A server without sync_pull: everything left goes table by table.
+      if (answer === null) break;
+      const stillOpen: SyncTable[] = [];
+      for (const table of open) {
+        const rows = answer[remoteTableOf(table)];
+        if (!Array.isArray(rows)) {
+          oneByOne.push(table);
+          continue;
+        }
+        const page = await applyPage(db, table, rows);
+        pulled += page.pulled;
+        if (page.cursor) after.set(table, page.cursor);
+        if (rows.length >= PULL_ALL_PAGE) stillOpen.push(table);
+      }
+      open = stillOpen;
+    }
+  }
+  for (const table of [...oneByOne, ...open])
+    pulled += await pullTable(db, remote, table, after.get(table) ?? null);
+  return pulled;
+}
+
+/**
+ * One round: send local changes, then fetch everything newer from the server. A round started
+ * by a local change can skip the pull (`pull: false`); it then does not count as synced, so
+ * the app never says "synced" while a pull is due.
+ */
 export async function syncOnce(
   db: WorkoutDatabase,
   remote: RemoteStore,
   userId: string,
+  options: { pull?: boolean } = {},
 ): Promise<SyncResult> {
   const { pushed, rejected } = await push(db, remote, userId);
+  if (options.pull === false) return { pushed, pulled: 0, rejected };
   const pulled = await pull(db, remote);
   await setMeta(db, META_KEYS.lastSyncedAt, new Date().toISOString());
   return { pushed, pulled, rejected };
+}
+
+/**
+ * Changes the server refused get one fresh try after the app updates, once per version: a fix
+ * on the server (a migration that was missing) then heals phones by itself.
+ */
+export async function retryRejectedOncePerVersion(
+  db: WorkoutDatabase,
+  version: string,
+): Promise<boolean> {
+  const key = 'sync.retriedForVersion';
+  if ((await getMeta<string>(db, key)) === version) return false;
+  await db.outbox
+    .filter((e) => e.attempts >= MAX_ATTEMPTS)
+    .modify((e) => {
+      e.attempts = 0;
+    });
+  await setMeta(db, key, version);
+  return true;
 }
 
 /** Changes that have not reached the server yet, and those it refused. */

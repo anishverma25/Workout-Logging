@@ -127,6 +127,25 @@ export class PGliteRemote implements RemoteStore {
     );
   }
 
+  /** Set to false to act like a server without migration 0031. */
+  hasPullAll = true;
+
+  async pullAll(
+    cursors: Record<string, PullCursor | null>,
+    limit: number,
+  ): Promise<Record<string, ServerRow[]> | null> {
+    if (!this.hasPullAll) return null;
+    return this.wrap(async () => {
+      const result = await this.server.asUser(this.userId, (tx) =>
+        tx.query<{ r: Record<string, ServerRow[]> }>('select public.sync_pull($1, $2) as r', [
+          JSON.stringify(cursors),
+          limit,
+        ]),
+      );
+      return result.rows[0]!.r;
+    });
+  }
+
   async pull(table: RemoteTable, after: PullCursor | null, limit: number): Promise<ServerRow[]> {
     const key = ident(keyColumn(table));
     return this.wrap(async () => {

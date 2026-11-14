@@ -17,6 +17,24 @@ export interface RemoteStore {
   upsert(table: RemoteTable, rows: ServerRow[]): Promise<void>;
   /** Rows changed after the cursor, oldest first. */
   pull(table: RemoteTable, after: PullCursor | null, limit: number): Promise<ServerRow[]>;
+  /**
+   * Every asked table's rows after its cursor, in one request (`sync_pull`, migration 0031).
+   * A table left out of the answer is pulled with `pull`. Null when the server does not have
+   * the function: then every table is pulled with `pull`.
+   */
+  pullAll?(
+    cursors: Record<string, PullCursor | null>,
+    limit: number,
+  ): Promise<Record<string, ServerRow[]> | null>;
+}
+
+/** The server does not have this function yet (PostgREST PGRST202, Postgres 42883). */
+export function isMissingFunction(error: { code?: string | null; message?: string }): boolean {
+  return (
+    error.code === 'PGRST202' ||
+    error.code === '42883' ||
+    /could not find the function|function .* does not exist/i.test(error.message ?? '')
+  );
 }
 
 /**
