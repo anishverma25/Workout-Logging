@@ -1,7 +1,14 @@
 import { liveQuery, type Subscription } from 'dexie';
 import type { WorkoutDatabase } from '../db';
 import { getMeta, META_KEYS } from '../repositories/meta';
-import { asRemoteError, MAX_ATTEMPTS, retryRejectedOncePerVersion, syncOnce } from './engine';
+import {
+  asRemoteError,
+  MAX_ATTEMPTS,
+  redownloadAccount,
+  retryRejectedOncePerVersion,
+  retrySkippedOncePerVersion,
+  syncOnce,
+} from './engine';
 import type { RemoteStore } from './remote';
 
 /**
@@ -34,6 +41,8 @@ export const PULL_INTERVAL_MS = 120_000;
 const BACKOFF_BASE_MS = 5_000;
 const BACKOFF_MAX_MS = 300_000;
 
+const appVersion = () => (typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'local');
+
 export function backoffDelay(failures: number): number {
   return Math.min(BACKOFF_MAX_MS, BACKOFF_BASE_MS * 2 ** Math.max(0, failures - 1));
 }
@@ -58,6 +67,8 @@ export class SyncController {
   private failures = 0;
   /** When the last round that pulled finished (ms), so a burst of edits only pushes. */
   private lastPullAt = 0;
+  /** Skipped rows were looked at again this session (after the first full round). */
+  private skippedChecked = false;
 
   getState = () => this.state;
 
@@ -79,12 +90,10 @@ export class SyncController {
     this.set({ phase: 'idle', pending: 0, rejected: 0, lastSyncedAt, error: null });
     this.failures = 0;
     this.lastPullAt = 0;
+    this.skippedChecked = false;
     // A new app version may have fixed what made the server refuse a change: try those once.
     try {
-      await retryRejectedOncePerVersion(
-        db,
-        typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'local',
-      );
+      await retryRejectedOncePerVersion(db, appVersion());
     } catch {
       // Never blocks sync starting.
     }
@@ -159,6 +168,44 @@ export class SyncController {
     }, delay);
   }
 
+  /**
+   * Account, "Download my account again": waits for any round in progress, sends what is
+   * waiting, then fetches everything again. Refused while changes are still waiting.
+   */
+  redownload = async (): Promise<'done' | 'pending' | 'failed' | 'off'> => {
+    const session = this.session;
+    if (!session) return 'off';
+    await this.syncNow();
+    if (this.session !== session) return 'off';
+    while (this.running) await this.running;
+    let result: 'done' | 'pending' | 'failed' = 'failed';
+    this.running = (async () => {
+      this.set({ phase: 'syncing' });
+      try {
+        const r = await redownloadAccount(session.db, session.remote);
+        result = r.ok ? 'done' : 'pending';
+        if (this.session !== session) return;
+        this.lastPullAt = Date.now();
+        const lastSyncedAt = (await getMeta<string>(session.db, META_KEYS.lastSyncedAt)) ?? null;
+        this.set({ phase: 'idle', error: null, lastSyncedAt });
+      } catch (err) {
+        if (this.session !== session) return;
+        const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+        this.set({ phase: offline ? 'offline' : 'error', error: asRemoteError(err).message });
+      } finally {
+        this.running = null;
+        if (this.again && this.session === session) {
+          const full = this.againFull;
+          this.again = false;
+          this.againFull = false;
+          void this.run(!full);
+        }
+      }
+    })();
+    await this.running;
+    return result;
+  };
+
   /** Runs a full sync round (push, then pull) now, or right after the one in progress. */
   syncNow = (): Promise<void> => this.run(false);
 
@@ -187,6 +234,14 @@ export class SyncController {
         await syncOnce(session.db, session.remote, session.userId, { pull });
         if (this.session !== session) return;
         if (pull) this.lastPullAt = Date.now();
+        if (pull && !this.skippedChecked) {
+          this.skippedChecked = true;
+          try {
+            await retrySkippedOncePerVersion(session.db, session.remote, appVersion());
+          } catch {
+            // Tried again next session; never fails a round.
+          }
+        }
         this.failures = 0;
         const lastSyncedAt = (await getMeta<string>(session.db, META_KEYS.lastSyncedAt)) ?? null;
         this.set({ phase: 'idle', error: null, lastSyncedAt });

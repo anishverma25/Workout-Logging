@@ -142,6 +142,18 @@ export class SupabaseRemote implements RemoteStore {
     }
   }
 
+  async fetchRows(table: RemoteTable, keys: string[]): Promise<ServerRow[]> {
+    if (keys.length === 0) return [];
+    try {
+      const { data, error } = await this.client.from(table).select('*').in(keyColumn(table), keys);
+      if (error) throw toRemoteError(error);
+      return (data ?? []) as ServerRow[];
+    } catch (err) {
+      if (err instanceof RemoteError) throw err;
+      throw new RemoteError((err as Error).message, { transient: true });
+    }
+  }
+
   async pull(table: RemoteTable, after: PullCursor | null, limit: number): Promise<ServerRow[]> {
     const key = keyColumn(table);
     try {

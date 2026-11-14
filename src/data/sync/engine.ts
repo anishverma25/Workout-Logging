@@ -265,6 +265,7 @@ async function applyPage(
   const target = remoteTableOf(table);
   const key = keyColumn(target);
   let pulled = 0;
+  const skipped: string[] = [];
   for (const row of rows) {
     if (table === 'preferences') {
       if (await mergePreferences(db, row)) pulled++;
@@ -275,17 +276,101 @@ async function applyPage(
       row,
     );
     if (!record) {
+      // Remembered, and fetched again after the next app update (`retrySkippedOncePerVersion`):
+      // a row this version cannot read is never lost for good, and never blocks the cursor.
       console.warn(`Skipped an invalid ${target} row from the server`, row[key]);
+      skipped.push(String(row[key]));
       continue;
     }
     if (await mergeRecord(db, table, record)) pulled++;
   }
+  if (skipped.length) await rememberSkipped(db, table, skipped);
   const last = rows.at(-1);
   if (!last) return { pulled, cursor: null };
   // Keep the server's own timestamp text: it has microseconds that a JS Date would drop.
   const cursor = { ts: String(last.server_updated_at), id: String(last[key]) };
   await setMeta(db, `${META_KEYS.syncCursor}${target}`, cursor);
   return { pulled, cursor };
+}
+
+export const SKIPPED_KEY = 'sync.skipped';
+export const MAX_SKIPPED = 500;
+export interface SkippedRow {
+  table: SyncTable;
+  key: string;
+}
+
+export async function skippedRows(db: WorkoutDatabase): Promise<SkippedRow[]> {
+  return (await getMeta<SkippedRow[]>(db, SKIPPED_KEY)) ?? [];
+}
+
+async function rememberSkipped(db: WorkoutDatabase, table: SyncTable, keys: string[]) {
+  const list = await skippedRows(db);
+  const seen = new Set(list.map((s) => `${s.table}:${s.key}`));
+  for (const key of keys) if (!seen.has(`${table}:${key}`)) list.push({ table, key });
+  // Newest kept when there are too many.
+  await setMeta(db, SKIPPED_KEY, list.slice(-MAX_SKIPPED));
+}
+
+/**
+ * Fetches the rows this phone once skipped and saves those that now read. Rows that still do
+ * not read stay listed; rows the server no longer has are dropped. Returns how many were saved.
+ */
+export async function retrySkipped(db: WorkoutDatabase, remote: RemoteStore): Promise<number> {
+  const list = await skippedRows(db);
+  if (list.length === 0 || !remote.fetchRows) return 0;
+  const keep: SkippedRow[] = [];
+  let saved = 0;
+  const tables = [...new Set(list.map((s) => s.table))];
+  for (const table of tables) {
+    const spec = TABLE_SPECS.find((s) => s.local === table);
+    const keys = list.filter((s) => s.table === table).map((s) => s.key);
+    if (!spec) continue;
+    const target = remoteTableOf(table);
+    for (let i = 0; i < keys.length; i += 100) {
+      const chunk = keys.slice(i, i + 100);
+      const rows = await remote.fetchRows(target, chunk);
+      for (const row of rows) {
+        const record = fromServerRow(spec, row);
+        if (!record) keep.push({ table, key: String(row[keyColumn(target)]) });
+        else if (await mergeRecord(db, table, record)) saved++;
+      }
+    }
+  }
+  await setMeta(db, SKIPPED_KEY, keep);
+  return saved;
+}
+
+/** `retrySkipped`, once per app version: a new version may read what the last one could not. */
+export async function retrySkippedOncePerVersion(
+  db: WorkoutDatabase,
+  remote: RemoteStore,
+  version: string,
+): Promise<number> {
+  const key = 'sync.skippedRetriedForVersion';
+  if ((await getMeta<string>(db, key)) === version) return 0;
+  const saved = await retrySkipped(db, remote);
+  await setMeta(db, key, version);
+  return saved;
+}
+
+/**
+ * Fetches everything in the account again (Account, "Download my account again"). Only with
+ * nothing waiting to be sent, so no local change can be lost. It only forgets where each pull
+ * stopped; local rows are never deleted, and newer local copies win as in every pull.
+ */
+export async function redownloadAccount(
+  db: WorkoutDatabase,
+  remote: RemoteStore,
+): Promise<{ ok: true; pulled: number } | { ok: false; reason: 'pending' }> {
+  if ((await db.outbox.count()) > 0) return { ok: false, reason: 'pending' };
+  const keys = (await db.meta.toArray())
+    .map((m) => m.key)
+    .filter((k) => k.startsWith(META_KEYS.syncCursor) || k === SKIPPED_KEY);
+  await db.meta.bulkDelete(keys);
+  const pulled = await pull(db, remote);
+  await setMeta(db, META_KEYS.lastSyncedAt, new Date().toISOString());
+  return { ok: true, pulled };
 }
 
 /** Pulls one table page by page, the way every table was pulled before `sync_pull`. */

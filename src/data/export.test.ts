@@ -6,7 +6,7 @@ describe('CSV export', () => {
   it('quotes only what needs quoting', () => {
     expect(toCsv([['a', 'b,c', 'say "hi"', null, 3]])).toBe('a,"b,c","say ""hi""",,3');
     // Formulas stay text; negative numbers stay numbers.
-    expect(toCsv([["=HYPERLINK(\"x\")", "+1", "@cmd", -2.5, "dal"]])).toBe(
+    expect(toCsv([['=HYPERLINK("x")', '+1', '@cmd', -2.5, 'dal']])).toBe(
       `"'=HYPERLINK(""x"")",'+1,'@cmd,-2.5,dal`,
     );
   });

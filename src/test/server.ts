@@ -146,6 +146,19 @@ export class PGliteRemote implements RemoteStore {
     });
   }
 
+  async fetchRows(table: RemoteTable, keys: string[]): Promise<ServerRow[]> {
+    const key = ident(keyColumn(table));
+    return this.wrap(async () => {
+      const result = await this.server.asUser(this.userId, (tx) =>
+        tx.query<{ row: ServerRow }>(
+          `select to_jsonb(t) as row from public.${ident(table)} t where t.${key} = any($1::uuid[])`,
+          [keys],
+        ),
+      );
+      return result.rows.map((r) => r.row);
+    });
+  }
+
   async pull(table: RemoteTable, after: PullCursor | null, limit: number): Promise<ServerRow[]> {
     const key = ident(keyColumn(table));
     return this.wrap(async () => {

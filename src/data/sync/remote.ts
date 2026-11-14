@@ -26,6 +26,8 @@ export interface RemoteStore {
     cursors: Record<string, PullCursor | null>,
     limit: number,
   ): Promise<Record<string, ServerRow[]> | null>;
+  /** The rows with these keys (at most 100), to fetch again rows the phone once skipped. */
+  fetchRows?(table: RemoteTable, keys: string[]): Promise<ServerRow[]>;
 }
 
 /** The server does not have this function yet (PostgREST PGRST202, Postgres 42883). */

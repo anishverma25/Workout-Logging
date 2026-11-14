@@ -284,6 +284,13 @@ function whereClause(url: URL, params: unknown[]) {
       );
       continue;
     }
+    const list = /^in\.\((.*)\)$/.exec(value);
+    if (list) {
+      // PostgREST `in.(a,b)`: the rows with any of these keys (fetching skipped rows again).
+      params.push(list[1]!.split(',').map((v) => unquote(v.trim())));
+      parts.push(`${ident(key)}::text = any($${params.length}::text[])`);
+      continue;
+    }
     const m = /^(eq|gt|lt|gte|lte)\.(.*)$/.exec(value);
     if (!m) throw new RestError(400, 'PGRST100', `Unsupported filter ${key}=${value}`);
     const op = { eq: '=', gt: '>', lt: '<', gte: '>=', lte: '<=' }[m[1] as 'eq'];

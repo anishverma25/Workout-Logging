@@ -3,6 +3,8 @@ import { useLocation } from 'react-router';
 import { CloudOff, Info, RefreshCw } from 'lucide-react';
 import { InlineNotice, SecondaryButton } from '@/components/kit';
 import { useActiveWorkout } from '@/data/hooks';
+import { onUpgradedElsewhere } from '@/data/db';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/cn';
 import { applyUpdate, useOnline, usePwa } from '../pwa';
 
@@ -17,9 +19,12 @@ export function AppNotices() {
   const online = useOnline();
   const { updateReady } = usePwa();
   const { notice } = useAppFlags();
-  if (online && !updateReady && !notice) return null;
+  const [elsewhere, setElsewhere] = useState(false);
+  useEffect(() => onUpgradedElsewhere(() => setElsewhere(true)), []);
+  if (online && !updateReady && !notice && !elsewhere) return null;
   return (
     <>
+      {elsewhere ? <UpgradedElsewhere updateReady={updateReady} /> : null}
       {notice ? (
         <InlineNotice icon={<Info />} className="mt-3">
           <span data-app-notice>{notice}</span>
@@ -32,6 +37,31 @@ export function AppNotices() {
       ) : null}
       {updateReady ? <UpdateNotice /> : null}
     </>
+  );
+}
+
+/**
+ * Another tab opened a newer version and upgraded the database, so this tab's copy is closed.
+ * Reloading picks up the new version (through the waiting worker when there is one).
+ */
+function UpgradedElsewhere({ updateReady }: { updateReady: boolean }) {
+  return (
+    <div
+      role="alert"
+      data-upgraded-elsewhere
+      className="mt-3 flex min-h-12 items-center gap-3 rounded-nested border border-border bg-surface py-2 pr-2 pl-4"
+    >
+      <RefreshCw className="size-5 shrink-0 text-text-2" aria-hidden />
+      <p className="type-body min-w-0 flex-1 py-1 text-text-1">
+        Macrotrophy was updated in another tab. Reload to continue.
+      </p>
+      <SecondaryButton
+        compact
+        onClick={() => (updateReady ? applyUpdate() : window.location.reload())}
+      >
+        Reload
+      </SecondaryButton>
+    </div>
   );
 }
 
