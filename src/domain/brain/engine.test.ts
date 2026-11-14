@@ -402,8 +402,9 @@ describe('training', () => {
 
   it('says it is still learning in the first weeks', () => {
     const d = decideWeek(input(riya(-0.45, 3)));
-    expect(d.notes.at(-1)!.en).toBe(
-      'Learning your patterns, week 3 of 6. Until then the plan uses research defaults.',
+    // With the learning meter: this week's food days and weigh-ins toward what it asks for.
+    expect(d.notes.at(-1)!.en).toMatch(
+      /^Learning your patterns, week 3 of 6\. This week: [0-5] of 5 food days, [0-4] of 4 weigh-ins\. Until then the plan uses research defaults\.$/,
     );
   });
 });

@@ -14,6 +14,7 @@ import { formatCalendarDate } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { ProNudgeCard } from '@/features/pro/ProNudgeCard';
+import { TrialEndingCard } from '@/features/pro/TrialEndingCard';
 import { buildSessions, isAlive } from '@/domain/analytics/sessions';
 import { Highlights } from './Highlights';
 import { StrengthCard } from './StrengthCard';
@@ -75,6 +76,7 @@ export function HomePage() {
       <PageHeader title={title} eyebrow={formatCalendarDate(now)} compactTitle="Home" />
       {training.status === 'success' && !ownProfile ? <SetupPrompt /> : null}
       {model ? <ProNudgeCard workoutDates={workoutDates} records={model.recentPrCount} /> : null}
+      {training.data ? <TrialEndingCard data={training.data} /> : null}
 
       {model ? (
         <NowCard training={training} today={model.today} now={now} wrappedMonth={wrappedMonth} />

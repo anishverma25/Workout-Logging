@@ -21,6 +21,7 @@ import { RestCard } from '@/features/shared/RestCard';
 import { MuscleMapCard } from '@/features/shared/MuscleMapCard';
 import { WorkoutBurnCard } from '@/features/shared/WorkoutBurnCard';
 import { RefuelCard } from './RefuelCard';
+import { FirstWorkoutCard } from './FirstWorkoutCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { ErrorState, Skeleton } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
@@ -281,6 +282,11 @@ export function SummaryPage() {
       </BottomSheet>
 
       <MuscleMapCard exercises={muscleLogs} sex={training.data.profile?.sex} className="mt-8" />
+      {training.data.workouts.filter(
+        (w) => w.deletedAt === null && w.origin === 'user' && w.status === 'completed',
+      ).length === 1 && session.workout.origin === 'user' ? (
+        <FirstWorkoutCard session={session} data={training.data} className="mt-4" />
+      ) : null}
       <WorkoutBurnCard
         workout={session.workout}
         sets={session.exercises.flatMap((e) => e.sets)}

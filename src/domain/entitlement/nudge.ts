@@ -72,7 +72,7 @@ export const FREE_PROGRESS_DAYS = 30;
  * The reminders, best first. Each one is only offered when its own number is real, so a person
  * with no history and no records is never shown a made-up reason to pay.
  */
-function candidates(f: NudgeFacts): Nudge[] {
+export function candidates(f: NudgeFacts): Nudge[] {
   const out: Nudge[] = [];
   if (f.historyDays > FREE_PROGRESS_DAYS + 14) {
     out.push({

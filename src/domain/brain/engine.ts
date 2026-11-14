@@ -1,3 +1,4 @@
+import { LEARNING_FOOD_DAYS, LEARNING_WEIGH_INS } from '../onboarding/firstDays';
 import { GOAL_PROTEIN, targetRate } from '../analytics/body';
 import { unsafeTarget } from '../analytics/goalPlan';
 import { muscleName } from '../analytics/weekly';
@@ -858,11 +859,16 @@ export function decideWeek(input: DecideInput): Decision {
     });
   }
 
-  if (model.stage.learning)
+  if (model.stage.learning) {
+    // The learning meter (batch 9): how far along, and this week's logging toward it.
+    const thisWeek = input.weeks.at(-1);
+    const food = Math.min(thisWeek?.foodDays ?? 0, LEARNING_FOOD_DAYS);
+    const weighs = Math.min(thisWeek?.weighIns ?? 0, LEARNING_WEIGH_INS);
     notes.push({
-      en: `Learning your patterns, week ${Math.max(1, model.stage.week)} of ${model.stage.of}. Until then the plan uses research defaults.`,
-      hi: `Aapke patterns seekh raha hai, hafta ${Math.max(1, model.stage.week)} of ${model.stage.of}. Tab tak plan research defaults par chalega.`,
+      en: `Learning your patterns, week ${Math.max(1, model.stage.week)} of ${model.stage.of}. This week: ${food} of ${LEARNING_FOOD_DAYS} food days, ${weighs} of ${LEARNING_WEIGH_INS} weigh-ins. Until then the plan uses research defaults.`,
+      hi: `Aapke patterns seekh raha hai, hafta ${Math.max(1, model.stage.week)} of ${model.stage.of}. Is hafte: ${food} of ${LEARNING_FOOD_DAYS} food days, ${weighs} of ${LEARNING_WEIGH_INS} weigh-ins. Tab tak plan research defaults par chalega.`,
     });
+  }
 
   return {
     weekStart: input.nextWeekStart,
