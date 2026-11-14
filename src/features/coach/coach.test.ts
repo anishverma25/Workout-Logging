@@ -111,7 +111,7 @@ describe('requests', () => {
     });
     expect(m.map((x) => x.role)).toEqual(['user', 'assistant', 'user']);
     expect(m[2]!.text).toContain('Bench: 80 kg x 6');
-    expect(m[2]!.text).toContain('Question: Why?');
+    expect(m[2]!.text).toContain('Question: <user_data>\nWhy?\n</user_data>');
   });
 });
 
@@ -535,7 +535,7 @@ describe('reply language', () => {
       brief: 'Person: goal hypertrophy.',
       history: [],
     });
-    expect(msg!.text).toMatch(/^Question: bench kyu nahi badh raha\?$/m);
+    expect(msg!.text).toMatch(/^bench kyu nahi badh raha\?$/m);
     expect(msg!.text).toMatch(/^Reply in: Hinglish/m);
   });
 

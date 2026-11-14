@@ -17,7 +17,14 @@ import { buildProgress } from '@/domain/analytics/progress';
 import { useNow } from '@/lib/useNow';
 import { nutritionBrief, useFoodContextFrom } from '../food/useFoodContext';
 import { buildBrief, suggestedQuestions, type BriefInput } from './brief';
-import { AiByline, CoachConsent, CoachLock, CoachText, Thinking } from './CoachParts';
+import {
+  AiByline,
+  CoachConsent,
+  CoachLock,
+  CoachText,
+  ReportAnswer,
+  Thinking,
+} from './CoachParts';
 
 /**
  * Ask your coach: a chat about your own training. Each question carries a brief of the last
@@ -341,6 +348,7 @@ function Bubble({ role, text }: { role: 'user' | 'coach'; text: string }) {
     <div className="ai-surface rounded-panel p-4 lg:p-5">
       <AiByline />
       <CoachText text={text} />
+      <ReportAnswer className="mt-3" />
     </div>
   );
 }

@@ -159,6 +159,7 @@ function ExplainAnswer({ topic, getBrief }: { topic: CoachTopic; getBrief: () =>
       <AiByline />
       <CoachText text={state.text} />
       <CoachFootnote />
+      <ReportAnswer className="mt-2" />
       <TextLink to="/coach" small chevron className="mt-3" icon={<MessageCircle />}>
         Ask a follow-up
       </TextLink>
@@ -289,6 +290,22 @@ export function AiByline({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Lets the person flag an answer that is wrong or unsafe. It opens feedback with a short note
+ * prefilled; the answer itself is never sent unless they paste it in.
+ */
+export function ReportAnswer({ className }: { className?: string }) {
+  return (
+    <TextLink
+      small
+      className={className}
+      to={`/feedback?tag=bug&screen=ai-answer&message=${encodeURIComponent('About a Macrotrophy AI answer: ')}`}
+    >
+      Report this answer
+    </TextLink>
+  );
+}
+
 export function CoachFootnote({ className }: { className?: string }) {
   return (
     <p className={cn('type-caption mt-4 text-text-2', className)}>
@@ -305,8 +322,10 @@ export function CoachConsent({ onDone }: { onDone?: () => void }) {
       <h3 className="type-headline text-text-1">Turn on Macrotrophy AI</h3>
       <ul className="type-meta mt-3 flex list-disc flex-col gap-2 pl-5 text-text-2">
         <li>
-          To answer, the numbers it needs (your sets, records, body weight and goals) and your
-          question are sent to a third-party AI service. Your name and email are never sent.
+          To answer, what it needs is sent to a third-party AI service: your question, your sets
+          and records, body weight, goals, sex, age and height, your food log and food names, your
+          plan, anything you told it to remember and any pain you reported. Your name and email
+          are never sent.
         </li>
         <li>
           That service may keep what is sent and use it to improve its products, so do not type

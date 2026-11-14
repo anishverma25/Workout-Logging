@@ -276,8 +276,8 @@ export function PhotoFoodLog({
       ) : null}
 
       <p className="type-caption text-text-3">
-        The photo goes to a third-party AI service to work out the food, then it is gone:
-        Macrotrophy does not keep it. Up to {PHOTOS_PER_DAY} photos a day.
+        The photo goes to a third-party AI service to work out the food. Macrotrophy does not keep
+        it, but that service may keep what is sent. Up to {PHOTOS_PER_DAY} photos a day.
       </p>
     </div>
   );

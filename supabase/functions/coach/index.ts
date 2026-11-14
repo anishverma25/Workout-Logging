@@ -108,6 +108,8 @@ Deno.serve(async (req) => {
         subscription: () => subscription,
         // Today's AI uses for this person (migration 0028), claimed as the service role for the
         // user checked above, so nobody can call the counter directly.
+        // Answers are signed with a key only the server knows (A5).
+        signingKey: env('COACH_SIGNING_KEY') || env('SUPABASE_SERVICE_ROLE_KEY'),
         quota: {
           async claim(kind) {
             const { data: left, error: claimError } = await admin.rpc('ai_claim', {

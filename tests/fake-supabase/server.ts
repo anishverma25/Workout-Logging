@@ -648,6 +648,7 @@ async function handleCoachRoute(req: IncomingMessage, res: ServerResponse) {
           const q = await tx.query<{ r: unknown }>('select public.get_my_subscription() as r');
           return q.rows[0]?.r ?? null;
         }),
+      signingKey: 'fake-coach-signing-key',
       quota: {
         claim: async (kind) => {
           const left = await billingDeps.rpc('ai_claim', { p_user: claims.sub, p_kind: kind });
