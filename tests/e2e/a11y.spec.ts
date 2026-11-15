@@ -154,7 +154,7 @@ test('keyboard: a sheet opens, Escape closes it and focus returns; confirm start
   await expect(page.getByRole('button', { name: 'Add exercise' })).toBeVisible();
   // Moving to another page puts focus on its heading and names the tab.
   await page.goto('/history');
-  await page.getByRole('link', { name: 'Progress' }).first().click();
+  await page.getByRole('link', { name: 'Progress', exact: true }).first().click();
   await expect(page.locator('#main h1')).toBeFocused();
   await expect(page).toHaveTitle(/Progress · Macrotrophy/);
 });

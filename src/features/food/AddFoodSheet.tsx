@@ -441,7 +441,9 @@ function AddFoodBody({
         {query.trim() ? (
           <Results
             rows={rows}
-            query={searchQuery}
+            // The first letters are searched at once: a deferred "" would list every food.
+            query={searchQuery.trim() ? searchQuery : query}
+            stale={!!searchQuery.trim() && searchQuery !== query}
             pro={pro}
             onCreate={() => onCreateFood(query.trim())}
             onAsk={() => leave({ kind: 'type', text: query.trim() })}
@@ -580,12 +582,15 @@ const DIET_WORD = {
 function Results({
   rows,
   query,
+  stale = false,
   pro,
   onCreate,
   onAsk,
 }: {
   rows: RowProps;
   query: string;
+  /** The list is still for what was typed a moment ago: it cannot be tapped until it catches up. */
+  stale?: boolean;
   pro: boolean;
   onCreate: () => void;
   /** Opens Macrotrophy AI with the search already typed in. */
@@ -605,7 +610,11 @@ function Results({
     [results.length, ctx.foods, query, ctx.diet],
   );
   return (
-    <div data-food-results>
+    <div
+      data-food-results
+      aria-busy={stale || undefined}
+      className={cn(stale && 'pointer-events-none')}
+    >
       {results.length ? (
         <ul className="flex flex-col">
           {results.map((f) => (
