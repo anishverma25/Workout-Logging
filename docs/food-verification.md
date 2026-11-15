@@ -216,21 +216,21 @@ platters were left out: they are several dishes, logged one by one.
 
 Amul (amul.com product pages, November 2026), stored as printed:
 
-| Product | Basis | kcal | Protein | Carbs | Fat |
-| --- | --- | --- | --- | --- | --- |
-| Kool Protein milkshake (chocolate, coffee, kesar) | 180 ml | 133 | 10 | 25 | 2.7 |
-| Protein lassi (plain, rose) | 200 ml | 107 | 15 | 12 | 1.7 |
-| High protein blueberry shake | 200 ml | 138 | 20 | rest | low |
-| Whey protein, plain | 100 g (32 g sachet) | 400 | 78 | 10.8 | 5 |
-| Whey protein, chocolate | 100 g (34 g sachet) | 383 | 74 | 10.6 | 5 |
-| High protein paneer | 100 g | 170 | 25 | 4 | 6 |
-| High protein kulfi | 60 g | 57 | 10 | | |
-| Gold milk | 100 ml | 86 | 3.1 | 5 | 6 |
-| Shakti / T-Special | 100 ml | 71 | 3 | 4.7 | 4.5 |
-| Slim n Trim | 100 ml | 46 | 3.1 | 5 | 1.5 |
-| Cow / A2 | 100 ml | 62 | 3 | 4.7 | 3.5 |
-| Buffalo | 100 ml | 91 | 3.2 | 5 | 6.5 |
-| Moti (toned) | 100 ml | 61 | 3.5 | 5 | 3 |
+| Product                                           | Basis               | kcal | Protein | Carbs | Fat |
+| ------------------------------------------------- | ------------------- | ---- | ------- | ----- | --- |
+| Kool Protein milkshake (chocolate, coffee, kesar) | 180 ml              | 133  | 10      | 25    | 2.7 |
+| Protein lassi (plain, rose)                       | 200 ml              | 107  | 15      | 12    | 1.7 |
+| High protein blueberry shake                      | 200 ml              | 138  | 20      | rest  | low |
+| Whey protein, plain                               | 100 g (32 g sachet) | 400  | 78      | 10.8  | 5   |
+| Whey protein, chocolate                           | 100 g (34 g sachet) | 383  | 74      | 10.6  | 5   |
+| High protein paneer                               | 100 g               | 170  | 25      | 4     | 6   |
+| High protein kulfi                                | 60 g                | 57   | 10      |       |     |
+| Gold milk                                         | 100 ml              | 86   | 3.1     | 5     | 6   |
+| Shakti / T-Special                                | 100 ml              | 71   | 3       | 4.7   | 4.5 |
+| Slim n Trim                                       | 100 ml              | 46   | 3.1     | 5     | 1.5 |
+| Cow / A2                                          | 100 ml              | 62   | 3       | 4.7   | 3.5 |
+| Buffalo                                           | 100 ml              | 91   | 3.2     | 5     | 6.5 |
+| Moti (toned)                                      | 100 ml              | 61   | 3.5     | 5     | 3   |
 
 - The Kool Protein page prints 133 kcal for values that add up to about 165; the label is kept
   as printed (`asPrinted` in `regional.test.ts`). Vanilla has no page of its own and uses its

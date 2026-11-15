@@ -19,6 +19,9 @@ test('a new account imports from Hevy, checks the matches, and carries on in set
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
 
+  // Sign up opens setup, which offers the import on its first step.
+  await expect(page).toHaveURL(/\/setup/);
+  await page.getByRole('link', { name: 'Bring your history first' }).click();
   await expect(page.getByRole('heading', { name: 'Coming from another app?' })).toBeVisible();
   await page.getByRole('radio', { name: /^Hevy/ }).click();
   await page.getByRole('button', { name: 'Continue with Hevy' }).click();

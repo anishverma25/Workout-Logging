@@ -1,3 +1,4 @@
+import { FREE_PROGRESS_DAYS, FREE_ROUTINES } from './limits';
 import { z } from 'zod';
 
 /**
@@ -8,7 +9,7 @@ import { z } from 'zod';
  * server's own clock, so changing the device clock, local storage or the URL changes nothing.
  */
 
-export const TRIAL_HOURS = 168;
+export { TRIAL_DAYS, TRIAL_HOURS } from './limits';
 
 const ts = z
   .string()
@@ -64,6 +65,8 @@ export interface Entitlement {
   paymentReference: string | null;
   /** Time left in the current trial or Pro period. */
   remainingMs: number | null;
+  /** This account's trial length in hours (168 before 15 November 2026, 336 after). */
+  trialHours: number | null;
   /** Joined during early access. */
   foundingMember: boolean;
   /** The paid plan, when Pro comes from a Razorpay subscription. */
@@ -93,6 +96,7 @@ const GUEST: Entitlement = {
   paymentPending: false,
   paymentReference: null,
   remainingMs: null,
+  trialHours: null,
   foundingMember: false,
   billingPlan: null,
   renews: false,
@@ -128,6 +132,10 @@ export function resolveEntitlement(sub: SubscriptionSnapshot | null, now: Date):
     paymentPending: sub.status === 'payment_pending' && !proActive && !founding,
     paymentReference: sub.payment_reference,
     remainingMs: endsAt ? Math.max(0, endsAt.getTime() - t) : null,
+    trialHours:
+      sub.trial_started_at && sub.trial_expires_at
+        ? Math.round((sub.trial_expires_at.getTime() - sub.trial_started_at.getTime()) / 3_600_000)
+        : null,
     foundingMember: sub.founding_member,
     billingPlan: sub.billing_plan,
     paidOnce: !!sub.billing_plan && sub.billing_kind === 'once',
@@ -183,18 +191,16 @@ export type ProFeature =
 export const PRO_FEATURES: Record<ProFeature, { title: string; description: string }> = {
   long_range: {
     title: '30-day, 90-day and all-time trends',
-    description:
-      'Free shows your last 7 days. Pro shows strength, volume and consistency across months.',
+    description: `Free shows your last ${FREE_PROGRESS_DAYS} days. Pro shows strength, volume and consistency across months.`,
   },
   unlimited_routines: {
     title: 'Unlimited routines',
-    description:
-      'Free keeps 2 routines. Pro keeps as many as you like: a cut, a bulk, a travel plan.',
+    description: `Free keeps ${FREE_ROUTINES} routines. Pro keeps as many as you like: a cut, a bulk, a travel plan.`,
   },
   macro_tracking: {
     title: 'Protein, carbs, fat and fibre',
     description:
-      'Free counts calories. Pro tracks protein, carbs, fat and fibre against your targets, and tells you what to eat next.',
+      "Every food shows its protein, carbs, fat and fibre. Pro tracks your day's protein, carbs and fat against your targets, and tells you what to eat next.",
   },
   gym_tools: {
     title: 'Gym tools',
@@ -298,11 +304,11 @@ export const PRO_FEATURES: Record<ProFeature, { title: string; description: stri
 export const FREE_FEATURES = [
   'Unlimited workout logging with last time beside every set',
   'Your full workout history and every personal record',
-  '2 routines, from any template or built your own',
+  `${FREE_ROUTINES} routines, from any template or built your own`,
   'Indian food logging with calories, by the katori, plate or roti',
   'A group, a duel a week and the global leaderboard',
   'Body weight, goals and progress photos',
-  'Progress for the last 7 days',
+  `Progress for the last ${FREE_PROGRESS_DAYS} days`,
   'Backup and sync across your devices',
 ];
 

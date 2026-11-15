@@ -1,3 +1,4 @@
+import { TRIAL_DAYS } from '../domain/entitlement/limits';
 /**
  * The pages anyone can open without an account, with what search engines and link previews
  * show for each. One list serves three places:
@@ -34,8 +35,7 @@ export interface PublicPage {
 export const HOME_PAGE: PublicPage = {
   path: '/',
   title: 'Macrotrophy: Workout Tracker, Indian Food Calorie Counter',
-  description:
-    'Log every set and every Indian meal in one app. Macrotrophy plans your next week from both, with an AI coach and a weekly report. 7 days of Pro free.',
+  description: `Log every set and every Indian meal in one app. Macrotrophy plans your next week from both, with Macrotrophy AI and a weekly report. ${TRIAL_DAYS} days of Pro free.`,
   inSitemap: true,
 };
 

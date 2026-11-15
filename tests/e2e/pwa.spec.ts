@@ -67,7 +67,8 @@ test('opens and works offline after the first visit', async ({ page, context }) 
   await page.getByRole('textbox', { name: 'Email' }).fill(`pwa-off-${Date.now()}@example.com`);
   await page.getByLabel('Password', { exact: true }).fill('correct-horse-9');
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page).toHaveURL(/\/import\?welcome=1/);
+  // A new account opens setup first.
+  await expect(page).toHaveURL(/\/setup/);
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await waitForServiceWorker(page);
@@ -107,6 +108,8 @@ test('caches only the app itself, never account or training data from the server
   await page.getByRole('textbox', { name: 'Email' }).fill(`pwa-${Date.now()}@example.com`);
   await page.getByLabel('Password', { exact: true }).fill('correct-horse-9');
   await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page).toHaveURL(/\/setup/);
+  await page.getByRole('button', { name: 'Not now' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Account', exact: true })).toBeVisible();
   await expect(page.getByRole('status', { name: 'Sync status' })).toContainText(
     'Synced to your account',

@@ -1,4 +1,7 @@
+import { isHardSet } from '@/domain/analytics/muscles';
+import { isWorkingSet } from '@/domain/analytics/sessions';
 import { wrapped, wrappedDue } from '@/domain/share/wrapped';
+import { useAccount } from '@/app/account';
 import { wrappedSeen } from '../wrapped/seen';
 import { NowCard } from './NowCard';
 import { useMemo, useState } from 'react';
@@ -14,6 +17,7 @@ import { formatCalendarDate } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { ProNudgeCard } from '@/features/pro/ProNudgeCard';
+import { TrialEndingCard } from '@/features/pro/TrialEndingCard';
 import { buildSessions, isAlive } from '@/domain/analytics/sessions';
 import { Highlights } from './Highlights';
 import { StrengthCard } from './StrengthCard';
@@ -42,7 +46,8 @@ export function HomePage() {
     [training.data],
   );
 
-  // This week's sets, spread over the muscles they work, for the small map at the end of Home.
+  // This week's hard sets (the same sets Progress, the report and the Brain count, batch 20),
+  // spread over the muscles they work, for the small map at the end of Home.
   const weekMuscles = useMemo(() => {
     if (!training.data) return [];
     const start = startOfWeek(now, prefs.weekStartsOn);
@@ -52,7 +57,7 @@ export function HomePage() {
         s.exercises.map((e) => ({
           exerciseId: e.workoutExercise.exerciseId,
           exercise: e.exercise,
-          sets: e.sets,
+          sets: e.sets.filter((set) => isWorkingSet(set) && isHardSet(set)),
         })),
       );
   }, [training.data, now, prefs.weekStartsOn]);
@@ -63,11 +68,13 @@ export function HomePage() {
   const dayOfMonth = now.getDate();
   const monthNow = now.getMonth();
   const yearNow = now.getFullYear();
+  const account = useAccount();
+  const accountId = account.status === 'signedIn' ? (account.user?.id ?? null) : null;
   const wrappedMonth = useMemo(() => {
     if (!training.data || dayOfMonth > 5) return null;
     const w = wrapped(training.data, wrappedDue(new Date(yearNow, monthNow, dayOfMonth)).month);
-    return w && !wrappedSeen().includes(w.key) ? w.label : null;
-  }, [training.data, dayOfMonth, monthNow, yearNow]);
+    return w && !wrappedSeen(accountId).includes(w.key) ? w.label : null;
+  }, [training.data, dayOfMonth, monthNow, yearNow, accountId]);
   const routineName = training.data ? (activeRoutine(training.data.routines)?.name ?? null) : null;
 
   return (
@@ -75,6 +82,7 @@ export function HomePage() {
       <PageHeader title={title} eyebrow={formatCalendarDate(now)} compactTitle="Home" />
       {training.status === 'success' && !ownProfile ? <SetupPrompt /> : null}
       {model ? <ProNudgeCard workoutDates={workoutDates} records={model.recentPrCount} /> : null}
+      {training.data ? <TrialEndingCard data={training.data} /> : null}
 
       {model ? (
         <NowCard training={training} today={model.today} now={now} wrappedMonth={wrappedMonth} />
@@ -155,7 +163,7 @@ export function HomePage() {
               <MuscleMapCard
                 exercises={weekMuscles}
                 sex={training.data?.profile?.sex}
-                title="Muscles this week"
+                title="Hard sets this week"
                 compact
               />
             ) : null}

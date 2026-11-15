@@ -181,8 +181,8 @@ Do every step. If anything looks wrong, take a screenshot and send it to me.
 9. Turn flight mode **off**. Within a few seconds it should say **Synced to your account**.
 10. On your laptop, open your address, sign in with the same account, and open **History**. The workout should be there with the same numbers.
 11. Sign out on the laptop, tap **Forgot your password?**, and complete the reset from the email.
-12. Open **Pro** on your phone. It should show **Free trial** with about 7 days left.
-13. In Supabase **Table Editor**, open `workouts` and `sets`: your workout is there. Open `subscriptions`: your row shows a trial ending 168 hours after you signed up.
+12. Open **Pro** on your phone. It should show **Free trial** with about 14 days left.
+13. In Supabase **Table Editor**, open `workouts` and `sets`: your workout is there. Open `subscriptions`: your row shows a trial ending 336 hours (14 days) after you signed up.
 
 ---
 
@@ -201,7 +201,7 @@ Invite 3 or 4 friends first. After two or three days with no problems, invite th
 > 3. Create an account (check spam for the confirmation email).
 > 4. Set up your profile, pick a routine under Routines, and log your next gym sessions in it.
 >
-> You get 7 days of Pro free, and your workout history always stays yours. It works without signal at the gym and syncs later.
+> You get 14 days of Pro free, and your workout history always stays yours. It works without signal at the gym and syncs later.
 >
 > Please tell me anything that felt slow, confusing or wrong. Screenshots help a lot.
 

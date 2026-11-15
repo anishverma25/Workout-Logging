@@ -29,6 +29,7 @@
   /* Legacy screens read text-danger and bg-danger as the AA-safe text red until Part 7. */
   --color-danger: var(--danger-text);
   --color-danger-soft: var(--danger-soft);
+  --color-danger-fill: var(--danger-fill);
   --color-ring-1: var(--ring-1);
   --color-ring-2: var(--ring-2);
   --color-ring-3: var(--ring-3);
@@ -992,6 +993,263 @@ html[data-landing] #landing {
 }
 @media (prefers-reduced-motion: reduce) {
   .release-wave {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * First impressions (November 2026): sign-in picture, reviews, building the plan, the Pro offer.
+ * ------------------------------------------------------------------------------------------- */
+
+/* Sign-up and sign-in: three real screens in phone frames, fanned out. */
+.auth-art-grid {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--text-1) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--text-1) 4%, transparent) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: radial-gradient(70% 60% at 50% 40%, #000, transparent 75%);
+  mask-image: radial-gradient(70% 60% at 50% 40%, #000, transparent 75%);
+}
+.auth-art-fade {
+  background: linear-gradient(to bottom, transparent, var(--surface));
+}
+.auth-phone {
+  position: absolute;
+  left: 50%;
+  width: var(--pw);
+  aspect-ratio: 390 / 794;
+  border-radius: calc(var(--pw) * 0.16);
+  padding: calc(var(--pw) * 0.03);
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--text-1) 14%, transparent),
+    0 24px 60px -18px rgb(0 0 0 / 0.9),
+    0 0 80px -30px var(--lime);
+  overflow: hidden;
+  animation: auth-phone-float 7s ease-in-out infinite;
+}
+.auth-phone img {
+  border-radius: calc(var(--pw) * 0.13);
+}
+.auth-phone-center {
+  --pw: 9.5rem;
+  top: 1.75rem;
+  z-index: 3;
+  --rot: 0deg;
+  --dx: -50%;
+}
+.auth-phone-left {
+  --pw: 7.75rem;
+  top: 3.5rem;
+  z-index: 2;
+  --rot: -9deg;
+  --dx: calc(-50% - 7.25rem);
+  opacity: 0.88;
+  animation-delay: -2.3s;
+}
+.auth-phone-right {
+  --pw: 7.75rem;
+  top: 3.5rem;
+  z-index: 2;
+  --rot: 9deg;
+  --dx: calc(-50% + 7.25rem);
+  opacity: 0.88;
+  animation-delay: -4.6s;
+}
+.auth-phone {
+  transform: translateX(var(--dx)) rotate(var(--rot));
+}
+@keyframes auth-phone-float {
+  0%,
+  100% {
+    transform: translateX(var(--dx)) translateY(0) rotate(var(--rot));
+  }
+  50% {
+    transform: translateX(var(--dx)) translateY(-6px) rotate(var(--rot));
+  }
+}
+.auth-chip-rating {
+  left: 1rem;
+  top: 1rem;
+  z-index: 4;
+}
+.auth-chip-made {
+  right: 1.25rem;
+  bottom: 2rem;
+  z-index: 4;
+}
+@media (min-width: 40rem) {
+  .auth-phone-center {
+    --pw: 11rem;
+  }
+  .auth-phone-left,
+  .auth-phone-right {
+    --pw: 9rem;
+  }
+  .auth-phone-left {
+    --dx: calc(-50% - 9rem);
+  }
+  .auth-phone-right {
+    --dx: calc(-50% + 9rem);
+  }
+}
+@media (min-width: 64rem) {
+  .auth-phone-center {
+    --pw: 14.5rem;
+    top: 50%;
+    margin-top: calc(var(--pw) * -1.018);
+  }
+  .auth-phone-left,
+  .auth-phone-right {
+    --pw: 11.5rem;
+    top: 50%;
+    margin-top: calc(var(--pw) * -0.9);
+  }
+  .auth-phone-left {
+    --dx: calc(-50% - 10.5rem);
+  }
+  .auth-phone-right {
+    --dx: calc(-50% + 10.5rem);
+  }
+  .auth-chip-rating {
+    left: 1.5rem;
+    top: 1.5rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-phone {
+    animation: none;
+  }
+}
+
+/* Reviews: a warm light behind the rating, and bars that fill from the left. */
+.review-hero {
+  background: radial-gradient(80% 120% at 0% 0%, var(--gold-dim), transparent 60%), var(--surface);
+}
+@keyframes review-bar {
+  from {
+    transform: scaleX(0);
+  }
+}
+.review-bar {
+  transform-origin: left;
+  animation: review-bar 700ms var(--ease-standard) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .review-bar {
+    animation: none;
+  }
+}
+
+/* Building the plan: a ring that fills as each real step finishes, with a slow glow. */
+.build-ring-track {
+  stroke: var(--track);
+}
+.build-ring-fill {
+  stroke: var(--lime);
+  transition: stroke-dashoffset 600ms var(--ease-standard);
+  filter: drop-shadow(0 0 10px color-mix(in oklab, var(--lime) 55%, transparent));
+}
+@keyframes build-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.build-orbit {
+  transform-origin: center;
+  animation: build-orbit 2.4s linear infinite;
+}
+@keyframes build-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+.build-glow {
+  background: radial-gradient(50% 50% at 50% 50%, var(--lime-dim), transparent 70%);
+  animation: build-breathe 2.6s ease-in-out infinite;
+}
+@keyframes build-done {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+.build-done {
+  animation: build-done 520ms var(--ease-snap) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .build-orbit,
+  .build-glow {
+    animation: none;
+  }
+  .build-ring-fill {
+    transition: none;
+  }
+}
+
+/* The Pro offer after setup: a lit header and a gently shining best plan. */
+.offer-hero {
+  background:
+    radial-gradient(
+      70% 80% at 50% 0%,
+      color-mix(in oklab, var(--lime) 22%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(40% 50% at 90% 10%, var(--gold-dim), transparent 70%);
+}
+
+/* Reviews, premium: a quote panel lit from one corner, story bars, a soft change of quote. */
+.quote-spot {
+  background:
+    radial-gradient(90% 70% at 0% 0%, var(--gold-dim), transparent 60%),
+    radial-gradient(70% 60% at 100% 100%, var(--lime-dim), transparent 65%), var(--surface);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--text-1) 10%, transparent),
+    0 30px 60px -30px rgb(0 0 0 / 0.8);
+}
+@keyframes quote-run {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+.quote-run {
+  animation: quote-run linear both;
+}
+@keyframes quote-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(4px);
+  }
+}
+.quote-in {
+  animation: quote-in 520ms var(--ease-standard) both;
+}
+@keyframes laurel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+.laurel-in {
+  animation: laurel-in 600ms var(--ease-snap) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .quote-in,
+  .laurel-in {
     animation: none;
   }
 }

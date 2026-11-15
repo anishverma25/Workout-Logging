@@ -533,7 +533,7 @@ describe('billing', () => {
   });
 
   it('a renewing member must turn renewal off before changing; then both ways are open', async () => {
-    const user = await server.createUser('switch@example.com');
+    const user = await server.createUser('switch-plan@example.com');
     const first = (await handleSubscribe(deps(), user, { plan: 'monthly' })).body
       .subscription_id as string;
     await activate(first, 30, 'evt_sw1');
@@ -891,5 +891,227 @@ describe('billing', () => {
     await expect(
       server.asUser(free, (tx) => tx.query('select public.billing_mark_early_members()')),
     ).rejects.toThrow();
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // Launch safety (migration 0028): no orphaned payments, failed webhooks retried, refunds
+  // recorded, cancelling every live state, no deletion while autopay can charge.
+  // -------------------------------------------------------------------------------------------
+
+  const orphans = async () =>
+    (
+      await server.pg.query<{ kind: string; razorpay_id: string; action: string }>(
+        'select kind, razorpay_id, action from public.billing_orphans order by id',
+      )
+    ).rows;
+  const liveSubs = (user: string) =>
+    [...subs.values()].filter(
+      (x) => x.notes.user_id === user && !['cancelled', 'completed', 'expired'].includes(x.status),
+    );
+
+  it('subscribe twice before paying: the same subscription is offered, so only one can charge', async () => {
+    const user = await server.createUser('twice@example.com');
+    const a = await handleSubscribe(deps(), user, { plan: 'monthly' });
+    const b = await handleSubscribe(deps(), user, { plan: 'monthly' });
+    expect(b.body.subscription_id).toBe(a.body.subscription_id);
+    expect(b.body.reused).toBe(true);
+    expect(liveSubs(user)).toHaveLength(1);
+    Object.assign(subs.get(a.body.subscription_id as string)!, {
+      status: 'active',
+      current_end: Math.floor((Date.now() + 30 * DAY) / 1000),
+    });
+    expect((await verifySub(user, a.body.subscription_id as string, 'pay_twice')).status).toBe(200);
+    expect(near((await mine(user)).pro_expires_at, Date.now() + 30 * DAY)).toBe(true);
+  });
+
+  it('a different plan cancels the unpaid one at Razorpay first', async () => {
+    const user = await server.createUser('launch-switch@example.com');
+    const a = await handleSubscribe(deps(), user, { plan: 'monthly' });
+    const b = await handleSubscribe(deps(), user, { plan: 'yearly' });
+    expect(b.body.subscription_id).not.toBe(a.body.subscription_id);
+    expect(cancelledNow).toContain(a.body.subscription_id);
+    expect(liveSubs(user).map((x) => x.id)).toEqual([b.body.subscription_id]);
+  });
+
+  it('paid, confirmation lost, pay again: told it is already paid, and nothing new is created', async () => {
+    const user = await server.createUser('lost@example.com');
+    const a = await handleSubscribe(deps(), user, { plan: 'quarterly' });
+    const id = a.body.subscription_id as string;
+    // Razorpay took the money; the phone never confirmed.
+    Object.assign(subs.get(id)!, {
+      status: 'active',
+      current_end: Math.floor((Date.now() + 91 * DAY) / 1000),
+    });
+    const before = subs.size;
+    const again = await handleSubscribe(deps(), user, { plan: 'quarterly' });
+    expect(again.status).toBe(200);
+    expect(again.body.already_paid).toBe(true);
+    expect(subs.size).toBe(before);
+    expect(near((await mine(user)).pro_expires_at, Date.now() + 91 * DAY)).toBe(true);
+    // Paying once instead also finds it paid.
+    const once = await handleOrder(deps(), user, { plan: 'monthly' });
+    expect(once.status).toBe(409);
+  });
+
+  it('a charge for a subscription the account no longer stores is adopted when nothing else is live', async () => {
+    const user = await server.createUser('adopt@example.com');
+    const orphan: FakeSub = {
+      id: `sub_orphan${++counter}`,
+      status: 'active',
+      current_end: Math.floor((Date.now() + 30 * DAY) / 1000),
+      notes: { user_id: user, plan: 'monthly' },
+      plan_id: 'plan_M',
+    };
+    subs.set(orphan.id, orphan);
+    const r = await webhook('subscription.charged', orphan, `evt_adopt_${counter}`);
+    expect(r.body.adopted).toBe(true);
+    expect(await mine(user)).toMatchObject({ billing_plan: 'monthly', status: 'active' });
+    expect(near((await mine(user)).pro_expires_at, Date.now() + 30 * DAY)).toBe(true);
+  });
+
+  it('a charge with no account to give it to is recorded and stopped at Razorpay', async () => {
+    const user = await server.createUser('busy@example.com');
+    const a = await handleSubscribe(deps(), user, { plan: 'yearly' });
+    await activate(a.body.subscription_id as string, 365, 'evt_busy_1');
+    const stray: FakeSub = {
+      id: `sub_stray${++counter}`,
+      status: 'active',
+      current_end: Math.floor((Date.now() + 30 * DAY) / 1000),
+      notes: { user_id: user, plan: 'monthly' },
+      plan_id: 'plan_M',
+    };
+    subs.set(stray.id, stray);
+    const r = await webhook('subscription.charged', stray, `evt_stray_${counter}`);
+    expect(r.body.orphan).toBe(true);
+    expect(cancelledNow).toContain(stray.id);
+    expect(await orphans()).toContainEqual({
+      kind: 'orphan',
+      razorpay_id: stray.id,
+      action: 'cancelled',
+    });
+    // The account keeps its own yearly plan.
+    expect((await mine(user)).billing_plan).toBe('yearly');
+  });
+
+  it('without an end date from Razorpay, Pro is given for 3 days until the charge says more', async () => {
+    const user = await server.createUser('noend@example.com');
+    const a = await handleSubscribe(deps(), user, { plan: 'yearly' });
+    const id = a.body.subscription_id as string;
+    subs.get(id)!.status = 'active';
+    expect((await verifySub(user, id, 'pay_noend')).status).toBe(200);
+    expect(near((await mine(user)).pro_expires_at, Date.now() + 3 * DAY, DAY / 2)).toBe(true);
+    // The charge event, still without an end: a whole year, because the charge is certain.
+    await webhook('subscription.charged', subs.get(id)!, 'evt_noend_charge');
+    expect(near((await mine(user)).pro_expires_at, Date.now() + 365 * DAY, 3 * DAY)).toBe(true);
+  });
+
+  it('a webhook that fails halfway is forgotten, so the retry applies it exactly once', async () => {
+    const user = await server.createUser('retry@example.com');
+    const a = await handleSubscribe(deps(), user, { plan: 'monthly' });
+    const sub = subs.get(a.body.subscription_id as string)!;
+    Object.assign(sub, {
+      status: 'active',
+      current_end: Math.floor((Date.now() + 30 * DAY) / 1000),
+    });
+    const flaky = deps();
+    const real = flaky.rpc;
+    let fail = true;
+    flaky.rpc = async (fn, args) => {
+      if (fn === 'billing_activate' && fail) {
+        fail = false;
+        throw new Error('database blip');
+      }
+      return real(fn, args);
+    };
+    const raw = JSON.stringify({
+      event: 'subscription.activated',
+      payload: { subscription: { entity: sub } },
+    });
+    const sig = await hmacSha256Hex(config.webhookSecret, raw);
+    await expect(handleWebhook(flaky, raw, sig, 'evt_flaky')).rejects.toThrow('database blip');
+    expect((await mine(user)).pro_expires_at).toBeNull();
+    const retry = await handleWebhook(flaky, raw, sig, 'evt_flaky');
+    expect(retry.body.applied).toBe('subscription.activated');
+    expect((await handleWebhook(flaky, raw, sig, 'evt_flaky')).body.duplicate).toBe(true);
+    expect(near((await mine(user)).pro_expires_at, Date.now() + 30 * DAY)).toBe(true);
+  });
+
+  it('refunds and disputes are recorded for the owner and change nothing else', async () => {
+    const user = await server.createUser('refund@example.com');
+    const a = await handleSubscribe(deps(), user, { plan: 'monthly' });
+    await activate(a.body.subscription_id as string, 30, 'evt_refund_on');
+    const before = await mine(user);
+    for (const [event, id] of [
+      ['refund.processed', 'evt_ref_1'],
+      ['payment.dispute.created', 'evt_dis_1'],
+    ] as const) {
+      const raw = JSON.stringify({
+        event,
+        payload: {
+          payment: { entity: { id: 'pay_refund_me', amount: 14900, notes: { user_id: user } } },
+          refund: { entity: { id: 'rfnd_1', payment_id: 'pay_refund_me', amount: 14900 } },
+          dispute: { entity: { id: 'disp_1', payment_id: 'pay_refund_me', amount: 14900 } },
+        },
+      });
+      const r = await handleWebhook(
+        deps(),
+        raw,
+        await hmacSha256Hex(config.webhookSecret, raw),
+        id,
+      );
+      expect(r.body.recorded).toBe(event);
+    }
+    const rows = (await orphans()).filter((o) => o.razorpay_id === 'pay_refund_me');
+    expect(rows.map((o) => o.kind)).toEqual(['refund', 'dispute']);
+    const after = await mine(user);
+    expect({ ...after, server_now: null }).toEqual({ ...before, server_now: null });
+  });
+
+  it('cancel works for a plan that has not started yet: stopped now, paid time kept', async () => {
+    const user = await server.createUser('notstarted@example.com');
+    await payOnce(user, 'monthly', 'pay_ns_once');
+    const paidUntil = (await mine(user)).pro_expires_at;
+    const a = await handleSubscribe(deps(), user, { plan: 'monthly' });
+    const id = a.body.subscription_id as string;
+    expect(a.body.starts_at).toBeTruthy();
+    subs.get(id)!.status = 'authenticated';
+    await verifySub(user, id, 'pay_ns_mandate');
+    const r = await handleCancel(deps(), user);
+    expect(r.status).toBe(200);
+    expect(cancelledNow).toContain(id);
+    expect(await mine(user)).toMatchObject({
+      cancel_at_period_end: true,
+      pro_expires_at: paidUntil,
+    });
+  });
+
+  it('an account cannot be deleted while autopay can still charge it', async () => {
+    const user = await server.createUser('deleteme@example.com');
+    const a = await handleSubscribe(deps(), user, { plan: 'monthly' });
+    await activate(a.body.subscription_id as string, 30, 'evt_del_on');
+    await expect(
+      server.asUser(user, (tx) => tx.query('select public.delete_my_account()')),
+    ).rejects.toThrow('cancel_autopay_first');
+    expect((await handleCancel(deps(), user)).status).toBe(200);
+    await server.asUser(user, (tx) => tx.query('select public.delete_my_account()'));
+    const left = await server.pg.query('select 1 from auth.users where id = $1', [user]);
+    expect(left.rows).toHaveLength(0);
+  });
+
+  it('keeps the new functions and tables closed to the app', async () => {
+    const user = await server.createUser('closed28@example.com');
+    for (const sql of [
+      `select public.billing_forget_event('evt_x')`,
+      `select public.billing_adopt('${user}', 'monthly', 'sub_x')`,
+      `select public.billing_record_orphan('orphan', 'sub_x', null, 'x', null, 'recorded')`,
+      `select * from public.billing_orphans`,
+      `select public.ai_claim('${user}', 'chat')`,
+      `select public.ai_release('${user}', 'chat')`,
+    ]) {
+      await expect(
+        server.asUser(user, (tx) => tx.query(sql)),
+        sql,
+      ).rejects.toThrow();
+    }
   });
 });

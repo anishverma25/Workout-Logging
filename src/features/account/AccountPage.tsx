@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
-import { HardDriveUpload, KeyRound, LogOut, Mail, RefreshCw, Trash2 } from 'lucide-react';
+import { Download, HardDriveUpload, KeyRound, LogOut, Mail, RefreshCw, Trash2 } from 'lucide-react';
 import { deleteAccount, signOut, useAccount, useSyncStatus } from '@/app/account';
 import {
   BottomSheet,
@@ -18,7 +18,7 @@ import {
 } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import { db, guestDatabase } from '@/data/db';
-import { useGuestImport } from '@/data/hooks';
+import { useGuestImport, useUnsyncedCount } from '@/data/hooks';
 import { syncController } from '@/data/sync/controller';
 import { retryRejected } from '@/data/sync/engine';
 import { copyGuestData, hasGuestData, markMigrationHandled } from '@/data/sync/migrate';
@@ -87,6 +87,50 @@ function AccountContent() {
   );
 }
 
+/**
+ * Fetches everything in the account again (batch 18, S2). Only once nothing is waiting to be
+ * sent; it never removes anything on the phone.
+ */
+function RedownloadRow({
+  busy,
+  run,
+}: {
+  busy: boolean;
+  run: (fn: () => Promise<void>) => Promise<void>;
+}) {
+  const sync = useSyncStatus();
+  const toast = useToast();
+  const waiting = sync.pending > 0;
+  return (
+    <div className="mt-5" data-redownload>
+      <SecondaryButton
+        compact
+        disabled={busy || sync.phase === 'syncing' || waiting}
+        icon={<Download aria-hidden />}
+        onClick={() =>
+          run(async () => {
+            const result = await syncController.redownload();
+            toast(
+              result === 'done'
+                ? 'Your account was downloaded again'
+                : result === 'pending'
+                  ? 'Some changes are still waiting to be sent. Try again once they are.'
+                  : 'Could not reach your account right now',
+            );
+          })
+        }
+      >
+        Download my account again
+      </SecondaryButton>
+      <p className="type-meta mt-2 px-1 text-text-2">
+        {waiting
+          ? 'Available once every change on this phone has been sent.'
+          : 'This fetches everything in your account again. Nothing on this phone is removed.'}
+      </p>
+    </div>
+  );
+}
+
 function SyncSection() {
   const sync = useSyncStatus();
   const toast = useToast();
@@ -139,6 +183,7 @@ function SyncSection() {
           </SecondaryButton>
         ) : null}
       </div>
+      <RedownloadRow busy={busy} run={run} />
     </section>
   );
 }
@@ -210,11 +255,12 @@ function GuestImportCard({ userId }: { userId: string }) {
 }
 
 function SignOutRow() {
-  const sync = useSyncStatus();
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const waiting = sync.pending;
+  // Counted live from this phone, not from the last sync.
+  const unsynced = useUnsyncedCount();
+  const waiting = unsynced.data ?? 0;
   const confirm = async () => {
     setBusy(true);
     try {
@@ -238,7 +284,7 @@ function SignOutRow() {
         open={open}
         onClose={() => setOpen(false)}
         title="Sign out?"
-        busy={busy}
+        busy={busy || unsynced.status !== 'success'}
         destructive
         confirmLabel="Sign out"
         onConfirm={confirm}
@@ -278,8 +324,8 @@ function DeleteAccountCard() {
       </h2>
       <p className="type-meta mt-1 text-text-2">
         Removes your account and every workout, routine, measurement and goal in it, from the server
-        and from this device. Export your data first if you want a copy (Settings). Photos on this
-        device are not affected.
+        and from this device. Any autopay is stopped first, so nothing is charged again. Export your
+        data first if you want a copy (Settings). Photos on this device are not affected.
       </p>
       <DestructiveButton
         compact

@@ -24,19 +24,21 @@ select public.community_board(gen_random_uuid(), now() - interval '7 days', now(
 
 Worked out on the server from synced workouts and food logs, never sent by the phone.
 
-| Part | Points | Cap per week |
-| --- | --- | --- |
-| Workout: completed, 10+ minutes, 3+ working sets, logged live (created within 2 days of starting) | 10 | 2 a day, 6 a week |
-| Hard set: working, back-off or drop set not logged as easy (RIR 5+ or RPE under 6) | 1 | 25 |
-| Record: best estimated 1RM (Epley, 1 to 10 reps) on an exercise done in 2+ earlier workouts, at most 40% above the old best | 5 | 5 |
-| Protein day: logged protein reaches 90% of the person's target (logs made by the end of the next day) | 3 | 7 |
+| Part                                                                                                                                                                                                              | Points | Cap per week      |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ----------------- |
+| Workout: completed, 10+ minutes not counting pauses (0034), 3+ working sets ticked over 2+ minutes, created within 2 days of starting                                                                             | 10     | 1 a day, 6 a week |
+| Hard set: a working set not logged as easy (RIR 5+ or RPE under 6), from every session of the day                                                                                                                 | 1      | 25                |
+| Record: best estimated 1RM on a compound weight and reps lift (Epley for 2 to 10 reps, a single counts as its weight, reps in reserve not used; 0034) done in 2+ earlier workouts, at most 40% above the old best | 5      | 5                 |
+| Protein day: logged protein over 2+ meals reaches 90% of the person's target (logs made by the end of the next day)                                                                                               | 3      | 7                 |
+| Consistent week: 3+ training days in a Monday to Sunday week                                                                                                                                                      | 10     | 1                 |
+| Progress: 1 point per 1% stronger on average across 3+ lifts against the 4 weeks before                                                                                                                           | 1 each | 10                |
 
 Monthly caps grow with the length of the month. Ties go to more hard sets, then more workouts,
 then whoever got there first. Weeks run Monday to Sunday, India time. A finished week or month is
 frozen in `group_results` the first time anyone views it.
 
 Limits: 30 people per group; 1 group per person on the free plan, 10 with Pro (migration 0027; groups joined before stay). Free users see the
-Overload Score board; Pro adds Consistency, Effort, Progress and Volume.
+Macrotrophy Score board; Pro adds Consistency, Effort, Progress and Volume.
 
 ## 3. Privacy
 
@@ -73,6 +75,32 @@ from public.groups g, public.community_bounds('week', 0) b where g.code = 'ABC23
 Removing a username also hides that person from boards until they pick a new one; their
 memberships stay.
 
+## Duels (migration `20261115000036_duels_accept.sql`)
+
+- A member challenges another in the group (`create_duel`): free accounts start 1 a week, Pro 3,
+  counted over every group (`duel_limit_for`). A waiting challenge uses one of those.
+- The opponent accepts (`accept_duel`); points count from `accepted_at` to the end of the week,
+  India time, by `community_scores` (`duel_scores`).
+- Before acceptance either side can withdraw or decline (`cancel_duel`), which frees the
+  allowance. After it only `forfeit_duel` ends it, as a loss for whoever gave up.
+- Finished weeks are settled once, the first time anyone in the group reads the duels
+  (`settle_group_duels` in `get_group_duels`); challenges nobody accepted are deleted then. The
+  card shows the last four weeks.
+- Leaving the group forfeits its open duels; settled duels stay.
+
+```sql
+-- Every duel in a group this month, with points and how it ended.
+select d.week_start, cu.username as challenger, ou.username as opponent, d.accepted_at,
+  d.challenger_score, d.opponent_score, wu.username as winner, d.forfeited_by is not null as forfeit
+from public.group_duels d
+join public.usernames cu on cu.user_id = d.challenger
+join public.usernames ou on ou.user_id = d.opponent
+left join public.usernames wu on wu.user_id = d.winner
+join public.groups g on g.id = d.group_id
+where g.code = 'ABC234' and d.week_start >= current_date - 28
+order by d.week_start desc;
+```
+
 ## 5. Global leaderboard
 
 Everyone with points in the week or month appears on the global leaderboard (`/groups/global`),
@@ -106,4 +134,3 @@ delete from public.global_results where not final;
 
 Hiding takes effect at the next refresh. A frozen past period keeps the hidden person until it is
 recomputed: `delete from public.global_results where period = 'week' and starts_on = '2026-11-02';`.
-

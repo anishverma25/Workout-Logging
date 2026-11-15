@@ -27,6 +27,9 @@ import { nowIso, putRecords } from './write';
  * left out and counted, never stretched to fit.
  */
 
+/** An imported workout starting this close to one already here is the same session. */
+export const SAME_SESSION_MS = 30 * 60_000;
+
 export interface ImportResult {
   workoutsAdded: number;
   /** Already imported before, so left as they are. */
@@ -212,9 +215,16 @@ export async function applyImport(
       const workouts: Workout[] = [];
       const workoutExercises: WorkoutExercise[] = [];
       const sets: WorkoutSet[] = [];
+      // Workouts already logged here (natively, or by another import) within 30 minutes of an
+      // imported one are the same session: skipped and counted as already here (T9).
+      const existingStarts = (await db.workouts.toArray())
+        .filter((x) => x.deletedAt === null && x.status === 'completed')
+        .map((x) => Date.parse(x.startedAt));
+      const nearExisting = (t: number) =>
+        existingStarts.some((e) => Math.abs(e - t) <= SAME_SESSION_MS);
       for (const w of log.workouts) {
         const workoutId = key('workout', w.key);
-        if (await db.workouts.get(workoutId)) {
+        if ((await db.workouts.get(workoutId)) || nearExisting(w.startedAt.getTime())) {
           result.workoutsSkipped++;
           continue;
         }

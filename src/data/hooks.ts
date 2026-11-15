@@ -1,3 +1,4 @@
+import { accountJson } from '@/data/repositories/exportAll';
 import { liveQuery } from 'dexie';
 import { useEffect, useState } from 'react';
 import {
@@ -72,6 +73,11 @@ export function useLiveData<T>(
 export const useTrainingData = () => useLiveData<TrainingData>(() => loadTrainingData(db));
 /** Just the profile: cheap enough for headers on every page. */
 export const useProfile = () => useLiveData(async () => pickProfile(await db.profiles.toArray()));
+/** Downloads everything this account keeps on the phone as one JSON file. */
+export const exportAccountJson = () => accountJson(db);
+
+/** Changes on this phone still waiting to reach the server, counted live. */
+export const useUnsyncedCount = () => useLiveData(() => db.outbox.count());
 export const useDemoStatus = () => useLiveData<DemoStatus>(() => getDemoStatus(db));
 
 export function usePreferences(): Preferences {
@@ -148,6 +154,18 @@ export const useWorkoutView = (workoutId: string | undefined) =>
 
 /** Only the id and start of the workout in progress: cheap enough for the app shell. */
 export const useActiveWorkout = () => useLiveData(() => getActiveWorkout(db));
+
+/** When the last set of a workout was ticked, or null: for the forgotten-workout prompt (T3). */
+export const useLastSetAt = (workoutId: string | null) =>
+  useLiveData(async () => {
+    if (!workoutId) return null;
+    const sets = await db.sets.where('workoutId').equals(workoutId).toArray();
+    const times = sets
+      .filter((s) => s.deletedAt === null && s.completedAt !== null)
+      .map((s) => s.completedAt!)
+      .sort();
+    return times.at(-1) ?? null;
+  }, [workoutId]);
 
 export const useRestTimer = () => useLiveData(() => getRestTimer(db));
 

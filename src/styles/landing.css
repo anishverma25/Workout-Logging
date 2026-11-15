@@ -605,6 +605,10 @@
     animation-play-state: paused;
   }
 }
+/* Keyboard users pause it by moving focus into it (X7). */
+.lp-marquee:focus-within .lp-marquee-track {
+  animation-play-state: paused;
+}
 @keyframes lp-scroll {
   to {
     transform: translate3d(-100%, 0, 0);

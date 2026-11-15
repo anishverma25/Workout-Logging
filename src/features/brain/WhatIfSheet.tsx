@@ -12,7 +12,15 @@ const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).
  * "Try a different plan": two sliders next to the real decision. The numbers come from the same
  * model the weekly plan uses, as a range, and say what they are based on.
  */
-export function WhatIfSheet({ open, onClose, brain }: { open: boolean; onClose: () => void; brain: Brain }) {
+export function WhatIfSheet({
+  open,
+  onClose,
+  brain,
+}: {
+  open: boolean;
+  onClose: () => void;
+  brain: Brain;
+}) {
   return (
     <BottomSheet
       open={open}
@@ -43,7 +51,9 @@ function Sliders({ brain }: { brain: Brain }) {
       .sort((a, b) => b.trend.weeks - a.trend.weeks || b.trend.latest - a.trend.latest);
     const pick = candidates[0];
     if (!pick) return null;
-    const planned = Math.round(input.plan.muscleSets[pick.muscle] ?? last?.muscles[pick.muscle] ?? 10);
+    const planned = Math.round(
+      input.plan.muscleSets[pick.muscle] ?? last?.muscles[pick.muscle] ?? 10,
+    );
     return { ...pick, planned: Math.max(SETS_FLOOR, Math.min(SETS_CEILING, planned)) };
   }, [brain.weeks, model.lifts, input.plan.muscleSets]);
 
@@ -60,10 +70,10 @@ function Sliders({ brain }: { brain: Brain }) {
   const hi = roundTo(maintenance + 600, KCAL_ROUND);
   const basis =
     model.maintenance!.confidence === 'personal'
-      ? `Based on your own maintenance of about ${maintenance.toLocaleString('en-IN')} kcal, from ${model.maintenance!.n} logged weeks.`
+      ? `Based on the plan's estimate of maintenance, about ${maintenance.toLocaleString('en-IN')} kcal, from ${model.maintenance!.n} logged weeks.`
       : model.maintenance!.confidence === 'learning'
-        ? `Based on a maintenance of about ${maintenance.toLocaleString('en-IN')} kcal, part your logs and part the body formula. The range is wider until more weeks are logged.`
-        : `Based on the body formula's maintenance of about ${maintenance.toLocaleString('en-IN')} kcal. Log food and weigh in for a few weeks to make this yours.`;
+        ? `Based on the plan's estimate of maintenance, about ${maintenance.toLocaleString('en-IN')} kcal, part your logs and part the body formula. The range is wider until more weeks are logged.`
+        : `Based on the formula estimate of maintenance, about ${maintenance.toLocaleString('en-IN')} kcal. Log food and weigh in for a few weeks to make this yours.`;
 
   return (
     <div className="flex flex-col gap-6" data-what-if>
@@ -88,7 +98,8 @@ function Sliders({ brain }: { brain: Brain }) {
         />
         {!result.allowed ? (
           <p className="type-footnote text-danger-text" role="status">
-            Under {result.floor.toLocaleString('en-IN')} kcal is below the lowest target the plan allows for you.
+            Under {result.floor.toLocaleString('en-IN')} kcal is below the lowest target the plan
+            allows for you.
           </p>
         ) : null}
       </div>
@@ -122,7 +133,8 @@ function Sliders({ brain }: { brain: Brain }) {
               {kg(result.weight.mid)} kg
               <span className="type-subhead text-text-2">
                 {' '}
-                ({kg(Math.min(result.weight.lo, result.weight.hi))} to {kg(Math.max(result.weight.lo, result.weight.hi))})
+                ({kg(Math.min(result.weight.lo, result.weight.hi))} to{' '}
+                {kg(Math.max(result.weight.lo, result.weight.hi))})
               </span>
             </p>
             <p className="type-footnote tabular text-text-2">
@@ -152,7 +164,8 @@ function Sliders({ brain }: { brain: Brain }) {
       </div>
 
       <p className="type-footnote text-text-2">
-        {basis} The 7,700 kcal per kg rule is a guide for the first weeks; the body adapts as weight changes.
+        {basis} The 7,700 kcal per kg rule is a guide for the first weeks; the body adapts as weight
+        changes.
       </p>
     </div>
   );

@@ -38,7 +38,10 @@ interface Word {
 }
 
 /** Wrapped text from runs; lines break between words, a word longer than a line breaks by letter. */
-export function text(runs: Run[], o: { lineHeight?: number; align?: 'left' | 'center' | 'right'; fonts: SvgFonts }): Node {
+export function text(
+  runs: Run[],
+  o: { lineHeight?: number; align?: 'left' | 'center' | 'right'; fonts: SvgFonts },
+): Node {
   const lh = o.lineHeight ?? 1.38;
   const layout = (width: number) => {
     const words: Word[] = [];
@@ -71,11 +74,20 @@ export function text(runs: Run[], o: { lineHeight?: number; align?: 'left' | 'ce
         for (const ch of word.text) {
           const next = chunk + ch;
           if (word.run.font.widthOfTextAtSize(next, word.run.size) > width && chunk) {
-            lines.push([{ ...word, text: chunk, width: word.run.font.widthOfTextAtSize(chunk, word.run.size), space: 0 }]);
+            lines.push([
+              {
+                ...word,
+                text: chunk,
+                width: word.run.font.widthOfTextAtSize(chunk, word.run.size),
+                space: 0,
+              },
+            ]);
             chunk = ch;
           } else chunk = next;
         }
-        line = [{ ...word, text: chunk, width: word.run.font.widthOfTextAtSize(chunk, word.run.size) }];
+        line = [
+          { ...word, text: chunk, width: word.run.font.widthOfTextAtSize(chunk, word.run.size) },
+        ];
         w = line[0]!.width;
         continue;
       }
@@ -95,7 +107,8 @@ export function text(runs: Run[], o: { lineHeight?: number; align?: 'left' | 'ce
         const h = heights[i]!;
         const size = Math.max(...l.map((wd) => wd.run.size));
         const lw = l.reduce((a, wd, k) => a + wd.width + (k < l.length - 1 ? wd.space : 0), 0);
-        let cx = o.align === 'center' ? x + (width - lw) / 2 : o.align === 'right' ? x + width - lw : x;
+        let cx =
+          o.align === 'center' ? x + (width - lw) / 2 : o.align === 'right' ? x + width - lw : x;
         // Baseline: centre the cap height in the line box.
         const base = y + (h - size) / 2 + size * 0.8;
         for (const [k, wd] of l.entries()) {
@@ -133,7 +146,11 @@ export function spacer(h: number): Node {
 }
 
 /** Columns: fixed point widths or `'flex'` sharing the rest. */
-export function row(cols: { node: Node; width: number | 'flex' }[], gap: number, align: 'top' | 'center' = 'top'): Node {
+export function row(
+  cols: { node: Node; width: number | 'flex' }[],
+  gap: number,
+  align: 'top' | 'center' = 'top',
+): Node {
   const widths = (w: number) => {
     const fixed = cols.reduce((a, col) => a + (col.width === 'flex' ? 0 : col.width), 0);
     const flex = cols.filter((col) => col.width === 'flex').length;
@@ -179,7 +196,9 @@ export function grid(nodes: Node[], columns: number, gap: number): Node {
       let y = top;
       for (const r of out) {
         r.cells.forEach((n, i) => {
-          const cell = n as Node & { drawAt?: (c: Ctx, x: number, top: number, w: number, h: number) => void };
+          const cell = n as Node & {
+            drawAt?: (c: Ctx, x: number, top: number, w: number, h: number) => void;
+          };
           if (cell.drawAt) cell.drawAt(c, x + i * (cw + gap), y, cw, r.h);
           else n.draw(c, x + i * (cw + gap), y, cw);
         });
@@ -194,7 +213,16 @@ export function roundedPath(x: number, y: number, w: number, h: number, r: numbe
   return `M${x + rr} ${y} H${x + w - rr} A${rr} ${rr} 0 0 1 ${x + w} ${y + rr} V${y + h - rr} A${rr} ${rr} 0 0 1 ${x + w - rr} ${y + h} H${x + rr} A${rr} ${rr} 0 0 1 ${x} ${y + h - rr} V${y + rr} A${rr} ${rr} 0 0 1 ${x + rr} ${y} Z`;
 }
 
-export function fillRect(c: Ctx, x: number, top: number, w: number, h: number, r: number, fill: string, border?: string) {
+export function fillRect(
+  c: Ctx,
+  x: number,
+  top: number,
+  w: number,
+  h: number,
+  r: number,
+  fill: string,
+  border?: string,
+) {
   c.page.drawSvgPath(roundedPath(0, 0, w, h, r), {
     x,
     y: c.page.getHeight() - top,
@@ -205,7 +233,10 @@ export function fillRect(c: Ctx, x: number, top: number, w: number, h: number, r
 }
 
 /** A filled rounded box around a child; in a grid it stretches to the row height. */
-export function box(child: Node, o: { fill: string; radius?: number; pad?: number; border?: string }): Node {
+export function box(
+  child: Node,
+  o: { fill: string; radius?: number; pad?: number; border?: string },
+): Node {
   const pad = o.pad ?? 14;
   const r = o.radius ?? 12;
   const node: Node & { drawAt: (c: Ctx, x: number, top: number, w: number, h: number) => void } = {

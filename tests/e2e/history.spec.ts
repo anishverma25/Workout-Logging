@@ -146,7 +146,7 @@ test('a past workout can be started again from its page', async ({ page }) => {
   await page.getByRole('button', { name: 'Start this workout' }).click();
   await expect(page).toHaveURL(/\/workout$/);
   await expect(page.getByRole('button', { name: 'Finish' })).toBeVisible();
-  await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+  await expect(page.locator('#main').getByText(name, { exact: true }).first()).toBeVisible();
   const logged = page.locator('section[aria-labelledby^="ex-"]');
   const expected = exercises.filter(
     (e) => e !== 'Rest' && e !== 'Calories burned' && e !== 'Muscles worked',
@@ -174,10 +174,11 @@ test('a workout makes story cards the person arranges, saved as 1080 × 1920 ima
   const canvas = sheet.locator('[data-story-canvas]');
   const handle = sheet.locator('[data-story-handle]');
   await expect(canvas).toBeVisible();
-  await expect(sheet.getByRole('button', { name: 'Workout', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  // The workout card comes first; the card choice shows only when there is more than one card
+  // (a record or a streak in this workout).
+  const workoutChip = sheet.getByRole('button', { name: 'Workout', exact: true });
+  if (await workoutChip.count()) await expect(workoutChip).toHaveAttribute('aria-pressed', 'true');
+  await expect(canvas).toHaveAccessibleName(/^Your .+ story card/);
   const where = async () => (await handle.boundingBox())!;
 
   // Drag the stats box up: grab it just inside its corner handle.

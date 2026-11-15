@@ -3,7 +3,8 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Sheet } from '@/components/ui/Sheet';
 import { Skeleton } from '@/components/ui/States';
-import { useExerciseCatalog } from '@/data/hooks';
+import { useExerciseCatalog, useProfile } from '@/data/hooks';
+import { equipmentFits } from '@/domain/workout/equipment';
 import {
   EMPTY_FILTERS,
   filterExercises,
@@ -45,6 +46,7 @@ function PickerContent({
   suggestMuscle,
 }: Props) {
   const catalog = useExerciseCatalog();
+  const access = useProfile().data?.equipment ?? null;
   const [filters, setFilters] = useState<ExerciseFilters>(() =>
     suggestMuscle ? { ...EMPTY_FILTERS, muscle: suggestMuscle } : EMPTY_FILTERS,
   );
@@ -63,6 +65,10 @@ function PickerContent({
     [catalog.data],
   );
   const showRecents = !hasActiveFilters(filters) && recents.length > 0;
+  // Swapping (batch 13): what the person's equipment allows first, the rest after.
+  const split = mode === 'single' && !!access && access !== 'full_gym';
+  const fitting = split ? results.filter((e) => equipmentFits(e.equipment, access)) : results;
+  const needsMore = split ? results.filter((e) => !equipmentFits(e.equipment, access)) : [];
   const present = new Set(presentIds);
 
   async function pick(ids: string[]) {
@@ -143,7 +149,17 @@ function PickerContent({
                 : 'All exercises'}
             </h3>
             {results.length > 0 ? (
-              <ul>{results.map(row)}</ul>
+              <>
+                <ul>{fitting.map(row)}</ul>
+                {needsMore.length > 0 ? (
+                  <div data-needs-equipment>
+                    <h3 className="mt-4 mb-1 px-2 text-sm font-semibold text-faint">
+                      Needs other equipment
+                    </h3>
+                    <ul>{needsMore.map(row)}</ul>
+                  </div>
+                ) : null}
+              </>
             ) : (
               <p className="px-2 py-6 text-muted">
                 Nothing matches. Try fewer filters, or create it as your own exercise.

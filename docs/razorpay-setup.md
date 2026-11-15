@@ -69,7 +69,7 @@ Supabase URL before `.supabase.co`.
 ## 4. Secrets (never in the app, the repository or chat)
 
 ```bash
-npx supabase secrets set RAZORPAY_KEY_ID=rzp_test_TmJLEu7kpvpwJm
+npx supabase secrets set RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxx
 npx supabase secrets set RAZORPAY_KEY_SECRET=<your key secret>
 npx supabase secrets set RAZORPAY_WEBHOOK_SECRET=<the secret you choose in step 5>
 npx supabase secrets set APP_ORIGIN=https://<your-site>

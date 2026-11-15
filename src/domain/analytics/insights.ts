@@ -42,6 +42,8 @@ interface InsightInput {
   recentAdherence: Adherence;
   volumeThisPeriod: number;
   volumePreviousPeriod: number;
+  /** Sessions in the earlier period; fewer than 3 is no basis for a change. */
+  previousSessions?: number;
   periodDays: number;
   unit: WeightUnit;
   /** Only flag drops in sessions after this date. */
@@ -49,6 +51,8 @@ interface InsightInput {
   /** Body weight on a date, for the size-adjusted trend. */
   bodyKgAt?: (date: Date) => number | null;
 }
+
+export const MIN_PREVIOUS_SESSIONS = 3;
 
 export function generateInsights(input: InsightInput): Insight[] {
   const insights: Insight[] = [];
@@ -116,7 +120,12 @@ export function generateInsights(input: InsightInput): Insight[] {
   }
 
   // Volume compared with the previous equal-length period.
-  if (input.volumeThisPeriod > 0 && input.volumePreviousPeriod > 0) {
+  // Only against a real earlier period: 3 sessions or more (G5), never "4900% higher" from one set.
+  if (
+    input.volumeThisPeriod > 0 &&
+    input.volumePreviousPeriod > 0 &&
+    (input.previousSessions ?? MIN_PREVIOUS_SESSIONS) >= MIN_PREVIOUS_SESSIONS
+  ) {
     const change =
       (input.volumeThisPeriod - input.volumePreviousPeriod) / input.volumePreviousPeriod;
     if (Math.abs(change) >= VOLUME_CHANGE_THRESHOLD) {

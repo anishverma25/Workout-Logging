@@ -73,8 +73,12 @@ export const restBand = (gapDays: number) => (gapDays <= 2 ? 'short' : 'long');
 
 /** A condition needs this many samples to be compared at all. */
 export const MIN_SAMPLES = 5;
-/** How clear the gap between the best condition and the next must be (Welch t). */
-export const CLEAR_GAP = 2.3;
+/**
+ * How clear the gap between the best condition and the next must be (Welch t). Set so that
+ * people whose training makes no difference almost never hear a personal finding: 12 muscles,
+ * 24 weeks, about 7% (simulate.test.ts), with the trend and two-week checks.
+ */
+export const CLEAR_GAP = 3.4;
 /** Maintenance is read from this many recent weeks, and needs this many of them complete. */
 export const MAINTENANCE_WINDOW = 4;
 export const MAINTENANCE_MIN_WEEKS = 3;
@@ -167,21 +171,62 @@ export function compare(samples: { cond: string; value: number }[]): {
     : { best: null, confidence: 'learning', groups };
 }
 
-/** For each week, the next week (within two) and the shared lifts' change between them. */
-function weekSteps(weeks: WeekFacts[]) {
-  const steps: { week: WeekFacts; byMuscle: Map<string, number[]>; all: number[] }[] = [];
+/**
+ * Each lift's own trend, as a curve that can slow down: log e1RM against the square root of
+ * weeks since the lift was first logged. A beginner's fast early weeks are then the trend, not
+ * evidence that whatever they did in those weeks works best (batch 8).
+ */
+function liftCurves(weeks: WeekFacts[]): Map<string, { first: number; k: number }> {
+  const out = new Map<string, { first: number; k: number }>();
+  const ids = new Set(weeks.flatMap((w) => Object.keys(w.lifts)));
+  for (const id of ids) {
+    const first = weeks.findIndex((w) => w.lifts[id]);
+    const points = weeks
+      .map((w, i) =>
+        w.lifts[id] ? { x: Math.sqrt(i - first), y: Math.log(w.lifts[id].e1rm) } : null,
+      )
+      .filter((p): p is { x: number; y: number } => p !== null);
+    out.set(id, { first, k: points.length >= 4 ? slope(points) : 0 });
+  }
+  return out;
+}
+
+/** The change between two weeks less what the lift's own trend expected over that gap. */
+function beyondTrend(
+  curves: Map<string, { first: number; k: number }>,
+  id: string,
+  from: number,
+  to: number,
+  ratio: number,
+): number {
+  const c = curves.get(id);
+  if (!c) return ratio - 1;
+  const expected = Math.exp(c.k * (Math.sqrt(to - c.first) - Math.sqrt(from - c.first)));
+  return ratio / expected - 1;
+}
+
+/** For each week, the next week (within two) and the shared lifts' change beyond their trend. */
+function weekSteps(weeks: WeekFacts[], curves: Map<string, { first: number; k: number }>) {
+  const steps: {
+    week: WeekFacts;
+    byMuscle: Map<string, number[]>;
+    reps: { muscle: string; cond: string; value: number }[];
+    all: number[];
+  }[] = [];
   for (let i = 0; i < weeks.length - 1; i++) {
     const week = weeks[i]!;
     const byMuscle = new Map<string, number[]>();
+    const reps: { muscle: string; cond: string; value: number }[] = [];
     const all: number[] = [];
     for (const [id, lift] of Object.entries(week.lifts)) {
-      const later = weeks[i + 1]!.lifts[id] ?? weeks[i + 2]?.lifts[id];
-      if (!later) continue;
-      const change = later.e1rm / lift.e1rm - 1;
+      const j = weeks[i + 1]!.lifts[id] ? i + 1 : weeks[i + 2]?.lifts[id] ? i + 2 : -1;
+      if (j < 0) continue;
+      const change = beyondTrend(curves, id, i, j, weeks[j]!.lifts[id]!.e1rm / lift.e1rm);
       byMuscle.set(lift.muscle, [...(byMuscle.get(lift.muscle) ?? []), change]);
+      reps.push({ muscle: lift.muscle, cond: repBand(lift.topReps), value: change });
       all.push(change);
     }
-    steps.push({ week, byMuscle, all });
+    steps.push({ week, byMuscle, reps, all });
   }
   return steps;
 }
@@ -206,6 +251,42 @@ function liftTrends(weeks: WeekFacts[]): Record<string, LiftTrend> {
   return out;
 }
 
+/** Every comparison the model makes, on the weeks given. */
+function findingsOf(
+  weeks: WeekFacts[],
+  recovery: RecoverySample[],
+  maintenance: Estimate | null,
+): Finding[] {
+  const steps = weekSteps(weeks, liftCurves(weeks));
+  const findings: Finding[] = [];
+  const muscles = new Set(steps.flatMap((s) => [...s.byMuscle.keys()]));
+  for (const muscle of muscles) {
+    const sets = steps
+      .filter((s) => s.byMuscle.has(muscle))
+      .map((s) => ({
+        cond: setBand(s.week.muscles[muscle] ?? 0),
+        value: meanOf(s.byMuscle.get(muscle)!),
+      }));
+    findings.push({ kind: 'sets', subject: muscle, ...compare(sets) });
+    const reps = steps.flatMap((s) => s.reps.filter((r) => r.muscle === muscle));
+    findings.push({ kind: 'reps', subject: muscle, ...compare(reps) });
+    const rest = recovery
+      .filter((r) => r.muscle === muscle)
+      .map((r) => ({ cond: restBand(r.gapDays), value: r.change }));
+    findings.push({ kind: 'recovery', subject: muscle, ...compare(rest) });
+  }
+  if (maintenance) {
+    const energy = steps
+      .filter((s) => s.week.foodDays >= MIN_FOOD_DAYS && s.week.meanKcal !== null && s.all.length)
+      .map((s) => ({
+        cond: s.week.meanKcal! <= maintenance.value - DEFICIT_KCAL ? 'deficit' : 'fed',
+        value: meanOf(s.all),
+      }));
+    findings.push({ kind: 'energy', subject: 'all', ...compare(energy) });
+  }
+  return findings;
+}
+
 export function responseModel(input: {
   /** Oldest first, ending with the last finished week. */
   weeks: WeekFacts[];
@@ -216,46 +297,20 @@ export function responseModel(input: {
   const { weeks } = input;
   const weeksLogged = weeks.filter((w) => w.sessions > 0 || w.foodDays >= 3).length;
   const maintenance = maintenanceEstimate(weeks, input.researchMaintenance);
-  const steps = weekSteps(weeks);
-  const findings: Finding[] = [];
-
-  const muscles = new Set(steps.flatMap((s) => [...s.byMuscle.keys()]));
-  for (const muscle of muscles) {
-    const sets = steps
-      .filter((s) => s.byMuscle.has(muscle))
-      .map((s) => ({
-        cond: setBand(s.week.muscles[muscle] ?? 0),
-        value: meanOf(s.byMuscle.get(muscle)!),
-      }));
-    findings.push({ kind: 'sets', subject: muscle, ...compare(sets) });
-
-    const reps = steps.flatMap((s) =>
-      Object.entries(s.week.lifts)
-        .filter(([, l]) => l.muscle === muscle)
-        .map(([id, l]) => {
-          const i = weeks.indexOf(s.week);
-          const later = weeks[i + 1]!.lifts[id] ?? weeks[i + 2]?.lifts[id];
-          return later ? { cond: repBand(l.topReps), value: later.e1rm / l.e1rm - 1 } : null;
-        })
-        .filter((v): v is { cond: string; value: number } => v !== null),
-    );
-    findings.push({ kind: 'reps', subject: muscle, ...compare(reps) });
-
-    const rest = input.recovery
-      .filter((r) => r.muscle === muscle)
-      .map((r) => ({ cond: restBand(r.gapDays), value: r.change }));
-    findings.push({ kind: 'recovery', subject: muscle, ...compare(rest) });
-  }
-
-  if (maintenance) {
-    const energy = steps
-      .filter((s) => s.week.foodDays >= MIN_FOOD_DAYS && s.week.meanKcal !== null && s.all.length)
-      .map((s) => ({
-        cond: s.week.meanKcal! <= maintenance.value - DEFICIT_KCAL ? 'deficit' : 'fed',
-        value: meanOf(s.all),
-      }));
-    findings.push({ kind: 'energy', subject: 'all', ...compare(energy) });
-  }
+  // A finding is personal only when the same condition was also best a week earlier: one
+  // lucky week can flip a test, two in a row rarely do (batch 8). No stored state: the earlier
+  // evaluation is read again from the weeks up to last week.
+  const lastWeek = weeks.at(-1)?.weekStart ?? null;
+  const earlier = findingsOf(
+    weeks.slice(0, -1),
+    input.recovery.filter((r) => !r.date || !lastWeek || r.date < lastWeek),
+    maintenance,
+  );
+  const findings = findingsOf(weeks, input.recovery, maintenance).map((f): Finding => {
+    if (f.confidence !== 'personal') return f;
+    const before = earlier.find((e) => e.kind === f.kind && e.subject === f.subject);
+    return before?.best === f.best ? f : { ...f, best: null, confidence: 'learning' };
+  });
 
   return {
     weeksLogged,

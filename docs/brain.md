@@ -10,7 +10,13 @@ One brain on the phone, in three steps:
 1. **Learn** (`src/domain/brain/response.ts`): the personal response model. Maintenance from the
    person's own intake and weight trend, blended with the body formula by how many complete weeks
    they have logged; and, per muscle, which weekly sets, rep range and rest their lifts answer to.
-   A finding is named only when their logs separate the options clearly (`CLEAR_GAP`).
+   A finding is named only when their logs separate the options clearly (`CLEAR_GAP` 3.4,
+   Welch t), on this review and on the one a week earlier (recomputed, nothing stored), after
+   each lift's own trend (log e1RM against the square root of weeks) is removed. Findings are
+   worded as what happened in the logs, never as cause. Simulations (`simulate.test.ts`): under
+   2% of slowing beginners are told fewer sets work, at least 90% of people with no real effect
+   (12 muscles, 24 weeks) hear nothing personal, and a real best range is named for about 11%
+   of those who have one, always correctly.
 2. **Decide** (`engine.ts`): once a week, the changes for next week: calories, protein, sets per
    muscle, a lighter week, an exercise rotated after a stall. Inputs: what is coming up and what
    hurts (`life.ts`).
@@ -24,19 +30,19 @@ steps outside a limit. Change a limit and the science topic in the same commit.
 
 ## Where each part lives
 
-| What the person sees | Code |
-| --- | --- |
-| Next week, Apply or Keep, in the weekly review | `features/brain/NextWeek.tsx`, `useBrain.ts` |
-| Try a different plan | `domain/brain/whatIf.ts`, `features/brain/WhatIfSheet.tsx` |
-| Coming up (review and Routines) | `ComingUpSheet.tsx`, `ComingUpRow.tsx` |
-| Something hurts (logger exercise menu) | `HurtsSheet.tsx` |
-| Programme rewrite | `domain/brain/rewrite.ts`, `data/repositories/plan.ts` (`applyDecision`) |
-| Now card | `domain/brain/now.ts`, `features/home/NowCard.tsx` |
-| Eat next, Plan my week, Read a menu | `domain/nutrition/solver.ts`, `features/food/EatNextCard.tsx`, `MealPlanPage.tsx`, `MenuSheet.tsx` |
-| Voice sets | `domain/workout/voice.ts`, `features/workout/VoiceSets.tsx`, `features/food/speech.ts` (`listenPatiently`) |
-| What Macrotrophy AI knows | `features/coach/memory.ts`, `features/settings/MemoryPage.tsx` |
-| Wrapped | `domain/share/wrapped.ts`, `features/wrapped` |
-| Duels | migration `20261112000023_duels.sql`, `features/groups/DuelsCard.tsx` |
+| What the person sees                           | Code                                                                                                       |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Next week, Apply or Keep, in the weekly review | `features/brain/NextWeek.tsx`, `useBrain.ts`                                                               |
+| Try a different plan                           | `domain/brain/whatIf.ts`, `features/brain/WhatIfSheet.tsx`                                                 |
+| Coming up (review and Routines)                | `ComingUpSheet.tsx`, `ComingUpRow.tsx`                                                                     |
+| Something hurts (logger exercise menu)         | `HurtsSheet.tsx`                                                                                           |
+| Programme rewrite                              | `domain/brain/rewrite.ts`, `data/repositories/plan.ts` (`applyDecision`)                                   |
+| Now card                                       | `domain/brain/now.ts`, `features/home/NowCard.tsx`                                                         |
+| Eat next, Plan my week, Read a menu            | `domain/nutrition/solver.ts`, `features/food/EatNextCard.tsx`, `MealPlanPage.tsx`, `MenuSheet.tsx`         |
+| Voice sets                                     | `domain/workout/voice.ts`, `features/workout/VoiceSets.tsx`, `features/food/speech.ts` (`listenPatiently`) |
+| What Macrotrophy AI knows                      | `features/coach/memory.ts`, `features/settings/MemoryPage.tsx`                                             |
+| Wrapped                                        | `domain/share/wrapped.ts`, `features/wrapped`                                                              |
+| Duels                                          | migration `20261112000023_duels.sql`, `features/groups/DuelsCard.tsx`                                      |
 
 ## Data
 

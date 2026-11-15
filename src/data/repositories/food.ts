@@ -236,6 +236,29 @@ async function keepAll(db: WorkoutDatabase, plate: FoodPortion[]): Promise<FoodP
       const n = p.food.per100;
       const sum = n.proteinG + n.carbsG + n.fatG;
       const scale = sum > 100 ? 100 / sum : 1;
+      // The same food logged again reuses the person's own copy instead of making another
+      // (batch 10, D10), so search has no duplicates and "Last time" carries over.
+      const name = p.food.name.slice(0, 60);
+      const close = (a: number, b: number) => Math.abs(a - b) <= 0.5;
+      const existing = (await db.customFoods.toArray()).find(
+        (c) =>
+          c.deletedAt === null &&
+          c.kind === 'food' &&
+          c.name.toLowerCase() === name.toLowerCase() &&
+          close(c.kcal, Math.min(900, n.kcal)) &&
+          close(c.proteinG, n.proteinG * scale) &&
+          close(c.carbsG, n.carbsG * scale) &&
+          close(c.fatG, n.fatG * scale),
+      );
+      if (existing) {
+        food = customToFood(existing);
+        saved.set(p.food.id, food);
+      }
+    }
+    if (!food) {
+      const n = p.food.per100;
+      const sum = n.proteinG + n.carbsG + n.fatG;
+      const scale = sum > 100 ? 100 / sum : 1;
       const custom = await saveCustomFood(db, {
         name: p.food.name.slice(0, 60),
         per100: {

@@ -136,19 +136,29 @@ test('two friends: username, create, join by code, points, home card and admin',
   await expect(top).toContainText('13');
   await expect(friend.page.locator('[data-trained-today]')).toContainText('1 of 2');
 
-  // A duel for the week, on the same points: the friend challenges, both see it, either ends it.
+  // A duel for the week, on the same points from the moment it is accepted: the friend
+  // challenges, Anish accepts, and only a forfeit ends it (migration 0036).
   await friend.page.locator('[data-duel-start]').click();
   await friend.page.locator(`[data-duel-member="${unique}"]`).click();
-  const duel = friend.page.locator('[data-duel="live"]');
-  await expect(duel).toContainText(`@${unique}.b`);
-  await expect(duel).toContainText(/0\s*:\s*13/);
-  await expect(duel).toContainText('You trail');
+  const waiting = friend.page.locator('[data-duel="pending"]');
+  await expect(waiting).toContainText(`Waiting for @${unique} to accept`);
   await expect(friend.page.locator('[data-duel-start]')).toHaveCount(0);
   await noSideScroll(friend.page);
   await page.goto(friend.page.url());
-  await expect(page.locator('[data-duel="live"]')).toContainText('You lead');
-  await page.locator('[data-duel-cancel]').click();
-  await expect(page.locator('[data-duel="live"]')).toHaveCount(0);
+  await expect(page.locator('[data-duel="pending"]')).toContainText('challenged you');
+  await page.locator('[data-duel-accept]').click();
+  const live = page.locator('[data-duel="live"]');
+  // Points earned before accepting do not count.
+  await expect(live).toContainText(/0\s*:\s*0/);
+  await expect(live).toContainText('Level');
+  await expect(page.locator('[data-duel-cancel]')).toHaveCount(0);
+  await friend.page.reload();
+  await expect(friend.page.locator('[data-duel="live"]')).toContainText('Level');
+  await friend.page.locator('[data-duel-forfeit]').click();
+  await friend.page.getByRole('button', { name: 'Give up' }).last().click();
+  await expect(friend.page.locator('[data-duel="done"]')).toContainText('you lost (forfeit)');
+  await page.reload();
+  await expect(page.locator('[data-duel="done"]')).toContainText('you won (forfeit)');
   // The breakdown shows how the points add up, and nothing about the workout itself.
   await top.getByRole('button').click();
   const breakdown = top.locator('[data-breakdown]');
@@ -266,13 +276,19 @@ test('global leaderboard: everyone by name, the username only when they turn it 
   await other.page.goto('/groups');
   await other.page.locator('[data-global-card]').click();
   await expect(other.page).toHaveURL(/\/groups\/global$/);
+  // The first visit asks how to appear; without a username that choice is not offered.
+  const ask = other.page.getByRole('dialog', { name: 'How should you appear?' });
+  await expect(ask).toBeVisible();
+  await expect(ask.locator('[data-choice="username"]')).toHaveCount(0);
+  await ask.locator('[data-choice="name"]').click();
+  await ask.locator('[data-show-as-save]').click();
+  await expect(ask).toHaveCount(0);
   const row = other.page.locator('[data-global-row]', { hasText: name });
   await expect(row).toBeVisible();
   await expect(row).toContainText('13');
   await expect(row).not.toContainText(`@${handle}`);
   await expect(other.page.locator('[data-global-mine]')).toContainText('Not on the board yet');
-  // Without a username, the switch is off and explains why.
-  await expect(other.page.getByRole('switch', { name: 'Show my username' })).toBeDisabled();
+  await expect(other.page.locator('[data-show-as-row]')).toContainText('My name');
   // Their routine shows by default, and the board says so once.
   await expect(other.page.getByRole('switch', { name: 'Show my routine plan' })).toHaveAttribute(
     'aria-checked',
@@ -281,22 +297,25 @@ test('global leaderboard: everyone by name, the username only when they turn it 
   await expect(other.page.locator('[data-routine-notice]')).toBeVisible();
   await noSideScroll(other.page);
 
-  // The owner turns on their username; it shows for everyone.
+  // The owner chooses their username on the first visit; it shows for everyone.
   await page.goto('/groups/global');
+  const first = page.getByRole('dialog', { name: 'How should you appear?' });
+  await expect(first).toBeVisible();
+  await first.locator('[data-choice="username"]').click();
+  await first.locator('[data-show-as-save]').click();
+  await expect(first).toHaveCount(0);
   await expect(page.locator('[data-global-mine]')).toContainText(/You are #\d+ of \d+/);
-  await expect(page.locator('[data-global-row][data-me]')).toContainText(name);
+  await expect(page.locator('[data-global-row][data-me]')).toBeVisible();
   await shareRank(page, /^macrotrophy-rank-week\.png$/);
-  const toggle = page.getByRole('switch', { name: 'Show my username' });
-  await expect(toggle).toHaveAttribute('aria-checked', 'false');
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-checked', 'true');
   await other.page.reload();
-  await expect(other.page.locator('[data-global-row]', { hasText: name })).toContainText(
-    `@${handle}`,
-  );
-  // And off again.
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await expect(other.page.locator('[data-global-row]', { hasText: `@${handle}` })).toBeVisible();
+  // And back to the name.
+  await page.locator('[data-show-as-row]').click();
+  const again = page.getByRole('dialog', { name: 'Show me as' });
+  await again.locator('[data-choice="name"]').click();
+  await again.locator('[data-show-as-save]').click();
+  await expect(again).toHaveCount(0);
+  await expect(page.locator('[data-global-row][data-me]')).toContainText(name);
   // Hiding the routine plan: someone tapping them sees it is private.
   const routineSwitch = page.getByRole('switch', { name: 'Show my routine plan' });
   await routineSwitch.click();

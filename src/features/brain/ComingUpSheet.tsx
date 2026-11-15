@@ -20,9 +20,22 @@ export const EVENT_EFFECT_COPY: Record<EventKind, string> = {
 const fieldClass =
   'h-12 w-full rounded-field bg-surface-2 px-3 text-[16px] text-text-1 [color-scheme:dark]';
 
-export function ComingUpSheet({ open, onClose, now }: { open: boolean; onClose: () => void; now: Date }) {
+export function ComingUpSheet({
+  open,
+  onClose,
+  now,
+}: {
+  open: boolean;
+  onClose: () => void;
+  now: Date;
+}) {
   return (
-    <BottomSheet open={open} onClose={onClose} title="Coming up" subtitle="The plan works around it">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="Coming up"
+      subtitle="The plan works around it"
+    >
       {open ? <Form onClose={onClose} now={now} /> : null}
     </BottomSheet>
   );

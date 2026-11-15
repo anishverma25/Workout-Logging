@@ -23,7 +23,10 @@ describe('badge art', () => {
       // Inter Display digits run about 0.62 of the size wide.
       expect(l.bigSize * [...big].length * 0.62, b.id).toBeLessThanOrEqual(FIT[shape].w + 0.01);
       expect(l.bigSize, b.id).toBeGreaterThanOrEqual(8);
-      if (l.word) expect(l.smallSize * l.word.length * 0.56, b.id).toBeLessThanOrEqual(FIT[shape].w * 1.15 + 0.01);
+      if (l.word)
+        expect(l.smallSize * l.word.length * 0.56, b.id).toBeLessThanOrEqual(
+          FIT[shape].w * 1.15 + 0.01,
+        );
       expect(l.bigY, b.id).toBeLessThan(92);
       if (shape === 'medals') expect(l.word).toBe('');
     }
@@ -37,7 +40,9 @@ describe('badge art', () => {
   });
 
   it('points to the next badge on the same lift, never another lift', () => {
-    const bench = badges.filter((b) => b.id.startsWith('plates-barbell-bench-press')).sort((a, b) => a.target - b.target);
+    const bench = badges
+      .filter((b) => b.id.startsWith('plates-barbell-bench-press'))
+      .sort((a, b) => a.target - b.target);
     const first = { ...bench[0]!, earnedAt: new Date() };
     const next = nextGoal(first, badges);
     if (bench.length > 1) expect(next?.label).toBe(`Next: ${bench[1]!.title}`);

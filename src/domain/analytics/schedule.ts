@@ -117,7 +117,15 @@ export function adherence(
   // never a second completed planned session.
   const done = new Set(
     sessions
-      .filter((s) => s.date >= start && s.date < end && s.workout.routineId === routineId)
+      .filter(
+        (s) =>
+          s.date >= start &&
+          s.date < end &&
+          // Done sessions count from the routine's start, like the planned ones (G1): imported
+          // history from before it never makes adherence 100%.
+          (!from || s.date >= from) &&
+          s.workout.routineId === routineId,
+      )
       .map((s) => toDateKey(s.date)),
   ).size;
   const completed = Math.min(done, planned);

@@ -63,6 +63,7 @@ export function NumberField({
           autoComplete="off"
           enterKeyHint="next"
           aria-invalid={invalid || undefined}
+          aria-describedby={invalid ? `${id}-error` : undefined}
           value={draft}
           onFocus={(e) => {
             focused.current = true;
@@ -88,6 +89,14 @@ export function NumberField({
         />
         {unit ? <span className="ml-1 text-sm text-faint">{unit}</span> : null}
       </div>
+      {/* Said in words too, never by the red border alone (X6). */}
+      {invalid ? (
+        <p id={`${id}-error`} role="alert" className="type-meta text-danger-text">
+          {max !== undefined
+            ? `Enter a number from ${min} to ${max}.`
+            : `Enter a number of ${min} or more.`}
+        </p>
+      ) : null}
     </div>
   );
 }

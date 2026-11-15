@@ -95,7 +95,7 @@ export function BodyNumbers({ snapshot: s, goal, sex, heightCm, unit, hasProfile
           unit="kcal"
           detail={
             s.energy
-              ? `Maintenance about ${s.energy.tdee.toLocaleString('en-GB')}`
+              ? `Formula estimate of maintenance about ${s.energy.tdee.toLocaleString('en-GB')}`
               : missingFor.energy.length
                 ? needs(missingFor.energy)
                 : 'Needs your profile'
@@ -306,7 +306,9 @@ function Explanation({
           <p className="type-meta text-text-2">
             {days}, {e.sessionMinutes} minutes each.
           </p>
-          <p className="mt-3">Maintenance, the calories that keep your weight steady:</p>
+          <p className="mt-3">
+            Formula estimate of maintenance, the calories that keep your weight steady:
+          </p>
           <Formula>
             {e.dailyKcal.toLocaleString('en-GB')} + {e.trainingKcal.toLocaleString('en-GB')} ={' '}
             <strong className="text-text-1">{e.tdee.toLocaleString('en-GB')} kcal</strong>

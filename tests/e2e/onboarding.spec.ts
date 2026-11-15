@@ -41,12 +41,13 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   await next();
   await expect(page.locator('[data-tour-coach]')).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: 'An AI coach that knows your numbers' }),
+    page.getByRole('heading', { name: 'Macrotrophy AI knows your numbers' }),
   ).toBeVisible();
   for (let i = 0; i < 3; i++) await next();
   await expect(page.locator('[data-tour-score]')).toContainText('points');
   await next();
-  await expect(page.locator('[data-tour-reviews] li')).toHaveCount(3);
+  // The rating as an award, then one member's words at a time.
+  await expect(page.locator('[data-tour-reviews] blockquote')).not.toBeEmpty();
   for (let i = 0; i < 2; i++) await next();
   await page.getByRole('button', { name: 'Create my account' }).click();
 
@@ -56,11 +57,9 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
 
-  // A new account is asked whether it comes from another app, then setup follows.
-  await expect(page).toHaveURL(/\/import\?welcome=1/);
-  await expect(page.getByRole('heading', { name: 'Coming from another app?' })).toBeVisible();
-  await page.getByRole('button', { name: 'I am new, start fresh' }).click();
+  // A new account goes straight to setup, which offers the import on its first step.
   await expect(page).toHaveURL(/\/setup/);
+  await expect(page.getByRole('link', { name: 'Bring your history first' })).toBeVisible();
   await page.getByRole('textbox', { name: 'Your name' }).fill('Meera Shah');
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: /^Hypertrophy/ }).click();
@@ -89,10 +88,14 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: /Mostly sitting/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
+  // How they eat (optional), then the plan is built.
+  await page.getByRole('button', { name: 'Continue' }).click();
 
   // The plan: numbers worked out from what was entered, and a recommended routine.
-  await expect(page.getByText('Daily calories')).toBeVisible();
-  await expect(page.getByText(/^Maintenance [\d,]+, \+10% for your goal$/)).toBeVisible();
+  // After the short "building your plan" screen.
+  await expect(page.getByText('Daily calories')).toBeVisible({ timeout: 15_000 });
+  // Named for what it is: a formula until their own logs say more (batch 20).
+  await expect(page.getByText(/^Formula estimate [\d,]+, \+10% for your goal$/)).toBeVisible();
   // Beginners get the recommendation only: five days is upper, lower, push, pull and legs.
   await expect(page.getByText('Upper Lower Push Pull Legs', { exact: true })).toBeVisible();
   await expect(page.getByRole('radio', { name: /Build my own/ })).toHaveCount(0);
@@ -100,7 +103,6 @@ test('the tour comes first, then an account, then setup builds a personalised pl
     page.getByRole('list', { name: 'Days in this routine' }).getByRole('listitem'),
   ).toHaveCount(5);
   // The first weeks, worked out from the answers.
-  await expect(page.locator('[data-personalising="done"]')).toBeVisible();
   await expect(page.locator('[data-roadmap]')).toContainText('This week');
   await expect(page.locator('[data-roadmap]')).toContainText(
     '5 sessions of Upper Lower Push Pull Legs',
@@ -109,11 +111,16 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   // Once, on a new account: the trial is on, what it includes, and the real prices.
   await expect(page).toHaveURL(/\/trial\?next=/);
   const trial = page.locator('[data-trial-welcome]');
-  await expect(trial.getByRole('heading', { level: 1 })).toHaveText('Your 7 days of Pro are on');
+  await expect(trial.getByRole('heading', { level: 1 })).toHaveText('Everything is unlocked');
+  // 14 days from today.
+  await expect(trial).toContainText(
+    /Pro is on until \w{3}, \d{1,2} \w{3}|Your 14 days of Pro are on/,
+  );
   // All three prices, as they are.
-  await expect(trial.locator('[data-trial-price="monthly"]')).toContainText('₹149');
-  await expect(trial.locator('[data-trial-price="quarterly"]')).toContainText('₹399');
-  await expect(trial.locator('[data-trial-price="yearly"]')).toContainText('₹1,499');
+  const prices = trial.locator('[data-trial-prices]');
+  await expect(prices).toContainText('₹149');
+  await expect(prices).toContainText('₹399');
+  await expect(prices).toContainText('₹1,499');
   await trial.locator('[data-trial-start]').click();
   await expect(page).toHaveURL(/\/routines\/[\w-]+$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Upper Lower Push Pull Legs');
@@ -143,9 +150,12 @@ test('intermediate and advanced lifters choose the recommendation or their own r
   await page.getByRole('radio', { name: /^Advanced/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: '4', exact: true }).click();
-  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Continue' }).click();
+  // Schedule, equipment, body, activity and food.
+  for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Continue' }).click();
   // Four days: full body every other day is recommended, and they can build their own instead.
-  await expect(page.getByRole('radio', { name: /Use the recommended routine/ })).toBeChecked();
+  await expect(page.getByRole('radio', { name: /Use the recommended routine/ })).toBeChecked({
+    timeout: 15_000,
+  });
   await expect(page.getByRole('radio', { name: /Full Body, every other day/ })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Create my routine' })).toBeVisible();
   await page.getByRole('radio', { name: /Build my own/ }).click();

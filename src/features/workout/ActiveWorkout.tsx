@@ -1,3 +1,4 @@
+import { reportFirst } from '@/app/errorReport';
 import { restIntervals } from '@/domain/analytics/rest';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -213,6 +214,7 @@ export function ActiveWorkout({ view, prefs }: Props) {
     try {
       if (effort !== null) await updateWorkoutFeel(db, workout.id, { sessionRpe: effort });
       await finishWorkout(db, workout.id, { keepUnconfirmed });
+      reportFirst('first_workout');
       haptic('success');
       await restActions.clear();
       navigate(`/workouts/${workout.id}/summary`, { replace: true });
@@ -274,6 +276,8 @@ export function ActiveWorkout({ view, prefs }: Props) {
           thickness={4}
           className="mb-2 mt-2"
         />
+        {/* The page's heading for screen readers (X7), after the visible name in the button. */}
+        <h1 className="sr-only">{workout.name}</h1>
       </header>
 
       {doneSets === 0 && !readinessHidden ? (
@@ -476,7 +480,8 @@ function FinishSheet({
     onFinish(keep, effort);
   };
   const nothingDone = check.completedSets === 0;
-  const total = check.completedSets + check.unconfirmedSets + check.emptySets;
+  const total =
+    check.completedSets + check.unconfirmedSets + check.emptySets + check.incompleteSets;
   const unticked = total - check.completedSets;
 
   if (nothingDone && check.unconfirmedSets === 0) {
@@ -542,6 +547,11 @@ function FinishSheet({
           {pluralize(check.emptySets, 'empty set')} will be removed.
         </p>
       ) : null}
+      {check.incompleteSets > 0 ? (
+        <p className="type-meta mt-1 text-text-2" data-incomplete-sets>
+          {pluralize(check.incompleteSets, 'set has', 'sets have')} no reps and will not be saved.
+        </p>
+      ) : null}
       {check.unconfirmedSets > 0 ? (
         <InlineNotice tone="warning" className="mt-4">
           {pluralize(check.unconfirmedSets, 'set has', 'sets have')} numbers but{' '}
@@ -558,6 +568,26 @@ function FinishSheet({
 
 function WorkoutNotes({ workout }: { workout: Workout }) {
   const [notes, setNotes] = useState(workout.notes ?? '');
+  // Saved while typing, half a second after the last key (T9), so closing the app mid-note
+  // keeps it; and on leaving the field.
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saved = useRef(workout.notes ?? '');
+  const saveNow = (text: string) => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    if (saved.current === text) return;
+    saved.current = text;
+    void updateWorkoutDetails(db, workout.id, { notes: text });
+  };
+  const latest = useRef(notes);
+  // Leaving the screen mid-note still saves it.
+  useEffect(
+    () => () => {
+      if (timer.current) saveNow(latest.current);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
   return (
     <TextArea
       label="Workout notes"
@@ -565,10 +595,14 @@ function WorkoutNotes({ workout }: { workout: Workout }) {
       value={notes}
       maxLength={1000}
       placeholder="Energy, sleep, anything worth remembering"
-      onChange={(e) => setNotes(e.target.value)}
-      onBlur={() => {
-        if ((workout.notes ?? '') !== notes) void updateWorkoutDetails(db, workout.id, { notes });
+      onChange={(e) => {
+        const text = e.target.value;
+        setNotes(text);
+        latest.current = text;
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => saveNow(text), 500);
       }}
+      onBlur={() => saveNow(notes)}
     />
   );
 }

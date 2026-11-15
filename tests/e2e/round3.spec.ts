@@ -30,6 +30,8 @@ test('plus adds and adds up without leaving the search; recent and usual show la
 
   await sheet.getByRole('searchbox').fill('roti');
   const row = sheet.locator('[data-food-results] li').first();
+  // Search results follow typing a moment later (deferred); tap once they are for "roti".
+  await expect(row).toContainText(/^Roti/);
   await row.locator('[data-quick-add]').click();
   await row.locator('[data-quick-add]').click();
   // Still on the search, and one line on the plate that added up.
@@ -134,10 +136,14 @@ test('setup: a target weight gives calories, protein and a date that moves with 
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: /Mostly sitting/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
+  // How they eat (optional), then the plan is built.
+  await page.getByRole('button', { name: 'Continue' }).click();
 
   const card = page.locator('[data-goal-targets]');
   const timeline = card.locator('[data-goal-timeline]');
-  await expect(timeline).toContainText(/You reach 72 kg around \d+ \w+ \d{4}, in about \d+ weeks/);
+  await expect(timeline).toContainText(/You reach 72 kg around \d+ \w+ \d{4}, in about \d+ weeks/, {
+    timeout: 15_000,
+  });
   // 2.2 g per kg of 80 kg.
   await expect(card.getByLabel('Protein a day')).toHaveValue('175');
   const suggested = Number((await card.getByLabel('Calories a day').inputValue()).replace(',', ''));

@@ -7,7 +7,15 @@ describe('a portion from a label', () => {
   it('grams against per 100 g values', () => {
     expect(
       labelPortion({ values: whey, column: 'per100', servingG: 33, amount: 45, unit: 'g' }),
-    ).toEqual({ grams: 45, kcal: 180, proteinG: 36, carbsG: 3.6, fatG: 2.7, fibreG: 0 });
+    ).toEqual({
+      grams: 45,
+      servings: null,
+      kcal: 180,
+      proteinG: 36,
+      carbsG: 3.6,
+      fatG: 2.7,
+      fibreG: 0,
+    });
   });
 
   it('servings against per 100 g values, through the serving size', () => {
@@ -49,6 +57,40 @@ describe('a portion from a label', () => {
     ).toBeNull();
     expect(
       labelPortion({ values: whey, column: 'per100', servingG: null, amount: 1, unit: 'serving' }),
+    ).toBeNull();
+  });
+
+  it('servings with no weight stay servings, never grams (D1)', () => {
+    const p = labelPortion({
+      values: { kcal: 240, proteinG: 24, carbsG: 20, fatG: 7, fibreG: 2 },
+      column: 'perServing',
+      servingG: null,
+      amount: 2,
+      unit: 'serving',
+    });
+    expect(p).toMatchObject({ grams: null, servings: 2, kcal: 480, proteinG: 48 });
+  });
+
+  it('refuses amounts under a quarter serving and anything that is not a number', () => {
+    const at = (amount: number) =>
+      labelPortion({
+        values: scoop,
+        column: 'perServing',
+        servingG: null,
+        amount,
+        unit: 'serving',
+      });
+    expect(at(0.1)).toBeNull();
+    expect(at(0.25)).not.toBeNull();
+    expect(at(Number.NaN)).toBeNull();
+    expect(
+      labelPortion({
+        values: { ...whey, proteinG: Number.NaN },
+        column: 'per100',
+        servingG: 33,
+        amount: 30,
+        unit: 'g',
+      }),
     ).toBeNull();
   });
 

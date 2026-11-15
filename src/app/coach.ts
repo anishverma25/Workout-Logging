@@ -1,3 +1,4 @@
+import { getFlags, PAUSED } from './flags';
 import { useSyncExternalStore } from 'react';
 import { supabase } from '@/data/sync/supabase';
 import { LIMITS, type CoachTopic, type CoachTurn } from '../../supabase/functions/_shared/coach.ts';
@@ -36,10 +37,15 @@ export interface CoachMessage extends CoachTurn {
 
 interface CoachStore {
   consent: boolean;
+  /** Which consent text they agreed to; an older one is asked again. */
+  consentVersion?: number;
   messages: CoachMessage[];
   /** Explain answers for today, by topic and the brief they answered. */
   explained: Record<string, { answer: string; at: number }>;
 }
+
+/** Raised when the consent text lists more of what is sent (November 2026: food, pain, notes). */
+export const CONSENT_VERSION = 2;
 
 const EMPTY: CoachStore = { consent: false, messages: [], explained: {} };
 
@@ -53,7 +59,8 @@ function prune(store: CoachStore, now = Date.now()): CoachStore {
   const cutoff = now - HISTORY_DAYS * DAY_MS;
   const today = new Date(now).toDateString();
   return {
-    consent: store.consent,
+    consent: store.consent && store.consentVersion === CONSENT_VERSION,
+    consentVersion: store.consentVersion,
     messages: store.messages.filter((m) => m.at >= cutoff).slice(-200),
     explained: Object.fromEntries(
       Object.entries(store.explained).filter(([, v]) => new Date(v.at).toDateString() === today),
@@ -105,7 +112,7 @@ export function useCoachStore(): CoachStore {
 export const getCoachStore = read;
 
 export function setCoachConsent(on: boolean) {
-  write({ ...read(), consent: on });
+  write({ ...read(), consent: on, consentVersion: CONSENT_VERSION });
 }
 
 /** Clears the chat and saved explanations on this phone. Consent stays as it is. */
@@ -138,8 +145,9 @@ async function call(body: {
   question: string;
   brief: string;
   history: CoachTurn[];
-}): Promise<string> {
+}): Promise<{ answer: string; sig?: string }> {
   if (!supabase) throw new CoachError('Accounts are not set up in this version of the app.', 'off');
+  if (!getFlags().ai_chat) throw new CoachError(PAUSED, 'paused');
   const { data, error } = await supabase.functions.invoke('coach', { body });
   if (error) {
     let message = 'Macrotrophy AI could not be reached. Check your connection and try again.';
@@ -155,9 +163,10 @@ async function call(body: {
     throw new CoachError(message, code);
   }
   const answer = (data as { answer?: unknown } | null)?.answer;
+  const sig = (data as { sig?: unknown } | null)?.sig;
   if (typeof answer !== 'string' || !answer)
     throw new CoachError('Macrotrophy AI gave no answer.', 'empty');
-  return answer;
+  return typeof sig === 'string' ? { answer, sig } : { answer };
 }
 
 /** The brief, trimmed to what the server accepts. */
@@ -168,7 +177,7 @@ export async function explain(topic: CoachTopic, brief: string): Promise<string>
   const key = `${topic}:${fingerprint(brief)}`;
   const saved = read().explained[key];
   if (saved) return saved.answer;
-  const answer = await call({ topic, question: '', brief: fit(brief), history: [] });
+  const { answer } = await call({ topic, question: '', brief: fit(brief), history: [] });
   write({ ...read(), explained: { ...read().explained, [key]: { answer, at: Date.now() } } });
   return answer;
 }
@@ -182,8 +191,13 @@ export async function ask(question: string, brief: string): Promise<string> {
   const history = read()
     .messages.filter((m) => !m.topic)
     .slice(-LIMITS.history)
-    .map(({ role, text: t }) => ({ role, text: t.slice(0, LIMITS.turn) }));
-  const answer = await call({ topic: 'chat', question: text, brief: fit(brief), history });
-  addMessages({ role: 'user', text }, { role: 'coach', text: answer });
+    // The server only trusts the AI's earlier words when they carry its signature.
+    .map(({ role, text: t, sig }) => ({
+      role,
+      text: t.slice(0, LIMITS.turn),
+      ...(sig ? { sig } : {}),
+    }));
+  const { answer, sig } = await call({ topic: 'chat', question: text, brief: fit(brief), history });
+  addMessages({ role: 'user', text }, { role: 'coach', text: answer, ...(sig ? { sig } : {}) });
   return answer;
 }

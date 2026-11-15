@@ -41,14 +41,24 @@ if (env('GROQ_API_KEY'))
 
 // A comma-separated list is allowed, for example during a move to a new domain:
 // https://macrotrophy.in,https://overloadgym.in
-const allowedOrigins = (env('APP_ORIGIN') ?? '')
+// Without APP_ORIGIN set, only the app's own addresses (and a local build) are allowed, never
+// any site at all.
+const DEFAULT_ORIGINS = [
+  'https://macrotrophy.in',
+  'https://www.macrotrophy.in',
+  'https://overloadgym.in',
+  'https://overload-gym.pages.dev',
+];
+const configuredOrigins = (env('APP_ORIGIN') ?? '')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);
+const allowedOrigins = configuredOrigins.length ? configuredOrigins : DEFAULT_ORIGINS;
+const isLocal = (origin: string) => /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 
 function cors(origin: string | null): Record<string, string> {
   const allow =
-    origin && (allowedOrigins.includes(origin) || !allowedOrigins.length)
+    origin && (allowedOrigins.includes(origin) || (!configuredOrigins.length && isLocal(origin)))
       ? origin
       : allowedOrigins[0];
   return {
@@ -96,17 +106,21 @@ Deno.serve(async (req) => {
       {
         providers,
         subscription: () => subscription,
-        // Today's photo allowance for this person (migration 0012).
-        photoQuota: {
-          async claim() {
-            const { data: left, error: claimError } = await asUser.rpc('claim_ai_use', {
-              p_kind: 'photo',
+        // Today's AI uses for this person (migration 0028), claimed as the service role for the
+        // user checked above, so nobody can call the counter directly.
+        // Answers are signed with a key only the server knows (A5).
+        signingKey: env('COACH_SIGNING_KEY') || env('SUPABASE_SERVICE_ROLE_KEY'),
+        quota: {
+          async claim(kind) {
+            const { data: left, error: claimError } = await admin.rpc('ai_claim', {
+              p_user: data.user.id,
+              p_kind: kind,
             });
             if (claimError) throw new Error(claimError.message);
             return typeof left === 'number' ? left : -1;
           },
-          async release() {
-            await asUser.rpc('release_ai_use', { p_kind: 'photo' });
+          async release(kind) {
+            await admin.rpc('ai_release', { p_user: data.user.id, p_kind: kind });
           },
         },
       },

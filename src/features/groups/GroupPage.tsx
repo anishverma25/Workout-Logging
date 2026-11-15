@@ -5,6 +5,7 @@ import {
   Copy,
   Crown,
   Ellipsis,
+  Flag,
   KeyRound,
   LogOut,
   Pencil,
@@ -35,6 +36,7 @@ import { PageHeader } from '@/app/layout/PageHeader';
 import { groupRankStory } from '@/domain/share/story';
 import { RankShareSheet } from '@/features/share/RankShareSheet';
 import { BoardRoutineSheet } from './BoardRoutineSheet';
+import { ReportSheet } from './PrivacySheets';
 import { DuelsCard } from './DuelsCard';
 import {
   ActionMenu,
@@ -138,7 +140,9 @@ export function GroupPage() {
   const [version, setVersion] = useState(0);
   const [open, setOpen] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
-  const [sheet, setSheet] = useState<'rename' | 'members' | 'code' | 'leave' | null>(null);
+  const [sheet, setSheet] = useState<'rename' | 'members' | 'code' | 'leave' | 'report' | null>(
+    null,
+  );
   const [sharing, setSharing] = useState(false);
   const [routineOf, setRoutineOf] = useState<string | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -454,6 +458,14 @@ export function GroupPage() {
                   ]
                 : []),
               {
+                label: 'Report this group',
+                icon: <Flag className="size-5" aria-hidden />,
+                onSelect: () => {
+                  setMenu(false);
+                  setSheet('report');
+                },
+              },
+              {
                 label: 'Leave group',
                 icon: <LogOut className="size-5" aria-hidden />,
                 danger: true,
@@ -463,6 +475,13 @@ export function GroupPage() {
                 },
               },
             ]}
+          />
+          <ReportSheet
+            open={sheet === 'report'}
+            kind="group"
+            target={b.group.id}
+            label={b.group.name}
+            onClose={() => setSheet(null)}
           />
           <BottomSheet
             open={sheet === 'rename'}
@@ -551,6 +570,9 @@ export function GroupPage() {
               hardSets: me.hardSets,
               records: me.records,
               proteinDays: me.proteinDays,
+              consistencyWeeks: me.consistencyWeeks,
+              progressPoints: me.progressPoints,
+              past: offset !== 0,
               groupName: b.group.name,
               members: b.group.members,
               leaderScore: leader,

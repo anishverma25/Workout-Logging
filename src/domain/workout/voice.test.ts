@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { matchSpokenExercise, parseSpokenSet } from './voice';
 
 const set = (weight: number | null, reps: number | null, sure: boolean, over: object = {}) => ({
-  kind: 'set', weight, reps, sure, unit: null, exercise: null, ...over,
+  kind: 'set',
+  weight,
+  reps,
+  sure,
+  unit: null,
+  exercise: null,
+  ...over,
 });
 
 describe('voice sets', () => {
@@ -21,6 +27,7 @@ describe('voice sets', () => {
     ['one hundred and ten kg 3 reps', set(110, 3, true, { unit: 'kg' })],
     ['pachees ke pandrah', set(25, 15, true)],
     ['82.5 for 6', set(82.5, 6, true)],
+    ['17,5 kg 10', set(17.5, 10, true, { unit: 'kg' })],
     ['eighty two point five kilo six', set(82.5, 6, true, { unit: 'kg' })],
     ['135 pounds 10 reps', set(135, 10, true, { unit: 'lb' })],
     ['8 reps 80 kilo', set(80, 8, true, { unit: 'kg' })],
@@ -43,12 +50,25 @@ describe('voice sets', () => {
   });
 
   it('ignores anything that is not a set', () => {
-    for (const s of ['', 'how many sets left', 'play some music', '80', 'three four five six', '80 kilo 500 reps', '900 kilo 5 reps', 'half past 8'])
+    for (const s of [
+      '',
+      'how many sets left',
+      'play some music',
+      '80',
+      'three four five six',
+      '80 kilo 500 reps',
+      '900 kilo 5 reps',
+      'half past 8',
+    ])
       expect(parseSpokenSet(s), s).toBeNull();
   });
 
   it('finds the exercise only when exactly one fits', () => {
-    const list = [{ name: 'Barbell bench press' }, { name: 'Incline dumbbell press' }, { name: 'Back squat' }];
+    const list = [
+      { name: 'Barbell bench press' },
+      { name: 'Incline dumbbell press' },
+      { name: 'Back squat' },
+    ];
     expect(matchSpokenExercise('bench', list)).toBe(list[0]);
     expect(matchSpokenExercise('squat', list)).toBe(list[2]);
     expect(matchSpokenExercise('press', list)).toBeNull();

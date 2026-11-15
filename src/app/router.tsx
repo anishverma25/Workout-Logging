@@ -86,6 +86,18 @@ export const router = createBrowserRouter([
     element: <RequireAccount />,
     errorElement: <RouteError />,
     children: [
+      // Development and e2e only (gone from production builds): a screen that throws while
+      // drawing, to test the crash screen and error reports.
+      ...(import.meta.env.DEV
+        ? [
+            {
+              path: '__crash',
+              Component: function Crash(): never {
+                throw new Error('Test crash for error reports');
+              },
+            },
+          ]
+        : []),
       {
         path: 'setup',
         lazy: page(() => import('@/features/setup/SetupPage'), 'SetupPage'),

@@ -1,6 +1,6 @@
 import { repsDone, setVolumeLoad } from './volume';
 import type { Exercise, WorkoutSet } from '../models/schemas';
-import { estimateOneRepMax, E1RM_PREFERRED_MAX_REPS, supportsE1rm } from './e1rm';
+import { estimateOneRepMax, supportsE1rm } from './e1rm';
 import { isLoadEligible, isWorkingSet, type Session } from './sessions';
 
 /** Best values for one exercise within one session. */
@@ -60,24 +60,19 @@ export function performanceFor(
     sessionReps: null,
   };
   const tracking = exercise?.trackingType;
-  let chartLow: number | null = null;
   for (const set of sets) {
     if (isLoadEligible(set, exercise)) {
-      const e1rm = supportsE1rm(exercise)
-        ? estimateOneRepMax(set.weightKg, set.reps, set.rir)
-        : null;
+      // Drop sets count for volume, never for load or e1RM records (batch 20, O7): the same rule
+      // as stalls, the Brain and the leaderboards.
+      const drop = set.setType === 'drop';
+      const e1rm =
+        !drop && supportsE1rm(exercise) ? estimateOneRepMax(set.weightKg, set.reps, set.rir) : null;
       if (e1rm !== null && (perf.bestE1rm === null || e1rm > perf.bestE1rm)) {
         perf.bestE1rm = e1rm;
         perf.bestE1rmSet = set;
       }
-      // Charts prefer the best set of 1 to 6 reps when there is one: low-rep sets estimate a
-      // max most reliably (Reynolds et al. 2006). Otherwise the best set up to 10 reps.
-      if (e1rm !== null) {
-        const low = (set.reps ?? 0) <= E1RM_PREFERRED_MAX_REPS;
-        if (low && (chartLow === null || e1rm > chartLow)) chartLow = e1rm;
-      }
       const w = set.weightKg ?? 0;
-      if (perf.heaviestLoad === null || w > perf.heaviestLoad) {
+      if (!drop && (perf.heaviestLoad === null || w > perf.heaviestLoad)) {
         perf.heaviestLoad = w;
         perf.heaviestLoadSet = set;
       }
@@ -139,7 +134,9 @@ export function performanceFor(
       }
     }
   }
-  perf.chartE1rm = chartLow ?? perf.bestE1rm;
+  // One rule for the whole chart (G3): the best set of 1 to 10 reps, so a change of rep range
+  // alone never moves the line.
+  perf.chartE1rm = perf.bestE1rm;
   return perf;
 }
 
@@ -147,17 +144,25 @@ export function performanceFor(
 export function performanceByExercise(sessions: Session[]): Map<string, ExercisePerformance[]> {
   const map = new Map<string, ExercisePerformance[]>();
   for (const session of sessions) {
+    // The same exercise twice in one workout is one session of it (G2): its sets are read
+    // together, so a trend never compares a workout with itself.
+    const byExercise = new Map<
+      string,
+      {
+        exercise: (typeof session.exercises)[number]['exercise'];
+        sets: (typeof session.exercises)[number]['sets'];
+      }
+    >();
     for (const { workoutExercise, exercise, sets } of session.exercises) {
-      const perf = performanceFor(
-        exercise,
-        workoutExercise.exerciseId,
-        session.workout.id,
-        session.date,
-        sets,
-      );
-      const list = map.get(workoutExercise.exerciseId) ?? [];
+      const entry = byExercise.get(workoutExercise.exerciseId);
+      if (entry) entry.sets = [...entry.sets, ...sets];
+      else byExercise.set(workoutExercise.exerciseId, { exercise, sets });
+    }
+    for (const [exerciseId, { exercise, sets }] of byExercise) {
+      const perf = performanceFor(exercise, exerciseId, session.workout.id, session.date, sets);
+      const list = map.get(exerciseId) ?? [];
       list.push(perf);
-      map.set(workoutExercise.exerciseId, list);
+      map.set(exerciseId, list);
     }
   }
   return map;

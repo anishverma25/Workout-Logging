@@ -2,7 +2,7 @@ import { buildData, type SetSpec } from '@/test/fixtures';
 import { SYSTEM_EXERCISES } from '@/data/library/exercises';
 import { stableId } from '@/lib/ids';
 import { buildSessions } from './sessions';
-import { detectStalls } from './stalls';
+import { detectStalls, inDeficit, stallWeeksFor } from './stalls';
 
 const NOW = new Date(2026, 9, 7, 20);
 const day = (offset: number) => {
@@ -135,7 +135,8 @@ describe('stalled lifts', () => {
     const three = stalls(plateau(3))[0]!;
     expect(three.cause).toBe('rep_range');
     expect(three.facts.reps).toEqual([5, 7]);
-    expect(stalls(plateau(3), 'advanced')[0]!.cause).toBe('deload');
+    // Advanced lifters progress over months: 3 weeks is not a stall for them (batch 13).
+    expect(stalls(plateau(3), 'advanced')).toEqual([]);
     expect(stalls(plateau(4))[0]!.cause).toBe('deload');
     const long = stalls(plateau(7))[0]!;
     expect(long.cause).toBe('variation');
@@ -167,5 +168,80 @@ describe('stalled lifts', () => {
       [-32, sets(80, 5)],
     ]);
     expect(stalls(specs)).toEqual([]);
+  });
+
+  describe('experience and cutting (batch 13)', () => {
+    // 4 weeks since the last best: stalled for a beginner, not yet for an advanced lifter.
+    const four = lift('barbell-bench-press', [
+      [-42, sets(80, 5)],
+      [-29, sets(85, 5)],
+      [-21, sets(85, 5)],
+      [-14, sets(85, 4)],
+      [-7, sets(82.5, 5)],
+      [-1, sets(85, 5)],
+    ]);
+    it('waits longer before calling an advanced lifter stalled', () => {
+      expect(stallWeeksFor('beginner')).toBe(3);
+      expect(stallWeeksFor('intermediate')).toBe(4);
+      expect(stallWeeksFor('advanced')).toBe(6);
+      expect(stalls(four, 'beginner')).toHaveLength(1);
+      expect(stalls(four, 'advanced')).toHaveLength(0);
+    });
+    it('in a deficit, a lift that holds is holding, not stalled, until 8 weeks', () => {
+      const cut = detectStalls(buildSessions(buildData(four)), NOW, 'beginner', SYSTEM_EXERCISES, {
+        deficit: true,
+      });
+      expect(cut).toHaveLength(1);
+      expect(cut[0]!.status).toBe('holding');
+      const fed = detectStalls(buildSessions(buildData(four)), NOW, 'beginner', SYSTEM_EXERCISES);
+      expect(fed[0]!.status).toBe('stalled');
+      const long = lift('barbell-bench-press', [
+        [-80, sets(80, 5)],
+        [-63, sets(85, 5)],
+        [-49, sets(85, 5)],
+        [-35, sets(85, 4)],
+        [-21, sets(82.5, 5)],
+        [-7, sets(85, 5)],
+      ]);
+      const after = detectStalls(
+        buildSessions(buildData(long)),
+        NOW,
+        'beginner',
+        SYSTEM_EXERCISES,
+        {
+          deficit: true,
+        },
+      );
+      expect(after[0]!.status).toBe('stalled');
+    });
+    it('reads a deficit from the goal and a falling weight, or from intake under maintenance', () => {
+      const w = (daysAgo: number, kg: number) => ({
+        measuredAt: new Date(NOW.getTime() - daysAgo * 86_400_000).toISOString(),
+        weightKg: kg,
+      });
+      const falling = [w(21, 82), w(14, 81.4), w(7, 80.9), w(1, 80.3)];
+      const flat = [w(21, 80), w(14, 80.1), w(7, 79.9), w(1, 80)];
+      expect(inDeficit({ goal: 'fat_loss', weights: falling, now: NOW })).toBe(true);
+      expect(inDeficit({ goal: 'fat_loss', weights: flat, now: NOW })).toBe(false);
+      expect(inDeficit({ goal: 'hypertrophy', weights: falling, now: NOW })).toBe(false);
+      expect(
+        inDeficit({
+          goal: 'hypertrophy',
+          weights: [],
+          now: NOW,
+          intakeKcal: 2000,
+          maintenanceKcal: 2300,
+        }),
+      ).toBe(true);
+      expect(
+        inDeficit({
+          goal: 'hypertrophy',
+          weights: [],
+          now: NOW,
+          intakeKcal: 2100,
+          maintenanceKcal: 2300,
+        }),
+      ).toBe(false);
+    });
   });
 });

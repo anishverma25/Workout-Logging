@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type { Milestone } from './roadmapPlan';
@@ -63,61 +63,6 @@ export function PictureOptions<T extends string>({
           </button>
         );
       })}
-    </div>
-  );
-}
-
-const reduceMotion = () =>
-  typeof window !== 'undefined' &&
-  !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-/**
- * "Building your plan": each line is a real step the app takes with their answers, ticked one
- * after another, then the roadmap. About two seconds; at once with reduced motion.
- */
-export function Personalising({ lines, children }: { lines: string[]; children: ReactNode }) {
-  const [done, setDone] = useState(() => (reduceMotion() ? lines.length : 0));
-  useEffect(() => {
-    if (done >= lines.length) return;
-    const t = window.setTimeout(() => setDone((d) => d + 1), done === 0 ? 350 : 480);
-    return () => window.clearTimeout(t);
-  }, [done, lines.length]);
-  const ready = done >= lines.length;
-  return (
-    <div className="flex flex-col gap-6" data-personalising={ready ? 'done' : 'working'}>
-      <ul className="flex flex-col gap-2.5" aria-live="polite">
-        {lines.map((line, i) => {
-          const ticked = i < done;
-          const working = i === done;
-          return (
-            <li
-              key={line}
-              className={cn(
-                'flex items-center gap-3 transition-opacity duration-300',
-                i > done ? 'opacity-35' : 'opacity-100',
-              )}
-            >
-              <span
-                className={cn(
-                  'flex size-6 shrink-0 items-center justify-center rounded-full',
-                  ticked ? 'bg-lime text-on-lime' : 'bg-surface-2',
-                )}
-                aria-hidden
-              >
-                {ticked ? (
-                  <Check className="size-4" strokeWidth={3} />
-                ) : working ? (
-                  <span className="size-2 animate-pulse rounded-full bg-lime" />
-                ) : null}
-              </span>
-              <span className={cn('type-body', ticked ? 'text-text-1' : 'text-text-2')}>
-                {line}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-      {ready ? <div className="rise-in">{children}</div> : null}
     </div>
   );
 }

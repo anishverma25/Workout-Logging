@@ -181,7 +181,9 @@ export async function suggestFood(food: SuggestedFood): Promise<void> {
     throw new SuggestError('Saved for you. You have sent a lot for review; send more tomorrow.');
   }
   if (/disagree|missing|Name/i.test(error.message)) {
-    throw new SuggestError('Saved for you. It was not sent for everyone: check the name and numbers.');
+    throw new SuggestError(
+      'Saved for you. It was not sent for everyone: check the name and numbers.',
+    );
   }
   throw new SuggestError('Saved for you. It could not be sent for everyone right now.');
 }

@@ -37,7 +37,12 @@ export function angleKind(
 
 /** Where the angle picker starts: flat for a flat bench press, else the usual angle. */
 export function angleStart(exercise: { name: string } | undefined, kind: AngleKind): number {
-  if (exercise && kind === 'incline' && isFlatBench(exercise.name) && !/\bincline\b/i.test(exercise.name))
+  if (
+    exercise &&
+    kind === 'incline' &&
+    isFlatBench(exercise.name) &&
+    !/\bincline\b/i.test(exercise.name)
+  )
     return 0;
   return DEFAULT_ANGLE[kind];
 }

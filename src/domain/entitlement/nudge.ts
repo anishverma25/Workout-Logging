@@ -1,3 +1,4 @@
+import { FREE_PROGRESS_DAYS } from './limits';
 /**
  * When, and with what, to remind a free member that Pro exists.
  *
@@ -66,13 +67,13 @@ export interface Nudge {
 }
 
 /** The free view of Progress, in days. Anything older than this is Pro. */
-export const FREE_PROGRESS_DAYS = 30;
+export { FREE_PROGRESS_DAYS };
 
 /**
  * The reminders, best first. Each one is only offered when its own number is real, so a person
  * with no history and no records is never shown a made-up reason to pay.
  */
-function candidates(f: NudgeFacts): Nudge[] {
+export function candidates(f: NudgeFacts): Nudge[] {
   const out: Nudge[] = [];
   if (f.historyDays > FREE_PROGRESS_DAYS + 14) {
     out.push({

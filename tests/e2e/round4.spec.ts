@@ -148,6 +148,9 @@ test('share a routine as a link; someone without an account adds it after signin
   await other.getByRole('textbox', { name: 'Email' }).fill(uniqueEmail('share-to'));
   await other.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await other.getByRole('button', { name: 'Create account' }).click();
+  // Setup comes first for a new account, then the routine is still waiting.
+  await expect(other).toHaveURL(/\/setup/);
+  await other.getByRole('button', { name: 'Not now' }).click();
   await expect(other).toHaveURL(/\/r$/);
   await other.locator('[data-add-shared-routine]').click();
   await expect(other).toHaveURL(/\/routines\/[0-9a-f-]+$/);
@@ -401,7 +404,7 @@ test('Macrotrophy AI opens at the latest message', async ({ page }) => {
     }));
     localStorage.setItem(
       `overload.coach.${uid}`,
-      JSON.stringify({ consent: true, messages, explained: {} }),
+      JSON.stringify({ consent: true, consentVersion: 2, messages, explained: {} }),
     );
   }, id);
   await page.goto('/coach');

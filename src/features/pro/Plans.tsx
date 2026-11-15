@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useAppFlags } from '@/app/flags';
 import { AlertTriangle, ShieldCheck, Tag } from 'lucide-react';
 import { useAccount } from '@/app/account';
 import {
   BillingError,
   cancelPlan,
   checkCoupon,
+  clearPendingPayment,
+  pendingPayment,
   formatRupees,
   perMonth,
   startCheckout,
@@ -13,7 +16,8 @@ import {
   type BillingPlan,
   type Coupon,
 } from '@/app/billing';
-import type { EntitlementView } from '@/app/entitlement';
+import { refreshEntitlement, type EntitlementView } from '@/app/entitlement';
+import { SUPPORT_EMAIL } from '@/features/legal/contact';
 import { markProJustStarted } from './justPaid';
 import { ButtonLink } from '@/components/ui/Button';
 import {
@@ -366,6 +370,10 @@ function BuyPlan({
   const [done, setDone] = useState(false);
   const [mode, setMode] = useState<PayMode>(extend ? 'once' : 'subscribe');
   const [coupon, setCoupon] = useState<Coupon | null>(null);
+  // A payment made whose confirmation did not arrive: no second payment until it is settled.
+  const [pending, setPending] = useState(() => pendingPayment());
+  const [waitedOut, setWaitedOut] = useState(false);
+  const flags = useAppFlags();
   const shown = priced(plans, mode);
   const plan = shown.find((p) => p.id === choice) ?? shown[0]!;
   const periods = mode === 'once' ? PERIOD_ONCE : PERIOD;
@@ -373,6 +381,27 @@ function BuyPlan({
   const open = mode === 'once' ? true : plan.available;
   const first = withCoupon(plan.priceInr, coupon);
   const until = extend && e.proEndsAt ? formatCalendarDate(e.proEndsAt) : null;
+
+  // While a payment is waiting, ask every 3 seconds for 90 seconds whether Pro is on.
+  useEffect(() => {
+    if (!pending) return;
+    if (e.plan === 'pro' || e.plan === 'founding') {
+      clearPendingPayment();
+      markProJustStarted();
+      window.location.reload();
+      return;
+    }
+    const started = Date.now();
+    const timer = window.setInterval(() => {
+      if (Date.now() - started > 90_000) {
+        window.clearInterval(timer);
+        setWaitedOut(true);
+        return;
+      }
+      void refreshEntitlement();
+    }, 3_000);
+    return () => window.clearInterval(timer);
+  }, [pending, e.plan]);
 
   const pick = (m: PayMode) => {
     setMode(m);
@@ -391,7 +420,9 @@ function BuyPlan({
         mode,
         coupon?.code ?? null,
       );
-      if (out.result === 'paid') {
+      if (out.result === 'pending') {
+        setPending(pendingPayment() ?? { paymentId: out.paymentId, at: 0 });
+      } else if (out.result === 'paid') {
         setDone(true);
         // A paid-for page should not keep selling: reload so the whole app, every Pro gate
         // included, comes back with the new plan, and the Pro page opens with the welcome.
@@ -483,6 +514,20 @@ function BuyPlan({
           Payment confirmed. Pro is on.
         </InlineNotice>
       ) : null}
+      {!flags.payments ? (
+        <p className="type-meta mt-3 text-text-2" data-payments-paused>
+          Payments are paused for a short while. Try again later.
+        </p>
+      ) : null}
+      {pending && !done ? (
+        <InlineNotice icon={<ShieldCheck />} className="mt-4">
+          <span data-payment-pending>
+            {waitedOut
+              ? `Your payment is safe. Pro will start within a few minutes. If it has not by then, write to ${SUPPORT_EMAIL} with this id: ${pending.paymentId}`
+              : 'Payment received. Turning Pro on...'}
+          </span>
+        </InlineNotice>
+      ) : null}
 
       <div className="mt-5">
         {!signedIn ? (
@@ -490,7 +535,13 @@ function BuyPlan({
             Start {TRIAL_DAYS} days free
           </ButtonLink>
         ) : open ? (
-          <PrimaryButton block loading={busy} onClick={() => void buy()}>
+          <PrimaryButton
+            block
+            loading={busy}
+            // Not while the plan is unknown (offline): it could already be paid for.
+            disabled={!!pending || e.unknown || !flags.payments}
+            onClick={() => void buy()}
+          >
             {mode === 'once'
               ? `Pay ${formatRupees(first)} once ${PERIOD_ONCE[plan.id]}`
               : coupon

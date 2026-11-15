@@ -144,6 +144,12 @@ export class WorkoutDatabase extends Dexie {
     this.version(6).stores({
       planItems: 'id, kind, status, origin',
     });
+    // Another tab opened a newer version of the app and wants to upgrade this database. Dexie
+    // closes this connection (after any write in progress finishes); the app says so once.
+    this.on('versionchange', (event) => {
+      const newer = typeof event.newVersion === 'number' && event.newVersion > event.oldVersion;
+      if (newer && this === db) upgradedElsewhere.forEach((l) => l());
+    });
   }
 
   /** Tables that hold origin-tagged domain records. */
@@ -177,6 +183,14 @@ export const accountDbName = (userId: string) => `overload-user-${userId}`;
  * sees the new instance. The app remounts its tree on switch so live queries re-subscribe.
  */
 export let db = new WorkoutDatabase(GUEST_DB_NAME);
+
+const upgradedElsewhere = new Set<() => void>();
+
+/** Called when another tab upgrades the open database: this tab must reload to go on. */
+export function onUpgradedElsewhere(listener: () => void): () => void {
+  upgradedElsewhere.add(listener);
+  return () => upgradedElsewhere.delete(listener);
+}
 
 const switchListeners = new Set<(db: WorkoutDatabase) => void>();
 

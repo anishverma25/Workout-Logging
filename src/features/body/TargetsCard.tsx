@@ -11,7 +11,7 @@ import { e1rmRate } from '@/domain/analytics/standards';
 import { targetInsights, type TargetInsight } from '@/domain/analytics/targets';
 import { GOAL_ENERGY } from '@/domain/analytics/body';
 import { dayTotals, nutritionSummary, realMaintenance } from '@/domain/nutrition/analysis';
-import { dailyTargets } from '@/domain/nutrition/targets';
+import { dailyTargets, TOO_LOW_FOR_PROTEIN } from '@/domain/nutrition/targets';
 import { useFoodData } from '@/data/hooks';
 import { useFeature } from '@/app/entitlement';
 import { toDateKey } from '@/lib/dates';
@@ -180,6 +180,11 @@ export function TargetsCard({
           ) : null}
         </div>
       </dl>
+      {daily.tooLowForProtein ? (
+        <p className="type-meta mt-3 text-text-2" data-too-low-for-protein>
+          {TOO_LOW_FOR_PROTEIN} Carbohydrate is at zero and fat at its lowest healthy level.
+        </p>
+      ) : null}
 
       {insights.length > 0 ? (
         <ul className="mt-4 flex flex-col gap-3">
@@ -279,7 +284,7 @@ function FoodLogBlock({
         maintenance ? (
           <>
             <p className="type-meta mt-2 text-text-2">
-              Your real maintenance is about{' '}
+              Your maintenance is about{' '}
               <span className="tabular font-semibold text-text-1">{n(maintenance.kcal)} kcal</span>:
               you ate {n(maintenance.meanIntake)} kcal a day while your trend weight moved{' '}
               {maintenance.changeKg >= 0 ? '+' : '−'}
@@ -293,13 +298,13 @@ function FoodLogBlock({
           </>
         ) : (
           <p className="type-meta mt-2 text-text-2">
-            Real maintenance shows after 14 fully logged days in 4 weeks, with weigh-ins at both
+            Your maintenance shows after 14 fully logged days in 4 weeks, with weigh-ins at both
             ends.
           </p>
         )
       ) : (
         <TextLink to="/pro" small className="mt-2" data-pro-lock="food_insights">
-          Pro works out your real maintenance from this
+          Pro works out your maintenance from this
         </TextLink>
       )}
     </div>

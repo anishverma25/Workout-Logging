@@ -1,4 +1,6 @@
+import { LEARNING_FOOD_DAYS, LEARNING_WEIGH_INS } from '../onboarding/firstDays';
 import { GOAL_PROTEIN, targetRate } from '../analytics/body';
+import { unsafeTarget } from '../analytics/goalPlan';
 import { muscleName } from '../analytics/weekly';
 import type { Experience, Goal } from '../models/schemas';
 import type { WeekFacts } from './facts';
@@ -92,7 +94,7 @@ export type Change = ChangeBase &
   );
 
 export interface Hold {
-  kind: 'calories' | 'protein' | 'volume';
+  kind: 'calories' | 'protein' | 'volume' | 'swap';
   reason: Text;
 }
 
@@ -135,6 +137,9 @@ export interface DecideInput {
     targetKg: number | null;
     /** The person typed their own protein target: it is theirs to keep. */
     ownProtein: boolean;
+    /** When known: a target under a healthy weight, or anyone under 18, is held, never cut. */
+    heightCm?: number | null;
+    age?: number | null;
   };
   plan: {
     kcal: number | null;
@@ -157,6 +162,8 @@ export interface DecideInput {
     name: (id: string) => string;
     keyOf: (id: string) => string | null;
     idOf: (key: string) => string | null;
+    /** The person's equipment allows it (setup). Missing: everything is allowed. */
+    fits?: (id: string) => boolean;
   };
 }
 
@@ -177,9 +184,12 @@ function paceBand(person: DecideInput['person']): { dir: Direction; lo: number; 
   if (targetKg !== null && weightKg !== null) {
     const diff = targetKg - weightKg;
     dir = Math.abs(diff) < 0.5 ? 'hold' : diff < 0 ? 'lose' : 'gain';
+    // Same rule as setup: never cut towards an underweight target, or for anyone under 18.
+    if (unsafeTarget({ weightKg, targetKg, heightCm: person.heightCm, age: person.age }))
+      dir = 'hold';
   } else {
     dir =
-      goal === 'fat_loss'
+      goal === 'fat_loss' && !(person.age != null && person.age < 18)
         ? 'lose'
         : goal === 'hypertrophy' || goal === 'strength_hypertrophy'
           ? 'gain'
@@ -583,6 +593,8 @@ export function decideWeek(input: DecideInput): Decision {
 
   // 2. Something hurts.
   const routine = new Set(plan.exerciseIds);
+  /** Lifts a swap was due for, with nothing that fits the person's equipment. */
+  const unfit: string[] = [];
   for (const pain of input.pains) {
     const label = PAIN_LABEL[pain.area];
     if (needsProfessional(pain)) {
@@ -603,6 +615,11 @@ export function decideWeek(input: DecideInput): Decision {
       const gentler = key ? GENTLER[pain.area][key] : undefined;
       const toId = gentler ? input.exercise.idOf(gentler) : null;
       if (!toId || routine.has(toId)) continue;
+      // Never a swap the person's equipment cannot do (batch 13): the lift stays, with a reason.
+      if (input.exercise.fits && !input.exercise.fits(toId)) {
+        unfit.push(id);
+        continue;
+      }
       routine.add(toId);
       changes.push({
         id: `swap:${id}`,
@@ -780,8 +797,9 @@ export function decideWeek(input: DecideInput): Decision {
         candidates.push({
           score: 2,
           change: setsChange(muscle, planned, planned - MAX_SET_STEP, 'personal', {
-            en: `Your own logs show your ${name.toLowerCase()} lifts move best at fewer weekly sets than this.`,
-            hi: `Aapke apne logs dikhate hain ki ${name} ki lifts isse kam weekly sets par behtar chalti hain.`,
+            // An observation from their logs, never a claim about cause (batch 8).
+            en: `In your logs, your ${name.toLowerCase()} lifts moved faster in weeks with fewer sets than this.`,
+            hi: `Aapke logs mein, ${name} ki lifts un hafton mein tez badhi jab sets isse kam the.`,
           }),
         });
         continue;
@@ -818,8 +836,12 @@ export function decideWeek(input: DecideInput): Decision {
     let swaps = 0;
     for (const stall of input.stalls) {
       if (swaps >= 2) break;
-      if (stall.cause !== 'variation' || !stall.variationId) continue;
-      if (!plan.exerciseIds.includes(stall.exerciseId) || routine.has(stall.variationId)) continue;
+      if (stall.cause !== 'variation' || !plan.exerciseIds.includes(stall.exerciseId)) continue;
+      if (!stall.variationId || (input.exercise.fits && !input.exercise.fits(stall.variationId))) {
+        unfit.push(stall.exerciseId);
+        continue;
+      }
+      if (routine.has(stall.variationId)) continue;
       if (changes.some((c) => c.kind === 'swap' && c.fromExerciseId === stall.exerciseId)) continue;
       routine.add(stall.variationId);
       swaps += 1;
@@ -851,11 +873,27 @@ export function decideWeek(input: DecideInput): Decision {
     });
   }
 
-  if (model.stage.learning)
-    notes.push({
-      en: `Learning your patterns, week ${Math.max(1, model.stage.week)} of ${model.stage.of}. Until then the plan uses research defaults.`,
-      hi: `Aapke patterns seekh raha hai, hafta ${Math.max(1, model.stage.week)} of ${model.stage.of}. Tab tak plan research defaults par chalega.`,
+  if (unfit.length) {
+    const names = [...new Set(unfit)].map((id) => input.exercise.name(id));
+    holds.push({
+      kind: 'swap',
+      reason: {
+        en: `${names.join(', ')} ${names.length === 1 ? 'stays' : 'stay'} as planned: no close swap fits your equipment. Change it in setup if you have more now.`,
+        hi: `${names.join(', ')} wahi rahega: aapke equipment mein koi close swap nahi hai. Agar ab zyada equipment hai to setup mein badliye.`,
+      },
     });
+  }
+
+  if (model.stage.learning) {
+    // The learning meter (batch 9): how far along, and this week's logging toward it.
+    const thisWeek = input.weeks.at(-1);
+    const food = Math.min(thisWeek?.foodDays ?? 0, LEARNING_FOOD_DAYS);
+    const weighs = Math.min(thisWeek?.weighIns ?? 0, LEARNING_WEIGH_INS);
+    notes.push({
+      en: `Learning your patterns, week ${Math.max(1, model.stage.week)} of ${model.stage.of}. This week: ${food} of ${LEARNING_FOOD_DAYS} food days, ${weighs} of ${LEARNING_WEIGH_INS} weigh-ins. Until then the plan uses research defaults.`,
+      hi: `Aapke patterns seekh raha hai, hafta ${Math.max(1, model.stage.week)} of ${model.stage.of}. Is hafte: ${food} of ${LEARNING_FOOD_DAYS} food days, ${weighs} of ${LEARNING_WEIGH_INS} weigh-ins. Tab tak plan research defaults par chalega.`,
+    });
+  }
 
   return {
     weekStart: input.nextWeekStart,

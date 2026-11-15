@@ -534,7 +534,16 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
     const fam = p.main;
     let y = 0;
     const ts = 3.5 * U;
-    const tw = p.text(c.title, 0, y + baseline(ts, 1.45), {
+    // C2: a long workout name is shortened, like the other designs, so the sub stays on the card.
+    const subW = p.width(c.sub, { size: ts, family: fam });
+    let title = c.title;
+    while (
+      title.length > 3 &&
+      p.width(title, { size: ts, weight: 600, family: fam }) > w - subW - 1.6 * U
+    )
+      title = title.slice(0, -2);
+    if (title !== c.title) title = `${title.trimEnd()}…`;
+    const tw = p.text(title, 0, y + baseline(ts, 1.45), {
       size: ts,
       weight: 600,
       family: fam,

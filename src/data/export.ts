@@ -10,7 +10,11 @@ export function toCsv(rows: (string | number | null | undefined)[][]): string {
       r
         .map((v) => {
           if (v === null || v === undefined) return '';
-          const s = String(v);
+          // Text that a spreadsheet would run as a formula (=, +, -, @, tab, return at the
+          // start) gets a leading apostrophe, so a food named "=HYPERLINK(...)" stays text.
+          // Numbers are left alone, so -2.5 is still a number.
+          const raw = String(v);
+          const s = typeof v === 'string' && /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
           return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
         })
         .join(','),

@@ -1,3 +1,4 @@
+import { FREE_ROUTINES } from '@/domain/entitlement/limits';
 import type { ReactNode } from 'react';
 import { BrainArt, FoodArt, LifeArt, NowArt, PlanArt, SocialArt, VoiceArt } from './whatsNewArt';
 import { BoardArt, LookArt, PayArt } from './whatsNewArt2';
@@ -45,7 +46,7 @@ export const BRAIN_STEPS: ReleaseStep[] = [
   },
   {
     id: 'plan',
-    kicker: 'Adaptive plan',
+    kicker: 'The Brain',
     title: 'Your week and next week',
     lead: 'Your weekly report now ends with next week: calories, protein and sets, changed only as far as your results say.',
     art: <PlanArt />,
@@ -305,7 +306,7 @@ export const RELEASE_STEPS: ReleaseStep[] = [
     points: [
       {
         strong: 'Free.',
-        text: 'Unlimited workout logging, all your history and records, 2 routines, calories, a group and the global board.',
+        text: `Unlimited workout logging, all your history and records, ${FREE_ROUTINES} routines, calories, a group and the global board.`,
       },
       {
         strong: 'Pro.',

@@ -1,3 +1,4 @@
+import { MIN_DAILY_KCAL } from '@/domain/brain/limits';
 import { useState } from 'react';
 import {
   BottomSheet,
@@ -118,8 +119,16 @@ function TargetsBody({
       ? { macros, kcal: kcalNow }
       : null;
 
+  // Own calories under the plan's floor need one confirmation (batch 10, D11).
+  const [confirmLow, setConfirmLow] = useState(false);
+  const low = mode === 'own' && own.kcal !== null && own.kcal < MIN_DAILY_KCAL;
+
   async function save() {
     if (!mode) return;
+    if (low && !confirmLow) {
+      setConfirmLow(true);
+      return;
+    }
     setBusy(true);
     try {
       await saveTargetSettings(
@@ -283,8 +292,20 @@ function TargetsBody({
       ) : null}
 
       <div className="flex flex-col gap-2">
+        {low && confirmLow ? (
+          <p className="type-meta text-text-2" role="alert" data-low-calories>
+            {own.kcal!.toLocaleString('en-IN')} kcal is under{' '}
+            {MIN_DAILY_KCAL.toLocaleString('en-IN')} kcal, the least the app ever plans. Eating this
+            little for long can cost muscle and health. Save it only if a doctor or dietitian set
+            it.
+          </p>
+        ) : null}
         <PrimaryButton block onClick={() => void save()} loading={busy} disabled={!mode}>
-          {mode === 'calculated' ? 'Use these targets' : 'Save targets'}
+          {mode === 'calculated'
+            ? 'Use these targets'
+            : low && confirmLow
+              ? 'Save anyway'
+              : 'Save targets'}
         </PrimaryButton>
         <SecondaryButton block onClick={onDone}>
           Cancel

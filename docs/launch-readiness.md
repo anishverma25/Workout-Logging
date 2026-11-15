@@ -20,7 +20,7 @@ Already true in the code:
 - [x] Logging works offline and survives refresh, closing the app and losing signal
 - [x] Sync is idempotent (no duplicates), retries, and never claims a backup it does not have
 - [x] Each account is isolated at the database (row level security, tested with two users)
-- [x] Trial is exactly 168 hours from account creation, set by the server
+- [x] Trial is exactly 14 days (336 hours) from account creation, set by the server
 - [x] Pro cannot be granted from the browser; history is never locked
 - [x] Demo data can never enter an account
 - [x] Installable app, works offline, updates only when the person taps Reload

@@ -49,8 +49,14 @@ describe('resolveEntitlement', () => {
     expect(hasFeature(e, 'long_range')).toBe(false);
   });
 
-  it('includes Pro features for exactly 168 hours of trial', () => {
-    expect(resolveEntitlement(sub(), at(0)).plan).toBe('trial');
+  it('a 14-day trial (accounts from migration 0033) runs its own 336 hours', () => {
+    const long = sub({ trial_expires_at: at(336).toISOString() });
+    expect(resolveEntitlement(long, at(200))).toMatchObject({ plan: 'trial', trialHours: 336 });
+    expect(resolveEntitlement(long, at(336)).plan).toBe('free');
+  });
+
+  it('includes Pro features for exactly the 168 hours of an older trial', () => {
+    expect(resolveEntitlement(sub(), at(0))).toMatchObject({ plan: 'trial', trialHours: 168 });
     const last = resolveEntitlement(sub(), new Date(at(168).getTime() - 1));
     expect(last.plan).toBe('trial');
     expect(last.remainingMs).toBe(1);

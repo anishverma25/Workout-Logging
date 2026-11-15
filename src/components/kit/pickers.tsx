@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { formatSeconds } from '@/lib/format';
@@ -31,6 +31,22 @@ function KeypadEntry({
 }) {
   const [text, setText] = useState(initial);
   const [error, setError] = useState(false);
+  // A real id (X6): the label has spaces and can repeat on one page.
+  const hintId = useId();
+  // When the keypad closes, focus goes back to the value it replaced (X6).
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    const form = formRef.current;
+    const parent = form?.parentElement ?? null;
+    return () => {
+      const hadFocus = !!form && form.contains(document.activeElement);
+      if (!hadFocus || !parent) return;
+      requestAnimationFrame(() => {
+        if (!parent.isConnected) return;
+        parent.querySelector<HTMLElement>('[role="spinbutton"]')?.focus({ preventScroll: true });
+      });
+    };
+  }, []);
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
     const v = parse(text);
@@ -41,7 +57,7 @@ function KeypadEntry({
     onDone(v);
   };
   return (
-    <form onSubmit={submit} className="flex items-start gap-2">
+    <form ref={formRef} onSubmit={submit} className="flex items-start gap-2">
       <div className="min-w-0 flex-1">
         <input
           autoFocus
@@ -50,7 +66,7 @@ function KeypadEntry({
           enterKeyHint="done"
           aria-label={label}
           aria-invalid={error || undefined}
-          aria-describedby={`${label}-hint`}
+          aria-describedby={hintId}
           value={text}
           onChange={(e) => {
             setText(e.target.value.replace(/[^\d:]/g, '').slice(0, 5));
@@ -68,7 +84,8 @@ function KeypadEntry({
           )}
         />
         <p
-          id={`${label}-hint`}
+          id={hintId}
+          role={error ? 'alert' : undefined}
           className={cn('type-meta mt-1.5', error ? 'text-danger-text' : 'text-text-2')}
         >
           {hint}

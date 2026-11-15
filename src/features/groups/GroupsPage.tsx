@@ -1,3 +1,4 @@
+import { useAppFlags } from '@/app/flags';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ChevronRight, Globe2, KeyRound, Plus, Trophy, UsersRound } from 'lucide-react';
@@ -37,6 +38,18 @@ export function GroupsPage() {
   const [sheet, setSheet] = useState<'create' | 'join' | 'username' | null>(null);
   const sync = useSyncStatus();
   const unsynced = sync.pending - sync.rejected;
+  const flags = useAppFlags();
+
+  if (!flags.groups)
+    return (
+      <>
+        <PageHeader back={{ to: '/more', label: 'More' }} title="Groups" />
+        <p className="type-body mt-4 text-text-2" data-groups-paused>
+          Groups and leaderboards are paused for a short while. Your points are safe. Try again
+          later.
+        </p>
+      </>
+    );
 
   return (
     <>
@@ -278,7 +291,7 @@ export function HowPointsWork() {
     {
       points: `+${POINTS.workout}`,
       what: 'a workout',
-      detail: `10 minutes or more, at least 3 working sets ticked as you do them. One a day, up to ${WEEKLY_CAPS.workouts} a week.`,
+      detail: `10 minutes or more not counting pauses, at least 3 working sets ticked as you do them. One a day, up to ${WEEKLY_CAPS.workouts} a week.`,
     },
     {
       points: `+${POINTS.hardSet}`,
@@ -288,7 +301,7 @@ export function HowPointsWork() {
     {
       points: `+${POINTS.record}`,
       what: 'a personal record',
-      detail: `A new best on an exercise you have done at least twice before. Up to ${WEEKLY_CAPS.records} a week.`,
+      detail: `A new best estimated 1RM on a compound lift you have done at least twice before. Up to ${WEEKLY_CAPS.records} a week.`,
     },
     {
       points: `+${POINTS.consistencyWeek}`,

@@ -73,3 +73,16 @@ describe('staples come first', () => {
     expect(top('paneer')).toBe('Paneer, plain');
   });
 });
+
+describe('searches nothing can match (batch 10, D3)', () => {
+  it('Hindi script or symbols list no foods and are flagged', async () => {
+    const { searchFoods: search, unreadableQuery } = await import('./search');
+    const { FOODS } = await import('@/data/library/foods');
+    expect(unreadableQuery('दाल')).toBe(true);
+    expect(unreadableQuery('!!')).toBe(true);
+    expect(unreadableQuery('dal')).toBe(false);
+    expect(unreadableQuery('  ')).toBe(false);
+    expect(search(FOODS, 'दाल', null)).toEqual([]);
+    expect(search(FOODS, 'dal', null).length).toBeGreaterThan(0);
+  });
+});

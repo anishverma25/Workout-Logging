@@ -15,9 +15,9 @@ describe('coupon prices', () => {
 
 describe('failed payments', () => {
   it("passes on Razorpay's own reason, and falls back to plain words", () => {
-    expect(
-      failureReason({ error: { description: 'Payment was declined by your UPI app' } }),
-    ).toBe('Payment was declined by your UPI app.');
+    expect(failureReason({ error: { description: 'Payment was declined by your UPI app' } })).toBe(
+      'Payment was declined by your UPI app.',
+    );
     expect(failureReason({ error: { description: 'Your bank declined it.' } })).toBe(
       'Your bank declined it.',
     );

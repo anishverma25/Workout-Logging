@@ -82,7 +82,8 @@
   /* Text */
   --text-1: #ffffff;
   --text-2: rgb(235 235 245 / 0.6);
-  --text-3: rgb(235 235 245 / 0.38);
+  /* Raised from 0.38 to reach 4.5:1 (WCAG AA) on --bg, --surface and --surface-2 (batch 16, X1). */
+  --text-3: rgb(235 235 245 / 0.55);
 
   /* The one accent, sampled from the Start button. Dimmer lime is the same hue with opacity. */
   --lime: #c6f432;
@@ -141,6 +142,8 @@
   --danger: #ff453a;
   /* Destructive text and field errors: --danger is 4.1:1 on --surface-2, this is 5.0:1. */
   --danger-text: #ff6b5e;
+  /* A red to put white text on (swipe to delete): 5.4:1, where --danger is 3.4:1 (X7). */
+  --danger-fill: #d70015;
   /* Change capsules (G3): green up, red down, on their own colour at 16%. */
   --up: #30d158;
   --up-dim: rgb(48 209 88 / 0.16);

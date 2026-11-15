@@ -119,3 +119,21 @@ describe('personal records', () => {
     );
   });
 });
+
+describe('assisted exercises (batch 11, T6)', () => {
+  it('more reps with more help is not a record; with the same or less help it is', async () => {
+    const { buildData } = await import('@/test/fixtures');
+    const { buildSessions } = await import('./sessions');
+    const { detectPersonalRecords } = await import('./prs');
+    const { SYSTEM_EXERCISES } = await import('@/data/library/exercises');
+    const at = (d: string, w: number, r: number) => ({
+      at: `2026-09-${d}T07:00:00.000Z`,
+      exercises: [{ key: 'assisted-pull-up', sets: [{ w, r }] }],
+    });
+    const data = buildData([at('01', 20, 6), at('03', 40, 9), at('05', 20, 8)]);
+    const prs = detectPersonalRecords(buildSessions(data), SYSTEM_EXERCISES).filter(
+      (p) => p.type === 'reps',
+    );
+    expect(prs.map((p) => [p.value, p.weightKg])).toEqual([[8, 20]]);
+  });
+});

@@ -377,6 +377,26 @@ describe('training', () => {
     ]);
   });
 
+  it('never swaps to an exercise the person’s equipment cannot do (batch 13)', () => {
+    const d = decideWeek(
+      input(riya(-0.45), {
+        plan: {
+          kcal: 1800,
+          proteinG: 130,
+          muscleSets: {},
+          exerciseIds: ['back-squat'],
+          sessionMinutes: 60,
+        },
+        stalls: [{ exerciseId: 'back-squat', cause: 'variation', variationId: 'front-squat' }],
+        exercise: { ...exercise, fits: (id) => id !== 'front-squat' },
+      }),
+    );
+    expect(d.changes.filter((c) => c.kind === 'swap')).toEqual([]);
+    expect(d.holds.find((h) => h.kind === 'swap')?.reason.en).toBe(
+      'back-squat stays as planned: no close swap fits your equipment. Change it in setup if you have more now.',
+    );
+  });
+
   it('keeps protein inside the range unless the target is the person’s own', () => {
     const low = decideWeek(
       input(riya(-0.45), {
@@ -402,8 +422,9 @@ describe('training', () => {
 
   it('says it is still learning in the first weeks', () => {
     const d = decideWeek(input(riya(-0.45, 3)));
-    expect(d.notes.at(-1)!.en).toBe(
-      'Learning your patterns, week 3 of 6. Until then the plan uses research defaults.',
+    // With the learning meter: this week's food days and weigh-ins toward what it asks for.
+    expect(d.notes.at(-1)!.en).toMatch(
+      /^Learning your patterns, week 3 of 6\. This week: [0-5] of 5 food days, [0-4] of 4 weigh-ins\. Until then the plan uses research defaults\.$/,
     );
   });
 });

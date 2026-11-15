@@ -50,7 +50,9 @@ export function toGo(b: Badge): string {
     case 'medals':
       return `${n} ${one ? 'medal' : 'medals'} to go`;
     case 'habits':
-      return b.id === 'weekend-warrior' ? `${n} ${one ? 'weekend' : 'weekends'} to go` : `${n} ${one ? 'workout' : 'workouts'} to go`;
+      return b.id === 'weekend-warrior'
+        ? `${n} ${one ? 'weekend' : 'weekends'} to go`
+        : `${n} ${one ? 'workout' : 'workouts'} to go`;
     default:
       return `${n} ${one ? 'workout' : 'workouts'} to go`;
   }
@@ -60,9 +62,18 @@ export function toGo(b: Badge): string {
 const lineOf = (b: Badge) => b.id.replace(/-[\d.]+$/, '');
 
 /** The next badge on the same line to chase, with how far along it is. */
-export function nextGoal(badge: Badge, all: Badge[]): { label: string; left: string; frac: number } | null {
+export function nextGoal(
+  badge: Badge,
+  all: Badge[],
+): { label: string; left: string; frac: number } | null {
   const next = all
-    .filter((b) => b.group === badge.group && !b.earnedAt && b.target > badge.target && lineOf(b) === lineOf(badge))
+    .filter(
+      (b) =>
+        b.group === badge.group &&
+        !b.earnedAt &&
+        b.target > badge.target &&
+        lineOf(b) === lineOf(badge),
+    )
     .sort((a, b) => a.target - b.target)[0];
   if (!next) return null;
   const left = toGo(next);
@@ -89,7 +100,13 @@ function confettiColours(tier: Badge['tier']): string[] {
     case 'gold':
       return [v('--tier-gold-text'), lime, white, v('--report-food')];
     default:
-      return [v('--tier-legend-a'), v('--tier-legend-b'), v('--tier-legend-c'), v('--tier-legend-d'), white];
+      return [
+        v('--tier-legend-a'),
+        v('--tier-legend-b'),
+        v('--tier-legend-c'),
+        v('--tier-legend-d'),
+        white,
+      ];
   }
 }
 
@@ -116,7 +133,18 @@ function Confetti({ tier, run }: { tier: Badge['tier']; run: number }) {
     const ps = Array.from({ length: CONFETTI[tier] }, () => {
       const a = rnd() * Math.PI * 2;
       const v = 3 + rnd() * 7;
-      return { x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 4, w: 4 + rnd() * 5, h: 6 + rnd() * 8, r: rnd() * 6, vr: (rnd() - 0.5) * 0.4, c: cols[Math.floor(rnd() * cols.length)]!, life: 0 };
+      return {
+        x: cx,
+        y: cy,
+        vx: Math.cos(a) * v,
+        vy: Math.sin(a) * v - 4,
+        w: 4 + rnd() * 5,
+        h: 6 + rnd() * 8,
+        r: rnd() * 6,
+        vr: (rnd() - 0.5) * 0.4,
+        c: cols[Math.floor(rnd() * cols.length)]!,
+        life: 0,
+      };
     });
     const start = performance.now() + 700;
     let raf = 0;
@@ -149,7 +177,9 @@ function Confetti({ tier, run }: { tier: Badge['tier']; run: number }) {
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
   }, [tier, run]);
-  return <canvas ref={ref} className="pointer-events-none absolute inset-0 size-full" aria-hidden />;
+  return (
+    <canvas ref={ref} className="pointer-events-none absolute inset-0 size-full" aria-hidden />
+  );
 }
 
 export function BadgeUnlock({
@@ -197,36 +227,70 @@ export function BadgeUnlock({
       style={style}
       data-badge-unlock={badge.id}
     >
-      <div key={badge.id} className="relative flex h-full w-full max-w-sm flex-col items-center justify-center text-center">
-        <div className="unlock-halo pointer-events-none absolute top-[36%] left-1/2 aspect-square w-[110%] -translate-x-1/2 -translate-y-1/2 rounded-full" aria-hidden />
-        <div className="unlock-rays pointer-events-none absolute top-[36%] left-1/2 aspect-square w-[180%] -translate-x-1/2 -translate-y-1/2" aria-hidden />
+      <div
+        key={badge.id}
+        className="relative flex h-full w-full max-w-sm flex-col items-center justify-center text-center"
+      >
+        <div
+          className="unlock-halo pointer-events-none absolute top-[36%] left-1/2 aspect-square w-[110%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          aria-hidden
+        />
+        <div
+          className="unlock-rays pointer-events-none absolute top-[36%] left-1/2 aspect-square w-[180%] -translate-x-1/2 -translate-y-1/2"
+          aria-hidden
+        />
         <div className="relative w-[58%] max-w-[240px] [perspective:900px]">
           <div className="unlock-flip">
             <BadgeMedallion badge={badge} className="block size-full" />
           </div>
         </div>
-        <p className="unlock-up relative mt-4 text-[14px] font-bold" style={{ color: `var(--tier-${badge.tier}-text)`, animationDelay: '1.05s' }}>
+        <p
+          className="unlock-up relative mt-4 text-[14px] font-bold"
+          style={{ color: `var(--tier-${badge.tier}-text)`, animationDelay: '1.05s' }}
+        >
           {TIER_LABEL[badge.tier]} badge unlocked
         </p>
-        <h2 id="unlock-name" className="type-title-1 unlock-up relative mt-1.5 text-balance text-text-1" style={{ animationDelay: '1.15s' }}>
+        <h2
+          id="unlock-name"
+          className="type-title-1 unlock-up relative mt-1.5 text-balance text-text-1"
+          style={{ animationDelay: '1.15s' }}
+        >
           {badge.title}
         </h2>
-        <p id="unlock-meaning" className="type-body unlock-up relative mt-2 max-w-[28ch] text-text-2" style={{ animationDelay: '1.25s' }}>
+        <p
+          id="unlock-meaning"
+          className="type-body unlock-up relative mt-2 max-w-[28ch] text-text-2"
+          style={{ animationDelay: '1.25s' }}
+        >
           {badge.goal}.
         </p>
         {next ? (
-          <div className="unlock-up relative mt-5 w-[80%] text-left" style={{ animationDelay: '1.35s' }}>
+          <div
+            className="unlock-up relative mt-5 w-[80%] text-left"
+            style={{ animationDelay: '1.35s' }}
+          >
             <div className="type-footnote flex justify-between gap-3 text-text-2">
               <span className="min-w-0">{next.label}</span>
               {next.left ? <span className="tabular shrink-0">{next.left}</span> : null}
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-track">
-              <i className="unlock-fill block h-full rounded-full bg-lime" style={{ '--w': `${Math.round(next.frac * 100)}%` } as CSSProperties} />
+              <i
+                className="unlock-fill block h-full rounded-full bg-lime"
+                style={{ '--w': `${Math.round(next.frac * 100)}%` } as CSSProperties}
+              />
             </div>
           </div>
         ) : null}
-        <div className="unlock-up relative mt-8 grid w-full gap-2.5" style={{ animationDelay: '1.5s' }}>
-          <PrimaryButton block icon={<Share aria-hidden />} onClick={() => onShare(badge)} data-unlock-share>
+        <div
+          className="unlock-up relative mt-8 grid w-full gap-2.5"
+          style={{ animationDelay: '1.5s' }}
+        >
+          <PrimaryButton
+            block
+            icon={<Share aria-hidden />}
+            onClick={() => onShare(badge)}
+            data-unlock-share
+          >
             Share as story card
           </PrimaryButton>
           <SecondaryButton

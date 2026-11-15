@@ -2,8 +2,8 @@
 // development-only access overrides, or a Supabase secret (service role) key. Also checks the
 // public pages: the home page's inline script is allowed by the CSP, and the SEO files exist.
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from 'node:fs';
+import { dirname, join, relative, sep } from 'node:path';
 
 const FORBIDDEN = [
   { pattern: /overload\.dev\.entitlement/, why: 'development access override' },
@@ -19,7 +19,20 @@ function files(dir) {
   });
 }
 
+// Source maps are built hidden (vite.config.ts) and never deployed: anyone could read the whole
+// source from them. They move to sourcemaps/ (not in git, not deployed) for reading error
+// reports, and no bundle may still point to one.
+rmSync('sourcemaps', { recursive: true, force: true });
+for (const file of files('dist').filter((f) => f.endsWith('.map'))) {
+  const to = join('sourcemaps', relative('dist', file));
+  mkdirSync(dirname(to), { recursive: true });
+  renameSync(file, to);
+}
+
 const problems = [];
+for (const file of files('dist').filter((f) => f.endsWith('.map'))) {
+  problems.push(`${file}: source map would be deployed`);
+}
 for (const file of files('dist').filter((f) => /\.(js|html|css|json|webmanifest)$/.test(f))) {
   const text = readFileSync(file, 'utf8');
   // Service role JWTs: decode every JWT-shaped string and check its role.
@@ -31,6 +44,8 @@ for (const file of files('dist').filter((f) => /\.(js|html|css|json|webmanifest)
       // Not a JWT.
     }
   }
+  if (/\/\/# sourceMappingURL=/.test(text) && file.endsWith('.js'))
+    problems.push(`${file}: points to a source map`);
   for (const { pattern, why } of FORBIDDEN) {
     if (pattern.test(text)) problems.push(`${file}: ${why}`);
   }

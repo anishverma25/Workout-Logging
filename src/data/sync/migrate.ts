@@ -44,10 +44,14 @@ export const hasGuestData = (s: GuestDataSummary) =>
   s.workouts + s.routines + s.customExercises + s.bodyWeights + s.measurements > 0 ||
   s.hasActiveWorkout;
 
-/** Whether the person already answered the import question for this account. */
+/**
+ * Whether the import question is settled on this phone: answered for this account, or for any
+ * other account before (guest data is offered once per phone, never to every account that
+ * signs in on it).
+ */
 export async function migrationHandled(guest: WorkoutDatabase, userId: string): Promise<boolean> {
   const handled = (await getMeta<Record<string, string>>(guest, MIGRATION_META_KEY)) ?? {};
-  return userId in handled;
+  return userId in handled || Object.keys(handled).length > 0;
 }
 
 export async function markMigrationHandled(

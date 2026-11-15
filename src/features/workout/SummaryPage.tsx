@@ -1,3 +1,4 @@
+import { streakTargetOf } from '@/domain/analytics/week';
 import { badgesEarnedIn, computeBadges, type Badge } from '@/domain/achievements/badges';
 import { BadgeUnlock, markBadgesSeen, seenBadges } from '@/features/medals/BadgeUnlock';
 import { BadgeMedallion } from '@/features/medals/BadgeMedallion';
@@ -21,6 +22,7 @@ import { RestCard } from '@/features/shared/RestCard';
 import { MuscleMapCard } from '@/features/shared/MuscleMapCard';
 import { WorkoutBurnCard } from '@/features/shared/WorkoutBurnCard';
 import { RefuelCard } from './RefuelCard';
+import { FirstWorkoutCard } from './FirstWorkoutCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { ErrorState, Skeleton } from '@/components/ui/States';
 import { usePreferences, useTrainingData } from '@/data/hooks';
@@ -69,6 +71,7 @@ export function SummaryPage() {
       bodyWeights: training.data.bodyWeights,
       now: new Date(),
       weekStartsOn: prefs.weekStartsOn,
+      minSessions: streakTargetOf(training.data),
     });
   }, [training.data, prefs.weekStartsOn]);
   const unlocked = useMemo(
@@ -90,7 +93,10 @@ export function SummaryPage() {
     const seen = seenBadges(accountId);
     const fresh = unlocked.filter((b) => !seen.has(b.id));
     if (!fresh.length) return;
-    markBadgesSeen(accountId, fresh.map((b) => b.id));
+    markBadgesSeen(
+      accountId,
+      fresh.map((b) => b.id),
+    );
     const order = { legend: 0, gold: 1, silver: 2, bronze: 3 } as const;
     // Effects may set state from data the page just read; this runs once per new badge set.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -191,7 +197,12 @@ export function SummaryPage() {
       </dl>
       <ShareSheet workoutId={session.workout.id} open={sharing} onClose={() => setSharing(false)} />
       {shareBadge ? (
-        <ShareSheet workoutId={session.workout.id} badgeId={shareBadge.id} open onClose={() => setShareBadge(null)} />
+        <ShareSheet
+          workoutId={session.workout.id}
+          badgeId={shareBadge.id}
+          open
+          onClose={() => setShareBadge(null)}
+        />
       ) : null}
       {celebrate?.length ? (
         <BadgeUnlock
@@ -273,6 +284,11 @@ export function SummaryPage() {
       </BottomSheet>
 
       <MuscleMapCard exercises={muscleLogs} sex={training.data.profile?.sex} className="mt-8" />
+      {training.data.workouts.filter(
+        (w) => w.deletedAt === null && w.origin === 'user' && w.status === 'completed',
+      ).length === 1 && session.workout.origin === 'user' ? (
+        <FirstWorkoutCard session={session} data={training.data} className="mt-4" />
+      ) : null}
       <WorkoutBurnCard
         workout={session.workout}
         sets={session.exercises.flatMap((e) => e.sets)}

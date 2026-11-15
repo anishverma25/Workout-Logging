@@ -2,7 +2,7 @@ import { COPY, TREND_WINDOW_WEEKS } from './thresholdCopy';
 import { TREND_DAYS } from './dashboard';
 import { PROJECTION_MIN_POINTS, PROJECTION_MIN_WEEKS } from './goals';
 import { FREQUENCY_MIN_DAYS } from './progress';
-import { STALL_MIN_SESSIONS, STALL_WEEKS } from './stalls';
+import { STALL_MIN_SESSIONS, STALL_WEEKS_BY_EXPERIENCE } from './stalls';
 import { MIN_TREND_SESSIONS } from './strength';
 
 /** The numbers quoted in a sentence, in order. */
@@ -18,7 +18,12 @@ describe('copy quotes the same thresholds the analytics use (D8)', () => {
 
   it('stalled lifts', () => {
     expect(numbers(COPY.stalledLiftsEmpty)).toEqual([STALL_MIN_SESSIONS + 1]);
-    expect(numbers(COPY.stalledLiftsDetail)).toEqual([STALL_WEEKS, STALL_MIN_SESSIONS]);
+    expect(numbers(COPY.stalledLiftsDetail)).toEqual([
+      STALL_WEEKS_BY_EXPERIENCE.beginner,
+      STALL_WEEKS_BY_EXPERIENCE.intermediate,
+      STALL_WEEKS_BY_EXPERIENCE.advanced,
+      STALL_MIN_SESSIONS,
+    ]);
   });
 
   it('goal projection', () => {

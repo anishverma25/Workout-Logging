@@ -607,7 +607,7 @@ export async function updateSet(db: WorkoutDatabase, setId: string, patch: SetPa
 
 /**
  * Reps for the left and right side apart, for this exercise in this workout. Switching it off
- * clears the sides of sets not done yet (done sets keep what was logged).
+ * clears the sides of every set and keeps the weaker side as its reps.
  */
 export async function setWorkoutExerciseBySide(
   db: WorkoutDatabase,
@@ -619,14 +619,22 @@ export async function setWorkoutExerciseBySide(
       bySide: on,
     });
     if (on) return;
-    const open = (await setsOf(db, workoutExerciseId)).filter(
-      (x) =>
-        x.completedAt === null && ((x.repsLeft ?? null) !== null || (x.repsRight ?? null) !== null),
+    // Every set, done or not, drops its sides; reps keeps the weaker side, so volume and
+    // records count what both sides managed and nothing from the old split (batch 11, T7).
+    const sided = (await setsOf(db, workoutExerciseId)).filter(
+      (x) => (x.repsLeft ?? null) !== null || (x.repsRight ?? null) !== null,
     );
     await patchRecords<WorkoutSet>(
       db,
       'sets',
-      open.map((x) => ({ id: x.id, changes: { repsLeft: null, repsRight: null } })),
+      sided.map((x) => ({
+        id: x.id,
+        changes: {
+          repsLeft: null,
+          repsRight: null,
+          reps: sideReps(x.repsLeft ?? null, x.repsRight ?? null) ?? x.reps,
+        },
+      })),
     );
   });
 }
@@ -712,6 +720,11 @@ export interface FinishCheck {
   unconfirmedSets: number;
   /** Sets left completely empty. Removed on finish. */
   emptySets: number;
+  /**
+   * Sets with some numbers that cannot be saved as done (a weight and no reps): removed on
+   * finish, and named so in the dialog (batch 11, T2).
+   */
+  incompleteSets: number;
 }
 
 export async function finishCheck(db: WorkoutDatabase, workoutId: string): Promise<FinishCheck> {
@@ -734,10 +747,20 @@ export async function finishCheck(db: WorkoutDatabase, workoutId: string): Promi
   const open = sets.filter((s) => s.completedAt === null);
   const hasValues = (s: WorkoutSet) =>
     s.weightKg !== null || s.reps !== null || s.durationSec !== null || s.distanceM !== null;
+  const info = new Map(
+    (await db.exercises.bulkGet([...new Set(open.map((s) => s.exerciseId))]))
+      .filter((e): e is Exercise => !!e)
+      .map((e) => [e.id, e]),
+  );
+  // Only sets that can really be completed count as "sets with numbers" (T2): finishing with
+  // "Yes, save them" then never removes a set the person was told would be saved.
+  const savable = (s: WorkoutSet) =>
+    hasValues(s) && !missingForCompletion(s, info.get(s.exerciseId));
   return {
     completedSets: completed.length,
-    unconfirmedSets: open.filter(hasValues).length,
+    unconfirmedSets: open.filter(savable).length,
     emptySets: open.filter((s) => !hasValues(s)).length,
+    incompleteSets: open.filter((s) => hasValues(s) && !savable(s)).length,
   };
 }
 

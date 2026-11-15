@@ -236,7 +236,7 @@ export function prStory(pr: PrCard, opts: { unit: WeightUnit }): StoryContent {
         }
       : null;
 
-  const records = pr.ladder.filter((l) => !l.start).length;
+  const records = pr.recordNumber ?? pr.ladder.filter((l) => !l.start).length;
   const chips = [`${ordinal(records)} ${pr.exerciseName.toLowerCase()} record`];
   if (more) chips.push(`Up ${more.v.slice(1)} ${more.u} since ${since}`);
 
@@ -325,7 +325,10 @@ export function streakStory(s: StreakCard, now: Date): StoryContent {
     tier: null,
     rings: [
       { frac: weeksTrained(0) / 12, stat: { v: String(weeksTrained(0)), u: '/12', l: 'Weeks' } },
-      { frac: weeksTrained(8) / 4, stat: { v: String(weeksTrained(8)), u: '/4', l: 'Last 4 weeks' } },
+      {
+        frac: weeksTrained(8) / 4,
+        stat: { v: String(weeksTrained(8)), u: '/4', l: 'Last 4 weeks' },
+      },
       { frac: daysThisWeek / 7, stat: { v: String(daysThisWeek), u: '/7', l: 'Days this week' } },
     ],
     ringsNote: 'Weeks and days you trained',
@@ -344,6 +347,10 @@ export interface RankCounts {
   hardSets: number;
   records: number;
   proteinDays: number;
+  /** Weeks with 3+ training days (migration 0026). */
+  consistencyWeeks?: number;
+  /** Points for getting stronger (migration 0026). */
+  progressPoints?: number;
 }
 
 export interface RankInput extends RankCounts {
@@ -356,10 +363,12 @@ export interface RankInput extends RankCounts {
   total: number;
   /** The rank in the finished period before, only when that period is frozen. */
   previousRank: number | null;
+  /** The period shared is the finished one before this ("Last week"), not the current one. */
+  past?: boolean;
 }
 
 /** Points per thing and the weekly caps, as the server scores them (migration 0019). */
-const POINTS = { workout: 10, hardSet: 1, record: 5, proteinDay: 3 };
+const POINTS = { workout: 10, hardSet: 1, record: 5, proteinDay: 3, consistencyWeek: 10 };
 const WEEKLY = { workouts: 6, hardSets: 25, records: 5 };
 
 const isoDay = (iso: string) => {
@@ -367,14 +376,19 @@ const isoDay = (iso: string) => {
   return new Date(y!, (m ?? 1) - 1, d ?? 1);
 };
 
-export function periodLabels(period: 'week' | 'month', startsOn: string, endsOn: string) {
+export function periodLabels(
+  period: 'week' | 'month',
+  startsOn: string,
+  endsOn: string,
+  past = false,
+) {
   const a = isoDay(startsOn);
   const b = isoDay(endsOn);
   if (period === 'month')
     return {
       date: `${LONG_MONTHS[a.getMonth()]} ${a.getFullYear()}`,
       short: `${LONG_MONTHS[a.getMonth()]}`,
-      sub: 'This month',
+      sub: past ? 'Last month' : 'This month',
     };
   const sameMonth = a.getMonth() === b.getMonth();
   return {
@@ -382,7 +396,7 @@ export function periodLabels(period: 'week' | 'month', startsOn: string, endsOn:
     short: sameMonth
       ? `${a.getDate()} to ${b.getDate()} ${MONTHS[b.getMonth()]}`
       : `${formatDayMonthFixed(a)} to ${formatDayMonthFixed(b)}`,
-    sub: 'This week',
+    sub: past ? 'Last week' : 'This week',
   };
 }
 
@@ -407,7 +421,7 @@ export function movement(rank: number, previous: number | null): string | null {
 }
 
 function rankCommon(r: RankInput) {
-  const labels = periodLabels(r.period, r.startsOn, r.endsOn);
+  const labels = periodLabels(r.period, r.startsOn, r.endsOn, r.past);
   const weeks =
     r.period === 'week'
       ? 1
@@ -417,6 +431,11 @@ function rankCommon(r: RankInput) {
     { l: 'Hard sets', n: r.hardSets, p: POINTS.hardSet },
     { l: 'Records', n: r.records, p: POINTS.record },
     { l: 'Protein days', n: r.proteinDays, p: POINTS.proteinDay },
+    // C1: the bonuses too, so the lines add up to the points shown.
+    ...(r.consistencyWeeks
+      ? [{ l: 'Consistency', n: r.consistencyWeeks, p: POINTS.consistencyWeek }]
+      : []),
+    ...(r.progressPoints ? [{ l: 'Getting stronger', n: r.progressPoints, p: 1 }] : []),
   ];
   const lastWord = r.period === 'week' ? 'week' : 'month';
   const move = movement(r.rank, r.previousRank);
@@ -437,13 +456,19 @@ function rankCommon(r: RankInput) {
   ];
   return {
     labels,
-    move: move ? `${move} since last ${lastWord}` : null,
+    move: move
+      ? `${move} since ${r.past ? 'the' : 'last'} ${lastWord}${r.past ? ' before' : ''}`
+      : null,
+    when: r.past ? `last ${lastWord}` : `this ${lastWord}`,
     moveShort: move,
     top,
     rings,
     extra: {
       type: 'lines' as const,
-      items: parts.map((p) => ({ l: p.l, r: `${p.n} × ${p.p} = ${p.n * p.p}` })),
+      items: parts.map((p) => ({
+        l: p.l,
+        r: p.p === 1 && p.l === 'Getting stronger' ? `${p.n}` : `${p.n} × ${p.p} = ${p.n * p.p}`,
+      })),
     },
   };
 }
@@ -456,8 +481,8 @@ export function globalRankStory(r: RankInput): StoryContent {
   const head = tier
     ? `${ordinal(r.rank)} on Macrotrophy`
     : c.top
-      ? `${c.top} this ${r.period}`
-      : `${ordinal(r.rank)} this ${r.period}`;
+      ? `${c.top} ${c.when}`
+      : `${ordinal(r.rank)} ${c.when}`;
   return {
     kind: 'global',
     title: 'Leaderboard',

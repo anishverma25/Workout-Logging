@@ -27,7 +27,7 @@ const KitToastContext = createContext<Show>(() => {});
 
 /**
  * Toasts in the kit style: above the tab bar on phones, bottom centre on desktop, read out
- * politely, gone after 3 s (5 s with an action). Screens move to it in UI Part 7.
+ * politely, gone after 3 s (10 s with an action). Screens move to it in UI Part 7.
  */
 export function KitToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
@@ -41,7 +41,8 @@ export function KitToastProvider({ children }: { children: ReactNode }) {
     (message, options = {}) => {
       const id = ++counter.current;
       setItems((list) => [...list, { id, message, ...options }]);
-      window.setTimeout(() => dismiss(id), options.action ? 5000 : 3000);
+      // An undo stays 10 s (X4).
+      window.setTimeout(() => dismiss(id), options.action ? 10_000 : 3000);
     },
     [dismiss],
   );

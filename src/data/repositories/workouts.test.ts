@@ -349,7 +349,7 @@ describe('left and right reps', () => {
     expect([set.repsLeft, set.repsRight, set.reps]).toEqual([6, 7, 6]);
   });
 
-  it('two-arm exercises stay one number unless switched on; switching off clears open sides', async () => {
+  it('two-arm exercises stay one number unless switched on; switching off clears the sides', async () => {
     const w = await startEmptyWorkout(db, T0);
     const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('cable-lateral-raise')]);
     const [first, second] = await liveSets(we!.id);
@@ -373,8 +373,9 @@ describe('left and right reps', () => {
     await updateSet(db, extra.id, { repsLeft: 9 });
     await setWorkoutExerciseBySide(db, we!.id, false);
     expect((await db.sets.get(extra.id))!.repsLeft ?? null).toBeNull();
-    // Done sets keep what was logged.
-    expect((await db.sets.get(second!.id))!.repsLeft).toBe(12);
+    // Done sets drop their sides too and keep the weaker side as reps (T7).
+    const done = (await db.sets.get(second!.id))!;
+    expect([done.repsLeft ?? null, done.repsRight ?? null, done.reps]).toEqual([null, null, 12]);
   });
 });
 
@@ -420,7 +421,16 @@ describe('finishing and cancelling', () => {
       completedSets: 1,
       unconfirmedSets: 1,
       emptySets: 4,
+      incompleteSets: 0,
     });
+  });
+
+  it('a set with a weight and no reps is named as not saved, never as "with numbers" (T2)', async () => {
+    const { w, squat } = await workoutWithMixedSets();
+    const [, , c] = await liveSets(squat.id);
+    await updateSet(db, c!.id, { weightKg: 100 });
+    const check = await finishCheck(db, w.id);
+    expect(check).toMatchObject({ unconfirmedSets: 1, incompleteSets: 1 });
   });
 
   it('drops unconfirmed and empty sets and empty exercises by default', async () => {

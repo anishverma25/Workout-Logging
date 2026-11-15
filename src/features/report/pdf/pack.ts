@@ -56,13 +56,18 @@ export function packPages(blocks: PackBlock[], o: PackOptions): number[][] {
     used = 0;
   };
   const spaceBefore = (i: number) =>
-    page.length === 0 ? 0 : blocks[i]!.section !== blocks[page[page.length - 1]!]!.section ? o.sectionGap : o.gap;
+    page.length === 0
+      ? 0
+      : blocks[i]!.section !== blocks[page[page.length - 1]!]!.section
+        ? o.sectionGap
+        : o.gap;
 
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i]!;
     if (b.breakBefore && page.length) newPage();
 
-    const firstOfSection = page.length === 0 || blocks[page[page.length - 1]!]!.section !== b.section;
+    const firstOfSection =
+      page.length === 0 || blocks[page[page.length - 1]!]!.section !== b.section;
     if (firstOfSection && page.length) {
       const end = sectionEnd(blocks, i);
       const whole = stackHeight(blocks, i, end, o);

@@ -5,10 +5,12 @@ import { Sparkles } from 'lucide-react';
 import { PrimaryButton, SecondaryButton } from '@/components/kit';
 import { cn } from '@/lib/cn';
 import { RELEASE_STEPS, type ReleaseStep } from './whatsNewContent';
-import { seenRelease, markReleaseSeen, RELEASE_ID } from './whatsNewStore';
+import { useAccount } from '@/app/account';
+import { seenRelease, markReleaseSeen, newerThanRelease, RELEASE_ID } from './whatsNewStore';
 
 /**
- * Shown once per release when the app opens, to everyone. The November 2026 revamp (the Brain and
+ * Shown once per release when the app opens, to people who used the app before it. An account
+ * made after the release never saw the old app, so it is marked seen and shown nothing. The November 2026 revamp (the Brain and
  * fair play together) is the largest so far, so it takes the whole screen: a story-style progress
  * bar, one part per page with its drawing, what it does, who gets it and where it lives, and a
  * button to go there. The same content stays on the "What is new" page. Never over a running
@@ -17,14 +19,21 @@ import { seenRelease, markReleaseSeen, RELEASE_ID } from './whatsNewStore';
 export function WhatsNew() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const account = useAccount();
+  const brandNew = newerThanRelease(account.user?.createdAt);
   const [open, setOpen] = useState(() => !seenRelease());
+  // A new account: remember it, so the walkthrough never appears on this phone for it later.
+  useEffect(() => {
+    if (brandNew && open) markReleaseSeen();
+  }, [brandNew, open]);
   const [step, setStep] = useState(0);
   const busy =
     pathname.startsWith('/workout') ||
     pathname.startsWith('/setup') ||
     pathname.startsWith('/groups') ||
-    pathname.startsWith('/whats-new');
-  const shown = open && !busy;
+    pathname.startsWith('/whats-new') ||
+    pathname.startsWith('/trial');
+  const shown = open && !busy && !brandNew;
   const close = () => {
     markReleaseSeen();
     setOpen(false);

@@ -114,8 +114,9 @@ export const RoutineExercise = z.object({
   exerciseId: z.string().uuid(),
   order: z.number().int().min(0),
   targetSets: z.number().int().min(1).max(20),
-  repMin: z.number().int().min(1).max(100),
-  repMax: z.number().int().min(1).max(100),
+  // Up to 600 for timed exercises (seconds, batch 11); reps stay at 100 (`updateTargets`).
+  repMin: z.number().int().min(1).max(600),
+  repMax: z.number().int().min(1).max(600),
   targetRir: z.number().min(0).max(10).nullable(),
   restSeconds: z.number().int().min(0).max(900),
   notes: z.string().nullable(),
@@ -439,7 +440,6 @@ export const PlanItem = z.object({
 });
 export type PlanItem = z.infer<typeof PlanItem>;
 
-
 /**
  * A food the person added: from a label (per 100 g) or their own recipe, such as the family
  * pot. Recipes keep their ingredients so they can be edited; the per 100 g values are worked
@@ -498,8 +498,8 @@ export type Preferences = z.infer<typeof Preferences>;
 export const RoutineTargets = z
   .object({
     targetSets: z.number().int().min(1).max(20),
-    repMin: z.number().int().min(1).max(100),
-    repMax: z.number().int().min(1).max(100),
+    repMin: z.number().int().min(1).max(600),
+    repMax: z.number().int().min(1).max(600),
     targetRir: z.number().min(0).max(10).nullable(),
     restSeconds: z.number().int().min(0).max(900),
     notes: z.string().max(500).nullable(),

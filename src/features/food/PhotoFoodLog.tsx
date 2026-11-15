@@ -1,3 +1,4 @@
+import { readDraft, writeDraft } from './aiDrafts';
 import { useEffect, useRef, useState } from 'react';
 import { Camera, ImagePlus, RotateCcw, Sparkles } from 'lucide-react';
 import { PrimaryButton, SecondaryButton } from '@/components/kit';
@@ -46,7 +47,13 @@ export function PhotoFoodLog({
   onType: () => void;
 }) {
   const store = useCoachStore();
-  const [photo, setPhoto] = useState<PreparedPhoto | null>(null);
+  const [photo, setPhotoState] = useState<PreparedPhoto | null>(() =>
+    readDraft<PreparedPhoto>('ai-food-photo'),
+  );
+  const setPhoto = (p: PreparedPhoto | null) => {
+    setPhotoState(p);
+    writeDraft('ai-food-photo', p);
+  };
   const [note, setNote] = useState('');
   const [state, setState] = useState<State>({ kind: 'pick' });
   const camera = useRef<HTMLInputElement>(null);
@@ -239,7 +246,13 @@ export function PhotoFoodLog({
                   />
                 ))}
               </ul>
-              <PrimaryButton block onClick={() => onFill(state.rows.map((r) => r.portion))}>
+              <PrimaryButton
+                block
+                onClick={() => {
+                  writeDraft('ai-food-photo', null);
+                  onFill(state.rows.map((r) => r.portion));
+                }}
+              >
                 Put on my plate
               </PrimaryButton>
             </>
@@ -276,8 +289,8 @@ export function PhotoFoodLog({
       ) : null}
 
       <p className="type-caption text-text-3">
-        The photo goes to a third-party AI service to work out the food, then it is gone:
-        Macrotrophy does not keep it. Up to {PHOTOS_PER_DAY} photos a day.
+        The photo goes to a third-party AI service to work out the food. Macrotrophy does not keep
+        it, but that service may keep what is sent. Up to {PHOTOS_PER_DAY} photos a day.
       </p>
     </div>
   );

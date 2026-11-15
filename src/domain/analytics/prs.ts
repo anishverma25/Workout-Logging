@@ -53,12 +53,16 @@ export function detectPersonalRecords(
   exercises: Exercise[],
 ): PersonalRecord[] {
   const nameById = new Map(exercises.map((e) => [e.id, e.name]));
+  const trackingById = new Map(exercises.map((e) => [e.id, e.trackingType]));
   const records: PersonalRecord[] = [];
 
   for (const [exerciseId, history] of performanceByExercise(sessions)) {
     let bestE1rm: number | null = null;
     let bestLoad: number | null = null;
     let bestReps: number | null = null;
+    /** Assisted moves: the help on the best reps set; more help never makes a record (T6). */
+    let bestRepsAssist: number | null = null;
+    const assisted = trackingById.get(exerciseId) === 'assisted_bodyweight';
     let bestDuration: number | null = null;
     let bestDistance: number | null = null;
     let bestSetVolume: number | null = null;
@@ -116,10 +120,25 @@ export function detectPersonalRecords(
         bestLoad = Math.max(bestLoad ?? 0, perf.heaviestLoad);
       }
       if (perf.mostReps !== null && perf.mostRepsSet) {
-        if (bestReps !== null && perf.mostReps > bestReps) {
-          push('reps', perf.mostReps, bestReps, perf.mostRepsSet.id, null, perf.mostReps);
+        const assist = assisted ? (perf.mostRepsSet.weightKg ?? 0) : 0;
+        const fair = !assisted || bestRepsAssist === null || assist <= bestRepsAssist + EPSILON;
+        if (bestReps !== null && perf.mostReps > bestReps && fair) {
+          push(
+            'reps',
+            perf.mostReps,
+            bestReps,
+            perf.mostRepsSet.id,
+            assisted ? assist : null,
+            perf.mostReps,
+          );
         }
-        bestReps = Math.max(bestReps ?? 0, perf.mostReps);
+        if (bestReps === null || (perf.mostReps > bestReps && fair)) {
+          bestReps = perf.mostReps;
+          bestRepsAssist = assist;
+        } else if (assisted && perf.mostReps >= bestReps && assist < (bestRepsAssist ?? 0)) {
+          // The same reps with less help is the new bar to beat.
+          bestRepsAssist = assist;
+        }
       }
       if (perf.bestSetVolume !== null && perf.bestSetVolume > 0 && perf.bestSetVolumeSet) {
         if (bestSetVolume !== null && perf.bestSetVolume > bestSetVolume + EPSILON) {

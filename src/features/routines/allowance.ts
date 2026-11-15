@@ -1,8 +1,9 @@
+import { FREE_ROUTINES } from '@/domain/entitlement/limits';
 import { useFeature } from '@/app/entitlement';
 import { useTrainingData } from '@/data/hooks';
 
-/** Routines on the free plan; Pro has no limit. Routines over the limit are kept, never removed. */
-export const FREE_ROUTINES = 2;
+/** Routines on the free plan (`domain/entitlement/limits.ts`); over the limit they are kept. */
+export { FREE_ROUTINES };
 
 /** Whether this account may add another routine (new, duplicate, saved from a workout, shared). */
 export function useRoutineAllowance() {

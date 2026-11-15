@@ -35,6 +35,8 @@ async function newPerson(page: Page, tag: string) {
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('radio', { name: /Mostly sitting/ }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
+  // How they eat (optional), then the plan is built.
+  await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('button', { name: 'Create my routine' }).click();
   await page.locator('[data-trial-start]').click();
   await expect(page).toHaveURL(/\/routines\/[\w-]+$/);
@@ -94,7 +96,10 @@ test('any quantity can be typed, with its unit, and the numbers follow', async (
   await page.locator('[data-add-food]').click();
   const sheet = page.getByRole('dialog');
   await sheet.getByRole('searchbox').fill('chapati');
-  await sheet.locator('[data-food-results] [data-food-row]').first().click();
+  const first = sheet.locator('[data-food-results] [data-food-row]').first();
+  // Results follow typing a moment later (deferred search).
+  await expect(first).toContainText(/^Roti/);
+  await first.click();
   const profile = sheet.locator('[data-food-profile]');
   // 2 rotis are 204 kcal, so one roti is 102.
   await expect(profile.locator('[data-portion-kcal]')).toHaveText('204');

@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { reportError } from '../errorReport';
 import { markStarted, repairAndReload } from '../startup';
 import { isChunkLoadError, reloadOnceForNewVersion } from './chunkReload';
 
@@ -16,6 +17,7 @@ export class AppCrash extends Component<{ children: ReactNode }, { error: Error 
 
   override componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('The app crashed', error, info.componentStack);
+    reportError(isChunkLoadError(error) ? 'chunk' : 'crash', error);
     // A code file from an older version is gone: one reload picks up the new version.
     if (isChunkLoadError(error) && reloadOnceForNewVersion()) return;
     markStarted();
@@ -31,8 +33,8 @@ export class AppCrash extends Component<{ children: ReactNode }, { error: Error 
       >
         <h1 className="type-title">Macrotrophy ran into a problem</h1>
         <p className="type-body text-text-2">
-          Everything you logged is safe, on this phone and in your account. Opening the app again
-          usually fixes it.
+          Everything you logged is saved on this phone, and goes to your account when it syncs.
+          Opening the app again usually fixes it.
         </p>
         <button
           type="button"

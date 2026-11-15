@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Camera, Check, Globe, ScanText, Sparkles } from 'lucide-react';
 import { PrimaryButton } from '@/components/kit';
 import { measurePortion, type FoodPortion } from '@/data/repositories/food';
@@ -30,6 +31,7 @@ export function FoodProfile({
   actionLabel: string;
   onDone: () => void;
 }) {
+  const [invalid, setInvalid] = useState(false);
   let measured: ReturnType<typeof measurePortion> | null;
   try {
     measured = measurePortion(portion, katoriMl);
@@ -46,6 +48,7 @@ export function FoodProfile({
           grams={measured.grams}
           portionLabel={portionText(portion.amount, portion.unit, portion.size, food.pieceName)}
           per100={food.per100}
+          weightKnown={!servingOnly(food)}
           targets={targets}
         />
       ) : (
@@ -63,10 +66,11 @@ export function FoodProfile({
           katoriMl={katoriMl}
           showSource={false}
           showTotals={false}
+          onInvalid={setInvalid}
         />
       </section>
       <div className="sticky -bottom-5 z-10 -mx-5 -mb-5 border-t-[0.5px] border-divider bg-surface px-5 pt-3 pb-5">
-        <PrimaryButton block disabled={!measured} onClick={onDone} data-profile-action>
+        <PrimaryButton block disabled={!measured || invalid} onClick={onDone} data-profile-action>
           {measured ? `${actionLabel} · ${Math.round(measured.nutrients.kcal)} kcal` : actionLabel}
         </PrimaryButton>
       </div>
@@ -109,18 +113,25 @@ const MACROS = [
 ] as const;
 
 /** The nutrients of one portion, large and easy to scan, with how they split and the day. */
+/** A pack logged by the serving with no weight on its label (its grams are bookkeeping only). */
+export const servingOnly = (food: Pick<Food, 'source' | 'ai'>) =>
+  food.source === 'ai' && food.ai?.portion === '1 serving';
+
 export function NutritionPanel({
   nutrients,
   grams,
   portionLabel,
   per100,
   targets,
+  weightKnown = true,
 }: {
   nutrients: Nutrients;
   grams: number;
   portionLabel: string;
   per100: Nutrients;
   targets: DailyTargets | null;
+  /** False for a pack counted in servings with no weight on it: no grams are shown. */
+  weightKnown?: boolean;
 }) {
   const fromMacros = nutrients.proteinG * 4 + nutrients.carbsG * 4 + nutrients.fatG * 9 || 1;
   const share = (kcal: number) => Math.round((kcal / fromMacros) * 100);
@@ -139,7 +150,7 @@ export function NutritionPanel({
         </p>
         <p className="type-meta tabular text-right text-text-2">
           {portionLabel}
-          {/ g$/.test(portionLabel) ? null : (
+          {!weightKnown || / g$/.test(portionLabel) ? null : (
             <>
               <br />
               {Math.round(grams)} g
@@ -195,11 +206,13 @@ export function NutritionPanel({
         </div>
       </dl>
 
-      <p className="type-caption tabular mt-4 border-t-[0.5px] border-divider pt-3 text-text-2">
-        Per 100 g: {Math.round(per100.kcal)} kcal · {per100.proteinG.toFixed(1)} g protein ·{' '}
-        {per100.carbsG.toFixed(1)} g carbs · {per100.fatG.toFixed(1)} g fat ·{' '}
-        {per100.fibreG.toFixed(1)} g fibre
-      </p>
+      {weightKnown ? (
+        <p className="type-caption tabular mt-4 border-t-[0.5px] border-divider pt-3 text-text-2">
+          Per 100 g: {Math.round(per100.kcal)} kcal · {per100.proteinG.toFixed(1)} g protein ·{' '}
+          {per100.carbsG.toFixed(1)} g carbs · {per100.fatG.toFixed(1)} g fat ·{' '}
+          {per100.fibreG.toFixed(1)} g fibre
+        </p>
+      ) : null}
     </section>
   );
 }

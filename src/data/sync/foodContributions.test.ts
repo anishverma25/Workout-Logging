@@ -27,20 +27,17 @@ interface FoodFields {
 }
 const submit = (user: string, f: FoodFields = {}) =>
   server.asUser(user, (tx) =>
-    tx.query<{ s: string }>(
-      'select public.submit_food($1, $2, $3, $4, $5, $6, $7, $8, $9) as s',
-      [
-        f.id ?? id(),
-        f.name ?? `Food ${n}`,
-        'veg',
-        f.kcal ?? 350,
-        f.protein ?? 20,
-        f.carbs ?? 45,
-        f.fat ?? 10,
-        2,
-        40,
-      ],
-    ),
+    tx.query<{ s: string }>('select public.submit_food($1, $2, $3, $4, $5, $6, $7, $8, $9) as s', [
+      f.id ?? id(),
+      f.name ?? `Food ${n}`,
+      'veg',
+      f.kcal ?? 350,
+      f.protein ?? 20,
+      f.carbs ?? 45,
+      f.fat ?? 10,
+      2,
+      40,
+    ]),
   );
 const shared = async (user: string) =>
   (
@@ -102,7 +99,9 @@ describe('food contributions', () => {
       'pending',
     );
     // Sending the same one again (a retry after a lost connection) adds nothing.
-    expect((await submit(author, { id: foodId, name: 'Sattu paratha' })).rows[0]!.s).toBe('pending');
+    expect((await submit(author, { id: foodId, name: 'Sattu paratha' })).rows[0]!.s).toBe(
+      'pending',
+    );
     expect(await shared(reader)).toEqual([]);
     expect((await thanks(author)).foods).toEqual([
       { id: foodId, name: 'Sattu paratha', status: 'pending' },
@@ -216,7 +215,10 @@ describe('food contributions', () => {
       `insert into public.food_credits (user_id, submission_id, valid_from, valid_until)
        values ('${reader}', '${foodId}', current_date, current_date)`,
     ]) {
-      await expect(server.asUser(reader, (tx) => tx.query(sql)), sql).rejects.toThrow();
+      await expect(
+        server.asUser(reader, (tx) => tx.query(sql)),
+        sql,
+      ).rejects.toThrow();
     }
   });
 });

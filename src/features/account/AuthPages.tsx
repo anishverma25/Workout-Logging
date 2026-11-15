@@ -1,3 +1,4 @@
+import { reportStep } from '@/app/errorReport';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { CloudOff, Crown, MailCheck } from 'lucide-react';
@@ -13,6 +14,7 @@ import {
 } from '@/app/account';
 import { APP_NAME } from '@/app/navigation';
 import { markTourSeen } from '@/app/seenTour';
+import { markReleaseSeen } from '@/app/layout/whatsNewStore';
 import {
   IconTile,
   InlineNotice,
@@ -245,15 +247,13 @@ export function SignUpPage() {
       if (err instanceof AccountExistsError) setExists(true);
       throw err;
     }
+    reportStep('signed_up');
     markTourSeen();
+    // A new account has never used the old app: no notes on what changed in it.
+    markReleaseSeen();
     if (result === 'confirm') setSentTo(email.trim());
-    // Someone who was on their way to a particular screen keeps going there. Otherwise a new
-    // account is asked whether they are coming from Hevy or Strong, then goes through setup.
-    else
-      navigate(
-        params.get('next') ? next : `/import?welcome=1&next=${encodeURIComponent('/setup?next=/')}`,
-        { replace: true },
-      );
+    // A new account always goes through setup first; where they were headed comes after it.
+    else navigate(`/setup?next=${encodeURIComponent(next)}`, { replace: true });
   });
 
   if (account.status === 'unavailable') return <AccountsUnavailable />;
@@ -321,7 +321,7 @@ export function SignUpPage() {
           {busy ? 'Creating account...' : 'Create account'}
         </PrimaryButton>
         <p className="type-meta text-text-2">
-          Next: seven quick questions, and your plan is ready.
+          Next: a few quick questions, and your plan is ready.
         </p>
         <p className="type-meta text-text-2">
           By creating an account you agree to the <TextLink to="/terms">Terms</TextLink> and the{' '}

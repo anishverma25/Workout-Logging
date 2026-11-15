@@ -1,3 +1,4 @@
+import { inDeficit } from './stalls';
 import { bodyWeightAt } from './progress';
 import { addDays, isSameDay, startOfDay, startOfWeek } from '@/lib/dates';
 import type { Preferences, RoutineDay, RoutineExercise } from '../models/schemas';
@@ -245,6 +246,7 @@ export function buildDashboard(data: TrainingData, prefs: Preferences, now: Date
       experience: data.profile?.experience,
       now,
       weekStartsOn: prefs.weekStartsOn,
+      deficit: inDeficit({ goal: data.profile?.goal, weights: data.bodyWeights, now }),
     }),
     today: todayPlan,
     weekDays: dayStatuses(sessions, days, weekStart, 7, now, since),

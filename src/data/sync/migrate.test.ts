@@ -126,10 +126,12 @@ describe('moving device data into an account', () => {
     );
   });
 
-  it('remembers the choice per account', async () => {
+  it('offers the guest data once per phone, not to every account', async () => {
     expect(await migrationHandled(guest, 'user-1')).toBe(false);
+    expect(await migrationHandled(guest, 'user-2')).toBe(false);
     await markMigrationHandled(guest, 'user-1', 'skipped');
     expect(await migrationHandled(guest, 'user-1')).toBe(true);
-    expect(await migrationHandled(guest, 'user-2')).toBe(false);
+    // Answered for one account: a second account on this phone is not asked again.
+    expect(await migrationHandled(guest, 'user-2')).toBe(true);
   });
 });

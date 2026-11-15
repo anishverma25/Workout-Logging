@@ -87,7 +87,12 @@ export function eventsFrom(items: PlanItem[], today: string): LifeEvent[] {
   return items
     .filter((i) => i.kind === 'event' && i.startDate && i.endDate && i.endDate >= today)
     .filter((i) => EVENT_KINDS.includes(i.data.event as EventKind))
-    .map((i) => ({ id: i.id, kind: i.data.event as EventKind, start: i.startDate!, end: i.endDate! }))
+    .map((i) => ({
+      id: i.id,
+      kind: i.data.event as EventKind,
+      start: i.startDate!,
+      end: i.endDate!,
+    }))
     .sort((a, b) => a.start.localeCompare(b.start));
 }
 
@@ -148,7 +153,10 @@ export interface Undo {
   patches: (Patch & { expectSets?: number; expectExerciseId?: string })[];
   /** The food targets as they were, and the calorie target the change set. */
   targets: {
-    was: Pick<Profile, 'targetMode' | 'calorieTarget' | 'proteinTargetG' | 'carbsTargetG' | 'fatTargetG'>;
+    was: Pick<
+      Profile,
+      'targetMode' | 'calorieTarget' | 'proteinTargetG' | 'carbsTargetG' | 'fatTargetG'
+    >;
     setTo: number;
   } | null;
 }
@@ -162,7 +170,10 @@ export function temporariesFrom(items: PlanItem[]): Temporary[] {
       until: i.endDate!,
       muscles: (i.data.muscles as string[] | undefined) ?? [],
       calories: !!i.data.calories,
-      label: (i.data.label as Text | undefined) ?? { en: 'A temporary change', hi: 'Temporary badlav' },
+      label: (i.data.label as Text | undefined) ?? {
+        en: 'A temporary change',
+        hi: 'Temporary badlav',
+      },
     }));
 }
 
@@ -265,6 +276,8 @@ export async function applyDecision(
     label?: (change: Change) => Text | null;
     /** False for a change made between weekly reviews (a pain report): the week stays open. */
     record?: boolean;
+    /** Only put temporary changes back: pain reports and the week are left as they are. */
+    restoreOnly?: boolean;
   } = {},
 ): Promise<ApplyResult> {
   const accept = new Set(options.accept ?? decision.changes.map((c) => c.id));
@@ -274,7 +287,15 @@ export async function applyDecision(
 
   await db.transaction(
     'rw',
-    [db.planItems, db.profiles, db.routines, db.routineDays, db.routineExercises, db.exercises, db.outbox],
+    [
+      db.planItems,
+      db.profiles,
+      db.routines,
+      db.routineDays,
+      db.routineExercises,
+      db.exercises,
+      db.outbox,
+    ],
     async () => {
       const profile = pickProfile(await db.profiles.toArray());
       const routine = (await db.routines.toArray()).find((r) => r.deletedAt === null && r.isActive);
@@ -340,10 +361,13 @@ export async function applyDecision(
           const now = slots.find((s) => s.id === p.slotId);
           if (!now) return false;
           if (p.expectSets !== undefined && now.targetSets !== p.expectSets) return false;
-          if (p.expectExerciseId !== undefined && now.exerciseId !== p.expectExerciseId) return false;
+          if (p.expectExerciseId !== undefined && now.exerciseId !== p.expectExerciseId)
+            return false;
           return true;
         });
-        await patchSlots(back.map(({ slotId, targetSets, exerciseId }) => ({ slotId, targetSets, exerciseId })));
+        await patchSlots(
+          back.map(({ slotId, targetSets, exerciseId }) => ({ slotId, targetSets, exerciseId })),
+        );
         if (undo.targets && targets && targets.calorieTarget === undo.targets.setTo)
           await saveTargets({ ...targets, ...undo.targets.was });
         await patchRecord<PlanItem>(db, 'planItems', item.id, { status: 'done' });
@@ -355,7 +379,8 @@ export async function applyDecision(
       for (const change of chosen) {
         if (change.kind === 'restore') continue;
         const temporary = change.until !== null;
-        const cause = change.cause === 'pain' ? 'pain' : change.kind === 'deload' ? 'deload' : 'event';
+        const cause =
+          change.cause === 'pain' ? 'pain' : change.kind === 'deload' ? 'deload' : 'event';
         const key = temporary ? `${cause}:${change.until}` : 'keep';
         groups.set(key, [...(groups.get(key) ?? []), change]);
       }
@@ -433,6 +458,7 @@ export async function applyDecision(
         }
       }
 
+      if (options.restoreOnly) return;
       // 3. Pain reports have been answered, and the decision is on record.
       for (const pain of items.filter((i) => i.kind === 'pain' && i.status === 'active'))
         await patchRecord<PlanItem>(db, 'planItems', pain.id, { status: 'done' });
@@ -459,6 +485,53 @@ export async function applyDecision(
     },
   );
   return { applied, skipped };
+}
+
+/**
+ * Temporary changes whose time is up go back by themselves (a lighter week, short sessions for
+ * exams, a swap around pain, calories held for a fast). This runs for everyone on every open,
+ * Pro or not and whether or not they open the weekly review: a routine is never left cut, and
+ * calories never left changed, because a trial ended or a screen was not visited. Returns the
+ * ids of the changes that were put back.
+ */
+export async function restoreExpired(db: WorkoutDatabase, today: string): Promise<string[]> {
+  const items = await planItems(db);
+  const due = temporariesFrom(items).filter((t) => t.until <= today);
+  if (due.length === 0) return [];
+  const decision: Decision = {
+    weekStart: today,
+    stage: { learning: true, week: 0, of: 0 },
+    maintenance: null,
+    holds: [],
+    warnings: [],
+    notes: [],
+    changes: due.map((t) => ({
+      id: `restore:${t.id}`,
+      kind: 'restore',
+      temporaryId: t.id,
+      cause: 'restore',
+      topic: 'adaptive-plan',
+      until: null,
+      title: { en: `Back to normal: ${t.label.en}`, hi: `Wapas normal: ${t.label.hi}` },
+      reason: {
+        en: 'The time for this change is up, so your plan goes back to what it was.',
+        hi: 'Is badlav ka samay poora hua, plan pehle jaisa ho jayega.',
+      },
+    })),
+  };
+  const { applied, skipped } = await applyDecision(db, decision, { restoreOnly: true });
+  // Nothing to put back (no record of how): it is still over, so it is not tried again.
+  if (skipped.length) {
+    await db.transaction('rw', tables(db), async () => {
+      for (const id of skipped) {
+        const itemId = id.replace(/^restore:/, '');
+        const item = await db.planItems.get(itemId);
+        if (item && item.status === 'active')
+          await patchRecord<PlanItem>(db, 'planItems', itemId, { status: 'done' });
+      }
+    });
+  }
+  return applied;
 }
 
 /** The person kept their plan: nothing changes, and the week is not asked about again. */
@@ -527,7 +600,9 @@ export async function addMemory(
     throw new PlanError(`Keep it to ${MEMORY_MAX_CHARS} characters.`);
   const item = make('memory', { startDate: null, endDate: null, data: { text: clean, source } });
   await db.transaction('rw', tables(db), async () => {
-    const count = (await db.planItems.toArray()).filter((i) => alive(i) && i.kind === 'memory').length;
+    const count = (await db.planItems.toArray()).filter(
+      (i) => alive(i) && i.kind === 'memory',
+    ).length;
     if (count >= MEMORY_MAX_ITEMS)
       throw new PlanError(`It can hold ${MEMORY_MAX_ITEMS} things. Delete one first.`);
     await putRecords(db, 'planItems', [item]);

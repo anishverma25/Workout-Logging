@@ -1,11 +1,26 @@
 import { useMemo } from 'react';
-import { CalendarCheck, Dumbbell, Scale, Sparkles, Utensils } from 'lucide-react';
+import {
+  BookOpen,
+  CalendarCheck,
+  CalendarRange,
+  Dumbbell,
+  Gauge,
+  Scale,
+  Sparkles,
+  Utensils,
+} from 'lucide-react';
+import { useAccount } from '@/app/account';
 import { useFeature } from '@/app/entitlement';
 import { CapsuleButton } from '@/components/kit';
 import { useActiveWorkout, type QueryState } from '@/data/hooks';
 import type { TodayPlan } from '@/domain/analytics/dashboard';
 import { isAlive, type TrainingData } from '@/domain/analytics/sessions';
 import { nowCard, usualHour, type NowKind } from '@/domain/brain/now';
+import { GOAL_PROTEIN } from '@/domain/analytics/body';
+import { LOGGED_DAY_KCAL } from '@/domain/brain/limits';
+import { MUSCLE_LABELS } from '@/domain/models/labels';
+import type { MuscleGroup } from '@/domain/models/schemas';
+import { firstDaysCard, type FirstDaysKind } from '@/domain/onboarding/firstDays';
 import { dayTotals } from '@/domain/nutrition/analysis';
 import { eatNext, habitsFrom } from '@/domain/nutrition/solver';
 import { addDays, toDateKey } from '@/lib/dates';
@@ -13,14 +28,22 @@ import { useBrain } from '../brain/useBrain';
 import { readMealPrefs } from '../food/mealPrefs';
 import { mealForHour, useFoodContextFrom } from '../food/useFoodContext';
 
-const ICON: Record<NowKind, typeof Scale> = {
+const ICON: Record<NowKind | FirstDaysKind, typeof Scale> = {
   review: CalendarCheck,
   wrapped: Sparkles,
   weigh: Scale,
   train: Dumbbell,
   protein: Utensils,
   meal: Utensils,
+  first_workout: Dumbbell,
+  pick_routine: CalendarRange,
+  first_food: Utensils,
+  first_weight: Scale,
+  muscle_sets: BookOpen,
+  learning: Gauge,
 };
+
+const DAY_MS = 86_400_000;
 
 /**
  * The Now card (free): one card at the top of Home that changes through the day, picked from
@@ -41,6 +64,7 @@ export function NowCard({
   const pro = useFeature('adaptive_plan');
   const macros = useFeature('macro_tracking');
   const brain = useBrain(now);
+  const createdAt = useAccount().user?.createdAt ?? null;
   const food = useFoodContextFrom(now, training);
   const active = useActiveWorkout();
   const data = training.data;
@@ -81,7 +105,7 @@ export function NowCard({
             katoriMl: food.katoriMl,
           }).map((p) => p.food.name)
         : [];
-    return nowCard({
+    const now_ = nowCard({
       hour,
       dayOfMonth: now.getDate(),
       reviewChanges: pro && !brain.record ? (brain.decision?.changes.length ?? 0) : 0,
@@ -99,6 +123,50 @@ export function NowCard({
       mealLogged: logs.some((l) => l.date === day && l.meal === mealNow),
       fits,
     });
+    if (now_) return now_;
+
+    // The first 14 days (batch 9): one next step, then something true back, then the meter.
+    const ageDays = createdAt
+      ? Math.floor((now.getTime() - new Date(createdAt).getTime()) / DAY_MS)
+      : Number.POSITIVE_INFINITY;
+    const completed = data.workouts.filter(
+      (w) => isAlive(w) && w.status === 'completed' && w.origin === 'user',
+    ).length;
+    const ownLogs = logs.filter((l) => l.origin === 'user');
+    const foodDates = [...new Set(ownLogs.map((l) => l.date))];
+    const fullDays = foodDates
+      .map((d) => dayTotals(ownLogs, d))
+      .filter((t) => t.kcal >= LOGGED_DAY_KCAL);
+    const weightKg = food.snapshot?.weightKg ?? null;
+    const proteinPerKg =
+      // Three full days smooth out one odd day (PROTEIN_INSIGHT_DAYS).
+      weightKg && fullDays.length >= 3
+        ? fullDays.reduce((sum, t) => sum + t.proteinG, 0) / fullDays.length / weightKg
+        : null;
+    const goal = data.profile?.goal ?? null;
+    const thisWeek = brain.weeks.at(-1);
+    const stage = brain.model?.stage;
+    const muscleSets = Object.fromEntries(
+      Object.entries(thisWeek?.muscles ?? {}).map(([m, n]) => [
+        MUSCLE_LABELS[m as MuscleGroup] ?? m,
+        n,
+      ]),
+    );
+    return firstDaysCard({
+      ageDays,
+      workouts: completed,
+      foodDays: foodDates.length,
+      weighIns: weights.length,
+      plannedDay: today.kind === 'planned' ? today.day.name : null,
+      hasRoutine: today.kind !== 'no_routine',
+      muscleSets,
+      proteinPerKg,
+      proteinRange: goal ? GOAL_PROTEIN[goal] : undefined,
+      macros,
+      learning: stage?.learning ? { week: stage.week, of: stage.of } : null,
+      weekFoodDays: thisWeek?.foodDays ?? 0,
+      weekWeighIns: thisWeek?.weighIns ?? 0,
+    });
     // `now` is read through the hour and the day, so the card does not recompute every minute.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -113,6 +181,10 @@ export function NowCard({
     macros,
     brain.record,
     brain.decision,
+    brain.weeks,
+    brain.model,
+    food.snapshot,
+    createdAt,
     today,
     active.data,
     wrappedMonth,

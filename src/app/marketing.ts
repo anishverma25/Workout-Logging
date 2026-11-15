@@ -1,3 +1,4 @@
+import { FREE_ROUTINES, TRIAL_DAYS } from '../domain/entitlement/limits';
 /**
  * What the public pages say about Macrotrophy: member reviews, the questions on the home page,
  * the guide pages for what people search for, and the structured data search engines read.
@@ -91,10 +92,10 @@ export interface Faq {
 export const FAQ: Faq[] = [
   {
     q: 'Is Macrotrophy free?',
-    a: 'Yes. Workout logging, your full history, every personal record, 2 routines and Indian food logging with calories are free forever. Pro adds the weekly plan, protein and macros, Macrotrophy AI, the weekly report and longer trends. Every new account gets 7 days of Pro free.',
+    a: `Yes. Workout logging, your full history, every personal record, ${FREE_ROUTINES} routines and Indian food logging with calories are free forever. Pro adds the weekly plan, protein and macros, Macrotrophy AI, the weekly report and longer trends. Every new account gets ${TRIAL_DAYS} days of Pro free.`,
   },
   {
-    q: 'What happens after the 7-day trial?',
+    q: `What happens after the ${TRIAL_DAYS}-day trial?`,
     a: 'Nothing is charged, because we never ask for a card to start. You move to the Free plan and keep everything you logged. Choose a Pro plan whenever you like.',
   },
   {
@@ -107,7 +108,7 @@ export const FAQ: Faq[] = [
   },
   {
     q: 'What is Macrotrophy AI?',
-    a: 'An AI coach inside the app, part of Pro. It explains your progress and food in plain words, in English, Hinglish or Hindi, logs meals from a photo or a sentence, and never makes up numbers of its own.',
+    a: 'The AI assistant inside the app, part of Pro. It explains your progress and food in plain words, in English, Hinglish or Hindi, logs meals from a photo or a sentence, and never makes up numbers of its own.',
   },
   {
     q: 'Do I need to install anything?',
@@ -505,7 +506,7 @@ export function structuredData(prices: Prices = PUBLIC_PRICES, faq: Faq[] = FAQ)
       name: BRAND,
       alternateName: 'Overload Gym',
       description:
-        'Workout tracker and Indian food calorie counter that plans your next week from your training and food: log sets and meals, an AI coach in English and Hinglish, a weekly report, leaderboards, and every number backed by published research.',
+        'Workout tracker and Indian food calorie counter that plans your next week from your training and food: log sets and meals, Macrotrophy AI in English and Hinglish, a weekly report, leaderboards, and every number backed by published research.',
       applicationCategory: 'HealthApplication',
       applicationSubCategory: 'Fitness',
       operatingSystem: 'Web, iOS, Android',

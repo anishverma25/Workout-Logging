@@ -88,7 +88,7 @@ Read README.md for setup, architecture and calculation rules.
   covers the whole previous period; partial periods are labelled.
 - Phase 6: Supabase schema with RLS, local-first sync (outbox, push, pull, conflicts, retry),
   auth (sign up, sign in, sign out, reset), per-account local databases, guest data import.
-- Phase 7: 168-hour server trial, `subscriptions` table with RPCs, central entitlement, Pro
+- Phase 7: server trial (168 hours; 336 hours, 14 days, for accounts from migration 0033), `subscriptions` table with RPCs, central entitlement, Pro
   gates on Progress and the logger, admin guide in `docs/admin-pro-payments.md`,
   development-only access states. Manual UPI was removed (October 2026).
 - Billing (migration 0008): Razorpay subscriptions. Plans and prices in `billing_plans`; logic in
@@ -115,7 +115,7 @@ Read README.md for setup, architecture and calculation rules.
 - Early access (migration 0005): `app_settings.early_access_ended_at` null means every account
   has Pro (plan `founding`, shown simply as "Pro is active"). Ending it is one SQL update
   (`docs/admin-pro-payments.md`). No founding member or early access copy remains in the app; the
-  Pro page sells with a 7-day trial, a Free and Pro table and the person's own counts.
+  Pro page sells with a 14-day trial, a Free and Pro table and the person's own counts.
 - Feedback (migration 0006): `submit_feedback` / `get_my_feedback` RPCs only, 10 a day, ids
   made on the phone so offline feedback is sent once (`src/app/feedback.ts`). Page `/feedback`,
   one-time prompt on the 3rd workout summary, links from Pro and the error screen. Reading and
@@ -473,3 +473,112 @@ Read README.md for setup, architecture and calculation rules.
     week", science sources band and `HeaderArt` on science groups and guides, `num-glow`, `shine`,
     `pulse-glow`. Tour shows the Brain after food. Release `2026-11-fair-play`, `CACHE_EPOCH`
     `ui-20`.
+- Launch safety, stages A and B (November 2026, migrations `20261114000028_launch_safety.sql`
+  and `20261114000029_retire_old_ai_claim.sql` (run 0029 only after the coach function is
+  deployed), Dexie unchanged, Fable review batches 1, 2, 7, 17 and three items of 10, 13, 14):
+  - First impressions: "What's new" never shows to accounts made after `RELEASE_AT`; the tour has
+    Skip (to sign up) on every slide; sign up always opens setup; `SetupGate` sends a new,
+    never set up account to setup once (email-confirm flow). Setup asks diet, waist and body fat
+    (optional), then `BuildingPlan` (full screen, real numbers), then the plan, then the Pro
+    offer page `/trial` (`TrialWelcomePage`: what Pro does, Free and Pro, reviews, `PlansSection`
+    checkout) for everyone not already paying. Sign-in art is real screens (`AuthArt`); reviews
+    are `RatingLaurel` and `QuoteSpotlight` (`features/tour/Reviews.tsx`).
+  - Safe targets: no plan, typed intake or Brain week cuts toward a BMI under 18.5 or for anyone
+    under 18 (`unsafeTarget` in `goalPlan.ts`, `energyPlan` age guard).
+  - AI limits by kind (`ai_claim`/`ai_release`, service role only; chat 60, food 80, photo 15 a
+    day; `app_settings.ai_daily_budget` for everyone, -2 means busy). Brand usernames reserved.
+  - Billing: failed webhooks are forgotten so retries apply (`billing_forget_event`); a stored
+    unpaid checkout is reused, found paid (`already_paid`) or cancelled before a new one
+    (`settleCreated`); payments for a subscription no account stores are adopted
+    (`billing_adopt`) or cancelled and recorded (`billing_orphans`, with refunds and disputes);
+    no full period without Razorpay's end date except on a charge; cancel works for every live
+    state; `delete_my_account` refuses while autopay can charge and the app cancels first.
+  - App: sign-out counts the real outbox; deleting clears the account's device keys; a paid but
+    unconfirmed checkout shows "Payment received" and blocks paying again for 30 minutes
+    (`pendingPayment`); `unknown` entitlement (offline, nothing cached) never shows ended or
+    reminders; switches in `app_settings.flags` (`get_app_flags`, `app/flags.ts`).
+  - Report crash fixed (`repaired` for saved reports); label servings with no weight log as
+    servings; temporary plan changes restore themselves for everyone (`restoreExpired`,
+    `RestoreExpired` in AppShell); logged food rows show calories only.
+- Launch safety, stage C (November 2026, migrations `20261114000030_privacy_community.sql`,
+  `20261114000031_sync_pull.sql`, `20261114000032_client_errors.sql`, Dexie unchanged, Fable
+  review batches 19, 12, 3, 18, 4):
+  - AI safety in code (`_shared/coach.ts` Safety section): `unsafeAnswer` drops crash diets,
+    fast loss, big deficits, risky doses, long fasts, water cuts and drugs (English, Hinglish,
+    Devanagari numbers), and any cut or supplement for under 18s; `questionSafety` answers
+    self-harm (Tele-MANAS 14416), eating disorder and weight-cut questions itself, without AI.
+    Only server-signed AI turns go back into the history (`signAnswer`, `COACH_SIGNING_KEY`,
+    else the service role key). Cases in `features/coach/safety.test.ts`.
+  - Privacy and community: "Show me as" on the global board (name, username, initials, hidden),
+    reports (`report_content`), group bans, blocked words; account JSON export; CSV cells
+    starting `= + - @` are neutralised.
+  - Sync: one request pull (`sync_pull`, `remote.pullAll`, per-table fallback); a round after a
+    local change pushes only unless the last pull is older than `PULL_INTERVAL_MS`; refused
+    changes and skipped rows get one more try per app version; "Download my account again" on
+    Account (only with an empty outbox, never deletes); another tab upgrading the database shows
+    a Reload notice (`onUpgradedElsewhere`); guest data is offered once per phone.
+  - Rule: a new synced table is `late: true` unless listed in `tableRules.test.ts`
+    `APPLIED_EVERYWHERE` (only once its migration is live and every app version knows it).
+    Database history is pinned in `db.upgrade.test.ts`: add each new Dexie version there.
+  - Error reports and the onboarding funnel (`app/errorReport.ts`, `report_client_error`, 20
+    rows a person a day, kept 30 days, read with `docs/admin-errors.md`); scrubbed of food,
+    notes, AI text, emails, tokens, queries and hashes. `/__crash` exists only in dev and e2e.
+  - Source maps are hidden and moved to `sourcemaps/` by `verify-build` (never deployed).
+    Daily encrypted database backup (`.github/workflows/backup.yml`, `docs/backup-restore.md`).
+- Launch safety, stage D (November 2026, migration `20261115000033_trial_14_days.sql`, Dexie
+  unchanged, Fable review batches 9, 8, 13):
+  - First 14 days (`domain/onboarding/firstDays.ts`, in `NowCard` when the Now card has
+    nothing): first workout, first food, first weight, then sets or protein against the
+    research ranges, then the learning meter (also in the weekly review notes). First workout
+    card on the summary (`FirstWorkoutCard`); `TrialEndingCard` on Home in the last 3 days
+    (`domain/entitlement/trialEnding.ts`, `URGENCY` words tested out of it and the nudges).
+  - Trial: 14 days for new accounts (`TRIAL_HOURS` 336, `TRIAL_DAYS`); each account's own
+    length is `Entitlement.trialHours`. `landing.test.ts` checks every trial line on the home
+    page against the migration. Run 0033 before deploying code that says 14 days.
+  - Honest Brain (`domain/brain/response.ts`): each lift's own trend (log e1RM against the
+    square root of weeks) is removed first, a finding must also hold on the review a week
+    earlier, `CLEAR_GAP` 3.4; findings are worded as what happened in the logs. Simulation
+    families in `simulate.test.ts` (slowing beginners, 12 muscles with no effect).
+  - One protein day: `PROTEIN_DAY_SHARE` (90%) in `nutrition/analysis.ts`. The AI brief dates
+    by the local day (`toDateKey`).
+  - Stalls: weeks by experience (`STALL_WEEKS_BY_EXPERIENCE` 3, 4, 6); in a deficit
+    (`inDeficit`) a lift is `holding`, not stalled, for up to `HOLD_WEEKS` (8), and holding
+    never counts as a stall (`ProgressModel.holding` is separate from `plateaus`).
+  - Equipment (`domain/workout/equipment.ts`, `equipmentFits`): programmes, stall variations,
+    Brain swaps (`exercise.fits`, a `swap` hold when nothing fits) and the swap picker
+    ("Needs other equipment" last) use one rule.
+- Launch safety, stage E (November 2026, migration `20261115000034_fair_scores_rules.sql`,
+  Dexie unchanged, Fable review batches 20 and 15):
+  - Streaks follow the week target (`streakTarget`, `weeklyStreak(minSessions)`); streak badges
+    reached before `STREAK_RULE_FROM` keep the old rule. Leaderboard records use the app's rule
+    (`community_e1rm`, compound weight and reps lifts, Epley capped at 10 reps), paused time is
+    left out. Every limit lives in `domain/entitlement/limits.ts` (`FREE_PROGRESS_DAYS` 7,
+    `FREE_ROUTINES` 2, groups, duels, AI photos, trial), checked by `limits.test.ts`.
+  - The science page takes its numbers from the constants that enforce them
+    (`features/science/topics.test.ts` pairs a text fragment with each constant).
+- Launch safety, stage F (November 2026, migrations `20261115000035_timed_targets.sql`,
+  `20261115000036_duels_accept.sql`, `20261115000037_report_weeks.sql`, Dexie unchanged, Fable
+  review batches 10, 11, 21, 14, 16):
+  - Food: logged rows show calories, a food's page shows protein, carbs, fat and fibre to
+    everyone; Pro tracks the day against targets. Hindi and spoken amounts, roti words, invalid
+    portions disable Add, AI drafts kept 30 s, `fitToCalories` with a fat floor.
+  - Training: timed targets up to 600 s, forgotten-workout prompt after 6 h, unfinished sets
+    named at finish, lb rounded to 0.05, assisted records, same-session imports skipped.
+  - Progress: adherence counts from the routine's start, one exercise twice in a workout is
+    one session, chart e1RM equals the best e1RM, volume changes need 3 earlier sessions,
+    weigh-ins older than 90 days are not used (`WEIGHT_MAX_AGE_DAYS`). Imports are capped at
+    20 MB, 200 columns and 200,000 rows; others' photos must be small JPEG, PNG or WebP
+    (`isSafeAvatar`); setup only follows same-app links (`safeNext`).
+  - Weekly report: always Monday to Sunday, waits until the week has synced, numbered by the
+    server (`number`, up to 60 read), overlapping weeks refused, the toggle says
+    "Headline and actions in", PDF names fall back to the library name or "Lift".
+  - Duels: accept first (`accept_duel`), points from `accepted_at`, no cancel after accepting,
+    `forfeit_duel` is a loss, settled on read, last four weeks shown, leaving forfeits.
+  - Cards: rank lines include consistency and progress and say "Last week" when shared late;
+    design A shortens long titles; PR ordinal from all records; weekend badge counts weekends,
+    early bird is 4 to 7 am (old badges kept); Wrapped rings capped, tonnage in the person's
+    unit, "seen" per account.
+  - Accessibility: `--text-3` raised to 4.5:1 and `--danger-fill` for white on red
+    (`styles/tokens.test.ts`); confirm sheets focus Cancel; "Rest over" is announced; undo
+    toasts stay 10 s and pause on hover or focus; a page change names the tab and focuses its
+    h1 (`usePageAnnounce` in AppShell); keypad hints by `useId`, errors as alerts.

@@ -20,7 +20,7 @@ End early access in the SQL editor when you are ready for the trial rules to app
 update public.app_settings set early_access_ended_at = now();
 ```
 
-After that the normal rules apply to everyone: the 168-hour trial from when the account was
+After that the normal rules apply to everyone: the trial (14 days, 7 days for accounts made before migration 0033) from when the account was
 created (so accounts older than 7 days go straight to the free plan), then Pro by plan.
 To give existing accounts time first, either end it later
 (`set early_access_ended_at = now() + interval '7 days'`) or grant them Pro for a period with
@@ -68,7 +68,7 @@ A revoked account keeps every free feature and all of its data.
 
 ## What cannot be changed
 
-- The trial is exactly 168 hours from account creation. A database trigger keeps
+- The trial is exactly 14 days (336 hours) from account creation, 168 hours for accounts made before migration 0033. A database trigger keeps
   `trial_started_at` and `trial_expires_at` fixed, even for the owner.
 - Users cannot read the table directly, cannot write to it at all, and never see `admin_note`.
   They can only call `get_my_subscription()` and `submit_payment_reference()`.

@@ -39,6 +39,30 @@ export interface DailyTargets {
   proteinSource: 'set' | 'calculated' | null;
   /** The mode in force; null until the person has chosen and has no numbers of their own. */
   mode: TargetMode | null;
+  /** Protein and the lowest healthy fat already pass the calories (batch 10, D11). */
+  tooLowForProtein?: boolean;
+}
+
+/** The lowest fat the targets go to when calories are tight: 0.6 g per kg. */
+export const FAT_FLOOR_G_PER_KG = 0.6;
+export const TOO_LOW_FOR_PROTEIN = 'These calories are too low for this much protein.';
+
+/**
+ * Never more macros than the calorie target (D11): carbohydrate goes first, then fat down to
+ * 0.6 g/kg. When protein and that fat still pass the calories, the split says so.
+ */
+function fitToCalories(
+  kcal: number,
+  proteinG: number,
+  fatG: number,
+  weightKg: number | null,
+): { carbsG: number; fatG: number; tooLow: boolean } {
+  const rest = kcal - proteinG * 4 - fatG * 9;
+  if (rest >= 0) return { carbsG: round(rest / 4, 5), fatG, tooLow: false };
+  const floor = weightKg && weightKg > 0 ? FAT_FLOOR_G_PER_KG * weightKg : 0;
+  const fitted = Math.max(0, Math.floor((kcal - proteinG * 4) / 9 / 5) * 5);
+  const fat = Math.max(Math.ceil(floor / 5) * 5, fitted);
+  return { carbsG: 0, fatG: fat, tooLow: proteinG * 4 + fat * 9 > kcal };
 }
 
 /** Fat share of energy for the calculated plan: inside the 20 to 35% range, near the low end. */
@@ -59,6 +83,7 @@ export interface CalculatedTargets {
   fatG: number;
   fibreG: number;
   waterMl: number | null;
+  tooLowForProtein?: boolean;
 }
 
 /** Water for a body weight: 35 ml per kg to the nearest 250 ml, kept between 1.5 and 4.5 L. */
@@ -76,13 +101,14 @@ export function calculatedTargets(
   const kcal = energy.targetKcal;
   const proteinG = Math.round((energy.proteinG[0] + energy.proteinG[1]) / 2);
   const fatMin = weightKg ? FAT_MIN_G_PER_KG * weightKg : energy.fatMinG;
-  const fatG = Math.max(round(fatMin, 5), round((CALC_FAT_SHARE * kcal) / 9, 5));
-  const carbsG = Math.max(0, round((kcal - proteinG * 4 - fatG * 9) / 4, 5));
+  const wantedFat = Math.max(round(fatMin, 5), round((CALC_FAT_SHARE * kcal) / 9, 5));
+  const { carbsG, fatG, tooLow } = fitToCalories(kcal, proteinG, wantedFat, weightKg);
   return {
     kcal,
     proteinG,
     carbsG,
     fatG,
+    tooLowForProtein: tooLow,
     fibreG: Math.round((FIBRE_G_PER_1000_KCAL_TARGET * kcal) / 1000),
     waterMl: calculatedWaterMl(weightKg),
   };
@@ -144,6 +170,7 @@ export function dailyTargets(
     kcalSource: own.calorieTarget != null ? 'set' : calc ? 'calculated' : null,
     proteinSource: own.proteinTargetG != null ? 'set' : calc ? 'calculated' : null,
     mode,
+    tooLowForProtein: !!base?.tooLowForProtein,
   };
 }
 
@@ -181,6 +208,7 @@ export interface MacroSplit {
   carbsG: number;
   fatG: number;
   fibreG: number;
+  tooLowForProtein?: boolean;
 }
 
 /**
@@ -218,19 +246,18 @@ export function macrosForCalories(input: {
     fatG = Math.max(0, round(left({ p: proteinG, c: carbsG }) / 9, 5));
   } else {
     const fatMin = kg ? FAT_MIN_G_PER_KG * kg : 0;
-    fatG = Math.max(round(fatMin, 5), round((GOAL_FAT_SHARE[goal] * kcal) / 9, 5));
-    const rest = left({ p: proteinG, f: fatG });
-    if (rest >= 0) carbsG = round(rest / 4, 5);
-    else {
-      // Protein and the fat floor already pass the calories: no carbohydrate, less fat.
-      carbsG = 0;
-      fatG = Math.max(0, round(left({ p: proteinG }) / 9, 5));
-    }
+    const wanted = Math.max(round(fatMin, 5), round((GOAL_FAT_SHARE[goal] * kcal) / 9, 5));
+    // Protein and the fat floor already pass the calories: no carbohydrate, less fat (D11).
+    const fit = fitToCalories(kcal, proteinG, wanted, kg);
+    fatG = fit.fatG;
+    carbsG = fit.carbsG;
   }
+  const tooLowForProtein = proteinG * 4 + fatG * 9 + carbsG * 4 > kcal + 5;
   return {
     proteinG,
     carbsG,
     fatG,
+    tooLowForProtein,
     fibreG: fixed.fibreG ?? Math.round((FIBRE_G_PER_1000_KCAL_TARGET * kcal) / 1000),
   };
 }

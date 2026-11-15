@@ -15,7 +15,10 @@ export interface LabelNumbers {
 }
 
 export interface LabelPortion {
-  grams: number;
+  /** Grams eaten, or null when the pack gives no serving weight and they counted servings. */
+  grams: number | null;
+  /** Servings eaten, when that is how they measured it and no gram weight is known. */
+  servings: number | null;
   kcal: number;
   proteinG: number;
   carbsG: number;
@@ -24,6 +27,9 @@ export interface LabelPortion {
 }
 
 const r1 = (v: number) => Math.round(v * 10) / 10;
+
+/** Less than this many servings is almost always a typing slip (0.1 for 1). */
+export const MIN_SERVINGS = 0.25;
 
 /**
  * Null when something needed is missing: the calories, an amount, or the serving size when
@@ -37,7 +43,8 @@ export function labelPortion(input: {
   unit: 'g' | 'serving';
 }): LabelPortion | null {
   const { values, column, servingG, amount, unit } = input;
-  if (values.kcal === null || !amount || amount <= 0) return null;
+  if (values.kcal === null || !amount || !(amount > 0) || !Number.isFinite(amount)) return null;
+  if (unit === 'serving' && amount < MIN_SERVINGS) return null;
   const grams = unit === 'g' ? amount : servingG ? amount * servingG : null;
   // How many of the label's columns the portion is.
   const factor =
@@ -50,15 +57,20 @@ export function labelPortion(input: {
         : servingG
           ? amount / servingG
           : null;
-  if (factor === null) return null;
-  return {
-    grams: Math.round(grams ?? amount),
+  if (factor === null || !Number.isFinite(factor)) return null;
+  const out = {
+    // Never the amount typed as if it were grams: without a weight, the portion is servings.
+    grams: grams !== null ? Math.round(grams) : null,
+    servings: grams === null ? amount : null,
     kcal: Math.round(values.kcal * factor),
     proteinG: r1((values.proteinG ?? 0) * factor),
     carbsG: r1((values.carbsG ?? 0) * factor),
     fatG: r1((values.fatG ?? 0) * factor),
     fibreG: r1((values.fibreG ?? 0) * factor),
   };
+  const numbers = [out.kcal, out.proteinG, out.carbsG, out.fatG, out.fibreG];
+  if (!numbers.every(Number.isFinite) || (out.grams !== null && out.grams < 1)) return null;
+  return out;
 }
 
 /** Whether a label column's energy roughly matches its macros (labels round; fibre counts less). */

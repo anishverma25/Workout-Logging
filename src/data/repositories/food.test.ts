@@ -160,6 +160,25 @@ describe('Macrotrophy AI foods on the plate', () => {
     expect(logs[0]!.kcal).toBeCloseTo(200, 0);
     expect(logs[0]!.foodId).toBe(kept[0]!.food.id);
     expect(await db.customFoods.count()).toBe(1);
+    // Logged again (a new AI answer, same food and numbers): the same own food, no duplicate.
+    const again = foodFromItem({
+      name: 'Starbucks cold coffee',
+      portion: '1 tall',
+      grams: 350,
+      kcal: 200,
+      proteinG: 7,
+      carbsG: 32,
+      fatG: 5,
+      fibreG: 0,
+      diet: 'veg',
+      basis: 'web',
+      ref: 'Starbucks India menu',
+    });
+    const second = await keepPlateFoods(db, [
+      { food: again, amount: 1, unit: 'serving' as const, size: null, oilLevel: null },
+    ]);
+    expect(second[0]!.food.id).toBe(kept[0]!.food.id);
+    expect(await db.customFoods.count()).toBe(1);
   });
 
   it('a found food renamed on its card is saved and logged under the new name', async () => {

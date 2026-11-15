@@ -114,8 +114,8 @@ describe('feedback', () => {
   it('the queries in the feedback guide work as written', async () => {
     const guide = readFileSync(join(process.cwd(), 'docs', 'admin-feedback.md'), 'utf8');
     const blocks = [...guide.matchAll(/```sql\n([\s\S]*?)```/g)].map((m) => m[1]!);
-    const [overview, latest, markRead, reply] = blocks;
-    expect(blocks).toHaveLength(4);
+    const [overview, latest, markRead, reply, reports, whose, hide, handled] = blocks;
+    expect(blocks).toHaveLength(8);
     const summary = await server.pg.query<{ entries: number; people: number }>(overview!);
     expect(Number(summary.rows[0]!.entries)).toBeGreaterThan(0);
     const rows = await server.pg.query<{ email: string; id: string }>(latest!);
@@ -126,5 +126,10 @@ describe('feedback', () => {
     const item = (await mine(userB)).find((f) => f.id === target.id)!;
     expect(item.reply).toMatch(/Thanks!/);
     expect(item.seen_at).not.toBeNull();
+    // Reports of people and groups (migration 0030).
+    await server.pg.query(reports!);
+    await server.pg.query(whose!.replace('their.username', 'nobody.here'));
+    await server.pg.exec(hide!.replace('paste-user-id', userB));
+    await server.pg.exec(handled!);
   });
 });

@@ -31,7 +31,9 @@ export async function applySpoken(
     onSetCompleted: (set: WorkoutSet, view: WorkoutExerciseView) => void;
   },
 ): Promise<{ message: string; undo?: () => void } | null> {
-  const lifts = ctx.exercises.filter((e) => (e.exercise?.trackingType ?? 'weight_reps') !== 'cardio');
+  const lifts = ctx.exercises.filter(
+    (e) => (e.exercise?.trackingType ?? 'weight_reps') !== 'cardio',
+  );
   const named =
     spoken.kind === 'set' && spoken.exercise
       ? matchSpokenExercise(
@@ -71,7 +73,8 @@ export async function applySpoken(
     reps = spoken.reps;
     sure = spoken.sure;
   }
-  const open = view.sets.find((s) => s.completedAt === null) ?? (await addSet(db, view.workoutExercise.id));
+  const open =
+    view.sets.find((s) => s.completedAt === null) ?? (await addSet(db, view.workoutExercise.id));
   const patch: { weightKg?: number; reps?: number } = {};
   if (weightKg !== null) patch.weightKg = Math.round(weightKg * 100) / 100;
   if (reps !== null) patch.reps = reps;
@@ -119,7 +122,8 @@ export function VoiceSets(props: {
         return;
       }
       const result = await applySpoken(spoken, latest.current);
-      if (result) toast(result.message, result.undo ? { label: 'Undo', onSelect: result.undo } : undefined);
+      if (result)
+        toast(result.message, result.undo ? { label: 'Undo', onSelect: result.undo } : undefined);
     },
     [toast],
   );

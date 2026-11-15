@@ -1,3 +1,4 @@
+import { streakTargetOf } from '@/domain/analytics/week';
 import { useEffect, useMemo, useState } from 'react';
 import { Download, Share } from 'lucide-react';
 import { BottomSheet, ChipGroup, PrimaryButton, SecondaryButton } from '@/components/kit';
@@ -72,13 +73,14 @@ function ShareForm({ workoutId, badgeId }: { workoutId: string | null; badgeId?:
       bodyWeights: data.bodyWeights,
       now,
       weekStartsOn: prefs.weekStartsOn,
+      minSessions: streakTargetOf(data),
     });
     const workout = workoutId ? workoutCard(data, workoutId) : null;
     return {
       workout,
       pr: workoutId ? prCard(data, workoutId) : null,
       medals: workoutId ? medalsCard(data, workoutId) : null,
-      streak: streakCard(data, now, prefs.weekStartsOn),
+      streak: streakCard(data, now, prefs.weekStartsOn, streakTargetOf(data)),
       badge: badgeId
         ? (badges.find((b) => b.id === badgeId && b.earnedAt) ?? null)
         : workoutId

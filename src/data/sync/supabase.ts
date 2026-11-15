@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { DROPPABLE_COLUMNS, LATE_COLUMNS, type ServerRow, type ServerTable } from './mapping';
 import {
+  isMissingFunction,
   isPermanentCode,
   keyColumn,
   RemoteError,
@@ -75,7 +76,34 @@ function toRemoteError(error: PostgrestLikeError): RemoteError {
 const q = (value: string) => `"${value.replace(/"/g, '')}"`;
 
 export class SupabaseRemote implements RemoteStore {
+  /** The server answered that sync_pull does not exist: not asked again this session. */
+  private noPullAll = false;
+
   constructor(private client: SupabaseClient) {}
+
+  async pullAll(
+    cursors: Record<string, PullCursor | null>,
+    limit: number,
+  ): Promise<Record<string, ServerRow[]> | null> {
+    if (this.noPullAll) return null;
+    try {
+      const { data, error } = await this.client.rpc('sync_pull', {
+        p_cursors: cursors,
+        p_limit: limit,
+      });
+      if (error) {
+        if (isMissingFunction(error)) {
+          this.noPullAll = true;
+          return null;
+        }
+        throw toRemoteError(error);
+      }
+      return data && typeof data === 'object' ? (data as Record<string, ServerRow[]>) : {};
+    } catch (err) {
+      if (err instanceof RemoteError) throw err;
+      throw new RemoteError((err as Error).message, { transient: true });
+    }
+  }
 
   async upsert(table: RemoteTable, rows: ServerRow[]): Promise<void> {
     if (rows.length === 0) return;
@@ -108,6 +136,18 @@ export class SupabaseRemote implements RemoteStore {
         if (retry.error) throw toRemoteError(retry.error);
       }
       if (waiting > 0) throw toRemoteError(error);
+    } catch (err) {
+      if (err instanceof RemoteError) throw err;
+      throw new RemoteError((err as Error).message, { transient: true });
+    }
+  }
+
+  async fetchRows(table: RemoteTable, keys: string[]): Promise<ServerRow[]> {
+    if (keys.length === 0) return [];
+    try {
+      const { data, error } = await this.client.from(table).select('*').in(keyColumn(table), keys);
+      if (error) throw toRemoteError(error);
+      return (data ?? []) as ServerRow[];
     } catch (err) {
       if (err instanceof RemoteError) throw err;
       throw new RemoteError((err as Error).message, { transient: true });

@@ -82,3 +82,46 @@ describe('intakeOutcome', () => {
     expect(at(1950, 175).proteinLow).toBe(false);
   });
 });
+
+describe('safe targets', () => {
+  // 175 cm: BMI 18.5 is 56.66 kg.
+  const tall = { ...base, weightKg: 65, maintenanceKcal: 2300, bmrKcal: 1550, heightCm: 175 };
+
+  it('holds weight for a target under BMI 18.5 and names the healthy floor', () => {
+    const p = targetPlan({ ...tall, targetKg: 56.3 }); // BMI 18.4
+    expect(p.direction).toBe('hold');
+    expect(p.kcal).toBe(2300);
+    expect(p.outcome.status).toBe('target_too_low');
+    expect(p.outcome.date).toBeNull();
+    expect(p.healthyMinKg).toBe(57);
+  });
+
+  it('plans a cut for a target just inside the healthy range', () => {
+    const p = targetPlan({ ...tall, targetKg: 57 }); // BMI 18.6
+    expect(p.direction).toBe('lose');
+    expect(p.kcal).toBeLessThan(2300);
+    expect(p.outcome.status).not.toBe('target_too_low');
+  });
+
+  it('keeps the old behaviour when the height is unknown', () => {
+    const p = targetPlan({ ...tall, heightCm: null, targetKg: 56.3 });
+    expect(p.direction).toBe('lose');
+    expect(p.healthyMinKg).toBeNull();
+  });
+
+  it('never cuts for someone under 18, but still lets them gain', () => {
+    const cut = targetPlan({ ...base, age: 17 });
+    expect(cut.direction).toBe('hold');
+    expect(cut.kcal).toBe(2600);
+    expect(cut.outcome.status).toBe('under_18');
+    const gain = targetPlan({ ...base, age: 17, goal: 'hypertrophy', targetKg: 84 });
+    expect(gain.direction).toBe('gain');
+    expect(targetPlan({ ...base, age: 18 }).direction).toBe('lose');
+  });
+
+  it('a typed intake toward an unsafe target is never given a date', () => {
+    const o = intakeOutcome({ ...tall, targetKg: 50, kcal: 1800, proteinG: 120 });
+    expect(o.status).toBe('target_too_low');
+    expect(o.date).toBeNull();
+  });
+});

@@ -1,3 +1,4 @@
+import { useOnce } from '@/lib/useOnce';
 import { EatNextCard } from './EatNextCard';
 import { FoodThanks } from './FoodThanks';
 import { useEffect, useState } from 'react';
@@ -247,7 +248,8 @@ function DaySummary({
   const totals = dayTotals(ctx.logs, date);
   const { kcal, proteinG } = ctx.targets;
   const left = kcal !== null ? kcal - totals.kcal : null;
-  // Free counts calories; protein, carbs, fat and fibre are Pro.
+  // Every food's own details show all its nutrients (D2, Anish's choice); the day's macro
+  // bars against targets are Pro.
   const macros = useFeature('macro_tracking');
   const bars = [
     { label: 'Protein', value: totals.proteinG, target: proteinG },
@@ -428,6 +430,8 @@ function MealCard({
   const offer = usual ?? previous;
   const yesterday = toDateKey(addDays(new Date(`${date}T12:00:00`), -1));
   const offerLabel = usual ? 'Usual' : previous?.date === yesterday ? 'Yesterday' : 'Last time';
+  // One tap logs once, however fast the second tap comes (batch 10, D6).
+  const [logging, once] = useOnce();
   const id = `meal-${meal}`;
   return (
     <section aria-labelledby={id} data-meal={meal} className="py-3">
@@ -437,8 +441,7 @@ function MealCard({
         </h3>
         {items.length ? (
           <span className="type-subhead tabular shrink-0 text-text-2">
-            <strong className="type-metric-sm text-text-1">{n(total.kcal)}</strong> kcal ·{' '}
-            {total.proteinG.toFixed(0)} g protein
+            <strong className="type-metric-sm text-text-1">{n(total.kcal)}</strong> kcal
           </span>
         ) : null}
         <button
@@ -462,14 +465,8 @@ function MealCard({
                   title={<span className="font-normal">{l.foodName}</span>}
                   subtitle={`${portion}${oil}`}
                   wrap
-                  value={
-                    <span className="flex flex-col items-end">
-                      <span className="type-subhead tabular text-text-1">{n(l.kcal)} kcal</span>
-                      <span className="type-caption tabular text-text-2">
-                        {l.proteinG.toFixed(0)} g protein
-                      </span>
-                    </span>
-                  }
+                  // A logged food shows its calories only; tapping it shows every nutrient.
+                  value={<span className="type-subhead tabular text-text-1">{n(l.kcal)} kcal</span>}
                   onClick={() => onEdit(l)}
                   className="pl-3"
                 />
@@ -497,26 +494,29 @@ function MealCard({
           className="pressable chrome type-meta mt-2 inline-flex h-8 max-w-full items-center gap-1.5 rounded-full bg-fill px-3 text-text-1"
           data-usual={meal}
           aria-label={`Log ${offerLabel.toLowerCase()} ${MEAL_LABEL[meal].toLowerCase()}: ${offer.items.map((i) => i.foodName).join(', ')}`}
+          disabled={logging}
           onClick={() =>
-            void copyFoodLogs(db, offer.items, { date, meal }).then((logs) => {
-              haptic('medium');
-              const what = MEAL_LABEL[meal].toLowerCase();
-              toast(
-                usual
-                  ? `Logged your usual ${what}`
-                  : offerLabel === 'Yesterday'
-                    ? `Logged yesterday's ${what} again`
-                    : `Logged your last ${what} again`,
-                {
-                  label: 'Undo',
-                  onSelect: () =>
-                    void deleteFoodLogs(
-                      db,
-                      logs.map((x) => x.id),
-                    ),
-                },
-              );
-            })
+            void once(() =>
+              copyFoodLogs(db, offer.items, { date, meal }).then((logs) => {
+                haptic('medium');
+                const what = MEAL_LABEL[meal].toLowerCase();
+                toast(
+                  usual
+                    ? `Logged your usual ${what}`
+                    : offerLabel === 'Yesterday'
+                      ? `Logged yesterday's ${what} again`
+                      : `Logged your last ${what} again`,
+                  {
+                    label: 'Undo',
+                    onSelect: () =>
+                      void deleteFoodLogs(
+                        db,
+                        logs.map((x) => x.id),
+                      ),
+                  },
+                );
+              }),
+            )
           }
         >
           <span className="truncate">

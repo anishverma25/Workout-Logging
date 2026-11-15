@@ -162,7 +162,48 @@ export interface CheckoutClosed {
   result: 'closed';
   failed: string | null;
 }
-export type CheckoutResult = { result: 'paid' } | CheckoutClosed;
+/** Razorpay took the payment, but the confirmation did not reach the server yet. */
+export interface CheckoutPending {
+  result: 'pending';
+  paymentId: string;
+}
+export type CheckoutResult = { result: 'paid' } | CheckoutPending | CheckoutClosed;
+
+// A payment made whose confirmation was lost: remembered for a while on this phone, so the pay
+// button cannot start a second payment before the first has turned Pro on.
+const PENDING_KEY = 'overload.payPending';
+/** How long a payment waiting to be confirmed blocks paying again. */
+export const PENDING_MS = 30 * 60_000;
+
+export function pendingPayment(now = Date.now()): { paymentId: string; at: number } | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(PENDING_KEY) ?? 'null') as {
+      paymentId?: unknown;
+      at?: unknown;
+    } | null;
+    if (!v || typeof v.paymentId !== 'string' || typeof v.at !== 'number') return null;
+    if (now - v.at > PENDING_MS) return null;
+    return { paymentId: v.paymentId, at: v.at };
+  } catch {
+    return null;
+  }
+}
+
+function markPending(paymentId: string) {
+  try {
+    localStorage.setItem(PENDING_KEY, JSON.stringify({ paymentId, at: Date.now() }));
+  } catch {
+    // Without storage the page still shows the message while it is open.
+  }
+}
+
+export function clearPendingPayment() {
+  try {
+    localStorage.removeItem(PENDING_KEY);
+  } catch {
+    // Nothing to do.
+  }
+}
 
 /** Razorpay's reason for a failed attempt, in words a person can act on. */
 export function failureReason(event: unknown): string {
@@ -246,10 +287,22 @@ export async function startCheckout(
   const body = coupon ? { plan, coupon } : { plan };
   const [started] = await Promise.all([
     mode === 'once'
-      ? call<{ order_id: string; amount: number; key_id: string }>('order', body)
-      : call<{ subscription_id: string; key_id: string }>('subscribe', body),
+      ? call<{ order_id: string; amount: number; key_id: string; already_paid?: boolean }>(
+          'order',
+          body,
+        )
+      : call<{ subscription_id: string; key_id: string; already_paid?: boolean }>(
+          'subscribe',
+          body,
+        ),
     loadCheckout(),
   ]);
+  // An earlier checkout was paid after all: the server turned Pro on, nothing is charged again.
+  if (started.already_paid) {
+    clearPendingPayment();
+    await refreshEntitlement();
+    return { result: 'paid' };
+  }
   const { key_id } = started;
   // A subscription opens Checkout with its id; a single payment with its order and amount.
   const target =
@@ -258,7 +311,7 @@ export async function startCheckout(
       : { subscription_id: started.subscription_id };
   const Razorpay = window.Razorpay;
   if (!Razorpay) throw new BillingError('Could not load the payment window. Try again.');
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     let failed: string | null = null;
     const checkout = new Razorpay({
       key: key_id,
@@ -275,10 +328,16 @@ export async function startCheckout(
       prefill: { email: prefill.email ?? undefined, name: prefill.name ?? undefined },
       theme: { color: themeColor() },
       handler: (response: RazorpayResponse) => {
+        // The money has moved. If confirming fails now (network, a closed tab), it is never
+        // "try again": the payment is remembered and Pro turns on when Razorpay tells the server.
+        markPending(response.razorpay_payment_id);
         call('verify', { ...response })
           .then(() => refreshEntitlement())
-          .then(() => resolve({ result: 'paid' }))
-          .catch(reject);
+          .then(() => {
+            clearPendingPayment();
+            resolve({ result: 'paid' });
+          })
+          .catch(() => resolve({ result: 'pending', paymentId: response.razorpay_payment_id }));
       },
       modal: { ondismiss: () => resolve({ result: 'closed', failed }), confirm_close: true },
     });

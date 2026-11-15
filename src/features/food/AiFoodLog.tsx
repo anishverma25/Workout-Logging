@@ -1,3 +1,4 @@
+import { readDraft, writeDraft } from './aiDrafts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Mic, MicOff, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -41,7 +42,13 @@ export function AiFoodLog({
   onFill: (items: FoodPortion[]) => void;
 }) {
   const store = useCoachStore();
-  const [text, setText] = useState(initialText ?? '');
+  const [text, setTextState] = useState(
+    () => initialText || readDraft<string>('ai-food-text') || '',
+  );
+  const setText = (v: string) => {
+    setTextState(v);
+    writeDraft('ai-food-text', v);
+  };
   const [state, setState] = useState<State>({ kind: 'idle' });
   const [listening, setListening] = useState(false);
   /** Words still being heard, shown under the box while the person speaks. */
@@ -218,7 +225,13 @@ export function AiFoodLog({
 
       {portions.length ? (
         <div className="flex flex-col gap-2">
-          <PrimaryButton block onClick={() => onFill(portions)}>
+          <PrimaryButton
+            block
+            onClick={() => {
+              writeDraft('ai-food-text', '');
+              onFill(portions);
+            }}
+          >
             Put on my plate
           </PrimaryButton>
           <SecondaryButton block compact onClick={() => void ask()}>

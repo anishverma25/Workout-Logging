@@ -45,7 +45,7 @@ for (const file of readdirSync(join(root, 'supabase/migrations')).sort()) {
     await pg.exec(readFileSync(join(root, 'supabase/migrations', file), 'utf8'));
 }
 await pg.exec('grant all on all tables in schema public to service_role;');
-// The launch state: early access has ended, so new accounts get the 7-day trial and then the
+// The launch state: early access has ended, so new accounts get the 14-day trial and then the
 // free plan. Early access itself is covered against real Postgres in subscriptions.test.ts.
 // Keeping one fixed state here also means no test flips a setting every other test shares.
 await pg.exec(
@@ -177,6 +177,12 @@ async function handleAuth(req: IncomingMessage, res: ServerResponse, path: strin
       'insert into auth.users (id, email, encrypted_password, email_confirmed_at) values ($1, $2, $3, $4)',
       [id, email, hashPassword(body.password!), confirm ? null : new Date()],
     );
+    // Test convention, like +confirm: "+old" in the address makes an account from before the
+    // latest release, the people "What's new" is for (new accounts never see it).
+    if (email.includes('+old'))
+      await pg.query(`update auth.users set created_at = '2026-11-01T00:00:00Z' where id = $1`, [
+        id,
+      ]);
     const user = (await userById(id))!;
     return send(res, 200, confirm ? userJson(user) : session(user));
   }
@@ -282,6 +288,13 @@ function whereClause(url: URL, params: unknown[]) {
       parts.push(
         `(${ident(m[1]!)} > ${ts}::timestamptz or (${ident(m[3]!)} = ${ts}::timestamptz and ${ident(m[5]!)}::text > ${id}))`,
       );
+      continue;
+    }
+    const list = /^in\.\((.*)\)$/.exec(value);
+    if (list) {
+      // PostgREST `in.(a,b)`: the rows with any of these keys (fetching skipped rows again).
+      params.push(list[1]!.split(',').map((v) => unquote(v.trim())));
+      parts.push(`${ident(key)}::text = any($${params.length}::text[])`);
       continue;
     }
     const m = /^(eq|gt|lt|gte|lte)\.(.*)$/.exec(value);
@@ -547,7 +560,8 @@ function fakeCoachProvider(name: 'gemini' | 'groq'): CoachProvider {
       if (last.includes('#all-down') || (name === 'gemini' && last.includes('#gemini-down')))
         throw new Error(`${name} is over its limit`);
       if (last.includes('#invent')) return 'Your squat is 999 kg, so add more weight.';
-      const question = /^Question: (.*)$/m.exec(last)?.[1];
+      // The question sits in a <user_data> block on its own lines (stage C).
+      const question = /^Question: (?:<user_data>\n)?(.*)$/m.exec(last)?.[1];
       const fact = last.split('\n').find((l) => l.startsWith('- ')) ?? '- Your data is in.';
       return `${question ? `You asked: ${question}\n` : ''}Here is what your numbers say (${name === 'gemini' ? 'main' : 'backup'}).\n${fact}\n- Keep logging every set so the next answer has more to go on.`;
     },
@@ -648,16 +662,15 @@ async function handleCoachRoute(req: IncomingMessage, res: ServerResponse) {
           const q = await tx.query<{ r: unknown }>('select public.get_my_subscription() as r');
           return q.rows[0]?.r ?? null;
         }),
-      photoQuota: {
-        claim: () =>
-          asRequester(req, async (tx) => {
-            const q = await tx.query<{ r: number }>(`select public.claim_ai_use('photo') as r`);
-            return q.rows[0]?.r ?? -1;
-          }),
-        release: () =>
-          asRequester(req, async (tx) => {
-            await tx.query(`select public.release_ai_use('photo')`);
-          }),
+      signingKey: 'fake-coach-signing-key',
+      quota: {
+        claim: async (kind) => {
+          const left = await billingDeps.rpc('ai_claim', { p_user: claims.sub, p_kind: kind });
+          return typeof left === 'number' ? left : -1;
+        },
+        release: async (kind) => {
+          await billingDeps.rpc('ai_release', { p_user: claims.sub, p_kind: kind });
+        },
       },
     },
     body,
@@ -709,6 +722,16 @@ const server = createServer(async (req, res) => {
         [reply],
       );
       return send(res, 200, {});
+    }
+    // Test control, standing in for the administrator's SQL in docs/admin-errors.md.
+    if (url.pathname === '/__test/client-errors' && req.method === 'POST') {
+      const { email } = (await readJson(req)) as { email: string };
+      const result = await pg.query(
+        `select kind, fingerprint, message, route, count from public.client_errors
+          where user_id = (select id from auth.users where email = $1) order by first_at`,
+        [email],
+      );
+      return send(res, 200, result.rows);
     }
     // Test control, standing in for time passing: an account's trial ended some days ago.
     if (url.pathname === '/__test/expire-trial' && req.method === 'POST') {

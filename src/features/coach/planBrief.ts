@@ -28,17 +28,27 @@ export function planLines(brain: Brain, exerciseName: (id: string) => string): s
           : `- Maintenance: about ${kcal(m.value)} a day from the body formula; not enough food and weigh-ins logged yet to measure it.`,
     );
   if (model.stage.learning)
-    lines.push(`- The plan is still learning their patterns: week ${Math.max(1, model.stage.week)} of ${model.stage.of}.`);
+    lines.push(
+      `- The plan is still learning their patterns: week ${Math.max(1, model.stage.week)} of ${model.stage.of}.`,
+    );
   for (const f of model.findings) {
     if (f.confidence !== 'personal' || !f.best) continue;
     if (f.kind === 'sets')
-      lines.push(`- Their own logs show ${muscleName(f.subject).toLowerCase()} lifts progress best at ${BAND_TEXT[f.best as SetBand]}.`);
+      lines.push(
+        `- In their logs, ${muscleName(f.subject).toLowerCase()} lifts moved faster in weeks at ${BAND_TEXT[f.best as SetBand]} (an observation, not proof of cause).`,
+      );
     if (f.kind === 'reps')
-      lines.push(`- Their own logs show ${muscleName(f.subject).toLowerCase()} lifts progress best with ${f.best === 'heavy' ? 'heavy top sets of 1 to 5 reps' : 'top sets of 6 to 10 reps'}.`);
+      lines.push(
+        `- In their logs, ${muscleName(f.subject).toLowerCase()} lifts moved faster in weeks with ${f.best === 'heavy' ? 'heavy top sets of 1 to 5 reps' : 'top sets of 6 to 10 reps'} (an observation, not proof of cause).`,
+      );
     if (f.kind === 'recovery')
-      lines.push(`- Their own logs show ${muscleName(f.subject).toLowerCase()} lifts do better after ${f.best === 'long' ? '3 or more days of rest' : '2 days of rest or fewer'}.`);
+      lines.push(
+        `- In their logs, ${muscleName(f.subject).toLowerCase()} lifts did better after ${f.best === 'long' ? '3 or more days of rest' : '2 days of rest or fewer'} (an observation, not proof of cause).`,
+      );
     if (f.kind === 'energy' && f.best === 'fed')
-      lines.push('- Their own logs show their lifts progress better in weeks they eat near maintenance than in weeks well under it.');
+      lines.push(
+        '- In their logs, lifts moved faster in weeks eating near maintenance than in weeks well under it (an observation, not proof of cause).',
+      );
   }
   const trends = Object.entries(model.lifts)
     .sort((a, b) => b[1].weeks - a[1].weeks)
@@ -48,7 +58,11 @@ export function planLines(brain: Brain, exerciseName: (id: string) => string): s
       `- ${exerciseName(id)}: estimated 1RM ${Math.round(t.latest)} kg, moving ${(t.weekly * 100).toFixed(1)}% a week over ${t.weeks} of the last 8 weeks.`,
     );
   if (decision) {
-    const answered = record ? (record.outcome === 'applied' ? 'They applied it.' : 'They kept their plan.') : 'Not answered yet.';
+    const answered = record
+      ? record.outcome === 'applied'
+        ? 'They applied it.'
+        : 'They kept their plan.'
+      : 'Not answered yet.';
     if (decision.changes.length) {
       lines.push(`- Changes proposed for the week of ${decision.weekStart} (${answered}):`);
       for (const c of decision.changes) lines.push(`  - ${c.title.en}: ${c.reason.en}`);

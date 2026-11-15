@@ -1,3 +1,4 @@
+import { FREE_PROGRESS_DAYS } from '@/domain/entitlement/limits';
 import { CoachingRow } from '@/features/coaching/CoachingRow';
 import { useMemo, type ReactNode } from 'react';
 import {
@@ -248,7 +249,12 @@ function PlanCard({ entitlement: e }: { entitlement: EntitlementView }) {
   let title: string;
   let detail: string;
   let progress: number | null = null;
-  if (e.plan === 'founding') {
+  if (e.unknown) {
+    badge = <Badge>Offline</Badge>;
+    title = 'Your plan could not be checked';
+    detail =
+      'Connect to the internet and your plan shows here. Nothing about it has changed, and everything you logged is safe.';
+  } else if (e.plan === 'founding') {
     badge = <Badge tone="lime">Pro</Badge>;
     title = 'Pro is active';
     detail = 'Every Pro feature is on for your account.';
@@ -260,7 +266,7 @@ function PlanCard({ entitlement: e }: { entitlement: EntitlementView }) {
     badge = <Badge tone="lime">Trial</Badge>;
     title = `Free trial: ${formatRemaining(e.remainingMs ?? 0)} left`;
     detail = `Every Pro feature is on until ${formatCalendarDate(e.trialEndsAt)}, ${time(e.trialEndsAt)}. After that, everything you logged stays and every free feature keeps working.`;
-    progress = 1 - (e.remainingMs ?? 0) / (TRIAL_HOURS * 3_600_000);
+    progress = 1 - (e.remainingMs ?? 0) / ((e.trialHours ?? TRIAL_HOURS) * 3_600_000);
   } else if (e.proEnded && e.proEndsAt) {
     badge = <Badge>Pro ended</Badge>;
     title = 'Your Pro has ended';
@@ -556,7 +562,7 @@ function Faq({ plans }: { plans: BillingPlan[] | null }) {
   const items: [string, string][] = [
     [
       'What happens when the trial or Pro ends?',
-      'Nothing you logged is lost or locked. Logging, routines, your full history, records, body metrics and the last 30 days of progress keep working. Only the Pro analysis pauses, and it comes back the moment Pro is on again.',
+      `Nothing you logged is lost or locked. Logging, routines, your full history, records, body metrics and the last ${FREE_PROGRESS_DAYS} days of progress keep working. Only the Pro analysis pauses, and it comes back the moment Pro is on again.`,
     ],
     [
       'Do I need to enter payment details for the trial?',

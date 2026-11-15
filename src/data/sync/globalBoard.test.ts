@@ -207,4 +207,79 @@ describe('global leaderboard', () => {
     const now = await board(a, 'month', 0);
     expect(now.mine!.score).toBe(13);
   });
+
+  it('each person chooses how they appear: name, username, initials or not at all (0030)', async () => {
+    const viewer = await person('Viewer V', 'viewer.vv');
+    const byName = await person('Neha Shah', 'neha.ss');
+    const byUser = await person('Karan Mehta', 'karan.mm');
+    const byInit = await person('Pooja Iyer', 'pooja.ii');
+    const hidden = await person('Hidden Person', 'hidden.pp');
+    for (const p of [byName, byUser, byInit, hidden]) await train(p, 25);
+    await as(byUser, 'public.set_leaderboard_style($1)', ['username']);
+    await as(byInit, 'public.set_leaderboard_style($1)', ['initials']);
+    await as(hidden, 'public.set_leaderboard_style($1)', ['hidden']);
+    const b = await board(viewer);
+    const names = b.rows.map((r) => r.name);
+    expect(names).toContain('Neha Shah');
+    expect(names).toContain('karan.mm');
+    expect(names).toContain('P. I.');
+    expect(names).not.toContain('Pooja Iyer');
+    expect(names.join(' ')).not.toMatch(/Hidden/);
+    expect(b.rows.find((r) => r.name === 'P. I.')!.avatar).toBeNull();
+    // Ranks close up around the hidden person.
+    const ranks = b.rows.map((r) => r.rank);
+    expect(ranks).toEqual([...ranks].sort((x, y) => x - y));
+    // The hidden person still sees their own place, and nobody else sees them.
+    const own = await board(hidden);
+    expect(own.mine!.score).toBeGreaterThan(0);
+    expect(own.rows.some((r) => r.me)).toBe(false);
+    expect(
+      (await as<{ rank: number }>(hidden, 'public.get_my_global_standing()')).rank,
+    ).toBeGreaterThan(0);
+    expect((own as unknown as { name_style: string }).name_style).toBe('hidden');
+    await expect(as(viewer, 'public.set_leaderboard_style($1)', ['ghost'])).rejects.toThrow();
+  });
+
+  it('a removed member cannot rejoin with the same code (0030)', async () => {
+    const admin = await person('Admin A', 'admin.groupa');
+    const member = await person('Member M', 'member.m');
+    const g = await as<{ id: string; code: string }>(admin, 'public.create_group($1)', ['Lifters']);
+    await as(member, 'public.join_group($1)', [g.code]);
+    expect(await as<boolean>(admin, 'public.remove_group_member($1, $2)', [g.id, 'member.m'])).toBe(
+      true,
+    );
+    await expect(as(member, 'public.join_group($1)', [g.code])).rejects.toThrow(/removed/);
+  });
+
+  it('reports are stored for the owner only, at most 20 a day (0030)', async () => {
+    const a = await person('Reporter R', 'reporter.r');
+    expect(
+      await as<boolean>(a, 'public.report_content($1, $2, $3, $4)', [
+        'person',
+        'bad.name',
+        'name',
+        'Rude username',
+      ]),
+    ).toBe(true);
+    await expect(
+      server.asUser(a, (tx) => tx.query('select * from public.content_reports')),
+    ).rejects.toThrow(/permission denied/);
+    const rows = await server.pg.query('select kind, target, reason from public.content_reports');
+    expect(rows.rows).toContainEqual({ kind: 'person', target: 'bad.name', reason: 'name' });
+    for (let i = 0; i < 19; i++)
+      await as(a, 'public.report_content($1, $2, $3, $4)', ['group', 'g', 'other', '']);
+    await expect(
+      as(a, 'public.report_content($1, $2, $3, $4)', ['group', 'g', 'other', '']),
+    ).rejects.toThrow(/Too many/);
+  });
+
+  it('blocked words are refused in usernames and group names (0030)', async () => {
+    const a = await person('Clean C', 'clean.c');
+    expect(await as<string>(a, 'public.check_username($1)', ['big_chutiya'])).toBe('reserved');
+    expect(await as<string>(a, 'public.check_username($1)', ['sussex_lifts'])).toBe('ok');
+    await expect(as(a, 'public.create_group($1)', ['F.u.c.k squad'])).rejects.toThrow(/different/);
+    expect(
+      (await as<{ id: string }>(a, 'public.create_group($1)', ['Campus Crew'])).id,
+    ).toBeTruthy();
+  });
 });

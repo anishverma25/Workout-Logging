@@ -1,3 +1,4 @@
+import { PROTEIN_DAY_SHARE } from '@/domain/nutrition/analysis';
 import {
   CUT_BAND,
   DELOAD_SHARE,
@@ -8,10 +9,13 @@ import {
   MAX_SET_STEP,
   MIN_DAILY_KCAL,
   PROTEIN_RANGE,
+  SETS_CEILING,
+  SETS_FLOOR,
+  SETS_LOW,
   SHRINK_K,
 } from '@/domain/brain/limits';
 import type { ReactNode } from 'react';
-import { E1RM_MAX_REPS, E1RM_PREFERRED_MAX_REPS } from '@/domain/analytics/e1rm';
+import { E1RM_MAX_REPS } from '@/domain/analytics/e1rm';
 import {
   BELOW_BEST_THRESHOLD,
   SIZE_EXPONENT,
@@ -54,7 +58,9 @@ import {
   EFFORT_RIR,
   MIN_PER_WEEK,
   STALL_MIN_SESSIONS,
-  STALL_WEEKS,
+  STALL_WEEKS_BY_EXPERIENCE,
+  HOLD_WEEKS,
+  DEFICIT_KCAL as STALL_DEFICIT_KCAL,
   VOLUME_DROP,
 } from '@/domain/analytics/stalls';
 import { REST_PRESETS } from '@/domain/workout/restTimer';
@@ -149,14 +155,14 @@ export const SCIENCE: TopicGroup[] = [
             Nuzzo and colleagues pooled 898 reps to failure tests from about 7,000 people. At 80% of
             1RM the average was 9.75 reps with a standard deviation of 2.51, and leg press allowed
             more reps than bench press at every load. One formula cannot be exact for everyone, so
-            the charts prefer your best set of 1 to {E1RM_PREFERRED_MAX_REPS} reps when there is
-            one.
+            the charts use one rule all the way along, your best set of 1 to {E1RM_MAX_REPS} reps,
+            and a change of rep range alone never moves the line.
           </>,
         ],
         forYou:
           'You can watch strength rise without testing a max. Heavy sets of about 5 reps or fewer give the most trustworthy estimate.',
         limits:
-          'Accuracy falls as reps rise and differs between exercises. It is always labelled an estimate and only used on weight and reps exercises.',
+          'Accuracy falls as reps rise and differs between exercises. It is always labelled an estimate and only used on compound weight and reps exercises: for isolation lifts the app tracks the top weight and reps instead.',
       },
       {
         id: 'effort',
@@ -216,7 +222,7 @@ export const SCIENCE: TopicGroup[] = [
         forYou:
           'The plain ratio is easy to read. The adjusted index stops a heavier body from making you look weaker when you are actually stronger.',
         limits:
-          'The exponent is a population average. Body weight is your latest weigh-in on or before the day, so without one this is not shown.',
+          'The exponent is a population average. Body weight is your latest weigh-in on or before the day, else the first one within 8 days after it; without either, and for weigh-ins older than 90 days, this is not shown.',
       },
       {
         id: 'insights',
@@ -332,9 +338,19 @@ export const SCIENCE: TopicGroup[] = [
             Progress is judged on what you lifted, not an estimate: a session counts when a set
             beats every earlier set with more weight for the same reps or more, or more reps at the
             same weight or more. Only sets within 80% of your heaviest weight count, so a light pump
-            set cannot hide a stall. A lift has stalled when nothing has moved for {STALL_WEEKS}{' '}
-            weeks or more, across at least {STALL_MIN_SESSIONS} sessions of it, and you trained it
-            in the last 2 weeks.
+            set cannot hide a stall. A lift has stalled when nothing has moved for{' '}
+            {STALL_WEEKS_BY_EXPERIENCE.beginner} weeks or more for a beginner (
+            {STALL_WEEKS_BY_EXPERIENCE.intermediate} intermediate,{' '}
+            {STALL_WEEKS_BY_EXPERIENCE.advanced} advanced: progress slows as you get stronger),
+            across at least {STALL_MIN_SESSIONS} sessions of it, and you trained it in the last 2
+            weeks.
+          </>,
+          <>
+            While you are eating in a deficit (your goal is fat loss and your weight trend is
+            falling, or you log at least {STALL_DEFICIT_KCAL} kcal a day under maintenance), keeping
+            your strength is the goal. A lift that has not moved is shown as holding, not stalled,
+            for up to {HOLD_WEEKS} weeks, and holding never triggers a lighter week or counts as a
+            stall anywhere.
           </>,
           <>
             The reason is the first of these that fits. A break of {BREAK_DAYS / 7} weeks or more:
@@ -409,9 +425,12 @@ export const SCIENCE: TopicGroup[] = [
           </>,
           <>
             More volume kept producing more growth across the range studied, with strength
-            flattening sooner than size. So the app shows your count and its change against the
-            previous period, on one shared scale for every muscle, with no target range and no ideal
-            number.
+            flattening sooner than size. So this chart shows your count and its change against the
+            previous period, on one shared scale for every muscle, with no target band drawn on it.
+            The adaptive plan does use a range when it moves your sets: it keeps each muscle between{' '}
+            {SETS_FLOOR} and {SETS_CEILING} hard sets a week and calls under {SETS_LOW} low, from
+            the dose and response in Pelland and colleagues (2026); the exact cut-offs are app
+            rules.
           </>,
           <>
             Baz-Valle and colleagues found counting sets near failure is a valid volume measure for
@@ -727,6 +746,13 @@ export const SCIENCE: TopicGroup[] = [
             Activities. One MET is about 1 kcal per kg per hour, and the resting MET is taken off
             because the day level already covers that time.
           </>,
+          <>
+            The app names three maintenance numbers, each for one job. The formula estimate (this
+            one) is used until you have logged enough. Your maintenance, on Body, Food and Progress,
+            comes from at least 14 logged days in 4 weeks with your weight trend (Food values). The
+            plan&apos;s estimate, in the weekly report and the Brain, blends 4 weeks of your logs
+            with this formula by how many full weeks you have, so it moves more slowly.
+          </>,
         ],
         forYou:
           'If your trend moves the wrong way for 2 to 3 weeks, change intake by 100 to 200 kcal.',
@@ -803,6 +829,9 @@ export const SCIENCE: TopicGroup[] = [
             {KCAL_PER_KG} kcal per kg, never under 1,200 kcal or your resting energy; protein is the
             middle of your goal&apos;s range, the cutting range when losing. The date is the weight
             to change divided by the weekly rate, worked out again whenever you change the calories.
+            A target under a BMI of 18.5 for your height (the World Health Organization&apos;s
+            underweight line) is never planned for, and nobody under 18 is given a deficit: the plan
+            holds your weight at maintenance instead and tells you why.
           </>,
         ],
         forYou:
@@ -958,8 +987,9 @@ export const SCIENCE: TopicGroup[] = [
           </>,
           <>
             Every food is tested: its calories must match its protein, carbs and fat (4, 4, 9 and 2
-            for fibre) within 12%, portions must be realistic, and light oil must be below normal
-            and rich.
+            for fibre) within 12% for our recipes and ingredients, and within 20% for pack labels
+            and chain servings (printed values are rounded); portions must be realistic, and light
+            oil must be below normal and rich.
           </>,
           <>
             Real maintenance uses what you logged, so if you always miss a little, the number
@@ -1010,6 +1040,11 @@ export const SCIENCE: TopicGroup[] = [
             On days you train, Slater and Phillips advise {TRAINING_CARBS_G_PER_KG[0]} to{' '}
             {TRAINING_CARBS_G_PER_KG[1]} g of carbohydrate per kg for strength sports. Energy is on
             target within {Math.round(ENERGY_TOLERANCE * 100)}% of your daily target.
+          </>,
+          <>
+            A protein day, everywhere in the app (the food summary, the weekly report, leaderboards
+            and Macrotrophy AI), is a logged day that reaches {Math.round(PROTEIN_DAY_SHARE * 100)}%
+            of your protein target.
           </>,
         ],
         forYou:
@@ -1100,7 +1135,7 @@ export const SCIENCE: TopicGroup[] = [
             spoken:
               'Score equals 10 times workouts, plus hard sets, plus 5 times records, plus 3 times protein days, plus 10 times consistent weeks, plus progress points',
             where:
-              'W: workouts of 10 minutes or more with at least 3 working sets, logged live with the sets ticked over at least 2 minutes, one a day and 6 a week. H: working sets not logged as easy (4 or fewer reps in reserve, or RPE 6 or more), from every session, at most 25 a week. R: a new best estimated 1RM on an exercise done in at least 2 earlier workouts and no more than 40% above the old best, at most 5 a week. P: days your logged protein, over 2 or more meals, reaches 90% of your own target. C: Monday to Sunday weeks with 3 or more training days. G: 1 point per 1% that your best estimated 1RM rose on average against the 4 weeks before, across 3 or more lifts, each lift held between minus 50% and plus 40%, at most 10. Monthly caps grow with the length of the month.',
+              'W: workouts of 10 minutes or more, not counting pauses, with at least 3 working sets, logged within two days of the workout with the sets ticked over at least 2 minutes, one a day and 6 a week. H: working sets not logged as easy (4 or fewer reps in reserve, or RPE 6 or more), from every session, at most 25 a week. R: a new best estimated 1RM (Epley, 2 to 10 reps; a single counts as its weight; reps in reserve not used) on a compound weight and reps lift done in at least 2 earlier workouts, no more than 40% above the old best, at most 5 a week. P: days your logged protein, over 2 or more meals, reaches 90% of your own target. C: Monday to Sunday weeks with 3 or more training days. G: 1 point per 1% that your best estimated 1RM rose on average against the 4 weeks before, across 3 or more lifts, each lift held between minus 50% and plus 40%, at most 10. Monthly caps grow with the length of the month.',
           },
         ],
         why: [
@@ -1112,16 +1147,22 @@ export const SCIENCE: TopicGroup[] = [
             Morton and colleagues (2018) found adds to the gains from training.
           </>,
           <>
-            Caps stop anyone winning by logging hundreds of sets. Only workouts logged live count,
-            with sets ticked as they are done, so imported history, workouts typed in days later or
-            ticked all at once never do. Nothing you only type in, like steps or body weight, earns
-            points. A finished week is locked the first time anyone views it.
+            Caps stop anyone winning by logging hundreds of sets. Only workouts logged within two
+            days count, with sets ticked as they are done, so imported history, workouts typed in
+            days later or ticked all at once never do. Nothing you only type in, like steps or body
+            weight, earns points. A finished week is locked the first time anyone views it.
+          </>,
+          <>
+            Duels use the same points. A challenge starts only when the other person accepts, and
+            points count from that moment to Sunday night, so nobody can challenge after building a
+            lead. Once accepted a duel cannot be called off: giving up, or leaving the group, counts
+            as a loss. A challenge nobody answers ends with the week.
           </>,
         ],
         forYou:
           'Train most days your plan says, push working sets close to failure, and log your food: that is how to win.',
         limits:
-          'The score is worked out on the server from synced data, so a workout counts once it has synced. The global leaderboard refreshes about once a minute. Records need a weight and 1 to 10 reps.',
+          'The score is worked out on the server from synced data, so a workout counts once it has synced. Leaderboard days and weeks use India time, Monday to Sunday, whatever your own week start. The global leaderboard refreshes about once a minute. Records need a weight and 1 to 10 reps.',
       },
       {
         id: 'weekly-report',
@@ -1157,10 +1198,10 @@ export const SCIENCE: TopicGroup[] = [
             equal (Schoenfeld and colleagues, 2019).
           </>,
           <>
-            Patterns between food and training are labelled Established only when a fixed rule
-            holds on your own numbers. Others are Early signals, which never change your advice; an
-            exact statistical test decides whether one is shown at all, and no probability is shown
-            to you.
+            Patterns between food and training are labelled Established when an exact statistical
+            test on your own numbers is clear enough; weaker ones are Early signals, which never
+            change your advice. The same test decides whether one is shown at all, and no
+            probability is shown to you.
           </>,
         ],
         forYou:
@@ -1192,15 +1233,15 @@ export const SCIENCE: TopicGroup[] = [
           <>
             Maintenance is read from what you ate and how your weight moved over 4 weeks, then
             blended with the body formula by how many complete weeks you have logged. The 7,700 kcal
-            per kg rule is a first-weeks guide: the body adapts as weight changes (Hall, 2008), which
-            is why the plan re-reads it every week instead of trusting one calculation.
+            per kg rule is a first-weeks guide: the body adapts as weight changes (Hall, 2008),
+            which is why the plan re-reads it every week instead of trusting one calculation.
           </>,
           <>
             On a cut the plan aims for {CUT_BAND[0] * 100} to {CUT_BAND[1] * 100}% of body weight a
             week, the pace that best keeps muscle (Helms and colleagues, 2014). It is always called
             weight, because a scale cannot tell fat from water. Protein stays between{' '}
-            {PROTEIN_RANGE[0]} and {PROTEIN_RANGE[1]} g per kg (Morton and colleagues, 2018), or your
-            goal's range when that is higher, unless you typed your own target.
+            {PROTEIN_RANGE[0]} and {PROTEIN_RANGE[1]} g per kg (Morton and colleagues, 2018), or
+            your goal's range when that is higher, unless you typed your own target.
           </>,
           <>
             Sets follow the dose and response of weekly hard sets (Pelland and colleagues, 2026). A
@@ -1208,7 +1249,10 @@ export const SCIENCE: TopicGroup[] = [
             doing the planned work; one whose lifts drop while you eat under maintenance gets{' '}
             {MAX_SET_STEP} fewer. A lift counts as moved at {LIFT_UP * 100}% up or{' '}
             {Math.abs(LIFT_DOWN) * 100}% down, set against day to day noise in a tested max of about
-            4% (Grgic and colleagues, 2020).
+            4% (Grgic and colleagues, 2020). That is smaller than the 5% Progress calls a real
+            change on purpose: the plan reads the lift&apos;s trend across sessions and needs
+            several lifts or two sessions in a row to agree before it acts, which a single noisy
+            test cannot.
           </>,
           <>
             A lighter week (about {DELOAD_SHARE * 100}% of your sets, same weights) is proposed only
@@ -1218,21 +1262,26 @@ export const SCIENCE: TopicGroup[] = [
             rule, not a threshold from research.
           </>,
           <>
-            A personal finding, such as the weekly sets a muscle answers to best, is named only when
-            your own logs separate the options clearly. A statistical test decides that, and no
-            probability is shown to you. Until then the plan says it is learning and uses research
-            defaults.
+            A personal finding, such as the weekly sets your lifts moved fastest at, is named only
+            when your own logs separate the options clearly, and on two weekly reviews in a row.
+            Each lift&apos;s own trend is taken out first (a curve that slows down, as gains do), so
+            a beginner&apos;s fast early weeks are not credited to whatever they did then. A
+            statistical test decides, strict enough that people whose training makes no difference
+            almost never hear a finding, and no probability is shown to you. A finding is what
+            happened in your logs, not proof of cause. Until then the plan says it is learning and
+            uses research defaults.
           </>,
         ],
         forYou:
           'Log food on 5 days and weigh in on 4 each week. Without that the plan holds your calories and tells you why.',
-        limits: `Limits the plan cannot cross: calories never under ${MIN_DAILY_KCAL.toLocaleString('en-IN')} kcal or your resting energy; at most ${MAX_KCAL_STEP} kcal and ${MAX_SET_STEP} sets per muscle of change a week; no deficit and nothing added through a fast, an illness or exams. Something hurts is training guidance, not medical advice: sharp or lasting pain, swelling or numbness means stop and see a professional. The step sizes and cut-offs are app rules built on the research, not numbers from it.`,
+        limits: `Limits the plan cannot cross: calories never under ${MIN_DAILY_KCAL.toLocaleString('en-IN')} kcal or your resting energy; at most ${MAX_KCAL_STEP} kcal and ${MAX_SET_STEP} sets per muscle of change a week; no deficit and nothing added through a fast, an illness or exams; no cut toward a target under a BMI of 18.5 for your height, and none for anyone under 18. Something hurts is training guidance, not medical advice: sharp or lasting pain, swelling or numbness means stop and see a professional. The step sizes and cut-offs are app rules built on the research, not numbers from it.`,
       },
       {
         id: 'trial',
         title: 'Trial length',
         evidence: 'trialLength',
-        shows: 'The Pro trial is exactly 168 hours, counted on the server.',
+        shows:
+          'The Pro trial is exactly 14 days (336 hours) from when the account is made, counted on the server. Accounts made before 15 November 2026 had 7 days.',
       },
     ],
   },

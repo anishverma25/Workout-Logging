@@ -1,3 +1,4 @@
+import { equipmentFits } from '@/domain/workout/equipment';
 import type { Experience, Goal, GymAccess, Profile } from '@/domain/models/schemas';
 import { SYSTEM_EXERCISES, SYSTEM_EXERCISE_KEYS } from './exercises';
 import {
@@ -152,19 +153,11 @@ const SWAPS: Record<string, { dumbbells: string[]; home: string[] }> = {
   'pallof-press': { dumbbells: ['plank'], home: ['side-plank'] },
 };
 
-const ALLOWED: Record<Exclude<GymAccess, 'full_gym'>, Set<string>> = {
-  dumbbells: new Set(['dumbbell', 'bodyweight', 'kettlebell', 'band', 'other']),
-  home: new Set(['bodyweight', 'band', 'other']),
-};
-/** Dumbbell moves that work unloaded, so they count as home exercises. */
-const HOME_UNLOADED = new Set(['bulgarian-split-squat', 'walking-lunge', 'step-up']);
-
 function fitsEquipment(key: string, access: GymAccess): boolean {
   if (access === 'full_gym') return true;
   const e = meta.get(key);
   if (!e) return false;
-  if (access === 'home' && HOME_UNLOADED.has(key)) return true;
-  return ALLOWED[access].has(e.equipment);
+  return equipmentFits(e.equipment, access, key);
 }
 
 /** The exercise to use for `key` with this equipment, avoiding ones already in the day. */

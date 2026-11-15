@@ -345,7 +345,7 @@ export function workoutBurn(
 ): WorkoutBurn | null {
   if (workout.kcalBurned != null)
     return { kcal: workout.kcalBurned, source: 'typed', basis: 'Typed by you' };
-  const weightKg = weightOn(bodyWeights, workout.startedAt.slice(0, 10));
+  const weightKg = weightOn(bodyWeights, toDateKey(new Date(workout.startedAt)));
   if (!weightKg) return null;
   const burn = estimateWorkout({
     minutes: workoutMinutes(workout, now),
