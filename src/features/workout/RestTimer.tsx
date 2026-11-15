@@ -28,20 +28,22 @@ const SLIDE_MS = 250;
  * At zero: a medium haptic and the tones, each only if turned on in Settings and only while
  * the app is open. No promise of alerts in the background: browsers do not allow it reliably.
  */
-function useFinishSignal(state: RestTimerState | null, now: Date) {
+function useFinishSignal(state: RestTimerState | null, now: Date, announce: (s: string) => void) {
   const signalled = useRef<string | null>(null);
   const finished = isFinished(state, now);
   const key = state?.endsAt ?? null;
   useEffect(() => {
     if (finished && key && signalled.current !== key) {
       signalled.current = key;
+      // Said to screen readers whatever the sound and vibration settings (X3).
+      announce('Rest over');
       if (document.visibilityState === 'visible') {
         const settings = getDeviceSettings();
         if (settings.restVibrate) haptic('medium');
         if (settings.restSound) playRestTone();
       }
     }
-  }, [finished, key]);
+  }, [finished, key, announce]);
 }
 
 /** Floating pill above the tab bar while resting. Hidden when there is no timer. */
@@ -50,7 +52,19 @@ export function RestTimerBar({ onOpen }: { onOpen: () => void }) {
   const timer = useRestTimer();
   const now = useNow(250);
   const state = timer.data ?? null;
-  useFinishSignal(state, now);
+  const [said, setSaid] = useState('');
+  useEffect(() => {
+    if (!said) return;
+    const t = window.setTimeout(() => setSaid(''), 4000);
+    return () => window.clearTimeout(t);
+  }, [said]);
+  useFinishSignal(state, now, setSaid);
+  // Always in the page, so the message is read even after the bar slides away.
+  const live = (
+    <p className="sr-only" role="status" aria-live="polite" data-rest-announce>
+      {said}
+    </p>
+  );
 
   const over = state?.endsAt ? now.getTime() - Date.parse(state.endsAt) : -1;
   const paused = state?.pausedRemainingMs != null;
@@ -58,7 +72,7 @@ export function RestTimerBar({ onOpen }: { onOpen: () => void }) {
     if (state && !paused && over >= GO_MS) void restActions.clear();
   }, [state, paused, over]);
 
-  if (!state) return null;
+  if (!state) return live;
   const left = remainingMs(state, now);
   const finished = !paused && left === 0;
   const leaving = finished && over >= GO_MS - SLIDE_MS;
@@ -67,65 +81,70 @@ export function RestTimerBar({ onOpen }: { onOpen: () => void }) {
     'pressable chrome type-meta tabular inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-surface font-semibold text-text-1';
 
   return (
-    <div
-      role="timer"
-      aria-label="Rest timer"
-      className={cn(
-        'rest-bar pointer-events-auto relative mx-auto flex h-14 w-full max-w-md items-center gap-2 overflow-hidden rounded-full bg-surface-2 pl-1 pr-4',
-        leaving && 'rest-bar-leave',
-      )}
-    >
-      <button
-        type="button"
-        onClick={onOpen}
-        className="pressable flex h-full min-w-0 flex-1 items-center gap-2 rounded-full pl-4 text-left"
-        aria-label={
-          finished ? 'Rest done. Open timer.' : `Rest ${formatClock(left / 1000)} left. Open timer.`
-        }
+    <>
+      {live}
+      <div
+        role="timer"
+        aria-label="Rest timer"
+        className={cn(
+          'rest-bar pointer-events-auto relative mx-auto flex h-14 w-full max-w-md items-center gap-2 overflow-hidden rounded-full bg-surface-2 pl-1 pr-4',
+          leaving && 'rest-bar-leave',
+        )}
       >
-        <span aria-live="off" className="type-stat tabular text-text-1">
-          {finished ? 'Go' : formatClock(Math.ceil(left / 1000))}
-        </span>
-        <span className="type-meta truncate text-text-2">
-          {finished ? 'next set' : paused ? 'Paused' : `of ${formatSeconds(state.durationSec)}`}
-        </span>
-      </button>
-      {!finished ? (
-        <>
-          <button
-            type="button"
-            onClick={() => restActions.adjust(state, -15)}
-            className={round}
-            aria-label="15 seconds less"
-          >
-            −15
-          </button>
-          <button
-            type="button"
-            onClick={() => restActions.adjust(state, 15)}
-            className={round}
-            aria-label="15 seconds more"
-          >
-            +15
-          </button>
-          <TextLink
-            small
-            aria-label="Skip rest"
-            onClick={() => {
-              toast(`Rested ${formatClock(restedSec(state, new Date()))}`);
-              void restActions.clear();
-            }}
-          >
-            Skip
-          </TextLink>
-        </>
-      ) : null}
-      <span
-        aria-hidden
-        className="absolute inset-x-0 bottom-0 h-[3px] origin-left bg-lime transition-transform duration-300 ease-linear"
-        style={{ transform: `scaleX(${1 - progress})` }}
-      />
-    </div>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="pressable flex h-full min-w-0 flex-1 items-center gap-2 rounded-full pl-4 text-left"
+          aria-label={
+            finished
+              ? 'Rest done. Open timer.'
+              : `Rest ${formatClock(left / 1000)} left. Open timer.`
+          }
+        >
+          <span aria-live="off" className="type-stat tabular text-text-1">
+            {finished ? 'Go' : formatClock(Math.ceil(left / 1000))}
+          </span>
+          <span className="type-meta truncate text-text-2">
+            {finished ? 'next set' : paused ? 'Paused' : `of ${formatSeconds(state.durationSec)}`}
+          </span>
+        </button>
+        {!finished ? (
+          <>
+            <button
+              type="button"
+              onClick={() => restActions.adjust(state, -15)}
+              className={round}
+              aria-label="15 seconds less"
+            >
+              −15
+            </button>
+            <button
+              type="button"
+              onClick={() => restActions.adjust(state, 15)}
+              className={round}
+              aria-label="15 seconds more"
+            >
+              +15
+            </button>
+            <TextLink
+              small
+              aria-label="Skip rest"
+              onClick={() => {
+                toast(`Rested ${formatClock(restedSec(state, new Date()))}`);
+                void restActions.clear();
+              }}
+            >
+              Skip
+            </TextLink>
+          </>
+        ) : null}
+        <span
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 h-[3px] origin-left bg-lime transition-transform duration-300 ease-linear"
+          style={{ transform: `scaleX(${1 - progress})` }}
+        />
+      </div>
+    </>
   );
 }
 

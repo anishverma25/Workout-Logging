@@ -15,7 +15,7 @@ import {
   SHRINK_K,
 } from '@/domain/brain/limits';
 import type { ReactNode } from 'react';
-import { E1RM_MAX_REPS, E1RM_PREFERRED_MAX_REPS } from '@/domain/analytics/e1rm';
+import { E1RM_MAX_REPS } from '@/domain/analytics/e1rm';
 import {
   BELOW_BEST_THRESHOLD,
   SIZE_EXPONENT,
@@ -155,8 +155,8 @@ export const SCIENCE: TopicGroup[] = [
             Nuzzo and colleagues pooled 898 reps to failure tests from about 7,000 people. At 80% of
             1RM the average was 9.75 reps with a standard deviation of 2.51, and leg press allowed
             more reps than bench press at every load. One formula cannot be exact for everyone, so
-            the charts prefer your best set of 1 to {E1RM_PREFERRED_MAX_REPS} reps when there is
-            one.
+            the charts use one rule all the way along, your best set of 1 to {E1RM_MAX_REPS} reps,
+            and a change of rep range alone never moves the line.
           </>,
         ],
         forYou:
@@ -1151,6 +1151,12 @@ export const SCIENCE: TopicGroup[] = [
             days count, with sets ticked as they are done, so imported history, workouts typed in
             days later or ticked all at once never do. Nothing you only type in, like steps or body
             weight, earns points. A finished week is locked the first time anyone views it.
+          </>,
+          <>
+            Duels use the same points. A challenge starts only when the other person accepts, and
+            points count from that moment to Sunday night, so nobody can challenge after building a
+            lead. Once accepted a duel cannot be called off: giving up, or leaving the group, counts
+            as a loss. A challenge nobody answers ends with the week.
           </>,
         ],
         forYou:

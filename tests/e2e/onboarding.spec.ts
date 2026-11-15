@@ -109,7 +109,7 @@ test('the tour comes first, then an account, then setup builds a personalised pl
   // Once, on a new account: the trial is on, what it includes, and the real prices.
   await expect(page).toHaveURL(/\/trial\?next=/);
   const trial = page.locator('[data-trial-welcome]');
-  await expect(trial.getByRole('heading', { level: 1 })).toHaveText('Your 7 days of Pro are on');
+  await expect(trial.getByRole('heading', { level: 1 })).toHaveText('Your 14 days of Pro are on');
   // All three prices, as they are.
   await expect(trial.locator('[data-trial-price="monthly"]')).toContainText('₹149');
   await expect(trial.locator('[data-trial-price="quarterly"]')).toContainText('₹399');

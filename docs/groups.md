@@ -75,6 +75,32 @@ from public.groups g, public.community_bounds('week', 0) b where g.code = 'ABC23
 Removing a username also hides that person from boards until they pick a new one; their
 memberships stay.
 
+## Duels (migration `20261115000036_duels_accept.sql`)
+
+- A member challenges another in the group (`create_duel`): free accounts start 1 a week, Pro 3,
+  counted over every group (`duel_limit_for`). A waiting challenge uses one of those.
+- The opponent accepts (`accept_duel`); points count from `accepted_at` to the end of the week,
+  India time, by `community_scores` (`duel_scores`).
+- Before acceptance either side can withdraw or decline (`cancel_duel`), which frees the
+  allowance. After it only `forfeit_duel` ends it, as a loss for whoever gave up.
+- Finished weeks are settled once, the first time anyone in the group reads the duels
+  (`settle_group_duels` in `get_group_duels`); challenges nobody accepted are deleted then. The
+  card shows the last four weeks.
+- Leaving the group forfeits its open duels; settled duels stay.
+
+```sql
+-- Every duel in a group this month, with points and how it ended.
+select d.week_start, cu.username as challenger, ou.username as opponent, d.accepted_at,
+  d.challenger_score, d.opponent_score, wu.username as winner, d.forfeited_by is not null as forfeit
+from public.group_duels d
+join public.usernames cu on cu.user_id = d.challenger
+join public.usernames ou on ou.user_id = d.opponent
+left join public.usernames wu on wu.user_id = d.winner
+join public.groups g on g.id = d.group_id
+where g.code = 'ABC234' and d.week_start >= current_date - 28
+order by d.week_start desc;
+```
+
 ## 5. Global leaderboard
 
 Everyone with points in the week or month appears on the global leaderboard (`/groups/global`),

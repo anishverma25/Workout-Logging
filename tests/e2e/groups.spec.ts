@@ -136,19 +136,29 @@ test('two friends: username, create, join by code, points, home card and admin',
   await expect(top).toContainText('13');
   await expect(friend.page.locator('[data-trained-today]')).toContainText('1 of 2');
 
-  // A duel for the week, on the same points: the friend challenges, both see it, either ends it.
+  // A duel for the week, on the same points from the moment it is accepted: the friend
+  // challenges, Anish accepts, and only a forfeit ends it (migration 0036).
   await friend.page.locator('[data-duel-start]').click();
   await friend.page.locator(`[data-duel-member="${unique}"]`).click();
-  const duel = friend.page.locator('[data-duel="live"]');
-  await expect(duel).toContainText(`@${unique}.b`);
-  await expect(duel).toContainText(/0\s*:\s*13/);
-  await expect(duel).toContainText('You trail');
+  const waiting = friend.page.locator('[data-duel="pending"]');
+  await expect(waiting).toContainText(`Waiting for @${unique} to accept`);
   await expect(friend.page.locator('[data-duel-start]')).toHaveCount(0);
   await noSideScroll(friend.page);
   await page.goto(friend.page.url());
-  await expect(page.locator('[data-duel="live"]')).toContainText('You lead');
-  await page.locator('[data-duel-cancel]').click();
-  await expect(page.locator('[data-duel="live"]')).toHaveCount(0);
+  await expect(page.locator('[data-duel="pending"]')).toContainText('challenged you');
+  await page.locator('[data-duel-accept]').click();
+  const live = page.locator('[data-duel="live"]');
+  // Points earned before accepting do not count.
+  await expect(live).toContainText(/0\s*:\s*0/);
+  await expect(live).toContainText('Level');
+  await expect(page.locator('[data-duel-cancel]')).toHaveCount(0);
+  await friend.page.reload();
+  await expect(friend.page.locator('[data-duel="live"]')).toContainText('Level');
+  await friend.page.locator('[data-duel-forfeit]').click();
+  await friend.page.getByRole('button', { name: 'Give up' }).last().click();
+  await expect(friend.page.locator('[data-duel="done"]')).toContainText('you lost (forfeit)');
+  await page.reload();
+  await expect(page.locator('[data-duel="done"]')).toContainText('you won (forfeit)');
   // The breakdown shows how the points add up, and nothing about the workout itself.
   await top.getByRole('button').click();
   const breakdown = top.locator('[data-breakdown]');

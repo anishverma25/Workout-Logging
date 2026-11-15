@@ -46,6 +46,7 @@ import {
   type Run,
 } from './layout';
 import type { SvgFonts } from './svg';
+import { printableName } from './names';
 import { PDF_THEMES, type PdfTheme, type PdfThemeName } from './theme';
 
 /**
@@ -765,7 +766,12 @@ function buildBlocks(r: WeeklyReport, o: PdfOptions, t: PdfTheme, f: Fonts): Blo
     const liftNode = (l: WeeklyReport['lifts'][number]) =>
       vstack(
         [
-          T(l.name, f.display600, 12.5, t.text1),
+          T(
+            printableName(l.name, l.exerciseId, (s) => f.clean(f.display600, s)),
+            f.display600,
+            12.5,
+            t.text1,
+          ),
           row(
             [
               {

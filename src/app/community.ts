@@ -193,7 +193,11 @@ export function messageFor(error: { message?: string; code?: string } | null): s
     return 'You were removed from this group, so you cannot join it again.';
   if (/Too many reports/i.test(m)) return 'You have sent a lot of reports today. We are on them.';
   if (/Duel exists/i.test(m)) return 'You two already have a duel this week.';
-  if (/Duel limit (\d+)/i.test(m)) return 'You can start 3 duels a week.';
+  const limit = /Duel limit (\d+)/i.exec(m);
+  if (limit)
+    return limit[1] === '1'
+      ? 'You can start 1 duel a week. Pro starts 3.'
+      : `You can start ${limit[1]} duels a week.`;
   if (/Duel yourself|No member with that username/i.test(m))
     return 'Choose another member of this group.';
   // The server has not been updated yet (migration 0019 not run).
@@ -247,11 +251,18 @@ export const getWinners = (groupId: string) =>
     Array.isArray(v) ? (v as Record<string, unknown>[]).map(parseWinner) : [],
   );
 
+/** Other people's photos: only JPEG, PNG or WebP data URLs under 100 KB are drawn (X3). */
+export const MAX_AVATAR_CHARS = Math.ceil((100 * 1024 * 4) / 3) + 40;
+export const isSafeAvatar = (a: unknown): a is string =>
+  typeof a === 'string' &&
+  a.length <= MAX_AVATAR_CHARS &&
+  /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(a);
+
 export const getAvatars = (groupId: string, usernames: string[]) =>
   call('get_group_avatars', { p_group: groupId, p_usernames: usernames.slice(0, 6) }, (v) => {
     const out: Record<string, string> = {};
     for (const [k, a] of Object.entries((v ?? {}) as Record<string, unknown>)) {
-      if (typeof a === 'string' && a.startsWith('data:image/')) out[k] = a;
+      if (isSafeAvatar(a)) out[k] = a;
     }
     return out;
   });
@@ -454,8 +465,7 @@ export type NameStyle = 'name' | 'username' | 'initials' | 'hidden';
 export const NAME_STYLES: NameStyle[] = ['name', 'username', 'initials', 'hidden'];
 
 function parseGlobalRow(v: Record<string, unknown>): GlobalRow {
-  const avatar =
-    typeof v.avatar === 'string' && v.avatar.startsWith('data:image/') ? v.avatar : null;
+  const avatar = isSafeAvatar(v.avatar) ? v.avatar : null;
   return {
     rank: num(v.rank) ?? 0,
     // The server names someone with no profile name 'Overload member' (migration 0020).
@@ -543,12 +553,18 @@ export const __test = { parseBoard, parseGroup, parseRow, parseGlobal };
 export interface Duel {
   id: string;
   weekStart: string;
-  /** This week's (points still moving) or last week's (settled). */
+  /** This week's (waiting or points still moving), not yet settled. */
   live: boolean;
+  /** Waiting for the opponent to accept, running, or finished (migration 0036). */
+  status: 'pending' | 'live' | 'settled';
   challenger: string;
   opponent: string;
   challengerScore: number;
   opponentScore: number;
+  /** The winner's username once settled; null for a tie. */
+  winner: string | null;
+  /** Ended by a forfeit (giving up, or leaving the group). */
+  forfeit: boolean;
   mine: boolean;
   iAmChallenger: boolean;
 }
@@ -556,33 +572,60 @@ export interface Duel {
 export interface Duels {
   weekStart: string;
   endsOn: string;
+  /** Duels this account can start this week, in every group together. */
   limit: number;
+  /** Duels this account has started this week, in every group. */
+  started: number;
   duels: Duel[];
 }
 
 export const getDuels = (groupId: string) =>
   call('get_group_duels', { p_group: groupId }, (v): Duels => {
     const o = (v ?? {}) as Record<string, unknown>;
+    const duels = (Array.isArray(o.duels) ? (o.duels as Record<string, unknown>[]) : []).map(
+      (d): Duel => {
+        const live = d.live === true;
+        const status =
+          d.status === 'pending' || d.status === 'live' || d.status === 'settled'
+            ? d.status
+            : live
+              ? 'live'
+              : 'settled';
+        return {
+          id: str(d.id),
+          weekStart: str(d.week_start),
+          live,
+          status,
+          challenger: str(d.challenger),
+          opponent: str(d.opponent),
+          challengerScore: num(d.challenger_score) ?? 0,
+          opponentScore: num(d.opponent_score) ?? 0,
+          winner: typeof d.winner === 'string' ? d.winner : null,
+          forfeit: d.forfeit === true,
+          mine: d.mine === true,
+          iAmChallenger: d.i_am_challenger === true,
+        };
+      },
+    );
     return {
       weekStart: str(o.week_start),
       endsOn: str(o.ends_on),
-      limit: num(o.limit) ?? 3,
-      duels: (Array.isArray(o.duels) ? (o.duels as Record<string, unknown>[]) : []).map((d) => ({
-        id: str(d.id),
-        weekStart: str(d.week_start),
-        live: d.live === true,
-        challenger: str(d.challenger),
-        opponent: str(d.opponent),
-        challengerScore: num(d.challenger_score) ?? 0,
-        opponentScore: num(d.opponent_score) ?? 0,
-        mine: d.mine === true,
-        iAmChallenger: d.i_am_challenger === true,
-      })),
+      limit: num(o.limit) ?? 1,
+      started:
+        num(o.started) ??
+        duels.filter((d) => d.live && d.iAmChallenger && d.weekStart === str(o.week_start)).length,
+      duels,
     };
   });
 
 export const createDuel = (groupId: string, username: string) =>
   call('create_duel', { p_group: groupId, p_username: username }, () => true);
+
+export const acceptDuel = (duelId: string) =>
+  call('accept_duel', { p_duel: duelId }, (v) => v === true);
+
+export const forfeitDuel = (duelId: string) =>
+  call('forfeit_duel', { p_duel: duelId }, (v) => v === true);
 
 export const cancelDuel = (duelId: string) =>
   call('cancel_duel', { p_duel: duelId }, (v) => v === true);

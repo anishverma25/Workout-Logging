@@ -24,12 +24,37 @@ type Show = (message: string, action?: ToastAction) => void;
 
 const ToastContext = createContext<Show>(() => {});
 
+/** How long a toast stays: an undo stays 10 s (X4), and waits while it is focused or hovered. */
+export const TOAST_MS = 2800;
+export const ACTION_TOAST_MS = 10_000;
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const counter = useRef(0);
+  const timers = useRef(new Map<number, number>());
 
   const dismiss = useCallback((id: number) => {
+    const t = timers.current.get(id);
+    if (t !== undefined) window.clearTimeout(t);
+    timers.current.delete(id);
     setItems((list) => list.filter((t) => t.id !== id));
+  }, []);
+
+  const schedule = useCallback(
+    (id: number, ms: number) => {
+      const old = timers.current.get(id);
+      if (old !== undefined) window.clearTimeout(old);
+      timers.current.set(
+        id,
+        window.setTimeout(() => dismiss(id), ms),
+      );
+    },
+    [dismiss],
+  );
+  const hold = useCallback((id: number) => {
+    const t = timers.current.get(id);
+    if (t !== undefined) window.clearTimeout(t);
+    timers.current.delete(id);
   }, []);
 
   const show = useCallback<Show>(
@@ -37,9 +62,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       const id = ++counter.current;
       setItems((list) => [...list, action ? { id, message, action } : { id, message }]);
       // Longer when there is something to undo, so there is time to reach it.
-      window.setTimeout(() => dismiss(id), action ? 5000 : 2800);
+      schedule(id, action ? ACTION_TOAST_MS : TOAST_MS);
     },
-    [dismiss],
+    [schedule],
   );
 
   const value = useMemo(() => show, [show]);
@@ -54,6 +79,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((t) => (
           <div
             key={t.id}
+            onPointerEnter={t.action ? () => hold(t.id) : undefined}
+            onPointerLeave={t.action ? () => schedule(t.id, ACTION_TOAST_MS) : undefined}
+            onFocus={t.action ? () => hold(t.id) : undefined}
+            onBlur={t.action ? () => schedule(t.id, ACTION_TOAST_MS) : undefined}
             className="type-body flex min-h-12 max-w-[min(30rem,calc(100vw-2rem))] items-center gap-3 rounded-nested bg-surface-2 py-2 pr-2 pl-4 text-text-1"
           >
             <Check className="size-5 shrink-0 text-text-2" aria-hidden />

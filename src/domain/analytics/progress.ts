@@ -220,7 +220,13 @@ export function periodsFor(
   return periods.map((p) => ({ ...p, partial: p.start < window.start }));
 }
 
-/** Body weight on a date: the latest entry on or before it, else the first entry within 7 days after. */
+/** A weigh-in this old is not used for relative strength or strength levels. */
+export const WEIGHT_MAX_AGE_DAYS = 90;
+
+/**
+ * Body weight on a date: the latest entry on or before it (at most 90 days old), else the first
+ * entry within 7 days after.
+ */
 export function bodyWeightAt(entries: BodyWeightEntry[], date: Date): number | null {
   const alive = entries
     .filter((e) => e.deletedAt === null)
@@ -228,9 +234,14 @@ export function bodyWeightAt(entries: BodyWeightEntry[], date: Date): number | n
   const endOfDay = addDays(startOfDay(date), 1).getTime();
   let before: BodyWeightEntry | null = null;
   for (const e of alive) if (Date.parse(e.measuredAt) < endOfDay) before = e;
-  if (before) return before.weightKg;
+  // A weigh-in older than 90 days says little about the body that lifted (G6).
+  if (before && endOfDay - Date.parse(before.measuredAt) <= WEIGHT_MAX_AGE_DAYS * 86_400_000)
+    return before.weightKg;
   const limit = addDays(startOfDay(date), 8).getTime();
-  const after = alive.find((e) => Date.parse(e.measuredAt) < limit);
+  const after = alive.find((e) => {
+    const at = Date.parse(e.measuredAt);
+    return at >= endOfDay && at < limit;
+  });
   return after ? after.weightKg : null;
 }
 
@@ -452,6 +463,7 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
     ),
     volumeThisPeriod: totalKg,
     volumePreviousPeriod: previousTotalKg ?? 0,
+    previousSessions: inPrevious.length,
     periodDays: window.days,
     bodyKgAt: (d) => bodyWeightAt(data.bodyWeights, d),
     unit,
@@ -572,7 +584,9 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
     muscles: {
       workload,
       previous: previousCovered ? muscleWorkload(inPrevious) : null,
-      weeks,
+      // Sets a week divide by the days the history covers, as consistency does (G4): 20 sets
+      // in 10 days on a 30-day range is 14 a week, not 4.7.
+      weeks: coveredDays > 0 ? Math.max(7, coveredDays) / 7 : weeks,
       recency: muscleRecency(sessions, now),
     },
     body: (() => {
@@ -587,7 +601,11 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
     strength: strengthProfile(
       history,
       data.exercises,
-      trend[trend.length - 1]?.trendKg ?? null,
+      // Strength levels need a recent weight (G6): none older than 90 days.
+      trend.length &&
+        now.getTime() - trend[trend.length - 1]!.date.getTime() <= WEIGHT_MAX_AGE_DAYS * 86_400_000
+        ? trend[trend.length - 1]!.trendKg
+        : null,
       data.profile?.sex,
       now,
     ),

@@ -136,7 +136,7 @@ export function SwipeRow({
         aria-hidden={!open}
         onClick={onDelete}
         className={cn(
-          'absolute inset-y-0 right-0 flex items-center justify-end gap-1.5 bg-danger pr-5 font-semibold text-white',
+          'absolute inset-y-0 right-0 flex items-center justify-end gap-1.5 bg-danger-fill pr-5 font-semibold text-white',
           offset === 0 && 'invisible',
         )}
         style={{ width: Math.max(ACTION_WIDTH, -offset) }}

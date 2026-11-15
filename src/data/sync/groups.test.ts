@@ -498,6 +498,8 @@ describe('duels', () => {
   interface Duel {
     id: string;
     live: boolean;
+    status: 'pending' | 'live' | 'settled';
+    winner: string | null;
     challenger: string;
     opponent: string;
     challenger_score: number;
@@ -506,9 +508,19 @@ describe('duels', () => {
     i_am_challenger: boolean;
   }
   const duels = (userId: string, group: string) =>
-    as<{ limit: number; duels: Duel[] }>(userId, 'public.get_group_duels($1)', [group]);
+    as<{ limit: number; started: number; duels: Duel[] }>(userId, 'public.get_group_duels($1)', [
+      group,
+    ]);
   /** An hour ago: inside this week whatever day the tests run, and logged live. */
   const recently = () => new Date(Date.now() - 60 * 60_000);
+  /** The opponent accepts; points count from then, so the clock is set back two hours. */
+  const accept = async (opponent: string, id: string) => {
+    expect(await as<boolean>(opponent, 'public.accept_duel($1)', [id])).toBe(true);
+    await server.pg.query(
+      `update public.group_duels set accepted_at = now() - interval '2 hours' where id = $1`,
+      [id],
+    );
+  };
 
   async function trio() {
     const tag = String(++n);
@@ -529,13 +541,20 @@ describe('duels', () => {
 
   it('one member challenges another, and both see the live points of the week', async () => {
     const { a, b, c, group, names } = await trio();
-    await as(a, 'public.create_duel($1, $2)', [group, names.b]);
+    const made = await as<{ id: string }>(a, 'public.create_duel($1, $2)', [group, names.b]);
+    // Waiting for B: no points yet, and only B can accept.
+    expect((await duels(a, group)).duels).toMatchObject([{ status: 'pending', live: true }]);
+    expect(await as<boolean>(a, 'public.accept_duel($1)', [made.id])).toBe(false);
+    expect(await as<boolean>(c, 'public.accept_duel($1)', [made.id])).toBe(false);
+    await accept(b, made.id);
     await workout(b, recently(), three());
     const mine = await duels(a, group);
     expect(mine.limit).toBe(3);
+    expect(mine).toMatchObject({ started: 1 });
     expect(mine.duels).toMatchObject([
       {
         live: true,
+        status: 'live',
         challenger: names.a,
         opponent: names.b,
         challenger_score: 0,
@@ -595,30 +614,71 @@ describe('duels', () => {
     ).rejects.toThrow(/permission denied/);
   });
 
-  it('either of the two can call it off, nobody else, and leaving the group ends it', async () => {
+  it('before acceptance either can call it off; after it only a forfeit ends it, as a loss', async () => {
     const { a, b, c, group, names } = await trio();
     const made = await as<{ id: string }>(a, 'public.create_duel($1, $2)', [group, names.b]);
     expect(await as<boolean>(c, 'public.cancel_duel($1)', [made.id])).toBe(false);
     expect((await duels(a, group)).duels).toHaveLength(1);
+    // B declines: gone, and A's allowance is free again.
     expect(await as<boolean>(b, 'public.cancel_duel($1)', [made.id])).toBe(true);
     expect((await duels(a, group)).duels).toHaveLength(0);
-    await as(a, 'public.create_duel($1, $2)', [group, names.c]);
-    await as(c, 'public.leave_group($1)', [group]);
-    expect((await duels(a, group)).duels).toHaveLength(0);
+    expect(await duels(a, group)).toMatchObject({ started: 0 });
+
+    const again = await as<{ id: string }>(a, 'public.create_duel($1, $2)', [group, names.b]);
+    await accept(b, again.id);
+    // Losing on Sunday night: cancelling no longer works.
+    expect(await as<boolean>(a, 'public.cancel_duel($1)', [again.id])).toBe(false);
+    expect(await as<boolean>(b, 'public.cancel_duel($1)', [again.id])).toBe(false);
+    expect(await as<boolean>(c, 'public.forfeit_duel($1)', [again.id])).toBe(false);
+    expect(await as<boolean>(a, 'public.forfeit_duel($1)', [again.id])).toBe(true);
+    expect((await duels(b, group)).duels).toMatchObject([
+      { status: 'settled', winner: names.b, forfeit: true, forfeited_by_me: false },
+    ]);
+    expect(await as<boolean>(a, 'public.forfeit_duel($1)', [again.id])).toBe(false);
   });
 
-  it('last week is settled once, with the winner by points', async () => {
+  it('points count only from acceptance, and leaving forfeits open duels but keeps results', async () => {
+    const { a, b, c, group, names } = await trio();
+    // A trained before B accepted: that workout does not count.
+    await workout(a, recently(), three());
+    const made = await as<{ id: string }>(a, 'public.create_duel($1, $2)', [group, names.b]);
+    expect(await as<boolean>(b, 'public.accept_duel($1)', [made.id])).toBe(true);
+    expect((await duels(a, group)).duels).toMatchObject([
+      { status: 'live', challenger_score: 0, opponent_score: 0 },
+    ]);
+    // An unanswered challenge from C disappears when C leaves; the live duel is C's loss.
+    const pending = await as<{ id: string }>(c, 'public.create_duel($1, $2)', [group, names.a]);
+    const live = await as<{ id: string }>(c, 'public.create_duel($1, $2)', [group, names.b]);
+    await accept(b, live.id);
+    await as(c, 'public.leave_group($1)', [group]);
+    const after = (await duels(a, group)).duels;
+    expect(after.find((d) => d.id === pending.id)).toBeUndefined();
+    expect(after.find((d) => d.id === live.id)).toMatchObject({
+      status: 'settled',
+      winner: names.b,
+    });
+    expect(after.find((d) => d.id === made.id)).toMatchObject({ status: 'live' });
+  });
+
+  it('finished weeks are settled once, by points from acceptance, and stay for four weeks', async () => {
     const { a, b, group, names } = await trio();
     const made = await as<{ id: string }>(a, 'public.create_duel($1, $2)', [group, names.b]);
-    // The duel was last week's, and A trained in it.
+    const waiting = await as<{ id: string }>(b, 'public.create_duel($1, $2)', [group, names.c]);
+    expect(await as<boolean>(b, 'public.accept_duel($1)', [made.id])).toBe(true);
+    // The duel was last week's, accepted then, and A trained in it. B's challenge to C was never
+    // answered.
     await server.pg.query(
-      'update public.group_duels set week_start = week_start - 7 where id = $1',
-      [made.id],
+      `update public.group_duels set week_start = week_start - 7,
+        accepted_at = case when accepted_at is null then null else now() - interval '8 days' end
+       where id = any($1::uuid[])`,
+      [[made.id, waiting.id]],
     );
     const lastWeek = new Date(Date.now() - 7 * 86_400_000);
     await workout(a, lastWeek, three(), { createdAt: lastWeek });
     const seen = await duels(b, group);
-    expect(seen.duels).toMatchObject([{ live: false, challenger_score: 13, opponent_score: 0 }]);
+    expect(seen.duels).toMatchObject([
+      { status: 'settled', live: false, challenger_score: 13, opponent_score: 0, winner: names.a },
+    ]);
     const row = (
       await server.pg.query<{ winner: string; settled_at: string }>(
         'select winner, settled_at from public.group_duels where id = $1',
@@ -632,6 +692,18 @@ describe('duels', () => {
       { challenger_score: 13, opponent_score: 0 },
     ]);
     expect(await as<boolean>(a, 'public.cancel_duel($1)', [made.id])).toBe(false);
+    expect(await as<boolean>(a, 'public.forfeit_duel($1)', [made.id])).toBe(false);
+    // Three weeks later it still shows; after five it is gone from the card (kept in the table).
+    await server.pg.query(
+      'update public.group_duels set week_start = week_start - 21 where id = $1',
+      [made.id],
+    );
+    expect((await duels(b, group)).duels).toHaveLength(1);
+    await server.pg.query(
+      'update public.group_duels set week_start = week_start - 14 where id = $1',
+      [made.id],
+    );
+    expect((await duels(b, group)).duels).toHaveLength(0);
   });
 
   // -------------------------------------------------------------------------------------------

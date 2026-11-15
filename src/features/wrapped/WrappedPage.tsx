@@ -3,7 +3,8 @@ import { Sparkles } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { ChipGroup } from '@/components/kit';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
-import { useTrainingData } from '@/data/hooks';
+import { useAccount } from '@/app/account';
+import { usePreferences, useTrainingData } from '@/data/hooks';
 import { wrapped, wrappedDue, wrappedStory } from '@/domain/share/wrapped';
 import { useNow } from '@/lib/useNow';
 import { StoryEditor } from '../share/story/StoryEditor';
@@ -15,6 +16,9 @@ import { markWrappedSeen } from './seen';
  */
 export function WrappedPage() {
   const training = useTrainingData();
+  const prefs = usePreferences();
+  const account = useAccount();
+  const accountId = account.status === 'signedIn' ? (account.user?.id ?? null) : null;
   const now = useNow();
   const data = training.data;
   const due = wrappedDue(now);
@@ -31,8 +35,8 @@ export function WrappedPage() {
   );
   const shown = which === 'year' && year ? year : (month ?? year);
   useEffect(() => {
-    if (shown) markWrappedSeen(shown.key);
-  }, [shown]);
+    if (shown) markWrappedSeen(accountId, shown.key);
+  }, [shown, accountId]);
   const first = data?.profile?.displayName?.trim().split(/\s+/)[0] || null;
 
   return (
@@ -66,7 +70,7 @@ export function WrappedPage() {
           ) : null}
           <StoryEditor
             key={shown.key}
-            content={wrappedStory(shown, now)}
+            content={wrappedStory(shown, now, prefs.weightUnit)}
             name={first}
             fileName={`macrotrophy-wrapped-${shown.key}.png`}
           />

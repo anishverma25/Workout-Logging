@@ -1,7 +1,7 @@
 import { WhatsNew } from './WhatsNew';
 import { SetupGate } from './SetupGate';
 import { RestoreExpired } from '@/features/brain/RestoreExpired';
-import { Suspense, useEffect, type MouseEvent } from 'react';
+import { Suspense, useEffect, useRef, type MouseEvent } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -29,6 +29,7 @@ export function AppShell() {
   useEffect(() => {
     document.title = APP_NAME;
   }, []);
+  usePageAnnounce(pathname);
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[15rem_1fr]">
       <a
@@ -65,6 +66,42 @@ export function AppShell() {
       <BottomNav />
     </div>
   );
+}
+
+/**
+ * After moving to another page (never on the first one): the tab title says the page, and focus
+ * moves to its heading without scrolling, so screen readers hear where they are (X5). Focus is
+ * left alone while someone is typing or a sheet is open.
+ */
+function usePageAnnounce(pathname: string) {
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    let tries = 0;
+    let timer = 0;
+    const run = () => {
+      const h1 = document.querySelector<HTMLElement>('#main h1');
+      if (!h1) {
+        if (++tries < 20) timer = window.setTimeout(run, 50);
+        return;
+      }
+      const name = h1.textContent?.trim();
+      document.title = name && name !== APP_NAME ? `${name} · ${APP_NAME}` : APP_NAME;
+      const active = document.activeElement;
+      const typing =
+        active instanceof HTMLElement &&
+        (active.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName));
+      if (typing || document.querySelector('dialog[open]')) return;
+      if (!h1.hasAttribute('tabindex')) h1.setAttribute('tabindex', '-1');
+      h1.classList.add('outline-none');
+      h1.focus({ preventScroll: true });
+    };
+    timer = window.setTimeout(run, 0);
+    return () => window.clearTimeout(timer);
+  }, [pathname]);
 }
 
 export function DemoPill({ className }: { className?: string }) {

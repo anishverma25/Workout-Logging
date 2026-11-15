@@ -46,6 +46,13 @@ const PAGES = [
   '/settings',
   '/pro',
   '/more',
+  // Batch 16 (X8): the screens added since.
+  '/badges',
+  '/groups',
+  '/report',
+  '/wrapped',
+  '/food/plan',
+  '/whats-new',
 ];
 
 test('no accessibility violations', async ({ page }) => {
@@ -120,4 +127,34 @@ test('no accessibility violations in an active workout and its sheets', async ({
   await page.getByRole('button', { name: 'Finish' }).click();
   problems.push(...(await scan('finish sheet')));
   expect(problems).toEqual([]);
+});
+
+test('keyboard: a sheet opens, Escape closes it and focus returns; confirm starts on Cancel', async ({
+  page,
+}) => {
+  await startWithDemo(page, { tag: 'a11y-keys' });
+  await page.goto('/workout');
+  await page
+    .getByRole('button', { name: /^Start Push/ })
+    .first()
+    .click();
+  const add = page.getByRole('button', { name: 'Add exercise' });
+  await add.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(add).toBeFocused();
+  // A destructive confirm starts on Cancel, so Enter never discards.
+  await page.getByRole('button', { name: 'Discard workout' }).click();
+  const confirm = page.getByRole('dialog');
+  await expect(confirm.getByRole('button', { name: 'Cancel' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add exercise' })).toBeVisible();
+  // Moving to another page puts focus on its heading and names the tab.
+  await page.goto('/history');
+  await page.getByRole('link', { name: 'Progress' }).first().click();
+  await expect(page.locator('#main h1')).toBeFocused();
+  await expect(page).toHaveTitle(/Progress · Macrotrophy/);
 });

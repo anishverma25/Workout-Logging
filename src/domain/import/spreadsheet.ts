@@ -10,7 +10,25 @@ import { ImportFormatError } from './formats';
  *   code page, with commas, semicolons or tabs.
  * - Old .xls files are a closed binary format: the person is asked to save as .xlsx or CSV.
  */
+/** Bigger files than this are not a workout log; they would freeze the tab (X2). */
+export const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
+export const MAX_IMPORT_COLUMNS = 200;
+export const MAX_IMPORT_ROWS = 200_000;
+
 export function readTableFile(name: string, bytes: Uint8Array): CsvTable {
+  if (bytes.length > MAX_IMPORT_BYTES)
+    throw new ImportFormatError(
+      `${name} is over 20 MB, too big for a workout log. Export only your workouts and try again.`,
+    );
+  const table = readTableFileUnchecked(name, bytes);
+  if (table.headers.length > MAX_IMPORT_COLUMNS || table.rows.length > MAX_IMPORT_ROWS)
+    throw new ImportFormatError(
+      `${name} has more than ${MAX_IMPORT_COLUMNS} columns or ${MAX_IMPORT_ROWS.toLocaleString('en-IN')} rows, more than a workout log has. Export only your workouts and try again.`,
+    );
+  return table;
+}
+
+function readTableFileUnchecked(name: string, bytes: Uint8Array): CsvTable {
   if (bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04) {
     return readXlsx(name, bytes);
   }

@@ -1,3 +1,4 @@
+import { safeNext } from '@/features/account/next';
 import { reportStep } from '@/app/errorReport';
 import { SYSTEM_EXERCISES, SYSTEM_EXERCISE_KEYS } from '@/data/library/exercises';
 import { shortDayName } from '@/lib/format/dates';
@@ -245,7 +246,7 @@ function SetupFlow({
 }) {
   const rawNavigate = useNavigate();
   const [params] = useSearchParams();
-  const next = params.get('next') ?? '/';
+  const next = safeNext(params.get('next'), '/');
   const entitlement = useEntitlement();
   const account = useAccount();
   // A first setup ends on one page about Pro (what it does, the prices), then the app. Members

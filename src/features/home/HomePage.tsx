@@ -1,6 +1,7 @@
 import { isHardSet } from '@/domain/analytics/muscles';
 import { isWorkingSet } from '@/domain/analytics/sessions';
 import { wrapped, wrappedDue } from '@/domain/share/wrapped';
+import { useAccount } from '@/app/account';
 import { wrappedSeen } from '../wrapped/seen';
 import { NowCard } from './NowCard';
 import { useMemo, useState } from 'react';
@@ -67,11 +68,13 @@ export function HomePage() {
   const dayOfMonth = now.getDate();
   const monthNow = now.getMonth();
   const yearNow = now.getFullYear();
+  const account = useAccount();
+  const accountId = account.status === 'signedIn' ? (account.user?.id ?? null) : null;
   const wrappedMonth = useMemo(() => {
     if (!training.data || dayOfMonth > 5) return null;
     const w = wrapped(training.data, wrappedDue(new Date(yearNow, monthNow, dayOfMonth)).month);
-    return w && !wrappedSeen().includes(w.key) ? w.label : null;
-  }, [training.data, dayOfMonth, monthNow, yearNow]);
+    return w && !wrappedSeen(accountId).includes(w.key) ? w.label : null;
+  }, [training.data, dayOfMonth, monthNow, yearNow, accountId]);
   const routineName = training.data ? (activeRoutine(training.data.routines)?.name ?? null) : null;
 
   return (

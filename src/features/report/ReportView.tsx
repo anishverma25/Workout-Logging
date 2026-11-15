@@ -873,11 +873,13 @@ export function ReportView({
           className="mt-6 max-w-[26ch] text-[clamp(1.375rem,5.6vw,1.875rem)] leading-[1.22] font-semibold tracking-[-0.02em] text-balance"
           style={DISPLAY}
           data-report-verdict
+          lang={lang === 'hi' ? 'hi-Latn' : undefined}
         >
           {lang === 'hi' ? r.verdict.hi : r.verdict.en}
         </p>
         <div className="mt-3.5 flex flex-wrap items-center gap-2 text-[12.5px] text-text-3">
-          <span>Read it in</span>
+          {/* R5: only the headline and the actions change language, so the label says so. */}
+          <span>Headline and actions in</span>
           {(['en', 'hi'] as const).map((l) => (
             <button
               key={l}
@@ -972,7 +974,7 @@ export function ReportView({
                 >
                   {i + 1}
                 </i>
-                <div className="text-[14.5px]">
+                <div className="text-[14.5px]" lang={lang === 'hi' ? 'hi-Latn' : undefined}>
                   {lang === 'hi' ? a.titleHi : a.title}
                   <span className="block text-[13px] text-text-2">{firstSentence(a.detail)}</span>
                 </div>
@@ -1352,7 +1354,11 @@ export function ReportView({
                   {i + 1}
                 </div>
                 <div>
-                  <h3 className="text-[19px] leading-tight font-semibold" style={DISPLAY}>
+                  <h3
+                    className="text-[19px] leading-tight font-semibold"
+                    style={DISPLAY}
+                    lang={lang === 'hi' ? 'hi-Latn' : undefined}
+                  >
                     {lang === 'hi' ? a.titleHi : a.title}
                   </h3>
                   <p className="mt-1.5 text-[14.5px] text-text-2">{a.detail}</p>

@@ -29,6 +29,7 @@
   /* Legacy screens read text-danger and bg-danger as the AA-safe text red until Part 7. */
   --color-danger: var(--danger-text);
   --color-danger-soft: var(--danger-soft);
+  --color-danger-fill: var(--danger-fill);
   --color-ring-1: var(--ring-1);
   --color-ring-2: var(--ring-2);
   --color-ring-3: var(--ring-3);

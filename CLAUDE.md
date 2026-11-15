@@ -547,3 +547,38 @@ Read README.md for setup, architecture and calculation rules.
   - Equipment (`domain/workout/equipment.ts`, `equipmentFits`): programmes, stall variations,
     Brain swaps (`exercise.fits`, a `swap` hold when nothing fits) and the swap picker
     ("Needs other equipment" last) use one rule.
+- Launch safety, stage E (November 2026, migration `20261115000034_fair_scores_rules.sql`,
+  Dexie unchanged, Fable review batches 20 and 15):
+  - Streaks follow the week target (`streakTarget`, `weeklyStreak(minSessions)`); streak badges
+    reached before `STREAK_RULE_FROM` keep the old rule. Leaderboard records use the app's rule
+    (`community_e1rm`, compound weight and reps lifts, Epley capped at 10 reps), paused time is
+    left out. Every limit lives in `domain/entitlement/limits.ts` (`FREE_PROGRESS_DAYS` 7,
+    `FREE_ROUTINES` 2, groups, duels, AI photos, trial), checked by `limits.test.ts`.
+  - The science page takes its numbers from the constants that enforce them
+    (`features/science/topics.test.ts` pairs a text fragment with each constant).
+- Launch safety, stage F (November 2026, migrations `20261115000035_timed_targets.sql`,
+  `20261115000036_duels_accept.sql`, `20261115000037_report_weeks.sql`, Dexie unchanged, Fable
+  review batches 10, 11, 21, 14, 16):
+  - Food: logged rows show calories, a food's page shows protein, carbs, fat and fibre to
+    everyone; Pro tracks the day against targets. Hindi and spoken amounts, roti words, invalid
+    portions disable Add, AI drafts kept 30 s, `fitToCalories` with a fat floor.
+  - Training: timed targets up to 600 s, forgotten-workout prompt after 6 h, unfinished sets
+    named at finish, lb rounded to 0.05, assisted records, same-session imports skipped.
+  - Progress: adherence counts from the routine's start, one exercise twice in a workout is
+    one session, chart e1RM equals the best e1RM, volume changes need 3 earlier sessions,
+    weigh-ins older than 90 days are not used (`WEIGHT_MAX_AGE_DAYS`). Imports are capped at
+    20 MB, 200 columns and 200,000 rows; others' photos must be small JPEG, PNG or WebP
+    (`isSafeAvatar`); setup only follows same-app links (`safeNext`).
+  - Weekly report: always Monday to Sunday, waits until the week has synced, numbered by the
+    server (`number`, up to 60 read), overlapping weeks refused, the toggle says
+    "Headline and actions in", PDF names fall back to the library name or "Lift".
+  - Duels: accept first (`accept_duel`), points from `accepted_at`, no cancel after accepting,
+    `forfeit_duel` is a loss, settled on read, last four weeks shown, leaving forfeits.
+  - Cards: rank lines include consistency and progress and say "Last week" when shared late;
+    design A shortens long titles; PR ordinal from all records; weekend badge counts weekends,
+    early bird is 4 to 7 am (old badges kept); Wrapped rings capped, tonnage in the person's
+    unit, "seen" per account.
+  - Accessibility: `--text-3` raised to 4.5:1 and `--danger-fill` for white on red
+    (`styles/tokens.test.ts`); confirm sheets focus Cancel; "Rest over" is announced; undo
+    toasts stay 10 s and pause on hover or focus; a page change names the tab and focuses its
+    h1 (`usePageAnnounce` in AppShell); keypad hints by `useId`, errors as alerts.

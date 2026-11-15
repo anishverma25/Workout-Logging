@@ -272,7 +272,8 @@ export function ConfirmSheet({
           <Confirm block loading={busy} onClick={onConfirm}>
             {confirmLabel}
           </Confirm>
-          <SecondaryButton block onClick={onClose}>
+          {/* Focus starts on the safe choice, so Enter never confirms by default (X2). */}
+          <SecondaryButton block onClick={onClose} data-autofocus>
             {cancelLabel}
           </SecondaryButton>
         </div>

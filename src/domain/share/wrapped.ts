@@ -4,6 +4,7 @@ import { buildSessions, isWorkingSet, type TrainingData } from '../analytics/ses
 import { muscleName } from '../analytics/weekly';
 import { setVolumeLoad } from '../analytics/volume';
 import { workoutMinutes } from '../activity/burn';
+import { toDisplayWeight, type WeightUnit } from '@/lib/units';
 import type { StoryContent } from './story';
 
 /**
@@ -137,7 +138,10 @@ export function wrappedDue(now: Date): {
   return { month: { year: last.getFullYear(), month: last.getMonth() }, year };
 }
 
-export function wrappedStory(w: Wrapped, now: Date): StoryContent {
+export function wrappedStory(w: Wrapped, now: Date, unit: WeightUnit = 'kg'): StoryContent {
+  // C5: tonnage in the person's own unit.
+  const lifted = thousands(Math.round(toDisplayWeight(w.tonnage, unit)));
+  const ring = (v: number, of: number) => (of > 0 ? Math.min(1, Math.max(0, v / of)) : 0);
   const top = w.muscles.slice(0, 4);
   const max = Math.max(1, ...top.map((m) => m.sets));
   const short = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getFullYear()).slice(2)}`;
@@ -149,9 +153,9 @@ export function wrappedStory(w: Wrapped, now: Date): StoryContent {
     short,
     time: '',
     big: { v: String(w.workouts), u: 'workouts', l: `In ${w.label}` },
-    note: `${thousands(w.tonnage)} kg lifted over ${w.daysTrained} days`,
+    note: `${lifted} ${unit} lifted over ${w.daysTrained} days`,
     stats: [
-      { v: thousands(w.tonnage), u: 'kg', l: 'Lifted' },
+      { v: lifted, u: unit, l: 'Lifted' },
       { v: String(w.hours), u: 'h', l: 'Trained' },
       { v: String(w.records), u: '', l: 'Records' },
     ],
@@ -160,24 +164,26 @@ export function wrappedStory(w: Wrapped, now: Date): StoryContent {
       : null,
     chips: [
       `${w.workouts} workouts`,
-      `${thousands(w.tonnage)} kg lifted`,
+      `${lifted} ${unit} lifted`,
       `${w.records} ${w.records === 1 ? 'record' : 'records'}`,
     ],
-    ach: { h: `${w.label}, wrapped`, s: `${thousands(w.tonnage)} kg lifted` },
+    ach: { h: `${w.label}, wrapped`, s: `${lifted} ${unit} lifted` },
     hand: 'wrapped!',
     tier: null,
     rings: [
       {
-        frac: w.daysTrained / w.daysInPeriod,
+        frac: ring(w.daysTrained, w.daysInPeriod),
         stat: { v: String(w.daysTrained), u: `/${w.daysInPeriod}`, l: 'Days trained' },
       },
       {
-        frac: w.weeksTrained / w.weeksInPeriod,
+        frac: ring(w.weeksTrained, w.weeksInPeriod),
         stat: { v: String(w.weeksTrained), u: `/${w.weeksInPeriod}`, l: 'Weeks trained' },
       },
+      // More records than workouts is common (several lifts a day): the ring fills, and the
+      // label never reads "12 /6".
       {
-        frac: w.workouts ? w.records / w.workouts : 0,
-        stat: { v: String(w.records), u: `/${w.workouts}`, l: 'Records per workout' },
+        frac: ring(w.records, w.workouts),
+        stat: { v: String(w.records), u: '', l: w.records === 1 ? 'Record' : 'Records' },
       },
     ],
     ringsNote: `Out of the days and weeks of ${w.label}`,

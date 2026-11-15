@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { Download } from 'lucide-react';
-import { useAccount } from '@/app/account';
+import { useAccount, useSyncStatus } from '@/app/account';
+import { describeSync } from '@/data/sync/describe';
 import { useFeature } from '@/app/entitlement';
 import { PageHeader } from '@/app/layout/PageHeader';
 import {
@@ -9,12 +10,12 @@ import {
   claimReport,
   fetchReports,
   ReportError,
+  reportNumber,
   reportWindow,
   type SavedReport,
 } from '@/app/weeklyReport';
 import { PrimaryButton, SecondaryButton } from '@/components/kit';
 import { ErrorState, Skeleton } from '@/components/ui/States';
-import { usePreferences } from '@/data/hooks';
 import { canMakeReport, MIN_FOOD_DAYS, MIN_SESSIONS } from '@/domain/analytics/weekly';
 import { addDays, toDateKey } from '@/lib/dates';
 import { cn } from '@/lib/cn';
@@ -44,7 +45,6 @@ export function ReportPage() {
   const account = useAccount();
   const userId = account.status === 'signedIn' ? (account.user?.id ?? null) : null;
   const pro = useFeature('weekly_report');
-  const prefs = usePreferences();
   const now = useNow();
   const [params, setParams] = useSearchParams();
   const { mode, setMode, lang, setLang } = useReportPrefs();
@@ -85,7 +85,16 @@ export function ReportPage() {
     };
   }, [userId]);
 
-  const win = useMemo(() => reportWindow(now, prefs.weekStartsOn), [now, prefs.weekStartsOn]);
+  // Reports always run Monday to Sunday (R3), whatever the display week, so switching the
+  // week start never gives two reports for the same days.
+  const win = useMemo(() => reportWindow(now, 1), [now]);
+  const sync = useSyncStatus();
+  const syncTone = describeSync(sync, account.status === 'signedIn', now).tone;
+  // A report is saved once, so it waits until this phone has everything (R2): a new phone or
+  // unsynced changes would make it from half the week.
+  const synced =
+    syncTone === 'synced' ||
+    (sync.rejected > 0 && sync.pending - sync.rejected === 0 && !!sync.lastSyncedAt);
   const openKey = toDateKey(win.open);
   const savedOpen = saved.find((r) => r.weekStart === openKey) ?? null;
   const previous = saved.find((r) => r.weekStart === toDateKey(addDays(win.open, -7))) ?? null;
@@ -100,7 +109,7 @@ export function ReportPage() {
   const shown =
     (selectedKey ? saved.find((r) => r.weekStart === selectedKey) : null) ??
     (selectedKey ? null : (savedOpen ?? ordered[ordered.length - 1] ?? null));
-  const number = shown ? ordered.findIndex((r) => r.id === shown.id) + 1 : 0;
+  const number = reportNumber(saved, shown);
 
   const make = async () => {
     if (!userId || !draft.report) return;
@@ -123,6 +132,7 @@ export function ReportPage() {
     if (draft.status === 'loading' || !loaded) return { kind: 'loading' as const };
     if (draft.status === 'error') return { kind: 'error' as const };
     if (!draft.report || !canMakeReport(draft.report)) return { kind: 'thin' as const };
+    if (!synced) return { kind: 'waiting' as const };
     return { kind: 'ready' as const };
   })();
 
@@ -148,7 +158,7 @@ export function ReportPage() {
 
         {generate?.kind === 'loading' ? <Skeleton className="h-36 rounded-panel" /> : null}
         {generate?.kind === 'error' ? <ErrorState /> : null}
-        {generate?.kind === 'ready' || generate?.kind === 'thin' ? (
+        {generate?.kind === 'ready' || generate?.kind === 'thin' || generate?.kind === 'waiting' ? (
           <section
             className="flex flex-col gap-3 rounded-panel bg-surface p-5"
             data-report-generate={generate.kind}
@@ -160,12 +170,18 @@ export function ReportPage() {
             >
               {generate.kind === 'ready'
                 ? 'Your report is ready to make'
-                : 'Not enough logged this week'}
+                : generate.kind === 'waiting'
+                  ? 'Syncing your week first'
+                  : 'Not enough logged this week'}
             </h2>
             <p className="type-body text-text-2">
               {generate.kind === 'ready'
                 ? 'You get one report for each week. It is saved once and stays the same, so make it when the week is logged.'
-                : `A report needs ${MIN_SESSIONS} workouts or ${MIN_FOOD_DAYS} days of food in the week. You can still log the days you missed.`}
+                : generate.kind === 'waiting'
+                  ? sync.phase === 'offline'
+                    ? 'You are offline. The report is saved once, so it waits until everything you logged this week has reached your account. Connect and it will be ready.'
+                    : 'The report is saved once, so it waits until everything you logged this week has reached your account. This takes a moment.'
+                  : `A report needs ${MIN_SESSIONS} workouts or ${MIN_FOOD_DAYS} days of food in the week. You can still log the days you missed.`}
             </p>
             {makeError ? (
               <p role="alert" className="type-footnote text-danger-text">

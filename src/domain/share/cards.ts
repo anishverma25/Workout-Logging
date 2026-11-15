@@ -63,6 +63,8 @@ export interface PrCard {
    * fewer than 5, the first bar is where the lift started (`start`).
    */
   ladder: { date: Date; value: number; start?: boolean }[];
+  /** Which record of this kind this is, counted over all of them (C3): 7 for the 7th. */
+  recordNumber?: number;
 }
 
 export interface StreakCard {
@@ -201,6 +203,7 @@ export function prCard(data: TrainingData, workoutId: string, exerciseId?: strin
         ? estimateOneRepMax(pick.weightKg, pick.reps, null)
         : null,
     ladder,
+    recordNumber: history.length,
   };
 }
 

@@ -15,6 +15,8 @@ export interface SavedReport {
   weekStart: string;
   createdAt: string;
   report: WeeklyReport;
+  /** The report's place among all the person's reports, counted by the server (R4). */
+  number?: number;
 }
 
 /** A week's report opens at 6 pm on its last day and can be made until 8 days after it ends. */
@@ -42,6 +44,8 @@ function messageFor(error: { message?: string; code?: string }): string {
   if (/comes with Pro/i.test(m)) return 'The weekly report comes with Pro.';
   if (/opens on its last day/i.test(m)) return 'This week’s report opens on its last day.';
   if (/too far back/i.test(m)) return 'That week is too far back to make a report.';
+  if (/already have a report for these days/i.test(m))
+    return 'You already have a report for these days.';
   if (error.code === 'PGRST202' || /does not exist|Could not find the function/i.test(m))
     return 'Weekly reports are not available yet. Please try again later.';
   return 'Could not reach Macrotrophy. Check your connection and try again.';
@@ -69,6 +73,7 @@ function parse(v: unknown): SavedReport | null {
     weekStart: String(o.week_start ?? report.weekStart),
     createdAt: String(o.created_at ?? report.madeAt),
     report: repaired(report),
+    ...(typeof o.number === 'number' && o.number > 0 ? { number: o.number } : {}),
   };
 }
 
@@ -91,6 +96,7 @@ function cache(account: string, list: SavedReport[]) {
       week_start: r.weekStart,
       created_at: r.createdAt,
       report: r.report,
+      ...(r.number ? { number: r.number } : {}),
     }));
     localStorage.setItem(KEY(account), JSON.stringify(raw));
   } catch {
@@ -98,9 +104,20 @@ function cache(account: string, list: SavedReport[]) {
   }
 }
 
+/** Reports read from the server at once: more than a year of weeks (R4). */
+export const REPORTS_FETCHED = 60;
+
+/** A report's number: the server's count when it sent one, else its place in the list. */
+export function reportNumber(list: SavedReport[], shown: SavedReport | null): number {
+  if (!shown) return 0;
+  if (shown.number) return shown.number;
+  const ordered = [...list].sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+  return ordered.findIndex((r) => r.id === shown.id) + 1;
+}
+
 export async function fetchReports(account: string): Promise<SavedReport[]> {
   if (!supabase) throw new ReportError('Accounts are not set up in this version of the app.');
-  const { data, error } = await supabase.rpc('get_my_weekly_reports', { p_limit: 12 });
+  const { data, error } = await supabase.rpc('get_my_weekly_reports', { p_limit: REPORTS_FETCHED });
   if (error) throw new ReportError(messageFor(error));
   const list = (Array.isArray(data) ? data : [])
     .map(parse)

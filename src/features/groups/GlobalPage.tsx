@@ -390,6 +390,9 @@ export function GlobalPage() {
               hardSets: mine.hardSets,
               records: mine.records,
               proteinDays: mine.proteinDays,
+              consistencyWeeks: mine.consistencyWeeks,
+              progressPoints: mine.progressPoints,
+              past: offset !== 0,
             });
           }}
         />
