@@ -89,7 +89,9 @@ function usePageAnnounce(pathname: string) {
         return;
       }
       const name = h1.textContent?.trim();
-      document.title = name && name !== APP_NAME ? `${name} · ${APP_NAME}` : APP_NAME;
+      // Home's heading is a greeting, so Home keeps the plain name.
+      document.title =
+        pathname !== '/' && name && name !== APP_NAME ? `${name} · ${APP_NAME}` : APP_NAME;
       const active = document.activeElement;
       const typing =
         active instanceof HTMLElement &&

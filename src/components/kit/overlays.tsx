@@ -133,6 +133,23 @@ export function BottomSheet({
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
+  // A sheet whose parent unmounts it while open (form sheets are mounted only while open)
+  // never gets a close event: focus would fall to the page. Give it back to the opener once the
+  // dialog has really left the page (a StrictMode re-run leaves it connected).
+  useEffect(() => {
+    const dialog = ref.current;
+    return () => {
+      window.setTimeout(() => {
+        if (!dialog || dialog.isConnected) return;
+        const el = opener.current;
+        opener.current = null;
+        const active = document.activeElement;
+        if (active && active !== document.body) return;
+        if (el instanceof HTMLElement && el.isConnected) el.focus({ preventScroll: true });
+      }, 0);
+    };
+  }, []);
+
   const restoreFocus = () => {
     const el = opener.current;
     opener.current = null;

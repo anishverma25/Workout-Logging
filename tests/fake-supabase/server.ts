@@ -177,6 +177,12 @@ async function handleAuth(req: IncomingMessage, res: ServerResponse, path: strin
       'insert into auth.users (id, email, encrypted_password, email_confirmed_at) values ($1, $2, $3, $4)',
       [id, email, hashPassword(body.password!), confirm ? null : new Date()],
     );
+    // Test convention, like +confirm: "+old" in the address makes an account from before the
+    // latest release, the people "What's new" is for (new accounts never see it).
+    if (email.includes('+old'))
+      await pg.query(`update auth.users set created_at = '2026-11-01T00:00:00Z' where id = $1`, [
+        id,
+      ]);
     const user = (await userById(id))!;
     return send(res, 200, confirm ? userJson(user) : session(user));
   }
@@ -554,7 +560,8 @@ function fakeCoachProvider(name: 'gemini' | 'groq'): CoachProvider {
       if (last.includes('#all-down') || (name === 'gemini' && last.includes('#gemini-down')))
         throw new Error(`${name} is over its limit`);
       if (last.includes('#invent')) return 'Your squat is 999 kg, so add more weight.';
-      const question = /^Question: (.*)$/m.exec(last)?.[1];
+      // The question sits in a <user_data> block on its own lines (stage C).
+      const question = /^Question: (?:<user_data>\n)?(.*)$/m.exec(last)?.[1];
       const fact = last.split('\n').find((l) => l.startsWith('- ')) ?? '- Your data is in.';
       return `${question ? `You asked: ${question}\n` : ''}Here is what your numbers say (${name === 'gemini' ? 'main' : 'backup'}).\n${fact}\n- Keep logging every set so the next answer has more to go on.`;
     },

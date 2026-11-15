@@ -228,8 +228,6 @@ export function ActiveWorkout({ view, prefs }: Props) {
     <div className="mx-auto max-w-[640px] pb-32">
       <MedalAlert news={medal} unit={prefs.weightUnit} onDone={clearMedal} />
       <header className="chrome material-bar sticky top-0 z-20 -mx-4 border-b-[0.5px] border-divider px-4 pt-[max(0.5rem,env(safe-area-inset-top))] lg:-mx-10 lg:px-10 lg:pt-5">
-        {/* The page's heading for screen readers (X7); the button below shows the name. */}
-        <h1 className="sr-only">{workout.name}</h1>
         <div className="flex min-h-14 items-center gap-2">
           <button
             type="button"
@@ -278,6 +276,8 @@ export function ActiveWorkout({ view, prefs }: Props) {
           thickness={4}
           className="mb-2 mt-2"
         />
+        {/* The page's heading for screen readers (X7), after the visible name in the button. */}
+        <h1 className="sr-only">{workout.name}</h1>
       </header>
 
       {doneSets === 0 && !readinessHidden ? (

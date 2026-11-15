@@ -70,6 +70,9 @@ async function signUp(page: Page) {
     .fill(`pay-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`);
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
+  // A new account opens setup first; this test is about paying.
+  await page.waitForURL((u) => u.pathname === '/setup');
+  await page.getByRole('button', { name: 'Not now' }).click();
   // The pathname itself: "/sign-up?next=/pro" also ends in /pro.
   await page.waitForURL((u) => u.pathname === '/pro');
 }
@@ -225,6 +228,8 @@ test('a member from before the new prices sees a code of their own and uses it o
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
+  await page.waitForURL((u) => u.pathname === '/setup');
+  await page.getByRole('button', { name: 'Not now' }).click();
   await page.waitForURL((u) => u.pathname === '/pro');
   // Nobody else is shown a code, and nothing comes off without one.
   await expect(page.locator('[data-early-code]')).toHaveCount(0);

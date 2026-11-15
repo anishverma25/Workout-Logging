@@ -48,10 +48,12 @@ test('a new account: pick a routine, first workout, first food, first weight', a
   }
   await page.getByRole('button', { name: 'Finish', exact: true }).click();
   const save = page.getByRole('button', { name: /^Finish and save/ });
+  // The finish check opens when a set is left unticked; wait for it rather than glance.
   if (
     await save
       .first()
-      .isVisible()
+      .waitFor({ state: 'visible', timeout: 3000 })
+      .then(() => true)
       .catch(() => false)
   )
     await save.first().click();

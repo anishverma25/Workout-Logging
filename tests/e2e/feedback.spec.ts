@@ -17,6 +17,8 @@ async function signUp(page: Page) {
     .fill(`fb-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`);
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page).toHaveURL(/\/setup/);
+  await page.getByRole('button', { name: 'Not now' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Feedback' })).toBeVisible();
 }
 

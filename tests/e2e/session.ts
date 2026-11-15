@@ -31,13 +31,18 @@ export async function expireTrial(email: string, daysAgo = 1) {
 /** Creates an account and returns the email it used. */
 export async function signUpFresh(page: Page, { at = '/', tag = 'e2e' } = {}): Promise<string> {
   const email = uniqueEmail(tag);
-  await page.goto(`/sign-up?next=${encodeURIComponent(at)}`);
+  // Sign up opens setup by itself; a test that starts in setup names where setup leads.
+  const target = at.startsWith('/setup')
+    ? (new URLSearchParams(at.split('?')[1] ?? '').get('next') ?? '/')
+    : at;
+  await page.goto(`/sign-up?next=${encodeURIComponent(target)}`);
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page).not.toHaveURL(/sign-up/);
   // A new account always opens setup first; tests that are not about setup leave it.
   await expect(page).toHaveURL(/\/setup/);
+  if (at.startsWith('/setup')) return email;
   await page.getByRole('button', { name: 'Not now' }).click();
   await expect(page).not.toHaveURL(/\/setup/);
   return email;

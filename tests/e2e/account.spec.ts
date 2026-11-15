@@ -20,6 +20,9 @@ async function signUp(page: Page, email: string) {
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
+  // A new account always opens setup first (stage A); this test is about the account.
+  await expect(page).toHaveURL(/\/setup/);
+  await page.getByRole('button', { name: 'Not now' }).click();
   await expect(page).toHaveURL(/:\d+\/account$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Account', exact: true })).toBeVisible();
 }

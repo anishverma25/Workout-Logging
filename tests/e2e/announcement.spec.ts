@@ -21,7 +21,8 @@ const TITLES = [
 test('the walkthrough explains every part of the release and ends on the plans', async ({
   page,
 }) => {
-  await signUpFresh(page, { tag: 'announce' });
+  // An account from before the release: new accounts never see it.
+  await signUpFresh(page, { tag: 'announce+old' });
   await page.evaluate(() => localStorage.removeItem('overload.whatsNew'));
   await page.goto('/');
   const dialog = page.getByRole('dialog', { name: 'New in Macrotrophy' });
@@ -47,7 +48,7 @@ test('the walkthrough explains every part of the release and ends on the plans',
 });
 
 test('Later closes it for good, and it stays readable from More', async ({ page }) => {
-  await signUpFresh(page, { tag: 'announce-later' });
+  await signUpFresh(page, { tag: 'announce-later+old' });
   await page.evaluate(() => localStorage.removeItem('overload.whatsNew'));
   await page.goto('/');
   const dialog = page.getByRole('dialog', { name: 'New in Macrotrophy' });
