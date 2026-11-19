@@ -95,6 +95,8 @@ test('clearing demo data survives a reload', async ({ page }) => {
 });
 
 test('no horizontal scrolling on any main page', async ({ page }) => {
+  // Visits every main page in one test: allow for slow CI machines.
+  test.setTimeout(180_000);
   for (const path of [
     '/',
     '/routines',
