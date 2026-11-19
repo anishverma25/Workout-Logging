@@ -26,7 +26,7 @@ describe('what Pro found', () => {
   });
 
   it('names stalls when there are some', () => {
-    const model = modelAt('2026-11-15T20:00:00Z');
+    const model = modelAt('2026-11-16T08:00:00Z');
     expect(model.plateaus.length).toBeGreaterThan(0);
     const n = model.plateaus.length;
     expect(proFindings(model).map((f) => f.fact)).toContain(
