@@ -16,6 +16,11 @@ describe('app switches', () => {
     expect(f.notice).toHaveLength(140);
     expect(parseFlags({ notice: '   ' }).notice).toBeNull();
   });
+  it('Continue with Google stays off until it is switched on', () => {
+    expect(ALL_ON.google_sign_in).toBe(false);
+    expect(parseFlags({ google_sign_in: 'yes' }).google_sign_in).toBe(false);
+    expect(parseFlags({ google_sign_in: true }).google_sign_in).toBe(true);
+  });
 });
 
 describe('a payment waiting to be confirmed', () => {

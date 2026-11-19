@@ -152,14 +152,18 @@ export function numbersAgree(per100: SuggestedFood['per100']): boolean {
 
 const round1 = (v: number) => Math.round(v * 10) / 10;
 
-/** Sends a food for review. Throws SuggestError with words for the person. */
+/**
+ * Sends a food for review: a new one from its label, or one the person saved earlier (Food
+ * settings). Throws SuggestError with words for the person; callers add what happened to
+ * their own copy ("Saved for you").
+ */
 export async function suggestFood(food: SuggestedFood): Promise<void> {
   if (!supabase || getAccountState().status !== 'signedIn') {
     throw new SuggestError('Sign in to suggest a food.');
   }
   if (!numbersAgree(food.per100)) {
     throw new SuggestError(
-      'Saved for you. It was not sent for everyone: the calories do not match the protein, carbs and fat. Check the label.',
+      'Not sent for everyone: the calories do not match the protein, carbs and fat. Check the label.',
     );
   }
   const { error } = await supabase.rpc('submit_food', {
@@ -175,17 +179,15 @@ export async function suggestFood(food: SuggestedFood): Promise<void> {
   });
   if (!error) return;
   if (error.code === '23505') {
-    throw new SuggestError('Saved for you. A food with this name is already suggested or shared.');
+    throw new SuggestError('A food with this name is already suggested or shared.');
   }
   if (/limit|waiting/i.test(error.message)) {
-    throw new SuggestError('Saved for you. You have sent a lot for review; send more tomorrow.');
+    throw new SuggestError('You have sent a lot for review; send more tomorrow.');
   }
   if (/disagree|missing|Name/i.test(error.message)) {
-    throw new SuggestError(
-      'Saved for you. It was not sent for everyone: check the name and numbers.',
-    );
+    throw new SuggestError('Not sent for everyone: check the name and numbers.');
   }
-  throw new SuggestError('Saved for you. It could not be sent for everyone right now.');
+  throw new SuggestError('It could not be sent for everyone right now. Try again later.');
 }
 
 export interface FoodThanks {
@@ -233,4 +235,31 @@ export function markThanked(ids: string[]): void {
   } catch {
     // Storage blocked: the thank-you may show once more.
   }
+}
+
+/** The fields a suggestion needs, from a food the person saved. Recipes are never shared. */
+export function suggestionFrom(food: {
+  kind: 'food' | 'recipe';
+  name: string;
+  diet: Food['diet'];
+  kcal: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  fibreG: number;
+  pieceG: number | null;
+}): SuggestedFood | null {
+  if (food.kind !== 'food') return null;
+  return {
+    name: food.name,
+    diet: food.diet,
+    per100: {
+      kcal: food.kcal,
+      proteinG: food.proteinG,
+      carbsG: food.carbsG,
+      fatG: food.fatG,
+      fibreG: food.fibreG,
+    },
+    pieceG: food.pieceG,
+  };
 }

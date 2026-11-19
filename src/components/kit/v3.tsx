@@ -213,6 +213,7 @@ export function TextButton({
   className,
   small,
   icon,
+  tone = 'lime',
   'aria-label': ariaLabel,
   ...rest
 }: {
@@ -222,11 +223,14 @@ export function TextButton({
   className?: string;
   small?: boolean;
   icon?: ReactNode;
+  /** Lime by default; danger for an action worth a second look (Remove set). */
+  tone?: 'lime' | 'danger';
   'aria-label'?: string;
   [data: `data-${string}`]: unknown;
 }) {
   const cls = cn(
-    'pressable chrome tap-target inline-flex shrink-0 items-center gap-1 rounded-tile text-lime',
+    'pressable chrome tap-target inline-flex shrink-0 items-center gap-1 rounded-tile',
+    tone === 'danger' ? 'text-danger-text' : 'text-lime',
     small ? 'type-subhead font-medium' : 'text-[1.0625rem] leading-[1.375rem]',
     className,
   );

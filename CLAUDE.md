@@ -582,3 +582,22 @@ Read README.md for setup, architecture and calculation rules.
     (`styles/tokens.test.ts`); confirm sheets focus Cancel; "Rest over" is announced; undo
     toasts stay 10 s and pause on hover or focus; a page change names the tab and focuses its
     h1 (`usePageAnnounce` in AppShell); keypad hints by `useId`, errors as alerts.
+- Sign-in codes and food batch (November 2026, no migration, Dexie unchanged,
+  `docs/sign-in-codes.md`):
+  - Email codes: sign-up shows `CodeEntry` (`features/account/EmailCode.tsx`) and confirms with
+    `verifyEmailCode` (Supabase `verifyOtp`, type `signup`); sign in offers "Use an email code
+    instead" (`sendSignInCode`, `shouldCreateUser: false`, verified as `email`, then `signup` for
+    an account never confirmed); a password sign-in before confirming offers "Send me a code to
+    confirm" (`EmailNotConfirmedError`, `resendSignupCode`). `SpamHint` names `AUTH_SENDER`;
+    resend waits `RESEND_WAIT_S`. Email templates carry `{{ .Token }}` (and the link for two
+    weeks). The fake server issues codes (`/__test/last-code`).
+  - Continue with Google (`GoogleSignIn`, `signInWithGoogle`, implicit flow back to
+    `/sign-in?via=google`, `isBrandNew` sends a new account to setup): shown only when
+    `app_settings.flags.google_sign_in` is true (the one flag that defaults off) and never in an
+    iPhone home-screen app (`isIosHomeScreenApp`). Fake server `/authorize` stands in for Google.
+  - Food: logged rows show protein with Pro `macro_tracking` (trial included); a saved label food
+    can be suggested for everyone from Food settings or while editing it (`suggestionFrom`).
+  - Logger: last time's RIR or RPE under its load and reps (`previousEffort`); Remove set is red
+    (`TextButton tone="danger"`; `cn` does not merge classes, so colours go through props).
+  - Wrapped: title is the month (sub "Month wrapped") so no design cuts it; the Lifted stat is
+    short (`compact`, 93.3k); the caption design lowers only the first letter (`lowerFirst`).

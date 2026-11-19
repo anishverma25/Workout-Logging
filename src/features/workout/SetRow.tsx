@@ -10,7 +10,7 @@ import type { SetSuggestion } from '@/domain/workout/previous';
 import { cn } from '@/lib/cn';
 import { fromDisplayWeight, toDisplayWeight } from '@/lib/units';
 import { CellInput, type CellInputHandle } from './CellInput';
-import { columnsFor, formatSetValues } from './format';
+import { columnsFor, formatSetValues, previousEffort } from './format';
 import { haptic } from '@/lib/haptics';
 
 /** UI Part 6: Set 28, Last 72, then flexible inputs, and the 48px check. */
@@ -66,6 +66,7 @@ function SetRowImpl({
   const effortRef = useRef<CellInputHandle>(null);
   const [pending, setPending] = useState(false);
   const effortKey = prefs.effortMetric;
+  const lastEffort = previous && cols.showEffort ? previousEffort(previous, effortKey) : null;
 
   const cardio = tracking === 'cardio';
   const displayLoad = cardio
@@ -184,12 +185,21 @@ function SetRowImpl({
         disabled={!previous}
         aria-label={
           previous
-            ? `Last time ${formatSetValues(previous, tracking, unit)}. Copy into this set.`
+            ? `Last time ${formatSetValues(previous, tracking, unit)}${lastEffort ? `, ${lastEffort}` : ''}. Copy into this set.`
             : 'No matching set last time'
         }
-        className="type-meta tabular h-11 min-w-0 truncate rounded-tile px-1 text-left text-text-2 transition-colors enabled:hover:bg-surface-2 enabled:hover:text-text-1"
+        className="type-meta tabular flex h-11 min-w-0 flex-col items-start justify-center rounded-tile px-1 text-left text-text-2 transition-colors enabled:hover:bg-surface-2 enabled:hover:text-text-1"
+        data-previous-set
       >
-        {previous ? formatSetValues(previous, tracking, unit, true) : 'New'}
+        <span className="block w-full truncate">
+          {previous ? formatSetValues(previous, tracking, unit, true) : 'New'}
+        </span>
+        {/* Last time's effort under the load and reps, as they logged it (RIR or RPE). */}
+        {lastEffort ? (
+          <span className="type-caption block w-full truncate text-text-3" data-previous-effort>
+            {lastEffort}
+          </span>
+        ) : null}
       </button>
 
       <div>

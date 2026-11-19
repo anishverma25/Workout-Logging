@@ -1,16 +1,21 @@
 import { reportStep } from '@/app/errorReport';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { CloudOff, Crown, MailCheck } from 'lucide-react';
 import {
   AccountError,
   AccountExistsError,
+  EmailNotConfirmedError,
+  isBrandNew,
   MIN_PASSWORD_LENGTH,
   requestPasswordReset,
+  resendSignupCode,
+  sendSignInCode,
   signIn,
   signUp,
   updatePassword,
   useAccount,
+  verifyEmailCode,
 } from '@/app/account';
 import { APP_NAME } from '@/app/navigation';
 import { markTourSeen } from '@/app/seenTour';
@@ -20,6 +25,7 @@ import {
   InlineNotice,
   PasswordField,
   PrimaryButton,
+  SecondaryButton,
   TextField,
   TextLink,
 } from '@/components/kit';
@@ -29,6 +35,7 @@ import { TRIAL_HOURS } from '@/domain/entitlement/entitlement';
 import { usePageMeta } from '@/app/usePageMeta';
 import { safeNext } from './next';
 import { AuthArt } from './AuthArt';
+import { CodeEntry, GoogleSignIn } from './EmailCode';
 
 const TRIAL_DAYS = Math.round(TRIAL_HOURS / 24);
 
@@ -173,16 +180,67 @@ export function SignInPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const next = safeNext(params.get('next'), HOME);
+  const fromGoogle = params.get('via') === 'google';
   const [email, setEmail] = useState(() => params.get('email') ?? '');
   const [password, setPassword] = useState('');
+  /** Password, or an emailed code; `codeFor` is set once a code has been sent. */
+  const [mode, setMode] = useState<'password' | 'code'>('password');
+  const [codeFor, setCodeFor] = useState<{ email: string; kind: 'signup' | 'signin' } | null>(null);
+  const [unconfirmed, setUnconfirmed] = useState(false);
   const { busy, error, onSubmit } = useSubmit(async () => {
-    await signIn(email.trim(), password);
+    setUnconfirmed(false);
+    if (mode === 'code') {
+      await sendSignInCode(email.trim());
+      setCodeFor({ email: email.trim(), kind: 'signin' });
+      return;
+    }
+    try {
+      await signIn(email.trim(), password);
+    } catch (err) {
+      if (err instanceof EmailNotConfirmedError) setUnconfirmed(true);
+      throw err;
+    }
     markTourSeen();
     navigate(next, { replace: true });
   });
+  const confirmNow = useSubmit(async () => {
+    await resendSignupCode(email.trim());
+    setCodeFor({ email: email.trim(), kind: 'signup' });
+  });
+
+  // Back from Google: a brand new account counts as a sign-up (and goes to setup by itself).
+  const signedIn = account.status === 'signedIn';
+  const createdAt = account.user?.createdAt;
+  useEffect(() => {
+    if (!signedIn || !fromGoogle) return;
+    markTourSeen();
+    if (isBrandNew(createdAt)) {
+      reportStep('signed_up');
+      markReleaseSeen();
+      navigate(`/setup?next=${encodeURIComponent(next)}`, { replace: true });
+    } else navigate(next, { replace: true });
+  }, [signedIn, fromGoogle, createdAt, navigate, next]);
 
   if (account.status === 'unavailable') return <AccountsUnavailable />;
-  if (account.status === 'signedIn' && !busy) return <Navigate to={next} replace />;
+  if (signedIn && fromGoogle) return null;
+  if (signedIn && !busy && !codeFor) return <Navigate to={next} replace />;
+
+  if (codeFor) {
+    return (
+      <AuthLayout>
+        <CodeEntry
+          email={codeFor.email}
+          kind={codeFor.kind}
+          onChangeEmail={() => setCodeFor(null)}
+          onVerify={async (code) => {
+            await verifyEmailCode(codeFor.email, code, codeFor.kind);
+            markTourSeen();
+            navigate(next, { replace: true });
+          }}
+        />
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout
@@ -200,6 +258,7 @@ export function SignInPage() {
         </>
       }
     >
+      <GoogleSignIn next={next} />
       <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate={false}>
         <TextField
           label="Email"
@@ -212,17 +271,46 @@ export function SignInPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <PasswordField
-          label="Password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <FormError error={error} />
+        {mode === 'password' ? (
+          <PasswordField
+            label="Password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        ) : (
+          <p className="type-meta text-text-2">We email you a 6-digit code. No password needed.</p>
+        )}
+        <FormError error={error ?? confirmNow.error} />
+        {unconfirmed && mode === 'password' ? (
+          <SecondaryButton
+            type="button"
+            block
+            loading={confirmNow.busy}
+            onClick={(e) => void confirmNow.onSubmit(e)}
+          >
+            Send me a code to confirm
+          </SecondaryButton>
+        ) : null}
         <PrimaryButton type="submit" block disabled={busy} className="mt-2">
-          {busy ? 'Signing in...' : 'Sign in'}
+          {mode === 'code'
+            ? busy
+              ? 'Sending code...'
+              : 'Email me a code'
+            : busy
+              ? 'Signing in...'
+              : 'Sign in'}
         </PrimaryButton>
+        <TextLink
+          className="self-center"
+          onClick={() => {
+            setMode(mode === 'password' ? 'code' : 'password');
+            setUnconfirmed(false);
+          }}
+        >
+          {mode === 'password' ? 'Use an email code instead' : 'Use my password instead'}
+        </TextLink>
       </form>
     </AuthLayout>
   );
@@ -257,14 +345,23 @@ export function SignUpPage() {
   });
 
   if (account.status === 'unavailable') return <AccountsUnavailable />;
-  if (account.status === 'signedIn' && !busy) return <Navigate to={next} replace />;
+  // Once a code confirms the account, onVerify itself goes to setup.
+  if (account.status === 'signedIn' && !busy && !sentTo) return <Navigate to={next} replace />;
 
   if (sentTo) {
     return (
-      <EmailSent action={<BlockLink to="/sign-in">Go to sign in</BlockLink>}>
-        We sent a link to <span className="font-semibold text-text-1">{sentTo}</span>. Open it to
-        confirm your account, then sign in. It can take a minute to arrive.
-      </EmailSent>
+      <AuthLayout>
+        <CodeEntry
+          email={sentTo}
+          kind="signup"
+          onChangeEmail={() => setSentTo(null)}
+          onVerify={async (code) => {
+            await verifyEmailCode(sentTo, code, 'signup');
+            // Confirmed and signed in: a new account always goes through setup first.
+            navigate(`/setup?next=${encodeURIComponent(next)}`, { replace: true });
+          }}
+        />
+      </AuthLayout>
     );
   }
 
@@ -279,6 +376,7 @@ export function SignUpPage() {
         </FooterLine>
       }
     >
+      <GoogleSignIn next={next} />
       <div className="mb-6 flex items-start gap-3 rounded-nested bg-surface-2 px-4 py-3">
         <IconTile pro icon={<Crown />} />
         <p className="type-meta text-text-2">

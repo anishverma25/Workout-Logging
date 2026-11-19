@@ -54,6 +54,17 @@ export interface Wrapped {
 
 const thousands = (v: number) => Math.round(v).toLocaleString('en-GB');
 
+/**
+ * A big total in the short form a narrow stat box can hold without squeezing it: 93,278 reads
+ * 93.3k, 1,250,000 reads 1.25M. Under 10,000 stays whole.
+ */
+export function compact(v: number): string {
+  const r = Math.round(v);
+  if (r < 10_000) return thousands(r);
+  if (r < 1_000_000) return `${(Math.round(r / 100) / 10).toLocaleString('en-GB')}k`;
+  return `${(Math.round(r / 10_000) / 100).toLocaleString('en-GB')}M`;
+}
+
 export function wrapped(
   data: TrainingData,
   period: { year: number; month: number | null },
@@ -140,22 +151,26 @@ export function wrappedDue(now: Date): {
 
 export function wrappedStory(w: Wrapped, now: Date, unit: WeightUnit = 'kg'): StoryContent {
   // C5: tonnage in the person's own unit.
-  const lifted = thousands(Math.round(toDisplayWeight(w.tonnage, unit)));
+  const liftedValue = Math.round(toDisplayWeight(w.tonnage, unit));
+  const lifted = thousands(liftedValue);
   const ring = (v: number, of: number) => (of > 0 ? Math.min(1, Math.max(0, v / of)) : 0);
   const top = w.muscles.slice(0, 4);
   const max = Math.max(1, ...top.map((m) => m.sets));
   const short = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getFullYear()).slice(2)}`;
   return {
     kind: 'wrapped',
-    title: `${w.label}, wrapped`,
-    sub: w.period === 'year' ? 'Your year in the gym' : 'Your month in the gym',
+    // The title shares one line with the sub on most designs: a short pair is never cut to
+    // "October,..." (it was, on every design but two).
+    title: w.label,
+    sub: w.period === 'year' ? 'Year wrapped' : 'Month wrapped',
     date: w.label,
     short,
     time: '',
     big: { v: String(w.workouts), u: 'workouts', l: `In ${w.label}` },
     note: `${lifted} ${unit} lifted over ${w.daysTrained} days`,
     stats: [
-      { v: lifted, u: unit, l: 'Lifted' },
+      // Short, so the narrow stat columns never squeeze it (93,278 kg was unreadable).
+      { v: compact(liftedValue), u: unit, l: 'Lifted' },
       { v: String(w.hours), u: 'h', l: 'Trained' },
       { v: String(w.records), u: '', l: 'Records' },
     ],

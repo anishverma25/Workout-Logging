@@ -10,7 +10,7 @@ import {
   Switch,
   TextField,
 } from '@/components/kit';
-import { SuggestError, suggestFood } from '@/app/sharedFoods';
+import { SuggestError, suggestFood, suggestionFrom } from '@/app/sharedFoods';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { RECIPE_INGREDIENTS, recipePer100 } from '@/data/library/foods';
@@ -176,21 +176,10 @@ function CustomFoodForm({
       let note = `Saved ${name.trim()}`;
       if (forEveryone && saved.kind === 'food') {
         try {
-          await suggestFood({
-            name: saved.name,
-            diet: saved.diet,
-            per100: {
-              kcal: saved.kcal,
-              proteinG: saved.proteinG,
-              carbsG: saved.carbsG,
-              fatG: saved.fatG,
-              fibreG: saved.fibreG,
-            },
-            pieceG: saved.pieceG,
-          });
+          await suggestFood(suggestionFrom(saved)!);
           note = `Saved ${saved.name}. Sent for a check before it is added for everyone.`;
         } catch (e) {
-          note = e instanceof SuggestError ? e.message : note;
+          note = e instanceof SuggestError ? `Saved for you. ${e.message}` : note;
         }
       }
       toast(note);
@@ -381,7 +370,8 @@ function CustomFoodForm({
         </>
       )}
 
-      {mode === 'label' && !editing ? (
+      {/* Also for a food saved earlier: editing it can send it for everyone (recipes never). */}
+      {mode === 'label' ? (
         <div
           className="flex items-start gap-3 rounded-nested bg-surface-2 px-4 py-3"
           data-share-food

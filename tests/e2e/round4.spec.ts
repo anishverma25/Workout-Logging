@@ -374,7 +374,7 @@ test('signing up with an email that has an account says so and offers sign in', 
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page.getByText(/We sent a link to/)).toBeVisible();
+  await expect(page.getByText(/We sent a 6-digit code to/)).toBeVisible();
 
   const again = await (await browser.newContext()).newPage();
   await again.goto('/sign-up');
@@ -384,7 +384,7 @@ test('signing up with an email that has an account says so and offers sign in', 
   await expect(
     again.getByText('There is already an account with this email. Sign in instead.'),
   ).toBeVisible();
-  await expect(again.getByText(/We sent a link to/)).toHaveCount(0);
+  await expect(again.getByText(/We sent a 6-digit code to/)).toHaveCount(0);
   await again.getByRole('link', { name: 'Sign in with this email' }).click();
   await expect(again).toHaveURL(/sign-in/);
   await expect(again.getByRole('textbox', { name: 'Email' })).toHaveValue(email);

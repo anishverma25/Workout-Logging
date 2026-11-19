@@ -44,6 +44,8 @@ import { useDayParam } from './useDayParam';
 import { MEAL_LABEL, mealForHour, useFoodContext, type FoodContext } from './useFoodContext';
 
 const n = (v: number) => Math.round(v).toLocaleString('en-GB');
+/** Protein on a logged row: "4.5 g" under 10 g, else whole grams ("24 g"). */
+const gramsText = (v: number) => `${v < 10 ? Math.round(v * 10) / 10 : Math.round(v)} g`;
 
 /**
  * Food: today's calories and protein against the person's targets, their meals, and logging
@@ -411,6 +413,8 @@ function MealCard({
 }) {
   const toast = useToast();
   const usualPro = useFeature('usual_meals');
+  // Protein on each logged row is part of tracking the day's macros (Pro and the trial).
+  const proteinPro = useFeature('macro_tracking');
   const items = mealsOn(ctx.logs, date)[meal];
   const total = roundNutrients(
     sumNutrients(
@@ -465,8 +469,18 @@ function MealCard({
                   title={<span className="font-normal">{l.foodName}</span>}
                   subtitle={`${portion}${oil}`}
                   wrap
-                  // A logged food shows its calories only; tapping it shows every nutrient.
-                  value={<span className="type-subhead tabular text-text-1">{n(l.kcal)} kcal</span>}
+                  // A logged food shows its calories; Pro (and the trial) also see its protein.
+                  // Tapping it shows every nutrient.
+                  value={
+                    <span className="flex flex-col items-end">
+                      <span className="type-subhead tabular text-text-1">{n(l.kcal)} kcal</span>
+                      {proteinPro ? (
+                        <span className="type-caption tabular text-text-2" data-row-protein>
+                          {gramsText(l.proteinG)} protein
+                        </span>
+                      ) : null}
+                    </span>
+                  }
                   onClick={() => onEdit(l)}
                   className="pl-3"
                 />

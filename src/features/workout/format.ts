@@ -75,6 +75,20 @@ export function formatSetValues(
 }
 
 /**
+ * The effort logged on last time's set, in the person's own measure: "RIR 2" or "RPE 8". Null
+ * when that set has none (or it was a warm-up), so the last-time column stays one line.
+ */
+export function previousEffort(
+  set: Pick<WorkoutSet, 'rir' | 'rpe' | 'setType'>,
+  metric: Preferences['effortMetric'],
+): string | null {
+  if (set.setType === 'warmup') return null;
+  const v = set[metric];
+  if (v === null || v === undefined || !Number.isFinite(v)) return null;
+  return `${metric === 'rir' ? 'RIR' : 'RPE'} ${Math.round(v * 10) / 10}`;
+}
+
+/**
  * Reps of a set logged per side: "6/7" in the narrow last-time column, "L 6 · R 7" elsewhere.
  * Null for a set logged as one number.
  */

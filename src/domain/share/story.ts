@@ -551,3 +551,6 @@ export function groupRankStory(
     rank: true,
   };
 }
+
+/** "In October" mid-sentence reads "in October": only the first letter, never a month name. */
+export const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
