@@ -447,7 +447,9 @@ function ExerciseCardImpl({
                 <TextButton
                   small
                   icon={<Minus />}
-                  className="text-text-2"
+                  // Red, so a tap meant for Add set is less likely to land here by mistake.
+                  tone="danger"
+                  data-remove-set
                   onClick={async () => {
                     const removed = await removeLastOpenSet(db, we.id);
                     if (removed) {

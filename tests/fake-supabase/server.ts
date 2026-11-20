@@ -3,7 +3,8 @@
  *
  * - Postgres is PGlite running the project's real migrations, so row level security is real.
  * - /auth/v1 implements the parts of Supabase Auth the app uses (sign up, password sign-in,
- *   refresh, sign out, user, password reset request and update).
+ *   email codes and resends, a stand-in for Continue with Google, refresh, sign out, user,
+ *   password reset request and update).
  * - /rest/v1 implements the parts of PostgREST the app uses (select with order, limit and the
  *   sync cursor filter; upsert; rpc), running every query as the signed-in user's role.
  *
@@ -91,6 +92,17 @@ interface UserRow {
 }
 
 const refreshTokens = new Map<string, string>();
+
+/**
+ * Codes "emailed" by sign up, sign-in codes and resends, as Supabase's {{ .Token }}. Tests read
+ * the latest one through /__test/last-code instead of an inbox.
+ */
+const emailCodes = new Map<string, { code: string; type: 'signup' | 'email' }>();
+function issueCode(email: string, type: 'signup' | 'email') {
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  emailCodes.set(email, { code, type });
+  return code;
+}
 
 function hashPassword(password: string) {
   const salt = randomBytes(16).toString('hex');
@@ -184,7 +196,66 @@ async function handleAuth(req: IncomingMessage, res: ServerResponse, path: strin
         id,
       ]);
     const user = (await userById(id))!;
+    if (confirm) issueCode(email, 'signup');
     return send(res, 200, confirm ? userJson(user) : session(user));
+  }
+
+  // A sign-in code (signInWithOtp, never creating an account). As Supabase does, an account
+  // that never confirmed its email gets a confirmation code instead.
+  if (path === '/otp' && req.method === 'POST') {
+    const email = String(body.email ?? '').toLowerCase();
+    const user = (await pg.query<UserRow>('select * from auth.users where email = $1', [email]))
+      .rows[0];
+    if (!user) return authError(res, 422, 'otp_disabled', 'Signups not allowed for otp');
+    issueCode(email, user.email_confirmed_at ? 'email' : 'signup');
+    return send(res, 200, {});
+  }
+
+  if (path === '/resend' && req.method === 'POST') {
+    const email = String(body.email ?? '').toLowerCase();
+    const user = (await pg.query<UserRow>('select * from auth.users where email = $1', [email]))
+      .rows[0];
+    if (user && !user.email_confirmed_at) issueCode(email, 'signup');
+    return send(res, 200, {});
+  }
+
+  if (path === '/verify' && req.method === 'POST') {
+    const email = String(body.email ?? '').toLowerCase();
+    const sent = emailCodes.get(email);
+    const type = body.type === 'signup' ? 'signup' : 'email';
+    if (!sent || sent.code !== String(body.token ?? '') || sent.type !== type)
+      return authError(res, 403, 'otp_expired', 'Token has expired or is invalid');
+    emailCodes.delete(email);
+    await pg.query(
+      'update auth.users set email_confirmed_at = coalesce(email_confirmed_at, now()) where email = $1',
+      [email],
+    );
+    const user = (await pg.query<UserRow>('select * from auth.users where email = $1', [email]))
+      .rows[0]!;
+    return send(res, 200, session(user));
+  }
+
+  // Continue with Google, stood in for: Google's page is skipped and a new account comes back
+  // to the app the way Supabase's implicit flow returns it (tokens in the address hash).
+  if (path === '/authorize' && req.method === 'GET') {
+    const redirect = url.searchParams.get('redirect_to') ?? 'http://localhost:5175/';
+    const id = randomUUID();
+    const email = `google-${id.slice(0, 8)}@example.com`;
+    await pg.query(
+      'insert into auth.users (id, email, encrypted_password, email_confirmed_at) values ($1, $2, $3, now())',
+      [id, email, hashPassword(randomBytes(12).toString('hex'))],
+    );
+    const s2 = session((await userById(id))!);
+    const hash = new URLSearchParams({
+      access_token: s2.access_token,
+      expires_at: String(s2.expires_at),
+      expires_in: String(s2.expires_in),
+      refresh_token: s2.refresh_token,
+      token_type: 'bearer',
+      provider_token: 'fake',
+    });
+    res.writeHead(302, { ...cors(req), location: `${redirect}#${hash.toString()}` }).end();
+    return;
   }
 
   if (path === '/token' && req.method === 'POST') {
@@ -800,6 +871,19 @@ const server = createServer(async (req, res) => {
           : 'update public.billing_plans set razorpay_plan_id = null',
       );
       return send(res, 200, { connected });
+    }
+    // Test control, standing in for an inbox: the last code emailed to an address.
+    if (url.pathname === '/__test/last-code' && req.method === 'GET') {
+      const sent = emailCodes.get(String(url.searchParams.get('email') ?? '').toLowerCase());
+      return send(res, sent ? 200 : 404, sent ?? { error: 'no code' });
+    }
+    // Test control, standing in for the owner's switches (app_settings.flags) in the SQL editor.
+    if (url.pathname === '/__test/flags' && req.method === 'POST') {
+      const flags = (await readJson(req)) as Record<string, unknown>;
+      await pg.query('update public.app_settings set flags = flags || $1::jsonb', [
+        JSON.stringify(flags),
+      ]);
+      return send(res, 200, { ok: true });
     }
     // Test control, standing in for the owner approving every waiting food in the SQL editor.
     if (url.pathname === '/__test/approve-foods' && req.method === 'POST') {

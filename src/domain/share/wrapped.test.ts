@@ -1,6 +1,7 @@
 import { buildData } from '@/test/fixtures';
 import { describe, expect, it } from 'vitest';
-import { wrapped, wrappedDue, wrappedStory } from './wrapped';
+import { lowerFirst } from './story';
+import { compact, wrapped, wrappedDue, wrappedStory } from './wrapped';
 
 const specs = [2, 5, 9, 12, 16, 19, 23, 26].map((d, i) => ({
   at: new Date(2026, 9, d, 18).toISOString(),
@@ -76,13 +77,28 @@ describe('Macrotrophy Wrapped', () => {
     const s = wrappedStory(wrapped(data, { year: 2026, month: 9 })!, new Date(2026, 10, 1));
     expect(s).toMatchObject({
       kind: 'wrapped',
-      title: 'October, wrapped',
+      title: 'October',
+      sub: 'Month wrapped',
       big: { v: '8', u: 'workouts' },
     });
+    expect(s.ach.h).toBe('October, wrapped');
     expect(s.rings[0]).toEqual({ frac: 8 / 31, stat: { v: '8', u: '/31', l: 'Days trained' } });
     expect(s.extra).toMatchObject({
       type: 'bars',
       items: [{ l: 'Chest', v: 1, label: '16 sets' }, { l: 'Quads' }],
     });
+  });
+});
+
+describe('wrapped card text', () => {
+  it('shortens big totals so a narrow stat column never squeezes them', () => {
+    expect(compact(9_999)).toBe('9,999');
+    expect(compact(93_278)).toBe('93.3k');
+    expect(compact(1_250_000)).toBe('1.25M');
+  });
+
+  it('lowers only the first letter mid-sentence, so month names keep their capital', () => {
+    expect(lowerFirst('In October')).toBe('in October');
+    expect(lowerFirst('Global rank')).toBe('global rank');
   });
 });

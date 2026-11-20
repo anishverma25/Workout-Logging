@@ -246,7 +246,11 @@ function requireClient() {
 function friendly(message: string): string {
   if (/invalid login credentials/i.test(message)) return 'That email and password do not match.';
   if (/email not confirmed/i.test(message))
-    return 'Confirm your email first. Check your inbox for the link.';
+    return 'Confirm your email first. We can send you a new code.';
+  if (/token has expired|invalid|otp_expired/i.test(message) && /token|otp|code/i.test(message))
+    return 'That code is wrong or has expired. Check the latest email, or send a new code.';
+  if (/signups not allowed|otp_disabled|user not found/i.test(message))
+    return 'There is no account with this email yet. Create one instead.';
   if (/already registered|already been registered|already exists/i.test(message))
     return 'There is already an account with this email. Sign in instead.';
   if (/rate limit|too many/i.test(message))
@@ -260,10 +264,120 @@ function friendly(message: string): string {
 
 export const MIN_PASSWORD_LENGTH = 8;
 
+/** Signing in with a password before the email was confirmed: the app offers a new code. */
+export class EmailNotConfirmedError extends AccountError {}
+
 export async function signIn(email: string, password: string): Promise<void> {
   const { data, error } = await requireClient().auth.signInWithPassword({ email, password });
+  if (error && /email not confirmed/i.test(error.message))
+    throw new EmailNotConfirmedError(friendly(error.message));
   if (error) throw new AccountError(friendly(error.message));
   await applySession(data.session);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Email codes (November 2026): the confirmation and sign-in emails carry a 6-digit code typed
+// into the app, so no link has to be opened (links are what spam filters distrust most, and a
+// link opens in the browser, not the installed app). The email templates still carry the link
+// too, so an email sent to an older version of the app keeps working.
+// ---------------------------------------------------------------------------------------------
+
+/** Supabase sends 6 digits by default; the project can be set to up to 10. */
+export const CODE_MIN = 6;
+export const CODE_MAX = 10;
+
+/** Digits only, at most CODE_MAX of them: pasted "123 456" or "Code: 123456" both work. */
+export function cleanCode(raw: string): string {
+  return raw.replace(/\D/g, '').slice(0, CODE_MAX);
+}
+
+/**
+ * Where the link in an email lands, for anyone who opens it instead of typing the code: the
+ * same address confirmation links have always used, so the project's allowed redirect list
+ * needs nothing new for it.
+ */
+const linkTarget = () => `${window.location.origin}/account`;
+
+/**
+ * Checks a code from the email and signs in. `signup` confirms a new account; `signin` is the
+ * sign-in code, which for an account never confirmed arrives as a confirmation code instead,
+ * so that is tried second.
+ */
+export async function verifyEmailCode(
+  email: string,
+  code: string,
+  kind: 'signup' | 'signin',
+): Promise<void> {
+  const token = cleanCode(code);
+  if (token.length < CODE_MIN) throw new AccountError('Enter the code from the email.');
+  const client = requireClient();
+  const types = kind === 'signup' ? (['signup'] as const) : (['email', 'signup'] as const);
+  let last: string | null = null;
+  for (const type of types) {
+    const { data, error } = await client.auth.verifyOtp({ email, token, type });
+    if (!error && data.session) {
+      await applySession(data.session);
+      return;
+    }
+    last = error?.message ?? 'Token has expired or is invalid';
+    // Only a wrong or expired code is worth the second try; anything else is reported now.
+    if (!/expired|invalid|not found/i.test(last)) break;
+  }
+  throw new AccountError(friendly(last ?? 'Token has expired or is invalid'));
+}
+
+/** Emails a sign-in code to an existing account (never creates one). */
+export async function sendSignInCode(email: string): Promise<void> {
+  const { error } = await requireClient().auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false, emailRedirectTo: linkTarget() },
+  });
+  if (error) throw new AccountError(friendly(error.message));
+}
+
+/** Sends a new confirmation code to an account that has not confirmed its email yet. */
+export async function resendSignupCode(email: string): Promise<void> {
+  const { error } = await requireClient().auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: linkTarget() },
+  });
+  if (error) throw new AccountError(friendly(error.message));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Continue with Google
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * An app added to the home screen on iPhone. Google's page opens in a separate browser sheet
+ * there, and the sign-in would stay in that sheet instead of reaching the app, so the button is
+ * not offered in it (email code and password work everywhere).
+ */
+export function isIosHomeScreenApp(nav: Navigator | undefined = globalThis.navigator): boolean {
+  return !!nav && (nav as Navigator & { standalone?: boolean }).standalone === true;
+}
+
+/** The query that marks a return from Google, so the sign-in page can finish what sign-up does. */
+export const GOOGLE_RETURN = 'via=google';
+
+/** Leaves for Google's sign-in page; the app opens again at sign-in, already signed in. */
+export async function signInWithGoogle(next: string): Promise<void> {
+  const { error } = await requireClient().auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/sign-in?${GOOGLE_RETURN}&next=${encodeURIComponent(next)}`,
+      queryParams: { prompt: 'select_account' },
+    },
+  });
+  if (error) throw new AccountError(friendly(error.message));
+}
+
+/** An account made in the last few minutes: someone who just signed up through Google. */
+export function isBrandNew(createdAt: string | null | undefined, now = Date.now()): boolean {
+  if (!createdAt) return false;
+  const made = Date.parse(createdAt);
+  return Number.isFinite(made) && now - made >= -60_000 && now - made < 10 * 60_000;
 }
 
 /** Returns 'confirm' when the project requires email confirmation before the first sign-in. */
@@ -273,7 +387,7 @@ export async function signUp(email: string, password: string): Promise<'signedIn
   const { data, error } = await requireClient().auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: `${window.location.origin}/account` },
+    options: { emailRedirectTo: linkTarget() },
   });
   if (error && /already registered|already been registered|already exists/i.test(error.message))
     throw new AccountExistsError();

@@ -56,7 +56,8 @@ const PAGES = [
 ];
 
 test('no accessibility violations', async ({ page }) => {
-  test.setTimeout(120_000);
+  // 31 pages scanned in one test: about 1.5 to 2.2 minutes on a 2-core machine, so 4 allowed.
+  test.setTimeout(240_000);
   await page.goto('/welcome');
   // A light preference stored before the redesign is ignored: every screen is checked dark.
   await page.evaluate(() => localStorage.setItem('overload.theme', 'light'));

@@ -8,7 +8,7 @@ import {
   type BoxGeometry,
   type BoxPlacement,
 } from '@/domain/share/layout';
-import type { StoryContent, StoryStat } from '@/domain/share/story';
+import { lowerFirst, type StoryContent, type StoryStat } from '@/domain/share/story';
 import { css, type Family, type FontId } from './fonts';
 
 /**
@@ -985,7 +985,7 @@ const DESIGN_DRAW: Record<DesignId, (a: DesignArgs) => number> = {
       color: t.tx,
     });
     y += titleSize + 0.6 * U;
-    const big = `${c.big.v}${c.big.u ? ` ${c.big.u}` : ''}, ${c.big.l.toLowerCase()}. ${c.note}.`;
+    const big = `${c.big.v}${c.big.u ? ` ${c.big.u}` : ''}, ${lowerFirst(c.big.l)}. ${c.note}.`;
     y += p.para(big, 0, y, w, 1.3, {
       size: 4 * U,
       family: fam,

@@ -94,6 +94,11 @@
   --on-lime: #000000;
 
   /* Medals: records only (UI rules: lime stays the one accent everywhere else). */
+  /* Google's mark on Continue with Google, in Google's own colours (its branding rules). */
+  --google-blue: #4285f4;
+  --google-red: #ea4335;
+  --google-yellow: #fbbc05;
+  --google-green: #34a853;
   --gold: #f5c542;
   --gold-dim: rgb(245 197 66 / 0.16);
   --on-gold: #000000;

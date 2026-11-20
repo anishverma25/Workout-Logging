@@ -288,6 +288,10 @@ async function interrupted(fromBuild, toBuild) {
   try {
     await use(fromBuild);
     await signUp(page);
+    // Sign up opens setup (stage A), a full-screen page with no update notice: wait on More,
+    // where people see "A new version is ready", as the other steps do.
+    await page.goto(`${BASE}/more`);
+    await page.waitForTimeout(1000);
     const old = (await state(page)).main;
 
     await breakDownloads(true);

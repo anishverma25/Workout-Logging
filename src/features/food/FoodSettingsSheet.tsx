@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, UsersRound } from 'lucide-react';
 import { BottomSheet, NumberField, OptionCard, PrimaryButton, TextLink } from '@/components/kit';
+import { SuggestError, suggestFood, suggestionFrom } from '@/app/sharedFoods';
 import { useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { deleteCustomFood } from '@/data/repositories/food';
@@ -75,6 +76,22 @@ function SettingsBody({
   const toast = useToast();
   const [katori, setKatori] = useState<number | null>(profile?.katoriMl ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState<string | null>(null);
+
+  /** A food saved earlier, sent for the same check and thank-you as a new one. */
+  async function suggest(food: CustomFood) {
+    const suggestion = suggestionFrom(food);
+    if (!suggestion) return;
+    setSending(food.id);
+    try {
+      await suggestFood(suggestion);
+      toast(`Sent ${food.name} for a check before it is added for everyone.`);
+    } catch (e) {
+      toast(e instanceof SuggestError ? e.message : 'Could not send it right now. Try again.');
+    } finally {
+      setSending(null);
+    }
+  }
 
   async function saveKatori(value: number | null) {
     try {
@@ -130,6 +147,12 @@ function SettingsBody({
         <h3 id="mine-title" className="type-headline mb-2 text-text-1">
           Your foods and recipes
         </h3>
+        {customFoods.some((c) => c.kind === 'food') ? (
+          <p className="type-meta mb-3 text-text-2">
+            Tap the people icon to suggest a packaged food for everyone. We check the numbers first,
+            and your name is never shown.
+          </p>
+        ) : null}
         {customFoods.length ? (
           <ul className="flex flex-col gap-1">
             {customFoods.map((c) => (
@@ -144,6 +167,18 @@ function SettingsBody({
                     {Math.round(c.kcal)} kcal per 100 g
                   </span>
                 </span>
+                {c.kind === 'food' ? (
+                  <button
+                    type="button"
+                    aria-label={`Suggest ${c.name} for everyone`}
+                    data-suggest-food={c.id}
+                    disabled={sending === c.id}
+                    onClick={() => void suggest(c)}
+                    className="pressable tap-target inline-flex size-9 items-center justify-center rounded-full text-text-2 disabled:opacity-50"
+                  >
+                    <UsersRound className="size-5" aria-hidden />
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   aria-label={`Edit ${c.name}`}
