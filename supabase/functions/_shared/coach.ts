@@ -10,8 +10,8 @@
  * - Pro is checked here, from the account's own subscription row on the server clock. The
  *   phone's word is never taken for it.
  * - Nothing is stored: not the question, not the brief, not the answer.
- * - Providers are tried in order (Gemini, then Groq). One failing, being over its free limit
- *   or giving an unreliable answer moves on to the next.
+ * - Providers are tried in order (Claude when its key is set, then Gemini, then Groq). One
+ *   failing, being over its limit or giving an unreliable answer moves on to the next.
  */
 
 export const COACH_TOPICS = [
@@ -67,7 +67,12 @@ export interface GenerateOptions {
   onSearch?: (searched: boolean) => void;
   /** A different model of the same provider for this request (a stronger one for labels). */
   model?: string;
+  /** What the request is for, so a provider can pick its model per feature (Claude does). */
+  purpose?: AiPurpose;
 }
+
+/** The features that call the AI; each can use its own Claude model. */
+export type AiPurpose = 'chat' | 'food' | 'photo' | 'label' | 'menu';
 
 export interface CoachProvider {
   name: string;
@@ -138,6 +143,23 @@ const fail = (status: number, error: string, code: string): CoachResponse => ({
  */
 export const HEDGE_MS = { chat: 3_000, food: 7_000, photo: 10_000, label: 10_000 } as const;
 
+/**
+ * Claude is the main provider (November 2026), so it gets longer before the next one is asked
+ * as well: long enough that it answers almost every time, short enough that a fallback still
+ * fits inside the app's 30 s wait for food, photos and labels.
+ */
+export const CLAUDE_HEDGE_MS = {
+  chat: 8_000,
+  food: 12_000,
+  photo: 12_000,
+  label: 12_000,
+} as const;
+
+/** The wait after starting attempt i: Claude's own patience for Claude, the usual otherwise. */
+export function patience(names: string[], usual: number, claude: number): (i: number) => number {
+  return (i) => (names[i] === 'claude' ? Math.max(usual, claude) : usual);
+}
+
 export interface Attempt<T> {
   /** Passed every check: use it. */
   ok: boolean;
@@ -153,8 +175,9 @@ export interface Attempt<T> {
 export function hedged<T>(
   count: number,
   run: (i: number) => Promise<Attempt<T>>,
-  delayMs: number,
+  delayMs: number | ((i: number) => number),
 ): Promise<T | null> {
+  const delay = typeof delayMs === 'function' ? delayMs : () => delayMs;
   return new Promise((resolve) => {
     if (count === 0) return resolve(null);
     const fallbacks: (T | undefined)[] = new Array(count);
@@ -177,7 +200,7 @@ export function hedged<T>(
       if (done || started >= count) return;
       const i = started;
       started += 1;
-      if (started < count) timers.push(setTimeout(start, delayMs));
+      if (started < count) timers.push(setTimeout(start, delay(i)));
       run(i).then(
         (r) => {
           if (r.ok) return finish(r.value as T);
@@ -770,7 +793,7 @@ export async function handleCoach(deps: CoachDeps, body: unknown): Promise<Coach
       const provider = deps.providers[i]!;
       let text: string;
       try {
-        text = tidyAnswer(await provider.generate(SYSTEM_PROMPT, messages));
+        text = tidyAnswer(await provider.generate(SYSTEM_PROMPT, messages, { purpose: 'chat' }));
       } catch (err) {
         console.error(`coach: ${provider.name} failed`, err instanceof Error ? err.message : err);
         return { ok: false };
@@ -800,9 +823,10 @@ export async function handleCoach(deps: CoachDeps, body: unknown): Promise<Coach
         console.error(`coach: ${provider.name} gave a generic answer`);
         return { ok: false, value: text };
       }
+      console.warn(`coach: answered by ${provider.name}`);
       return { ok: true, value: text };
     },
-    HEDGE_MS.chat,
+    patience(names(deps.providers), HEDGE_MS.chat, CLAUDE_HEDGE_MS.chat),
   );
   // Every provider answered only in general terms: better a general answer than none.
   if (answer)
@@ -971,7 +995,126 @@ export function groqProvider(
 
 const hasImage = (messages: ProviderMessage[]) => messages.some((m) => m.image);
 
+const names = (providers: CoachProvider[]) => providers.map((p) => p.name);
+
+/** Which Claude model answers each feature (owner's choice, November 2026). */
+export type ClaudeModels = Record<AiPurpose, string>;
+
+/** Claude's answer time limit; the hedge asks the next provider well before it. */
+export const CLAUDE_TIMEOUT_MS = 25_000;
+
+type ClaudeBlock =
+  | { type: 'text'; text: string }
+  | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } };
+
+/**
+ * Messages in Claude's shape: a photo goes before its words, turns of the same role are joined
+ * (the API wants them to alternate), empty words are left out, and the first turn is the
+ * person's.
+ */
+export function claudeMessages(
+  messages: ProviderMessage[],
+): { role: 'user' | 'assistant'; content: ClaudeBlock[] }[] {
+  const out: { role: 'user' | 'assistant'; content: ClaudeBlock[] }[] = [];
+  for (const m of messages) {
+    const content: ClaudeBlock[] = [];
+    if (m.image)
+      content.push({
+        type: 'image',
+        source: { type: 'base64', media_type: m.image.mime, data: m.image.data },
+      });
+    if (m.text.trim()) content.push({ type: 'text', text: m.text });
+    if (content.length === 0) continue;
+    const last = out[out.length - 1];
+    if (last && last.role === m.role) last.content.push(...content);
+    else out.push({ role: m.role, content });
+  }
+  while (out.length && out[0]!.role === 'assistant') out.shift();
+  return out;
+}
+
+/**
+ * Anthropic's Claude (Messages API), the main provider since November 2026. Each feature uses
+ * its own model (`ANTHROPIC_*_MODEL` secrets), typed food can search the web with Claude's own
+ * web search tool, and photos are sent inline.
+ */
+export function claudeProvider(
+  apiKey: string,
+  models: ClaudeModels,
+  fetchFn: Fetch = fetch,
+): CoachProvider {
+  return {
+    name: 'claude',
+    generate: (system, messages, options) => {
+      const purpose = options?.purpose ?? (hasImage(messages) ? 'photo' : 'chat');
+      const model = models[purpose];
+      const content = claudeMessages(messages);
+      return withSearch(options, async (grounded) => {
+        const send = (withTemperature: boolean) =>
+          fetchFn('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify({
+              model,
+              system,
+              messages: content,
+              max_tokens: 2048,
+              ...(withTemperature ? { temperature: 0.2 } : {}),
+              // Claude's web search, for packaged, branded and restaurant foods.
+              ...(grounded
+                ? { tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }] }
+                : {}),
+            }),
+            signal: AbortSignal.timeout(CLAUDE_TIMEOUT_MS),
+          });
+        let res = await send(true);
+        // A model that does not take a temperature says so; ask again without one.
+        if (res.status === 400) {
+          const err = await res.text();
+          if (!/temperature/i.test(err)) throw new Error(`Claude 400: ${err.slice(0, 300)}`);
+          res = await send(false);
+        }
+        if (!res.ok) throw new Error(`Claude ${res.status}: ${(await res.text()).slice(0, 300)}`);
+        const json = (await res.json()) as {
+          content?: { type?: string; text?: string }[];
+          stop_reason?: string;
+          usage?: { server_tool_use?: { web_search_requests?: number } };
+        };
+        const blocks = json.content ?? [];
+        if (grounded)
+          options?.onSearch?.(
+            Boolean(json.usage?.server_tool_use?.web_search_requests) ||
+              blocks.some((b) => b.type === 'web_search_tool_result'),
+          );
+        if (json.stop_reason === 'refusal') return '';
+        // With a search, the answer is the words after the last search result ("Let me look
+        // that up" comes before it).
+        let from = 0;
+        blocks.forEach((b, i) => {
+          if (b.type !== 'text') from = i + 1;
+        });
+        const after = blocks.slice(from).filter((b) => b.type === 'text');
+        return (after.length ? after : blocks.filter((b) => b.type === 'text'))
+          .map((b) => b.text ?? '')
+          .join('');
+      });
+    },
+  };
+}
+
 export const DEFAULT_MODELS = {
+  /** Claude per feature: Haiku for words and labels, Sonnet for plate photos. */
+  claude: {
+    chat: 'claude-haiku-5-5',
+    food: 'claude-haiku-5-5',
+    label: 'claude-haiku-5-5',
+    menu: 'claude-haiku-5-5',
+    photo: 'claude-sonnet-5-5',
+  } satisfies ClaudeModels,
   gemini: 'gemini-3.5-flash-lite',
   groq: 'openai/gpt-oss-120b',
   /** Groq's model that can see images (Qwen 3.8, up to 3 images, 2,048 tokens each). */
@@ -1317,6 +1460,7 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
       let searched = false;
       try {
         answer = await provider.generate(FOOD_PROMPT, messages, {
+          purpose: 'food',
           search: true,
           onSearch: (s) => {
             searched = s;
@@ -1349,9 +1493,10 @@ export async function handleFoodLog(deps: CoachDeps, body: unknown): Promise<Coa
         console.error(`food: ${provider.name} items failed the checks`);
         return { ok: false };
       }
+      console.warn(`food: answered by ${provider.name}${searched ? ' with a web search' : ''}`);
       return { ok: true, value: items };
     },
-    HEDGE_MS.food,
+    patience(names(deps.providers), HEDGE_MS.food, CLAUDE_HEDGE_MS.food),
   );
   if (result) return { status: 200, body: { items: result } };
   await release(deps, 'food');
@@ -1427,7 +1572,7 @@ export async function handleFoodPhoto(deps: CoachDeps, body: unknown): Promise<C
       const provider = deps.providers[i]!;
       let answer: string;
       try {
-        answer = await provider.generate(FOOD_PHOTO_PROMPT, messages);
+        answer = await provider.generate(FOOD_PHOTO_PROMPT, messages, { purpose: 'photo' });
       } catch (err) {
         console.error(`photo: ${provider.name} failed`, err instanceof Error ? err.message : err);
         return { ok: false };
@@ -1450,9 +1595,10 @@ export async function handleFoodPhoto(deps: CoachDeps, body: unknown): Promise<C
         console.error(`photo: ${provider.name} items failed the checks`);
         return { ok: false };
       }
+      console.warn(`photo: answered by ${provider.name}`);
       return { ok: true, value: items };
     },
-    HEDGE_MS.photo,
+    patience(names(deps.providers), HEDGE_MS.photo, CLAUDE_HEDGE_MS.photo),
   );
   if (result) return { status: 200, body: { items: result, left: Math.max(0, left) } };
   // Nothing usable came back, so the photo does not count against today's allowance.
@@ -1590,34 +1736,45 @@ export async function handleFoodLabel(deps: CoachDeps, body: unknown): Promise<C
   const messages: ProviderMessage[] = [
     { role: 'user', text: 'Read this nutrition label.', image: { mime, data: image } },
   ];
-  // The stronger model first where there is one, then each provider as it is.
-  const attempts: [CoachProvider, GenerateOptions | undefined][] = [];
+  // The stronger model first where there is one, then each provider as it is. A slow attempt
+  // no longer holds up the next one: after a short wait the next is asked as well, so a read
+  // fits inside the app's 30 s wait (labels used to fail with "That took too long").
+  const attempts: [CoachProvider, GenerateOptions][] = [];
   for (const p of deps.providers) {
-    if (p.name === 'gemini') attempts.push([p, { model: LABEL_MODEL }]);
-    attempts.push([p, undefined]);
+    if (p.name === 'gemini') attempts.push([p, { purpose: 'label', model: LABEL_MODEL }]);
+    attempts.push([p, { purpose: 'label' }]);
   }
   let notLabel = false;
-  for (const [provider, options] of attempts) {
-    let answer: string;
-    try {
-      answer = await provider.generate(FOOD_LABEL_PROMPT, messages, options);
-    } catch (err) {
-      console.error(`label: ${provider.name} failed`, err instanceof Error ? err.message : err);
-      continue;
-    }
-    const raw = parseObject(answer);
-    if (!raw) {
-      console.error(`label: ${provider.name} gave no JSON`);
-      continue;
-    }
-    if (raw.not_a_label === true) {
-      notLabel = true;
-      break;
-    }
-    const label = checkLabel(raw);
-    if (!label) continue;
-    return { status: 200, body: { label, left: Math.max(0, left) } };
-  }
+  const label = await hedged<LabelReading | 'not_a_label'>(
+    attempts.length,
+    async (i) => {
+      const [provider, options] = attempts[i]!;
+      let answer: string;
+      try {
+        answer = await provider.generate(FOOD_LABEL_PROMPT, messages, options);
+      } catch (err) {
+        console.error(`label: ${provider.name} failed`, err instanceof Error ? err.message : err);
+        return { ok: false };
+      }
+      const raw = parseObject(answer);
+      if (!raw) {
+        console.error(`label: ${provider.name} gave no JSON`);
+        return { ok: false };
+      }
+      if (raw.not_a_label === true) return { ok: true, value: 'not_a_label' };
+      const checked = checkLabel(raw);
+      if (!checked) return { ok: false };
+      console.warn(`label: answered by ${provider.name}`);
+      return { ok: true, value: checked };
+    },
+    patience(
+      attempts.map(([p]) => p.name),
+      HEDGE_MS.label,
+      CLAUDE_HEDGE_MS.label,
+    ),
+  );
+  if (label === 'not_a_label') notLabel = true;
+  else if (label) return { status: 200, body: { label, left: Math.max(0, left) } };
   await release(deps, 'photo');
   if (notLabel)
     return fail(
@@ -1692,24 +1849,28 @@ export async function handleFoodMenu(deps: CoachDeps, body: unknown): Promise<Co
     { role: 'user', text: 'List the dishes on this menu.', image: { mime, data: image } },
   ];
   let notMenu = false;
-  for (const provider of deps.providers) {
-    let answer: string;
-    try {
-      answer = await provider.generate(FOOD_MENU_PROMPT, messages);
-    } catch (err) {
-      console.error(`menu: ${provider.name} failed`, err instanceof Error ? err.message : err);
-      continue;
-    }
-    const raw = parseObject(answer);
-    if (!raw) continue;
-    if (raw.not_a_menu === true) {
-      notMenu = true;
-      break;
-    }
-    const dishes = checkMenu(raw);
-    if (!dishes) continue;
-    return { status: 200, body: { dishes, left: Math.max(0, left) } };
-  }
+  const dishes = await hedged<string[] | 'not_a_menu'>(
+    deps.providers.length,
+    async (i) => {
+      const provider = deps.providers[i]!;
+      let answer: string;
+      try {
+        answer = await provider.generate(FOOD_MENU_PROMPT, messages, { purpose: 'menu' });
+      } catch (err) {
+        console.error(`menu: ${provider.name} failed`, err instanceof Error ? err.message : err);
+        return { ok: false };
+      }
+      const raw = parseObject(answer);
+      if (!raw) return { ok: false };
+      if (raw.not_a_menu === true) return { ok: true, value: 'not_a_menu' };
+      const list = checkMenu(raw);
+      if (!list) return { ok: false };
+      return { ok: true, value: list };
+    },
+    patience(names(deps.providers), HEDGE_MS.label, CLAUDE_HEDGE_MS.label),
+  );
+  if (dishes === 'not_a_menu') notMenu = true;
+  else if (dishes) return { status: 200, body: { dishes, left: Math.max(0, left) } };
   await release(deps, 'photo');
   if (notMenu)
     return fail(
