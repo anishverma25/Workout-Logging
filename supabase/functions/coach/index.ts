@@ -3,11 +3,15 @@
 // POST /coach with { topic, question, brief, history }, { kind: 'food', text } or
 // { kind: 'food_photo', image, note }, signed in (checked here with the user's
 // access token). Pro is checked from the account's subscription row; nothing is stored.
-// Secrets: GEMINI_API_KEY (Google AI Studio) and/or GROQ_API_KEY (console.groq.com). Optional:
-// GEMINI_MODEL, GROQ_MODEL, GROQ_VISION_MODEL to change models, APP_ORIGIN as for billing.
+// Secrets: ANTHROPIC_API_KEY (Claude Console, tried first), GEMINI_API_KEY (Google AI Studio)
+// and GROQ_API_KEY (console.groq.com); any of them may be missing. Optional:
+// ANTHROPIC_CHAT_MODEL, ANTHROPIC_FOOD_MODEL, ANTHROPIC_LABEL_MODEL, ANTHROPIC_PHOTO_MODEL,
+// ANTHROPIC_MENU_MODEL, GEMINI_MODEL, GROQ_MODEL, GROQ_VISION_MODEL to change models,
+// APP_ORIGIN as for billing.
 // SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase.
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 import {
+  claudeProvider,
   DEFAULT_MODELS,
   geminiProvider,
   groqProvider,
@@ -23,8 +27,22 @@ const admin = createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY')
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-// Gemini first (better answers), Groq when Gemini fails or is over its free limit.
+// Claude first (November 2026), then Gemini, then Groq when the one before fails or is over
+// its limit. Each feature picks its own Claude model from the ANTHROPIC_*_MODEL secrets.
 const providers: CoachProvider[] = [];
+if (env('ANTHROPIC_API_KEY')) {
+  const label = env('ANTHROPIC_LABEL_MODEL') || DEFAULT_MODELS.claude.label;
+  providers.push(
+    claudeProvider(env('ANTHROPIC_API_KEY'), {
+      chat: env('ANTHROPIC_CHAT_MODEL') || DEFAULT_MODELS.claude.chat,
+      food: env('ANTHROPIC_FOOD_MODEL') || DEFAULT_MODELS.claude.food,
+      photo: env('ANTHROPIC_PHOTO_MODEL') || DEFAULT_MODELS.claude.photo,
+      label,
+      // Menus are read like labels: printed words only.
+      menu: env('ANTHROPIC_MENU_MODEL') || label,
+    }),
+  );
+}
 if (env('GEMINI_API_KEY'))
   providers.push(
     geminiProvider(env('GEMINI_API_KEY'), env('GEMINI_MODEL') || DEFAULT_MODELS.gemini),

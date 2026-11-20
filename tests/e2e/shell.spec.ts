@@ -150,6 +150,10 @@ test('setting up a profile greets you by name and keeps the demo profile separat
 });
 
 test('tapping the tab you are on scrolls back to the top', async ({ page }) => {
+  // On a tall desktop window Home can fit without scrolling on some days, which leaves nothing
+  // to test; a shorter window keeps every page scrollable.
+  const size = page.viewportSize();
+  if (size && size.height > 700) await page.setViewportSize({ width: size.width, height: 600 });
   const scrollDown = async () => {
     await page.evaluate(() => window.scrollTo(0, 1200));
     // Home is short on a large desktop screen since UI v3, so any real scroll will do.

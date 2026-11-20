@@ -601,3 +601,10 @@ Read README.md for setup, architecture and calculation rules.
     (`TextButton tone="danger"`; `cn` does not merge classes, so colours go through props).
   - Wrapped: title is the month (sub "Month wrapped") so no design cuts it; the Lifted stat is
     short (`compact`, 93.3k); the caption design lowers only the first letter (`lowerFirst`).
+- Claude first (November 2026, no migration, Dexie unchanged, `docs/ai-coach.md` "Claude"):
+  `claudeProvider` in `_shared/coach.ts` is the first provider when `ANTHROPIC_API_KEY` is set,
+  then Gemini, then Groq. A model per feature from `ANTHROPIC_CHAT_MODEL`, `_FOOD_`, `_LABEL_`,
+  `_PHOTO_`, `_MENU_` secrets (defaults Haiku 5.5, photos Sonnet 5.5), chosen by
+  `GenerateOptions.purpose`. Claude gets longer before the next provider is asked
+  (`CLAUDE_HEDGE_MS`, `patience`); labels and menus are hedged too. Typed food searches with
+  Claude's web search tool. The fake Supabase still uses stand-in providers.
