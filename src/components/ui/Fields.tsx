@@ -109,7 +109,7 @@ export function Chips<T extends string>({
       role="radiogroup"
       aria-label={label}
       className={cn(
-        '-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0',
+        '-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0',
         className,
       )}
     >

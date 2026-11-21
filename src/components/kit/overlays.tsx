@@ -229,7 +229,8 @@ export function BottomSheet({
             className={cn(
               // Auto basis, not 0: a zero basis collapsed the content in a sheet with no fixed height
               // on newer iPhone Safari, leaving only the header.
-              'min-h-0 flex-auto overflow-y-auto overscroll-contain px-5',
+              // Never sideways: a chip row scrolled past its end used to drag the whole form.
+              'min-h-0 flex-auto overflow-x-hidden overflow-y-auto overscroll-contain px-5',
               footer ? 'pb-4' : 'pb-5',
             )}
           >
