@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, Crown, Dumbbell, Globe2 } from 'lucide-react';
+import { ChevronDown, Dumbbell, Globe2 } from 'lucide-react';
 import { useSyncStatus } from '@/app/account';
 import {
   CommunityError,
@@ -26,11 +26,13 @@ import { useToast } from '@/components/ui/Toast';
 import { globalRankStory } from '@/domain/share/story';
 import { RankShareSheet } from '@/features/share/RankShareSheet';
 import { formatNumber } from '@/lib/format';
+import { useFeature } from '@/app/entitlement';
 import { cn } from '@/lib/cn';
+import { Link } from 'react-router';
 import { BoardRoutineSheet } from './BoardRoutineSheet';
 import { ReportSheet, ShowAsSheet } from './PrivacySheets';
 import { HowPointsWork } from './GroupsPage';
-import { MemberAvatar, ProCrown } from './parts';
+import { MemberAvatar, ProTag } from './parts';
 
 const dateLabel = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -49,6 +51,8 @@ const MEDAL = [
 export function GlobalPage() {
   const toast = useToast();
   const [period, setPeriod] = useState<Period>('week');
+  // Free members see how many of the leaders are Pro (from the board itself, so always true).
+  const isPro = useFeature('group_boards');
   const [offset, setOffset] = useState<0 | -1>(0);
   const [version, setVersion] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
@@ -286,6 +290,8 @@ export function GlobalPage() {
               )}
             </Section>
 
+            {!isPro && offset === 0 ? <ProLeaders rows={b.rows} /> : null}
+
             <Section title="Your privacy" id="global-privacy-title">
               <div
                 className="divide-y-[0.5px] divide-divider overflow-hidden rounded-card bg-surface"
@@ -410,42 +416,76 @@ const STYLE_LABEL: Record<NameStyle, string> = {
   hidden: 'Not shown on the public board',
 };
 
-/** The top three, side by side, first in the middle and raised. */
+/** Gold, silver and bronze in a ring of their metal, on steps, first in the middle and raised. */
 function Podium({ rows, onPick }: { rows: GlobalRow[]; onPick: (r: GlobalRow) => void }) {
   const order = [rows[1]!, rows[0]!, rows[2]!];
   return (
-    <ol className="grid grid-cols-3 items-end gap-2" aria-label="Top three" data-podium>
+    <ol className="podium" aria-label="Top three" data-podium>
+      <li className="pointer-events-none absolute inset-0" aria-hidden>
+        <span className="podium-flake" style={{ left: '38%', top: 0 }} />
+        <span
+          className="podium-flake"
+          style={{ left: '58%', top: -6, animationDelay: '1.1s', background: 'var(--tier-gold-a)' }}
+          aria-hidden
+        />
+        <span
+          className="podium-flake"
+          style={{ left: '47%', top: 10, animationDelay: '2.2s' }}
+          aria-hidden
+        />
+      </li>
       {order.map((r) => {
         const first = r.rank === 1;
         return (
-          <li key={r.rank} className={first ? 'order-none' : ''}>
+          <li key={r.rank} className="podium-spot" data-place={r.rank}>
             <button
               type="button"
               onClick={() => onPick(r)}
-              className={cn(
-                'pressable relative flex w-full flex-col items-center gap-2 overflow-hidden rounded-card bg-surface px-2 text-center',
-                first ? 'glow-lime pt-5 pb-4' : 'pt-4 pb-3',
-              )}
+              className="pressable flex w-full min-w-0 flex-col items-center gap-1.5 text-center"
               data-podium-rank={r.rank}
             >
-              {first ? <Crown className="size-5 text-gold" aria-hidden /> : null}
-              <span className={first ? 'scale-125' : ''}>
-                <MemberAvatar username={r.name} avatar={r.avatar} />
-              </span>
-              <span className="type-subhead line-clamp-2 min-h-[2.5em] w-full break-words text-text-1">
-                {r.name}
-                {r.pro ? <ProCrown /> : null}
-                {r.me ? <span className="block text-text-2">You</span> : null}
+              {first ? (
+                <svg className="podium-crown" viewBox="0 0 48 36" aria-hidden>
+                  <path
+                    d="M4 30 2 8l12 10L24 2l10 16 12-10-2 22Z"
+                    fill="var(--gold)"
+                    stroke="var(--tier-gold-c)"
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="24" cy="2.5" r="2.5" fill="var(--tier-gold-a)" />
+                </svg>
+              ) : null}
+              <span className="podium-ring">
+                <span className={first ? 'scale-150' : 'scale-125'}>
+                  <MemberAvatar username={r.name} avatar={r.avatar} />
+                </span>
+                <span className="podium-medal tabular" aria-label={`Place ${r.rank}`}>
+                  {r.rank}
+                </span>
               </span>
               <span
                 className={cn(
-                  'type-caption tabular rounded-full px-2 py-0.5 font-semibold',
-                  MEDAL[r.rank - 1],
+                  'type-subhead mt-3 w-full truncate font-semibold text-text-1',
+                  first && 'mt-5',
                 )}
               >
-                #{r.rank} · {formatNumber(r.score)}
+                {r.name}
+              </span>
+              {r.pro || r.me ? (
+                <span className="flex items-center gap-1">
+                  {r.pro ? <ProTag /> : null}
+                  {r.me ? <span className="type-caption text-text-2">You</span> : null}
+                </span>
+              ) : null}
+              <span className="podium-points tabular">
+                {formatNumber(r.score)}
+                <span className="type-caption ml-0.5 font-semibold text-text-2">pts</span>
               </span>
             </button>
+            <span className="podium-step" aria-hidden>
+              {r.rank}
+            </span>
           </li>
         );
       })}
@@ -483,11 +523,13 @@ function GlobalRowView({
         >
           {r.rank}
         </span>
-        <MemberAvatar username={r.name} avatar={r.avatar} />
+        <span className={cn('shrink-0', r.pro && 'pro-ring')}>
+          <MemberAvatar username={r.name} avatar={r.avatar} />
+        </span>
         <span className="min-w-0 flex-1">
           <span className="type-headline block truncate text-text-1">
             {r.name}
-            {r.pro ? <ProCrown /> : null}
+            {r.pro ? <ProTag /> : null}
             {r.me ? <span className="type-subhead ml-1.5 text-text-2">You</span> : null}
           </span>
           {r.username ? (
@@ -530,5 +572,30 @@ function GlobalRowView({
         </div>
       ) : null}
     </li>
+  );
+}
+
+/** "6 of the top 10 are Pro": shown to free members, counted from the board on screen. */
+function ProLeaders({ rows }: { rows: GlobalRow[] }) {
+  const top = rows.slice(0, 10);
+  const pro = top.filter((r) => r.pro).length;
+  if (top.length < 3 || pro === 0) return null;
+  return (
+    <div className="pro-leaders flex items-center gap-3 rounded-card p-4" data-pro-leaders>
+      <span className="min-w-0 flex-1">
+        <span className="type-headline block text-text-1">
+          {pro} of the top {top.length} {pro === 1 ? 'is' : 'are'} Pro
+        </span>
+        <span className="type-meta block text-text-2">
+          They plan their weeks with the Brain and track their protein. Get your <ProTag /> tag.
+        </span>
+      </span>
+      <Link
+        to="/pro"
+        className="pressable type-headline inline-flex h-9 shrink-0 items-center rounded-full bg-lime px-4 text-on-lime"
+      >
+        Get Pro
+      </Link>
+    </div>
   );
 }

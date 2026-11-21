@@ -894,7 +894,7 @@ describe('duels', () => {
     // On the trial: three.
     expect((await as<{ limit: number }>(b, 'public.get_group_duels($1)', [g.id])).limit).toBe(3);
 
-    // The crown: not for a trial, yes once paid.
+    // The Pro tag (0038): on the trial, gone when the trial ends unpaid, back once paid.
     await workout(b, new Date(), three());
     const rowsFor = async () =>
       (
@@ -904,6 +904,8 @@ describe('duels', () => {
           [g.id, 'week', 0],
         )
       ).rows;
+    expect((await rowsFor()).find((r) => r.username === 'limit.b')?.pro).toBe(true);
+    await free(b);
     expect((await rowsFor()).find((r) => r.username === 'limit.b')?.pro).toBe(false);
     await server.pg.query(
       `update public.subscriptions set pro_expires_at = now() + interval '30 days' where user_id = $1`,

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { AtSign, Crown } from 'lucide-react';
+import { AtSign } from 'lucide-react';
 import {
   checkUsername,
   cleanCode,
@@ -277,15 +277,18 @@ function JoinForm({
   );
 }
 
-/** A paying member's crown next to their name on a board. */
-export function ProCrown() {
+/**
+ * The Pro tag next to a name on a board: paying members and members on the Pro trial (it goes
+ * when a trial ends unpaid, migration 0038).
+ */
+export function ProTag() {
   return (
-    <span
-      className="ml-1.5 inline-flex size-4 translate-y-[1px] items-center justify-center text-gold"
-      title="Macrotrophy Pro"
-      data-pro-crown
-    >
-      <Crown className="size-3.5 fill-current" aria-label="Pro member" />
+    <span className="pro-tag ml-1.5 shrink-0" title="Macrotrophy Pro member" data-pro-tag>
+      <svg viewBox="0 0 10 10" className="size-2.5" aria-hidden>
+        <path d="M5 0 6.3 3.7 10 5 6.3 6.3 5 10 3.7 6.3 0 5 3.7 3.7Z" fill="currentColor" />
+      </svg>
+      PRO
+      <span className="sr-only"> member</span>
     </span>
   );
 }
