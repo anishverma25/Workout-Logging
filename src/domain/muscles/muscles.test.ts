@@ -1,3 +1,4 @@
+import { EMPTY_FILTERS, filterExercises } from '@/domain/exercises/search';
 import { SYSTEM_EXERCISES, SYSTEM_EXERCISE_KEYS } from '@/data/library/exercises';
 import { MUSCLE_GROUPS } from '@/domain/models/schemas';
 import { EXERCISE_TARGETS, targetsFor, worksMuscle } from './targets';
@@ -118,5 +119,31 @@ describe('what each exercise works', () => {
     expect(t.secondary).toEqual(['triceps']);
     expect(worksMuscle(t, 'chest')).toBe(2);
     expect(worksMuscle(t, 'pec-clavicular')).toBe(0);
+  });
+});
+
+describe('searching exercises by muscle', () => {
+  const search = (q: string) =>
+    filterExercises(SYSTEM_EXERCISES, { ...EMPTY_FILTERS, query: q }).map((e) => e.name);
+
+  it('muscle names, gym words and partial words find the exercises that train them', () => {
+    expect(search('upper chest')[0]).toMatch(/^Incline/);
+    expect(search('rear delts')[0]).toMatch(/[Rr]ear delt|Reverse pec deck|Face pull/);
+    expect(search('biceps long head').slice(0, 4)).toContain('Incline dumbbell curl');
+    expect(search('soleus')[0]).toBe('Seated calf raise');
+    expect(search('lower traps').length).toBeGreaterThan(0);
+    expect(search('glute med').slice(0, 3)).toContain('Hip abduction machine');
+    expect(search('brachial').slice(0, 3)).toContain('Hammer curl');
+  });
+
+  it('an exercise typed by name still comes first', () => {
+    expect(search('hammer curl')[0]).toBe('Hammer curl');
+    expect(search('leg extension')[0]).toBe('Leg extension');
+  });
+
+  it('the advanced filter keeps only exercises that work the muscle, main work first', () => {
+    const list = filterExercises(SYSTEM_EXERCISES, { ...EMPTY_FILTERS, detail: 'triceps-long' });
+    expect(list.length).toBeGreaterThan(3);
+    expect(worksMuscle(targetsFor(list[0]!), 'triceps-long')).toBe(2);
   });
 });

@@ -1,4 +1,6 @@
 import { EQUIPMENT_LABELS, MUSCLE_LABELS } from '../models/labels';
+import { targetsFor, worksMuscle } from '../muscles/targets';
+import { MUSCLES, within } from '../muscles/taxonomy';
 import type { Equipment, Exercise, MuscleGroup, Workout, WorkoutExercise } from '../models/schemas';
 
 export type ExerciseSource = 'all' | 'library' | 'custom';
@@ -9,6 +11,8 @@ export interface ExerciseFilters {
   equipment: Equipment | null;
   category: Exercise['category'] | null;
   source: ExerciseSource;
+  /** A muscle, group or region from the advanced filter (taxonomy id), or null. */
+  detail?: string | null;
 }
 
 export const EMPTY_FILTERS: ExerciseFilters = {
@@ -25,7 +29,8 @@ export function hasActiveFilters(f: ExerciseFilters): boolean {
     f.muscle !== null ||
     f.equipment !== null ||
     f.category !== null ||
-    f.source !== 'all'
+    f.source !== 'all' ||
+    !!f.detail
   );
 }
 
@@ -86,6 +91,70 @@ export function matchScore(exercise: Exercise, query: string): number {
   const q = normalize(query);
   if (q === '') return 1;
   const name = normalize(exercise.name);
+
+  if (name === q) return 1000;
+  if (name.startsWith(q)) return 800;
+  if (COMPACT(name).includes(COMPACT(q))) return 600;
+  // A match on the name (or its muscle and equipment labels) always ranks above a match on a
+  // muscle the exercise works, so typing an exercise still finds it first.
+  const byName = nameScoreFor(exercise, q);
+  return byName > 0 ? 400 + Math.min(byName, 199) : muscleScore(exercise, q);
+}
+
+/**
+ * Muscles the query names ("upper chest", "rear delts", "biceps long head", "tibs"): a node
+ * whose gym name, anatomical name or another name contains every word typed.
+ */
+const muscleCache = new Map<string, string[]>();
+export function musclesNamed(query: string): string[] {
+  const q = normalize(query);
+  if (q.length < 3) return [];
+  const hit = muscleCache.get(q);
+  if (hit) return hit;
+  const words = q.split(' ');
+  const found: { id: string; rank: number }[] = [];
+  for (const m of MUSCLES) {
+    const terms = [m.gym, m.name, ...(m.aliases ?? [])].map(normalize);
+    let rank = 0;
+    for (const t of terms) {
+      const tw = t.split(' ');
+      if (t === q) rank = Math.max(rank, 3);
+      else if (
+        words.every((w) => tw.some((x) => x.startsWith(w) || x.startsWith(w.replace(/s$/, ''))))
+      )
+        rank = Math.max(rank, 2);
+    }
+    if (rank) found.push({ id: m.id, rank });
+  }
+  const best = Math.max(0, ...found.map((f) => f.rank));
+  const ids = found.filter((f) => f.rank === best).map((f) => f.id);
+  if (muscleCache.size > 200) muscleCache.clear();
+  muscleCache.set(q, ids);
+  return ids;
+}
+
+/** An exercise that works a muscle the query names: below any match on the exercise's name. */
+function muscleScore(exercise: Exercise, q: string): number {
+  const named = musclesNamed(q);
+  if (named.length === 0) return 0;
+  const t = targetsFor(exercise);
+  // The muscle listed first is the one the exercise is chosen for: it ranks higher, and an
+  // exercise whose research note names the region ("long head") a little higher again.
+  const tail = q.split(' ').slice(-2).join(' ');
+  const emphasised = !!t.emphasis && tail.length > 3 && normalize(t.emphasis).includes(tail);
+  let best = 0;
+  for (const id of named) {
+    const set = within(id);
+    const i = t.primary.findIndex((m) => set.has(m));
+    if (i >= 0) best = Math.max(best, 300 - Math.min(i, 9) * 10 + (emphasised ? 5 : 0));
+    else if (t.secondary.some((m) => set.has(m))) best = Math.max(best, 60);
+  }
+  return best;
+}
+
+function nameScoreFor(exercise: Exercise, query: string): number {
+  const q = normalize(query);
+  const name = normalize(exercise.name);
   const nameWords = name.split(' ');
   const meta = normalize(
     [
@@ -94,10 +163,6 @@ export function matchScore(exercise: Exercise, query: string): number {
       EQUIPMENT_LABELS[exercise.equipment],
     ].join(' '),
   );
-
-  if (name === q) return 1000;
-  if (name.startsWith(q)) return 800;
-  if (COMPACT(name).includes(COMPACT(q))) return 600;
 
   let score = 0;
   for (const word of q.split(' ')) {
@@ -133,8 +198,11 @@ export function filterExercises(exercises: Exercise[], filters: ExerciseFilters)
     if (filters.category && exercise.category !== filters.category) continue;
     if (filters.source === 'custom' && !exercise.isCustom) continue;
     if (filters.source === 'library' && exercise.isCustom) continue;
+    // The advanced filter: exercises that train the muscle first, then those it helps in.
+    const works = filters.detail ? worksMuscle(targetsFor(exercise), filters.detail) : 0;
+    if (filters.detail && works === 0) continue;
     const score = matchScore(exercise, filters.query);
-    if (score > 0) scored.push({ exercise, score });
+    if (score > 0) scored.push({ exercise, score: score + (works === 2 ? 50 : 0) });
   }
   return scored
     .sort((a, b) => b.score - a.score || a.exercise.name.localeCompare(b.exercise.name))
