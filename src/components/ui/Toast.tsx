@@ -12,6 +12,8 @@ import { Check } from 'lucide-react';
 export interface ToastAction {
   label: string;
   onSelect: () => void;
+  /** How long this one stays; quick undos (a glass of water) use `QUICK_UNDO_MS`. */
+  ms?: number;
 }
 
 interface ToastItem {
@@ -27,6 +29,8 @@ const ToastContext = createContext<Show>(() => {});
 /** How long a toast stays: an undo stays 10 s (X4), and waits while it is focused or hovered. */
 export const TOAST_MS = 2800;
 export const ACTION_TOAST_MS = 10_000;
+/** A small, easy to redo action (a glass of water): long enough to reach Undo, then gone. */
+export const QUICK_UNDO_MS = 4_000;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
@@ -60,11 +64,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const show = useCallback<Show>(
     (message, action) => {
       const id = ++counter.current;
-      setItems((list) => [...list, action ? { id, message, action } : { id, message }]);
+      // The same message again (a second glass of water) replaces the first, so they never
+      // stack up; its Undo still covers the first one's change, which is already saved.
+      setItems((list) => {
+        for (const old of list) if (old.message === message) hold(old.id);
+        return [
+          ...list.filter((t) => t.message !== message),
+          action ? { id, message, action } : { id, message },
+        ];
+      });
       // Longer when there is something to undo, so there is time to reach it.
-      schedule(id, action ? ACTION_TOAST_MS : TOAST_MS);
+      schedule(id, action ? (action.ms ?? ACTION_TOAST_MS) : TOAST_MS);
     },
-    [schedule],
+    [schedule, hold],
   );
 
   const value = useMemo(() => show, [show]);
@@ -79,10 +91,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((t) => (
           <div
             key={t.id}
-            onPointerEnter={t.action ? () => hold(t.id) : undefined}
-            onPointerLeave={t.action ? () => schedule(t.id, ACTION_TOAST_MS) : undefined}
+            // A mouse resting on it holds it; a finger passing over a phone screen does not
+            // (touch never sends the leave that would let it go again).
+            onPointerEnter={t.action ? (e) => e.pointerType === 'mouse' && hold(t.id) : undefined}
+            onPointerLeave={
+              t.action
+                ? (e) =>
+                    e.pointerType === 'mouse' && schedule(t.id, t.action!.ms ?? ACTION_TOAST_MS)
+                : undefined
+            }
             onFocus={t.action ? () => hold(t.id) : undefined}
-            onBlur={t.action ? () => schedule(t.id, ACTION_TOAST_MS) : undefined}
+            onBlur={t.action ? () => schedule(t.id, t.action!.ms ?? ACTION_TOAST_MS) : undefined}
             className="type-body flex min-h-12 max-w-[min(30rem,calc(100vw-2rem))] items-center gap-3 rounded-nested bg-surface-2 py-2 pr-2 pl-4 text-text-1"
           >
             <Check className="size-5 shrink-0 text-text-2" aria-hidden />

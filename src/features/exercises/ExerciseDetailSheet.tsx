@@ -25,6 +25,7 @@ import { pluralize } from '@/lib/format';
 import { formatWeight } from '@/lib/units';
 import { CustomExerciseSheet } from './CustomExerciseSheet';
 import { MuscleShares } from './MuscleShares';
+import { MusclesWorked } from './MuscleDetail';
 import { sharesFor } from '@/data/library/shares';
 import { readableError } from '@/lib/errors';
 
@@ -133,6 +134,8 @@ export function ExerciseDetailSheet({ exercise, onClose }: Props) {
             </div>
           ))}
         </dl>
+
+        <MusclesWorked exercise={exercise} />
 
         {shares ? (
           <section className="mt-6" aria-labelledby="shares-heading">

@@ -6,6 +6,7 @@ import { DALS } from './dals';
 import { DRINKS } from './drinks';
 import { FESTIVAL } from './festival';
 import { REGIONAL_LABELS } from './labels';
+import { REPLACED_IDS } from '../branded/replaced';
 import { PROTEIN } from './protein';
 import { RICE_DISHES } from './rice';
 import { SIDES } from './sides';
@@ -34,5 +35,5 @@ export const REGIONAL_DISHES = [
 
 export const REGIONAL_FOODS: Food[] = [
   ...buildDishes(REGIONAL_DISHES),
-  ...buildLabels(REGIONAL_LABELS),
+  ...buildLabels(REGIONAL_LABELS.filter((l) => !REPLACED_IDS.has(l.id))),
 ];

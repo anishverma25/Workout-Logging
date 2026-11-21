@@ -2,7 +2,7 @@ import { WhatsNew } from './WhatsNew';
 import { SetupGate } from './SetupGate';
 import { RestoreExpired } from '@/features/brain/RestoreExpired';
 import { Suspense, useEffect, useRef, type MouseEvent } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router';
+import { Link, NavLink, Outlet, useLocation, useNavigationType } from 'react-router';
 import { FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
@@ -30,6 +30,7 @@ export function AppShell() {
     document.title = APP_NAME;
   }, []);
   usePageAnnounce(pathname);
+  useTopOnNewPage(pathname);
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[15rem_1fr]">
       <a
@@ -66,6 +67,31 @@ export function AppShell() {
       <BottomNav />
     </div>
   );
+}
+
+/**
+ * A new page opens at its top (Groups, a group, the leaderboard opened from far down Home used
+ * to keep Home's scroll). Back and forward keep the browser's own restoring, and a link to a
+ * part of a page (`#insights`) is left to go there.
+ */
+function useTopOnNewPage(pathname: string) {
+  const type = useNavigationType();
+  const { hash } = useLocation();
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    if (type === 'POP' || hash) return;
+    window.scrollTo({ top: 0 });
+    // Pages that draw after loading their data can grow and pull the view back: once more on
+    // the next frame.
+    const raf = requestAnimationFrame(() => window.scrollTo({ top: 0 }));
+    return () => cancelAnimationFrame(raf);
+    // Only a change of page counts, not its search part.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 }
 
 /**

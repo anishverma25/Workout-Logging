@@ -90,9 +90,12 @@ describe('people find the regional dishes by the name they use', () => {
     ['neer dosa', 'neer-dosa'],
     ['undhiyu', 'undhiyu'],
     ['amul gold', 'amul-gold-milk'],
-    ['amul whey', 'amul-whey-protein'],
   ])('%s finds %s first', (q, id) => {
     expect(searchFoods(all, q, null)[0]?.id).toBe(id);
+  });
+
+  it('amul whey finds an Amul whey first', () => {
+    expect(searchFoods(all, 'amul whey', null)[0]?.id).toMatch(/^amul-whey-protein/);
   });
 
   it('a curated dish still comes before a regional one with the same words', () => {

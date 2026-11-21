@@ -21,6 +21,7 @@ export function ExerciseRow({ exercise, onSelect, selected, selectable, trailing
     <button
       type="button"
       onClick={onSelect}
+      data-exercise-row
       aria-pressed={selectable ? !!selected : undefined}
       className={cn(
         // No two-letter tile (UI v3, G9), and hover only where there is a mouse, so a tapped

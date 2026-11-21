@@ -1,3 +1,5 @@
+import { fromBranded } from './branded';
+import { REPLACED_IDS, REPLACED_ROWS } from './branded/replaced';
 import {
   cookedFromMoisture,
   ingredientNutrients,
@@ -7218,7 +7220,9 @@ function fromBasic(b: BasicDef): Food {
 export const FOODS: Food[] = [
   ...DISHES.map(fromDish),
   ...BASICS.map(fromBasic),
-  ...LABELS.map(fromLabel),
+  // Labels a newer listing of the same product replaced keep their id in REPLACED_ROWS.
+  ...LABELS.filter((l) => !REPLACED_IDS.has(l.id)).map(fromLabel),
+  ...REPLACED_ROWS.map(fromBranded),
 ].map(withMeasures);
 export const FOOD_BY_ID = new Map(FOODS.map((f) => [f.id, f]));
 

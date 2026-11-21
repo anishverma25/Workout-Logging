@@ -11,7 +11,7 @@ import {
   TextButton,
 } from '@/components/kit';
 import type { WaterLog } from '@/domain/models/schemas';
-import { useToast } from '@/components/ui/Toast';
+import { QUICK_UNDO_MS, useToast } from '@/components/ui/Toast';
 import { useWaterData } from '@/data/hooks';
 import { db } from '@/data/db';
 import { ProfileError, saveTargetSettings } from '@/data/repositories/profile';
@@ -70,6 +70,7 @@ export function WaterCard({ ctx, date }: { ctx: FoodContext; date: string }) {
       haptic('light');
       toast(`Added ${n(ml * count)} ml`, {
         label: 'Undo',
+        ms: QUICK_UNDO_MS,
         onSelect: () =>
           void deleteWaterLogs(
             db,

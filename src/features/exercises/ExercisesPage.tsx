@@ -17,6 +17,7 @@ import { pluralize } from '@/lib/format';
 import { IconButton, TextLink } from '@/components/kit';
 import { CustomExerciseSheet } from './CustomExerciseSheet';
 import { ExerciseDetailSheet } from './ExerciseDetailSheet';
+import { MuscleDetailButton, MuscleDetailSheet } from './MuscleDetail';
 import { ExerciseFilterChips, SearchField } from './ExerciseFilters';
 import { ExerciseRow } from './ExerciseRow';
 
@@ -28,6 +29,7 @@ export function ExercisesPage() {
   const query = useDeferredValue(filters.query);
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const data = catalog.data;
   const results = useMemo(
@@ -95,7 +97,19 @@ export function ExercisesPage() {
           onChange={(q) => setFilters((f) => ({ ...f, query: q }))}
         />
         <ExerciseFilterChips filters={filters} onChange={setFilters} full />
+        <MuscleDetailButton
+          value={filters.detail}
+          onOpen={() => setDetailOpen(true)}
+          onClear={() => setFilters((f) => ({ ...f, detail: null }))}
+        />
       </div>
+      <MuscleDetailSheet
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        exercises={data?.exercises ?? []}
+        value={filters.detail}
+        onPick={(detail) => setFilters((f) => ({ ...f, detail }))}
+      />
 
       {catalog.status === 'loading' ? <Skeleton className="mt-6 h-96" /> : null}
       {catalog.status === 'error' ? (

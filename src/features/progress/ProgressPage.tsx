@@ -1,3 +1,5 @@
+import { MUSCLE_BY_ID } from '@/domain/muscles/taxonomy';
+import type { GroupVolume } from '@/domain/muscles/volume';
 import { FREE_PROGRESS_DAYS } from '@/domain/entitlement/limits';
 import { COPY } from '@/domain/analytics/thresholdCopy';
 import { useMemo, useState } from 'react';
@@ -8,6 +10,7 @@ import {
   Dumbbell,
   FlaskConical,
   Trophy,
+  Microscope,
 } from 'lucide-react';
 import { EvidenceLink } from '@/features/science/EvidenceLink';
 import { PageHeader } from '@/app/layout/PageHeader';
@@ -825,6 +828,7 @@ function MusclesSection({ model }: { model: ProgressModel }) {
                   String(w.indirect),
                 ])}
               />
+              <MuscleDetailList groups={model.muscles.detail} weeks={perWeek ? weeks : 1} />
             </>
           ) : (
             <EmptyBox>No working sets in this period.</EmptyBox>
@@ -1063,5 +1067,60 @@ function EmptyBox({ children }: { children: React.ReactNode }) {
     <p className="type-meta flex min-h-22 items-center justify-center rounded-nested bg-surface-2 px-5 py-4 text-center text-text-2">
       {children}
     </p>
+  );
+}
+
+/**
+ * Sets per gym group and per muscle, from the muscle taxonomy, behind one tap. Muscles are
+ * credited only with sets of exercises that train them as a main muscle.
+ */
+function MuscleDetailList({ groups, weeks }: { groups: GroupVolume[]; weeks: number }) {
+  const [open, setOpen] = useState(false);
+  if (groups.length === 0) return null;
+  const per = (n: number) => formatNumber(n / weeks);
+  return (
+    <div className="mt-4 border-t-[0.5px] border-divider pt-3" data-muscle-detail-volume>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="pressable type-meta inline-flex h-9 items-center gap-1.5 font-semibold text-text-1"
+      >
+        <Microscope className="size-4" aria-hidden />
+        {open ? 'Hide muscles in detail' : 'Muscles in detail'}
+      </button>
+      {open ? (
+        <ul className="mt-2 flex flex-col gap-3">
+          {groups.map((g) => (
+            <li key={g.group}>
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="type-body font-medium text-text-1">
+                  {MUSCLE_BY_ID.get(g.group)?.gym ?? g.group}
+                </span>
+                <span className="type-headline tabular text-text-1">{per(g.weighted)}</span>
+              </div>
+              {g.muscles.length ? (
+                <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                  {g.muscles.map((m) => (
+                    <li
+                      key={m.id}
+                      className="type-caption tabular rounded-full bg-surface-2 px-2.5 py-1 text-text-2"
+                    >
+                      {MUSCLE_BY_ID.get(m.id)?.gym ?? m.id}{' '}
+                      <span className="font-semibold text-text-1">{per(m.direct)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          ))}
+          <li className="type-caption text-text-2">
+            Groups count direct sets as 1 and supporting sets as 0.5. A muscle or head shows the
+            direct sets of exercises that train it as a main muscle; an exercise biases a head, it
+            cannot isolate it, so these are a guide, not a measure of growth.
+          </li>
+        </ul>
+      ) : null}
+    </div>
   );
 }

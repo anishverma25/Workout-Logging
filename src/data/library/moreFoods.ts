@@ -1,5 +1,6 @@
 import type { Food } from '../../domain/nutrition/calc';
 import type { DietType, Meal, UnitId } from '../../domain/nutrition/types';
+import type { BrandedRow } from './branded/types';
 
 /**
  * The long tail of the food library, loaded only when someone opens the food logger:
@@ -128,10 +129,14 @@ export function loadMoreFoods(): Promise<Food[]> {
     import('./usdaFoods.json'),
     import('./indbFoods.json'),
     import('./regional/index'),
-  ]).then(([usda, indb, regional]) => {
+    import('./branded/rows.json'),
+    import('./branded/index'),
+  ]).then(([usda, indb, regional, brandedRows, branded]) => {
     loaded = [
       // Calculated regional recipes and labels first: they rank with the curated library.
       ...regional.REGIONAL_FOODS,
+      // Branded packs (November 2026), copied from their labels.
+      ...(brandedRows.default as unknown as BrandedRow[]).map(branded.fromBranded),
       ...(indb.default as unknown as IndbRow[]).map(fromIndb),
       ...(usda.default as unknown as UsdaRow[]).map(fromUsda),
     ];

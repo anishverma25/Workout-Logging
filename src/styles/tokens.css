@@ -131,6 +131,16 @@
   --tier-gold-ink: #2a1c00;
   --tier-gold-glow: rgb(255 205 70 / 0.6);
   --tier-gold-text: #ffd75e;
+  /* The Pro tag on boards (November 2026): a lime metal with a sheen. */
+  --pro-a: #eaff8a;
+  --pro-b: #c6f432;
+  --pro-c: #8fcf00;
+  --pro-ink: #0b0f00;
+  --pro-glow: rgb(198 244 50 / 0.35);
+  /* Duels: you are lime, your rival is this red. */
+  --rival: #ff5a4e;
+  --rival-dim: rgb(255 90 78 / 0.14);
+  --rival-glow: rgb(255 90 78 / 0.45);
   --tier-legend-a: #d2f25c;
   --tier-legend-b: #5cc8ff;
   --tier-legend-c: #c58bff;

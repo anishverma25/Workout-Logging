@@ -57,7 +57,7 @@ import { useToast } from '@/components/ui/Toast';
 import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { HowPointsWork } from './GroupsPage';
-import { MemberAvatar, ProCrown } from './parts';
+import { MemberAvatar, ProTag } from './parts';
 import { shareCode } from './shareCode';
 
 /** The boards a group can switch to. Macrotrophy Score is free; the others are Pro. */
@@ -627,7 +627,7 @@ function BoardRowView({
         <span className="min-w-0 flex-1">
           <span className="type-headline block truncate text-text-1">
             @{r.username}
-            {r.pro ? <ProCrown /> : null}
+            {r.pro ? <ProTag /> : null}
             {r.me ? <span className="type-subhead ml-1.5 text-text-2">You</span> : null}
           </span>
         </span>
