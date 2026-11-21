@@ -1,3 +1,5 @@
+import type { Session } from '@/domain/analytics/sessions';
+import { detailedVolume } from './volume';
 import { EMPTY_FILTERS, filterExercises } from '@/domain/exercises/search';
 import { SYSTEM_EXERCISES, SYSTEM_EXERCISE_KEYS } from '@/data/library/exercises';
 import { MUSCLE_GROUPS } from '@/domain/models/schemas';
@@ -145,5 +147,47 @@ describe('searching exercises by muscle', () => {
     const list = filterExercises(SYSTEM_EXERCISES, { ...EMPTY_FILTERS, detail: 'triceps-long' });
     expect(list.length).toBeGreaterThan(3);
     expect(worksMuscle(targetsFor(list[0]!), 'triceps-long')).toBe(2);
+  });
+});
+
+describe('sets per muscle in detail', () => {
+  const ex = (name: string) => SYSTEM_EXERCISES.find((e) => e.name === name)!;
+  const set = (rir: number | null = 2) =>
+    ({ completedAt: '2026-11-20T10:00:00.000Z', setType: 'normal', rir, rpe: null }) as never;
+  const session = (items: [string, number][]) =>
+    ({
+      workout: {} as never,
+      date: new Date('2026-11-20'),
+      exercises: items.map(([name, n]) => ({
+        workoutExercise: {} as never,
+        exercise: ex(name),
+        sets: Array.from({ length: n }, () => set()),
+      })),
+    }) as Session;
+
+  it('groups count direct sets fully and supporting sets at half; heads only direct sets', () => {
+    const v = detailedVolume([
+      session([
+        ['Barbell bench press', 3],
+        ['Triceps rope pushdown', 3],
+      ]),
+    ]);
+    const by = new Map(v.map((g) => [g.group, g]));
+    expect(by.get('pecs')).toMatchObject({ direct: 3, indirect: 0, weighted: 3 });
+    // Bench helps the triceps (3 indirect), pushdowns train them (3 direct).
+    expect(by.get('triceps')).toMatchObject({ direct: 3, indirect: 3, weighted: 4.5 });
+    const heads = new Map(by.get('triceps')!.muscles.map((m) => [m.id, m.direct]));
+    expect(heads.get('triceps-lateral')).toBe(3);
+    // The pushdown only assists the long head: no direct set is credited to it.
+    expect(heads.get('triceps-long')).toBeUndefined();
+    // Stabilizers are never counted.
+    expect(by.get('rotator-cuff')).toBeUndefined();
+  });
+
+  it('easy sets (5+ reps left) and warm-ups do not count, as everywhere else', () => {
+    const s = session([['Leg extension', 2]]);
+    s.exercises[0]!.sets.push({ ...(set(6) as object), setType: 'normal' } as never);
+    s.exercises[0]!.sets.push({ ...(set(2) as object), setType: 'warmup' } as never);
+    expect(detailedVolume([s]).find((g) => g.group === 'quads')?.direct).toBe(2);
   });
 });

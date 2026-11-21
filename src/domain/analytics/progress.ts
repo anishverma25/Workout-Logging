@@ -1,3 +1,4 @@
+import { detailedVolume, type GroupVolume } from '../muscles/volume';
 import {
   addDays,
   differenceInCalendarDays,
@@ -139,6 +140,8 @@ export interface ProgressModel {
     previous: MuscleWorkload[] | null;
     weeks: number;
     recency: MuscleRecency[];
+    /** Sets per gym group and per muscle from the muscle taxonomy; the numbers above are unchanged. */
+    detail: GroupVolume[];
   };
   body: { points: BodyWeightPoint[]; trend: BodyWeightTrend | null };
   records: PersonalRecord[];
@@ -588,6 +591,7 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
       // in 10 days on a 30-day range is 14 a week, not 4.7.
       weeks: coveredDays > 0 ? Math.max(7, coveredDays) / 7 : weeks,
       recency: muscleRecency(sessions, now),
+      detail: detailedVolume(inWindow),
     },
     body: (() => {
       const points = bodyWeightSeries(data.bodyWeights).filter(
