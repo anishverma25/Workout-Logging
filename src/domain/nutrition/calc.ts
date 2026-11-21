@@ -73,6 +73,17 @@ export interface Food {
     | 'community';
   /** The recipe as it was calculated, for the detail view. */
   recipe: { lines: { name: string; grams: number }[]; cookedG: number; makes: string } | null;
+  /** The maker, for packaged foods: search ranks it, the list groups by it (November 2026). */
+  brand?: string;
+  /** The label lists no fibre: shown as a dash, never as 0 g. */
+  fibreUnknown?: boolean;
+  /** The pack's calories differ from 4/4/9 of its macros by over 20%; kept exactly as printed. */
+  printedKcal?: boolean;
+  /**
+   * Sources disagree on this pack (`conflict`) or it may be the same product as another
+   * (`check`): the food's page asks people to check their pack.
+   */
+  check?: { kind: 'conflict' | 'check'; note: string };
   /** For Macrotrophy AI estimates: whether a label or menu was found, and where. */
   ai?: {
     basis: 'web' | 'estimate' | 'photo' | 'label' | 'yours';

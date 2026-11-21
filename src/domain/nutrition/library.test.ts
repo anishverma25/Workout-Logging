@@ -30,7 +30,7 @@ describe('the food library', () => {
 
   it('every dish: energy adds up within 12% of protein, carbs and fat', () => {
     for (const f of FOODS) {
-      if (f.per100.kcal < 20) continue;
+      if (f.per100.kcal < 20 || f.printedKcal) continue;
       const ratio = atwaterKcal(f.per100) / f.per100.kcal;
       // Pack labels round their figures and count fibre and sugar alcohols at less energy, so
       // they are checked a little more loosely; the label is kept as printed.

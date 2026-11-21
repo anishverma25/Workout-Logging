@@ -42,7 +42,7 @@ import {
   type MealTemplate,
 } from '@/domain/nutrition/analysis';
 import { portionText, roundNutrients, sumNutrients, type Food } from '@/domain/nutrition/calc';
-import { fitsDiet, searchFoods, unreadableQuery } from '@/domain/nutrition/search';
+import { fitsDiet, groupResults, searchFoods, unreadableQuery } from '@/domain/nutrition/search';
 import { MEALS, ZERO, type Meal } from '@/domain/nutrition/types';
 import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
@@ -601,10 +601,22 @@ function Results({
   // an empty result is "still looking", not "we do not have it".
   const longTail = useSyncExternalStore(moreFoodsStore.subscribe, moreFoodsStore.get);
   const stillLoading = longTail.length === 0;
+  // Foods the person logs often move up a little in search (never above an exact name).
+  const usual = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const l of ctx.logs)
+      if (!l.deletedAt) counts.set(l.foodId, (counts.get(l.foodId) ?? 0) + 1);
+    return counts;
+  }, [ctx.logs]);
   const results = useMemo(
-    () => searchFoods(ctx.foods, query, ctx.diet),
-    [ctx.foods, query, ctx.diet],
+    () => searchFoods(ctx.foods, query, ctx.diet, 60, usual),
+    [ctx.foods, query, ctx.diet, usual],
   );
+  const grouped = useMemo(() => groupResults(results, query), [results, query]);
+  // "Show more" opens the rest for this search only.
+  const [openFor, setOpenFor] = useState<string | null>(null);
+  const open = openFor === query;
+  const shownResults = open ? results : grouped.first;
   const hidden = useMemo(
     () => results.length === 0 && !!ctx.diet && searchFoods(ctx.foods, query, null, 1).length > 0,
     [results.length, ctx.foods, query, ctx.diet],
@@ -616,11 +628,26 @@ function Results({
       className={cn(stale && 'pointer-events-none')}
     >
       {results.length ? (
-        <ul className="flex flex-col">
-          {results.map((f) => (
-            <FoodRow key={f.id} food={f} rows={rows} />
-          ))}
-        </ul>
+        <>
+          <ul className="flex flex-col">
+            {shownResults.map((f) => (
+              <FoodRow key={f.id} food={f} rows={rows} />
+            ))}
+          </ul>
+          {!open && grouped.more.length ? (
+            <button
+              type="button"
+              onClick={() => setOpenFor(query)}
+              className="pressable type-headline mt-1 flex h-11 w-full items-center justify-center rounded-nested bg-surface-2 text-text-1"
+              data-keep-keyboard
+              data-more-results
+            >
+              {grouped.brandTyped
+                ? `Show ${grouped.more.length} more`
+                : `Show ${grouped.more.length} more, including brands`}
+            </button>
+          ) : null}
+        </>
       ) : stillLoading && !unreadableQuery(query) ? (
         <p
           className="type-meta rounded-nested bg-surface-2 p-4 text-center text-text-2"

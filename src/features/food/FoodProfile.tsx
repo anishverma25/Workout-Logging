@@ -49,6 +49,7 @@ export function FoodProfile({
           portionLabel={portionText(portion.amount, portion.unit, portion.size, food.pieceName)}
           per100={food.per100}
           weightKnown={!servingOnly(food)}
+          fibreUnknown={food.fibreUnknown}
           targets={targets}
         />
       ) : (
@@ -102,6 +103,13 @@ function SourceLine({ food }: { food: Food }) {
       {food.source === 'recipe' || food.source === 'ingredient' ? (
         <EvidenceLink topic="food-values" about="how food values are worked out" />
       ) : null}
+      {food.check ? (
+        <span className="basis-full text-text-2" data-check-pack={food.check.kind}>
+          {food.check.kind === 'conflict'
+            ? 'Listings of this pack disagree a little. Check the numbers on your pack.'
+            : 'This may be the same product as another listing. Check your pack.'}
+        </span>
+      ) : null}
     </p>
   );
 }
@@ -124,6 +132,7 @@ export function NutritionPanel({
   per100,
   targets,
   weightKnown = true,
+  fibreUnknown = false,
 }: {
   nutrients: Nutrients;
   grams: number;
@@ -132,6 +141,8 @@ export function NutritionPanel({
   targets: DailyTargets | null;
   /** False for a pack counted in servings with no weight on it: no grams are shown. */
   weightKnown?: boolean;
+  /** The label lists no fibre: a dash, never 0 g. */
+  fibreUnknown?: boolean;
 }) {
   const fromMacros = nutrients.proteinG * 4 + nutrients.carbsG * 4 + nutrients.fatG * 9 || 1;
   const share = (kcal: number) => Math.round((kcal / fromMacros) * 100);
@@ -200,8 +211,14 @@ export function NutritionPanel({
         <div>
           <dt className="type-caption text-text-2">Fibre</dt>
           <dd className="type-title tabular mt-0.5 text-text-1">
-            {nutrients.fibreG.toFixed(1)}
-            <span className="type-meta ml-0.5 text-text-2">g</span>
+            {fibreUnknown ? (
+              <span aria-label="not on the label">–</span>
+            ) : (
+              <>
+                {nutrients.fibreG.toFixed(1)}
+                <span className="type-meta ml-0.5 text-text-2">g</span>
+              </>
+            )}
           </dd>
         </div>
       </dl>
@@ -210,7 +227,7 @@ export function NutritionPanel({
         <p className="type-caption tabular mt-4 border-t-[0.5px] border-divider pt-3 text-text-2">
           Per 100 g: {Math.round(per100.kcal)} kcal · {per100.proteinG.toFixed(1)} g protein ·{' '}
           {per100.carbsG.toFixed(1)} g carbs · {per100.fatG.toFixed(1)} g fat ·{' '}
-          {per100.fibreG.toFixed(1)} g fibre
+          {fibreUnknown ? 'fibre not listed' : `${per100.fibreG.toFixed(1)} g fibre`}
         </p>
       ) : null}
     </section>

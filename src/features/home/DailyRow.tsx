@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Droplets, Plus, Scale } from 'lucide-react';
 import { BottomSheet, InlineNotice, NumberField, PrimaryButton } from '@/components/kit';
 import { Sparkline } from '@/components/ui/Sparkline';
-import { useToast } from '@/components/ui/Toast';
+import { QUICK_UNDO_MS, useToast } from '@/components/ui/Toast';
 import { db } from '@/data/db';
 import { useWaterData } from '@/data/hooks';
 import { addBodyWeight, BodyWeightError, updateBodyWeight } from '@/data/repositories/bodyweight';
@@ -63,6 +63,7 @@ export function DailyRow({
     haptic('light');
     toast('Added a glass of water', {
       label: 'Undo',
+      ms: QUICK_UNDO_MS,
       onSelect: () =>
         void deleteWaterLogs(
           db,
