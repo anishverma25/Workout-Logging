@@ -1,5 +1,45 @@
 import json,re,unicodedata
-new=json.load(open('clean.json')); existing={e['id']:e for e in json.load(open('existing.json'))}
+new=json.load(open('clean.json'))
+skipped=json.load(open('skipped.json'))
+# Products the database lists without a value the app needs. The owner asked for them anyway
+# (21 Nov 2026), with approximate numbers: each is worked out from the values the source does
+# list (energy left after the listed macros) or from a sister product of the same brand, and
+# the food page says the numbers are estimated. (kcal, protein, carbs, fat, how)
+ESTIMATES={
+ 'MuscleBlaze Yeast Protein Isolate, Cafe Mocha':(149.76,26,6.49,2.2,'carbs and fat from the Rich Chocolate flavour'),
+ 'AS-IT-IS ATOM Whey Isolate, Mango Delight':(128.5,30,1,0.5,'calories from its listed macros'),
+ 'GNC Select Fermented Yeast Protein, Coffee':(140.37,25,6.02,2.03,'calories, carbs and fat from the Chocolate flavour'),
+ 'GNC Select Fermented Yeast Protein, Vanilla':(140.37,25,6.02,2.03,'calories, carbs and fat from the Chocolate flavour'),
+ 'Guru Mann 3 Ingredients Fermented Yeast Protein, Vanilla':(119,26.3,2.31,0.5,'calories, carbs and fat from the Cocoa flavour'),
+ 'Amul Probiotic High Protein Curd':(68,6,10.6,0.1,'carbs from the calories left after protein and fat'),
+ 'Amul Pure Milk Cheese Block':(311,20,1.5,25,'fat from the calories left after protein and carbs'),
+ 'Amul Irish Drink Shot':(112,3,15,4.4,'carbs and fat split 60:40 from the calories left after protein'),
+ 'Amul High Protein Cubes':(150,25,7.5,2.2,'carbs and fat split 60:40 from the calories left after protein'),
+ 'Country Delight High Protein Paneer':(204,30,4.8,7.2,'calories, carbs and fat in the proportions of other high protein paneer'),
+ 'Country Delight 10g Protein Taaza Jeera Chaach':(44,4,4.2,1.2,'carbs and fat split 60:40 from the calories left after protein'),
+ 'Country Delight 10g Protein Mango Lassi':(84,4,10.2,3,'carbs and fat split 60:40 from the calories left after protein'),
+ 'Heritage Plain Greek Yogurt':(77.4,8,6.8,2,'carbs and fat split 60:40 from the calories left after protein'),
+ "Saffola 0% Added Sugar Muesli, Berry Crunch":(405,11.25,67.5,10,'fat from the other Saffola mueslis, carbs from the calories left'),
+ 'RiteBite RTD Protein Milkshake, Coffee Crush':(171,26,10,3,'calories, carbs and fat typical of a 26 g protein ready-to-drink shake'),
+ 'RiteBite Max Protein Peanut Butter, Choco Creamy':(608,20,19,50.2,'fat from the calories left after protein and carbs'),
+ 'SuperYou Protein Wafer Bar (10g protein), Coffee':(177.7,10,13.5,9.3,'carbs from the calories left after protein and fat'),
+ 'SuperYou Protein Wafer Bar (10g protein), Cookies & Cream':(180.4,10,13.5,9.6,'carbs from the Coffee wafer, fat from the calories left'),
+ 'SuperYou Power Puffs (8g protein), Pizza Party':(147,8,17.4,5.2,'calories, carbs and fat from the Chilli Masala pack, by weight'),
+ 'SuperYou Power Puffs (13g protein), Chilli Masala':(245,13,29,8.6,'carbs and fat split 60:40 from the calories left after protein'),
+ 'The Whole Truth Snackbar, Mixed Fruit':(162.7,4.3,19.7,7.4,'protein from the calories left after carbs and fat'),
+}
+
+for x in skipped:
+  if x['name'] in ESTIMATES:
+    k,p,c,f,how=ESTIMATES[x['name']]
+    x.update(kcal=k,p=p,c=c,f=f,flag='estimate',notes=how[0].upper()+how[1:]+'.',calc=False)
+    new.append(x)
+  elif x['serving'] in ('Cup','Cone'):
+    # Per cup or cone as sold; no weight is printed, so they are logged by the cup only.
+    x.update(flag=None,servingOnly=True)
+    new.append(x)
+assert len(new)==849, len(new)
+existing={e['id']:e for e in json.load(open('existing.json'))}
 REPL={
 'on-gold-standard-whey':'Optimum Nutrition Gold Standard 100% Whey, Double Rich Chocolate',
 'naturaltein-whey':'Naturaltein Whey Concentrate, Chocolate',
@@ -82,6 +122,10 @@ def fibre(notes):
 rows=[];repl_rows=[]
 for n in new:
   sv=n['serving'].strip()
+  if n.get('servingOnly'):
+    word=sv.lower()
+    row=[None,n['name'],n['brand'],'sweet',n['kcal'],n['p'],n['c'],n['f'],None,n['sugar'],100.0,'g',100.0,[word,word+'s'],None,None,1 if n['calc'] else 0,1]
+    fid='b-'+slug(n['name']); used.add(fid); row[0]=fid; rows.append(row); continue
   m=re.match(r'^(\d+(?:\.\d+)?)\s*(g|ml)\b\s*(.*)$',sv)
   amt=float(m.group(1)); unit=m.group(2); suffix=m.group(3).strip().lower()
   piece=None
@@ -108,7 +152,7 @@ for n in new:
   used.add(fid)
   fb=fibre(n['notes'])
   note=n['notes'] if n['flag'] else None
-  row=[fid,name,n['brand'],category(n,unit),n['kcal'],n['p'],n['c'],n['f'],fb,n['sugar'],amt,unit,piece[0] if piece else None,piece[1] if piece else None,n['flag'],note,1 if n['calc'] else 0]
+  row=[fid,name,n['brand'],category(n,unit),n['kcal'],n['p'],n['c'],n['f'],fb,n['sugar'],amt,unit,piece[0] if piece else None,piece[1] if piece else None,n['flag'],note,1 if n['calc'] else 0,0]
   (repl_rows if oid else rows).append(row)
 import os
 D='/home/claude/wl-r2/src/data/library/branded'

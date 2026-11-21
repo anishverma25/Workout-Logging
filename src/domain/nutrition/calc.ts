@@ -83,7 +83,9 @@ export interface Food {
    * Sources disagree on this pack (`conflict`) or it may be the same product as another
    * (`check`): the food's page asks people to check their pack.
    */
-  check?: { kind: 'conflict' | 'check'; note: string };
+  check?: { kind: 'conflict' | 'check' | 'estimate'; note: string };
+  /** Sold by the piece with no weight printed (a cup of ice cream): no grams are shown. */
+  servingOnly?: boolean;
   /** For Macrotrophy AI estimates: whether a label or menu was found, and where. */
   ai?: {
     basis: 'web' | 'estimate' | 'photo' | 'label' | 'yours';

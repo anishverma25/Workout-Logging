@@ -5,9 +5,9 @@ The Branded Food Macro Database (849 products, 49 brand groups, 6 categories) wa
 ## Import summary
 
 - Products in the database: 849
-- Imported: 825 (one food each, no two with the same name)
+- Imported: all 849 (one food each, no two with the same name)
 - Of these, 53 replace an older label of the same product from the same brand. They keep the old id, so recent foods, usual meals and saved plates still find them; past logs keep the numbers they were logged with.
-- Left out: 24, because a value needed for logging is not listed. Nothing was estimated.
+- 24 list a value as missing: 21 have it worked out and say so on the food page, 3 are logged by the cup (see below).
 - Brands: 53
 - Listings that disagree (⚠ in the source): 21. The main value is kept, the other listing is in the note, and the food page asks people to check their pack.
 - "Check pack" rows (may be the same product as another): 12. Imported, with the same note on the food page.
@@ -15,32 +15,32 @@ The Branded Food Macro Database (849 products, 49 brand groups, 6 categories) wa
 - Fibre is taken from the notes where the label lists it; otherwise the food page shows a dash, never 0 g.
 - Per scoop, per pack, per bar and per 100 g are one food with a serving to choose. Values are stored per 100 g (ml counted as g, as every pack label in the library already was).
 
-## Left out (no value invented)
+## Added with worked-out numbers (owner's request, 21 Nov 2026)
 
-- MuscleBlaze Yeast Protein Isolate, Cafe Mocha (36g): carbs or fat not listed
-- AS-IT-IS ATOM Whey Isolate, Mango Delight (35g): calories or protein not listed
-- GNC Select Fermented Yeast Protein, Coffee (35g): calories or protein not listed
-- GNC Select Fermented Yeast Protein, Vanilla (35g): calories or protein not listed
-- Guru Mann 3 Ingredients Fermented Yeast Protein, Vanilla (33g): calories or protein not listed
-- Amul Probiotic High Protein Curd (100g): carbs or fat not listed
-- Amul Pure Milk Cheese Block (100g): carbs or fat not listed
-- Amul Irish Drink Shot (100 ml): carbs or fat not listed
-- Amul High Protein Cubes (38g pack): carbs or fat not listed
-- Country Delight High Protein Paneer (180g pack): calories or protein not listed
-- Country Delight 10g Protein Taaza Jeera Chaach (100 ml): carbs or fat not listed
-- Country Delight 10g Protein Mango Lassi (100 ml): carbs or fat not listed
-- Heritage Plain Greek Yogurt (100g): carbs or fat not listed
-- Saffola 0% Added Sugar Muesli, Berry Crunch (100g): carbs or fat not listed
-- RiteBite RTD Protein Milkshake, Coffee Crush (250 ml): calories or protein not listed
-- RiteBite Max Protein Peanut Butter, Choco Creamy (100g): carbs or fat not listed
-- SuperYou Protein Wafer Bar (10g protein), Coffee (40g wafer): carbs or fat not listed
-- SuperYou Protein Wafer Bar (10g protein), Cookies & Cream (40g wafer): carbs or fat not listed
-- SuperYou Power Puffs (8g protein), Pizza Party (33g pack): calories or protein not listed
-- SuperYou Power Puffs (13g protein), Chilli Masala (55g pack): carbs or fat not listed
-- The Whole Truth Snackbar, Mixed Fruit (35g bar): calories or protein not listed
-- Get-A-Way High Protein Ice Cream, Chocolate Brownie Fudge Cup (Cup): serving has no weight (Cup)
-- Get-A-Way High Protein Ice Cream, Blueberry Cheesecake Cup (Cup): serving has no weight (Cup)
-- Get-A-Way High Protein Ice Cream, Dark Chocolate Cone (Cone): serving has no weight (Cone)
+The source leaves out a value for 24 products. At the owner's request they are imported too: 21 with the missing numbers worked out as below (their food page says "Some numbers are estimated, not printed"), and 3 Get-A-Way cups and cones logged by the cup, as sold, with no grams shown.
+
+- MuscleBlaze Yeast Protein Isolate, Cafe Mocha: 149.76 kcal, 26 g protein, 6.49 g carbs, 2.2 g fat (carbs and fat from the Rich Chocolate flavour)
+- AS-IT-IS ATOM Whey Isolate, Mango Delight: 128.5 kcal, 30 g protein, 1 g carbs, 0.5 g fat (calories from its listed macros)
+- GNC Select Fermented Yeast Protein, Coffee: 140.37 kcal, 25 g protein, 6.02 g carbs, 2.03 g fat (calories, carbs and fat from the Chocolate flavour)
+- GNC Select Fermented Yeast Protein, Vanilla: 140.37 kcal, 25 g protein, 6.02 g carbs, 2.03 g fat (calories, carbs and fat from the Chocolate flavour)
+- Guru Mann 3 Ingredients Fermented Yeast Protein, Vanilla: 119 kcal, 26.3 g protein, 2.31 g carbs, 0.5 g fat (calories, carbs and fat from the Cocoa flavour)
+- Amul Probiotic High Protein Curd: 68 kcal, 6 g protein, 10.6 g carbs, 0.1 g fat (carbs from the calories left after protein and fat)
+- Amul Pure Milk Cheese Block: 311 kcal, 20 g protein, 1.5 g carbs, 25 g fat (fat from the calories left after protein and carbs)
+- Amul Irish Drink Shot: 112 kcal, 3 g protein, 15 g carbs, 4.4 g fat (carbs and fat split 60:40 from the calories left after protein)
+- Amul High Protein Cubes: 150 kcal, 25 g protein, 7.5 g carbs, 2.2 g fat (carbs and fat split 60:40 from the calories left after protein)
+- Country Delight High Protein Paneer: 204 kcal, 30 g protein, 4.8 g carbs, 7.2 g fat (calories, carbs and fat in the proportions of other high protein paneer)
+- Country Delight 10g Protein Taaza Jeera Chaach: 44 kcal, 4 g protein, 4.2 g carbs, 1.2 g fat (carbs and fat split 60:40 from the calories left after protein)
+- Country Delight 10g Protein Mango Lassi: 84 kcal, 4 g protein, 10.2 g carbs, 3 g fat (carbs and fat split 60:40 from the calories left after protein)
+- Heritage Plain Greek Yogurt: 77.4 kcal, 8 g protein, 6.8 g carbs, 2 g fat (carbs and fat split 60:40 from the calories left after protein)
+- Saffola 0% Added Sugar Muesli, Berry Crunch: 405 kcal, 11.25 g protein, 67.5 g carbs, 10 g fat (fat from the other Saffola mueslis, carbs from the calories left)
+- RiteBite RTD Protein Milkshake, Coffee Crush: 171 kcal, 26 g protein, 10 g carbs, 3 g fat (calories, carbs and fat typical of a 26 g protein ready-to-drink shake)
+- RiteBite Max Protein Peanut Butter, Choco Creamy: 608 kcal, 20 g protein, 19 g carbs, 50.2 g fat (fat from the calories left after protein and carbs)
+- SuperYou Protein Wafer Bar (10g protein), Coffee: 177.7 kcal, 10 g protein, 13.5 g carbs, 9.3 g fat (carbs from the calories left after protein and fat)
+- SuperYou Protein Wafer Bar (10g protein), Cookies & Cream: 180.4 kcal, 10 g protein, 13.5 g carbs, 9.6 g fat (carbs from the Coffee wafer, fat from the calories left)
+- SuperYou Power Puffs (8g protein), Pizza Party: 147 kcal, 8 g protein, 17.4 g carbs, 5.2 g fat (calories, carbs and fat from the Chilli Masala pack, by weight)
+- SuperYou Power Puffs (13g protein), Chilli Masala: 245 kcal, 13 g protein, 29 g carbs, 8.6 g fat (carbs and fat split 60:40 from the calories left after protein)
+- The Whole Truth Snackbar, Mixed Fruit: 162.7 kcal, 4.3 g protein, 19.7 g carbs, 7.4 g fat (protein from the calories left after carbs and fat)
+- Get-A-Way High Protein Ice Cream: Chocolate Brownie Fudge Cup, Blueberry Cheesecake Cup, Dark Chocolate Cone, per cup or cone as listed.
 
 ## Replaced older labels (old id, new product)
 

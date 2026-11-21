@@ -18,14 +18,29 @@ const ids = (q: string, n = 5, diet: Parameters<typeof searchFoods>[2] = null) =
   searchFoods(all, q, diet).slice(0, n);
 
 describe('branded foods: the import', () => {
-  it('imports every product that lists calories, protein, carbs and fat, once each', () => {
-    // 849 products in the database; 24 left out (8 with no calories or protein, 13 with no
-    // carbs or fat, 3 ice creams with no weight for their cup or cone): nothing is estimated.
-    expect(ALL_ROWS).toHaveLength(825);
-    expect(new Set(ALL_ROWS.map((r) => r[0])).size).toBe(825);
-    expect(new Set(ALL_ROWS.map((r) => normalize(r[1]))).size).toBe(825);
+  it('imports all 849 products, once each', () => {
+    expect(ALL_ROWS).toHaveLength(849);
+    expect(new Set(ALL_ROWS.map((r) => r[0])).size).toBe(849);
+    expect(new Set(ALL_ROWS.map((r) => normalize(r[1]))).size).toBe(849);
     for (const id of ALL_ROWS.map((r) => r[0]))
-      expect(all.filter((f) => f.id === id), id).toHaveLength(1);
+      expect(
+        all.filter((f) => f.id === id),
+        id,
+      ).toHaveLength(1);
+  });
+
+  it('says so where the source left a number out and it was worked out (owner, 21 Nov)', () => {
+    const estimated = all.filter((f) => f.check?.kind === 'estimate');
+    expect(estimated).toHaveLength(21);
+    const curd = all.find((f) => f.name === 'Amul Probiotic High Protein Curd')!;
+    expect(curd.per100).toMatchObject({ kcal: 68, proteinG: 6, fatG: 0.1 });
+    expect(curd.check?.note).toMatch(/calories left/);
+    // Get-A-Way cups and cones: per cup as sold, logged by the cup, no grams shown.
+    const cup = all.find((f) => f.name.startsWith('Get-A-Way High Protein Ice Cream, Blueberry'))!;
+    expect(cup.servingOnly).toBe(true);
+    expect(cup.units).toEqual(['piece']);
+    expect(cup.pieceName).toEqual(['cup', 'cups']);
+    expect(cup.per100.kcal).toBe(222);
   });
 
   it('a newer listing of the same product replaces the old one and keeps its id', () => {

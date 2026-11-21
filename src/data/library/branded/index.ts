@@ -56,7 +56,7 @@ export const BRAND_ALIASES: Record<string, string[]> = {
 
 export function fromBranded(r: BrandedRow): Food {
   const [id, name, brand, category, kcal, p, c, f, fibre, , basis, unit, pieceG, pieceName] = r;
-  const [, , , , , , , , , , , , , , flag, note, printedKcal] = r;
+  const [, , , , , , , , , , , , , , flag, note, printedKcal, perPiece] = r;
   const k = 100 / basis;
   const round = (v: number) => Math.round(v * k * 100) / 100;
   const liquid = unit === 'ml';
@@ -79,7 +79,7 @@ export function fromBranded(r: BrandedRow): Food {
       fibreG: fibre === null ? 0 : round(fibre),
     },
     fatPer100: null,
-    units: pieceG ? ['piece', liquid ? 'ml' : 'g'] : [liquid ? 'ml' : 'g'],
+    units: perPiece ? ['piece'] : pieceG ? ['piece', liquid ? 'ml' : 'g'] : [liquid ? 'ml' : 'g'],
     defaultAmount: pieceG ? 1 : liquid ? 200 : 100,
     density: 1,
     pieceG,
@@ -89,6 +89,7 @@ export function fromBranded(r: BrandedRow): Food {
     recipe: null,
     ...(fibre === null ? { fibreUnknown: true } : {}),
     ...(printedKcal ? { printedKcal: true } : {}),
+    ...(perPiece ? { servingOnly: true } : {}),
     ...(flag && note ? { check: { kind: flag, note } } : {}),
   };
 }

@@ -18,8 +18,11 @@ export type BrandedRow = [
   basisUnit: 'g' | 'ml',
   pieceG: number | null,
   pieceName: [string, string] | null,
-  flag: 'conflict' | 'check' | null,
+  /** conflict: listings disagree; check: may be another product; estimate: some numbers worked out. */
+  flag: 'conflict' | 'check' | 'estimate' | null,
   note: string | null,
   /** 1: the printed calories differ by over 20% from 4/4/9 of the macros; kept as printed. */
   printedKcal: 0 | 1,
+  /** 1: sold by the cup or cone with no weight printed; logged by the piece only. */
+  servingOnly: 0 | 1,
 ];

@@ -107,7 +107,9 @@ function SourceLine({ food }: { food: Food }) {
         <span className="basis-full text-text-2" data-check-pack={food.check.kind}>
           {food.check.kind === 'conflict'
             ? 'Listings of this pack disagree a little. Check the numbers on your pack.'
-            : 'This may be the same product as another listing. Check your pack.'}
+            : food.check.kind === 'estimate'
+              ? `Some numbers are estimated, not printed. ${food.check.note}`
+              : 'This may be the same product as another listing. Check your pack.'}
         </span>
       ) : null}
     </p>
@@ -122,8 +124,8 @@ const MACROS = [
 
 /** The nutrients of one portion, large and easy to scan, with how they split and the day. */
 /** A pack logged by the serving with no weight on its label (its grams are bookkeeping only). */
-export const servingOnly = (food: Pick<Food, 'source' | 'ai'>) =>
-  food.source === 'ai' && food.ai?.portion === '1 serving';
+export const servingOnly = (food: Pick<Food, 'source' | 'ai' | 'servingOnly'>) =>
+  food.servingOnly === true || (food.source === 'ai' && food.ai?.portion === '1 serving');
 
 export function NutritionPanel({
   nutrients,
