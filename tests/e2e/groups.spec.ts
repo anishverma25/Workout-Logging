@@ -140,6 +140,9 @@ test('two friends: username, create, join by code, points, home card and admin',
   // challenges, Anish accepts, and only a forfeit ends it (migration 0036).
   await friend.page.locator('[data-duel-start]').click();
   await friend.page.locator(`[data-duel-member="${unique}"]`).click();
+  // The challenge moment plays, then gets out of the way.
+  await expect(friend.page.locator('[data-duel-stage]')).toBeVisible();
+  await expect(friend.page.locator('[data-duel-stage]')).toHaveCount(0, { timeout: 5000 });
   const waiting = friend.page.locator('[data-duel="pending"]');
   await expect(waiting).toContainText(`Waiting for @${unique} to accept`);
   await expect(friend.page.locator('[data-duel-start]')).toHaveCount(0);
@@ -148,8 +151,9 @@ test('two friends: username, create, join by code, points, home card and admin',
   await expect(page.locator('[data-duel="pending"]')).toContainText('challenged you');
   await page.locator('[data-duel-accept]').click();
   const live = page.locator('[data-duel="live"]');
-  // Points earned before accepting do not count.
-  await expect(live).toContainText(/0\s*:\s*0/);
+  // Points earned before accepting do not count: the arena starts at 0 against 0.
+  await expect(live.locator('[data-duel-score="me"]')).toHaveText('0');
+  await expect(live.locator('[data-duel-score="them"]')).toHaveText('0');
   await expect(live).toContainText('Level');
   await expect(page.locator('[data-duel-cancel]')).toHaveCount(0);
   await friend.page.reload();

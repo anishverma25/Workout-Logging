@@ -46,6 +46,7 @@
   --color-text-2: var(--text-2);
   --color-text-3: var(--text-3);
   --color-lime: var(--lime);
+  --color-rival: var(--rival);
   --color-lime-dim: var(--lime-dim);
   --color-gold: var(--gold);
   --color-gold-dim: var(--gold-dim);
@@ -1730,6 +1731,5 @@ html[data-landing] #landing {
 .pro-leaders {
   border: 1px solid rgb(198 244 50 / 0.25);
   background:
-    radial-gradient(120% 140% at 100% 0%, var(--pro-glow), transparent 60%),
-    var(--surface);
+    radial-gradient(120% 140% at 100% 0%, var(--pro-glow), transparent 60%), var(--surface);
 }
