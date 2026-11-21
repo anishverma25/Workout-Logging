@@ -609,14 +609,14 @@ function Results({
     return counts;
   }, [ctx.logs]);
   const results = useMemo(
-    () => searchFoods(ctx.foods, query, ctx.diet, 60, usual),
+    () => searchFoods(ctx.foods, query, ctx.diet, 150, usual),
     [ctx.foods, query, ctx.diet, usual],
   );
   const grouped = useMemo(() => groupResults(results, query), [results, query]);
   // "Show more" opens the rest for this search only.
   const [openFor, setOpenFor] = useState<string | null>(null);
   const open = openFor === query;
-  const shownResults = open ? results : grouped.first;
+  const shownResults = open ? [...grouped.first, ...grouped.more] : grouped.first;
   const hidden = useMemo(
     () => results.length === 0 && !!ctx.diet && searchFoods(ctx.foods, query, null, 1).length > 0,
     [results.length, ctx.foods, query, ctx.diet],

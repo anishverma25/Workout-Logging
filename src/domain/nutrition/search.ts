@@ -310,15 +310,15 @@ export function groupResults(
 ): { first: Food[]; more: Food[]; brandTyped: boolean } {
   const brandTyped = results.some((f) => f.brand && namesBrand(f, query));
   if (brandTyped) return { first: results.slice(0, 10), more: results.slice(10), brandTyped };
-  const first: Food[] = [];
-  const more: Food[] = [];
-  let packs = 0;
-  for (const f of results) {
-    if (f.brand && packs >= 4) more.push(f);
-    else {
-      if (f.brand) packs++;
-      first.push(f);
-    }
-  }
-  return { first: first.slice(0, 20), more: [...first.slice(20), ...more], brandTyped };
+  const plain = results.filter((f) => !f.brand);
+  const packs = results.filter((f) => f.brand);
+  const firstPacks = packs.slice(0, 4);
+  const firstPlain = plain.slice(0, 20);
+  const keep = new Set([...firstPlain, ...firstPacks]);
+  // The brands come first behind "Show more", then the rest of the everyday matches.
+  return {
+    first: results.filter((f) => keep.has(f)),
+    more: [...packs.slice(4), ...plain.slice(20)],
+    brandTyped,
+  };
 }
