@@ -98,6 +98,12 @@ html[data-landing] #landing {
 }
 
 @layer base {
+  /* A fieldset grows to fit its widest child by default (min-inline-size: min-content), so a
+     row of chips inside one made a whole sheet scroll sideways. */
+  fieldset {
+    min-inline-size: 0;
+  }
+
   html {
     background: var(--bg);
     -webkit-text-size-adjust: 100%;

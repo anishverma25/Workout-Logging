@@ -626,4 +626,13 @@ Read README.md for setup, architecture and calculation rules.
     moment (`DuelStage`), duel record. Tokens `--pro-*`, `--rival*`.
   - Water undo toasts last `QUICK_UNDO_MS` (4 s), a repeated message replaces the last, and
     only a mouse (not a finger) holds a toast. A new page opens at its top (`useTopOnNewPage`).
+- Muscles in detail (November 2026, no migration, Dexie unchanged, `docs/muscles.md`): taxonomy in
+  `domain/muscles/taxonomy.ts` (8 regions, 26 groups, 88 muscles, one record each, `alsoIn` for
+  a second group, `legacy` maps to the 12 stored groups), reviewed targets for all 120 library
+  exercises in `targets.ts` (`targetsFor`, `worksMuscle`; custom exercises use their groups),
+  `detailedVolume` (same 1 and 0.5 rule; heads get direct sets only; the 12-group numbers are
+  unchanged). Exercises page: `MuscleDetailButton`/`MuscleDetailSheet` (filter `detail`),
+  search by muscle names (`musclesNamed`, below any name match), "Muscles worked" in the
+  exercise sheet; Progress "Muscles in detail". A fieldset no longer grows to its widest child
+  (sheets scrolled sideways).
 

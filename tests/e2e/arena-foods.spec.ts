@@ -71,3 +71,46 @@ test('a page opened from far down another one starts at its top', async ({ page 
   await page.goBack();
   await expect(page).toHaveURL(/\/more/);
 });
+
+test('exercise library: simple chips first, muscles in detail one tap away', async ({ page }) => {
+  await signUpFresh(page, { at: '/exercises', tag: 'muscle-detail' });
+  // A muscle searched by its gym name finds the exercises that train it.
+  const search = page.getByRole('searchbox', { name: 'Search exercises' });
+  await search.fill('upper chest');
+  await expect(page.locator('[data-exercise-row]').first()).toContainText(/Incline/);
+  await search.fill('');
+
+  await page.locator('[data-muscle-detail-open]').click();
+  const sheet = page.getByRole('dialog', { name: 'Muscles in detail' });
+  await sheet.locator('[data-muscle-expand="triceps"]').click();
+  await sheet.locator('[data-muscle-pick="triceps-long"]').click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.locator('[data-muscle-detail-active="triceps-long"]')).toContainText(
+    'Triceps long head',
+  );
+  const rows = page.locator('[data-exercise-row]');
+  await expect(rows.filter({ hasText: 'Overhead triceps extension' })).toHaveCount(1);
+  await expect(rows.filter({ hasText: 'Barbell curl' })).toHaveCount(0);
+
+  // The exercise's sheet: Muscles worked, closed until tapped.
+  await rows.filter({ hasText: 'Overhead triceps extension' }).click();
+  const detail = page.locator('[data-muscles-worked]');
+  await expect(detail).toBeVisible();
+  await detail.getByRole('button', { name: /Muscles worked/ }).click();
+  await expect(detail).toContainText('Main');
+  await expect(detail).toContainText('Triceps long head');
+});
+
+test('the new exercise sheet never slides sideways when a chip row is swiped', async ({ page }) => {
+  await signUpFresh(page, { at: '/exercises', tag: 'sheet-swipe' });
+  await page.getByRole('button', { name: 'New exercise' }).click();
+  const body = page.getByRole('dialog').locator('[data-sheet-body]');
+  await expect(body).toBeVisible();
+  const row = page.getByRole('dialog').getByRole('radiogroup').first();
+  await row.hover();
+  await page.mouse.wheel(600, 0);
+  await page.mouse.wheel(600, 0);
+  await expect.poll(() => body.evaluate((el) => el.scrollLeft)).toBe(0);
+  // Nothing inside is wider than the sheet.
+  expect(await body.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+});
