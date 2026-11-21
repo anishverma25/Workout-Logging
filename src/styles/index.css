@@ -1321,7 +1321,8 @@ html[data-landing] #landing {
 .podium::before {
   content: '';
   position: absolute;
-  inset: -30px -20px auto;
+  /* Never wider than the page: a glow past the edge made the board scroll sideways. */
+  inset: -30px 0 auto;
   height: 260px;
   background: radial-gradient(60% 70% at 50% 30%, var(--gold-dim), transparent 70%);
   pointer-events: none;
