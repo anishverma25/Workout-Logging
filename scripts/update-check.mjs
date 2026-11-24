@@ -505,7 +505,7 @@ async function propagating(fromBuild, toBuild) {
  * headers). Once the deploy is complete, "Repair and open" must bring the app up.
  */
 async function firstVisitMidDeploy(fromBuild, toBuild) {
-  const name = `first visit while ${toBuild} spreads, then Repair and open`;
+  const name = `first visit while ${toBuild} spreads, then it repairs itself`;
   const ctx = await browser.newContext({ ...devices['Pixel 7'] });
   const page = await ctx.newPage();
   try {
@@ -515,16 +515,14 @@ async function firstVisitMidDeploy(fromBuild, toBuild) {
     await page.waitForTimeout(3000);
     await lagBehind(null);
     await page.reload();
-    await page.waitForTimeout(8000);
-    const stuck = await state(page);
-    console.log(`  after a plain reload: ${stuck.drawn && !stuck.help ? 'opened' : 'stuck'}`);
-    if (!stuck.drawn || stuck.help) {
-      await page.getByRole('button', { name: 'Repair and open' }).click();
-      await page.waitForTimeout(10_000);
+    // The start-up check repairs by itself when app files failed to load (6 s), then opens.
+    let after = { drawn: false, help: true, errs: [] };
+    for (let waited = 0; waited < 40_000 && (!after.drawn || after.help); waited += 2000) {
+      await page.waitForTimeout(2000);
+      after = await state(page).catch(() => after); // a repair reloads the page meanwhile
     }
-    const after = await state(page);
     if (!after.drawn || after.help)
-      throw new Error('Repair and open did not bring the app up: ' + JSON.stringify(after.errs));
+      throw new Error('the app did not repair itself and open: ' + JSON.stringify(after.errs));
     console.log(`PASS ${name}`);
   } catch (err) {
     failures.push(`${name}: ${err.message}`);
