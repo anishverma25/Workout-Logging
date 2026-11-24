@@ -18,7 +18,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
-import { chromium, devices } from '@playwright/test';
+import { chromium, devices, webkit } from '@playwright/test';
 
 const ROOT = resolve('.');
 const WORK = join(ROOT, '.update-check');
@@ -124,15 +124,22 @@ if (!(await fakeUp())) {
 }
 
 // 3. The steps.
-const browser = await chromium.launch(
-  process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},
-);
+// UPDATE_BROWSER=webkit runs every step in Safari's engine on an iPhone (November 2026: an
+// update that opened in Chrome failed to open on iPhones).
+const SAFARI = process.env.UPDATE_BROWSER === 'webkit';
+const PHONE = SAFARI ? devices['iPhone 15'] : devices['Pixel 7'];
+const browser = SAFARI
+  ? await webkit.launch()
+  : await chromium.launch(
+      process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},
+    );
 const failures = [];
 const state = (page) =>
   page.evaluate(() => ({
     reloaded: !window.__beforeUpdate,
     main: [...document.scripts].map((s) => s.src).find((s) => s.includes('/assets/index-')) ?? '',
     help: !!document.getElementById('boot-help'),
+    errs: window.__overload?.errors ?? [],
     drawn: (document.getElementById('root')?.childElementCount ?? 0) > 0,
   }));
 
@@ -194,9 +201,21 @@ const releaseId = (src) =>
   )?.[1] ?? '';
 const RELEASES = { prev: releaseId(prevSrc), cur: releaseId(ROOT) };
 
+/** Errors the pages of a context printed, shown when a step fails. */
+function watchErrors(ctx) {
+  const seen = [];
+  const on = (p) => {
+    p.on('pageerror', (e) => seen.push(`pageerror: ${e.message}`));
+    p.on('console', (m) => m.type() === 'error' && seen.push(`console: ${m.text()}`));
+  };
+  ctx.on('page', on);
+  return seen;
+}
+
 async function update(fromBuild, toBuild) {
   const name = `${fromBuild} -> ${toBuild}`;
-  const ctx = await browser.newContext({ ...devices['Pixel 7'] });
+  const ctx = await browser.newContext({ ...PHONE });
+  const seen = watchErrors(ctx);
   await ctx.addInitScript((id) => {
     try {
       localStorage.setItem('overload.whatsNew', id);
@@ -231,7 +250,8 @@ async function update(fromBuild, toBuild) {
     const want =
       (await (await fetch(`${BASE}/`)).text()).match(/\/assets\/index-[^"]+\.js/)?.[0] ?? '';
     if (!after.reloaded) throw new Error('Reload did nothing');
-    if (!after.drawn || after.help) throw new Error('the app did not open after Reload');
+    if (!after.drawn || after.help)
+      throw new Error('the app did not open after Reload: ' + JSON.stringify(after.errs));
     if (!after.main.endsWith(want))
       throw new Error(`still on the old version after Reload (${after.main})`);
     const workers = await page.evaluate(async () => (await caches.keys()).join(','));
@@ -244,7 +264,9 @@ async function update(fromBuild, toBuild) {
     await again.waitForTimeout(4000);
     const cold = await state(again);
     if (!cold.drawn || cold.help)
-      throw new Error('the app did not open from cold after the update');
+      throw new Error(
+        'the app did not open from cold after the update: ' + JSON.stringify(cold.errs),
+      );
     if (!cold.main.endsWith(want)) throw new Error('opening from cold gave the old version');
     const kept = await records(again);
     if (kept.workouts !== before.workouts || kept.sets !== before.sets)
@@ -260,13 +282,16 @@ async function update(fromBuild, toBuild) {
     await off.waitForTimeout(4000);
     const offline = await state(off);
     if (!offline.drawn || offline.help)
-      throw new Error('the app did not open offline after the update');
+      throw new Error(
+        'the app did not open offline after the update: ' + JSON.stringify(offline.errs),
+      );
     if (!offline.main.endsWith(want)) throw new Error('offline opened the old version');
     await ctx.setOffline(false);
     console.log(`PASS ${name} (${kept.workouts} workouts kept, opens offline)`);
   } catch (err) {
     failures.push(`${name}: ${err.message}`);
     console.log(`FAIL ${name}: ${err.message}`);
+    for (const line of seen.slice(-20)) console.log(`  ${line.slice(0, 400)}`);
   } finally {
     await ctx.close();
   }
@@ -278,7 +303,7 @@ async function update(fromBuild, toBuild) {
  */
 async function interrupted(fromBuild, toBuild) {
   const name = `${fromBuild} -> ${toBuild}, cut off halfway`;
-  const ctx = await browser.newContext({ ...devices['Pixel 7'] });
+  const ctx = await browser.newContext({ ...PHONE });
   await ctx.addInitScript((id) => {
     try {
       localStorage.setItem('overload.whatsNew', id);
@@ -303,7 +328,9 @@ async function interrupted(fromBuild, toBuild) {
     await page.waitForTimeout(4000);
     const stuck = await state(page);
     if (!stuck.drawn || stuck.help)
-      throw new Error('the app stopped opening after a failed update');
+      throw new Error(
+        'the app stopped opening after a failed update: ' + JSON.stringify(stuck.errs),
+      );
     if (stuck.main !== old) throw new Error('a half-downloaded version took over');
     await ctx.setOffline(true);
     const off = await ctx.newPage();
@@ -311,7 +338,9 @@ async function interrupted(fromBuild, toBuild) {
     await off.waitForTimeout(4000);
     const offline = await state(off);
     if (!offline.drawn || offline.help)
-      throw new Error('the app did not open offline after a failed update');
+      throw new Error(
+        'the app did not open offline after a failed update: ' + JSON.stringify(offline.errs),
+      );
     await off.close();
     await ctx.setOffline(false);
 
@@ -332,7 +361,9 @@ async function interrupted(fromBuild, toBuild) {
     const want =
       (await (await fetch(`${BASE}/`)).text()).match(/\/assets\/index-[^"]+\.js/)?.[0] ?? '';
     if (!after.drawn || after.help)
-      throw new Error('the app did not open after the retried update');
+      throw new Error(
+        'the app did not open after the retried update: ' + JSON.stringify(after.errs),
+      );
     if (!after.main.endsWith(want)) throw new Error('the retried update did not take over');
     console.log(`PASS ${name}`);
   } catch (err) {
