@@ -30,7 +30,9 @@ const sh = (cmd, cwd = ROOT) =>
     .trim();
 
 // 1. The versions: live now, this code, and this code again under a new version name.
-rmSync(WORK, { recursive: true, force: true });
+// UPDATE_REUSE=1 reuses the builds of the last run (for working on the steps themselves).
+const reuse = process.env.UPDATE_REUSE === '1' && existsSync(join(WORK, 'next', 'sw.js'));
+if (!reuse) rmSync(WORK, { recursive: true, force: true });
 const fromRef = process.env.UPDATE_FROM_REF ?? 'origin/phase-2-wip';
 let from = sh(`git rev-parse ${fromRef}`);
 // On the deployed branch itself, the version before this commit is the one people have.
@@ -38,20 +40,23 @@ if (sh(`git rev-parse ${from}^{tree}`) === sh('git rev-parse HEAD^{tree}'))
   from = sh('git rev-parse HEAD~1');
 console.log(`Live version: ${from.slice(0, 7)}; this code: ${sh('git rev-parse --short HEAD')}`);
 const prevSrc = join(WORK, 'src-prev');
-sh(`git worktree add --detach --force ${prevSrc} ${from}`);
-symlinkSync(join(ROOT, 'node_modules'), join(prevSrc, 'node_modules'));
-cpSync(join(ROOT, '.env.e2e'), join(prevSrc, '.env.e2e'));
 const build = (cwd, out) =>
   // The demo athlete can be loaded in these builds, to update an account with real history.
   sh(`VITE_DEMO_AUTOLOAD=true pnpm exec vite build --mode e2e --outDir ${out} --emptyOutDir`, cwd);
-build(prevSrc, join(WORK, 'prev'));
-build(ROOT, join(WORK, 'cur'));
-cpSync(join(WORK, 'cur'), join(WORK, 'next'), { recursive: true });
+if (!reuse) {
+  sh(`git worktree add --detach --force ${prevSrc} ${from}`);
+  symlinkSync(join(ROOT, 'node_modules'), join(prevSrc, 'node_modules'));
+  cpSync(join(ROOT, '.env.e2e'), join(prevSrc, '.env.e2e'));
+  build(prevSrc, join(WORK, 'prev'));
+  build(ROOT, join(WORK, 'cur'));
+  cpSync(join(WORK, 'cur'), join(WORK, 'next'), { recursive: true });
+}
 const swNext = join(WORK, 'next', 'sw.js');
-writeFileSync(
-  swNext,
-  readFileSync(swNext, 'utf8').replace(/const VERSION = '([^']*)'/, "const VERSION = '$1-next'"),
-);
+if (!reuse)
+  writeFileSync(
+    swNext,
+    readFileSync(swNext, 'utf8').replace(/const VERSION = '([^']*)'/, "const VERSION = '$1-next'"),
+  );
 
 // 2. Hosting like Cloudflare Pages: files, pretty .html addresses, the nearest 404.html for a
 // missing file (index.html when there is none: Pages then assumes a single-page app), and every
@@ -423,7 +428,24 @@ async function propagating(fromBuild, toBuild) {
       window.__beforeUpdate = true;
     });
     await page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.update());
-    await page.getByText('A new version is ready').first().waitFor({ timeout: 30_000 });
+    await page
+      .getByText('A new version is ready')
+      .first()
+      .waitFor({ timeout: 30_000 })
+      .catch(async (err) => {
+        const why = await page.evaluate(async () => {
+          const r = await navigator.serviceWorker.getRegistration();
+          return {
+            installing: r?.installing?.state,
+            waiting: r?.waiting?.state,
+            active: r?.active?.scriptURL && r.active.state,
+            caches: await caches.keys(),
+          };
+        });
+        throw new Error(`no update notice after the deploy finished ${JSON.stringify(why)}`, {
+          cause: err,
+        });
+      });
     await page.waitForTimeout(2000);
     await page.getByRole('button', { name: 'Reload' }).first().click();
     await page
@@ -490,16 +512,18 @@ async function firstVisitMidDeploy(fromBuild, toBuild) {
   }
 }
 
-await propagating('prev', 'cur');
-await firstVisitMidDeploy('prev', 'cur');
-await update('prev', 'cur');
-await update('cur', 'next');
-await interrupted('prev', 'cur');
+const only = process.env.UPDATE_ONLY;
+const run = (key, fn) => (!only || only.split(',').includes(key) ? fn() : null);
+await run('propagating', () => propagating('prev', 'cur'));
+await run('firstVisit', () => firstVisitMidDeploy('prev', 'cur'));
+await run('update', () => update('prev', 'cur'));
+await run('update-next', () => update('cur', 'next'));
+await run('interrupted', () => interrupted('prev', 'cur'));
 
 await browser.close();
 server.close();
 fake?.kill();
-sh(`git worktree remove --force ${prevSrc}`);
+if (!process.env.UPDATE_KEEP) sh(`git worktree remove --force ${prevSrc}`);
 if (failures.length) {
   console.error(`\nUpdate check failed:\n- ${failures.join('\n- ')}`);
   process.exit(1);

@@ -652,3 +652,13 @@ Read README.md for setup, architecture and calculation rules.
     `domain/analytics/quality.ts`, topics `recovery-map` and `training-quality`; the acute to
     chronic load flag was removed. Colours on Progress: lime good, `--info` sky for information,
     `--warning` amber for attention, the rest grey; section icons are neutral.
+- Deploy safety (November 24, 2026, after the November 24 batch failed to open on every device):
+  while a Pages deploy spreads, a new file name can be answered by the old deployment with the
+  page (HTML, 200), which phones then kept for a year. Now: `dist/assets/404.html` makes a
+  missing app file a real 404; `/assets/*` is `max-age=0, must-revalidate`; file names are
+  `[name]-[hash:10]` (`FILE_NAMES`, so no name from the failed release returns); the worker
+  downloads every file with `cache: 'no-cache'`, checks its type (`looksRight`) and that `/`
+  links only its own files, and fails the install otherwise, so the old version keeps working;
+  cached hits and network answers of the wrong type are never used; Repair also re-downloads any
+  app file the browser saved wrongly. `pnpm test:update` covers a deploy still spreading and a
+  first visit during one (`UPDATE_ONLY`, `UPDATE_REUSE`, `UPDATE_KEEP` for working on it).

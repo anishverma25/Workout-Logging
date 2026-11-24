@@ -101,6 +101,14 @@ for (const file of ['sitemap.xml', '_routes.json', 'robots.txt']) {
     )
   )
     problems.push('_headers caches /assets/* without checking with the server');
+  // The worker only installs when the page it saves links to files of its own version.
+  const sw = readFileSync('dist/sw.js', 'utf8');
+  const precache = new Set(JSON.parse(/const PRECACHE = (\[[\s\S]*?\]);/.exec(sw)?.[1] ?? '[]'));
+  for (const m of readFileSync('dist/index.html', 'utf8').matchAll(
+    /(?:src|href)="(\/assets\/[^"]+)"/g,
+  ))
+    if (!precache.has(m[1]))
+      problems.push(`index.html links ${m[1]}, which the offline copy lacks`);
   if (readFileSync('dist/sw.js', 'utf8').includes('/assets/404.html'))
     problems.push('the offline copy precaches /assets/404.html');
 }

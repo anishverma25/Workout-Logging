@@ -43,10 +43,17 @@ async function download(path) {
       res = null;
     }
     if (looksRight(path, res)) {
-      if (path !== '/') return res;
+      // Read in full now, so no download holds a connection open while the others wait.
+      let body;
+      try {
+        body = await res.blob();
+      } catch {
+        body = null;
+      }
+      const whole = body && new Response(body, { status: res.status, headers: res.headers });
       // The page must be this version's page: every app file it links to is in this version.
-      const html = await res.clone().text();
-      if (linkedAssets(html).every((a) => PRECACHED.has(a))) return res;
+      if (whole && (path !== '/' || linkedAssets(await body.text()).every((a) => PRECACHED.has(a))))
+        return whole;
     }
     await new Promise((r) => setTimeout(r, 1500));
   }
@@ -62,21 +69,30 @@ self.addEventListener('install', (event) => {
     (async () => {
       const got = new Map();
       const queue = [...PRECACHE];
+      let failed = false;
       const worker = async () => {
-        while (queue.length) {
+        while (queue.length && !failed) {
           const path = queue.shift();
-          got.set(path, await download(path));
+          try {
+            got.set(path, await download(path));
+          } catch (err) {
+            failed = true;
+            throw err;
+          }
         }
       };
       await Promise.all(Array.from({ length: 6 }, worker));
+      // Nothing is stored until every file has passed; a cache already there is never removed.
+      const existed = await caches.has(CACHE);
       const cache = await caches.open(CACHE);
-      for (const [path, res] of got) await cache.put(path, res);
+      try {
+        for (const [path, res] of got) await cache.put(path, res);
+      } catch (err) {
+        if (!existed) await caches.delete(CACHE);
+        throw err;
+      }
       await self.skipWaiting();
-    })().catch(async (err) => {
-      // A half-filled cache must never be mistaken for this version.
-      await caches.delete(CACHE);
-      throw err;
-    }),
+    })(),
   );
 });
 

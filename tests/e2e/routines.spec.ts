@@ -149,9 +149,7 @@ test('each library exercise shows what it works, with its sources', async ({ pag
   await expect(sheet.getByRole('heading', { name: 'Muscles worked' })).toBeVisible();
   // Primary, secondary and minor lists together add up to the whole.
   const shares = sheet.locator('ul[aria-label="Approximate share of the work"] > li');
-  const values = (await shares.allInnerTexts()).map((t) =>
-    Number(/(\d+)%/.exec(t)![1]),
-  );
+  const values = (await shares.allInnerTexts()).map((t) => Number(/(\d+)%/.exec(t)![1]));
   expect(values.reduce((a, b) => a + b, 0)).toBe(100);
   await expect(sheet.getByRole('link').first()).toHaveAttribute('href', /^https:\/\//);
 });
