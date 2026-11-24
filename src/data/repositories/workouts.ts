@@ -686,9 +686,7 @@ export async function completeSet(
       durationSec: set.durationSec ?? suggestion?.durationSec ?? null,
       distanceM: set.distanceM ?? suggestion?.distanceM ?? null,
     };
-    const siblings = we
-      ? await db.sets.where('workoutExerciseId').equals(we.id).toArray()
-      : [];
+    const siblings = we ? await db.sets.where('workoutExerciseId').equals(we.id).toArray() : [];
     if (logsBySide(we?.bySide, exercise, we?.createdAt, siblings)) {
       // Each side empty takes last time's reps for that side (or last time's reps, when that
       // set was not logged per side); `reps` is the weaker side.

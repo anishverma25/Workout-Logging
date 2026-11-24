@@ -30,7 +30,9 @@ const sh = (cmd, cwd = ROOT) =>
     .trim();
 
 // 1. The versions: live now, this code, and this code again under a new version name.
-rmSync(WORK, { recursive: true, force: true });
+// UPDATE_REUSE=1 reuses the builds of the last run (for working on the steps themselves).
+const reuse = process.env.UPDATE_REUSE === '1' && existsSync(join(WORK, 'next', 'sw.js'));
+if (!reuse) rmSync(WORK, { recursive: true, force: true });
 const fromRef = process.env.UPDATE_FROM_REF ?? 'origin/phase-2-wip';
 let from = sh(`git rev-parse ${fromRef}`);
 // On the deployed branch itself, the version before this commit is the one people have.
@@ -38,24 +40,33 @@ if (sh(`git rev-parse ${from}^{tree}`) === sh('git rev-parse HEAD^{tree}'))
   from = sh('git rev-parse HEAD~1');
 console.log(`Live version: ${from.slice(0, 7)}; this code: ${sh('git rev-parse --short HEAD')}`);
 const prevSrc = join(WORK, 'src-prev');
-sh(`git worktree add --detach --force ${prevSrc} ${from}`);
-symlinkSync(join(ROOT, 'node_modules'), join(prevSrc, 'node_modules'));
-cpSync(join(ROOT, '.env.e2e'), join(prevSrc, '.env.e2e'));
 const build = (cwd, out) =>
   // The demo athlete can be loaded in these builds, to update an account with real history.
   sh(`VITE_DEMO_AUTOLOAD=true pnpm exec vite build --mode e2e --outDir ${out} --emptyOutDir`, cwd);
-build(prevSrc, join(WORK, 'prev'));
-build(ROOT, join(WORK, 'cur'));
-cpSync(join(WORK, 'cur'), join(WORK, 'next'), { recursive: true });
+if (!reuse) {
+  sh(`git worktree add --detach --force ${prevSrc} ${from}`);
+  symlinkSync(join(ROOT, 'node_modules'), join(prevSrc, 'node_modules'));
+  cpSync(join(ROOT, '.env.e2e'), join(prevSrc, '.env.e2e'));
+  build(prevSrc, join(WORK, 'prev'));
+  build(ROOT, join(WORK, 'cur'));
+  cpSync(join(WORK, 'cur'), join(WORK, 'next'), { recursive: true });
+}
 const swNext = join(WORK, 'next', 'sw.js');
-writeFileSync(
-  swNext,
-  readFileSync(swNext, 'utf8').replace(/const VERSION = '([^']*)'/, "const VERSION = '$1-next'"),
-);
+if (!reuse)
+  writeFileSync(
+    swNext,
+    readFileSync(swNext, 'utf8').replace(/const VERSION = '([^']*)'/, "const VERSION = '$1-next'"),
+  );
 
-// 2. Hosting like Cloudflare Pages: files, pretty .html addresses, index.html for anything else,
-// and the `/*` headers (the Content Security Policy matters). GET /__use/<name> switches build.
+// 2. Hosting like Cloudflare Pages: files, pretty .html addresses, the nearest 404.html for a
+// missing file (index.html when there is none: Pages then assumes a single-page app), and every
+// `_headers` block that matches (the CSP and the caching both matter). GET /__use/<name>
+// switches build. GET /__lag/<name> starts a deploy that has not reached every data centre yet:
+// app files are answered by that older build, as Cloudflare did on November 24, 2026 (the new
+// page and worker, but the old deployment's answer for the new file names).
 let current = 'prev';
+/** While set, /assets/ requests are answered by this older build. */
+let lag = null;
 /** While on, script files fail to download: an update cut off halfway. */
 let broken = false;
 const types = {
@@ -70,23 +81,43 @@ const types = {
   '.txt': 'text/plain',
   '.xml': 'application/xml',
 };
-function headersFor(dir) {
-  const block = readFileSync(join(dir, '_headers'), 'utf8')
-    .split(/\n(?=\/)/)[0]
-    .split('\n')
-    .slice(1);
-  return Object.fromEntries(
-    block
-      .map((l) => /^\s+([^:]+):\s*(.*)$/.exec(l))
-      .filter(Boolean)
-      .map((m) => [m[1], m[2]]),
-  );
+function headersFor(dir, pathname) {
+  const out = {};
+  for (const block of readFileSync(join(dir, '_headers'), 'utf8').split(/\n(?=\/)/)) {
+    const [rule, ...lines] = block.split('\n');
+    const pattern = rule.trim();
+    const hit = pattern.endsWith('*')
+      ? pathname.startsWith(pattern.slice(0, -1))
+      : pathname === pattern;
+    if (!hit) continue;
+    for (const l of lines) {
+      const m = /^\s+([^:]+):\s*(.*)$/.exec(l);
+      if (m) out[m[1]] = m[2];
+    }
+  }
+  // Pages' own default for anything the file does not set.
+  out['Cache-Control'] ??= 'public, max-age=0, must-revalidate';
+  return out;
+}
+/** The nearest 404.html above a missing path, or null (single-page app: index.html). */
+function notFoundPage(dir, pathname) {
+  let at = pathname.replace(/\/[^/]*$/, '');
+  for (;;) {
+    const page = join(dir, at, '404.html');
+    if (existsSync(page)) return page;
+    if (!at) return null;
+    at = at.replace(/\/[^/]*$/, '');
+  }
 }
 const server = createServer((req, res) => {
   const url = new URL(req.url, BASE);
   if (url.pathname.startsWith('/__use/')) {
     current = url.pathname.slice(7);
     return res.end(current);
+  }
+  if (url.pathname.startsWith('/__lag/')) {
+    lag = url.pathname.slice(7) || null;
+    return res.end(String(lag));
   }
   if (url.pathname.startsWith('/__break/')) {
     broken = url.pathname.endsWith('/on');
@@ -96,19 +127,26 @@ const server = createServer((req, res) => {
     res.writeHead(503);
     return res.end();
   }
-  const dir = join(WORK, current);
+  const dir = join(WORK, lag && url.pathname.startsWith('/assets/') ? lag : current);
   let file = join(dir, decodeURIComponent(url.pathname));
+  let status = 200;
   if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html');
   if (!existsSync(file) && existsSync(`${file}.html`)) file += '.html';
-  if (!existsSync(file)) file = join(dir, 'index.html');
+  if (!existsSync(file)) {
+    const missing = notFoundPage(dir, url.pathname);
+    if (missing) {
+      file = missing;
+      status = 404;
+    } else file = join(dir, 'index.html');
+  }
   const headers = {
-    ...headersFor(dir),
+    ...headersFor(dir, url.pathname),
     'Content-Type': types[extname(file)] ?? 'application/octet-stream',
   };
-  if (/(sw\.js|\.html)$/.test(file)) headers['Cache-Control'] = 'no-cache';
-  res.writeHead(200, headers);
+  res.writeHead(status, headers);
   res.end(readFileSync(file));
 }).listen(PORT);
+const lagBehind = (v) => fetch(`${BASE}/__lag/${v ?? ''}`);
 const use = (v) => fetch(`${BASE}/__use/${v}`);
 const breakDownloads = (on) => fetch(`${BASE}/__break/${on ? 'on' : 'off'}`);
 
@@ -133,6 +171,7 @@ const state = (page) =>
     reloaded: !window.__beforeUpdate,
     main: [...document.scripts].map((s) => s.src).find((s) => s.includes('/assets/index-')) ?? '',
     help: !!document.getElementById('boot-help'),
+    errs: window.__overload?.errors ?? [],
     drawn: (document.getElementById('root')?.childElementCount ?? 0) > 0,
   }));
 
@@ -344,18 +383,172 @@ async function interrupted(fromBuild, toBuild) {
   }
 }
 
-await update('prev', 'cur');
-await update('cur', 'next');
-await interrupted('prev', 'cur');
+/**
+ * A deploy that has not reached every data centre yet (November 24, 2026): the new page and
+ * worker arrive, but the new app files are still answered by the older deployment. The version
+ * the person has must keep opening, and the update must go through once the deploy is complete.
+ */
+async function propagating(fromBuild, toBuild) {
+  const name = `${fromBuild} -> ${toBuild}, deploy still spreading`;
+  const ctx = await browser.newContext({ ...devices['Pixel 7'] });
+  await ctx.addInitScript((id) => {
+    try {
+      localStorage.setItem('overload.whatsNew', id);
+    } catch {}
+  }, RELEASES[fromBuild]);
+  const page = await ctx.newPage();
+  try {
+    await use(fromBuild);
+    await signUp(page);
+    await page.goto(`${BASE}/more`);
+    await page.waitForTimeout(1000);
+    const old = (await state(page)).main;
+
+    await use(toBuild);
+    await lagBehind(fromBuild);
+    await page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.update());
+    await page.waitForTimeout(12_000);
+    for (const label of ['a reload', 'a cold start']) {
+      const p = label === 'a reload' ? page : await ctx.newPage();
+      if (label === 'a reload') await p.reload();
+      else await p.goto(`${BASE}/more`);
+      await p.waitForTimeout(5000);
+      const now = await state(p);
+      if (!now.drawn || now.help)
+        throw new Error(
+          `the app stopped opening after ${label} mid-deploy: ${JSON.stringify(now.errs)}`,
+        );
+      if (now.main !== old) throw new Error(`a half-deployed version took over (${now.main})`);
+      if (p !== page) await p.close();
+    }
+
+    // The deploy reaches every data centre: the update goes through as usual.
+    await lagBehind(null);
+    if (process.env.UPDATE_DEBUG) {
+      ctx.on('console', (m) => console.log('  [console]', m.text()));
+      const r = await page.evaluate(async () => {
+        const reg = await navigator.serviceWorker.getRegistration();
+        try {
+          await reg.update();
+        } catch (e) {
+          return 'update threw ' + e.message;
+        }
+        await new Promise((r) => setTimeout(r, 8000));
+        return JSON.stringify({
+          installing: reg.installing?.state,
+          waiting: reg.waiting?.state,
+          active: reg.active?.state,
+          caches: await caches.keys(),
+        });
+      });
+      console.log('  [debug] after update', r);
+    }
+    await page.evaluate(() => {
+      window.__beforeUpdate = true;
+    });
+    // People come back to the app now and then; each time it looks for the new version. An
+    // attempt made while the deploy was spreading may still be finishing: the next one installs.
+    const notice = page.getByText('A new version is ready').first();
+    for (let tries = 0; tries < 6 && !(await notice.isVisible()); tries++) {
+      await page
+        .evaluate(async () => (await navigator.serviceWorker.getRegistration())?.update())
+        .catch(() => {});
+      await notice.waitFor({ timeout: 10_000 }).catch(() => {});
+    }
+    await notice.waitFor({ timeout: 1000 }).catch(async (err) => {
+      const why = await page.evaluate(async () => {
+        const r = await navigator.serviceWorker.getRegistration();
+        return {
+          installing: r?.installing?.state,
+          waiting: r?.waiting?.state,
+          active: r?.active?.scriptURL && r.active.state,
+          caches: await caches.keys(),
+        };
+      });
+      throw new Error(`no update notice after the deploy finished ${JSON.stringify(why)}`, {
+        cause: err,
+      });
+    });
+    await page.waitForTimeout(2000);
+    await page.getByRole('button', { name: 'Reload' }).first().click();
+    await page
+      .waitForFunction(() => !window.__beforeUpdate, null, { timeout: 15_000 })
+      .catch(() => {});
+    await page.waitForTimeout(4000);
+    const want =
+      (await (await fetch(`${BASE}/`)).text()).match(/\/assets\/index-[^"]+\.js/)?.[0] ?? '';
+    const after = await state(page);
+    if (!after.drawn || after.help)
+      throw new Error(
+        'the app did not open after the deploy finished: ' + JSON.stringify(after.errs),
+      );
+    if (!after.main.endsWith(want)) throw new Error('the update did not take over afterwards');
+    const cold = await ctx.newPage();
+    await cold.goto(`${BASE}/more`);
+    await cold.waitForTimeout(5000);
+    const c = await state(cold);
+    if (!c.drawn || c.help || !c.main.endsWith(want))
+      throw new Error('a cold start after the update failed: ' + JSON.stringify(c.errs));
+    console.log(`PASS ${name}`);
+  } catch (err) {
+    failures.push(`${name}: ${err.message}`);
+    console.log(`FAIL ${name}: ${err.message}`);
+  } finally {
+    await lagBehind(null);
+    await ctx.close();
+  }
+}
+
+/**
+ * Someone opening the site for the first time while a deploy spreads: the browser saves the old
+ * deployment's answer under the new file names (the page, cached for a year by the old
+ * headers). Once the deploy is complete, "Repair and open" must bring the app up.
+ */
+async function firstVisitMidDeploy(fromBuild, toBuild) {
+  const name = `first visit while ${toBuild} spreads, then it repairs itself`;
+  const ctx = await browser.newContext({ ...devices['Pixel 7'] });
+  const page = await ctx.newPage();
+  try {
+    await use(toBuild);
+    await lagBehind(fromBuild);
+    await page.goto(`${BASE}/sign-in`);
+    await page.waitForTimeout(3000);
+    await lagBehind(null);
+    await page.reload();
+    // The start-up check repairs by itself when app files failed to load (6 s), then opens.
+    let after = { drawn: false, help: true, errs: [] };
+    for (let waited = 0; waited < 40_000 && (!after.drawn || after.help); waited += 2000) {
+      await page.waitForTimeout(2000);
+      after = await state(page).catch(() => after); // a repair reloads the page meanwhile
+    }
+    if (!after.drawn || after.help)
+      throw new Error('the app did not repair itself and open: ' + JSON.stringify(after.errs));
+    console.log(`PASS ${name}`);
+  } catch (err) {
+    failures.push(`${name}: ${err.message}`);
+    console.log(`FAIL ${name}: ${err.message}`);
+  } finally {
+    await lagBehind(null);
+    await ctx.close();
+  }
+}
+
+const only = process.env.UPDATE_ONLY;
+const run = (key, fn) => (!only || only.split(',').includes(key) ? fn() : null);
+await run('propagating', () => propagating('prev', 'cur'));
+await run('firstVisit', () => firstVisitMidDeploy('prev', 'cur'));
+await run('update', () => update('prev', 'cur'));
+await run('update-next', () => update('cur', 'next'));
+await run('interrupted', () => interrupted('prev', 'cur'));
 
 await browser.close();
 server.close();
 fake?.kill();
-sh(`git worktree remove --force ${prevSrc}`);
+if (!process.env.UPDATE_KEEP) sh(`git worktree remove --force ${prevSrc}`);
 if (failures.length) {
   console.error(`\nUpdate check failed:\n- ${failures.join('\n- ')}`);
   process.exit(1);
 }
 console.log(
-  '\nUpdate check passed: people with the app open get the new version when they tap Reload, keep their training, can open it offline, and survive an update cut off halfway.',
+  '\nUpdate check passed: people with the app open get the new version when they tap Reload, keep their training, can open it offline, and survive an update cut off halfway or a deploy that is still spreading.',
 );

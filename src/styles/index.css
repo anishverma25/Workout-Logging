@@ -1768,8 +1768,7 @@ html[data-landing] #landing {
 /* The Brain page: a lit core inside the learning ring. */
 .brain-hero {
   background:
-    radial-gradient(70% 55% at 50% 22%, rgb(198 244 50 / 0.16), transparent 70%),
-    var(--surface);
+    radial-gradient(70% 55% at 50% 22%, rgb(198 244 50 / 0.16), transparent 70%), var(--surface);
 }
 /* Lit learning weeks glow softly, like light caught in glass. */
 .brain-seg {

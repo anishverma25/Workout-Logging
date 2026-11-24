@@ -249,13 +249,13 @@ Chain menus come from each chain's own document, as text in `scripts/chain-foods
 (`pdftotext -layout`), built by `python3 scripts/chain-foods/build.py` into
 `src/data/library/chains/rows.json` (lazy) and `replaced.json` (main bundle):
 
-| Chain | Document | Basis | Label in the app |
-| --- | --- | --- | --- |
-| Burger King | Nutrition per serve, 12 February 2026 | per serving, with grams or ml | official |
-| Domino's | Nutritional information (pizzas per serve of 4, 3 or 2 slices) | per slice; Regular 4, Medium 6, Large 8 slices; no weights published | official |
-| Pizza Hut | Nutrition and allergen booklet, 2022 | whole pizza and slices, with grams | official |
-| McDonald's | North and East macros compiled from the official booklet | per serving | compiled, "check the current menu" |
-| Starbucks | Tata Starbucks nutrition guide | per cup (ml) or per item (g) | official |
+| Chain       | Document                                                       | Basis                                                                | Label in the app                   |
+| ----------- | -------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------- |
+| Burger King | Nutrition per serve, 12 February 2026                          | per serving, with grams or ml                                        | official                           |
+| Domino's    | Nutritional information (pizzas per serve of 4, 3 or 2 slices) | per slice; Regular 4, Medium 6, Large 8 slices; no weights published | official                           |
+| Pizza Hut   | Nutrition and allergen booklet, 2022                           | whole pizza and slices, with grams                                   | official                           |
+| McDonald's  | North and East macros compiled from the official booklet       | per serving                                                          | compiled, "check the current menu" |
+| Starbucks   | Tata Starbucks nutrition guide                                 | per cup (ml) or per item (g)                                         | official                           |
 
 - Published calories are kept as printed. 19 rows whose calories and macros disagree by over
   25% are flagged on the food's page with both numbers (for example Burger King's Veg Whopper
