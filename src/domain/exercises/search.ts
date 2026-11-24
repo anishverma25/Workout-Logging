@@ -1,5 +1,5 @@
 import { EQUIPMENT_LABELS, MUSCLE_LABELS } from '../models/labels';
-import { targetsFor, worksMuscle } from '../muscles/targets';
+import { shownGroup, targetsFor, worksMuscle } from '../muscles/targets';
 import { MUSCLES, within } from '../muscles/taxonomy';
 import type { Equipment, Exercise, MuscleGroup, Workout, WorkoutExercise } from '../models/schemas';
 
@@ -7,7 +7,8 @@ export type ExerciseSource = 'all' | 'library' | 'custom';
 
 export interface ExerciseFilters {
   query: string;
-  muscle: MuscleGroup | null;
+  /** A stored group, or forearms (shown for wrist and grip work stored under biceps). */
+  muscle: MuscleGroup | 'forearms' | null;
   equipment: Equipment | null;
   category: Exercise['category'] | null;
   source: ExerciseSource;
@@ -87,18 +88,44 @@ const SYNONYMS: Record<string, string[]> = {
  * Every query word must match the name, a muscle or the equipment.
  * Name matches rank above metadata matches, and earlier matches above later ones.
  */
-export function matchScore(exercise: Exercise, query: string): number {
+export function matchScore(
+  exercise: Exercise,
+  query: string,
+  /** Other names people search for ("DB shrug"), by exercise id. */
+  aliases?: ReadonlyMap<string, readonly string[]>,
+): number {
   const q = normalize(query);
   if (q === '') return 1;
   const name = normalize(exercise.name);
 
   if (name === q) return 1000;
-  if (name.startsWith(q)) return 800;
-  if (COMPACT(name).includes(COMPACT(q))) return 600;
+  const alias = aliasScore(aliases?.get(exercise.id), q);
+  if (name.startsWith(q)) return Math.max(800, alias);
+  if (COMPACT(name).includes(COMPACT(q))) return Math.max(600, alias);
   // A match on the name (or its muscle and equipment labels) always ranks above a match on a
   // muscle the exercise works, so typing an exercise still finds it first.
   const byName = nameScoreFor(exercise, q);
-  return byName > 0 ? 400 + Math.min(byName, 199) : muscleScore(exercise, q);
+  if (byName > 0) return Math.max(400 + Math.min(byName, 199), alias);
+  return alias || muscleScore(exercise, q);
+}
+
+/** A match on another name of the exercise: just below the same match on its own name. */
+function aliasScore(aliases: readonly string[] | undefined, q: string): number {
+  if (!aliases?.length) return 0;
+  const words = q.split(' ');
+  let best = 0;
+  for (const raw of aliases) {
+    const a = normalize(raw);
+    if (a === q) best = Math.max(best, 900);
+    else if (a.startsWith(q)) best = Math.max(best, 700);
+    else if (COMPACT(a).includes(COMPACT(q))) best = Math.max(best, 500);
+    else {
+      const aw = a.split(' ');
+      if (words.every((w) => aw.some((x) => x.startsWith(w) || x.startsWith(w.replace(/s$/, '')))))
+        best = Math.max(best, 450);
+    }
+  }
+  return best;
 }
 
 /**
@@ -189,11 +216,20 @@ function nameScoreFor(exercise: Exercise, query: string): number {
   }
 }
 
-export function filterExercises(exercises: Exercise[], filters: ExerciseFilters): Exercise[] {
+export function filterExercises(
+  exercises: Exercise[],
+  filters: ExerciseFilters,
+  aliases?: ReadonlyMap<string, readonly string[]>,
+): Exercise[] {
   const scored: { exercise: Exercise; score: number }[] = [];
   for (const exercise of exercises) {
     if (exercise.deletedAt !== null) continue;
-    if (filters.muscle && exercise.primaryMuscle !== filters.muscle) continue;
+    if (filters.muscle) {
+      const shown = shownGroup(exercise);
+      // Wrist curls are stored under biceps but listed under Forearms, never under Biceps.
+      if (filters.muscle === 'forearms' ? shown !== 'forearms' : shown === 'forearms') continue;
+      if (filters.muscle !== 'forearms' && exercise.primaryMuscle !== filters.muscle) continue;
+    }
     if (filters.equipment && exercise.equipment !== filters.equipment) continue;
     if (filters.category && exercise.category !== filters.category) continue;
     if (filters.source === 'custom' && !exercise.isCustom) continue;
@@ -201,7 +237,7 @@ export function filterExercises(exercises: Exercise[], filters: ExerciseFilters)
     // The advanced filter: exercises that train the muscle first, then those it helps in.
     const works = filters.detail ? worksMuscle(targetsFor(exercise), filters.detail) : 0;
     if (filters.detail && works === 0) continue;
-    const score = matchScore(exercise, filters.query);
+    const score = matchScore(exercise, filters.query, aliases);
     if (score > 0) scored.push({ exercise, score: score + (works === 2 ? 50 : 0) });
   }
   return scored

@@ -461,7 +461,7 @@ function MealCard({
         <ul className="mt-1 flex flex-col">
           {items.map((l) => {
             const food = ctx.foodById.get(l.foodId);
-            const portion = portionText(l.amount, l.unit, l.size, food?.pieceName);
+            const portion = portionText(l.amount, l.unit, l.size, food ?? null);
             const oil = l.oilLevel && l.oilLevel !== 'normal' ? ` · ${l.oilLevel} oil` : '';
             return (
               <li key={l.id}>

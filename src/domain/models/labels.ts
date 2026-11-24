@@ -1,3 +1,4 @@
+import { shownGroup, type ShownGroup } from '../muscles/targets';
 import type {
   Equipment,
   Exercise,
@@ -82,9 +83,18 @@ export const SET_TYPE_SHORT: Record<SetType, string> = {
   drop: 'D',
 };
 
-/** "Chest · Barbell" */
-export function exerciseMeta(exercise: Pick<Exercise, 'primaryMuscle' | 'equipment'>): string {
-  return `${MUSCLE_LABELS[exercise.primaryMuscle]} · ${EQUIPMENT_LABELS[exercise.equipment]}`;
+/** Labels for the group shown on an exercise, which adds forearms and neck (`shownGroup`). */
+export const SHOWN_GROUP_LABELS: Record<ShownGroup, string> = {
+  ...MUSCLE_LABELS,
+  forearms: 'Forearms',
+  neck: 'Neck',
+};
+
+/** "Chest · Barbell", "Forearms · Barbell" */
+export function exerciseMeta(
+  exercise: Pick<Exercise, 'id' | 'primaryMuscle' | 'secondaryMuscles' | 'equipment'>,
+): string {
+  return `${SHOWN_GROUP_LABELS[shownGroup(exercise)]} · ${EQUIPMENT_LABELS[exercise.equipment]}`;
 }
 
 export const GOAL_LABEL: Record<Profile['goal'], string> = {

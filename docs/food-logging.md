@@ -139,3 +139,23 @@ food gives its author 5% off one Pro payment. The first is valid from approval t
 month; each further one covers the month after the last, so two foods in one month cover the next
 two months. It is applied by itself at payment (a typed coupon code wins and the credit waits).
 After approval, the author sees one thank-you card on Food that names the food and the 5%.
+
+## Simple search (24 Nov 2026)
+
+Owner: logging must be quick, with simple, most used options first.
+
+- The words people type most (`EVERYDAY` in `domain/nutrition/everyday.ts`: rice, roti, dal,
+  egg, chicken, paneer, milk, curd, tea, coffee, oats, bread, potato and a few more, with Hindi
+  words) show only their everyday picks first, in a fixed order; everything else is behind
+  "Show more". Every pick is checked to exist (`everyday.test.ts`).
+- Any other word: at most eight everyday foods and three packs first. USDA reference entries
+  ("Rice, white, glutinous, unenriched, cooked") wait behind "Show more" unless fewer than three
+  everyday foods match. The comma rule ("Milk, full cream" counts as milk) no longer applies to
+  USDA and INDB names.
+- A pack shows first only when its own name, without the brand and brackets, says the word
+  (no plant proteins for "rice", no Pizza Hut drinks for "pizza"). "Pizza", "burger", "coffee",
+  "tea" and "cafe" alone never count as typing a brand.
+- One line per name: the same dish from a second source (INDB "Idli" under our "Idli") is shown
+  once; the person's own foods always show.
+- A dish is found by what it is: among partial matches, a name ending in the word typed ranks a
+  little higher ("Jeera rice" before "Rice kheer" for rice).

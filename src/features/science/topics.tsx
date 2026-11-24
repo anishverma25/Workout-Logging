@@ -63,6 +63,23 @@ import {
   DEFICIT_KCAL as STALL_DEFICIT_KCAL,
   VOLUME_DROP,
 } from '@/domain/analytics/stalls';
+import {
+  EFFORT_LOGGED_RIR,
+  EFFORT_MIN_PAIRS,
+  EFFORT_REP_DROP,
+  FATIGUE_HIGH,
+  FATIGUE_LOW,
+  FATIGUE_MIN_SESSIONS,
+  FATIGUE_MIN_SETS,
+  HEAVY_MAX_REPS,
+  MODERATE_MAX_REPS,
+  READY_HOURS,
+  RECOVERING_HOURS,
+  REP_RANGE_MIN_SETS,
+  SIDE_GAP,
+  SIDE_MIN_SESSIONS,
+  STRENGTH_HEAVY_SHARE,
+} from '@/domain/analytics/quality';
 import { REST_PRESETS } from '@/domain/workout/restTimer';
 import { FOODS } from '@/data/library/foods';
 import {
@@ -446,22 +463,30 @@ export const SCIENCE: TopicGroup[] = [
         title: 'What each exercise works',
         evidence: 'muscleShares',
         shows:
-          'Under each library exercise, the approximate share of the work done by each muscle region, for example upper chest 40%.',
+          'Under each library exercise, the estimated share of the work done by each of 50 muscle regions, for example mid chest (sternal pec) 35%, grouped as primary, secondary and minor.',
         why: [
           <>
-            Each breakdown was built from electromyography (EMG) and muscle growth studies of that
-            exercise, or the closest one studied, then rounded to 5% so the shares add up to 100%.
-            The sources sit under every exercise.
+            Each breakdown is an evidence-based estimate of how the work is shared among the
+            muscles, with typical technique, in 5% steps that add up to 100%. It draws on
+            electromyography (EMG) and muscle growth studies of the exercise or the closest one
+            studied, such as bench angle (Rodríguez-Ridao, 2020), overhead triceps work (Maeo, 2023)
+            and seated versus lying leg curls (Maeo, 2021).
           </>,
           <>
-            For example, the López-Vivancos meta-analysis of bench press variants shows decline
-            pressing shifts work toward the lower chest and incline toward the upper chest.
+            Primary is the top muscle and any at 30% or more, secondary 10 to 29%, minor under 10%.
+            Confidence says how sure the direction is (which muscles lead), not the exact numbers.
+            The technique each estimate assumes is shown with it.
+          </>,
+          <>
+            The shares colour the body maps. Sets per muscle are counted separately: a working set
+            is a direct set for the main muscles and half a set for the ones that clearly help, so a
+            percentage never turns into a set count.
           </>,
         ],
         forYou:
           'Pick exercises for the region you want to bring up, and see why they feel the way they do.',
         limits:
-          'Muscle activity is not the same as the load each muscle carries, and form changes it. Treat the numbers as a guide. Exercises marked as estimated borrow from a similar movement.',
+          'No study measures exact per-muscle shares: these are estimated contributions, not measured activation, force or growth. Grip, angles and machine design change them. Exercises with no study of their own say so.',
       },
       {
         id: 'volume',
@@ -559,6 +584,80 @@ export const SCIENCE: TopicGroup[] = [
           'Rest is measured from when you tick sets off, so ticking late or early moves it. Reps kept also depends on how close to failure each set was.',
       },
       {
+        id: 'recovery-map',
+        title: 'Ready to train',
+        evidence: 'recoveryMap',
+        shows: `Hours since each muscle last had hard sets in the last two weeks: under ${RECOVERING_HOURS} hours, ${RECOVERING_HOURS} to ${READY_HOURS} hours, and ${READY_HOURS} hours or more.`,
+        formulas: [
+          {
+            tex: String.raw`\text{sets}_{\text{area}} = \sum \text{hard sets} \times \text{share}_{\text{area}}`,
+            spoken:
+              'Sets for a muscle are the hard sets of each exercise times that muscle’s share',
+            where:
+              'A muscle counts as trained in a workout from one set after shares are added up. Hard sets are those within 4 reps of failure, or with no effort logged.',
+          },
+        ],
+        why: [
+          <>
+            Morán-Navarro and colleagues (2017) measured recovery after the same work taken to
+            failure or not: without failure, performance was back within about 24 to 48 hours; to
+            failure it took longer, beyond 48 hours for some measures. Training each muscle twice a
+            week grows more muscle than once (Schoenfeld and colleagues, 2019), which fits a gap of
+            two to three days.
+          </>,
+        ],
+        forYou:
+          'Train what has rested longest first. A muscle trained in the last two days can still be trained lightly.',
+        limits:
+          'A workout log cannot measure recovery. Sleep, food, stress and how hard the sets were all change it, so these are hours since training, not a readiness score.',
+      },
+      {
+        id: 'training-quality',
+        title: 'Training quality',
+        evidence: 'trainingQuality',
+        shows:
+          'How your reps hold across sets at one weight, whether the effort you log matches how your reps fall, the loads you train with, and the gap between your left and right side.',
+        formulas: [
+          {
+            tex: String.raw`\text{drop} = \dfrac{\text{reps}_{\text{first}} - \text{reps}_{\text{last}}}{\text{reps}_{\text{first}}}`,
+            spoken:
+              'Drop is the reps lost from the first to the last set, over the reps of the first set',
+            where: `Working sets at the first set's weight, ${FATIGUE_MIN_SETS} or more, averaged over at least ${FATIGUE_MIN_SESSIONS} sessions. Under ${Math.round(FATIGUE_LOW * 100)}% reps hold, over ${Math.round(FATIGUE_HIGH * 100)}% is steep.`,
+          },
+          {
+            tex: String.raw`\text{gap} = \dfrac{|\text{reps}_L - \text{reps}_R|}{\max(\text{reps}_L, \text{reps}_R)}`,
+            spoken: 'Gap is the difference between left and right reps over the larger of the two',
+            where: `For exercises logged per side, over ${SIDE_MIN_SESSIONS} or more sessions. Over ${Math.round(SIDE_GAP * 100)}% is called out.`,
+          },
+        ],
+        why: [
+          <>
+            Reps fall across sets faster with short rest (Schoenfeld and colleagues, 2016) and after
+            sets taken to failure (Morán-Navarro and colleagues, 2017), so a steep drop points at
+            one of those two.
+          </>,
+          <>
+            People often guess reps in reserve a few reps off, most when the set is far from failure
+            (Halperin and colleagues, 2022; Zourdos and colleagues, 2016). The effort check counts
+            sets logged with {EFFORT_LOGGED_RIR} or more reps left that were followed by a set at
+            the same weight losing {EFFORT_REP_DROP} or more reps. It needs {EFFORT_MIN_PAIRS} such
+            pairs, and a share of 30% or more says your sets may be closer to failure than you log.
+          </>,
+          <>
+            Rep ranges are 1 to {HEAVY_MAX_REPS}, {HEAVY_MAX_REPS + 1} to {MODERATE_MAX_REPS} and{' '}
+            {MODERATE_MAX_REPS + 1} or more. Light and heavy sets grow muscle about equally when
+            taken close to failure, but strength gains follow heavy loads (Schoenfeld and
+            colleagues, 2017). So a strength goal with under{' '}
+            {Math.round(STRENGTH_HEAVY_SHARE * 100)}% heavy sets gets a note, once there are{' '}
+            {REP_RANGE_MIN_SETS} sets in the period.
+          </>,
+        ],
+        forYou:
+          'A steep drop: rest longer or stop the first set a rep earlier. A big side gap: start each set with the weaker side and match its reps.',
+        limits:
+          'Reps can also fall because of the exercise order or a bad day. The effort check is a pattern in your logs, not a measurement of any one set.',
+      },
+      {
         id: 'frequency',
         title: 'Training frequency',
         evidence: 'frequency',
@@ -608,13 +707,8 @@ export const SCIENCE: TopicGroup[] = [
         id: 'load',
         title: 'Balance and training load',
         evidence: 'trainingLoad',
-        shows: 'Push to pull balance, sudden jumps in weekly sets, and the load of each session.',
+        shows: 'Push to pull balance and the load of each session.',
         formulas: [
-          {
-            tex: String.raw`\text{load ratio} = \dfrac{N_{\text{last 7 days}}}{\tfrac{1}{4}\, N_{\text{4 weeks before}}}`,
-            spoken:
-              'Load ratio equals sets in the last 7 days over the weekly average of the 4 weeks before',
-          },
           {
             tex: String.raw`L = \text{RPE}_{\text{session}} \times t_{\text{minutes}}`,
             spoken: 'Session load equals session effort times minutes',
@@ -622,14 +716,15 @@ export const SCIENCE: TopicGroup[] = [
         ],
         why: [
           <>
-            Gabbett (2016) linked sudden spikes in training, a ratio above about 1.5, with more
-            injuries, so the app flags that. It needs 5 weeks of history.
-          </>,
-          <>
             Session load is Foster&apos;s session RPE method, shown when you rate a finished
             workout. The Balance cards show each pair&apos;s sets and their ratio, with no verdict:
             no study sets a right ratio for everyone. Only the weekly check-in suggests extra work,
             when push to pull is outside 0.67 to 1.5 once a pair has 20 sets.
+          </>,
+          <>
+            The app does not flag a jump in weekly sets against the weeks before (the acute to
+            chronic workload ratio). Later analyses found that ratio is a statistical artefact and
+            does not predict injury reliably, so it is left out.
           </>,
         ],
         limits: 'A prompt to look at your training, not an injury prediction.',
@@ -1121,7 +1216,7 @@ export const SCIENCE: TopicGroup[] = [
         id: 'recovery',
         title: 'Recovery',
         shows:
-          'The app does not guess how recovered a muscle is, because a workout log cannot tell you that. It only shows days since each muscle was last trained.',
+          'The app does not guess how recovered a muscle is, because a workout log cannot tell you that. Ready to train on Progress shows hours since each muscle last had hard sets.',
       },
       {
         id: 'leaderboards',

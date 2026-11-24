@@ -1,14 +1,7 @@
 import { buildData } from '@/test/fixtures';
 import { performanceByExercise } from './performance';
 import { buildSessions } from './sessions';
-import {
-  balanceRatios,
-  dotsScore,
-  e1rmRate,
-  loadSpike,
-  sessionLoad,
-  strengthLevel,
-} from './standards';
+import { balanceRatios, dotsScore, e1rmRate, sessionLoad, strengthLevel } from './standards';
 
 const BENCH_ID = 'bench';
 
@@ -94,32 +87,6 @@ describe('training load', () => {
   it('multiplies session effort by minutes', () => {
     expect(sessionLoad(7, 60)).toBe(420);
     expect(sessionLoad(null, 60)).toBeNull();
-  });
-
-  it('flags a week with more than 1.5 times the usual sets', () => {
-    const NOW = new Date(2026, 9, 7, 20);
-    const day = (at: string, n: number) => ({
-      at,
-      exercises: [{ key: 'barbell-bench-press', sets: Array(n).fill({ w: 60, r: 8 }) }],
-    });
-    const steady = [
-      day('2026-08-25T10:00:00', 12),
-      day('2026-09-03T10:00:00', 12),
-      day('2026-09-10T10:00:00', 12),
-      day('2026-09-17T10:00:00', 12),
-      day('2026-09-24T10:00:00', 12),
-    ];
-    expect(
-      loadSpike(buildSessions(buildData([...steady, day('2026-10-05T10:00:00', 12)])), NOW),
-    ).toBeNull();
-    const spike = loadSpike(
-      buildSessions(
-        buildData([...steady, day('2026-10-02T10:00:00', 12), day('2026-10-05T10:00:00', 12)]),
-      ),
-      NOW,
-    )!;
-    expect(spike.acuteSets).toBe(24);
-    expect(spike.ratio).toBeGreaterThan(1.5);
   });
 });
 

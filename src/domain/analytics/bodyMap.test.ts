@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MUSCLE_SHARES } from '@/data/library/muscleShares';
+import { MUSCLE_SHARES } from '@/data/library/shares';
 import { sharesFor } from '@/data/library/shares';
 import { SYSTEM_EXERCISES, exerciseIdFor } from '@/data/library/exercises';
 import { areasWorked, setsPerArea, shadeLevels } from './bodyMap';
@@ -84,7 +84,7 @@ describe('the muscle map', () => {
   });
 
   it('every region of the muscle shares has a place on the drawing or is left off on purpose', () => {
-    const offMap = new Set(['Hip flexors', 'Serratus']);
+    const offMap = new Set(['Serratus anterior', 'Iliopsoas', 'Sartorius']);
     const regions = new Set(
       Object.values(MUSCLE_SHARES).flatMap((s) => s.regions.map((r) => r.region)),
     );

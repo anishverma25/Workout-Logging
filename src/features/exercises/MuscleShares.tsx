@@ -1,49 +1,119 @@
 import { ExternalLink } from 'lucide-react';
 import { citationUrl } from '@/domain/analytics/citations';
-import { shareSource } from '@/data/library/shares';
+import { regionDetail, shareSource, shortRegion } from '@/data/library/shares';
 import type { ExerciseShares } from '@/data/library/muscleShares';
 import { cn } from '@/lib/cn';
+import { sharesByArea, shareRole } from '@/domain/analytics/bodyMap';
+import { ExerciseBody } from './MuscleSplit';
+import { ROLE_FILL, ROLE_LABEL, useGrown } from './muscleRoles';
 
 /**
  * Which muscles an exercise works and roughly how much, from EMG and muscle-growth studies. The
  * numbers are estimates of each muscle's share of the work, rounded to 5%, and say so.
  */
 export function MuscleShares({ shares, compact }: { shares: ExerciseShares; compact?: boolean }) {
+  const grown = useGrown();
+  const groups = sharesByArea(shares.regions);
+  const roles = (['primary', 'secondary', 'minor'] as const)
+    .map((role) => ({
+      role,
+      items: shares.regions.filter((r, i) => shareRole(i, r.share) === role),
+    }))
+    .filter((g) => g.items.length > 0);
   return (
-    <div>
-      <ul className="flex flex-col gap-2" aria-label="Approximate share of the work">
-        {shares.regions.map((r) => (
-          <li key={r.region}>
-            <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="font-medium">{r.region}</span>
-              <span className="tabular font-semibold text-muted">{r.share}%</span>
-            </div>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[var(--ring-track)]">
-              <div
-                className="h-full rounded-full bg-[var(--ring-1)]"
-                style={{ width: `${r.share}%` }}
-              />
-            </div>
-          </li>
+    <div data-muscle-shares>
+      <div className="flex justify-center gap-6 py-1">
+        {(['front', 'back'] as const).map((side) => (
+          <figure key={side} className="m-0 flex flex-col items-center">
+            <ExerciseBody shares={shares} show={side} className="h-44 w-[5.5rem]" />
+            <figcaption className="type-caption mt-1 text-text-2">
+              {side === 'front' ? 'Front' : 'Back'}
+            </figcaption>
+          </figure>
         ))}
-      </ul>
-      <p className={cn('text-sm text-muted', compact ? 'mt-2' : 'mt-3')}>{shares.note}</p>
+      </div>
+      <div className="type-caption mt-2 flex justify-center gap-4 text-text-2" aria-hidden>
+        {(['primary', 'secondary', 'minor'] as const).map((role) => (
+          <span key={role} className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-[3px]" style={{ background: ROLE_FILL[role] }} />
+            {ROLE_LABEL[role]}
+          </span>
+        ))}
+      </div>
+
+      {groups.length > 1 ? (
+        <div className="mt-4">
+          <p className="type-caption mb-1.5 text-text-2">By muscle group</p>
+          <div className="flex h-8 gap-0.5 overflow-hidden rounded-nested" data-muscle-groups>
+            {groups.map((g, i) => (
+              <span
+                key={g.area}
+                className="score-grow type-caption flex min-w-0 items-center justify-center overflow-hidden font-semibold whitespace-nowrap"
+                style={{
+                  width: grown ? `${g.share}%` : 0,
+                  background:
+                    i === 0 ? 'var(--muscle-3)' : i === 1 ? 'var(--muscle-2)' : 'var(--muscle-1)',
+                  color: i < 2 ? 'var(--on-lime)' : 'var(--text-1)',
+                }}
+              >
+                {g.share >= 18 ? `${g.label} ${g.share}%` : ''}
+              </span>
+            ))}
+          </div>
+          <p className="type-caption tabular mt-1.5 text-text-2">
+            {groups.map((g) => `${g.label} ${g.share}%`).join(' · ')}
+          </p>
+        </div>
+      ) : null}
+
+      {roles.map(({ role, items }) => (
+        <section key={role} className="mt-4" aria-label={ROLE_LABEL[role]}>
+          <h4 className="type-footnote mb-1.5 flex justify-between font-semibold text-text-2">
+            <span>{ROLE_LABEL[role]}</span>
+            <span className="tabular">{items.reduce((s, r) => s + r.share, 0)}%</span>
+          </h4>
+          <ul className="rounded-nested bg-surface-2" aria-label="Approximate share of the work">
+            {items.map((r, i) => (
+              <li
+                key={r.region}
+                className={cn('px-3 py-2.5', i > 0 && 'shadow-[inset_0_0.5px_0_var(--divider)]')}
+              >
+                <span className="flex items-baseline justify-between gap-3">
+                  <span className="type-body min-w-0 text-text-1">
+                    {shortRegion(r.region)}
+                    {regionDetail(r.region) ? (
+                      <span className="type-footnote text-text-2"> {regionDetail(r.region)}</span>
+                    ) : null}
+                  </span>
+                  <span className="type-headline tabular text-text-1">{r.share}%</span>
+                </span>
+                <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-fill">
+                  <span
+                    className="score-grow block h-full rounded-full"
+                    style={{ width: grown ? `${r.share}%` : 0, background: ROLE_FILL[role] }}
+                  />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+      {shares.note ? (
+        <p className={cn('type-footnote text-text-2', compact ? 'mt-2' : 'mt-3')}>{shares.note}</p>
+      ) : null}
       {!compact ? (
         <>
-          <p className="mt-2 text-xs leading-relaxed text-faint">
-            Approximate share of the work, rounded to 5%.{' '}
-            {shares.confidence === 'moderate'
-              ? 'Based on studies of this exercise or a near-identical one.'
-              : 'Estimated from the closest exercise that has been studied.'}{' '}
-            Muscle activity is not the same as the load each muscle carries, so treat these as a
-            guide.
+          <p className="type-caption mt-2 text-text-3">
+            Estimated share of the work, not measured muscle activation.
           </p>
           <ul className="mt-2 flex flex-col gap-1">
             {shares.sources.map((id) => {
               const c = shareSource(id);
               if (!c) return null;
               const url = citationUrl(c);
-              const text = `${c.authors.split(',')[0]} et al. ${c.year ?? ''}`.trim();
+              const many = c.authors.includes(',') && !/ et al\.?$| & /.test(c.authors);
+              const who = many ? `${c.authors.split(',')[0]} et al.` : c.authors;
+              const text = `${who} ${c.year ?? ''}`.trim();
               return (
                 <li key={id} className="text-xs">
                   {url ? (

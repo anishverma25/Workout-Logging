@@ -1,0 +1,673 @@
+(An average active adult requires
+   2,000 kcal energy per day,                                             Energy (KCal) per serve
+however, calorie needs may vary)
+
+         TYPE OF CRUST                    New Hand Tossed                    Fresh Pan              Thin Crust              Cheese Burst
+
+          SIZE OF PIZZA              Regular    Medium        Large      Regular    Medium      Regular     Medium         Regular   Medium
+
+                                                           No. of Slices/Serving (Serve Size) (Regular serves 1 person,
+S.No.          Core Pizza                                      Medium serves 2 people & Large serves 4 people)
+                                     4 Slices   3 Slices      2 Slices   4 Slices    3 Slices   4 Slices    3 Slices      4 Slices    3 Slices
+    1           Margherita            688        585           509        722         616        440          351           899        773
+    2         Cheese n Corn           709        600           522         744        631         461         367           921        788
+    3        Cheese n Tomato          695        592           550        730         623         447         359           907        780
+    4      Moroccan Spice PP V        899        766           NA*         991        766         651         532           1111       954
+    5        Achari Do Pyaza           735       645           564        792         676         487         411           950        833
+    6          Fresh Veggie            701       598           520        736         629        454          364           913        785
+    7    Double Cheese Margherita      735       616           537         767        651         487         382           947        797
+    8           Farmhouse              727       619           539        762         650         479         385           939        807
+    9      Mexican Green Wave          707       602           525         742        633        459          369           918        790
+10           Veggie Paradise           715       610           530        750         642        468          377           927        798
+11             Peppy Paneer            857       721           628        892         753        609          488          1069        909
+12         Creamy Tomato PP V         865        685           NA*        808         685         618         452          1020        873
+13             Delux Veggie           830        704           616        865         735        582          471           1041       892
+14           Veg Extravaganza         789        697           607        848         728         541         465          1025        887
+15          Indi Tandoori Paneer      952        806           701        993         837        705          573           1170       994
+16           Paneer Makhani           983        804           720        1017        835         735         570           1129       989
+17               5 Pepper             703        600           522        738         631        456          366           915        788
+18           Unthinkable Pizza        842        719           635         877        750        594          485          1054        907
+19            Kadhai Paneer            851       783           705        965         814        603          549           1141        971
+20            4 Cheese Pizza          739        635           564         797        667        568          461           NA*        NA*
+21          Cheese Dominator           817       649           614         877        680        645          474           NA*        NA*
+22           Chicken Sausage           767       655           568        802         686         519         422           978        843
+23           Keema Do Pyaza            737       645           559         787        676        489          411           964        833
+24       Pepper Barbeque Chicken       738       632           549         773        663         491         398           950        820
+25        Moroccan Spice PP NV        940        804           NA*        1032        804        692          570           1151       992
+26      Pepper BBQ Chicken & Onion     746       639           549         781        670        498          405           958        827
+27        Creamy Tomato PP NV         869        693           NA*         813        693         621         460          1081        881
+28            Chicken Fiesta          730        633           546        765         664        482          400           945        821
+29        Chicken Golden Delight       733       688           598        830         719        485          455          1007        876
+30          Chicken Dominator          801       728           621         851        759        553          494          1028        916
+31          Non-veg Supreme            773       678           582        808         709        525          445           985        866
+32          Chicken Pepperoni          753       661           577        802         692        505          428           979        849
+33           Indi Chicken Tikka       859        737           640        894         768         612         503           1071       795
+Regular serves 1 person, Medium serves 2 people and Large serves 4 people.
+#
+                                                                                                                            * Not Applicable
+PP V = Pasta Pizza Veg    PP NV = Pasta Pizza Non Veg
+S.No.          Pizza Mania             Energy (KCal) per serve
+
+              Type of Crust               HT                  PAN
+
+        No. of Slices (Portion Size)   4 Slices             4Slices
+
+1                 Onion                  547                  684
+
+2                 Tomato                 546                  682
+
+3               Capsicum                 545                  682
+
+4                  Corn                  554                   691
+
+5            Paneer & Onion              640                   782
+
+6                 Cheesy                 671                   761
+
+7               Loaded VG                NA*                  653
+
+8           Chicken Sausage              586                   723
+
+9         Pepper BBQ Chicken             578                   715
+
+10           Loaded Non-veg              NA*                   714
+
+                                                     * Not Applicable
+S.No. Sides                                        No. of Serve          Energy (Kcal)
+                                                                          per Serve
+ 1                      Garlic Bread                    2                       144
+ 2                    Paneer tikka SGB                  2                       214
+ 3                 Chicken pepperoni SGB                2                       187
+ 4                  Stuffed Garlic Bread                2                       144
+ 5                       Cheesy Dip                     1                        55
+ 6                      Jalapeno Dip                    1                        53
+ 7                  Taco Mexicana - Veg                 2                       248
+ 8               Taco Mexicana - Veg Single             1                       248
+ 9                Taco Mexicana - Non-veg               2                       219
+ 10            Taco Mexicana - Non-veg Single           1                       219
+ 11                  Zingy Parcel - Veg                 1                       230
+ 12                Zingy Parcel - Non-veg               1                       208
+ 13    Roasted Chicken Wings Peri-Peri seasoning        1                       412
+ 14    Roasted Chicken Wings Classic Hot Sauce          1                       439
+ 15    Roasted Chicken Wings Peri-Peri seasoning        1                       412
+ 16    Roasted Chicken Wings - Classic Hot Sauce        1                       439
+ 17      Chicken Meatballs Peri-Peri Seasoning          1                       205
+ 18      Chicken Meatballs Peri-Peri Seasoning          1                       205
+ 19           Chicken Meatballs Peri-Peri Sauce         1                       219
+ 20           Chicken Meatballs Peri-Peri Sauce         1                       219
+ 21           Boneless Chicken Wings Peri-Peri          1                       253
+ 22           Boneless Chicken Wings Peri-Peri          1                       253
+ 23                   Choco Lava Cake                   1                       327
+ 24                 Potato Cheese Shots                 1                       144
+ 25                     Crinkle Fries                   1                       132
+ 26                   Crunchy Stripes                   1                       295
+                                                            SGB = Stuffed Garlic Bread
+S.No. Sides                                       No. of Serve        Energy (Kcal)
+                                                                       per Serve
+ 27                  Brownie Fantasy                    1                   372
+ 28             Taco Mexicana (Veg Single)              1                   248
+ 29                       BMC                           1                   215
+ 30              Creamy Tomato Pasta Veg                1                   440
+ 31            Creamy Tomato Pasta Non-veg              1                   467
+ 32             Moroccan Spice Pasta Veg                1                   647
+ 33           Moroccan Spice Pasta Non-veg              1                    717
+ 34               Tikka Masala Pasta Veg                1                   501
+ 35             Tikka Masala Pasta Non-veg              1                   453
+ 36             Cheesey Jalaepno Pasta Veg              1                   523
+ 37           Cheesey Jalaepno Pasta Non-veg            1                   549
+ 38              Burger Pizza Classic Veg               1                   356
+ 39              Burger Pizza Pemium Veg                1                   455
+ 40            Burger Pizza Classic Non-veg             1                   390
+ 41       Burger Pizza Classic Veg Small Town           1                   273
+ 42      Burger Pizza Pemium Veg Small Town             1                   312
+ 43     Burger Pizza Classic Non Veg Small Town         1                   291
+                                                    BMC = Butterscotch Mousse Cake
+S.No.         Beverages            Energy (Kcal) per Serve (350mL)
+
+ 1          Fountain Pepsi                       151
+
+ 2        Fountain Diet Pepsi                     1
+
+ 3           Fountain 7Up                        161
+
+ 4      Fountain Lipton Iced Tea                130
+
+ 5         Fountain Mirinda                     193
+
+ 6      Fountain Mountain Dew                   172
+                                                                                       Protein (g)
+          TYPE OF CRUST
+                                               New Hand Tossed                  Fresh Pan                Thin Crust            Cheese Burst
+
+           SIZE OF PIZZA                Regular    Medium        Large      Regular     Medium       Regular    Medium        Regular    Medium
+
+                                                              No. of Slices/Serving (Serve Size) (Regular serves 1 person,
+S.No.           Core Pizza                                        Medium serves 2 people & Large serves 4 people)
+                                        4 Slices   3 Slices      2 Slices   4 Slices     3 Slices    4 Slices   3 Slices     4 Slices    3 Slices
+    1           Margherita                24         21            19          27          24           17         15           31         28
+    2          Cheese n Corn              24         22            19          27          24           17         16           32         28
+    3         Cheese n Tomato             24         21            22          27          24           17         16           32         28
+    4       Moroccan Spice PP V           20          17          NA*          27          17           13         11           27         24
+    5         Achari Do Pyaza             24         22            19          27          25           17         16           32         29
+    6           Fresh Veggie              25         22            19         28           25           18         16           32         29
+    7    Double Cheese Margherita         28         24            21         30           27           21         18           35         29
+    8           Farmhouse                 25         23            20         28           25           18         17           33         29
+    9       Mexican Green Wave            25         22            19         28           25           18         16           33         29
+10            Veggie Paradise             24         22            19          27          24           17         16           32         29
+11             Peppy Paneer               34         30            26         37           32           27        24            42         36
+12          Creamy Tomato PP V            25          17          NA*         20           17           18         11           28         24
+13              Delux Veggie              31         28            24         34           30           24        22            39         35
+14           Veg Extravaganza             29         28            24         34           30           22        22            39         35
+15          Indi Tandoori Paneer          30         26            23         37           29           23         21           42         33
+16            Paneer Makhani              38         31            28          41          34           31        26            46         38
+17               5 Pepper                 24         22            19          27          25           17         16           32         29
+18           Unthinkable Pizza            31         28            25         34           30           24        22            39         35
+19             Kadhai Paneer              30         30            27         38           33           23        24            42         37
+20             4 Cheese Pizza             30         26            23         32           29           23         21          NA*        NA*
+21           Cheese Dominator             38         30            29          41          32           31        24           NA*        NA*
+22            Chicken Sausage             29         26            23         32           29           22        20            37         33
+23            Keema Do Pyaza              27         25            22          31          28           20        20            36         32
+24        Pepper Barbeque Chicken         30         27            24         33           30           23        22            38         34
+25         Moroccan Spice PP NV           20         25           NA*         36           17           21         19           36         32
+26      Pepper BBQ Chicken & Onion        31         28            24         34           31           24        22            39         35
+27         Creamy Tomato PP NV            27         20           NA*         23           20           20         14           35         27
+28             Chicken Fiesta             30         29            25         33           32           23        23            39         36
+29         Chicken Golden Delight         31         29            27         37           41           22        26            42         38
+30           Chicken Dominator            38         36            32          41          39           29        32            46         37
+31           Non-veg Supreme              33         32            27         36           35           26        27            41         39
+32           Chicken Pepperoni            32         31            28         36           34           25        26            41         38
+33           Indi Chicken Tikka           33         29            26         36           32           26        23            41         26
+#
+    Regular serves 1 person, Medium serves 2 people and Large serves 4 people.                                                 * Not Applicable
+PP V = Pasta Pizza Veg             PP NV = Pasta Pizza Non Veg
+                                                                             Total carbohydrate (g)
+          TYPE OF CRUST
+                                              New Hand Tossed                  Fresh Pan              Thin Crust              Cheese Burst
+
+           SIZE OF PIZZA               Regular    Medium        Large      Regular    Medium      Regular     Medium         Regular    Medium
+
+                                                             No. of Slices/Serving (Serve Size) (Regular serves 1 person,
+S.No.           Core Pizza                                       Medium serves 2 people & Large serves 4 people)
+                                       4 Slices   3 Slices      2 Slices   4 Slices    3 Slices   4 Slices    3 Slices      4 Slices    3 Slices
+    1           Margherita               88         73            66         88          73          50         32            106         89
+    2          Cheese n Corn             92         76            72         93          76          54         35             111        92
+    3         Cheese n Tomato            89         74            68         90          75          51         33            108         91
+    4       Moroccan Spice PP V          95         80           NA*         97          80          57         38             114        96
+    5         Achari Do Pyaza            89         75            68         91          75          51         34            108         91
+    6           Fresh Veggie             90         75            67         90          75          51         33            108         91
+    7    Double Cheese Margherita        89         73            66         89          74          50         32            107         94
+    8           Farmhouse                92         76            69         92          77          53         35             110        92
+    9       Mexican Green Wave           91         76            68         91          76          52         34            109         92
+10            Veggie Paradise            91         76            68         91          76          52         34            109         92
+11             Peppy Paneer              91         75            68         91          76          52         34            109         92
+12          Creamy Tomato PP V           99         83           NA*         99          83          61          41            117        99
+13              Delux Veggie             94         78            71         94          78          55          37            112        94
+14           Veg Extravaganza            95         79            71         95          79          56         38             113        95
+15          Indi Tandoori Paneer         97         80            72         93          81          59         39             111        96
+16            Paneer Makhani             93         76            73         93          77          54         35            109         92
+17               5 Pepper                90         75            68         91          76          52         34            109         91
+18           Unthinkable Pizza           95         79            72         95          79          57         38             113        95
+19             Kadhai Paneer             92         77            74         94          78          53         36             112        94
+20             4 Cheese Pizza            87         72            65         88          73          50          31           NA*        NA*
+21           Cheese Dominator            88         72            66         88          72          50          31           NA*        NA*
+22            Chicken Sausage            91         76            69         92          76          53         35             110        92
+23            Keema Do Pyaza             90         76            69         92          77          52         35             110        93
+24        Pepper Barbeque Chicken        90         75            68         90          75          52         33            108         91
+25         Moroccan Spice PP NV          96         80           NA*         98          81          58         39             115        97
+26      Pepper BBQ Chicken & Onion       91         76            68         91          76          52         34            109         92
+27         Creamy Tomato PP NV          100         83           NA*         99          83          61         42             118        99
+28             Chicken Fiesta            89         74            67         90          75          51         33            108         91
+29         Chicken Golden Delight        91         77            69         92          77          53         35             110        93
+30           Chicken Dominator           91         77            70         92          78          53         36             110        94
+31           Non-veg Supreme             91         76            69         92          77          53         35             110        93
+32           Chicken Pepperoni           89         74            67         90          75          51         33            108         91
+33           Indi Chicken Tikka          93         77            70         93          77          55         36             111        87
+#
+    Regular serves 1 person, Medium serves 2 people and Large serves 4 people.                                                * Not Applicable
+PP V = Pasta Pizza Veg          PP NV = Pasta Pizza Non Veg
+                                                                                    Total Sugar (g)
+          TYPE OF CRUST
+                                            New Hand Tossed                  Fresh Pan                Thin Crust            Cheese Burst
+
+           SIZE OF PIZZA             Regular    Medium        Large      Regular       Medium     Regular    Medium        Regular    Medium
+
+                                                           No. of Slices/Serving (Serve Size) (Regular serves 1 person,
+S.No.           Core Pizza                                     Medium serves 2 people & Large serves 4 people)
+                                     4 Slices   3 Slices      2 Slices   4 Slices      3 Slices   4 Slices   3 Slices     4 Slices    3 Slices
+    1           Margherita              3          2             2          3             2           5         3             6          5
+    2          Cheese n Corn            4          3             3          4             3           6         4             7          6
+    3         Cheese n Tomato           3          2             2          3             2           5         3             6          5
+    4       Moroccan Spice PP V         6          6           NA*          6             6           8         6             9          8
+    5         Achari Do Pyaza           2          2             2          3             2           4         3             5          5
+    6           Fresh Veggie            3          2             2          3             2           5         3             6          5
+    7    Double Cheese Margherita       3          2             2          3             2           5         3             6          6
+    8           Farmhouse               3          3             3          3             3           5         4             6          5
+    9       Mexican Green Wave          3          2             2          3             2           5         3             6          5
+10            Veggie Paradise           3          3             3          3             3           5         4             6          5
+11             Peppy Paneer             3          3             2          3             3           5         3             6          5
+12          Creamy Tomato PP V          7          6           NA*          7             6           9         7            10          9
+13              Delux Veggie            4          4             3          4             4           6         4             7          6
+14           Veg Extravaganza           4          4             3          4             4           6         4             7          6
+15          Indi Tandoori Paneer        4          4             3          4             4           7         5             7          6
+16            Paneer Makhani            4          3             5          4             3           6         4             6          5
+17               5 Pepper               3          3             2          3             3           5         3             6          5
+18           Unthinkable Pizza          4          4             3          4             4           6         4             7          6
+19             Kadhai Paneer            3          3             5          4             3           5         4             7          6
+20             4 Cheese Pizza           2          2             2          2             2           5         3           NA*        NA*
+21           Cheese Dominator           2          1             1          2             1           4         2           NA*        NA*
+22            Chicken Sausage           3          3             2          3             3           5         4             6          5
+23            Keema Do Pyaza            2          2             2          3             2           4         3             6          5
+24        Pepper Barbeque Chicken       3          2             2          3             2           5         3             6          5
+25         Moroccan Spice PP NV         6          6           NA*          6             6           8         7             9          8
+26      Pepper BBQ Chicken & Onion      3          2             2          3             2           5         3             6          5
+27         Creamy Tomato PP NV          7          6           NA*          7             6           9         7            10          9
+28             Chicken Fiesta           3          2             2          3             2           5         3             6          5
+29         Chicken Golden Delight       3          3             3          3             3           5         4             6          5
+30           Chicken Dominator          4          3             3          4             3           6         4             7          6
+31           Non-veg Supreme            3          3             2          3             3           5         4             6          5
+32           Chicken Pepperoni          3          2             2          3             2           5         3             6          5
+33           Indi Chicken Tikka         5          4             4          5             4           7         5             8          6
+#
+    Regular serves 1 person, Medium serves 2 people and Large serves 4 people.                                              * Not Applicable
+PP V = Pasta Pizza Veg PP NV = Pasta Pizza Non Veg
+                                                                                       Total Fat (g)
+          TYPE OF CRUST
+                                               New Hand Tossed                  Fresh Pan                 Thin Crust           Cheese Burst
+
+           SIZE OF PIZZA                Regular    Medium        Large      Regular      Medium        Regular   Medium       Regular    Medium
+
+                                                              No. of Slices/Serving (Serve Size) (Regular serves 1 person,
+S.No.           Core Pizza                                        Medium serves 2 people & Large serves 4 people)
+                                        4 Slices   3 Slices      2 Slices   4 Slices      3 Slices   4 Slices    3 Slices    4 Slices    3 Slices
+    1           Margherita                26         23            18         28            25           19         17          38         33
+    2          Cheese n Corn              26         23            19         29            25           20         17          38         33
+    3         Cheese n Tomato             26         23            21         29            25           19         17          38         33
+    4       Moroccan Spice PP V           49         43           NA*         55            43           42        37           61         53
+    5         Achari Do Pyaza             31         28            23         35            30           24        22           43         38
+    6           Fresh Veggie              26         23            19         29            25           20         17          38         33
+    7    Double Cheese Margherita         29         25            20         32            27           23         19          41         33
+    8           Farmhouse                 28         24            20         30            26           21         18          40         35
+    9       Mexican Green Wave            26         23            19         29            25           20         17          38         33
+10            Veggie Paradise             28         24            20         30            26           21         18          40         35
+11             Peppy Paneer               39         33            27          41           35           32        27           51         43
+12          Creamy Tomato PP V             7         32           NA*         37            32           35        26           49         43
+13              Delux Veggie              36         31            26         38            33           29        25           48         41
+14           Veg Extravaganza             32         29            24         36            32           25        24           46         40
+15          Indi Tandoori Paneer          49         42            35         52            44           42        36           61         52
+16            Paneer Makhani              51         41            35         53            43           44        35           56         51
+17               5 Pepper                 26         23            19         29            25           20         17          38         33
+18           Unthinkable Pizza            37         32            27         39            34           30        26           49         42
+19             Kadhai Paneer              40         39            33         48            41           33        33           58         49
+20             4 Cheese Pizza             29         26            23         34            28           31        27          NA*        NA*
+21           Cheese Dominator             34         27            26         39            29           36        27          NA*        NA*
+22            Chicken Sausage             31         27            22         33            29           24         21          43         37
+23            Keema Do Pyaza              29         26            21         32            28           22        20           41         36
+24        Pepper Barbeque Chicken         28         24            20         30            26           21         18          40         35
+25         Moroccan Spice PP NV           49         43           NA*         56            43           43        37           61         54
+26      Pepper BBQ Chicken & Onion        28         24            20         30            26           21         18          40         35
+27         Creamy Tomato PP NV            41         32           NA*         37            32           34        26           52         42
+28             Chicken Fiesta             27         24            19         29            26           20         18          39         34
+29         Chicken Golden Delight         27         28            23         34            30           21        22           44         38
+30           Chicken Dominator            32         29            23         34            31           25        23           44         39
+31           Non-veg Supreme              30         26            21         32            28           23        20           42         37
+32           Chicken Pepperoni            32         29            24         35            31           25        23           45         40
+33           Indi Chicken Tikka           39         34            28         42            37           32        28           51         37
+#
+    Regular serves 1 person, Medium serves 2 people and Large serves 4 people.                                                 * Not Applicable
+PP V = Pasta Pizza Veg            PP NV = Pasta Pizza Non Veg
+                                                                              Total Saturated Fat (g)
+          TYPE OF CRUST
+                                               New Hand Tossed                  Fresh Pan              Thin Crust              Cheese Burst
+
+           SIZE OF PIZZA                Regular    Medium        Large      Regular    Medium      Regular     Medium         Regular    Medium
+
+                                                              No. of Slices/Serving (Serve Size) (Regular serves 1 person,
+S.No.           Core Pizza                                        Medium serves 2 people & Large serves 4 people)
+                                        4 Slices   3 Slices      2 Slices   4 Slices    3 Slices   4 Slices    3 Slices      4 Slices    3 Slices
+    1           Margherita                14         12            10          15         14          10          9             22         19
+    2          Cheese n Corn              14         12            10          15         14          10          9             22         19
+    3         Cheese n Tomato             14         12            12          15         14          10          9             22         19
+    4       Moroccan Spice PP V           15         13           NA*          19         13          11          10            23         20
+    5         Achari Do Pyaza             15         13            11          16         15          11          10            23         20
+    6           Fresh Veggie              14         12            10          15         14          10          9             22         19
+    7    Double Cheese Margherita         16         14            12          17         15          12          11            24         20
+    8           Farmhouse                 14         13            11          16         14          10          10            22         20
+    9       Mexican Green Wave            14         12            10          15         14          10          9             22         19
+10            Veggie Paradise             14         12            11          16         14          10          10            22         20
+11             Peppy Paneer               22         19            16         24          20          19          16            31         26
+12          Creamy Tomato PP V            16         12           NA*          14         12          13          9             22         19
+13              Delux Veggie              19          17           14          21         18          16          14            28         24
+14           Veg Extravaganza             16         15            13          19         17          12          12            25         22
+15          Indi Tandoori Paneer          21         18            15         25          19          17          15            32         25
+16            Paneer Makhani              27         22            19         28          23          23          19            34         29
+17               5 Pepper                 14         12            10          15         14          10          9             22         19
+18           Unthinkable Pizza            14         13            11          16         14          11          10            23         20
+19             Kadhai Paneer              20         20            17         25          21          16          17            32         27
+20             4 Cheese Pizza             20         18            16         22          20          18          16           NA*        NA*
+21           Cheese Dominator             23         18            18         25          20          21          16           NA*        NA*
+22            Chicken Sausage             15         14            12          17         15          12          11            24         21
+23            Keema Do Pyaza              14         13            11          16         14          11          10            23         20
+24        Pepper Barbeque Chicken         14         13            11          16         14          11          10            23         20
+25         Moroccan Spice PP NV           15         13           NA*          19         13          12          10            24         20
+26      Pepper BBQ Chicken & Onion        14         13            11          16         14          11          10            23         20
+27         Creamy Tomato PP NV            16         12           NA*          14         12          13          9             25         19
+28             Chicken Fiesta             14         12            11          16         14          10          10            22         20
+29         Chicken Golden Delight         14         15            13          19         17          11          12            25         22
+30           Chicken Dominator            15         14            12          17         15          12          11            24         21
+31           Non-veg Supreme              15         13            11          16         15          11          10            23         20
+32           Chicken Pepperoni            17         16            13          19         17          13          13            26         23
+33           Indi Chicken Tikka           16         14            12          18         16          13          11            25         16
+#
+    Regular serves 1 person, Medium serves 2 people and Large serves 4 people.                                                 * Not Applicable
+PP V = Pasta Pizza Veg            PP NV = Pasta Pizza Non Veg
+                                                                                 Total Trans-fat (g)
+          TYPE OF CRUST
+                                              New Hand Tossed                   Fresh Pan              Thin Crust              Cheese Burst
+
+           SIZE OF PIZZA                Regular    Medium        Large      Regular    Medium      Regular     Medium         Regular    Medium
+
+                                                              No. of Slices/Serving (Serve Size) (Regular serves 1 person,
+S.No.           Core Pizza                                        Medium serves 2 people & Large serves 4 people)
+                                        4 Slices   3 Slices      2 Slices   4 Slices    3 Slices   4 Slices    3 Slices      4 Slices    3 Slices
+    1           Margherita                0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+    2          Cheese n Corn              0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+    3         Cheese n Tomato             0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+    4       Moroccan Spice PP V           0.3        0.2          NA*         0.3        0.2          0.1         0.1           0.5        0.4
+    5         Achari Do Pyaza             0.3        0.2           0.2        0.3        0.3          0.1         0.1           0.5        0.5
+    6           Fresh Veggie              0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+    7    Double Cheese Margherita         0.3        0.3           0.2        0.4        0.3         0.2         0.2            0.6        0.5
+    8           Farmhouse                 0.3        0.3           0.2        0.3        0.3         0.2          0.1           0.6        0.5
+    9       Mexican Green Wave            0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+10            Veggie Paradise             0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+11             Peppy Paneer               0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+12          Creamy Tomato PP V            0.3        0.2          NA*         0.3        0.2          0.1         0.1           0.5        0.5
+13              Delux Veggie              0.3        0.3           0.2        0.3        0.3         0.2          0.1           0.6        0.5
+14           Veg Extravaganza             0.4        0.3          0.3         0.4        0.4         0.2         0.2            0.6        0.6
+15          Indi Tandoori Paneer          0.3        0.2           0.2        0.3        0.2          0.1         0.1           0.5        0.5
+16            Paneer Makhani              0.3        0.2           0.2        0.3        0.2          0.1         0.1           0.6        0.5
+17               5 Pepper                 0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+18           Unthinkable Pizza            0.7        0.6          0.5         0.7        0.6         0.6         0.5            1.0        0.9
+19             Kadhai Paneer              0.3        0.2           0.2        0.3        0.2          0.1         0.1           0.5        0.5
+20             4 Cheese Pizza             0.4        0.4          0.3         0.5        0.4          0.4        0.4           NA*        NA*
+21           Cheese Dominator             0.4        0.3          0.3         0.5        0.3          0.4        0.3           NA*        NA*
+22            Chicken Sausage             0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+23            Keema Do Pyaza              0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+24        Pepper Barbeque Chicken         0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+25         Moroccan Spice PP NV           0.3        0.2          NA*         0.3        0.2          0.1         0.1           0.5        0.4
+26      Pepper BBQ Chicken & Onion        0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+27         Creamy Tomato PP NV            0.3        0.2          NA*         0.3        0.2          0.1         0.1           0.6        0.4
+28             Chicken Fiesta             0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+29         Chicken Golden Delight         0.3        0.3           0.2        0.4        0.3          0.1        0.2            0.6        0.5
+30           Chicken Dominator            0.3        0.3           0.2        0.3        0.3          0.1         0.1           0.6        0.5
+31           Non-veg Supreme              0.3        0.3           0.2        0.4        0.3         0.2          0.1           0.6        0.5
+32           Chicken Pepperoni            0.3        0.3           0.2        0.4        0.3         0.2         0.2            0.6        0.5
+33           Indi Chicken Tikka           0.3        0.2           0.2        0.3        0.2          0.1         0.1           0.5        0.5
+#
+    Regular serves 1 person, Medium serves 2 people and Large serves 4 people.                                                 * Not Applicable
+PP V = Pasta Pizza Veg            PP NV = Pasta Pizza Non Veg
+                                                                                       Sodium (mg)
+          TYPE OF CRUST
+                                              New Hand Tossed                   Fresh Pan               Thin Crust             Cheese Burst
+
+           SIZE OF PIZZA                Regular    Medium        Large      Regular      Medium     Regular    Medium         Regular    Medium
+
+                                                              No. of Slices/Serving (Serve Size) (Regular serves 1 person,
+S.No.           Core Pizza                                        Medium serves 2 people & Large serves 4 people)
+                                        4 Slices   3 Slices      2 Slices   4 Slices     3 Slices   4 Slices   3 Slices      4 Slices    3 Slices
+    1           Margherita                1367      1149          984        1445         1219        589        564           1813       1542
+    2          Cheese n Corn              1367      1149          984        1445         1219        589        564           1813       1542
+    3         Cheese n Tomato             1367      1149          1061       1445         1219        589        564           1813       1542
+    4       Moroccan Spice PP V           1741      1453          NA*        1948         1453        963        868          2188        1846
+    5         Achari Do Pyaza             1521      1358          1160       1681         1428        774        743          2055        1751
+    6           Fresh Veggie              1367      1219          984        1445         1219        589        564           1813       1542
+    7    Double Cheese Margherita         1473      1219         1047        1546         1297        695        634          1920        1620
+    8           Farmhouse                 1563      1311          1130        1641        1381        785        726          2009        1704
+    9       Mexican Green Wave            1619      1401          1196       1697         1471        841        816          2065        1794
+10            Veggie Paradise             1687      1469         1224        1765         1539        909        884          2133        1622
+11             Peppy Paneer               1937      1701         1459        2015         1771        1159       816          2383        2094
+12          Creamy Tomato PP V            1910      1707          NA*         1781        1707        1132       1122         2228        2100
+13              Delux Veggie              1773      1521          1272        1851        1591        995        936          2219        1914
+14           Veg Extravaganza             1887      1677         1422        2021         1747        1109      1080          2389        2280
+15          Indi Tandoori Paneer          2600      2161          1719       2178         2231       1822       1577          2554        2546
+16            Paneer Makhani              1660      1381         1397        1738         1451        882        797           1813       1604
+17               5 Pepper                 1859      1641          1376       1937         1711        1081      1056          2305        2034
+18           Unthinkable Pizza            2231      1885         1658        2309         1955       1453       1300          2677        2278
+19             Kadhai Paneer              1883      1721         1668        2040         1791        1137      1105          2404        2114
+20             4 Cheese Pizza             1394      1217         1062        1438         1287        889        802           NA*        NA*
+21           Cheese Dominator             1394      1100         1050        1472         1170        888        686           NA*        NA*
+22            Chicken Sausage             1592      1349          1153       1670         1419        814        764          2038        1742
+23            Keema Do Pyaza              1495      1350          1155       1662         1420        766        717          2030        1743
+24        Pepper Barbeque Chicken         1717      1474         1259        1795         1544        939        889          2163        1867
+25         Moroccan Spice PP NV           2182      1862          NA*        2389         1862       1404       1278          2629        2255
+26      Pepper BBQ Chicken & Onion        1717      1474         1259        1795         1544        939        889          2163        1867
+27         Creamy Tomato PP NV            1950      1777          NA*         1821        1777        1192       1172         2396        2170
+28             Chicken Fiesta             1638      1478         1236         1716        1548        893        860           2122       1871
+29         Chicken Golden Delight         1617      1550          1321       1835         1620        965        839          2203        1943
+30           Chicken Dominator            1992      1964         1623        2162         2034        1379       1214          2531       2357
+31           Non-veg Supreme              1922      1789         1486        2012         1859       1204        1114         2380        2182
+32           Chicken Pepperoni            1693      1530          1321       1805         1600        945        915           2173       1923
+33           Indi Chicken Tikka           2340      1971          1719       2418         2041       1562       1387          2786        2362
+#
+    Regular serves 1 person, Medium serves 2 people and Large serves 4 people.                                                 * Not Applicable
+PP V = Pasta Pizza Veg            PP NV = Pasta Pizza Non Veg
+                                       Energy (Kcal)
+        Pizza Mania                                     Protein (g)   Total Carb (g)   Total Sugar (g)   Total Fat (g)   Total Sat Fat (g) Total Trans-fat (g)    Sodium (mg)
+                                         per serve
+S.No.          Type of Crust           HT      PAN     HT      PAN    HT      PAN       HT      PAN      HT      PAN      HT       PAN        HT      PAN         HT       PAN
+        No. of Slices (Portion Size)    4       4      4        4     4         4        4        4       4       4        4        4         4         4          4         4
+1                  Onion               546     684     17       17    82        91       3        4      16       27       3        11       0.02     0.08        760       862
+2                 Tomato               546     682     17       17    82        91       3        4      16       27       3        11       0.02     0.08        760       862
+3                Capsicum              545     682     17       17     81      93        3        4      16       27       3        11       0.00     0.08        760       862
+4                     Corn             554      691    17       17    83       93        4        5      16       27       3        11       0.02     0.08        760       862
+5             Paneer & Onion           640     782     23       24    82       92        3        4      24       35       8        16       0.00     0.08        970      1072
+6                 Cheesy               671      761     18      18     81      88       3         3      30       37       6        13       0.06      0.16      1033      1065
+7              Loaded VEG              NA*     653     NA*      19    NA*      92      NA*        4      NA*      23      NA*       11       NA*       0.11       NA*      1071
+8            Chicken Sausage           586     723     20       20    83       92       3         4      19       30       4        12       0.02     0.08        885       987
+9          Pepper BBQ Chicken          578      715    23       22    82       82       3         4      17       28       3        12       0.02     0.08       1010       1112
+10           Loaded Non veg            NA*      714    NA*      29    NA*      92      NA*        3      NA*      25      NA*       12       NA*       0.10       NA*      1288
+                                                                                                                                                                 * Not Applicable
+S.No.                    Sides                    No. of Serve   Energy (Kcal)   Protein (g)   Carb(g)   Total Sugar (g)   Total Fat (g)   Total Sat Fat (g)   Total Trans-fat (g) Sodium (mg)
+1                     Garlic Bread                     2             288             5           34            0                14                5                  0.11            300
+2                  Paneer tikka SGB                    2             429             10          44             1               23                9                  0.17             445
+3               Chicken pepperoni SGB                  2             373             10          42             1               19                7                  0.17             355
+4                 Stuffed Garlic Bread                 2             288             9           43             1               19                7                  0.15             323
+5                     Cheesy Dip                       1              55             2           0             0                5                 3                  0.04             56
+6                    Jalapeno Dip                      1              53              1          2              1               5                 2                  0.00             92
+7                Taco Mexicana - Veg                   2             496             9           59            5                25                5                  0.15             769
+8              Taco Mexicana - Non- veg                2             437             9           57            4                19                4                  0.15             640
+9                  Zingy Parcel - Veg                  1             230             6           24             1               12                5                  0.03             332
+10              Zingy Parcel - Non- veg                1             208             5           24             1               10                3                  0.03             298
+11   Roasted Chicken Wings Peri-Peri seasoning         1             412             21          52            0                13                4                  0.01             917
+12      Roasted Chicken Wings Classic Hot Sauce        1             439             21          59            5                13                4                  0.01             957
+13   Roasted Chicken Wings Peri-Peri seasoning         1             412             21          52            0                13                4                  0.01             917
+14   Roasted Chicken Wings - Classic Hot Sauce         1             439             21          59            5                13                4                  0.01             957
+15       Chicken Meatballs Peri-Peri Seasoning         1             205             18          14            0                9                 2                  0.00            1266
+16       Chicken Meatballs Peri-Peri Seasoning         1             205             18          14            0                9                 2                  0.00            1266
+17         Chicken Meatballs Peri-Peri Sauce           1             219             18          18            9                9                 2                  0.00            1382
+18         Chicken Meatballs Peri-Peri Sauce           1             219             23          18            0                10                3                  1.26            1256
+20          Boneless Chicken Wings Peri-Peri           1             253             23          18            0                10                3                  1.26            1256
+21                 Choco Lava Cake                     1             327             6           47            27               13                4                  0.36              0
+22               Potato Cheese Shots                   1             144             3           16            0                6                 3                  0.08             384
+24                  Crunchy Stripes                    1             295             5           40            2                9                 5                  0.03             81
+25                  Brownie Fantasy                    1             372             5           53            35               16                3                  0.18              0
+26             Taco Mexicana (Veg Single)              1             248             4           30            3                12                2                  0.08             385
+27                       BMC                           1             215             3           29            20               10                7                  0.00              0
+28             Creamy Tomato Pasta Veg                 1             440             7           54            9                22                4                  0.05            1030
+29          Creamy Tomato Pasta Non- veg               1             467             11          55            9                23                4                  0.05            1230
+30             Moroccan Spice Pasta Veg                1             647             7           51            9                46                7                  0.05            1270
+31          Moroccan Spice Pasta Non- veg              1             717             14          55            8                49                8                  0.05            1488
+32              Tikka Masala Pasta Veg                 1             501             11          57            9                25                6                  0.05            1650
+33            Tikka Masala Pasta Non- veg              1             453             14          55            9                20                4                  0.05            1530
+34            Cheesey Jalaepno Pasta Veg               1             523             8           50            5                32                6                  0.05            1442
+35          Cheesey Jalaepno Pasta Non-veg             1             549             12          50            5                33                6                  0.05            1322
+36              Burger Pizza Classic Veg               1             356             12          37            5                18                7                  0.12             585
+37             Burger Pizza Pemium Veg                 1             455             18          38            5                26                12                 0.12             669
+38           Burger Pizza Classic Non- veg             1             390             19          38            5                18                7                  0.12            1123
+39        Burger Pizza Classic Veg Small Town          1             273             9           34            5                11                5                  0.05             288
+40        Burger Pizza Pemium Veg Small Town           1             312             11          35            5                14                7                  0.05             372
+41      Burger Pizza Classic Non Veg Small Town        1             291             12          35            5                11                5                  0.05             557
+
+
+ Paneer Tikka SGB = Paneer Tikka Stuffed Garlic Bread
+ Chicken Pepperoni SGB – Chicken Pepperoni Stuffed Garlic Bread
+S.No.          Beverages           Energy (Kcal)      Protein(g)        Total      Total         Total           Total        Total   Sodium (mg)
+                                                   carbohydrate (g)   Sugar (g)   Fat (g)   Saturated Fat (g) Trans-fat (g)
+ 1          Fountain Pepsi              43                0              11         11             11               0          0          11
+2         Fountain Diet Pepsi          0.3                0              0          0              0                0          0          21
+3            Fountain 7Up               46                0              11         11             0                0          0          27
+4       Fountain Lipton Iced Tea        37                0              9          9              0                0          0          11
+5          Fountain Mirinda             55                0              14         14             0                0          0          14
+6       Fountain Mountain Dew           49                0              12         12             0                0          0          16
+                                                                                          ALLERGENS
+S.No.                 PRODUCT                    Milk & milk    Cereals
+                                                  products     containing   Soya   Nuts     Fish      Crustaceans   Sulphite   Egg
+                                                                 gluten
+
+ 1                   Margherita                     YES          YES        YES    NO       NO            NO         NO        NO
+ 2            Double Cheese Margherita              YES          YES        YES    NO       NO            NO         NO        NO
+ 3                   Farmhouse                      YES          YES        YES    NO       NO            NO         NO        NO
+ 4              Mexican Green wave                  YES          YES        YES    NO       NO            NO         NO        NO
+ 5                  Peppy Paneer                    YES          YES        YES    NO       NO            NO         NO        NO
+ 6                 Veggie Paradise                  YES          YES        YES    NO       NO            NO         NO        NO
+ 8                  Deluxe Veggie                   YES          YES        YES    NO       NO            NO         NO        NO
+ 9                Veg Extravaganza                  YES          YES        YES    NO       NO            NO         NO        NO
+10            Pepper Barbecue Chicken               YES          YES        YES    NO       NO            NO         NO        NO
+11                 Chicken Fiesta                   YES          YES        YES    NO       NO            NO         NO        NO
+12             Chicken Golden Delight               YES          YES        YES    NO       NO            NO         NO        NO
+13               Chicken Dominator                  YES          YES        YES    YES      NO            NO         NO        NO
+14               Chicken Pepperoni                  YES          YES        YES    NO       NO            NO         NO        NO
+15                Non-Veg Supreme                   YES          YES        YES    NO       NO            NO         NO        NO
+16               Pizza Mania-Cheesy                 YES          YES        YES    NO       NO            NO         NO        NO
+17             Pizza Mania-Loaded-Veg               YES          YES        YES    NO       NO            NO         NO        NO
+18             Pizza Mania-Veg Singles              YES          YES        YES    NO       NO            NO         NO        NO
+19        Pizza Mania-Non-Veg Pepper BBQ            YES          YES        YES    NO       NO            NO         NO        NO
+20           Pizza Mania-Non-Veg loaded             YES          YES        YES    NO       NO            NO         NO        NO
+21      Pizza Mania-Non-Veg Chicken sausage         YES          YES        YES    NO       NO            NO         NO        NO
+22               Stuffed Garlic Bread               YES          YES        YES    NO       NO            NO         NO        NO
+23        Paneer Tikka Stuffed Garlic Bread         YES          YES        YES    NO       NO            NO         NO        NO
+24      Chicken Pepperoni Stuffed Garlic Bread      YES          YES        YES    NO       NO            NO         NO        NO
+25                   Garlic Bread                    NO          YES        YES    NO       NO            NO         NO        NO
+26               Taco Mexicana Veg                  YES          YES        YES    NO       NO            NO         NO        NO
+27             Taco Mexicana Chicken                YES          YES        YES    NO       NO            NO         NO        NO
+28           Pasta Veg - Creamy Tomato              YES          YES        YES    NO       NO            NO         NO        NO
+29           Pasta Veg - Jalapeno Cheesy            YES          YES        YES    NO       NO            NO         NO        NO
+30         Pasta Veg - Paneer Tikka Masala          YES          YES        YES    NO       NO            NO         NO        NO
+31         Pasta Non-Veg - Creamy Tomato            YES          YES        YES    NO       NO            NO         NO        NO
+32        Pasta Non-Veg - Jalapeno Cheesy           YES          YES        YES    NO       NO            NO         NO        NO
+33      Pasta Non-Veg - Chicken Tikka Masala        YES          YES        YES    YES      NO            NO         NO        NO
+34                Zingy Parcel - Veg                YES          YES        YES    NO       NO            NO         NO        NO
+35              Zingy Parcel-Chicken                YES          YES        YES    NO       NO            NO         NO        NO
+36             Roasted Chicken Wings                YES          YES        YES    NO       NO            NO         NO        NO
+37                Choco Lava Cake                   YES          YES        NO     NO       NO            NO         NO        NO
+38              Red Velvet Lava Cake                YES          YES        YES    NO       NO            NO         NO        NO
+39               Cheesy Jalapeno Dip                YES           NO        NO     NO       NO            NO         NO        NO
+40                   Cheesy Dip                     YES           NO        NO     NO       NO            NO         NO        NO
+                                                                                        ALLERGENS
+S.NO.                 PRODUCT                  Milk & milk    Cereals
+                                                products     containing   Soya   Nuts     Fish      Crustaceans   Sulphite   Egg
+                                                               gluten
+
+41              Butter Mousse Cake                YES          YES        YES    NO       NO            NO         NO        NO
+42                 Cheese & Corn                  YES          YES        YES    NO       NO            NO         NO        NO
+43                Paneer Makhani                  YES          YES        YES    NO       NO            NO         NO        NO
+44                  Fresh Veggie                  YES          YES        YES    NO       NO            NO         NO        NO
+45                Chicken Sausage                 YES          YES        YES    NO       NO            NO         NO        NO
+46           Pepper Barbecue & Onion              YES          YES        YES    NO       NO            NO         NO        NO
+47                 Chicken Tikka                  YES          YES        YES    YES      NO            NO         NO        NO
+48                Peri-Peri Chicken               YES          YES        YES    NO       NO            NO         NO        NO
+49               Chicken Meat Balls                NO          YES        YES    NO       NO            NO         NO        NO
+50            Boneless Chicken Wings               NO          YES        YES    NO       NO            NO         NO        NO
+60                  Cheesy Dip                    YES           NO        NO     NO       NO            NO         NO        NO
+61              Cheesy Jalapeno Dip               YES           NO        NO     NO       NO            NO         YES       NO
+62       Shredded Orange Cheddar Cheese           YES           NO        NO     NO       NO            NO         NO        NO
+63                  Flour (Maida)                  NO          YES        NO     NO       NO            NO         YES       NO
+64                     Gluten                      NO          YES        NO     NO       NO            NO         YES       NO
+65                   Dry Yeast                     NO           NO        NO     NO       NO            NO         NO        NO
+66          Cold Dough Premix (775 Gm)            YES          YES        YES    NO       NO            NO         YES       NO
+67              Indi Tandoori Paneer              YES          YES        YES    NO       NO            NO         NO        NO
+68                    Brownie                     YES          YES        YES    NO       NO            NO         NO        NO
+69                Achari Do Pyaza                 YES          YES        YES    NO       NO            NO         NO        NO
+70        Moroccan Spice Pasta Pizza- Veg         YES          YES        YES    NO       NO            NO         NO        NO
+71      Moroccan Spice Pasta Pizza - Non-veg      YES          YES        YES    NO       NO            NO         NO        NO
+72        Creamy Tomato Pasta Pizza - Veg         YES          YES        YES    NO       NO            NO         NO        NO
+73      Creamy Tomato Pasta Pizza - Non-veg       YES          YES        YES    NO       NO            NO         NO        NO
+74                 Kadhai Paneer                  YES          YES        YES    NO       NO            NO         NO        NO
+75               Burger Pizza - Veg               YES          YES        YES    NO       NO            NO         NO        NO
+76             Burger Pizza - Non-veg             YES          YES        YES    NO       NO            NO         NO        NO
+77                  Frozen Bun                    YES          YES        YES    NO       NO            NO         NO        NO
+78                   Thin Crust                    NO          YES        NO     NO       NO            NO         NO        NO
+79                 Thinner Tortilla                NO          YES        NO     NO       NO            NO         NO        NO
+80                   Flaky wrap                    NO          YES        NO     NO       NO            NO         NO        NO
+81                   Dough ball                    NO          YES        NO     NO       NO            NO         NO        NO
+82          Kala Khatta Flavoured Syrup            NO           NO        NO     NO       NO            NO         NO        NO
+83            Ice Spice Flavoured Syrup            NO           NO        NO     NO       NO            NO         NO        NO
+84            Diced Mozzarella Cheese             YES           NO        NO     NO       NO            NO         NO        NO
+85                  Filler Cheese                 YES           NO        NO     NO       NO            NO         NO        NO
+86             Cheesy & Jalapeno Dip              YES           NO        YES    NO       NO            NO         NO        NO
+87       Shredded Orange Cheddar Cheese           YES           NO        NO     NO       NO            NO         NO        NO
+88                   Corn Meal                     NO           NO        NO     NO       NO            NO         NO        NO
+                                                                                      ALLERGENS
+S.No.               PRODUCT                  Milk & milk    Cereals
+                                              products     containing   Soya   Nuts     Fish      Crustaceans   Sulphite   Egg
+                                                             gluten
+
+89          Butterscotch Mousse Cake            YES          YES        YES    NO       NO            NO         NO        NO
+90                   Brownie                    YES           NO        YES    NO       NO            NO         NO        NO
+91                  Hot Fudge                   YES           NO        YES    NO       NO            NO         NO        NO
+92             Veg Creamy Keema                 YES          YES        YES    YES      NO            NO         NO        NO
+93           Processed Rigatoni Pasta            NO          YES        YES    NO       NO            NO         NO        NO
+94           Seasoned Cheese Blend              YES           NO        YES    NO       NO            NO         NO        NO
+95          Harissa Mayonnaise Sauce            YES           NO        YES    NO       NO            NO         NO        NO
+96         Seasoned Mayonnaise Sauce            YES           NO        YES    NO       NO            NO         NO        NO
+97          Gouda Flavoured Dressing            YES           NO        YES    NO       NO            NO         NO        NO
+98             Plain Frozen Paneer              YES           NO        NO     NO       NO            NO         NO        NO
+99          Paneer Masala (Mix Paneer)          YES           NO        YES    NO       NO            NO         NO        NO
+100                Paneer Tikka                 YES           NO        YES    NO       NO            NO         NO        NO
+101            Pepper BBQ Chicken                NO          YES        YES    NO       NO            NO         NO        NO
+102              Peri Peri Chicken               NO          YES        YES    NO       NO            NO         NO        NO
+103           Chicken Tikka Masala              YES           NO        NO     YES      NO            NO         NO        NO
+104             Chicken Pepperoni                NO           NO        NO     NO       NO            NO         NO        NO
+105          Roasted Chicken Wings               NO           NO        YES    NO       NO            NO         NO        NO
+106          Boneless Chicken Wings              NO          YES        YES    NO       NO            NO         NO        NO
+107           Grilled Chicken Rasher             NO          YES        YES    NO       NO            NO         NO        NO
+108              Chicken Keema                   NO          YES        YES    NO       NO            NO         NO        NO
+109            Reﬁned Soyabean Oil               NO           NO        YES    NO       NO            NO         NO        NO
+110                 K- Cuisine                   NO           NO        YES    NO       NO            NO         NO        NO
+111                Fusilli Pasta                 NO          YES        NO     NO       NO            NO         NO        NO
+112             Arancini Veg Patty               NO          YES        NO     NO       NO            NO         NO        NO
+113     Spicy Red Dressing (Makhani Sauce)      YES          YES        YES    NO       NO            NO         NO        NO
+114         Tomato Blend/Pizza Sauce             NO           NO        YES    NO       NO            NO         NO        NO
+115             Tomato Chili Sauce               NO           NO        NO     NO       NO            NO         NO        NO
+116          Tomato Ketchup Sachet               NO           NO        NO     NO       NO            NO         NO        NO
+117        Tomato Chili Ketchup Sachet           NO           NO        NO     NO       NO            NO         NO        NO
+118                 Mint Mayo                   YES           NO        YES    NO       NO            NO         NO        NO
+119              Peri Peri Sauce                 NO           NO        YES    NO       NO            NO         NO        NO
+120          Creamy Culinary Dressing            NO           NO        YES    NO       NO            NO         NO        NO
+121           Garlic Herb Seasoning              NO           NO        YES    NO       NO            NO         NO        NO
+122            Mexican Seasoning                 NO          YES        NO     NO       NO            NO         NO        NO
+123             Paneer Seasoning                 NO           NO        YES    NO       NO            NO         NO        NO
+124             Peri Peri Sprinkler              NO           NO        YES    NO       NO            NO         NO        NO
+125            Chilly Flakes Sachets             NO           NO        NO     NO       NO            NO         NO        NO
+126         Oregano Seasoning Sachet             NO           NO        YES    NO       NO            NO         NO        NO
+127          Pepper Herb Seasoning              YES           NO        YES    NO       NO            NO         NO        NO
+                                                                           ALLERGENS
+S.No.          PRODUCT            Milk & milk    Cereals
+                                   products     containing   Soya   Nuts     Fish      Crustaceans   Sulphite   Egg
+                                                  gluten
+
+128     Kadhai Masala Seasoning       NO           NO        NO     NO       NO            NO         NO        NO
+129        Aachari Seasoning          NO           NO        YES    NO       NO            NO         NO        NO
+130      Potato Cheese Shots         YES          YES        NO     NO       NO            NO         NO        NO
+131       Masala Crinkle fries        NO          YES        NO     NO       NO            NO         NO        NO
+132      Green Capsicum (Cut)         NO           NO        NO     NO       NO            NO         NO        NO
+133           Onion (Cut)             NO           NO        NO     NO       NO            NO         NO        NO
+134          Tomato (Cut)             NO           NO        NO     NO       NO            NO         NO        NO
+135         Mushroom (Cut)            NO           NO        NO     NO       NO            NO         NO        NO
+136       Red Capsicum (Cut)          NO           NO        NO     NO       NO            NO         NO        NO
+137        Sliced Mushroom            NO           NO        NO     NO       NO            NO         NO        NO
+138      Yellow Capsicum (Cut)        NO           NO        NO     NO       NO            NO         NO        NO
+139              Corn                 NO           NO        NO     NO       NO            NO         NO        NO
+140            Jalapeno               NO           NO        NO     NO       NO            NO         NO        NO
+141           Black Olive             NO           NO        NO     NO       NO            NO         NO        NO
+142          Red Pepprika             NO           NO        NO     NO       NO            NO         NO        NO
+

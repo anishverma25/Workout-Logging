@@ -9,6 +9,7 @@ export function unitName(food: Food, unit: UnitId) {
   if (unit === 'g') return 'Grams';
   if (unit === 'ml') return 'ml';
   if (unit === 'share') return 'Share of the pot';
+  if (unit === 'serving' && food.servingName) return `Whole ${food.servingName[0]}`;
   return cap(UNIT_LABEL[unit][0]);
 }
 

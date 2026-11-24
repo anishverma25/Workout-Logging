@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/Badge';
 import { exerciseMeta } from '@/domain/models/labels';
 import type { Exercise } from '@/domain/models/schemas';
 import { cn } from '@/lib/cn';
-import { sharesFor, sharesSummary } from '@/data/library/shares';
+import { sharesFor } from '@/data/library/shares';
+import { ExerciseBody, MuscleLine, MuscleStrip } from './MuscleSplit';
 
 interface RowProps {
   exercise: Exercise;
@@ -31,6 +32,7 @@ export function ExerciseRow({ exercise, onSelect, selected, selectable, trailing
         selected && 'bg-surface-2',
       )}
     >
+      {shares ? <ExerciseBody shares={shares} className="h-16 w-9" /> : null}
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
           <span className="truncate text-[1.0625rem] leading-[1.375rem] text-text-1">
@@ -42,9 +44,10 @@ export function ExerciseRow({ exercise, onSelect, selected, selectable, trailing
           {exerciseMeta(exercise)}
         </span>
         {shares ? (
-          <span className="type-meta tabular block truncate text-text-2">
-            {sharesSummary(shares)}
-          </span>
+          <>
+            <MuscleStrip shares={shares} className="mt-2 mb-1" />
+            <MuscleLine shares={shares} />
+          </>
         ) : null}
       </span>
       {selectable ? (

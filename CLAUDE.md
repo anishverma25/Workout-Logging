@@ -636,3 +636,19 @@ Read README.md for setup, architecture and calculation rules.
   exercise sheet; Progress "Muscles in detail". A fieldset no longer grows to its widest child
   (sheets scrolled sideways).
 
+- November 24 batch (migration `20261124000039_exercise_targeting.sql`, Dexie unchanged,
+  `docs/muscles.md`, `docs/food-logging.md`):
+  - Exercise library 201: the 165-row muscle sheet (120 updated, 42 added) and the 42 researched
+    additions (39 added, 3 same as existing), both read by `scripts/exercise-library/import.py`
+    into `targeting.json` (shares, laterality, `aliases` for search, sheet `citations`). Shares
+    drive body maps only; sets stay 1 direct and 0.5 indirect. `EACH_SIDE_SINCE` keeps old logs.
+  - Chain menus (`data/library/chains`, `scripts/chain-foods`): pizza by size, crust and slices,
+    Starbucks cups, variants collapsed in search (`VariantPicker`). Top 300 (`top300.ts`).
+  - Simple food search: `EVERYDAY` picks for the most typed words, USDA behind "Show more", packs
+    first only when their own name says the word, one line per name (`everyday.test.ts`).
+  - Home: slim weekly report banner (`ReportReadyBanner`), Brain pill above the greeting
+    (`BrainButton`, `PageHeader lead`), Brain page `/brain`. Leaderboard ring (`ScoreBreakdown`).
+  - Progress: Ready to train (Overview) and Training quality (Strength) from
+    `domain/analytics/quality.ts`, topics `recovery-map` and `training-quality`; the acute to
+    chronic load flag was removed. Colours on Progress: lime good, `--info` sky for information,
+    `--warning` amber for attention, the rest grey; section icons are neutral.

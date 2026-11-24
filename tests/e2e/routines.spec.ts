@@ -146,9 +146,10 @@ test('each library exercise shows what it works, with its sources', async ({ pag
   await expect(row).toContainText(/Upper chest \d+%/);
   await row.click();
   const sheet = page.getByRole('dialog', { name: 'Incline dumbbell press' });
-  await expect(sheet.getByRole('heading', { name: 'What it works' })).toBeVisible();
-  const shares = sheet.getByRole('list', { name: 'Approximate share of the work' });
-  const values = (await shares.getByRole('listitem').allInnerTexts()).map((t) =>
+  await expect(sheet.getByRole('heading', { name: 'Muscles worked' })).toBeVisible();
+  // Primary, secondary and minor lists together add up to the whole.
+  const shares = sheet.locator('ul[aria-label="Approximate share of the work"] > li');
+  const values = (await shares.allInnerTexts()).map((t) =>
     Number(/(\d+)%/.exec(t)![1]),
   );
   expect(values.reduce((a, b) => a + b, 0)).toBe(100);

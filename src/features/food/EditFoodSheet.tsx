@@ -170,7 +170,7 @@ function EditTotals({ portion, ctx }: { portion: FoodPortion; ctx: FoodContext }
     <NutritionPanel
       nutrients={m.nutrients}
       grams={m.grams}
-      portionLabel={portionText(portion.amount, portion.unit, portion.size, portion.food.pieceName)}
+      portionLabel={portionText(portion.amount, portion.unit, portion.size, portion.food)}
       per100={portion.food.per100}
       weightKnown={!servingOnly(portion.food)}
       targets={ctx.targets}

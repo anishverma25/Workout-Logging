@@ -67,6 +67,20 @@ describe('the muscle taxonomy', () => {
   });
 });
 
+const NO_STORED_GROUP = [
+  'Seated wrist curl',
+  'Reverse wrist curl',
+  'Wrist pronation',
+  'Neck flexion',
+  'Neck extension',
+  'Barbell wrist curl',
+  'Cable wrist curl',
+  'Reverse barbell wrist curl',
+  'Reverse cable wrist curl',
+  'Wrist roller',
+  'Plate pinch hold',
+];
+
 describe('what each exercise works', () => {
   it('every library exercise has been reviewed, and names only real muscles', () => {
     expect(Object.keys(EXERCISE_TARGETS).sort()).toEqual([...SYSTEM_EXERCISE_KEYS].sort());
@@ -91,6 +105,12 @@ describe('what each exercise works', () => {
       const legacy = new Set(
         [...t.primary, ...t.secondary].map((m) => groupOf(m)?.legacy).filter(Boolean),
       );
+      // Forearm, neck and hip-flexor exercises work no muscle in the 12 stored groups: they are
+      // stored under the nearest one and listed here on purpose (docs/muscles.md).
+      if (legacy.size === 0) {
+        expect(NO_STORED_GROUP, e.name).toContain(e.name);
+        continue;
+      }
       expect(legacy.has(e.primaryMuscle), `${e.name}: ${e.primaryMuscle}`).toBe(true);
     }
   });

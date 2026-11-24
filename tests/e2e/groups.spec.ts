@@ -167,8 +167,11 @@ test('two friends: username, create, join by code, points, home card and admin',
   await top.getByRole('button').click();
   const breakdown = top.locator('[data-breakdown]');
   await expect(breakdown).toContainText('Workouts');
-  await expect(breakdown).toContainText('= 10 pts');
-  await expect(breakdown).toContainText('= 3 pts');
+  // The ring's legend: each part as count × points each, and what it adds.
+  await expect(breakdown).toContainText('1 × 10');
+  await expect(breakdown).toContainText('+10');
+  await expect(breakdown).toContainText('3 × 1');
+  await expect(breakdown).toContainText('+3');
   await expect(top).not.toContainText('Pec deck');
   await expect(top).not.toContainText('40');
 
@@ -176,7 +179,8 @@ test('two friends: username, create, join by code, points, home card and admin',
   await top.locator('[data-see-routine]').click();
   const plan = friend.page.getByRole('dialog', { name: `@${unique}’s routine` });
   await expect(plan.locator('[data-board-routine]')).toContainText('Upper');
-  await expect(plan).not.toContainText(/kg/);
+  // No weights (a load in kg); the random username can itself contain the letters "kg".
+  await expect(plan).not.toContainText(/\d\s?kg\b/);
   await plan.locator('[data-copy-routine]').click();
   await expect(friend.page).toHaveURL(/\/routines\/[^/]+$/);
   await expect(

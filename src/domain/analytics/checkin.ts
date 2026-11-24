@@ -3,7 +3,7 @@ import type { Experience } from '../models/schemas';
 import { performanceByExercise } from './performance';
 import { detectPersonalRecords } from './prs';
 import { sessionsBetween, workingSetCount, type Session } from './sessions';
-import { balanceRatios, loadSpike } from './standards';
+import { balanceRatios } from './standards';
 import { detectStalls } from './stalls';
 import type { Exercise } from '../models/schemas';
 
@@ -23,7 +23,7 @@ export type FocusKind = 'ease_off' | 'consistency' | 'stalled' | 'balance' | 'ke
 
 /**
  * Last calendar week in review, from fixed rules. The focus is the first that applies:
- * a load spike, then missed sessions, then a stalled lift, then lopsided training, otherwise
+ * missed sessions, then a stalled lift, then lopsided training, otherwise
  * keep going.
  */
 export function weeklyCheckin(input: {
@@ -72,7 +72,6 @@ export function weeklyCheckin(input: {
       name: names.get(p.exerciseId) ?? 'Exercise',
       weeks: p.weeks,
     }));
-  const spike = loadSpike(upToWeekEnd, lastDay);
   const lopsided = balanceRatios(upToWeekEnd, lastDay).find(
     (b) => b.verdict === 'a_heavy' || b.verdict === 'b_heavy',
   );
@@ -82,11 +81,6 @@ export function weeklyCheckin(input: {
     focus = {
       kind: 'start',
       text: 'No workouts last week. Plan two short sessions this week to get going again.',
-    };
-  else if (spike)
-    focus = {
-      kind: 'ease_off',
-      text: `You did ${spike.ratio.toFixed(1)} times your usual sets. Keep this week closer to ${Math.round(spike.chronicSetsPerWeek)} sets.`,
     };
   else if (target && week.length < target)
     focus = {

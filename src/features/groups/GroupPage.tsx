@@ -25,7 +25,6 @@ import {
   newGroupCode,
   removeMember,
   renameGroup,
-  scoreParts,
   useRemote,
   type BoardRow,
   type Period,
@@ -55,6 +54,7 @@ import {
 } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import { formatNumber } from '@/lib/format';
+import { ScoreBreakdown } from './ScoreBreakdown';
 import { cn } from '@/lib/cn';
 import { HowPointsWork } from './GroupsPage';
 import { MemberAvatar, ProTag } from './parts';
@@ -642,16 +642,7 @@ function BoardRowView({
       </button>
       {open ? (
         <div className="px-4 pb-4" data-breakdown>
-          <ul className="grid grid-cols-2 gap-2">
-            {scoreParts(r).map((p) => (
-              <li key={p.key} className="rounded-nested bg-surface-2 px-3 py-2">
-                <span className="type-caption block text-text-2">{p.label}</span>
-                <span className="type-headline tabular block text-text-1">
-                  {p.count} <span className="type-caption text-text-2">= {p.points} pts</span>
-                </span>
-              </li>
-            ))}
-          </ul>
+          <ScoreBreakdown row={r} />
           {r.me && !r.hasProteinTarget ? (
             <p className="type-meta mt-2 text-text-2">
               Set a protein target on{' '}
@@ -663,9 +654,9 @@ function BoardRowView({
           ) : null}
           {!r.me ? (
             <div className="mt-3">
-              <TextButton onClick={onRoutine} data-see-routine>
+              <CapsuleButton tone="lime" onClick={onRoutine} data-see-routine>
                 See their routine
-              </TextButton>
+              </CapsuleButton>
             </div>
           ) : null}
         </div>

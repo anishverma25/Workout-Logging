@@ -92,11 +92,11 @@ test('exercise library: simple chips first, muscles in detail one tap away', asy
   await expect(rows.filter({ hasText: 'Overhead triceps extension' })).toHaveCount(1);
   await expect(rows.filter({ hasText: 'Barbell curl' })).toHaveCount(0);
 
-  // The exercise's sheet: Muscles worked, closed until tapped.
+  // The exercise's sheet: the named muscles (Anatomy), closed until tapped.
   await rows.filter({ hasText: 'Overhead triceps extension' }).click();
   const detail = page.locator('[data-muscles-worked]');
   await expect(detail).toBeVisible();
-  await detail.getByRole('button', { name: /Muscles worked/ }).click();
+  await detail.getByRole('button', { name: /Anatomy/ }).click();
   await expect(detail).toContainText('Main');
   await expect(detail).toContainText('Triceps long head');
 });

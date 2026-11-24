@@ -1,5 +1,8 @@
 import type { Food } from '../../domain/nutrition/calc';
 import type { DietType, Meal, UnitId } from '../../domain/nutrition/types';
+import type { ChainRow } from './chains/index';
+import type { Top300Row } from './top300';
+import { FOODS } from './foods';
 import type { BrandedRow } from './branded/types';
 
 /**
@@ -131,14 +134,32 @@ export function loadMoreFoods(): Promise<Food[]> {
     import('./regional/index'),
     import('./branded/rows.json'),
     import('./branded/index'),
-  ]).then(([usda, indb, regional, brandedRows, branded]) => {
+    import('./chains/rows.json'),
+    import('./chains/index'),
+    import('./top300.json'),
+    import('./top300'),
+  ]).then(([usda, indb, regional, brandedRows, branded, chainRows, chains, t300, top300]) => {
+    const brandedFoods = (brandedRows.default as unknown as BrandedRow[]).map(branded.fromBranded);
+    // The top 300 foods' natural servings, for foods the library does not have yet.
+    const indbFoods = (indb.default as unknown as IndbRow[]).map(fromIndb);
+    const usdaFoods = (usda.default as unknown as UsdaRow[]).map(fromUsda);
+    const top = top300.newTop300(t300.default as unknown as Top300Row[], [
+      ...FOODS,
+      ...regional.REGIONAL_FOODS,
+      ...brandedFoods,
+      ...indbFoods,
+      ...usdaFoods,
+    ]);
     loaded = [
+      ...top,
+      // Chain menus from each chain's own document (November 2026).
+      ...(chainRows.default as unknown as ChainRow[]).map(chains.fromChain),
       // Calculated regional recipes and labels first: they rank with the curated library.
       ...regional.REGIONAL_FOODS,
       // Branded packs (November 2026), copied from their labels.
-      ...(brandedRows.default as unknown as BrandedRow[]).map(branded.fromBranded),
-      ...(indb.default as unknown as IndbRow[]).map(fromIndb),
-      ...(usda.default as unknown as UsdaRow[]).map(fromUsda),
+      ...brandedFoods,
+      ...indbFoods,
+      ...usdaFoods,
     ];
     listeners.forEach((l) => l());
     return loaded;

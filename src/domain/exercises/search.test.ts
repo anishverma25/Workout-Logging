@@ -1,3 +1,5 @@
+import { exerciseMeta } from '@/domain/models/labels';
+import { EXERCISE_ALIASES } from '@/data/library/shares';
 import { exerciseIdFor, SYSTEM_EXERCISES, SYSTEM_EXERCISE_KEYS } from '@/data/library/exercises';
 import { MUSCLE_GROUPS, type Exercise } from '../models/schemas';
 import {
@@ -134,7 +136,7 @@ describe('filterExercises', () => {
       equipment: 'dumbbell',
       category: 'isolation',
     });
-    expect(names(results)).toEqual(['Dumbbell fly']);
+    expect(names(results)).toEqual(['Dumbbell fly', 'Incline dumbbell fly']);
   });
 
   it('separates custom from built-in exercises and skips deleted ones', () => {
@@ -234,7 +236,8 @@ describe('gym words', () => {
     names(filterExercises(SYSTEM_EXERCISES, { ...EMPTY_FILTERS, query })).slice(0, 3);
 
   it('finds the adductor and abductor machines by the names people use', () => {
-    expect(search('adductor')[0]).toBe('Hip adduction machine');
+    // Copenhagen adduction (November 2026) may come first; the machine stays in the top three.
+    expect(search('adductor')).toContain('Hip adduction machine');
     expect(search('abductor')[0]).toBe('Hip abduction machine');
     expect(search('abductor machine')[0]).toBe('Hip abduction machine');
     expect(search('inner thigh')).toContain('Hip adduction machine');
@@ -259,5 +262,42 @@ describe('gym words', () => {
       expect.arrayContaining(['Stiff-leg deadlift', 'Dumbbell stiff-leg deadlift']),
     );
     expect(search('dumbbell sldl')[0]).toBe('Dumbbell stiff-leg deadlift');
+  });
+});
+
+describe('other names from the researched sheet (November 2026)', () => {
+  const search = (q: string) =>
+    filterExercises(SYSTEM_EXERCISES, { ...EMPTY_FILTERS, query: q }, EXERCISE_ALIASES).map(
+      (e) => e.name,
+    );
+  it('finds an exercise by the words people use for it', () => {
+    expect(search('DB shrug')[0]).toBe('Dumbbell shrug');
+    expect(search('tricep dip machine')[0]).toBe('Seated machine triceps dip');
+    expect(search('underhand pulldown')[0]).toBe('Reverse-grip lat pulldown');
+    expect(search('neck curl')[0]).toBe('Neck flexion');
+    expect(search('reverse cable crossover')[0]).toBe('Cable rear delt fly');
+  });
+  it('a match on the name itself still comes first', () => {
+    expect(search('dumbbell shrug')[0]).toBe('Dumbbell shrug');
+    expect(search('lat pulldown')[0]).toBe('Lat pulldown');
+  });
+});
+
+describe('forearms as their own group (24 Nov 2026)', () => {
+  const byMuscle = (muscle: typeof EMPTY_FILTERS.muscle | 'forearms') =>
+    filterExercises(SYSTEM_EXERCISES, { ...EMPTY_FILTERS, muscle }).map((e) => e.name);
+  it('wrist and grip work is listed under Forearms, not Biceps', () => {
+    const forearms = byMuscle('forearms');
+    for (const n of ['Seated wrist curl', 'Barbell wrist curl', 'Wrist roller', 'Plate pinch hold'])
+      expect(forearms, n).toContain(n);
+    expect(forearms).not.toContain('Barbell curl');
+    expect(byMuscle('biceps')).not.toContain('Seated wrist curl');
+    expect(byMuscle('biceps')).toContain('Barbell curl');
+  });
+  it('the exercise reads "Forearms · Barbell"', () => {
+    const e = SYSTEM_EXERCISES.find((x) => x.name === 'Barbell wrist curl')!;
+    expect(exerciseMeta(e)).toBe('Forearms · Barbell');
+    const n = SYSTEM_EXERCISES.find((x) => x.name === 'Neck flexion')!;
+    expect(exerciseMeta(n)).toBe('Neck · Other');
   });
 });

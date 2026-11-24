@@ -1,4 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react';
+import { EXERCISE_ALIASES } from '@/data/library/shares';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Sheet } from '@/components/ui/Sheet';
@@ -57,7 +58,7 @@ function PickerContent({
 
   const exercises = catalog.data?.exercises;
   const results = useMemo(
-    () => (exercises ? filterExercises(exercises, { ...filters, query }) : []),
+    () => (exercises ? filterExercises(exercises, { ...filters, query }, EXERCISE_ALIASES) : []),
     [exercises, filters, query],
   );
   const recents = useMemo(

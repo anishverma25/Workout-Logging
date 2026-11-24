@@ -8,10 +8,22 @@ import { isLoadEligible, type Session } from './sessions';
  */
 export function setVolumeLoad(set: WorkoutSet, exercise: Exercise | undefined): number {
   if (!isLoadEligible(set, exercise)) return 0;
-  // Logged per side: each side moved the load for its own reps.
-  if (isSideSet(set)) return (set.weightKg ?? 0) * repsDone(set);
+  // Logged per side: each side moved the load for its own reps. A leg exercise logged per hand
+  // (a dumbbell in each hand, one leg working) carries both dumbbells on every rep.
+  if (isSideSet(set)) return (set.weightKg ?? 0) * repsDone(set) * sideLoadHands(exercise);
   const sides = exercise?.loadMode === 'per_hand' ? 2 : 1;
   return (set.weightKg ?? 0) * (set.reps ?? 0) * sides;
+}
+
+const LEGS = new Set(['quads', 'hamstrings', 'glutes', 'adductors', 'calves']);
+
+/**
+ * How many hands hold the logged load on each rep of a set logged per side: 2 for a leg
+ * exercise with a dumbbell in each hand (Bulgarian split squat, walking lunge), else 1 (one-arm
+ * rows and raises hold one dumbbell or one handle).
+ */
+export function sideLoadHands(exercise: Pick<Exercise, 'loadMode' | 'primaryMuscle'> | undefined) {
+  return exercise?.loadMode === 'per_hand' && LEGS.has(exercise.primaryMuscle) ? 2 : 1;
 }
 
 /** A set with reps logged for the left and right side apart. */

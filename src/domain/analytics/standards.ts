@@ -1,4 +1,4 @@
-import { addDays, startOfDay } from '@/lib/dates';
+import { addDays } from '@/lib/dates';
 import { stableId } from '@/lib/ids';
 import type { Exercise, MuscleGroup, Sex } from '../models/schemas';
 import type { ExercisePerformance } from './performance';
@@ -6,7 +6,7 @@ import { isWorkingSet, sessionsBetween, type Session } from './sessions';
 
 /**
  * Strength analytics that go beyond records: levels against body weight, DOTS, rate of
- * progress, plateaus, training balance and load spikes. Pure functions, fixed rules, every
+ * progress, plateaus, training balance and session load. Pure functions, fixed rules, every
  * threshold written down here and on the methodology page.
  */
 
@@ -247,35 +247,6 @@ export function sessionLoad(
 ): number | null {
   if (!sessionRpe || !minutes) return null;
   return Math.round(sessionRpe * minutes);
-}
-
-export interface LoadSpike {
-  acuteSets: number;
-  chronicSetsPerWeek: number;
-  ratio: number;
-}
-
-/**
- * Acute to chronic workload: working sets in the last 7 days against the weekly average of the
- * 4 weeks before. Above 1.5, injury risk rises in the sports science literature (Gabbett, 2016),
- * so a jump that big is flagged. Needs 5 weeks of history and at least 10 sets a week before.
- */
-export function loadSpike(sessions: Session[], now: Date): LoadSpike | null {
-  const first = sessions[0];
-  if (!first || first.date > addDays(now, -35)) return null;
-  const count = (from: Date, to: Date) =>
-    sessionsBetween(sessions, from, to).reduce(
-      (n, s) => n + s.exercises.reduce((m, e) => m + e.sets.filter(isWorkingSet).length, 0),
-      0,
-    );
-  // Whole calendar days: today and the 6 before it, against the 28 days before those.
-  const end = addDays(startOfDay(now), 1);
-  const acuteStart = addDays(end, -7);
-  const acute = count(acuteStart, end);
-  const chronic = count(addDays(acuteStart, -28), acuteStart) / 4;
-  if (chronic < 10) return null;
-  const ratio = acute / chronic;
-  return ratio > 1.5 ? { acuteSets: acute, chronicSetsPerWeek: chronic, ratio } : null;
 }
 
 // ---------------------------------------------------------------------------------------------

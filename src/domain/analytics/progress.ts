@@ -23,7 +23,6 @@ import { performanceByExercise, performanceFor } from './performance';
 import {
   balanceRatios,
   readinessPattern,
-  loadSpike,
   strengthProfile,
   type BalanceRatio,
   type StrengthProfile,
@@ -506,16 +505,6 @@ export function buildProgress(data: TrainingData, options: ProgressOptions): Pro
           ? 'Every target set reached the planned reps at the planned effort last time. See the suggestions below.'
           : 'Every target set reached the top of its rep range at the planned effort last time. See the suggestions below.',
       priority: 5.5,
-    });
-  }
-  const spike = loadSpike(sessions, now);
-  if (spike) {
-    insights.push({
-      id: 'load-spike',
-      tone: 'attention',
-      title: `You did ${spike.acuteSets} working sets in the last 7 days, ${spike.ratio.toFixed(1)} times your usual week.`,
-      basis: `Your usual week over the 4 weeks before was ${Math.round(spike.chronicSetsPerWeek)} sets. Jumps above 1.5 times are linked with more injuries in sports science research. Build up over a few weeks instead.`,
-      priority: 6,
     });
   }
   const history = performanceByExercise(sessions);

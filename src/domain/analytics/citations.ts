@@ -457,6 +457,26 @@ export const CITATIONS: Record<string, Citation> = {
     doi: '10.3390/sports7070154',
     openAccess: true,
   },
+  schoenfeld2017load: {
+    id: 'schoenfeld2017load',
+    authors: 'Schoenfeld BJ, Grgic J, Ogborn D, Krieger JW',
+    year: 2017,
+    title:
+      'Strength and Hypertrophy Adaptations Between Low- vs. High-Load Resistance Training: A Systematic Review and Meta-analysis',
+    journal: 'Journal of Strength and Conditioning Research 31(12):3508-3523',
+    doi: '10.1519/JSC.0000000000002200',
+    openAccess: false,
+  },
+  moranNavarro2017: {
+    id: 'moranNavarro2017',
+    authors:
+      'Morán-Navarro R, Pérez CE, Mora-Rodríguez R, de la Cruz-Sánchez E, González-Badillo JJ, Sánchez-Medina L, Pallarés JG',
+    year: 2017,
+    title: 'Time course of recovery following resistance training leading or not to failure',
+    journal: 'European Journal of Applied Physiology 117(12):2387-2399',
+    doi: '10.1007/s00421-017-3725-7',
+    openAccess: false,
+  },
   grgic2018rest: {
     id: 'grgic2018rest',
     authors: 'Grgic J, Schoenfeld BJ, Skrepnik M, Davies TB, Mikulic P',
@@ -562,7 +582,7 @@ export const METRIC_EVIDENCE: Record<
   ffmi: { kind: 'evidence', citations: ['kouri1995'] },
   strengthLevels: { kind: 'evidence', citations: ['rippetoe2009', 'dots2019'] },
   muscleShares: { kind: 'evidence', citations: ['lopezVivancos2023'] },
-  trainingLoad: { kind: 'evidence', citations: ['gabbett2016', 'foster2001'] },
+  trainingLoad: { kind: 'evidence', citations: ['foster2001'] },
   stalls: {
     kind: 'evidence',
     citations: [
@@ -595,6 +615,18 @@ export const METRIC_EVIDENCE: Record<
   restAnalysis: {
     kind: 'evidence',
     citations: ['singer2024', 'schoenfeld2016rest', 'grgic2018rest'],
+  },
+  recoveryMap: { kind: 'evidence', citations: ['moranNavarro2017', 'schoenfeld2019freq'] },
+  trainingQuality: {
+    kind: 'evidence',
+    citations: [
+      'schoenfeld2016rest',
+      'moranNavarro2017',
+      'zourdos2016',
+      'helms2016rir',
+      'halperin2022',
+      'schoenfeld2017load',
+    ],
   },
 };
 

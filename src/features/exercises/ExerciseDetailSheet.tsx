@@ -17,9 +17,11 @@ import {
   EQUIPMENT_LABELS,
   LOAD_MODE_LABELS,
   MUSCLE_LABELS,
+  SHOWN_GROUP_LABELS,
   TRACKING_LABELS,
 } from '@/domain/models/labels';
 import type { Exercise } from '@/domain/models/schemas';
+import { shownGroup } from '@/domain/muscles/targets';
 import { formatRelativeDay } from '@/lib/dates';
 import { pluralize } from '@/lib/format';
 import { formatWeight } from '@/lib/units';
@@ -63,7 +65,7 @@ export function ExerciseDetailSheet({ exercise, onClose }: Props) {
   if (!exercise) return null;
   const shares = sharesFor(exercise.id);
   const meta: [string, string][] = [
-    ['Primary', MUSCLE_LABELS[exercise.primaryMuscle]],
+    ['Primary', SHOWN_GROUP_LABELS[shownGroup(exercise)]],
     [
       'Secondary',
       exercise.secondaryMuscles.length
@@ -126,6 +128,15 @@ export function ExerciseDetailSheet({ exercise, onClose }: Props) {
           </div>
         }
       >
+        {shares ? (
+          <section className="mb-6" aria-labelledby="shares-heading">
+            <h3 id="shares-heading" className="type-headline mb-2 text-text-1">
+              Muscles worked
+            </h3>
+            <MuscleShares shares={shares} />
+          </section>
+        ) : null}
+
         <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 text-[0.95rem]">
           {meta.map(([k, v]) => (
             <div key={k} className="contents">
@@ -136,15 +147,6 @@ export function ExerciseDetailSheet({ exercise, onClose }: Props) {
         </dl>
 
         <MusclesWorked exercise={exercise} />
-
-        {shares ? (
-          <section className="mt-6" aria-labelledby="shares-heading">
-            <h3 id="shares-heading" className="mb-3 font-display text-lg font-semibold">
-              What it works
-            </h3>
-            <MuscleShares shares={shares} />
-          </section>
-        ) : null}
 
         {exercise.instructions ? (
           <section className="mt-6">

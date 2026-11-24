@@ -58,7 +58,8 @@ describe('the food library', () => {
       const kcal = portionNutrients(f, grams(f) * f.defaultAmount).kcal;
       // Black coffee and green tea really are close to nothing.
       if (f.per100.kcal >= 5) expect(kcal, f.id).toBeGreaterThan(5);
-      expect(kcal, f.id).toBeLessThan(800);
+      // A chain's whole pizza is one person's serving as the chain sells it.
+      if (!f.servingName) expect(kcal, f.id).toBeLessThan(800);
     }
   });
 
