@@ -1,3 +1,4 @@
+import { everydayRank } from './everyday';
 import { normalize } from '../exercises/search';
 import type { Food } from './calc';
 import type { DietType } from './types';
@@ -113,6 +114,8 @@ export function unreadableQuery(query: string): boolean {
 }
 
 const brandCache = new WeakMap<Food, string[]>();
+/** Words in a brand that are also the food ("pizza" in Pizza Hut): typing them is not the brand. */
+const FOOD_WORD_BRANDS = new Set(['pizza', 'burger', 'coffee', 'chai', 'tea', 'cafe']);
 /** The brand's own words and the other names people type for it, as search tokens. */
 function brandTokens(food: Food): string[] {
   if (!food.brand) return [];
@@ -120,7 +123,7 @@ function brandTokens(food: Food): string[] {
   if (!t) {
     t = [food.brand, ...food.aliases]
       .flatMap((a) => normalize(a).split(' '))
-      .filter(Boolean)
+      .filter((w) => w && !FOOD_WORD_BRANDS.has(w))
       .map(phonetic);
     brandCache.set(food, t);
   }
@@ -133,7 +136,7 @@ export function namesBrand(food: Food, query: string): boolean {
   if (own.length === 0) return false;
   return normalize(query)
     .split(' ')
-    .filter(Boolean)
+    .filter((w) => w && !FOOD_WORD_BRANDS.has(w))
     .map(phonetic)
     .some((w) => own.some((t) => t === w || (w.length >= 3 && t.startsWith(w))));
 }
@@ -185,7 +188,10 @@ export function foodScore(food: Food, query: string, fuzzy = false): number {
   // tadka, "paneer" is plain paneer. Shorter names win the remaining ties.
   const q = normalize(query);
   // "Milk, full cream" is milk: the name before a comma or bracket counts as the food itself.
-  const base = normalize(food.name.split(/[,(]/)[0] ?? food.name);
+  // Not for the reference databases, whose every name starts with the plain word ("Rice, white,
+  // glutinous, unenriched, cooked" is not what someone typing "rice" means).
+  const reference = food.source === 'usda' || food.source === 'indb';
+  const base = normalize(reference ? food.name : (food.name.split(/[,(]/)[0] ?? food.name));
   // An alias that is the whole query counts like the name (an alias word scores 6 against 10 for
   // a name word), so "chapati" is roti, not chapati roll; a food named exactly the query still
   // comes first.
@@ -199,7 +205,14 @@ export function foodScore(food: Food, query: string, fuzzy = false): number {
   // Packs from the branded database: first when the brand is typed ("amul paneer"), after the
   // everyday food when it is not ("paneer" is plain paneer, not thirty brands of it).
   const brand = food.brand ? (namesBrand(food, query) ? 2 : -3) : 0;
-  return total + exact + brand - tail - normalize(food.name).length * 0.01;
+  // Indian dish names end in what the dish is: "jeera rice" is rice, "rice kheer" is kheer.
+  const nameWords = base.split(' ');
+  // Only among partial matches: a food that is exactly what was typed is never overtaken.
+  const head =
+    !reference && exact === 0 && nameWords.length > 1 && nameWords.at(-1) === words.at(-1)
+      ? 0.5
+      : 0;
+  return total + exact + brand + head - tail - normalize(food.name).length * 0.01;
 }
 
 /** Whether a food fits a diet. Jain food is vegetarian without onion, garlic or roots. */
@@ -279,7 +292,7 @@ export function searchFoods(
       })
       .filter((m) => m.score > 0)
       .sort((a, b) => b.score - a.score);
-  let matches = rank(pool, false);
+  let matches: { food: Food; score: number }[] = rank(pool, false);
   // Nothing (or almost nothing) for what was typed: allow a typo in each word. Not when the
   // words do match foods outside the person's diet ("chicken" for a vegetarian is not a typo).
   const outsideDiet = matches.length === 0 && !!diet && pool.some((f) => foodScore(f, query) > 0);
@@ -287,11 +300,25 @@ export function searchFoods(
     const seen = new Set(matches.map((m) => m.food));
     matches = [...matches, ...rank(foods, true).filter((m) => !seen.has(m.food))];
   }
+  // The everyday picks for the most typed words come first, in their own order.
+  const picks = everydayRank(normalize(query));
+  if (picks) {
+    const byId = new Map(foods.map((f) => [f.id, f]));
+    const pinned = [...picks.keys()]
+      .map((id) => byId.get(id))
+      .filter((f): f is Food => !!f && fitsDiet(f, diet))
+      .map((food) => ({ food, score: Infinity }));
+    const pinnedIds = new Set(pinned.map((p) => p.food.id));
+    matches = [...pinned, ...matches.filter((m) => !pinnedIds.has(m.food.id))];
+  }
   const shown = new Set<string>();
   const out: Food[] = [];
   for (const m of matches) {
-    const key = normalize(m.food.name);
-    if (m.food.source === 'community' && shown.has(key)) continue;
+    const key = displayKey(m.food.name);
+    // One line per name: the same dish from a second source ("Idli" from the Indian Nutrient
+    // Databank under our own "Idli", a shared food under the library's) is left out. The
+    // person's own foods always show.
+    if (shown.has(key) && !OWN_SOURCES.has(m.food.source)) continue;
     shown.add(key);
     out.push(m.food);
     if (out.length >= limit) break;
@@ -299,10 +326,25 @@ export function searchFoods(
   return out;
 }
 
+const OWN_SOURCES = new Set<Food['source']>(['custom', 'custom_recipe', 'ai', 'off']);
+
+/** "Makki ki roti" and "Curd rice (Dahi bhaat/...)" by the name before any bracket. */
+function displayKey(name: string): string {
+  return normalize(name.split(/[(/]/)[0] ?? name);
+}
+
+/** Everyday foods shown before "Show more" for a plain word. */
+export const FIRST_EVERYDAY = 8;
+/** Packs shown before "Show more" for a plain word. */
+export const FIRST_PACKS = 3;
+/** Reference entries (USDA) shown first only when fewer everyday foods than this match. */
+export const FEW_EVERYDAY = 3;
+
 /**
- * Results split into what shows first and what waits behind "Show more": a plain word shows
- * at most four branded packs (the everyday food, your own foods and recipes stay), a brand
- * shows its first ten products.
+ * Results split into what shows first and what waits behind "Show more". A plain word ("rice")
+ * shows a short list: the everyday foods and dishes, then a few packs. The detailed reference
+ * entries (USDA's twenty kinds of raw and cooked rice) wait behind "Show more", unless almost
+ * nothing else matches. A brand typed shows its first ten products.
  */
 export function groupResults(
   results: Food[],
@@ -310,15 +352,88 @@ export function groupResults(
 ): { first: Food[]; more: Food[]; brandTyped: boolean } {
   const brandTyped = results.some((f) => f.brand && namesBrand(f, query));
   if (brandTyped) return { first: results.slice(0, 10), more: results.slice(10), brandTyped };
-  const plain = results.filter((f) => !f.brand);
-  const packs = results.filter((f) => f.brand);
-  const firstPacks = packs.slice(0, 4);
-  const firstPlain = plain.slice(0, 20);
-  const keep = new Set([...firstPlain, ...firstPacks]);
-  // The brands come first behind "Show more", then the rest of the everyday matches.
+  // The most typed words ("rice", "dal", "egg") show only their everyday picks first.
+  const picks = everydayRank(normalize(query));
+  if (picks && results.some((f) => picks.has(f.id))) {
+    return {
+      first: results.filter((f) => picks.has(f.id)),
+      more: results.filter((f) => !picks.has(f.id)),
+      brandTyped,
+    };
+  }
+  const words = normalize(query).split(' ').filter(Boolean);
+  // A pack only shows first when its own name says what was typed, not its brackets ("Plant
+  // Protein (Pea + Brown Rice)" is not rice).
+  const named = (f: Food) => {
+    // Its own name: without the brackets, and without the brand in front ("Pizza Hut 7 UP").
+    const own = f.brand && f.name.startsWith(f.brand) ? f.name.slice(f.brand.length) : f.name;
+    const outside = normalize(own.replace(/\([^)]*\)/g, ' ')).split(' ');
+    return words.every((w) => outside.some((x) => x.startsWith(w)));
+  };
+  const everyday = results.filter((f) => !f.brand && f.source !== 'usda');
+  const reference = results.filter((f) => !f.brand && f.source === 'usda');
+  const packs = results.filter((f) => f.brand && named(f));
+  const firstReference = everyday.length < FEW_EVERYDAY ? reference.slice(0, 5) : [];
+  const keep = new Set([
+    ...everyday.slice(0, FIRST_EVERYDAY),
+    ...firstReference,
+    ...packs.slice(0, FIRST_PACKS),
+  ]);
   return {
     first: results.filter((f) => keep.has(f)),
-    more: [...packs.slice(4), ...plain.slice(20)],
+    more: results.filter((f) => !keep.has(f)),
     brandTyped,
   };
+}
+
+/**
+ * Sizes and versions of one product (a pizza's sizes and crusts, a drink's cup sizes) show as
+ * one result: the best ranked of them, which the food's page then lets the person change.
+ */
+export function collapseVariants(results: Food[]): Food[] {
+  const seen = new Set<string>();
+  return results.filter((f) => {
+    if (!f.variant) return true;
+    if (seen.has(f.variant.group)) return false;
+    seen.add(f.variant.group);
+    return true;
+  });
+}
+
+/** Every version of a product, for the selectors on its page. */
+export function variantsOf(foods: readonly Food[], food: Food): Food[] {
+  if (!food.variant) return [];
+  const group = food.variant.group;
+  return foods.filter((f) => f.variant?.group === group);
+}
+
+/**
+ * The version that matches `dims` with one dimension changed, or the first that has the new
+ * value when that exact combination is not sold (a large pizza has no thin crust).
+ */
+export function pickVariant(
+  variants: readonly Food[],
+  current: Food,
+  dim: string,
+  value: string,
+): Food | null {
+  const want = new Map(current.variant?.dims ?? []);
+  want.set(dim, value);
+  const has = (f: Food) => new Map(f.variant?.dims ?? []).get(dim) === value;
+  const exact = variants.find(
+    (f) => has(f) && (f.variant?.dims ?? []).every(([d, v]) => want.get(d) === v),
+  );
+  return exact ?? variants.find(has) ?? null;
+}
+
+/** The choices for each dimension of a product ("Size": Regular, Medium, Large), in menu order. */
+export function variantChoices(variants: readonly Food[]): [string, string[]][] {
+  const out = new Map<string, string[]>();
+  for (const f of variants)
+    for (const [d, v] of f.variant?.dims ?? []) {
+      const list = out.get(d) ?? [];
+      if (!list.includes(v)) list.push(v);
+      out.set(d, list);
+    }
+  return [...out.entries()];
 }

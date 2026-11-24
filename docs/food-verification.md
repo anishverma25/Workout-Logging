@@ -242,3 +242,36 @@ Amul (amul.com product pages, November 2026), stored as printed:
 - Left out: other brands whose only published numbers were user-entered aggregator data, and an
   Amul mango lassi whose page values did not add up. Any pack can be logged from its label
   (Pack label in Add food), which reads the printed values.
+
+## Chain menus and the top 300 Indian foods (November 2026)
+
+Chain menus come from each chain's own document, as text in `scripts/chain-foods/sources`
+(`pdftotext -layout`), built by `python3 scripts/chain-foods/build.py` into
+`src/data/library/chains/rows.json` (lazy) and `replaced.json` (main bundle):
+
+| Chain | Document | Basis | Label in the app |
+| --- | --- | --- | --- |
+| Burger King | Nutrition per serve, 12 February 2026 | per serving, with grams or ml | official |
+| Domino's | Nutritional information (pizzas per serve of 4, 3 or 2 slices) | per slice; Regular 4, Medium 6, Large 8 slices; no weights published | official |
+| Pizza Hut | Nutrition and allergen booklet, 2022 | whole pizza and slices, with grams | official |
+| McDonald's | North and East macros compiled from the official booklet | per serving | compiled, "check the current menu" |
+| Starbucks | Tata Starbucks nutrition guide | per cup (ml) or per item (g) | official |
+
+- Published calories are kept as printed. 19 rows whose calories and macros disagree by over
+  25% are flagged on the food's page with both numbers (for example Burger King's Veg Whopper
+  Double Patty, 1,431.7 kcal against about 883 from its macros).
+- "% RDA" rows are never read. Fibre and sugar not given are unknown (a dash), never 0.
+- Sizes, crusts and portions of one product share a group: search shows the product once and
+  its page has the choices. Pizzas log by the slice or the whole pizza.
+- 20 older chain foods (McDonald's, Domino's, Burger King) now carry the document's numbers and
+  keep their ids; KFC, Subway and McDonald's items not in the compilation keep their older values.
+- Left out and listed by the build: Domino's fountain drinks (the fat column is wrong in the
+  document), rows with no calories or macros, rows whose numbers cannot be right (for example
+  520.9 kcal in 6 g), and repeated rows.
+- Logs keep the numbers they were saved with; only new logs use the new values.
+
+The top 300 sheet (`scripts/top300`, `python3 scripts/top300/build.py`) gives each food a
+natural serving. A row is added only when the library has no food of that name (word order,
+brackets and words like plain, cooked or raw ignored; packaged foods matched by brand), so 75
+foods are new and the rest keep their tested values. "Recipe estimate" rows say the household
+portion is worked out from a standard recipe; 4 rows marked "Needs recheck" are left out.

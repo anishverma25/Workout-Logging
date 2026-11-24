@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useLocation, useSearchParams } from 'react-router';
 import { Download } from 'lucide-react';
 import { useAccount, useSyncStatus } from '@/app/account';
 import { describeSync } from '@/data/sync/describe';
@@ -56,6 +56,22 @@ export function ReportPage() {
   const [makeError, setMakeError] = useState<string | null>(null);
   const [download, setDownload] = useState(false);
   const [fonts, setFonts] = useState(false);
+  const { hash } = useLocation();
+
+  // Home's Brain card opens the plan: once Next week has drawn (it waits for the Brain), go to it.
+  useEffect(() => {
+    if (hash !== '#next-week') return;
+    let tries = 0;
+    const id = window.setInterval(() => {
+      const el = document.getElementById('next-week');
+      tries += 1;
+      if (el) {
+        el.scrollIntoView({ block: 'start' });
+        window.clearInterval(id);
+      } else if (tries > 20) window.clearInterval(id);
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [hash]);
 
   useEffect(() => {
     let live = true;

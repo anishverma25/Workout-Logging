@@ -1740,3 +1740,53 @@ html[data-landing] #landing {
   background:
     radial-gradient(120% 140% at 100% 0%, var(--pro-glow), transparent 60%), var(--surface);
 }
+
+/* Leaderboard score ring (ScoreBreakdown) and muscle strips: they grow in once. */
+.score-grow {
+  transition: width 900ms var(--ease-standard);
+}
+.score-arc {
+  transition: stroke-dasharray 900ms var(--ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  .score-grow,
+  .score-arc {
+    transition: none;
+  }
+}
+
+/* Home: the weekly report banner and the Brain card carry a soft lime glow so they read as
+   the app's own features, not one more list row. */
+.report-ready {
+  background: linear-gradient(90deg, var(--lime-dim), transparent 70%), var(--surface);
+  box-shadow: inset 0 0 0 1px rgb(198 244 50 / 0.22);
+}
+.brain-button {
+  background: linear-gradient(120deg, var(--lime-dim), transparent 75%), var(--surface);
+  box-shadow: inset 0 0 0 1px rgb(198 244 50 / 0.18);
+}
+/* The Brain page: a lit core inside the learning ring. */
+.brain-hero {
+  background:
+    radial-gradient(70% 55% at 50% 22%, rgb(198 244 50 / 0.16), transparent 70%),
+    var(--surface);
+}
+/* Lit learning weeks glow softly, like light caught in glass. */
+.brain-seg {
+  filter: drop-shadow(0 0 3px rgb(198 244 50 / 0.45));
+}
+.brain-core {
+  background: radial-gradient(circle, rgb(198 244 50 / 0.22), rgb(198 244 50 / 0.04) 70%);
+  box-shadow: 0 0 32px rgb(198 244 50 / 0.18);
+  animation: brain-glow 3.2s ease-in-out infinite;
+}
+@keyframes brain-glow {
+  50% {
+    box-shadow: 0 0 44px rgb(198 244 50 / 0.34);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brain-core {
+    animation: none;
+  }
+}

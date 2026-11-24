@@ -128,7 +128,12 @@ export function NextWeek({ lang, now }: { lang: Lang; now: Date }) {
   };
 
   return (
-    <section className="mt-8 flex flex-col gap-3" data-next-week aria-labelledby="next-week-title">
+    <section
+      id="next-week"
+      className="mt-8 flex scroll-mt-24 flex-col gap-3"
+      data-next-week
+      aria-labelledby="next-week-title"
+    >
       <header className="flex flex-col gap-1">
         <span className="type-meta text-lime">
           {t(COPY.weekOf)} {weekRange(nextWeekStart)}

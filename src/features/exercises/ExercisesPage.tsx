@@ -1,4 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { EXERCISE_ALIASES } from '@/data/library/shares';
 import { Library, Plus } from 'lucide-react';
 import { PageHeader } from '@/app/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -33,7 +34,7 @@ export function ExercisesPage() {
 
   const data = catalog.data;
   const results = useMemo(
-    () => (data ? filterExercises(data.exercises, { ...filters, query }) : []),
+    () => (data ? filterExercises(data.exercises, { ...filters, query }, EXERCISE_ALIASES) : []),
     [data, filters, query],
   );
   const recents = useMemo(

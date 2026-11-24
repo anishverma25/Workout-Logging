@@ -86,6 +86,15 @@ export interface Food {
   check?: { kind: 'conflict' | 'check' | 'estimate'; note: string };
   /** Sold by the piece with no weight printed (a cup of ice cream): no grams are shown. */
   servingOnly?: boolean;
+  /** What one `serving` is called when it is not a serving (a whole pizza). */
+  servingName?: [string, string];
+  /**
+   * A size, crust or portion of one product (November 2026): search shows the product once and
+   * the food's page offers the others.
+   */
+  variant?: { group: string; groupName: string; dims: [string, string][] };
+  /** The chain's document the numbers come from. */
+  chainDoc?: string;
   /** For Macrotrophy AI estimates: whether a label or menu was found, and where. */
   ai?: {
     basis: 'web' | 'estimate' | 'photo' | 'label' | 'yours';
@@ -254,11 +263,20 @@ export function portionText(
   amount: number,
   unit: UnitId,
   size: SizeId | null,
-  pieceName?: [string, string] | null,
+  names?: [string, string] | null | Pick<Food, 'pieceName' | 'servingName'>,
 ): string {
   if (unit === 'g') return `${Math.round(amount)} g`;
   if (unit === 'ml') return `${Math.round(amount)} ml`;
-  const [one, many] = unit === 'piece' && pieceName ? pieceName : UNIT_LABEL[unit];
+  const food =
+    names && !Array.isArray(names) ? (names as Pick<Food, 'pieceName' | 'servingName'>) : null;
+  const pieceName = food ? food.pieceName : (names as [string, string] | null | undefined);
+  const servingName = food?.servingName ?? null;
+  const [one, many] =
+    unit === 'piece' && pieceName
+      ? pieceName
+      : unit === 'serving' && servingName
+        ? servingName
+        : UNIT_LABEL[unit];
   const sized = size && (unit === 'katori' || unit === 'cup') ? SIZE_LABEL[size] : '';
   const noun = amount > 1 ? many : one;
   return [amountText(amount), sized, noun].filter(Boolean).join(' ');

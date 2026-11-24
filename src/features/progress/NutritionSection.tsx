@@ -1,3 +1,4 @@
+import { SectionIcon } from './SectionIcon';
 import { useMemo } from 'react';
 import { BarChart } from '@/components/charts/BarChart';
 import { Card, TextLink } from '@/components/kit';
@@ -68,6 +69,7 @@ export function NutritionSection({
   return (
     <section id="nutrition" aria-labelledby="sec-nutrition" className="mt-8 scroll-mt-28">
       <div className="flex items-center gap-2">
+        <SectionIcon id="nutrition" />
         <h2 id="sec-nutrition" className="type-title text-text-1">
           Food
         </h2>

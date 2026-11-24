@@ -37,10 +37,13 @@ test('a new account imports from Hevy, checks the matches, and carries on in set
   const bench = list.getByRole('listitem').filter({ hasText: 'Bench Press (Barbell)' });
   await expect(bench.getByRole('combobox')).toHaveValue(/.+/);
   await expect(bench).toContainText('Matched');
+  // The dumbbell pullover is in the library since November 2026.
   const pullover = list.getByRole('listitem').filter({ hasText: 'Pullover (Dumbbell)' });
-  await expect(pullover).toContainText('Your own');
+  await expect(pullover).toContainText('Matched');
+  const kelso = list.getByRole('listitem').filter({ hasText: 'KELSO SHRUGS' });
+  await expect(kelso).toContainText('Your own');
   // The person can say what an unmatched exercise works.
-  await pullover.getByLabel('Main muscle').selectOption('chest');
+  await kelso.getByLabel('Main muscle').selectOption('back');
 
   // The routine they were following, rebuilt from the workouts, on by default.
   const routineCard = page.getByRole('region', { name: 'My Hevy routine' });

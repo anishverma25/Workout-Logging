@@ -9,6 +9,7 @@ import { cn } from '@/lib/cn';
 import { EvidenceLink } from '../science/EvidenceLink';
 import { SOURCE } from './foodText';
 import { PortionEditor } from './PortionEditor';
+import { VariantPicker } from './VariantPicker';
 
 /**
  * A food's profile while logging: its nutrients for the portion chosen, how they split, what
@@ -22,6 +23,7 @@ export function FoodProfile({
   targets,
   actionLabel,
   onDone,
+  variants = [],
 }: {
   portion: FoodPortion;
   onChange: (next: FoodPortion) => void;
@@ -30,6 +32,8 @@ export function FoodProfile({
   /** "Add to plate" for a new food, "Done" when adjusting one already on the plate. */
   actionLabel: string;
   onDone: () => void;
+  /** Other sizes, crusts or portions of the same product (chain menus). */
+  variants?: readonly Food[];
 }) {
   const [invalid, setInvalid] = useState(false);
   let measured: ReturnType<typeof measurePortion> | null;
@@ -42,11 +46,26 @@ export function FoodProfile({
   return (
     <div className="flex flex-col gap-5" data-food-profile={food.id}>
       <SourceLine food={food} />
+      {variants.length > 1 ? (
+        <VariantPicker
+          food={food}
+          variants={variants}
+          onPick={(next) =>
+            onChange({
+              ...portion,
+              food: next,
+              // Keep the unit and amount when the new version has that unit (2 slices stay 2).
+              unit: next.units.includes(portion.unit) ? portion.unit : next.units[0]!,
+              amount: next.units.includes(portion.unit) ? portion.amount : next.defaultAmount,
+            })
+          }
+        />
+      ) : null}
       {measured ? (
         <NutritionPanel
           nutrients={measured.nutrients}
           grams={measured.grams}
-          portionLabel={portionText(portion.amount, portion.unit, portion.size, food.pieceName)}
+          portionLabel={portionText(portion.amount, portion.unit, portion.size, food)}
           per100={food.per100}
           weightKnown={!servingOnly(food)}
           fibreUnknown={food.fibreUnknown}
@@ -103,7 +122,16 @@ function SourceLine({ food }: { food: Food }) {
       {food.source === 'recipe' || food.source === 'ingredient' ? (
         <EvidenceLink topic="food-values" about="how food values are worked out" />
       ) : null}
-      {food.check ? (
+      {food.chainDoc ? (
+        <span className="basis-full text-text-3" data-chain-doc>
+          {food.chainDoc}
+        </span>
+      ) : null}
+      {food.check && food.source === 'chain' ? (
+        <span className="basis-full text-text-2" data-check-pack={food.check.kind}>
+          {food.check.note}
+        </span>
+      ) : food.check ? (
         <span className="basis-full text-text-2" data-check-pack={food.check.kind}>
           {food.check.kind === 'conflict'
             ? 'Listings of this pack disagree a little. Check the numbers on your pack.'

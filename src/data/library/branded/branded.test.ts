@@ -1,7 +1,7 @@
 import { FOODS, FOOD_BY_ID } from '@/data/library/foods';
 import { loadMoreFoods } from '@/data/library/moreFoods';
 import type { Food } from '@/domain/nutrition/calc';
-import { groupResults, namesBrand, searchFoods } from '@/domain/nutrition/search';
+import { collapseVariants, groupResults, namesBrand, searchFoods } from '@/domain/nutrition/search';
 import { normalize } from '@/domain/exercises/search';
 import rows from './rows.json';
 import { REPLACED_ROWS } from './replaced';
@@ -30,7 +30,8 @@ describe('branded foods: the import', () => {
   });
 
   it('says so where the source left a number out and it was worked out (owner, 21 Nov)', () => {
-    const estimated = all.filter((f) => f.check?.kind === 'estimate');
+    const brandedIds = new Set(ALL_ROWS.map((r) => r[0]));
+    const estimated = all.filter((f) => brandedIds.has(f.id) && f.check?.kind === 'estimate');
     expect(estimated).toHaveLength(21);
     const curd = all.find((f) => f.name === 'Amul Probiotic High Protein Curd')!;
     expect(curd.per100).toMatchObject({ kcal: 68, proteinG: 6, fatG: 0.1 });
@@ -54,7 +55,8 @@ describe('branded foods: the import', () => {
     expect((biozyme.per100.kcal * 36) / 100).toBeCloseTo(143.26, 1);
     expect((biozyme.per100.proteinG * 36) / 100).toBeCloseTo(25, 1);
     // No food appears twice under two names.
-    const names = all.filter((f) => f.brand).map((f) => normalize(f.name));
+    // (Chain menus repeat a name for each size; those are grouped as versions of one product.)
+    const names = all.filter((f) => f.brand && !f.variant).map((f) => normalize(f.name));
     expect(new Set(names).size).toBe(names.length);
   });
 
@@ -107,7 +109,7 @@ describe('branded foods: search', () => {
     const results = searchFoods(all, 'paneer', null);
     expect(results[0]!.id).toBe('paneer');
     expect(results[0]!.brand).toBeUndefined();
-    const { first, more } = groupResults(results, 'paneer');
+    const { first, more } = groupResults(collapseVariants(results), 'paneer');
     expect(first.filter((f) => f.brand).length).toBeLessThanOrEqual(4);
     expect(more.length).toBeGreaterThan(0);
   });

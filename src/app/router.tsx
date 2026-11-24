@@ -160,6 +160,10 @@ export const router = createBrowserRouter([
           },
           { path: 'body', lazy: page(() => import('@/features/body/BodyPage'), 'BodyPage') },
           {
+            path: 'brain',
+            lazy: page(() => import('@/features/brain/BrainPage'), 'BrainPage'),
+          },
+          {
             path: 'report',
             lazy: page(() => import('@/features/report/ReportPage'), 'ReportPage'),
           },

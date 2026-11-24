@@ -42,7 +42,15 @@ import {
   type MealTemplate,
 } from '@/domain/nutrition/analysis';
 import { portionText, roundNutrients, sumNutrients, type Food } from '@/domain/nutrition/calc';
-import { fitsDiet, groupResults, searchFoods, unreadableQuery } from '@/domain/nutrition/search';
+import {
+  collapseVariants,
+  fitsDiet,
+  groupResults,
+  searchFoods,
+  unreadableQuery,
+  variantChoices,
+  variantsOf,
+} from '@/domain/nutrition/search';
 import { MEALS, ZERO, type Meal } from '@/domain/nutrition/types';
 import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
@@ -295,7 +303,7 @@ function AddFoodBody({
                 onClick={() => leave({ kind: 'edit', index: i })}
                 className="pressable chrome type-meta inline-flex h-9 items-center gap-1 rounded-l-full bg-surface-2 pr-2 pl-3 font-semibold text-text-1"
               >
-                {portionText(p.amount, p.unit, p.size, p.food.pieceName)}{' '}
+                {portionText(p.amount, p.unit, p.size, p.food)}{' '}
                 {p.unit === 'piece' && p.food.pieceName && p.food.pieceName[0] !== 'serving'
                   ? ''
                   : p.food.name.toLowerCase()}
@@ -334,6 +342,7 @@ function AddFoodBody({
           katoriMl={ctx.katoriMl}
           targets={ctx.targets}
           actionLabel="Done"
+          variants={variantsOf(ctx.foods, p.food)}
           onChange={(next) => setPlate((list) => list.map((x, j) => (j === view.index ? next : x)))}
           onDone={() => setView({ kind: 'pick' })}
         />
@@ -350,6 +359,7 @@ function AddFoodBody({
           katoriMl={ctx.katoriMl}
           targets={ctx.targets}
           actionLabel="Add to plate"
+          variants={variantsOf(ctx.foods, view.portion.food)}
           onChange={(next) => setView({ kind: 'food', portion: next })}
           onDone={() => {
             haptic('light');
@@ -513,12 +523,13 @@ function FoodRow({ food, rows }: { food: Food; rows: RowProps }) {
       >
         {/* The whole name, wrapped: a cut-off name cannot be told apart from its neighbours. */}
         <span className="type-headline block [overflow-wrap:anywhere] text-text-1">
-          {food.name}
+          {food.variant ? food.variant.groupName : food.name}
         </span>
+        {food.variant ? <VariantHint food={food} foods={rows.ctx.foods} /> : null}
         {detail ? <span className="type-meta tabular block text-text-2">{detail}</span> : null}
         {there ? (
           <span className="type-caption tabular block font-semibold text-lime" data-on-plate>
-            On your plate: {portionText(there.amount, there.unit, there.size, food.pieceName)}
+            On your plate: {portionText(there.amount, there.unit, there.size, food)}
           </span>
         ) : null}
       </button>
@@ -537,7 +548,7 @@ function FoodRow({ food, rows }: { food: Food; rows: RowProps }) {
       <button
         type="button"
         onClick={() => rows.onAdd(food)}
-        aria-label={`Add ${portionText(step.amount, step.unit, step.size, food.pieceName)} of ${food.name} to plate`}
+        aria-label={`Add ${portionText(step.amount, step.unit, step.size, food)} of ${food.name} to plate`}
         className={cn(
           'pressable tap-target inline-flex size-10 shrink-0 items-center justify-center rounded-full',
           there ? 'bg-lime text-on-lime' : 'bg-surface-2 text-text-1',
@@ -551,6 +562,23 @@ function FoodRow({ food, rows }: { food: Food; rows: RowProps }) {
   );
 }
 
+/** "3 sizes · 4 crusts": a product with versions to choose on its page. */
+function VariantHint({ food, foods }: { food: Food; foods: readonly Food[] }) {
+  const text = useMemo(
+    () =>
+      variantChoices(variantsOf(foods, food))
+        .filter(([, values]) => values.length > 1)
+        .map(([dim, values]) => `${values.length} ${dim.toLowerCase()}s`)
+        .join(' · '),
+    [food, foods],
+  );
+  return text ? (
+    <span className="type-caption block font-semibold text-lime" data-variant-hint>
+      {text}
+    </span>
+  ) : null;
+}
+
 /**
  * "Last time: 2 rotis · 204 kcal · 7 g protein" (or the usual portion for a food not eaten
  * before): exactly what one tap of + adds, numbers in bold.
@@ -561,7 +589,7 @@ function describe(p: FoodPortion, katoriMl: number | null, fromHistory: boolean)
     return (
       <>
         {fromHistory ? 'Last time: ' : ''}
-        {portionText(p.amount, p.unit, p.size, p.food.pieceName)} ·{' '}
+        {portionText(p.amount, p.unit, p.size, p.food)} ·{' '}
         <strong className="font-semibold text-text-1">{m.nutrients.kcal} kcal</strong> ·{' '}
         <strong className="font-semibold text-text-1">{m.nutrients.proteinG.toFixed(0)} g</strong>{' '}
         protein
@@ -612,7 +640,7 @@ function Results({
     () => searchFoods(ctx.foods, query, ctx.diet, 150, usual),
     [ctx.foods, query, ctx.diet, usual],
   );
-  const grouped = useMemo(() => groupResults(results, query), [results, query]);
+  const grouped = useMemo(() => groupResults(collapseVariants(results), query), [results, query]);
   // "Show more" opens the rest for this search only.
   const [openFor, setOpenFor] = useState<string | null>(null);
   const open = openFor === query;

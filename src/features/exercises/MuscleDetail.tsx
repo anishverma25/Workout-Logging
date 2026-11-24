@@ -221,7 +221,10 @@ const PATTERN_LABEL: Record<ExerciseTargets['pattern'], string> = {
   cardio: 'Cardio',
 };
 
-/** "Muscles worked" in an exercise's sheet: closed by default, the detail one tap away. */
+/**
+ * "Anatomy" in an exercise's sheet: the named muscles (main, assisting, stabilizing), closed by
+ * default under the "Muscles worked" shares, so the sheet never shows two sections of one name.
+ */
 export function MusclesWorked({ exercise }: { exercise: Exercise }) {
   const t = targetsFor(exercise);
   const [open, setOpen] = useState(false);
@@ -241,7 +244,7 @@ export function MusclesWorked({ exercise }: { exercise: Exercise }) {
         className="pressable flex w-full items-center justify-between gap-3 rounded-card bg-surface-2 px-4 py-3 text-left"
       >
         <span className="min-w-0">
-          <span className="type-headline block text-text-1">Muscles worked</span>
+          <span className="type-headline block text-text-1">Anatomy</span>
           <span className="type-meta block truncate text-text-2">{summary}</span>
         </span>
         <ChevronDown

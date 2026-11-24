@@ -154,6 +154,16 @@
   /* Weekly report: training lime, food amber, body sky (charts and legends). */
   --report-food: #ffb020;
   --report-body: #5cc8ff;
+  /* Leaderboard score parts: one colour each, for the breakdown bar, icons and meters. */
+  --score-workouts: var(--lime);
+  --score-hard-sets: #5cc8ff;
+  --score-records: var(--gold);
+  --score-protein: #ff9f43;
+  --score-consistency: #a78bfa;
+  --score-progress: #f472b6;
+  /* Progress accents (November 2026): lime for good, sky for information, amber for "look at
+     this". Everything else on Progress stays grey. */
+  --info: #5cc8ff;
   --danger: #ff453a;
   /* Destructive text and field errors: --danger is 4.1:1 on --surface-2, this is 5.0:1. */
   --danger-text: #ff6b5e;

@@ -15,6 +15,8 @@ interface PageHeaderProps {
   eyebrow?: ReactNode;
   /** Header buttons, at the top right (at most two). */
   actions?: ReactNode;
+  /** Shown between the top row and the large title (Home: the Macrotrophy Brain button). */
+  lead?: ReactNode;
   /** Plain-text title for the compact bar, when `title` is not a string. */
   compactTitle?: string;
   /** A pushed screen: back chevron with the parent's name instead of the avatar. */
@@ -34,6 +36,7 @@ export function PageHeader({
   subtitle,
   eyebrow,
   actions,
+  lead,
   compactTitle,
   back,
   coach,
@@ -96,7 +99,10 @@ export function PageHeader({
             {back ? null : <AvatarLink />}
           </div>
         </div>
-        <h1 className="type-display mt-0.5 break-words text-text-1">{title}</h1>
+        {lead ? <div className="mt-2">{lead}</div> : null}
+        <h1 className={cn('type-display break-words text-text-1', lead ? 'mt-3' : 'mt-0.5')}>
+          {title}
+        </h1>
         {subtitle ? (
           <p className="type-meta mt-1 max-w-[60ch] text-text-2 [text-wrap:balance]">{subtitle}</p>
         ) : null}

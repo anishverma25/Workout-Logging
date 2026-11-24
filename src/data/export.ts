@@ -1,3 +1,4 @@
+import { isSideSet, setVolumeLoad } from '@/domain/analytics/volume';
 import type { ActivityLog, FoodLog, WaterLog } from '@/domain/models/schemas';
 import { buildSessions, type TrainingData } from '@/domain/analytics/sessions';
 import { isAlive } from '@/domain/analytics/sessions';
@@ -43,6 +44,9 @@ export function setsCsv(data: TrainingData): string {
       'workout_id',
       'reps_left',
       'reps_right',
+      'logged_per_side',
+      'weight_is',
+      'volume_kg',
     ],
   ];
   for (const s of buildSessions(data)) {
@@ -66,6 +70,9 @@ export function setsCsv(data: TrainingData): string {
             s.workout.id,
             x.repsLeft ?? null,
             x.repsRight ?? null,
+            isSideSet(x) ? 'yes' : 'no',
+            ex.exercise?.loadMode === 'per_hand' ? 'one dumbbell or side' : 'total',
+            Math.round(setVolumeLoad(x, ex.exercise) * 100) / 100,
           ]),
         );
     }

@@ -50,8 +50,9 @@ describe('applyImport', () => {
       measurementsAdded: 1,
       dropped: 0,
     });
-    // Pullover, single-arm pushdown and Kelso shrugs have no library match.
-    expect(result.exercisesCreated).toBe(3);
+    // Single-arm pushdown and Kelso shrugs (seat note) have no library match; the dumbbell
+    // pullover joined the library in November 2026.
+    expect(result.exercisesCreated).toBe(2);
 
     const workouts = await db.workouts.toArray();
     expect(workouts.every((w) => w.origin === 'user' && w.status === 'completed')).toBe(true);
@@ -62,12 +63,11 @@ describe('applyImport', () => {
     const custom = (await db.exercises.toArray()).filter((e) => e.isCustom);
     expect(custom.map((e) => e.name).sort()).toEqual([
       'KELSO SHRUGS (seat full down)',
-      'Pullover (Dumbbell)',
       'Single Arm Triceps Pushdown (Cable)',
     ]);
     // Everything is queued to sync to the account.
     const queued = await db.outbox.count();
-    expect(queued).toBe(2 + 10 + 13 + 3 + 2 + 1);
+    expect(queued).toBe(2 + 10 + 13 + 2 + 2 + 1);
   });
 
   it('feeds the same analytics as training logged in the app', async () => {

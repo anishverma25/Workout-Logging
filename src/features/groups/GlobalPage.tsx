@@ -5,7 +5,6 @@ import {
   CommunityError,
   getBoardRoutine,
   getGlobalBoard,
-  scoreParts,
   setShareRoutine,
   useRemote,
   type GlobalRow,
@@ -26,6 +25,7 @@ import { useToast } from '@/components/ui/Toast';
 import { globalRankStory } from '@/domain/share/story';
 import { RankShareSheet } from '@/features/share/RankShareSheet';
 import { formatNumber } from '@/lib/format';
+import { ScoreBreakdown } from './ScoreBreakdown';
 import { useFeature } from '@/app/entitlement';
 import { cn } from '@/lib/cn';
 import { Link } from 'react-router';
@@ -549,24 +549,20 @@ function GlobalRowView({
       </button>
       {open ? (
         <div className="px-4 pb-4" data-breakdown>
-          <ul className="grid grid-cols-2 gap-2">
-            {scoreParts(r).map((p) => (
-              <li key={p.key} className="rounded-nested bg-surface-2 px-3 py-2">
-                <span className="type-caption block text-text-2">{p.label}</span>
-                <span className="type-headline tabular block text-text-1">
-                  {p.count} <span className="type-caption text-text-2">= {p.points} pts</span>
-                </span>
-              </li>
-            ))}
-          </ul>
+          <ScoreBreakdown row={r} />
           {!r.me ? (
             <div className="mt-3 flex items-center justify-between gap-3">
-              <TextButton onClick={onRoutine} data-see-routine>
+              <CapsuleButton tone="lime" onClick={onRoutine} data-see-routine>
                 See their routine
-              </TextButton>
-              <TextButton small onClick={onReport} data-report-person>
+              </CapsuleButton>
+              <button
+                type="button"
+                onClick={onReport}
+                className="pressable tap-target type-subhead px-1 font-medium text-text-2"
+                data-report-person
+              >
                 Report
-              </TextButton>
+              </button>
             </div>
           ) : null}
         </div>

@@ -351,7 +351,7 @@ describe('left and right reps', () => {
 
   it('two-arm exercises stay one number unless switched on; switching off clears the sides', async () => {
     const w = await startEmptyWorkout(db, T0);
-    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('cable-lateral-raise')]);
+    const [we] = await addExercisesToWorkout(db, w.id, [exerciseIdFor('dumbbell-lateral-raise')]);
     const [first, second] = await liveSets(we!.id);
     await updateSet(db, first!.id, { weightKg: 10, reps: 12 });
     expect((await completeSet(db, first!.id, null, at(1))).ok).toBe(true);

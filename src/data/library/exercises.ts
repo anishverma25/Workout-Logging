@@ -19,6 +19,11 @@ interface ExerciseSeed {
   loadMode?: LoadMode;
   /** Done one arm or one leg at a time: reps are logged for the left and right side apart. */
   eachSide?: boolean;
+  /**
+   * When an exercise became one side at a time by default: workouts and routines made before it
+   * keep logging both sides together, so history reads as it was logged.
+   */
+  eachSideSince?: string;
   instructions: string;
 }
 
@@ -31,6 +36,9 @@ interface ExerciseSeed {
  * Instructions are brief setup and execution cues, not prescriptions. No exercise here is
  * claimed to be better than another; pick what suits your body, equipment and goals.
  */
+/** The muscle-targeting import (November 2026) made 8 one-sided exercises per side by default. */
+const EACH_SIDE_V2 = '2026-11-24T00:00:00.000Z';
+
 const SEEDS: ExerciseSeed[] = [
   // Chest
   {
@@ -260,6 +268,8 @@ const SEEDS: ExerciseSeed[] = [
     equipment: 'dumbbell',
     category: 'compound',
     loadMode: 'per_hand',
+    eachSide: true,
+    eachSideSince: EACH_SIDE_V2,
     instructions:
       'Brace one hand on a bench. Row the dumbbell toward the hip, keeping the shoulder down, then lower to a full stretch. Log the dumbbell weight; reps are per side.',
   },
@@ -394,6 +404,8 @@ const SEEDS: ExerciseSeed[] = [
     equipment: 'cable',
     category: 'isolation',
     loadMode: 'per_hand',
+    eachSide: true,
+    eachSideSince: EACH_SIDE_V2,
     instructions:
       'Stand side-on to a low pulley. Raise the handle out to the side to shoulder height, then lower slowly. Log the stack weight; reps are per side.',
   },
@@ -653,6 +665,8 @@ const SEEDS: ExerciseSeed[] = [
     equipment: 'dumbbell',
     category: 'compound',
     loadMode: 'per_hand',
+    eachSide: true,
+    eachSideSince: EACH_SIDE_V2,
     instructions:
       'Rear foot on a bench and dumbbells at your sides. Lower the back knee toward the floor, then drive up through the front foot. Log one dumbbell; reps are per leg.',
   },
@@ -664,6 +678,8 @@ const SEEDS: ExerciseSeed[] = [
     equipment: 'dumbbell',
     category: 'compound',
     loadMode: 'per_hand',
+    eachSide: true,
+    eachSideSince: EACH_SIDE_V2,
     instructions:
       'Step forward and lower the back knee toward the floor, then step through into the next lunge. Log one dumbbell and total steps as reps.',
   },
@@ -684,6 +700,8 @@ const SEEDS: ExerciseSeed[] = [
     equipment: 'dumbbell',
     category: 'compound',
     loadMode: 'per_hand',
+    eachSide: true,
+    eachSideSince: EACH_SIDE_V2,
     instructions:
       'Step onto a box with the whole foot and drive up to stand on it, then step down with control. Log one dumbbell; reps are per leg.',
   },
@@ -797,6 +815,8 @@ const SEEDS: ExerciseSeed[] = [
     primary: 'glutes',
     equipment: 'cable',
     category: 'isolation',
+    eachSide: true,
+    eachSideSince: EACH_SIDE_V2,
     instructions:
       'Attach an ankle strap to a low pulley. Kick the leg back and slightly up without arching the lower back. Reps are per leg.',
   },
@@ -854,6 +874,8 @@ const SEEDS: ExerciseSeed[] = [
     equipment: 'bodyweight',
     category: 'isolation',
     tracking: 'bodyweight_reps',
+    eachSide: true,
+    eachSideSince: EACH_SIDE_V2,
     instructions:
       'Stand on one foot on a step. Lower the heel below the step, then rise onto the toes. Reps are per leg.',
   },
@@ -1118,6 +1140,8 @@ const SEEDS: ExerciseSeed[] = [
     primary: 'back',
     equipment: 'cable',
     category: 'isolation',
+    eachSide: true,
+    eachSideSince: EACH_SIDE_V2,
     instructions:
       'Fit a cuff just above the elbow, with the cable set high. Sit sideways on a high incline bench and, with the arm nearly straight, pull the elbow down and in toward your side, then let it rise slowly overhead. One arm at a time.',
   },
@@ -1270,6 +1294,827 @@ const SEEDS: ExerciseSeed[] = [
     instructions:
       'Stand on one leg with a slight knee bend, a dumbbell in the opposite hand. Hinge at the hip, letting the free leg reach back in line with the torso, until the standing hamstring stretches, then stand tall. Log the weight in your hand and the reps for each leg.',
   },
+  // November 2026: 42 exercises from the muscle-targeting sheet (migration 0039).
+  {
+    key: 'high-to-low-cable-fly',
+    name: 'High-to-low cable fly',
+    primary: 'chest',
+    secondary: ['shoulders'],
+    equipment: 'cable',
+    category: 'isolation',
+    instructions:
+      'Set both pulleys above head height. With a slight bend in the elbows, sweep the handles down and together in front of the lower chest, then let them return slowly.',
+  },
+  {
+    key: 'low-to-high-cable-fly',
+    name: 'Low-to-high cable fly',
+    primary: 'chest',
+    secondary: ['shoulders'],
+    equipment: 'cable',
+    category: 'isolation',
+    instructions:
+      'Set both pulleys near the floor. With soft elbows, sweep the handles up and together to about chin height, then lower them slowly.',
+  },
+  {
+    key: 'deficit-push-up',
+    name: 'Deficit push-up',
+    primary: 'chest',
+    secondary: ['triceps', 'shoulders'],
+    equipment: 'bodyweight',
+    category: 'compound',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Put the hands on push-up handles or plates so the chest can go below hand level. Keep the body straight, lower until the chest passes the hands, then push away.',
+  },
+  {
+    key: 'neutral-grip-pull-up',
+    name: 'Neutral-grip pull-up',
+    primary: 'back',
+    secondary: ['biceps'],
+    equipment: 'bodyweight',
+    category: 'compound',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Hang from parallel handles with the palms facing each other. Pull the chest up by driving the elbows down to the sides, then lower to a full hang.',
+  },
+  {
+    key: 'machine-pullover',
+    name: 'Machine pullover',
+    primary: 'back',
+    equipment: 'machine',
+    category: 'isolation',
+    instructions:
+      'Sit with the pads on the backs of the upper arms and the arms overhead. Drive the elbows down and around to the sides, then let them rise slowly to a full stretch.',
+  },
+  {
+    key: 'one-arm-cable-lat-pull-in',
+    name: 'One-arm cable lat pull-in',
+    primary: 'back',
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Kneel or stand beside a high cable holding a single handle with a long arm. Pull the hand down and in towards the hip in an arc, keeping the elbow nearly straight, then return slowly. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'wide-elbow-chest-supported-row',
+    name: 'Wide-elbow chest-supported row',
+    primary: 'back',
+    secondary: ['shoulders', 'biceps'],
+    equipment: 'dumbbell',
+    category: 'compound',
+    loadMode: 'per_hand',
+    instructions:
+      'Lie face down on an incline bench with a dumbbell in each hand. Row with the elbows flared out to the sides until the upper arms are level with the back, then lower. Log the weight of one dumbbell.',
+  },
+  {
+    key: '45-degree-hip-back-extension',
+    name: '45-degree hip back extension',
+    primary: 'glutes',
+    secondary: ['hamstrings', 'back'],
+    equipment: 'bodyweight',
+    category: 'compound',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Set the pad just below the hips on a 45-degree bench. Hinge at the hips with a neutral spine, then squeeze the glutes to rise until the body is in a straight line. Hold a plate for more load.',
+  },
+  {
+    key: 'reverse-hyperextension',
+    name: 'Reverse hyperextension',
+    primary: 'glutes',
+    secondary: ['hamstrings', 'back'],
+    equipment: 'machine',
+    category: 'isolation',
+    instructions:
+      'Lie face down on the machine with the hips at the edge and the legs hanging. Lift the legs behind you to body height by squeezing the glutes, then lower with control.',
+  },
+  {
+    key: 'incline-prone-y-raise',
+    name: 'Incline prone Y raise',
+    primary: 'back',
+    secondary: ['shoulders'],
+    equipment: 'dumbbell',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    instructions:
+      'Lie face down on an incline bench with light dumbbells. Raise the arms up and out into a Y, thumbs up, until they line up with the body, then lower slowly. Log the weight of one dumbbell.',
+  },
+  {
+    key: 'cable-shrug',
+    name: 'Cable shrug',
+    primary: 'back',
+    equipment: 'cable',
+    category: 'isolation',
+    instructions:
+      'Stand between two low pulleys, or at one with a bar. Lift the shoulders straight up towards the ears, pause, then lower to a full stretch.',
+  },
+  {
+    key: 'bayesian-cable-rear-delt-fly',
+    name: 'Bayesian cable rear-delt fly',
+    primary: 'shoulders',
+    secondary: ['back'],
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Stand side-on to a cable at shoulder height and take the handle with the far hand. With a soft elbow, sweep the arm out and back to the side of the body, then return slowly. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'cable-external-rotation',
+    name: 'Cable external rotation',
+    primary: 'shoulders',
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Set a cable at elbow height and stand side-on. Keep the elbow bent to 90 degrees and against the side, and rotate the hand out away from the body, then back slowly. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'cable-internal-rotation',
+    name: 'Cable internal rotation',
+    primary: 'shoulders',
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Set a cable at elbow height and stand side-on with the near hand on the handle. Keep the elbow bent to 90 degrees against the side and rotate the hand in across the stomach, then back slowly. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'push-up-plus',
+    name: 'Push-up plus',
+    primary: 'shoulders',
+    secondary: ['chest', 'triceps'],
+    equipment: 'bodyweight',
+    category: 'compound',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Do a push-up, then at the top push the floor further away so the shoulder blades spread around the ribs. Lower the shoulder blades back, then the body.',
+  },
+  {
+    key: 'spider-curl',
+    name: 'Spider curl',
+    primary: 'biceps',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    instructions:
+      'Lie chest down on an incline bench with the arms hanging straight. Curl the dumbbells up without moving the upper arms, squeeze, then lower to straight arms. Log the weight of one dumbbell.',
+  },
+  {
+    key: 'bayesian-cable-curl',
+    name: 'Bayesian cable curl',
+    primary: 'biceps',
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Face away from a low cable holding the handle, with the arm drawn slightly behind the body. Curl the hand to the shoulder without letting the elbow drift forward, then lower to a full stretch. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'reverse-ez-bar-curl',
+    name: 'Reverse EZ-bar curl',
+    primary: 'biceps',
+    equipment: 'barbell',
+    category: 'isolation',
+    instructions:
+      'Hold an EZ bar with the palms facing down. Keep the elbows at your sides and curl up without letting the wrists drop, then lower slowly.',
+  },
+  {
+    key: 'cross-body-cable-triceps-extension',
+    name: 'Cross-body cable triceps extension',
+    primary: 'triceps',
+    equipment: 'cable',
+    category: 'isolation',
+    instructions:
+      'Stand between two high pulleys, each hand holding the opposite cable so the arms cross. Straighten the elbows out to the sides, then let them bend back slowly. Both arms at once, or one at a time and log each side.',
+  },
+  {
+    key: 'seated-wrist-curl',
+    name: 'Seated wrist curl',
+    primary: 'biceps',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    instructions:
+      'Sit with the forearms on the thighs, palms up and wrists past the knees. Let the dumbbells roll down to the fingers, then curl the wrists up as far as they go. Log the weight of one dumbbell.',
+  },
+  {
+    key: 'reverse-wrist-curl',
+    name: 'Reverse wrist curl',
+    primary: 'biceps',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    instructions:
+      'Sit with the forearms on the thighs, palms down and wrists past the knees. Lift the backs of the hands up as far as they go, then lower slowly. Log the weight of one dumbbell.',
+  },
+  {
+    key: 'wrist-pronation',
+    name: 'Wrist pronation',
+    primary: 'biceps',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Rest the forearm on a bench holding a dumbbell by one end, thumb side up. Turn the palm down slowly, then back to the start. Do one hand, then the other, and log each side.',
+  },
+  {
+    key: 'wrist-supination',
+    name: 'Wrist supination',
+    primary: 'biceps',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Rest the forearm on a bench holding a dumbbell by one end, palm down. Turn the palm up slowly, then back to the start. Do one hand, then the other, and log each side.',
+  },
+  {
+    key: 'dead-hang',
+    name: 'Dead hang',
+    primary: 'back',
+    equipment: 'bodyweight',
+    category: 'isolation',
+    tracking: 'duration',
+    instructions:
+      'Hang from a bar with an overhand grip and straight arms, shoulders lightly engaged. Hold for time.',
+  },
+  {
+    key: 'reverse-nordic-curl',
+    name: 'Reverse Nordic curl',
+    primary: 'quads',
+    equipment: 'bodyweight',
+    category: 'isolation',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Kneel upright with the feet anchored or free. Keeping hips and torso in one line, lean back as far as you control, then use the quads to return to upright.',
+  },
+  {
+    key: 'sissy-squat',
+    name: 'Sissy squat',
+    primary: 'quads',
+    equipment: 'bodyweight',
+    category: 'isolation',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Hold a support and rise onto the toes. Let the knees travel forward as you lean back in one straight line from knees to head, lower as far as comfortable, then return.',
+  },
+  {
+    key: 'smith-machine-heel-elevated-squat',
+    name: 'Smith machine heel-elevated squat',
+    primary: 'quads',
+    secondary: ['glutes', 'adductors'],
+    equipment: 'machine',
+    category: 'compound',
+    instructions:
+      'Stand under the Smith bar with the heels raised on a plate or wedge and the feet slightly forward. Squat down with an upright torso as deep as you control, then drive up.',
+  },
+  {
+    key: 'standing-single-leg-curl',
+    name: 'Standing single-leg curl',
+    primary: 'hamstrings',
+    equipment: 'machine',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Stand in the machine with the pad behind one ankle and the hips against the support. Curl the heel up towards the glute, then lower slowly to a straight leg. Do one leg, then the other, and log each side.',
+  },
+  {
+    key: 'glute-ham-raise',
+    name: 'Glute-ham raise',
+    primary: 'hamstrings',
+    secondary: ['glutes'],
+    equipment: 'bodyweight',
+    category: 'compound',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Lock the ankles in the bench with the knees on the pad. Lower the upper body forward under control until it is level, then curl back up with the hamstrings, keeping the hips straight.',
+  },
+  {
+    key: 'cable-hip-abduction',
+    name: 'Cable hip abduction',
+    primary: 'glutes',
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Fit an ankle strap to a low cable and stand side-on with the outer leg strapped. Lift the leg out to the side without leaning, then lower slowly. Do one leg, then the other, and log each side.',
+  },
+  {
+    key: 'cable-standing-hip-adduction',
+    name: 'Cable standing hip adduction',
+    primary: 'adductors',
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Fit an ankle strap to a low cable and stand side-on with the near leg strapped. Pull the leg across in front of the standing leg, then return slowly. Do one leg, then the other, and log each side.',
+  },
+  {
+    key: 'copenhagen-adduction',
+    name: 'Copenhagen adduction',
+    primary: 'adductors',
+    secondary: ['abs'],
+    equipment: 'bodyweight',
+    category: 'isolation',
+    tracking: 'duration',
+    instructions:
+      'Lie on your side with the top leg on a bench and the forearm on the floor. Lift the hips so the body is straight, held up by the top leg. Hold for time, then switch sides.',
+  },
+  {
+    key: 'standing-cable-hip-flexion',
+    name: 'Standing cable hip flexion',
+    primary: 'quads',
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Fit an ankle strap to a low cable and face away from it. Drive the knee up to hip height without leaning back, then lower slowly. Do one leg, then the other, and log each side.',
+  },
+  {
+    key: 'seated-hip-flexion-raise',
+    name: 'Seated hip flexion raise',
+    primary: 'quads',
+    equipment: 'bodyweight',
+    category: 'isolation',
+    tracking: 'bodyweight_reps',
+    eachSide: true,
+    instructions:
+      'Sit tall on a bench or the floor. Lift one knee or straight leg as high as you can without leaning back, pause, then lower. Do one leg, then the other, and log each side.',
+  },
+  {
+    key: 'donkey-calf-raise',
+    name: 'Donkey calf raise',
+    primary: 'calves',
+    equipment: 'machine',
+    category: 'isolation',
+    instructions:
+      'Bend at the hips with the pad on the lower back and the balls of the feet on the step. Lower the heels to a full stretch, pause, then rise as high as you can.',
+  },
+  {
+    key: 'tibialis-raise',
+    name: 'Tibialis raise',
+    primary: 'calves',
+    equipment: 'bodyweight',
+    category: 'isolation',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Lean back against a wall with the heels a foot or so in front. Lift the toes and fronts of the feet as high as you can, then lower slowly.',
+  },
+  {
+    key: 'banded-ankle-eversion',
+    name: 'Banded ankle eversion',
+    primary: 'calves',
+    equipment: 'band',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Sit with a band around the outside of one foot, anchored to the inside. Turn the sole of the foot outwards against the band, then return slowly. Do one foot, then the other, and log each side.',
+  },
+  {
+    key: 'reverse-crunch-posterior-pelvic-tilt',
+    name: 'Reverse crunch with posterior pelvic tilt',
+    primary: 'abs',
+    equipment: 'bodyweight',
+    category: 'isolation',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Lie on your back with the knees bent over the hips. Curl the pelvis up and roll the lower back off the floor, then lower slowly without swinging the legs.',
+  },
+  {
+    key: 'cable-woodchop',
+    name: 'Cable woodchop',
+    primary: 'abs',
+    secondary: ['glutes'],
+    equipment: 'cable',
+    category: 'compound',
+    instructions:
+      'Stand side-on to a cable with both hands on the handle. Rotate through the trunk and pull the handle diagonally across the body, then return slowly. Do both sides.',
+  },
+  {
+    key: 'suitcase-carry',
+    name: 'Suitcase carry',
+    primary: 'abs',
+    secondary: ['back'],
+    equipment: 'dumbbell',
+    category: 'compound',
+    tracking: 'distance',
+    instructions:
+      'Hold one heavy dumbbell at one side, stand tall without leaning and walk with short steps. Switch hands and walk back. Log the distance covered.',
+  },
+  {
+    key: 'neck-flexion',
+    name: 'Neck flexion',
+    primary: 'back',
+    equipment: 'other',
+    category: 'isolation',
+    instructions:
+      'Lie on your back with the head off the end of a bench and a light plate on the forehead, held with the hands. Slowly bring the chin to the chest, then lower. Go light, never jerk, and get advice if your neck has a problem.',
+  },
+  {
+    key: 'neck-extension',
+    name: 'Neck extension',
+    primary: 'back',
+    equipment: 'other',
+    category: 'isolation',
+    instructions:
+      'Lie face down with the head off the end of a bench and a light plate behind the head, or use a neck harness. Slowly lift the head back, then lower. Go light and never force the movement.',
+  },
+  // November 2026: 39 researched additions (second sheet, also seeded by migration 0039).
+  {
+    key: 'dumbbell-pullover',
+    name: 'Dumbbell pullover',
+    primary: 'back',
+    secondary: ['chest', 'triceps'],
+    equipment: 'dumbbell',
+    category: 'isolation',
+    instructions:
+      'Lie across or along a bench holding one dumbbell over the chest with both hands. Keeping a slight, fixed bend in the elbows, lower it back behind the head to a comfortable stretch, then pull it back over the chest. Log the weight of the dumbbell.',
+  },
+  {
+    key: 'seated-machine-triceps-dip',
+    name: 'Seated machine triceps dip',
+    primary: 'triceps',
+    secondary: ['chest', 'shoulders'],
+    equipment: 'machine',
+    category: 'compound',
+    instructions:
+      'Sit upright with the handles at your sides and the elbows close in. Press both handles down until the arms are straight, then let them rise slowly.',
+  },
+  {
+    key: 'dumbbell-shrug',
+    name: 'Dumbbell shrug',
+    primary: 'back',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    instructions:
+      'Stand tall with a dumbbell in each hand at your sides. Lift the shoulders straight up towards the ears without rolling them, pause, then lower. Log the weight of one dumbbell.',
+  },
+  {
+    key: 'standing-cable-shoulder-press',
+    name: 'Standing cable shoulder press',
+    primary: 'shoulders',
+    secondary: ['triceps'],
+    equipment: 'cable',
+    category: 'compound',
+    loadMode: 'per_hand',
+    instructions:
+      'Stand in a split stance between two low cables with a handle in each hand at shoulder height. Press both handles overhead together without leaning back or using the legs, then lower. Log the weight of one stack.',
+  },
+  {
+    key: 'behind-the-neck-lat-pulldown',
+    name: 'Behind-the-neck lat pulldown',
+    primary: 'back',
+    secondary: ['biceps'],
+    equipment: 'cable',
+    category: 'compound',
+    instructions:
+      'Sit at the pulldown with a wide overhand grip. Pull the bar down behind the head only as far as your shoulders move comfortably, keeping the head still, then return. Stop if the shoulders or neck complain.',
+  },
+  {
+    key: 'weighted-push-up',
+    name: 'Weighted push-up',
+    primary: 'chest',
+    secondary: ['triceps', 'shoulders'],
+    equipment: 'bodyweight',
+    category: 'compound',
+    tracking: 'weighted_bodyweight',
+    instructions:
+      'Wear a weighted vest or have a plate placed on the upper back. With the hands about shoulder width and the body straight, lower the chest to the floor, then push up. Log only the added weight.',
+  },
+  {
+    key: 'weighted-standing-single-leg-calf-raise',
+    name: 'Weighted standing single-leg calf raise',
+    primary: 'calves',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Stand on one foot on a step holding a dumbbell, with a hand on a support for balance. With the knee nearly straight, lower the heel to a stretch, then rise as high as you can. Log the weight held and the reps for each leg.',
+  },
+  {
+    key: 'smith-machine-shoulder-press',
+    name: 'Smith machine shoulder press',
+    primary: 'shoulders',
+    secondary: ['triceps'],
+    equipment: 'machine',
+    category: 'compound',
+    instructions:
+      'Sit on an upright bench under the Smith bar with the bar in front of your face. Press it overhead along the fixed path, then lower to about chin height.',
+  },
+  {
+    key: 'standing-dumbbell-shoulder-press',
+    name: 'Standing dumbbell shoulder press',
+    primary: 'shoulders',
+    secondary: ['triceps'],
+    equipment: 'dumbbell',
+    category: 'compound',
+    loadMode: 'per_hand',
+    instructions:
+      'Stand tall with the dumbbells at shoulder height. Press both overhead together without bending the knees or leaning back, then lower. Log the weight of one dumbbell.',
+  },
+  {
+    key: 'single-arm-dumbbell-shoulder-press',
+    name: 'Single-arm dumbbell shoulder press',
+    primary: 'shoulders',
+    secondary: ['triceps', 'abs'],
+    equipment: 'dumbbell',
+    category: 'compound',
+    eachSide: true,
+    instructions:
+      'Stand tall with one dumbbell at shoulder height. Press it overhead without leaning to the side or using the legs, then lower. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'cable-rear-delt-fly',
+    name: 'Cable rear delt fly',
+    primary: 'shoulders',
+    secondary: ['back'],
+    equipment: 'cable',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    instructions:
+      'Set two cables at shoulder height and take the opposite handle in each hand so the cables cross. With soft, fixed elbows, sweep both arms out and back, then return slowly. Do not row. Log the weight of one stack.',
+  },
+  {
+    key: 'assisted-dip',
+    name: 'Assisted dip',
+    primary: 'triceps',
+    secondary: ['chest', 'shoulders'],
+    equipment: 'machine',
+    category: 'compound',
+    tracking: 'assisted_bodyweight',
+    instructions:
+      'Kneel or stand on the assistance pad and hold the parallel handles. Keep the torso upright and the elbows tucked, lower until the upper arms are about level, then press up. Log the assistance weight; less assistance means more work.',
+  },
+  {
+    key: 'dumbbell-triceps-kickback',
+    name: 'Dumbbell triceps kickback',
+    primary: 'triceps',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    eachSide: true,
+    instructions:
+      'Lean forward with one hand on a bench and the working upper arm against your side. Straighten the elbow until the arm is in line with the body, then bend it back without swinging. One arm at a time and log each side, or both arms together.',
+  },
+  {
+    key: 'cable-triceps-kickback',
+    name: 'Cable triceps kickback',
+    primary: 'triceps',
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Hold a single handle from a low cable and lean forward with the upper arm fixed at your side. Straighten the elbow until the arm is in line with the body, then return slowly. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'smith-machine-shrug',
+    name: 'Smith machine shrug',
+    primary: 'back',
+    equipment: 'machine',
+    category: 'isolation',
+    instructions:
+      'Stand with the Smith bar in front of the thighs and the arms long. Lift the shoulders straight up towards the ears without rolling them, pause, then lower.',
+  },
+  {
+    key: 'incline-dumbbell-fly',
+    name: 'Incline dumbbell fly',
+    primary: 'chest',
+    secondary: ['shoulders'],
+    equipment: 'dumbbell',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    instructions:
+      'Lie on a bench set to about 20 to 30 degrees with the dumbbells over the chest. With soft, fixed elbows, open the arms out to a stretch, then bring them back together. Do not press. Log the weight of one dumbbell.',
+  },
+  {
+    key: 'decline-push-up',
+    name: 'Decline push-up',
+    primary: 'chest',
+    secondary: ['triceps', 'shoulders'],
+    equipment: 'bodyweight',
+    category: 'compound',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Put the feet on a bench or box about 30 to 45 cm high and the hands on the floor at shoulder width. Keep the body straight, lower the chest to the floor, then push up.',
+  },
+  {
+    key: 'incline-push-up',
+    name: 'Incline push-up',
+    primary: 'chest',
+    secondary: ['triceps', 'shoulders'],
+    equipment: 'bodyweight',
+    category: 'compound',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Put the hands on a bench or stable edge at shoulder width with the feet on the floor. Keep the body straight, lower the chest to the edge, then push away.',
+  },
+  {
+    key: 'diamond-push-up',
+    name: 'Diamond push-up',
+    primary: 'triceps',
+    secondary: ['chest', 'shoulders'],
+    equipment: 'bodyweight',
+    category: 'compound',
+    tracking: 'bodyweight_reps',
+    instructions:
+      'Put the hands close together under the chest, thumbs and fingers forming a diamond. Keep the elbows close and the body straight, lower the chest to the hands, then push up.',
+  },
+  {
+    key: 'reverse-grip-lat-pulldown',
+    name: 'Reverse-grip lat pulldown',
+    primary: 'back',
+    secondary: ['biceps'],
+    equipment: 'cable',
+    category: 'compound',
+    instructions:
+      'Hold the bar with the palms facing you at shoulder width. Pull it down in front to the upper chest with little lean or swing, then let it rise to straight arms.',
+  },
+  {
+    key: 'weighted-chin-up',
+    name: 'Weighted chin-up',
+    primary: 'back',
+    secondary: ['biceps'],
+    equipment: 'bodyweight',
+    category: 'compound',
+    tracking: 'weighted_bodyweight',
+    instructions:
+      'Add weight with a belt or vest and hang with the palms facing you at shoulder width. Pull the chin over the bar, then lower to a full hang. Log only the added weight.',
+  },
+  {
+    key: 'smith-machine-calf-raise',
+    name: 'Smith machine calf raise',
+    primary: 'calves',
+    equipment: 'machine',
+    category: 'isolation',
+    instructions:
+      'Stand under the Smith bar with the balls of both feet on a raised plate or step. With the knees nearly straight, lower the heels to a stretch, then rise as high as you can.',
+  },
+  {
+    key: 'standing-dumbbell-calf-raise',
+    name: 'Standing dumbbell calf raise',
+    primary: 'calves',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    instructions:
+      'Stand on a step with a dumbbell in each hand. With the knees nearly straight, lower the heels to a stretch, then rise as high as you can. Log the weight of one dumbbell.',
+  },
+  {
+    key: 'barbell-wrist-curl',
+    name: 'Barbell wrist curl',
+    primary: 'biceps',
+    equipment: 'barbell',
+    category: 'isolation',
+    instructions:
+      'Sit with the forearms on the thighs or a bench, palms up and wrists past the edge, holding a barbell. Curl the wrists up as far as they go, then lower slowly.',
+  },
+  {
+    key: 'cable-wrist-curl',
+    name: 'Cable wrist curl',
+    primary: 'biceps',
+    equipment: 'cable',
+    category: 'isolation',
+    instructions:
+      'Kneel or sit facing a low cable with a straight bar, forearms supported and palms up. Curl the wrists up as far as they go, then lower slowly. With a single handle, do one hand at a time and log each side.',
+  },
+  {
+    key: 'dumbbell-preacher-curl',
+    name: 'Dumbbell preacher curl',
+    primary: 'biceps',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    eachSide: true,
+    instructions:
+      'Rest the back of the upper arm on the preacher pad with the palm up. Curl the dumbbell up without lifting the elbow, then lower to a nearly straight arm. One arm at a time and log each side, or both arms together.',
+  },
+  {
+    key: 'concentration-curl',
+    name: 'Concentration curl',
+    primary: 'biceps',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Sit with the working elbow braced against the inside of the thigh. Curl the dumbbell up to the shoulder without moving the body, then lower to a straight arm. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'reverse-barbell-wrist-curl',
+    name: 'Reverse barbell wrist curl',
+    primary: 'biceps',
+    equipment: 'barbell',
+    category: 'isolation',
+    instructions:
+      'Sit with the forearms on the thighs or a bench, palms down and wrists past the edge, holding a barbell. Lift the backs of the hands up as far as they go without lifting the elbows, then lower slowly.',
+  },
+  {
+    key: 'reverse-cable-wrist-curl',
+    name: 'Reverse cable wrist curl',
+    primary: 'biceps',
+    equipment: 'cable',
+    category: 'isolation',
+    instructions:
+      'Kneel or sit facing a low cable with a straight bar, forearms supported and palms down. Lift the backs of the hands up as far as they go, then lower slowly. With a single handle, do one hand at a time and log each side.',
+  },
+  {
+    key: 'wrist-roller',
+    name: 'Wrist roller',
+    primary: 'biceps',
+    equipment: 'other',
+    category: 'isolation',
+    instructions:
+      'Hold the roller in front with both hands, the weight hanging on its cord. Roll the weight all the way up by turning the wrists, then lower it under control. One rep is up and down. Log the hanging weight.',
+  },
+  {
+    key: 'plate-pinch-hold',
+    name: 'Plate pinch hold',
+    primary: 'biceps',
+    equipment: 'other',
+    category: 'isolation',
+    tracking: 'duration',
+    instructions:
+      'Pinch smooth weight plates together between the thumb and fingers of one hand, arm hanging at your side. Hold for time, then switch hands. Log each hand as its own set.',
+  },
+  {
+    key: 'single-arm-cable-shoulder-press',
+    name: 'Single-arm cable shoulder press',
+    primary: 'shoulders',
+    secondary: ['triceps', 'abs'],
+    equipment: 'cable',
+    category: 'compound',
+    eachSide: true,
+    instructions:
+      'Stand in a split stance with a single handle from a low cable at shoulder height. Press it overhead without twisting the trunk, then lower. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'cable-front-raise',
+    name: 'Cable front raise',
+    primary: 'shoulders',
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Face away from a low cable holding the handle at your side. Raise the straight arm in front to shoulder height, then lower slowly. One arm at a time and log each side, or both hands on a bar.',
+  },
+  {
+    key: 'incline-dumbbell-shrug',
+    name: 'Incline dumbbell shrug',
+    primary: 'back',
+    equipment: 'dumbbell',
+    category: 'isolation',
+    loadMode: 'per_hand',
+    instructions:
+      'Lie chest down on a bench set to 30 to 45 degrees with the dumbbells hanging. Keeping the arms straight, lift the shoulders up towards the ears and slightly back, then lower. Do not row. Log the weight of one dumbbell.',
+  },
+  {
+    key: 'behind-the-back-barbell-shrug',
+    name: 'Behind-the-back barbell shrug',
+    primary: 'back',
+    equipment: 'barbell',
+    category: 'isolation',
+    instructions:
+      'Hold a barbell behind the thighs with straight arms. Lift the shoulders straight up towards the ears, pause, then lower.',
+  },
+  {
+    key: 'single-arm-straight-arm-pulldown',
+    name: 'Single-arm straight-arm pulldown',
+    primary: 'back',
+    equipment: 'cable',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Face a high cable holding a single handle with a soft, fixed elbow. Pull the hand down in an arc to the hip without bending the elbow, then return slowly. Do one arm, then the other, and log each side.',
+  },
+  {
+    key: 'seated-single-leg-calf-raise',
+    name: 'Seated single-leg calf raise',
+    primary: 'calves',
+    equipment: 'machine',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Sit with one forefoot on the step and the knee bent to about 90 degrees under the pad, or with a dumbbell on the thigh. Lower the heel to a stretch, then rise as high as you can. Do one leg, then the other, and log each side.',
+  },
+  {
+    key: 'weighted-tibialis-raise',
+    name: 'Weighted tibialis raise',
+    primary: 'calves',
+    equipment: 'other',
+    category: 'isolation',
+    instructions:
+      'Sit or stand with the heels supported and both feet under a tibialis machine pad or tib bar. Pull the toes and fronts of the feet up as high as you can, then lower slowly.',
+  },
+  {
+    key: 'neck-lateral-flexion',
+    name: 'Neck lateral flexion',
+    primary: 'back',
+    equipment: 'other',
+    category: 'isolation',
+    eachSide: true,
+    instructions:
+      'Lie on your side with the head off the end of a bench, or use a harness or your hand for resistance. Slowly bend the ear towards the shoulder and back, without turning the head. Go light, do one side, then the other, and log each side.',
+  },
 ];
 
 /** Fixed timestamp so system records are identical on every device and every load. */
@@ -1299,4 +2144,12 @@ export const SYSTEM_EXERCISE_KEYS = SEEDS.map((s) => s.key);
 /** Library exercises done one side at a time: their reps are logged for each side by default. */
 export const EACH_SIDE_EXERCISE_IDS: ReadonlySet<string> = new Set(
   SEEDS.filter((s) => s.eachSide).map((s) => exerciseIdFor(s.key)),
+);
+
+/** Exercises that became per side by default later, and from when (see `eachSideSince`). */
+export const EACH_SIDE_SINCE: ReadonlyMap<string, string> = new Map(
+  SEEDS.filter((s) => s.eachSide && s.eachSideSince).map((s) => [
+    exerciseIdFor(s.key),
+    s.eachSideSince!,
+  ]),
 );

@@ -18,6 +18,8 @@ export const LIBRARY_ADDITIONS_SIZE = 102;
 export const TRAINING_DETAILS_SIZE = 104;
 /** Library size after migration 0014 (round 2); round 4 additions go in 0016. */
 export const ROUND_2_SIZE = 109;
+/** Library size after migration 0016 (round 4); the targeting sheet's additions go in 0039. */
+export const ROUND_4_SIZE = 120;
 
 export function exerciseSeedSql(from = 0, to = FIRST_LIBRARY_SIZE): string {
   const rows = SYSTEM_EXERCISES.slice(from, to).map((e, j) => {

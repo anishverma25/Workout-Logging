@@ -2,11 +2,20 @@ import { useState } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { Chips } from '@/components/ui/Fields';
 import { CATEGORY_LABELS, EQUIPMENT_LABELS, MUSCLE_LABELS } from '@/domain/models/labels';
-import { Equipment, MUSCLE_GROUPS } from '@/domain/models/schemas';
+import { Equipment, MUSCLE_GROUPS, type MuscleGroup } from '@/domain/models/schemas';
 import type { ExerciseFilters as Filters, ExerciseSource } from '@/domain/exercises/search';
 import { cn } from '@/lib/cn';
 
-const muscleOptions = MUSCLE_GROUPS.map((m) => ({ value: m, label: MUSCLE_LABELS[m] }));
+// Forearms sits after Triceps: wrist and grip work is stored under biceps but listed apart.
+type MuscleOption = { value: MuscleGroup | 'forearms'; label: string };
+const muscleOptions: MuscleOption[] = MUSCLE_GROUPS.flatMap((m): MuscleOption[] =>
+  m === 'triceps'
+    ? [
+        { value: m, label: MUSCLE_LABELS[m] },
+        { value: 'forearms', label: 'Forearms' },
+      ]
+    : [{ value: m, label: MUSCLE_LABELS[m] }],
+);
 const equipmentOptions = Equipment.options.map((e) => ({ value: e, label: EQUIPMENT_LABELS[e] }));
 const categoryOptions = (['compound', 'isolation'] as const).map((c) => ({
   value: c,

@@ -56,6 +56,8 @@ import { ProFindings } from './ProFindings';
 import { ProLock } from '../pro/ProLock';
 import { useFoodContextFrom } from '../food/useFoodContext';
 import { NutritionSection } from './NutritionSection';
+import { SectionIcon } from './SectionIcon';
+import { ReadySection, QualitySection } from './QualitySection';
 import {
   BalanceSection,
   LevelsSection,
@@ -279,6 +281,7 @@ export function ProgressPage() {
                       }
                     />
                   ) : null}
+                  <ReadySection data={training.data!} now={now} />
                   <ConsistencySection model={model} />
                   <RecordsSection model={model} unit={unit} />
                 </>
@@ -302,6 +305,7 @@ export function ProgressPage() {
                     }
                   />
                   <PlateausSection model={model} unit={unit} exercises={training.data!.exercises} />
+                  <QualitySection data={training.data!} model={model} />
                 </>
               ) : null}
 
@@ -427,6 +431,7 @@ function Section({
   return (
     <section id={id} aria-labelledby={`sec-${id}`} className="mt-8 scroll-mt-28">
       <div className="flex items-center gap-2">
+        <SectionIcon id={id} />
         <h2 id={`sec-${id}`} className="type-title text-text-1">
           {title}
         </h2>

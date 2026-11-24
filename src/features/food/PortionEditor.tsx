@@ -137,7 +137,11 @@ export function PortionEditor({
       <AmountInput
         portion={portion}
         grams={grams}
-        gramsText={measured && portion.unit !== 'g' ? `${Math.round(measured.grams)} g` : null}
+        gramsText={
+          measured && portion.unit !== 'g' && !food.servingOnly
+            ? `${Math.round(measured.grams)} g`
+            : null
+        }
         onChange={set}
         onInvalid={onInvalid}
       />

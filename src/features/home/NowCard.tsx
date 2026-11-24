@@ -24,7 +24,7 @@ import { firstDaysCard, type FirstDaysKind } from '@/domain/onboarding/firstDays
 import { dayTotals } from '@/domain/nutrition/analysis';
 import { eatNext, habitsFrom } from '@/domain/nutrition/solver';
 import { addDays, toDateKey } from '@/lib/dates';
-import { useBrain } from '../brain/useBrain';
+import type { useBrain } from '../brain/useBrain';
 import { readMealPrefs } from '../food/mealPrefs';
 import { mealForHour, useFoodContextFrom } from '../food/useFoodContext';
 
@@ -55,7 +55,9 @@ export function NowCard({
   today,
   now,
   wrappedMonth = null,
+  brain,
 }: {
+  brain: ReturnType<typeof useBrain>;
   training: QueryState<TrainingData>;
   today: TodayPlan;
   now: Date;
@@ -63,7 +65,6 @@ export function NowCard({
 }) {
   const pro = useFeature('adaptive_plan');
   const macros = useFeature('macro_tracking');
-  const brain = useBrain(now);
   const createdAt = useAccount().user?.createdAt ?? null;
   const food = useFoodContextFrom(now, training);
   const active = useActiveWorkout();

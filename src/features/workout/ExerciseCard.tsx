@@ -72,7 +72,8 @@ import { warmupSets } from '@/domain/workout/plates';
 import { ExercisePicker } from '@/features/exercises/ExercisePicker';
 import { PlateSheet } from './PlateSheet';
 import { ExerciseNote, type ExerciseNoteHandle } from './ExerciseNote';
-import { sharesFor, sharesSummary } from '@/data/library/shares';
+import { sharesFor } from '@/data/library/shares';
+import { MusclesPanel } from '@/features/exercises/MuscleSplit';
 import { MuscleShares } from '@/features/exercises/MuscleShares';
 
 interface Props {
@@ -186,7 +187,7 @@ function ExerciseCardImpl({
   const loadTracked = tracking === 'weight_reps';
   // One arm or one leg at a time: reps for the left and right side apart.
   const sideable = canLogBySide(exercise);
-  const bySide = logsBySide(we.bySide, exercise);
+  const bySide = logsBySide(we.bySide, exercise, we.createdAt, sets);
 
   async function addWarmups() {
     if (!workingKg) {
@@ -277,26 +278,49 @@ function ExerciseCardImpl({
                   : 'No target'}
               </p>
               {shares ? (
-                <button
-                  type="button"
-                  onClick={() => setShowingShares(true)}
-                  className="type-meta tabular mt-0.5 block max-w-full truncate text-left text-text-2 hover:text-text-1"
-                  aria-label={`Muscles worked: ${sharesSummary(shares, 3)}. Show the breakdown`}
-                >
-                  {sharesSummary(shares)}
-                </button>
+                <MusclesPanel shares={shares} onOpen={() => setShowingShares(true)} />
               ) : null}
               {angle ? (
                 <button
                   type="button"
                   onClick={() => setEditingAngle(true)}
                   className={cn(
-                    'pressable chrome type-meta mt-2 inline-flex h-8 items-center gap-1.5 rounded-full bg-surface-2 px-3 font-semibold',
-                    we.angleDeg != null ? 'text-text-1' : 'text-text-2',
+                    'pressable chrome type-meta mt-2 inline-flex h-8 items-center gap-1.5 rounded-full px-3 font-semibold',
+                    // Lime so it is seen while training (owner, Nov 2026); set or not.
+                    we.angleDeg != null ? 'bg-lime-dim text-lime' : 'bg-lime text-on-lime',
                   )}
                 >
                   {we.angleDeg != null ? `Bench ${formatAngle(we.angleDeg)}` : 'Set bench angle'}
                 </button>
+              ) : null}
+              {sideable && shares?.laterality === 'both' ? (
+                <div
+                  role="radiogroup"
+                  aria-label="How you do it"
+                  className="mt-2 inline-flex rounded-full bg-fill p-0.5"
+                  data-laterality-choice
+                >
+                  {[
+                    { side: false, label: 'Both together' },
+                    { side: true, label: 'One side at a time' },
+                  ].map((o) => (
+                    <button
+                      key={o.label}
+                      type="button"
+                      role="radio"
+                      aria-checked={bySide === o.side}
+                      onClick={() => {
+                        if (bySide !== o.side) void setWorkoutExerciseBySide(db, we.id, o.side);
+                      }}
+                      className={cn(
+                        'pressable type-caption h-7 rounded-full px-3 font-semibold',
+                        bySide === o.side ? 'bg-surface-3 text-text-1' : 'text-text-2',
+                      )}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
               ) : null}
               {bySide ? (
                 <p className="type-caption mt-1 text-text-2" data-by-side>
@@ -520,7 +544,7 @@ function ExerciseCardImpl({
         <Sheet
           open={showingShares}
           onClose={() => setShowingShares(false)}
-          title="What it works"
+          title="Muscles worked"
           description={we.exerciseName}
         >
           {showingShares ? <MuscleShares shares={shares} /> : null}

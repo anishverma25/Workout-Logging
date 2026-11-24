@@ -4,6 +4,9 @@ import { wrapped, wrappedDue } from '@/domain/share/wrapped';
 import { useAccount } from '@/app/account';
 import { wrappedSeen } from '../wrapped/seen';
 import { NowCard } from './NowCard';
+import { BrainButton } from './BrainButton';
+import { ReportReadyBanner } from './ReportReadyBanner';
+import { useBrain } from '../brain/useBrain';
 import { useMemo, useState } from 'react';
 import { CalendarRange, Dumbbell, FileUp, Sparkles, X } from 'lucide-react';
 import { CapsuleButton } from '@/components/kit';
@@ -31,6 +34,8 @@ export function HomePage() {
   const training = useTrainingData();
   const prefs = usePreferences();
   const now = useNow();
+  // One Brain for Home: the Now card, the Brain card and the report banner share it.
+  const brain = useBrain(now);
 
   const model = useMemo(
     () => (training.data ? buildDashboard(training.data, prefs, now) : null),
@@ -79,13 +84,28 @@ export function HomePage() {
 
   return (
     <>
-      <PageHeader title={title} eyebrow={formatCalendarDate(now)} compactTitle="Home" />
+      <PageHeader
+        title={title}
+        eyebrow={formatCalendarDate(now)}
+        compactTitle="Home"
+        lead={<BrainButton brain={brain} />}
+      />
       {training.status === 'success' && !ownProfile ? <SetupPrompt /> : null}
       {model ? <ProNudgeCard workoutDates={workoutDates} records={model.recentPrCount} /> : null}
       {training.data ? <TrialEndingCard data={training.data} /> : null}
 
+      {training.data ? (
+        <ReportReadyBanner data={training.data} weeks={brain.weeks} now={now} />
+      ) : null}
+
       {model ? (
-        <NowCard training={training} today={model.today} now={now} wrappedMonth={wrappedMonth} />
+        <NowCard
+          training={training}
+          today={model.today}
+          now={now}
+          wrappedMonth={wrappedMonth}
+          brain={brain}
+        />
       ) : null}
 
       {training.status === 'loading' ? <HomeSkeleton /> : null}

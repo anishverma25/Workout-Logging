@@ -17,6 +17,8 @@ export const BODY_AREAS = [
   'gluteal',
   'adductors',
   'calves',
+  'tibialis',
+  'neck',
 ] as const;
 export type BodyArea = (typeof BODY_AREAS)[number];
 
@@ -36,47 +38,63 @@ export const BODY_AREA_LABEL: Record<BodyArea, string> = {
   gluteal: 'Glutes',
   adductors: 'Adductors',
   calves: 'Calves',
+  tibialis: 'Shins',
+  neck: 'Neck',
 };
 
 /**
- * Where each region of the research-based muscle shares sits on the drawing. Regions with no
- * place on it (hip flexors, serratus) are left off rather than painted somewhere wrong.
+ * Where each muscle region of the targeting sheet sits on the drawing. Regions with no place on
+ * it (serratus, the deep hip flexors) are left off rather than painted somewhere wrong.
  */
 const REGION_AREA: Record<string, BodyArea> = {
-  'Upper chest': 'chest',
-  'Mid chest': 'chest',
-  'Lower chest': 'chest',
+  'Upper chest (clavicular pec)': 'chest',
+  'Mid chest (sternal pec)': 'chest',
+  'Lower chest (costal pec)': 'chest',
   'Front delts': 'deltoids',
   'Side delts': 'deltoids',
   'Rear delts': 'deltoids',
-  'Upper back and traps': 'trapezius',
-  'Upper traps': 'trapezius',
-  'Mid back': 'upper-back',
+  Supraspinatus: 'deltoids',
+  'Infraspinatus & teres minor': 'deltoids',
+  Subscapularis: 'deltoids',
   Lats: 'upper-back',
-  'Lower back': 'lower-back',
-  Triceps: 'triceps',
-  'Triceps long head': 'triceps',
-  'Triceps lateral and medial heads': 'triceps',
-  Biceps: 'biceps',
+  'Teres major': 'upper-back',
+  'Mid traps & rhomboids': 'upper-back',
+  'Lower traps': 'trapezius',
+  'Upper traps': 'trapezius',
+  'Levator scapulae': 'trapezius',
+  'Spinal erectors': 'lower-back',
+  'Biceps brachii': 'biceps',
   Brachialis: 'biceps',
-  'Forearms (brachioradialis)': 'forearm',
-  Grip: 'forearm',
-  Quads: 'quadriceps',
-  'Vasti (outer and inner quads)': 'quadriceps',
+  Brachioradialis: 'forearm',
+  'Triceps long head': 'triceps',
+  'Triceps lateral & medial heads': 'triceps',
+  'Finger flexors (grip)': 'forearm',
+  'Wrist flexors': 'forearm',
+  'Wrist & finger extensors': 'forearm',
+  'Pronators (teres & quadratus)': 'forearm',
+  'Thumb adductors & intrinsic hand muscles': 'forearm',
+  Supinator: 'forearm',
+  'Rectus abdominis': 'abs',
+  Obliques: 'obliques',
+  'Transverse abdominis (deep core)': 'abs',
+  'Quadratus lumborum': 'lower-back',
+  'Glute max': 'gluteal',
+  'Glute med & min': 'gluteal',
+  'Tensor fasciae latae': 'gluteal',
+  'Quads – vasti': 'quadriceps',
   'Rectus femoris': 'quadriceps',
   Hamstrings: 'hamstring',
-  Glutes: 'gluteal',
-  'Glute maximus': 'gluteal',
-  'Glute medius and minimus': 'gluteal',
-  Adductors: 'adductors',
-  Calves: 'calves',
-  Soleus: 'calves',
+  'Adductor magnus': 'adductors',
+  'Adductors – longus, brevis, gracilis, pectineus': 'adductors',
   Gastrocnemius: 'calves',
-  'Upper abs': 'abs',
-  'Lower abs': 'abs',
-  Core: 'abs',
-  'Deep core': 'abs',
-  Obliques: 'obliques',
+  Soleus: 'calves',
+  'Tibialis anterior': 'tibialis',
+  'Toe extensors (EDL/EHL)': 'tibialis',
+  'Peroneals (fibularis)': 'tibialis',
+  Sternocleidomastoid: 'neck',
+  'Deep neck flexors': 'neck',
+  Scalenes: 'neck',
+  'Neck extensors (splenius & semispinalis)': 'neck',
 };
 
 /** For exercises without research shares (the person's own): their muscle groups. */
@@ -160,4 +178,57 @@ export function areasWorked(sets: Map<BodyArea, number>): { area: BodyArea; sets
     .filter(([, v]) => v >= MIN_SHADED_SETS)
     .sort((a, b) => b[1] - a[1])
     .map(([area, v]) => ({ area, sets: Math.round(v * 2) / 2 }));
+}
+
+/** The body area a research region belongs to (Mid chest: chest), or null when not drawn. */
+export const areaOfRegion = (region: string): BodyArea | null => REGION_AREA[region] ?? null;
+
+/**
+ * The role of one muscle in an exercise, by its share: primary is the top muscle or any at 30%
+ * or more, secondary 10 to 29%, minor under 10% (assisters and stabilisers).
+ */
+export type ShareRole = 'primary' | 'secondary' | 'minor';
+export function shareRole(index: number, share: number): ShareRole {
+  if (index === 0 || share >= 30) return 'primary';
+  return share >= 10 ? 'secondary' : 'minor';
+}
+
+const ROLE_LEVEL: Record<ShareRole, 1 | 2 | 3> = { primary: 3, secondary: 2, minor: 1 };
+
+/** Shading for one exercise on the body: each area at its strongest role. */
+export function exerciseLevels(regions: { region: string; share: number }[]) {
+  const out = new Map<BodyArea, 1 | 2 | 3>();
+  regions.forEach((r, i) => {
+    const area = areaOfRegion(r.region);
+    if (!area) return;
+    const level = ROLE_LEVEL[shareRole(i, r.share)];
+    if (level > (out.get(area) ?? 0)) out.set(area, level);
+  });
+  return out;
+}
+
+/** Areas seen from behind: an exercise led by one of them shows the back of the body first. */
+const BACK_AREAS = new Set<BodyArea>([
+  'upper-back',
+  'lower-back',
+  'trapezius',
+  'gluteal',
+  'hamstring',
+  'triceps',
+]);
+export function leadsFromBehind(regions: { region: string }[]): boolean {
+  const first = regions[0] ? areaOfRegion(regions[0].region) : null;
+  return !!first && BACK_AREAS.has(first);
+}
+
+/** Shares per area for a muscle-group bar (Chest 65%, Triceps 20%...), biggest first. */
+export function sharesByArea(regions: { region: string; share: number }[]) {
+  const out = new Map<BodyArea, number>();
+  for (const r of regions) {
+    const area = areaOfRegion(r.region);
+    if (area) out.set(area, (out.get(area) ?? 0) + r.share);
+  }
+  return [...out.entries()]
+    .map(([area, share]) => ({ area, label: BODY_AREA_LABEL[area], share }))
+    .sort((a, b) => b.share - a.share);
 }

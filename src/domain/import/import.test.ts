@@ -170,13 +170,14 @@ describe('matching exercises to the library', () => {
     expect(named('Hip Adduction (Machine)')).toBe('Hip adduction machine');
     // One-leg and one-arm versions have their own entries since October 2026.
     expect(named('Single Leg Extensions')).toBe('Single-leg extension');
+    // The dumbbell pullover joined the library in November 2026.
+    expect(named('Pullover (Dumbbell)')).toBe('Dumbbell pullover');
   });
 
   it('never matches a different lift, even with a similar name', () => {
     expect(named('Incline Bench Press (Smith Machine)')).toBeNull();
     expect(named('Overhead Press (Smith Machine)')).toBeNull();
     expect(named('KELSO SHRUGS (seat full down)')).toBeNull();
-    expect(named('Pullover (Dumbbell)')).toBeNull();
   });
 
   it('describes unmatched exercises from their name and sets', () => {
@@ -242,7 +243,10 @@ describe('the plan shown before importing', () => {
     expect(plan.exercises.find((e) => e.name === 'Hip Adduction (Machine)')!.reason).toBe(
       'library',
     );
-    expect(plan.exercises.find((e) => e.name === 'Pullover (Dumbbell)')!.reason).toBe('new');
+    expect(plan.exercises.find((e) => e.name === 'Pullover (Dumbbell)')!.reason).toBe('library');
+    expect(plan.exercises.find((e) => e.name === 'KELSO SHRUGS (seat full down)')!.reason).toBe(
+      'new',
+    );
   });
 
   it('reuses an exercise the person already made with the same name', () => {
