@@ -424,6 +424,25 @@ async function propagating(fromBuild, toBuild) {
 
     // The deploy reaches every data centre: the update goes through as usual.
     await lagBehind(null);
+    if (process.env.UPDATE_DEBUG) {
+      ctx.on('console', (m) => console.log('  [console]', m.text()));
+      const r = await page.evaluate(async () => {
+        const reg = await navigator.serviceWorker.getRegistration();
+        try {
+          await reg.update();
+        } catch (e) {
+          return 'update threw ' + e.message;
+        }
+        await new Promise((r) => setTimeout(r, 8000));
+        return JSON.stringify({
+          installing: reg.installing?.state,
+          waiting: reg.waiting?.state,
+          active: reg.active?.state,
+          caches: await caches.keys(),
+        });
+      });
+      console.log('  [debug] after update', r);
+    }
     await page.evaluate(() => {
       window.__beforeUpdate = true;
     });

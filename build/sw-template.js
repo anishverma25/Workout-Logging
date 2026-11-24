@@ -57,6 +57,7 @@ async function download(path) {
     }
     await new Promise((r) => setTimeout(r, 1500));
   }
+  console.warn(`Update postponed: ${path} is not ready on the server yet`);
   throw new Error(`Not ready yet: ${path}`);
 }
 
