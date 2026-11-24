@@ -446,25 +446,29 @@ async function propagating(fromBuild, toBuild) {
     await page.evaluate(() => {
       window.__beforeUpdate = true;
     });
-    await page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.update());
-    await page
-      .getByText('A new version is ready')
-      .first()
-      .waitFor({ timeout: 30_000 })
-      .catch(async (err) => {
-        const why = await page.evaluate(async () => {
-          const r = await navigator.serviceWorker.getRegistration();
-          return {
-            installing: r?.installing?.state,
-            waiting: r?.waiting?.state,
-            active: r?.active?.scriptURL && r.active.state,
-            caches: await caches.keys(),
-          };
-        });
-        throw new Error(`no update notice after the deploy finished ${JSON.stringify(why)}`, {
-          cause: err,
-        });
+    // People come back to the app now and then; each time it looks for the new version. An
+    // attempt made while the deploy was spreading may still be finishing: the next one installs.
+    const notice = page.getByText('A new version is ready').first();
+    for (let tries = 0; tries < 6 && !(await notice.isVisible()); tries++) {
+      await page
+        .evaluate(async () => (await navigator.serviceWorker.getRegistration())?.update())
+        .catch(() => {});
+      await notice.waitFor({ timeout: 10_000 }).catch(() => {});
+    }
+    await notice.waitFor({ timeout: 1000 }).catch(async (err) => {
+      const why = await page.evaluate(async () => {
+        const r = await navigator.serviceWorker.getRegistration();
+        return {
+          installing: r?.installing?.state,
+          waiting: r?.waiting?.state,
+          active: r?.active?.scriptURL && r.active.state,
+          caches: await caches.keys(),
+        };
       });
+      throw new Error(`no update notice after the deploy finished ${JSON.stringify(why)}`, {
+        cause: err,
+      });
+    });
     await page.waitForTimeout(2000);
     await page.getByRole('button', { name: 'Reload' }).first().click();
     await page
