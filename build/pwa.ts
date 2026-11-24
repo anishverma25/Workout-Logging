@@ -64,7 +64,12 @@ export function securityHeaders(supabaseUrl: string | undefined): Record<string,
   };
 }
 
-/** Cloudflare Pages `_headers`: security headers everywhere, long caching for hashed files only. */
+/**
+ * Cloudflare Pages `_headers`: security headers everywhere. App files are checked with the
+ * server on every use outside the offline copy (which serves them itself, so this costs nothing
+ * in the installed app). They were cached for a year until November 24, 2026, when an answer
+ * saved during a deploy (the page instead of the file) stuck on phones for good.
+ */
 function headersFile(supabaseUrl: string | undefined): string {
   const all = Object.entries({
     ...securityHeaders(supabaseUrl),
@@ -76,7 +81,7 @@ function headersFile(supabaseUrl: string | undefined): string {
 ${all}
 
 /assets/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=0, must-revalidate
 
 /sw.js
   Cache-Control: no-cache
@@ -112,6 +117,20 @@ export const LAZY_FONTS =
  * the download says it needs a connection.
  */
 export const LAZY_CHUNKS = /(^|\/)makePdf-[^/]*\.js$/;
+
+const NOT_FOUND =
+  '<!doctype html><meta charset="utf-8"><title>Not found</title><p>Not found.</p>\n';
+
+/**
+ * Built file names: `[name]-[hash:10]`. Ten characters since November 24, 2026, so no file name
+ * from the release that failed to load that day is ever used again (phones may still hold a bad
+ * copy saved under those names).
+ */
+export const FILE_NAMES = {
+  entryFileNames: 'assets/[name]-[hash:10].js',
+  chunkFileNames: 'assets/[name]-[hash:10].js',
+  assetFileNames: 'assets/[name]-[hash:10][extname]',
+};
 
 const TEMPLATE = fileURLToPath(new URL('./sw-template.js', import.meta.url));
 
@@ -164,6 +183,10 @@ export function pwa(env: Record<string, string | undefined>): Plugin {
         .replace('__VERSION__', `${CACHE_EPOCH}-${version}`)
         .replace('__PRECACHE__', JSON.stringify(precache));
       this.emitFile({ type: 'asset', fileName: 'sw.js', source });
+      // A missing app file is "not found", never the app's page with status 200: Pages answers
+      // a missing path with the nearest 404.html, and only falls back to index.html when there
+      // is none. Not precached, and nothing links to it.
+      this.emitFile({ type: 'asset', fileName: 'assets/404.html', source: NOT_FOUND });
       this.emitFile({
         type: 'asset',
         fileName: '_headers',

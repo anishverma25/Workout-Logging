@@ -86,6 +86,24 @@ for (const file of ['sitemap.xml', '_routes.json', 'robots.txt']) {
   }
   if (!excluded('/sw.js')) problems.push('/sw.js must be excluded in _routes.json');
 }
+// A deploy must never leave phones holding the page saved as an app file (November 24, 2026):
+// a missing app file is "not found", app files are not cached for a year, and the 404 page is
+// not part of the offline copy.
+{
+  try {
+    statSync('dist/assets/404.html');
+  } catch {
+    problems.push('dist/assets/404.html is missing (missing app files would get the page)');
+  }
+  if (
+    /immutable|max-age=[1-9]/.test(
+      headers.split(/\n(?=\/)/).find((b) => b.startsWith('/assets/*')) ?? '',
+    )
+  )
+    problems.push('_headers caches /assets/* without checking with the server');
+  if (readFileSync('dist/sw.js', 'utf8').includes('/assets/404.html'))
+    problems.push('the offline copy precaches /assets/404.html');
+}
 if (!readFileSync('dist/index.html', 'utf8').includes('id="landing"')) {
   problems.push('dist/index.html has no public home page');
 }

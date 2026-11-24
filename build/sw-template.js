@@ -10,15 +10,73 @@ const META = 'overload-meta';
 // data) and any other origin go straight to the network and are never stored here: private
 // data lives only in the per-account IndexedDB database.
 
+/**
+ * The type a file must come back as. During a deploy, Cloudflare can briefly answer a new file
+ * name with the old version's page (HTML, status 200) before the file reaches every data centre
+ * (November 24, 2026: phones saved that page as the app's code and could not open). A file that
+ * comes back as the wrong type is never stored or used.
+ */
+function looksRight(path, res) {
+  if (!res || !res.ok || res.type === 'opaque' || res.redirected) return false;
+  const type = (res.headers.get('content-type') || '').toLowerCase();
+  if (path === '/' || path.endsWith('.html')) return type.includes('text/html');
+  return !type.includes('text/html');
+}
+
+/** The app files a page links to, so the shell can be checked against this version's list. */
+function linkedAssets(html) {
+  return [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((m) => m[1]);
+}
+
+/**
+ * Downloads one file for this version, past the browser's own HTTP cache: `no-cache` checks
+ * with the server, so a bad answer saved during a deploy is replaced, never reused. A wrong
+ * answer is tried again fresh; still wrong, and the install fails, so the version people have
+ * keeps working and the browser tries the update again later.
+ */
+async function download(path) {
+  for (const mode of ['no-cache', 'reload', 'reload']) {
+    let res;
+    try {
+      res = await fetch(path, { cache: mode, credentials: 'same-origin' });
+    } catch {
+      res = null;
+    }
+    if (looksRight(path, res)) {
+      if (path !== '/') return res;
+      // The page must be this version's page: every app file it links to is in this version.
+      const html = await res.clone().text();
+      if (linkedAssets(html).every((a) => PRECACHED.has(a))) return res;
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  throw new Error(`Not ready yet: ${path}`);
+}
+
 self.addEventListener('install', (event) => {
   // A new version takes over as soon as it is downloaded: waiting for every window to close
   // left installed apps on an old version for days (Android keeps them open in the background).
   // Pages that are already open keep working, because the previous version's files stay cached.
+  // Every file is downloaded and checked before anything is stored, a few at a time.
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
-      .then(() => self.skipWaiting()),
+    (async () => {
+      const got = new Map();
+      const queue = [...PRECACHE];
+      const worker = async () => {
+        while (queue.length) {
+          const path = queue.shift();
+          got.set(path, await download(path));
+        }
+      };
+      await Promise.all(Array.from({ length: 6 }, worker));
+      const cache = await caches.open(CACHE);
+      for (const [path, res] of got) await cache.put(path, res);
+      await self.skipWaiting();
+    })().catch(async (err) => {
+      // A half-filled cache must never be mistaken for this version.
+      await caches.delete(CACHE);
+      throw err;
+    }),
   );
 });
 
@@ -66,7 +124,25 @@ self.addEventListener('message', (event) => {
 
 /** This version's copy first, then the previous version's (for pages opened before the update). */
 async function cached(path) {
-  return (await caches.match(path, { cacheName: CACHE })) || (await caches.match(path));
+  const hit = (await caches.match(path, { cacheName: CACHE })) || (await caches.match(path));
+  return hit && looksRight(path, hit) ? hit : null;
+}
+
+/** A file not in any cache: from the network, and only if it is really that file. */
+async function network(request, path) {
+  try {
+    const res = await fetch(request);
+    if (looksRight(path, res)) return res;
+  } catch {
+    // Tried fresh below.
+  }
+  try {
+    const fresh = await fetch(path, { cache: 'reload', credentials: 'same-origin' });
+    if (looksRight(path, fresh)) return fresh;
+  } catch {
+    // Offline: the page's own error handling takes over.
+  }
+  return new Response('', { status: 404, headers: { 'Cache-Control': 'no-store' } });
 }
 
 self.addEventListener('fetch', (event) => {
@@ -89,8 +165,8 @@ self.addEventListener('fetch', (event) => {
   if (PRECACHED.has(url.pathname) || url.pathname.startsWith('/assets/')) {
     event.respondWith(
       cached(url.pathname)
-        .then((hit) => hit || fetch(request))
-        .catch(() => fetch(request)),
+        .then((hit) => hit || network(request, url.pathname))
+        .catch(() => network(request, url.pathname)),
     );
   }
 });

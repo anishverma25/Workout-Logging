@@ -3,7 +3,7 @@ import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, loadEnv } from 'vite';
-import { pwa, securityHeaders } from './build/pwa.ts';
+import { FILE_NAMES, pwa, securityHeaders } from './build/pwa.ts';
 import { landingContent, seo } from './build/seo.ts';
 
 export default defineConfig(({ mode }) => {
@@ -38,6 +38,7 @@ export default defineConfig(({ mode }) => {
       // Hidden: maps are made for reading error reports, but the files never ship (verify-build
       // moves them out of dist) and no bundle points to them.
       sourcemap: 'hidden',
+      rolldownOptions: { output: FILE_NAMES },
       // Fonts stay files: the Content Security Policy allows fonts from this site only, so a
       // small KaTeX font inlined as a data: address would be refused on the science page.
       assetsInlineLimit: (file: string) => (/\.(woff2?|ttf|otf)$/.test(file) ? false : undefined),
