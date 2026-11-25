@@ -68,12 +68,18 @@ for (const [name, w, h] of [
           if (a.top > t.top + 12) out.push('avatar below title');
         }
         // No tappable thing may cover another: overlapping buttons mean a mistap on a phone.
+        // The Community compose button floats over the feed by design (the page keeps room
+        // below the last post for it), so it alone is left out.
         const taps = [...document.querySelectorAll('main button, main a')]
           .filter((el) => {
             const b = el.getBoundingClientRect();
             const st = getComputedStyle(el);
             return (
-              b.width > 0 && b.height > 0 && st.visibility !== 'hidden' && !el.closest('.sr-only')
+              b.width > 0 &&
+              b.height > 0 &&
+              st.visibility !== 'hidden' &&
+              !el.closest('.sr-only') &&
+              !el.hasAttribute('data-compose-fab')
             );
           })
           .slice(0, 250);
