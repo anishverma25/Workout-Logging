@@ -163,7 +163,11 @@ test('paying once turns Pro on with no renewal, and more time can be added eithe
   const more = page.getByRole('region', { name: 'Extend your Pro' });
   await expect(more.getByRole('radio', { name: /^Autopay/ })).toBeVisible();
   await more.getByRole('radio', { name: /^Monthly/ }).click();
+  // A paid checkout reloads the page (every Pro gate comes back with the new plan); wait for
+  // that reload so the next navigation does not collide with it.
+  const reloaded = page.waitForEvent('load', AFTER_PAYMENT);
   await more.getByRole('button', { name: 'Pay ₹149 once for 1 month' }).click();
+  await reloaded;
   await expect(mine).toContainText('Monthly, paid once', AFTER_PAYMENT);
   // The extend row is one tap from More, for members too.
   await page.goto('/more');
