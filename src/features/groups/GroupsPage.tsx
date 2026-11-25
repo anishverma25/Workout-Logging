@@ -24,6 +24,7 @@ import {
 } from '@/components/kit';
 import { useToast } from '@/components/ui/Toast';
 import { CreateGroupSheet, JoinGroupSheet, UsernameForm } from './parts';
+import { HubSwitch } from '@/features/community/parts';
 
 /**
  * Groups (November 2026): your username, the groups you are in with your place this week, and
@@ -55,10 +56,11 @@ export function GroupsPage() {
     <>
       <PageHeader
         back={{ to: '/more', label: 'More' }}
-        title="Groups"
+        title="Leaderboards"
         subtitle="Train with friends and compete on fair, weekly leaderboards."
       />
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 pb-10" data-groups-page>
+        <HubSwitch current="leaderboards" />
         <GlobalCard />
 
         {username.loading ? <Skeleton height="8rem" radius="panel" /> : null}

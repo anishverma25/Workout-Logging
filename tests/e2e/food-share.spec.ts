@@ -43,7 +43,7 @@ test('a food added for everyone is checked first, then found by others, and its 
   await search.getByRole('searchbox').fill(name.toLowerCase());
   await expect(search.locator('[data-food-results]')).not.toContainText(name);
 
-  await fetch(`${FAKE}/__test/approve-foods`, { method: 'POST' });
+  await fetch(`${FAKE}/__test/approve-foods?name=${encodeURIComponent(name)}`, { method: 'POST' });
 
   // Once checked, everyone finds it, with where it came from (and no author).
   await other.evaluate(() => localStorage.removeItem('overload.sharedFoods'));
@@ -81,10 +81,12 @@ test('a food kept to yourself is never sent', async ({ page }) => {
   await signUpFresh(page, { at: '/food', tag: 'food-private' });
   await addLabelFood(page, name, false);
   await expect(page.getByText(`Saved ${name}`, { exact: true })).toBeVisible();
-  const res = await fetch(`${FAKE}/__test/approve-foods`, { method: 'POST' });
+  const res = await fetch(`${FAKE}/__test/approve-foods?name=${encodeURIComponent(name)}`, {
+    method: 'POST',
+  });
   const { approved } = (await res.json()) as { approved: number };
-  // Other tests may have food waiting; this one never is.
-  expect(approved).toBeGreaterThanOrEqual(0);
+  // A food kept to yourself is never waiting for a check.
+  expect(approved).toBe(0);
   await page.goto('/food');
   await expect(page.locator('[data-food-thanks]')).toHaveCount(0);
 });

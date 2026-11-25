@@ -116,78 +116,71 @@ export function EatNextCard({
     }
   };
 
+  // A slim quick-add strip under the meals (owner, 25 Nov 2026): the totals above already show
+  // what is left, so this only offers foods that fit, one tap each.
   return (
-    <section aria-labelledby="eat-next-title" data-eat-next>
-      <h2 id="eat-next-title" className="type-section mb-2 text-text-1">
-        Eat next
-      </h2>
-      <div className="rounded-card bg-surface px-4 pt-4 pb-2">
-        <p className="type-subhead text-text-2" data-eat-next-left>
-          You have{' '}
-          <span className="tabular font-semibold text-text-1">
-            {remaining.kcal.toLocaleString('en-IN')} kcal
-          </span>
-          {remaining.proteinG > 0 ? (
-            <>
-              {' '}
-              and{' '}
-              <span className="tabular font-semibold text-text-1">
-                {remaining.proteinG} g protein
-              </span>
-            </>
-          ) : null}{' '}
-          left today.
+    <section aria-labelledby="eat-next-title" data-eat-next className="min-w-0">
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <h2 id="eat-next-title" className="type-section shrink-0 text-text-1">
+          Eat next
+        </h2>
+        <p className="type-meta tabular min-w-0 truncate text-text-2" data-eat-next-left>
+          <span className="sr-only">You have </span>
+          {remaining.kcal.toLocaleString('en-IN')} kcal
+          {remaining.proteinG > 0 ? ` · ${remaining.proteinG} g protein` : ''} left
         </p>
-        <ul className="mt-2 divide-y-[0.5px] divide-divider">
+      </div>
+      <div className="min-w-0 rounded-card bg-surface px-3.5 pt-3.5 pb-2.5">
+        <ul className="relative -mx-3.5 flex gap-2 overflow-x-auto px-3.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {picks.map((p) => (
             <li
               key={p.food.id}
-              className="flex items-center gap-3 py-3"
+              className="flex max-w-[16rem] shrink-0 items-center gap-2.5 rounded-[0.875rem] bg-surface-2 py-1.5 pr-1.5 pl-3"
               data-eat-next-item={p.food.id}
             >
-              <div className="min-w-0 flex-1">
-                <p className="type-headline text-text-1">{p.food.name}</p>
-                <p className="type-footnote tabular text-text-2">
+              <div className="min-w-0">
+                <p className="type-subhead truncate font-semibold text-text-1">{p.food.name}</p>
+                <p className="type-meta tabular truncate text-text-2">
                   {portionText(p.amount, p.unit, p.size, p.food.pieceName)} ·{' '}
-                  {Math.round(p.nutrients.kcal)} kcal · {Math.round(p.nutrients.proteinG)} g protein
+                  {Math.round(p.nutrients.kcal)} kcal · {Math.round(p.nutrients.proteinG)} g P
                 </p>
-                <p className="type-footnote text-text-2">{WHY[p.why]}</p>
+                <p className="sr-only">{WHY[p.why]}</p>
               </div>
               <button
                 type="button"
-                className="pressable chrome tap-target flex size-10 shrink-0 items-center justify-center rounded-full bg-fill text-lime disabled:opacity-40"
+                className="pressable chrome tap-target flex size-9 shrink-0 items-center justify-center rounded-full bg-lime text-on-lime disabled:opacity-40"
                 aria-label={`Add ${p.food.name} to ${MEAL_LABEL[meal].toLowerCase()}`}
                 disabled={busy !== null}
                 onClick={() => void add(p)}
                 data-eat-next-add
               >
-                <Plus className="size-5" aria-hidden />
+                <Plus className="size-[1.125rem]" strokeWidth={2.5} aria-hidden />
               </button>
             </li>
           ))}
         </ul>
-        <div className="flex flex-wrap gap-x-5 gap-y-1 border-t-[0.5px] border-divider py-3">
+        <div className="mt-2 flex flex-wrap gap-x-5">
           <Link
             to="/food/plan"
-            className="pressable type-subhead inline-flex items-center gap-1.5 font-semibold text-lime"
+            className="pressable type-meta tap-target inline-flex items-center gap-1.5 font-semibold text-lime"
             data-plan-week
           >
-            <CalendarDays className="size-4" aria-hidden />
+            <CalendarDays className="size-3.5" aria-hidden />
             Plan my week
             {!planPro ? (
-              <span className="type-footnote rounded-full bg-fill px-1.5 text-text-2">Pro</span>
+              <span className="type-caption rounded-full bg-fill px-1.5 text-text-2">Pro</span>
             ) : null}
           </Link>
           <button
             type="button"
-            className="pressable type-subhead inline-flex items-center gap-1.5 font-semibold text-lime"
+            className="pressable type-meta tap-target inline-flex items-center gap-1.5 font-semibold text-lime"
             onClick={() => setMenu(true)}
             data-menu-open
           >
-            <ScanText className="size-4" aria-hidden />
+            <ScanText className="size-3.5" aria-hidden />
             Read a menu
             {!menuPro ? (
-              <span className="type-footnote rounded-full bg-fill px-1.5 text-text-2">Pro</span>
+              <span className="type-caption rounded-full bg-fill px-1.5 text-text-2">Pro</span>
             ) : null}
           </button>
         </div>

@@ -1789,3 +1789,38 @@ html[data-landing] #landing {
     animation: none;
   }
 }
+
+/* Community (November 2026): a reaction settles with a small spring when it turns on, a card
+   arrives softly, the compose button scales in. Nothing moves with reduced motion. */
+@keyframes community-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.16);
+  }
+  65% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes community-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+}
+@utility community-pop {
+  animation: community-pop 420ms cubic-bezier(0.34, 1.4, 0.5, 1);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+@utility community-rise {
+  animation: community-rise 320ms var(--ease-standard) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

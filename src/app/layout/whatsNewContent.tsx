@@ -2,6 +2,8 @@ import { FREE_ROUTINES } from '@/domain/entitlement/limits';
 import type { ReactNode } from 'react';
 import { BrainArt, FoodArt, LifeArt, NowArt, PlanArt, SocialArt, VoiceArt } from './whatsNewArt';
 import { BoardArt, LookArt, PayArt } from './whatsNewArt2';
+import { AnswerShot, AskShot, FeedShot, KarmaShot, MealsShot } from './whatsNewShots';
+import { COMMUNITY_REWARD_DAYS, COMMUNITY_REWARD_KARMA } from '@/domain/entitlement/limits';
 
 /**
  * What each release brings, part by part. The latest is shown as a walkthrough once after the
@@ -193,15 +195,16 @@ export const BRAIN_STEPS: ReleaseStep[] = [
  * The latest walkthrough: the whole November revamp in one, the Brain and the fair-play release
  * together, only the parts that matter most. Shown full screen once after the update.
  */
-export const RELEASE_TITLE = 'Macrotrophy, rebuilt';
+export const FAIR_PLAY_TITLE = 'Macrotrophy, rebuilt';
 
 const byId = (id: string) => BRAIN_STEPS.find((s) => s.id === id)!;
 
-export const RELEASE_STEPS: ReleaseStep[] = [
+/** The November 14 release (the Brain and fair play), kept for reference. */
+export const FAIR_PLAY_STEPS: ReleaseStep[] = [
   {
     id: 'revamp',
     kicker: 'The biggest update yet',
-    title: RELEASE_TITLE,
+    title: FAIR_PLAY_TITLE,
     lead: 'A coach that plans your week from your training and your food, fairer leaderboards, and a fresh look across the app.',
     art: <BrainArt />,
     points: [
@@ -323,5 +326,122 @@ export const RELEASE_STEPS: ReleaseStep[] = [
     ],
     plan: 'Pro from ₹149 a month',
     where: { label: 'See Pro', to: '/pro' },
+  },
+];
+
+/** The Community launch (November 2026): what members see once after the update. */
+export const RELEASE_TITLE = 'Community is here';
+
+export const RELEASE_STEPS: ReleaseStep[] = [
+  {
+    id: 'community',
+    kicker: 'Meet Community',
+    title: RELEASE_TITLE,
+    lead: 'Ask questions, share your journey and learn from lifters across India, with fitness creators in the conversation too.',
+    art: <FeedShot />,
+    points: [
+      {
+        strong: 'Ask anything.',
+        text: 'Training, food, form, recovery or your first week in the gym.',
+      },
+      {
+        strong: 'Share your journey.',
+        text: 'Your progress, photos and a workout count from your own logs.',
+      },
+      {
+        strong: 'Creators are here.',
+        text: 'Fitness creators answer too, marked Macrotrophy Verified.',
+      },
+    ],
+    plan: 'Free for everyone',
+    where: { label: 'Open Community', to: '/community' },
+  },
+  {
+    id: 'anonymous',
+    kicker: 'Ask without the awkwardness',
+    title: 'Post anonymously, any time',
+    lead: 'One switch on any post or reply hides your name. Members only see \u201cAnonymous Lifter\u201d.',
+    art: <AskShot />,
+    points: [
+      {
+        strong: 'Your choice, every time.',
+        text: 'Use your username or stay anonymous, post by post.',
+      },
+      {
+        strong: 'Kept respectful.',
+        text: 'Report or block anything, anonymous or not. The same rules apply to everyone.',
+      },
+      {
+        strong: 'Photos made safe.',
+        text: 'Location and camera details are removed before upload.',
+      },
+    ],
+    plan: 'Free for everyone',
+    where: { label: 'Ask a question', to: '/community/new?kind=question' },
+  },
+  {
+    id: 'answers',
+    kicker: 'Answers you can trust',
+    title: 'The best answer rises to the top',
+    lead: 'Tap Helpful on replies that help, and whoever asked picks the best answer for everyone to see.',
+    art: <AnswerShot />,
+    points: [
+      {
+        strong: 'Verified creators.',
+        text: 'The lime badge means officially recognised by Macrotrophy.',
+      },
+      {
+        strong: 'Support for journeys.',
+        text: 'Cheer on someone\u2019s progress with one tap.',
+      },
+      {
+        strong: 'Never miss a reply.',
+        text: 'Follow a thread and new replies show up in Activity.',
+      },
+    ],
+    plan: 'Free for everyone',
+    where: { label: 'See the answers', to: '/community' },
+  },
+  {
+    id: 'meal-macros',
+    kicker: 'Food',
+    title: 'Macros for every meal',
+    lead: 'Breakfast, lunch, snacks and dinner now show carbs, fat and protein, and your meals sit right under today, so logging needs no scrolling.',
+    art: <MealsShot />,
+    points: [
+      {
+        strong: 'Every meal, in grams.',
+        text: 'Calories, carbs, fat and protein for each meal, like the best food trackers.',
+      },
+      {
+        strong: 'Quicker to log.',
+        text: 'Meals first, then a quick-add Eat next, water and your day analysis.',
+      },
+    ],
+    plan: 'Meal macros with Pro. Calories for everyone',
+    where: { label: 'Open Food', to: '/food' },
+  },
+  {
+    id: 'karma',
+    kicker: 'Help others, get rewarded',
+    title: `Earn ${COMMUNITY_REWARD_DAYS} days of Pro, free`,
+    lead: `Every helpful answer earns karma. Reach ${COMMUNITY_REWARD_KARMA} and claim a full month of Macrotrophy Pro.`,
+    art: <KarmaShot />,
+    points: [
+      {
+        strong: '+5, +20, +3.',
+        text: 'For a Helpful answer, a Best answer and a Helpful journey.',
+      },
+      {
+        strong: 'Real help only.',
+        text: 'Posting more earns nothing on its own. Points come from real members finding you helpful.',
+      },
+      {
+        strong: 'Watch it grow.',
+        text: 'Your karma and what is left to claim live in Community.',
+      },
+    ],
+    plan: 'Anyone can earn it, free members too',
+    where: { label: 'Join the community', to: '/community' },
   },
 ];

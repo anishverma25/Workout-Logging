@@ -47,11 +47,11 @@ window.Razorpay = function (options) {
 const control = (path: string, body: unknown) =>
   fetch(`${FAKE}${path}`, { method: 'POST', body: JSON.stringify(body) });
 
+// Plans stay connected afterwards: the phone and desktop copies of this file run side by side,
+// and disconnecting when one finishes turned the other's coaching button into "Opening soon".
+// No other test needs the plans disconnected.
 test.beforeAll(async () => {
   await control('/__test/billing-plans', { connected: true });
-});
-test.afterAll(async () => {
-  await control('/__test/billing-plans', { connected: false });
 });
 
 test.beforeEach(async ({ page }) => {
@@ -163,7 +163,11 @@ test('paying once turns Pro on with no renewal, and more time can be added eithe
   const more = page.getByRole('region', { name: 'Extend your Pro' });
   await expect(more.getByRole('radio', { name: /^Autopay/ })).toBeVisible();
   await more.getByRole('radio', { name: /^Monthly/ }).click();
+  // A paid checkout reloads the page (every Pro gate comes back with the new plan); wait for
+  // that reload so the next navigation does not collide with it.
+  const reloaded = page.waitForEvent('load', AFTER_PAYMENT);
   await more.getByRole('button', { name: 'Pay ₹149 once for 1 month' }).click();
+  await reloaded;
   await expect(mine).toContainText('Monthly, paid once', AFTER_PAYMENT);
   // The extend row is one tap from More, for members too.
   await page.goto('/more');
@@ -192,7 +196,7 @@ test('a failed autopay says why and offers one payment instead', async ({ page }
   await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible(AFTER_PAYMENT);
 });
 
-test('a code takes 10% off the first payment, once per account', async ({ page }) => {
+test('a code takes 10% off, and works again on the next payment', async ({ page }) => {
   await control('/__test/coupon', { code: 'GYM10' });
   await signUp(page);
   const plans = page.getByRole('region', { name: 'Pro plans' });
@@ -203,7 +207,7 @@ test('a code takes 10% off the first payment, once per account', async ({ page }
   await plans.getByLabel('Code').fill('gym10');
   await plans.getByRole('button', { name: 'Apply' }).click();
   await expect(plans.locator('[data-coupon-applied]')).toContainText(
-    'GYM10 applied: 10% off your first payment',
+    'GYM10 applied: 10% off this payment',
   );
   // Autopay: the first year at the lower price today, then the normal price.
   await expect(plans.getByRole('button', { name: 'Start autopay, ₹1,349 today' })).toBeVisible();
@@ -212,12 +216,12 @@ test('a code takes 10% off the first payment, once per account', async ({ page }
   await plans.getByRole('radio', { name: /^Pay once/ }).click();
   await plans.getByRole('button', { name: 'Pay ₹1,349 once for 1 year' }).click();
   await expect(page.getByRole('heading', { name: 'Welcome to Pro' })).toBeVisible(AFTER_PAYMENT);
-  // The same account cannot use a code again.
+  // Codes work on every payment (migration 0041): the same code applies again to the next one.
   const more = page.getByRole('region', { name: 'Extend your Pro' });
   await more.getByRole('button', { name: 'Have a code?' }).click();
   await more.getByLabel('Code').fill('GYM10');
   await more.getByRole('button', { name: 'Apply' }).click();
-  await expect(more.getByRole('alert')).toContainText('already been used on this account');
+  await expect(more.locator('[data-coupon-applied]')).toContainText('GYM10 applied: 10% off');
 });
 
 test('a member from before the new prices sees a code of their own and uses it once', async ({

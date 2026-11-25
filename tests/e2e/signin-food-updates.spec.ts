@@ -155,12 +155,19 @@ test('logged foods show their protein to Pro and trial members, never to free on
   const row = page.locator('[data-meal="lunch"] [data-row-protein]').first();
   await expect(row).toBeVisible();
   await expect(row).toHaveText(/^\d+(\.\d)? g protein$/);
+  // And each meal shows its carbs, fat and protein in grams, like MyFitnessPal.
+  await expect(page.locator('[data-meal-macros="lunch"]')).toHaveText(
+    /C\s*\d+ g\s*F\s*\d+ g\s*P\s*\d+ g/,
+  );
 
   await expireTrial(email);
   await page.reload();
   await expect(page.locator('[data-meal="lunch"]')).toContainText(/Dal/i);
   await expect(page.locator('[data-meal="lunch"]')).toContainText('kcal');
   await expect(page.locator('[data-meal="lunch"] [data-row-protein]')).toHaveCount(0);
+  // Free: no meal macros and no day macro numbers anywhere on the page, not even hidden.
+  await expect(page.locator('[data-meal-macros]')).toHaveCount(0);
+  await expect(page.locator('[data-macro-bars]')).toHaveCount(0);
 });
 
 test('a food saved earlier can be suggested for everyone from Food settings', async ({ page }) => {

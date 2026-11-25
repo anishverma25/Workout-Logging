@@ -1,10 +1,10 @@
 /** Which release announcement this device has seen. Device-only, like other display state. */
-export const RELEASE_ID = '2026-11-fair-play';
+export const RELEASE_ID = '2026-11-community';
 /**
  * When this release shipped. An account made at or after this moment never used the app before
  * it, so the announcement of what changed means nothing to it and is not shown.
  */
-export const RELEASE_AT = '2026-11-14T00:00:00Z';
+export const RELEASE_AT = '2026-11-26T00:00:00Z';
 const KEY = 'overload.whatsNew';
 
 export function seenRelease(): boolean {
