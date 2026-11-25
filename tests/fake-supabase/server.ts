@@ -904,8 +904,12 @@ const server = createServer(async (req, res) => {
     }
     // Test control, standing in for the owner approving every waiting food in the SQL editor.
     if (url.pathname === '/__test/approve-foods' && req.method === 'POST') {
+      // With ?name=, only that food: tests run side by side and must not approve each other's.
+      const only = url.searchParams.get('name');
       const waiting = await pg.query<{ id: string }>(
-        `select id from public.food_submissions where status = 'pending'`,
+        `select id from public.food_submissions where status = 'pending'
+           and ($1::text is null or name = $1)`,
+        [only],
       );
       for (const row of waiting.rows) await pg.query('select public.approve_food($1)', [row.id]);
       return send(res, 200, { approved: waiting.rows.length });
