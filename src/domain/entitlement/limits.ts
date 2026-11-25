@@ -23,3 +23,9 @@ export const FREE_DUELS = 1;
 export const PRO_DUELS = 3;
 /** Food photos Macrotrophy AI reads a day (Pro). */
 export const AI_PHOTOS_PER_DAY = 15;
+/**
+ * Community reward (migration 0040): the defaults of `forum_reward_rules`. The karma page shows
+ * the server's own numbers; these are only for short lines elsewhere (tested against the SQL).
+ */
+export const COMMUNITY_REWARD_DAYS = 30;
+export const COMMUNITY_REWARD_KARMA = 300;

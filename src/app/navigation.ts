@@ -59,7 +59,7 @@ export const PRIMARY_NAV: NavItem[] = [
 export const BOTTOM_NAV = PRIMARY_NAV.filter((i) => i.bottom !== false);
 
 export const SECONDARY_NAV: NavItem[] = [
-  { to: '/groups', label: 'Groups', icon: UsersRound, tone: 'lime', group: 'you' },
+  { to: '/community', label: 'Leaderboards & Community', icon: UsersRound, tone: 'lime', group: 'you' },
   { to: '/badges', label: 'Badges', icon: Medal, tone: 'amber', group: 'you' },
   { to: '/journey', label: 'Journey', icon: Route, tone: 'ember', group: 'you' },
   { to: '/body', label: 'Body metrics', icon: Scale, tone: 'sky', group: 'you' },
@@ -92,5 +92,7 @@ export const TAB_ROOTS = ['/', '/workout', '/food', '/progress', '/history'];
  */
 export function hidesTabBar(pathname: string, workoutOpen: boolean): boolean {
   if (/^\/workouts\/[^/]+\/summary\/?$/.test(pathname)) return true;
+  // A Community thread and the composer are focused screens with their own bar at the bottom.
+  if (/^\/community\/(p\/[^/]+|new)\/?$/.test(pathname)) return true;
   return workoutOpen && (pathname === '/workout' || pathname === '/workout/');
 }

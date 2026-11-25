@@ -197,6 +197,34 @@ export const router = createBrowserRouter([
             lazy: page(() => import('@/features/wrapped/WrappedPage'), 'WrappedPage'),
           },
           {
+            path: 'community',
+            lazy: page(() => import('@/features/community/CommunityPage'), 'CommunityPage'),
+          },
+          {
+            path: 'community/new',
+            lazy: page(() => import('@/features/community/ComposePage'), 'ComposePage'),
+          },
+          {
+            path: 'community/p/:postId',
+            lazy: page(() => import('@/features/community/PostPage'), 'PostPage'),
+          },
+          {
+            path: 'community/activity',
+            lazy: page(() => import('@/features/community/pages'), 'ActivityPage'),
+          },
+          {
+            path: 'community/mine',
+            lazy: page(() => import('@/features/community/pages'), 'MinePage'),
+          },
+          {
+            path: 'community/karma',
+            lazy: page(() => import('@/features/community/pages'), 'KarmaPage'),
+          },
+          {
+            path: 'community/u/:username',
+            lazy: page(() => import('@/features/community/pages'), 'ProfilePage'),
+          },
+          {
             path: 'groups',
             lazy: page(() => import('@/features/groups/GroupsPage'), 'GroupsPage'),
           },

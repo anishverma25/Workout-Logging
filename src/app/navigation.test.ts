@@ -17,5 +17,8 @@ describe('the tab bar (UI v3)', () => {
     expect(hidesTabBar('/workouts/abc/summary', false)).toBe(true);
     expect(hidesTabBar('/history', true)).toBe(false);
     expect(hidesTabBar('/', true)).toBe(false);
+    expect(hidesTabBar('/community/p/abc', false)).toBe(true);
+    expect(hidesTabBar('/community/new', false)).toBe(true);
+    expect(hidesTabBar('/community', false)).toBe(false);
   });
 });

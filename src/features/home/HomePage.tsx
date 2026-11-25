@@ -150,6 +150,12 @@ export function HomePage() {
           }
         />
       ) : null}
+      {model && !model.hasTrainingData && model.today.kind === 'no_routine' ? (
+        // New members meet Leaderboards and Community too: often the first place to ask.
+        <div className="mt-8">
+          <GroupsHomeCard />
+        </div>
+      ) : null}
 
       {model && (model.hasTrainingData || model.today.kind !== 'no_routine') ? (
         // UI v3 (S3): Today, This week, today's numbers, highlights, strength. Last week moved

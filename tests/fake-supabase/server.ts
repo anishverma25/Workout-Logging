@@ -885,6 +885,19 @@ const server = createServer(async (req, res) => {
       ]);
       return send(res, 200, { ok: true });
     }
+    // Test control, standing in for the owner's Community SQL (docs/community-owner-sql.md):
+    // only the community_owner_* functions, run as the database owner like the SQL editor.
+    if (url.pathname === '/__test/community-owner' && req.method === 'POST') {
+      const { fn, args } = (await readJson(req)) as { fn: string; args: unknown[] };
+      if (!/^community_owner_[a-z_]+$/.test(fn)) return send(res, 400, { error: 'owner functions only' });
+      const list = (args ?? []).map((_, i) => `$${i + 1}`).join(', ');
+      try {
+        const out = await pg.query<{ r: unknown }>(`select to_jsonb(public.${fn}(${list})) as r`, args ?? []);
+        return send(res, 200, { result: out.rows[0]?.r ?? null });
+      } catch (e) {
+        return send(res, 400, { error: (e as Error).message });
+      }
+    }
     // Test control, standing in for the owner approving every waiting food in the SQL editor.
     if (url.pathname === '/__test/approve-foods' && req.method === 'POST') {
       const waiting = await pg.query<{ id: string }>(

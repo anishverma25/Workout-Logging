@@ -3,13 +3,14 @@ import { Link } from 'react-router';
 import { ChevronRight, Globe2, Trophy, UsersRound, X } from 'lucide-react';
 import { getMyGroups, getMyStanding, useRemote } from '@/app/community';
 import { Section, TextButton } from '@/components/kit';
+import { CommunityHomeBanner } from '@/features/community/HomeBanner';
 
 const PROMO_HIDDEN_KEY = 'overload.groupsPromoHidden';
 
 /**
- * Leaderboards on Home (November 2026): your place this week on the global board and in your
- * first group, or a quiet invite to start a group. Says nothing at all when the server cannot be
- * reached, so Home never waits on it.
+ * Leaderboards and Community on Home (November 2026): the Community banner, your place this week
+ * on the global board and in your first group, or a quiet invite to start a group. Each part says
+ * nothing when the server cannot be reached, so Home never waits on it.
  */
 export function GroupsHomeCard() {
   const groups = useRemote(getMyGroups, 'home');
@@ -24,7 +25,6 @@ export function GroupsHomeCard() {
   const g = groups.data?.[0] ?? null;
   const s = standing.data?.rank ? standing.data : null;
   const promo = groups.data?.length === 0 && !hidden;
-  if (!g && !s && !promo) return null;
 
   const groupLine = g
     ? g.rank === 1 && g.members > 1
@@ -38,15 +38,16 @@ export function GroupsHomeCard() {
 
   return (
     <Section
-      title="Leaderboards"
+      title="Leaderboards & Community"
       id="home-leaderboards"
       action={
-        <TextButton small to="/groups">
+        <TextButton small to="/community">
           See all
         </TextButton>
       }
     >
       <div className="flex flex-col gap-3">
+        <CommunityHomeBanner />
         {s ? (
           <Row
             to="/groups/global"
