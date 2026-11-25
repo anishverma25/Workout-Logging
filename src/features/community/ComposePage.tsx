@@ -222,7 +222,7 @@ function Composer({
           Topic
         </p>
         <div
-          className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="relative -mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="radiogroup"
           aria-labelledby="topic-label"
         >

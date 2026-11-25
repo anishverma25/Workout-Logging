@@ -119,7 +119,7 @@ export function EatNextCard({
   // A slim quick-add strip under the meals (owner, 25 Nov 2026): the totals above already show
   // what is left, so this only offers foods that fit, one tap each.
   return (
-    <section aria-labelledby="eat-next-title" data-eat-next>
+    <section aria-labelledby="eat-next-title" data-eat-next className="min-w-0">
       <div className="mb-2 flex items-baseline justify-between gap-3">
         <h2 id="eat-next-title" className="type-section shrink-0 text-text-1">
           Eat next
@@ -130,8 +130,8 @@ export function EatNextCard({
           {remaining.proteinG > 0 ? ` · ${remaining.proteinG} g protein` : ''} left
         </p>
       </div>
-      <div className="rounded-card bg-surface px-3.5 pt-3.5 pb-2.5">
-        <ul className="-mx-3.5 flex gap-2 overflow-x-auto px-3.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="min-w-0 rounded-card bg-surface px-3.5 pt-3.5 pb-2.5">
+        <ul className="relative -mx-3.5 flex gap-2 overflow-x-auto px-3.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {picks.map((p) => (
             <li
               key={p.food.id}

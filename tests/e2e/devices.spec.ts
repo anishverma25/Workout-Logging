@@ -27,6 +27,7 @@ const pages = [
   '/profile',
   '/feedback',
   '/groups',
+  '/community',
 ];
 for (const [name, w, h] of [
   ['iphone16', 393, 852],
@@ -40,10 +41,13 @@ for (const [name, w, h] of [
     for (const p of pages) {
       await page.goto(p);
       await page.waitForLoadState('networkidle');
-      const r = await page.evaluate(() => {
-        const vw = window.innerWidth;
+      const r = await page.evaluate((screenW) => {
+        // On a phone the layout viewport grows with anything that overflows, so innerWidth
+        // would hide the problem: compare with the real screen width instead.
+        const vw = Math.min(window.innerWidth, screenW);
         const out: string[] = [];
-        if (document.documentElement.scrollWidth > vw) out.push('page scrolls sideways');
+        if (document.documentElement.scrollWidth > vw || window.innerWidth > screenW)
+          out.push('page scrolls sideways');
         document
           .querySelectorAll('main button, main a, main h1, main h2, main h3, main p, main span')
           .forEach((el) => {
@@ -94,7 +98,7 @@ for (const [name, w, h] of [
         if (h1 && h1.getBoundingClientRect().top < 20)
           out.push('title too close to top: ' + Math.round(h1.getBoundingClientRect().top));
         return [...new Set(out)].slice(0, 6);
-      });
+      }, w);
       if (r.length) problems.push(p + ': ' + r.join(' | '));
     }
     expect(problems).toEqual([]);
