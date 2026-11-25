@@ -1,13 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import {
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-  Dumbbell,
-  ImagePlus,
-  X,
-} from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, Dumbbell, ImagePlus, X } from 'lucide-react';
 import { useRemote } from '@/app/community';
 import {
   createPost,
@@ -59,7 +52,8 @@ function loadDraft(kind: PostKind): Draft | null {
 
 function saveDraft(kind: PostKind, d: Draft | null) {
   try {
-    if (d && (d.title.trim() || d.body.trim())) localStorage.setItem(draftKey(kind), JSON.stringify(d));
+    if (d && (d.title.trim() || d.body.trim()))
+      localStorage.setItem(draftKey(kind), JSON.stringify(d));
     else localStorage.removeItem(draftKey(kind));
   } catch {
     // Private mode: the draft lives only while the page is open.
@@ -129,7 +123,9 @@ function Composer({
   const saved = useMemo(() => loadDraft(kind), [kind]);
   const [title, setTitle] = useState(saved?.title ?? '');
   const [body, setBody] = useState(saved?.body ?? '');
-  const [topic, setTopic] = useState<Topic | null>(saved?.topic ?? (kind === 'journey' ? 'journeys' : null));
+  const [topic, setTopic] = useState<Topic | null>(
+    saved?.topic ?? (kind === 'journey' ? 'journeys' : null),
+  );
   const [anonymous, setAnonymous] = useState(saved?.anonymous ?? false);
   const [card, setCard] = useState<CardChoice>(saved?.card ?? null);
   const [showCard, setShowCard] = useState(saved?.card != null);
@@ -152,7 +148,11 @@ function Composer({
   const titleOk = titleLen >= 3 && titleLen <= LIMITS.title;
   const ready = titleOk && topic !== null && body.length <= max && !preparing;
   const revealing = anonymous && (photos.length > 0 || card !== null);
-  const missing = !titleOk ? 'Add a title to post' : topic === null ? 'Choose a topic to post' : null;
+  const missing = !titleOk
+    ? 'Add a title to post'
+    : topic === null
+      ? 'Choose a topic to post'
+      : null;
 
   async function addFiles(list: FileList | null) {
     if (!list?.length) return;
@@ -241,7 +241,10 @@ function Composer({
                 topic === t.id ? 'bg-lime text-on-lime' : 'bg-surface text-text-1',
               )}
             >
-              <TopicIcon topic={t.id} className={cn('size-4', topic === t.id ? 'text-on-lime' : 'text-text-2')} />
+              <TopicIcon
+                topic={t.id}
+                className={cn('size-4', topic === t.id ? 'text-on-lime' : 'text-text-2')}
+              />
               {t.short}
             </button>
           ))}
@@ -256,9 +259,7 @@ function Composer({
             <p className="type-subhead flex min-w-0 items-center font-semibold">
               <AuthorName author={author} link={false} />
             </p>
-            <p className="type-meta text-text-3">
-              {anonymous ? 'Name hidden' : 'Your username'}
-            </p>
+            <p className="type-meta text-text-3">{anonymous ? 'Name hidden' : 'Your username'}</p>
           </div>
           <label className="flex shrink-0 items-center gap-2">
             <span className="type-meta font-medium text-text-2">Anonymous</span>
@@ -280,7 +281,9 @@ function Composer({
             maxLength={LIMITS.title}
             rows={1}
             onChange={(e) => setTitle(e.target.value.replace(/\n/g, ' '))}
-            placeholder={kind === 'question' ? 'What do you want to know?' : 'Give your journey a title'}
+            placeholder={
+              kind === 'question' ? 'What do you want to know?' : 'Give your journey a title'
+            }
             style={{ fieldSizing: 'content' } as React.CSSProperties}
             className="type-title block w-full resize-none bg-transparent text-text-1 outline-none placeholder:text-text-3"
             data-title
@@ -308,7 +311,11 @@ function Composer({
         {photos.length ? (
           <div className="grid grid-cols-4 gap-2 px-4 pt-1 pb-3">
             {photos.map((p, i) => (
-              <div key={i} className="relative aspect-square overflow-hidden rounded-[0.75rem] bg-surface-2" data-photo-draft>
+              <div
+                key={i}
+                className="relative aspect-square overflow-hidden rounded-[0.75rem] bg-surface-2"
+                data-photo-draft
+              >
                 <img src={p.thumb} alt={`Photo ${i + 1}`} className="size-full object-cover" />
                 <button
                   type="button"
@@ -364,7 +371,11 @@ function Composer({
                   <X className="size-4" aria-hidden />
                 </button>
               </div>
-              <div className="mt-2.5 grid grid-cols-4 gap-1.5" role="radiogroup" aria-label="Period">
+              <div
+                className="mt-2.5 grid grid-cols-4 gap-1.5"
+                role="radiogroup"
+                aria-label="Period"
+              >
                 {CARD_CHOICES.map((c) => (
                   <button
                     key={c.value}
@@ -398,7 +409,11 @@ function Composer({
               data-add-photo
             >
               <ImagePlus className="size-5 text-lime" aria-hidden />
-              {preparing ? 'Preparing' : photos.length ? `Photos ${photos.length}/${LIMITS.photos}` : 'Photos'}
+              {preparing
+                ? 'Preparing'
+                : photos.length
+                  ? `Photos ${photos.length}/${LIMITS.photos}`
+                  : 'Photos'}
             </button>
           ) : null}
           {!showCard ? (
@@ -416,7 +431,11 @@ function Composer({
             </button>
           ) : null}
           <span className="type-meta tabular ml-auto pr-2 text-text-3" aria-live="polite">
-            {body.length > max - 300 ? `${max - body.length} left` : titleLen > LIMITS.title - 20 ? `${LIMITS.title - titleLen} left in title` : ''}
+            {body.length > max - 300
+              ? `${max - body.length} left`
+              : titleLen > LIMITS.title - 20
+                ? `${LIMITS.title - titleLen} left in title`
+                : ''}
           </span>
         </div>
         <input
@@ -433,14 +452,17 @@ function Composer({
       </section>
 
       {revealing ? (
-        <div className="-mt-2 flex items-start gap-2.5 rounded-[0.875rem] bg-warning-dim px-3.5 py-3 text-warning" role="note" data-reveal-warning>
+        <div
+          className="-mt-2 flex items-start gap-2.5 rounded-[0.875rem] bg-warning-dim px-3.5 py-3 text-warning"
+          role="note"
+          data-reveal-warning
+        >
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span className="type-subhead">
             Your username will be hidden, but the photo or details you share may identify you.
           </span>
         </div>
       ) : null}
-
 
       {error ? <InlineNotice tone="warning">{error}</InlineNotice> : null}
 
@@ -460,7 +482,14 @@ function Composer({
           <span className="type-meta min-w-0 flex-1 truncate text-text-2">
             {missing ?? (anonymous ? 'Posting as Anonymous Lifter' : `Posting as @${username}`)}
           </span>
-          <PrimaryButton type="submit" compact disabled={!ready} loading={busy} className="min-w-32" data-post-submit>
+          <PrimaryButton
+            type="submit"
+            compact
+            disabled={!ready}
+            loading={busy}
+            className="min-w-32"
+            data-post-submit
+          >
             {kind === 'question' ? 'Post question' : 'Share journey'}
           </PrimaryButton>
         </div>

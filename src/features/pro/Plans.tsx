@@ -215,8 +215,8 @@ function CouponBox({
       >
         <Tag className="size-4 shrink-0 text-lime" aria-hidden />
         <p className="type-meta min-w-0 flex-1 text-text-1">
-          <span className="font-semibold">{coupon.code}</span> applied: {coupon.percent}% off your
-          first payment.
+          <span className="font-semibold">{coupon.code}</span> applied: {coupon.percent}% off this
+          payment.
         </p>
         <TextButton
           onClick={() => {

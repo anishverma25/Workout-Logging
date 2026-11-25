@@ -67,13 +67,23 @@ export function VerifiedBadge({
       height={size}
       viewBox="0 0 24 24"
       aria-hidden
-      className="block shrink-0 drop-shadow-[0_0_6px_rgb(198_244_50/0.35)]"
+      className="block shrink-0 drop-shadow-[0_0_6px_var(--lime-dim)]"
     >
       <defs>
-        <linearGradient id={`vb-${id}`} x1="3" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id={`vb-${id}`}
+          x1="3"
+          y1="2"
+          x2="21"
+          y2="22"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop offset="0" style={{ stopColor: 'color-mix(in srgb, var(--lime) 70%, white)' }} />
           <stop offset="0.55" style={{ stopColor: 'var(--lime)' }} />
-          <stop offset="1" style={{ stopColor: 'color-mix(in srgb, var(--lime) 72%, var(--gold))' }} />
+          <stop
+            offset="1"
+            style={{ stopColor: 'color-mix(in srgb, var(--lime) 72%, var(--gold))' }}
+          />
         </linearGradient>
       </defs>
       <path d={SEAL} fill={`url(#vb-${id})`} strokeLinejoin="round" />
@@ -89,7 +99,12 @@ export function VerifiedBadge({
   );
   if (!interactive)
     return (
-      <span role="img" aria-label="Macrotrophy Verified" className={cn('inline-flex', className)} data-verified>
+      <span
+        role="img"
+        aria-label="Macrotrophy Verified"
+        className={cn('inline-flex', className)}
+        data-verified
+      >
         {svg}
       </span>
     );
@@ -142,9 +157,19 @@ export function CommunityMark({ size = 40, className }: { size?: number; classNa
       className={cn('block shrink-0', className)}
     >
       <defs>
-        <linearGradient id={`cm-${id}`} x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id={`cm-${id}`}
+          x1="0"
+          y1="0"
+          x2="48"
+          y2="48"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop offset="0" style={{ stopColor: 'color-mix(in srgb, var(--lime) 82%, white)' }} />
-          <stop offset="1" style={{ stopColor: 'color-mix(in srgb, var(--lime) 78%, var(--gold))' }} />
+          <stop
+            offset="1"
+            style={{ stopColor: 'color-mix(in srgb, var(--lime) 78%, var(--gold))' }}
+          />
         </linearGradient>
       </defs>
       <rect width="48" height="48" rx="14" fill={`url(#cm-${id})`} />
@@ -183,7 +208,9 @@ export function AuthorAvatar({ author, size = 36 }: { author: Author; size?: 28 
           dims,
         )}
       >
-        <VenetianMask className={size === 56 ? 'size-7' : size === 36 ? 'size-[1.125rem]' : 'size-4'} />
+        <VenetianMask
+          className={size === 56 ? 'size-7' : size === 36 ? 'size-[1.125rem]' : 'size-4'}
+        />
       </span>
     );
   return (
@@ -213,7 +240,10 @@ export function AuthorName({
 }) {
   if (author.anonymous)
     return (
-      <span className={cn('inline-flex min-w-0 items-center gap-1 text-text-1', className)} data-author-anon>
+      <span
+        className={cn('inline-flex min-w-0 items-center gap-1 text-text-1', className)}
+        data-author-anon
+      >
         <span className="truncate">{author.label}</span>
         {author.me ? <span className="type-meta shrink-0 text-text-3">(you)</span> : null}
       </span>
@@ -226,7 +256,10 @@ export function AuthorName({
   );
   if (!link)
     return (
-      <span className={cn('inline-flex min-w-0 items-center gap-1 text-text-1', className)} data-author>
+      <span
+        className={cn('inline-flex min-w-0 items-center gap-1 text-text-1', className)}
+        data-author
+      >
         {inner}
       </span>
     );
@@ -234,7 +267,10 @@ export function AuthorName({
     <Link
       to={`/community/u/${author.username}`}
       onClick={(e) => e.stopPropagation()}
-      className={cn('inline-flex min-w-0 items-center gap-1 text-text-1 hover:underline', className)}
+      className={cn(
+        'inline-flex min-w-0 items-center gap-1 text-text-1 hover:underline',
+        className,
+      )}
       data-author={author.username}
     >
       {inner}
@@ -295,18 +331,35 @@ export function CardPill({ card }: { card: ProgressCard }) {
       <span className="min-w-0 flex-1">
         <span className="type-metric-sm tabular block text-text-1">
           {card.value.toLocaleString('en-IN')}
-          <span className="type-subhead ml-1.5 font-medium text-text-2">{card.label.toLowerCase()}</span>
+          <span className="type-subhead ml-1.5 font-medium text-text-2">
+            {card.label.toLowerCase()}
+          </span>
         </span>
-        <span className="type-meta block text-text-3">From this member&rsquo;s Macrotrophy logs</span>
+        <span className="type-meta block text-text-3">
+          From this member&rsquo;s Macrotrophy logs
+        </span>
       </span>
     </div>
   );
 }
 
-function Stat({ icon, value, label, active }: { icon: ReactNode; value: number; label: string; active?: boolean }) {
+function Stat({
+  icon,
+  value,
+  label,
+  active,
+}: {
+  icon: ReactNode;
+  value: number;
+  label: string;
+  active?: boolean;
+}) {
   return (
     <span
-      className={cn('type-subhead tabular inline-flex items-center gap-1.5', active ? 'text-lime' : 'text-text-2')}
+      className={cn(
+        'type-subhead tabular inline-flex items-center gap-1.5',
+        active ? 'text-lime' : 'text-text-2',
+      )}
       aria-label={`${value} ${label}`}
     >
       <span aria-hidden className="inline-flex size-[1.125rem] [&>svg]:size-[1.125rem]">
@@ -347,7 +400,10 @@ export function PostCard({ post, index = 0 }: { post: Post; index?: number }) {
         <KindTag kind={post.kind} />
       </header>
       <div className="flex flex-col gap-1">
-        <h3 id={`t-${post.id}`} className="type-headline line-clamp-2 text-[1.0625rem] leading-snug text-text-1">
+        <h3
+          id={`t-${post.id}`}
+          className="type-headline line-clamp-2 text-[1.0625rem] leading-snug text-text-1"
+        >
           <Link
             to={`/community/p/${post.id}`}
             onClick={(e) => e.stopPropagation()}
@@ -379,7 +435,11 @@ export function PostCard({ post, index = 0 }: { post: Post; index?: number }) {
       ) : null}
       {post.card ? <CardPill card={post.card} /> : null}
       <footer className="relative flex min-h-8 items-center gap-5">
-        <Stat icon={<MessageCircle />} value={post.replies} label={post.replies === 1 ? 'reply' : 'replies'} />
+        <Stat
+          icon={<MessageCircle />}
+          value={post.replies}
+          label={post.replies === 1 ? 'reply' : 'replies'}
+        />
         {post.kind === 'journey' ? (
           <Stat icon={<HandHeart />} value={post.support} label="support" active={post.mySupport} />
         ) : null}
@@ -438,7 +498,13 @@ export function PhotoGrid({ media, onOpen }: { media: Media[]; onOpen: (i: numbe
   if (!media.length) return null;
   const one = media.length === 1;
   return (
-    <div className={cn('grid gap-1.5 overflow-hidden rounded-tile', one ? 'grid-cols-1' : 'grid-cols-2')} data-photos>
+    <div
+      className={cn(
+        'grid gap-1.5 overflow-hidden rounded-tile',
+        one ? 'grid-cols-1' : 'grid-cols-2',
+      )}
+      data-photos
+    >
       {media.map((m, i) => (
         <button
           key={m.id}
@@ -472,7 +538,15 @@ export function PhotoGrid({ media, onOpen }: { media: Media[]; onOpen: (i: numbe
 }
 
 /** Full-size photos, fetched one at a time, on black. */
-export function Lightbox({ media, start, onClose }: { media: Media[]; start: number; onClose: () => void }) {
+export function Lightbox({
+  media,
+  start,
+  onClose,
+}: {
+  media: Media[];
+  start: number;
+  onClose: () => void;
+}) {
   const [index, setIndex] = useState(start);
   const [full, setFull] = useState<Record<string, string>>({});
   const ref = useRef<HTMLDialogElement>(null);
@@ -514,7 +588,10 @@ export function Lightbox({ media, start, onClose }: { media: Media[]; start: num
           onClick={onClose}
           aria-label="Close"
           className="pressable absolute flex size-11 items-center justify-center rounded-full bg-white/15 backdrop-blur"
-          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)', right: 'calc(env(safe-area-inset-right, 0px) + 12px)' }}
+          style={{
+            top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+            right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
+          }}
         >
           <X className="size-5" />
         </button>
@@ -573,9 +650,9 @@ export function HubSwitch({ current }: { current: 'community' | 'leaderboards' }
         { value: 'leaderboards', label: 'Leaderboards' },
       ]}
       onChange={(v) => {
-        if (v !== current) navigate(v === 'community' ? '/community' : '/groups', { replace: true });
+        if (v !== current)
+          navigate(v === 'community' ? '/community' : '/groups', { replace: true });
       }}
     />
   );
 }
-

@@ -21,7 +21,13 @@ export const TOPICS: { id: Topic; label: string; short: string }[] = [
 ];
 export const topicLabel = (t: string) => TOPICS.find((x) => x.id === t)?.short ?? 'Community';
 
-export const LIMITS = { title: 120, question: 2000, journey: 3000, reply: 2000, photos: 4 } as const;
+export const LIMITS = {
+  title: 120,
+  question: 2000,
+  journey: 3000,
+  reply: 2000,
+  photos: 4,
+} as const;
 
 /** Who wrote something, as the server shows it. Anonymous authors carry a label only. */
 export type Author =
@@ -96,14 +102,7 @@ export interface PostDetail extends Post {
 }
 
 export type WriteProblem =
-  | 'signed_out'
-  | 'paused'
-  | 'banned'
-  | 'muted'
-  | 'username'
-  | 'rules'
-  | 'minor'
-  | null;
+  'signed_out' | 'paused' | 'banned' | 'muted' | 'username' | 'rules' | 'minor' | null;
 
 export interface Me {
   username: string | null;
@@ -141,7 +140,15 @@ export interface Profile {
   karma: number | null;
   answers: number;
   posts: Post[];
-  replies: { id: string; postId: string; postTitle: string; body: string; helpful: number; best: boolean; createdAt: string }[];
+  replies: {
+    id: string;
+    postId: string;
+    postTitle: string;
+    body: string;
+    helpful: number;
+    best: boolean;
+    createdAt: string;
+  }[];
 }
 
 export interface MyReply {
@@ -183,7 +190,11 @@ export interface Karma {
   inGoodStanding: boolean;
   eligible: boolean;
   rewardsOn: boolean;
-  lastClaim: { status: 'applied' | 'held' | 'revoked'; claimedAt: string; proUntil: string | null } | null;
+  lastClaim: {
+    status: 'applied' | 'held' | 'revoked';
+    claimedAt: string;
+    proUntil: string | null;
+  } | null;
   nextClaimAt: string | null;
   history: { delta: number; source: string; createdAt: string }[];
 }
@@ -224,7 +235,11 @@ export function parsePost(v: unknown): Post {
     held: p.status === 'held',
     card:
       p.card && typeof card.value === 'number'
-        ? { value: card.value, days: typeof card.days === 'number' ? card.days : null, label: str(card.label) }
+        ? {
+            value: card.value,
+            days: typeof card.days === 'number' ? card.days : null,
+            label: str(card.label),
+          }
         : null,
     answered: p.answered === true,
     bestReply: typeof p.best_reply === 'string' ? p.best_reply : null,
@@ -275,8 +290,10 @@ export function forumMessage(error: { message?: string; code?: string } | null):
   const problem = /Community: (\w+)/.exec(m)?.[1];
   if (/Community limit: slow down/.test(m)) return 'Give it a minute before posting again.';
   if (/Community limit: posts/.test(m)) return 'You have posted a lot today. Try again tomorrow.';
-  if (/Community limit: replies/.test(m)) return 'You have replied a lot today. Try again tomorrow.';
-  if (/Community text: words/.test(m)) return 'Please keep it respectful. Remove the offensive words.';
+  if (/Community limit: replies/.test(m))
+    return 'You have replied a lot today. Try again tomorrow.';
+  if (/Community text: words/.test(m))
+    return 'Please keep it respectful. Remove the offensive words.';
   if (/Community text: links/.test(m)) return 'Up to 3 links in one post.';
   if (/Community text: contact/.test(m))
     return 'Phone numbers and contact requests are not allowed. Keep the talk here.';
@@ -305,7 +322,9 @@ export function forumMessage(error: { message?: string; code?: string } | null):
       if (/not eligible/.test(m)) return 'Not there yet. Keep helping people.';
       return 'This is no longer available.';
     case 'photos':
-      return /paused/.test(m) ? 'Photo uploads are paused for a short while.' : `Up to ${LIMITS.photos} photos.`;
+      return /paused/.test(m)
+        ? 'Photo uploads are paused for a short while.'
+        : `Up to ${LIMITS.photos} photos.`;
     default:
       break;
   }
@@ -411,7 +430,8 @@ export const getProfile = (username: string) =>
       me: p.me === true,
       banned: p.banned === true,
       joined: typeof p.joined === 'string' ? p.joined : null,
-      recognition: p.recognition === 'trusted' || p.recognition === 'helpful' ? p.recognition : null,
+      recognition:
+        p.recognition === 'trusted' || p.recognition === 'helpful' ? p.recognition : null,
       karma: typeof p.karma === 'number' ? p.karma : null,
       answers: num(p.answers),
       posts: arr(p.posts).map(parsePost),
@@ -434,35 +454,31 @@ export const getMinePosts = (tab: 'posts' | 'saved' | 'following') =>
 
 export const getMineReplies = () =>
   call('forum_mine', { p_tab: 'replies' }, (v) =>
-    arr(v).map(
-      (r): MyReply => ({
-        id: str(r.id),
-        postId: str(r.post_id),
-        postTitle: str(r.post_title),
-        body: str(r.body),
-        anonymous: r.anonymous === true,
-        helpful: num(r.helpful),
-        best: r.best === true,
-        held: r.held === true,
-        createdAt: str(r.created_at),
-      }),
-    ),
+    arr(v).map((r): MyReply => ({
+      id: str(r.id),
+      postId: str(r.post_id),
+      postTitle: str(r.post_title),
+      body: str(r.body),
+      anonymous: r.anonymous === true,
+      helpful: num(r.helpful),
+      best: r.best === true,
+      held: r.held === true,
+      createdAt: str(r.created_at),
+    })),
   );
 
 export const getActivity = () =>
   call('forum_activity_list', {}, (v) =>
-    arr(v).map(
-      (a): ActivityItem => ({
-        id: num(a.id),
-        kind: (str(a.kind) || 'reply') as ActivityItem['kind'],
-        postId: typeof a.post_id === 'string' ? a.post_id : null,
-        postTitle: typeof a.post_title === 'string' ? a.post_title : null,
-        actor: str(a.actor),
-        detail: str(a.detail),
-        createdAt: str(a.created_at),
-        read: a.read === true,
-      }),
-    ),
+    arr(v).map((a): ActivityItem => ({
+      id: num(a.id),
+      kind: (str(a.kind) || 'reply') as ActivityItem['kind'],
+      postId: typeof a.post_id === 'string' ? a.post_id : null,
+      postTitle: typeof a.post_title === 'string' ? a.post_title : null,
+      actor: str(a.actor),
+      detail: str(a.detail),
+      createdAt: str(a.created_at),
+      read: a.read === true,
+    })),
   );
 
 export const markActivityRead = () => call('forum_activity_read', {}, () => true);
@@ -557,20 +573,26 @@ export const getBlocks = () =>
 export const unblock = (id: string) => call('forum_unblock', { p_id: id }, () => true);
 
 export type ReportReason =
-  | 'harassment'
-  | 'explicit'
-  | 'spam'
-  | 'health_risk'
-  | 'self_harm'
-  | 'privacy'
-  | 'other';
+  'harassment' | 'explicit' | 'spam' | 'health_risk' | 'self_harm' | 'privacy' | 'other';
 
 export const REPORT_REASONS: { id: ReportReason; label: string; hint: string }[] = [
   { id: 'harassment', label: 'Harassment or hate', hint: 'Bullying, threats, body shaming' },
-  { id: 'explicit', label: 'Explicit or intimate image', hint: 'Nudity or a photo shared without consent' },
+  {
+    id: 'explicit',
+    label: 'Explicit or intimate image',
+    hint: 'Nudity or a photo shared without consent',
+  },
   { id: 'spam', label: 'Spam or scam', hint: 'Selling, promotion, fake karma' },
-  { id: 'health_risk', label: 'Risky health advice', hint: 'Crash diets, drug sourcing, dangerous claims' },
-  { id: 'self_harm', label: 'Someone may be at risk', hint: 'Self-harm or an eating disorder concern' },
+  {
+    id: 'health_risk',
+    label: 'Risky health advice',
+    hint: 'Crash diets, drug sourcing, dangerous claims',
+  },
+  {
+    id: 'self_harm',
+    label: 'Someone may be at risk',
+    hint: 'Self-harm or an eating disorder concern',
+  },
   { id: 'privacy', label: 'Private information', hint: 'Someone else’s photo, name or details' },
   { id: 'other', label: 'Something else', hint: 'Tell us in a note' },
 ];
@@ -651,7 +673,8 @@ export function cleanUrl(raw: string): string {
   try {
     const u = new URL(raw.replace(/[).,!?]+$/, ''));
     for (const k of [...u.searchParams.keys()])
-      if (/^(utm_|fbclid|gclid|igshid|ref$|ref_|aff|affiliate|tag$)/i.test(k)) u.searchParams.delete(k);
+      if (/^(utm_|fbclid|gclid|igshid|ref$|ref_|aff|affiliate|tag$)/i.test(k))
+        u.searchParams.delete(k);
     return u.toString();
   } catch {
     return '#';

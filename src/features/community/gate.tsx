@@ -11,12 +11,18 @@ export function RulesCard({ onAccepted }: { onAccepted: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
-    <section className="rounded-panel bg-surface px-5 pt-6 pb-5" aria-labelledby="rules-title" data-rules>
+    <section
+      className="rounded-panel bg-surface px-5 pt-6 pb-5"
+      aria-labelledby="rules-title"
+      data-rules
+    >
       <CommunityMark size={48} />
       <h2 id="rules-title" className="type-title mt-3 text-text-1">
         Community rules
       </h2>
-      <p className="type-subhead mt-1 text-text-2">A helpful gym community, not another noisy feed.</p>
+      <p className="type-subhead mt-1 text-text-2">
+        A helpful gym community, not another noisy feed.
+      </p>
       <ol className="mt-4 flex flex-col gap-3">
         {RULES.map((r, i) => (
           <li key={r.title} className="flex gap-3">
@@ -69,8 +75,15 @@ export function RulesCard({ onAccepted }: { onAccepted: () => void }) {
 export function WriteGate({ me, onChanged }: { me: Me; onChanged: () => void }) {
   if (me.problem === 'username')
     return (
-      <section className="rounded-panel bg-surface px-5 pt-6 pb-6" aria-labelledby="pick-name" data-pick-username>
-        <span aria-hidden className="flex size-12 items-center justify-center rounded-full bg-lime-dim text-lime">
+      <section
+        className="rounded-panel bg-surface px-5 pt-6 pb-6"
+        aria-labelledby="pick-name"
+        data-pick-username
+      >
+        <span
+          aria-hidden
+          className="flex size-12 items-center justify-center rounded-full bg-lime-dim text-lime"
+        >
           <UsersRound className="size-6" />
         </span>
         <h2 id="pick-name" className="type-title mt-3 text-text-1">

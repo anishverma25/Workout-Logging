@@ -648,12 +648,17 @@ describe('billing', () => {
     expect((await payOnce(user, 'monthly', 'pay_c1b', 'GYM10')).body.amount).toBe(13400);
     expect(
       (
-        await server.pg.query('select count(*)::int as c from public.coupon_uses where user_id = $1', [
-          user,
-        ])
+        await server.pg.query(
+          'select count(*)::int as c from public.coupon_uses where user_id = $1',
+          [user],
+        )
       ).rows[0],
     ).toEqual({ c: 2 });
-    const report = await server.pg.query<{ code: string; member_email: string; code_owner: string }>(
+    const report = await server.pg.query<{
+      code: string;
+      member_email: string;
+      code_owner: string;
+    }>(
       `select code, member_email, code_owner from public.coupon_payments where member_email = $1`,
       ['coupon@example.com'],
     );

@@ -23,10 +23,9 @@ export function CommunityHomeBanner() {
     <Link
       to="/community"
       state={{ from: 'home' }}
-      className="pressable chrome relative flex flex-col gap-3 overflow-hidden rounded-card bg-surface p-4 ring-1 ring-lime/20"
+      className="pressable chrome relative flex flex-col gap-3 overflow-hidden rounded-card bg-surface bg-[radial-gradient(60%_70%_at_100%_0%,var(--lime-dim),transparent_70%)] p-4 ring-1 ring-lime/20"
       data-home-community
     >
-      <span aria-hidden className="pointer-events-none absolute -top-14 -right-10 size-40 rounded-full bg-lime/12 blur-3xl" />
       <span className="relative flex items-center gap-3">
         <span className="relative">
           <CommunityMark size={44} />
@@ -51,7 +50,9 @@ export function CommunityHomeBanner() {
             {latest.kind === 'question' ? 'Asked' : 'Shared'}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="type-subhead line-clamp-1 block font-medium text-text-1">{latest.title}</span>
+            <span className="type-subhead line-clamp-1 block font-medium text-text-1">
+              {latest.title}
+            </span>
             <span className="type-meta flex min-w-0 items-center gap-1 text-text-3">
               <AuthorName author={latest.author} link={false} className="text-text-3" />
               <span className="shrink-0">

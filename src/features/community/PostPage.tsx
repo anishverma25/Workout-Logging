@@ -79,7 +79,9 @@ export function PostPage() {
   const [reporting, setReporting] = useState<Target | null>(null);
   const [blocking, setBlocking] = useState<Target | null>(null);
   const [deleting, setDeleting] = useState<Target | null>(null);
-  const [editing, setEditing] = useState<{ kind: 'post' } | { kind: 'reply'; reply: Reply } | null>(null);
+  const [editing, setEditing] = useState<{ kind: 'post' } | { kind: 'reply'; reply: Reply } | null>(
+    null,
+  );
   const [quote, setQuote] = useState<Reply | null>(null);
   const composer = useRef<HTMLTextAreaElement>(null);
 
@@ -104,7 +106,11 @@ export function PostPage() {
     return (
       <>
         <PageHeader back={{ to: '/community', label: 'Community' }} title="Post" />
-        <ErrorState title="This post is not available" message={error} onRetry={() => void load()} />
+        <ErrorState
+          title="This post is not available"
+          message={error}
+          onRetry={() => void load()}
+        />
       </>
     );
   if (!post)
@@ -136,7 +142,10 @@ export function PostPage() {
           icon: <BellOff />,
           onSelect: () => {
             setPost({ ...post, following: false });
-            void toggle(() => setPostFlag(post.id, 'follow', false), () => setPost({ ...post }));
+            void toggle(
+              () => setPostFlag(post.id, 'follow', false),
+              () => setPost({ ...post }),
+            );
           },
         }
       : {
@@ -144,7 +153,10 @@ export function PostPage() {
           icon: <Bell />,
           onSelect: () => {
             setPost({ ...post, following: true });
-            void toggle(() => setPostFlag(post.id, 'follow', true), () => setPost({ ...post }));
+            void toggle(
+              () => setPostFlag(post.id, 'follow', true),
+              () => setPost({ ...post }),
+            );
           },
         },
     ...(post.mine
@@ -171,7 +183,11 @@ export function PostPage() {
               }
             },
           },
-          { label: 'Report', icon: <Flag />, onSelect: () => setReporting({ kind: 'post', id: post.id }) },
+          {
+            label: 'Report',
+            icon: <Flag />,
+            onSelect: () => setReporting({ kind: 'post', id: post.id }),
+          },
           {
             label: post.author.anonymous ? 'Block this anonymous author' : 'Block author',
             icon: <Ban />,
@@ -195,7 +211,10 @@ export function PostPage() {
               onClick={() => {
                 const was = post.saved;
                 setPost({ ...post, saved: !was });
-                void toggle(() => setPostFlag(post.id, 'save', !was), () => setPost({ ...post, saved: was }));
+                void toggle(
+                  () => setPostFlag(post.id, 'save', !was),
+                  () => setPost({ ...post, saved: was }),
+                );
                 toast(was ? 'Removed from saved' : 'Saved');
               }}
               data-save
@@ -207,7 +226,10 @@ export function PostPage() {
         }
       />
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 pb-40" data-post-page={post.id}>
-        <article className="flex flex-col gap-3.5 rounded-panel bg-surface p-5" aria-labelledby="post-title">
+        <article
+          className="flex flex-col gap-3.5 rounded-panel bg-surface p-5"
+          aria-labelledby="post-title"
+        >
           <header className="flex items-center gap-3">
             <AuthorAvatar author={post.author} size={36} />
             <div className="min-w-0 flex-1">
@@ -299,7 +321,10 @@ export function PostPage() {
             ? `${post.replyList.filter((r) => !r.deleted).length} ${post.replyList.filter((r) => !r.deleted).length === 1 ? 'reply' : 'replies'}`
             : 'Replies'}
         </h2>
-        {post.kind === 'question' && post.mine && !post.answered && post.replyList.some((r) => !r.mine && !r.deleted) ? (
+        {post.kind === 'question' &&
+        post.mine &&
+        !post.answered &&
+        post.replyList.some((r) => !r.mine && !r.deleted) ? (
           <p className="type-meta -mt-2 text-text-3">
             When an answer helps you, mark it as the best answer. It tells others what worked.
           </p>
@@ -322,7 +347,9 @@ export function PostPage() {
                 onEdit={() => setEditing({ kind: 'reply', reply: r })}
                 onDelete={() => setDeleting({ kind: 'reply', id: r.id })}
                 onChanged={(next) =>
-                  setPost((p) => (p ? { ...p, replyList: p.replyList.map((x) => (x.id === r.id ? next : x)) } : p))
+                  setPost((p) =>
+                    p ? { ...p, replyList: p.replyList.map((x) => (x.id === r.id ? next : x)) } : p,
+                  )
                 }
                 onBest={async (on) => {
                   try {
@@ -338,7 +365,9 @@ export function PostPage() {
           </ol>
         ) : (
           <p className="type-subhead rounded-card bg-surface px-4 py-6 text-center text-text-2">
-            {post.kind === 'question' ? 'No answers yet. Know something useful? Share it.' : 'Be the first to cheer them on.'}
+            {post.kind === 'question'
+              ? 'No answers yet. Know something useful? Share it.'
+              : 'Be the first to cheer them on.'}
           </p>
         )}
 
@@ -363,7 +392,9 @@ export function PostPage() {
         ) : null}
       </div>
 
-      {photo !== null ? <Lightbox media={post.media} start={photo} onClose={() => setPhoto(null)} /> : null}
+      {photo !== null ? (
+        <Lightbox media={post.media} start={photo} onClose={() => setPhoto(null)} />
+      ) : null}
       {reporting ? (
         <ReportSheet
           target={reporting}
@@ -376,9 +407,16 @@ export function PostPage() {
       ) : null}
       <ConfirmSheet
         open={blocking !== null}
-        title={post.author.anonymous && blocking?.kind === 'post' ? 'Block this anonymous author?' : 'Block this person?'}
+        title={
+          post.author.anonymous && blocking?.kind === 'post'
+            ? 'Block this anonymous author?'
+            : 'Block this person?'
+        }
         body={
-          blocking && (blocking.kind === 'post' ? post.author.anonymous : post.replyList.find((x) => x.id === blocking.id)?.author.anonymous)
+          blocking &&
+          (blocking.kind === 'post'
+            ? post.author.anonymous
+            : post.replyList.find((x) => x.id === blocking.id)?.author.anonymous)
             ? 'You will no longer see anything they post anonymously. Who they are stays private, even from you.'
             : 'You will no longer see their posts and replies. They are not told.'
         }
@@ -504,7 +542,10 @@ function ReplyItem({
       data-reply={r.id}
     >
       {r.best ? (
-        <span className="type-meta inline-flex w-fit items-center gap-1 rounded-full bg-lime px-2.5 py-1 font-bold text-on-lime" data-best>
+        <span
+          className="type-meta inline-flex w-fit items-center gap-1 rounded-full bg-lime px-2.5 py-1 font-bold text-on-lime"
+          data-best
+        >
           <CircleCheck className="size-3.5" aria-hidden /> Best answer
         </span>
       ) : null}
@@ -513,7 +554,9 @@ function ReplyItem({
         <span className="type-subhead flex min-w-0 flex-1 items-center gap-1.5 font-semibold">
           <AuthorName author={r.author} />
           {r.isOp ? (
-            <span className="type-meta shrink-0 rounded-full bg-fill px-2 py-px font-semibold text-text-2">Author</span>
+            <span className="type-meta shrink-0 rounded-full bg-fill px-2 py-px font-semibold text-text-2">
+              Author
+            </span>
           ) : null}
           <span className="shrink-0 font-normal text-text-3">
             · {ago(r.createdAt)}
@@ -528,7 +571,11 @@ function ReplyItem({
       {r.quote ? (
         <blockquote className="type-subhead border-l-2 border-lime/60 pl-3 text-text-2" data-quote>
           <span className="font-semibold text-text-1">{r.quote.label}</span>
-          {r.quote.excerpt ? <span className="line-clamp-2">{r.quote.excerpt}</span> : <span> (removed)</span>}
+          {r.quote.excerpt ? (
+            <span className="line-clamp-2">{r.quote.excerpt}</span>
+          ) : (
+            <span> (removed)</span>
+          )}
         </blockquote>
       ) : null}
       <p className="type-body break-words whitespace-pre-line text-text-1">
@@ -695,7 +742,13 @@ function MenuButton({
       >
         <MoreHorizontal className="size-5" aria-hidden />
       </button>
-      <ActionMenu open={open} onClose={() => setOpen(false)} anchor={ref} label={label} items={items} />
+      <ActionMenu
+        open={open}
+        onClose={() => setOpen(false)}
+        anchor={ref}
+        label={label}
+        items={items}
+      />
     </>
   );
 }
@@ -758,13 +811,25 @@ const ReplyComposer = function ReplyComposer({
   }, [autoFocus, ref]);
   const me_: Author = anonymous
     ? { anonymous: true, label: 'Anonymous', me: true }
-    : { anonymous: false, username: me.username ?? 'you', avatar: me.avatar, verified: me.verified, me: true };
+    : {
+        anonymous: false,
+        username: me.username ?? 'you',
+        avatar: me.avatar,
+        verified: me.verified,
+        me: true,
+      };
   const send = async () => {
     if (!body.trim() || busy) return;
     setBusy(true);
     setError(null);
     try {
-      await createReply({ clientId, postId, body: body.trim(), anonymous, quote: quote?.id ?? null });
+      await createReply({
+        clientId,
+        postId,
+        body: body.trim(),
+        anonymous,
+        quote: quote?.id ?? null,
+      });
       haptic('medium');
       setBody('');
       setClientId(crypto.randomUUID());
@@ -806,13 +871,21 @@ const ReplyComposer = function ReplyComposer({
             </button>
           </div>
         ) : null}
-        {error ? <p className="type-meta mb-2 text-danger-text" role="alert">{error}</p> : null}
+        {error ? (
+          <p className="type-meta mb-2 text-danger-text" role="alert">
+            {error}
+          </p>
+        ) : null}
         <div className="flex items-end gap-2">
           <button
             type="button"
             role="switch"
             aria-checked={anonymous}
-            aria-label={anonymous ? 'Replying anonymously. Tap to use your username' : `Replying as @${me.username}. Tap to reply anonymously`}
+            aria-label={
+              anonymous
+                ? 'Replying anonymously. Tap to use your username'
+                : `Replying as @${me.username}. Tap to reply anonymously`
+            }
             onClick={() => {
               haptic('light');
               setAnonymous((a) => !a);
@@ -862,7 +935,10 @@ const ReplyComposer = function ReplyComposer({
           </div>
         </div>
         {anonymous || left < 200 ? (
-          <p className="type-meta mt-1.5 flex justify-between gap-3 pl-11 text-text-3" aria-live="polite">
+          <p
+            className="type-meta mt-1.5 flex justify-between gap-3 pl-11 text-text-3"
+            aria-live="polite"
+          >
             <span>{anonymous ? 'Shown as Anonymous Lifter. Rules still apply.' : ''}</span>
             <span className="tabular">{left < 200 ? `${left} left` : ''}</span>
           </p>

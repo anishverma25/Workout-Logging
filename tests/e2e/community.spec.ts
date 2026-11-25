@@ -39,9 +39,13 @@ async function joinCommunity(page: Page, username: string) {
   await expect(page.locator('[data-composer]')).toBeVisible();
 }
 
-const name = (tag: string) => `${tag}${Date.now().toString(36).slice(-5)}${Math.floor(Math.random() * 90 + 10)}`;
+const name = (tag: string) =>
+  `${tag}${Date.now().toString(36).slice(-5)}${Math.floor(Math.random() * 90 + 10)}`;
 
-test('ask anonymously, answer as a verified creator, best answer, block and report', async ({ page, browser }) => {
+test('ask anonymously, answer as a verified creator, best answer, block and report', async ({
+  page,
+  browser,
+}) => {
   test.setTimeout(120_000);
   // The asker.
   await signUpFresh(page, { tag: 'asker' });
@@ -57,24 +61,32 @@ test('ask anonymously, answer as a verified creator, best answer, block and repo
   await expect(page).toHaveURL(/\/community\/p\//);
   const postUrl = page.url();
   await expect(page.locator('[data-post-title]')).toHaveText(title);
-  await expect(page.locator('[data-post-page] [data-author-anon]').first()).toContainText('Anonymous Lifter');
+  await expect(page.locator('[data-post-page] [data-author-anon]').first()).toContainText(
+    'Anonymous Lifter',
+  );
 
   // The creator, verified by the owner by email.
   const other = await secondPerson(browser);
   const creatorEmail = await signUpFresh(other.page, { tag: 'creator' });
   const creatorName = name('coach');
   await joinCommunity(other.page, creatorName);
-  expect((await owner('community_owner_verify', [creatorEmail])).result).toBe(`Verified: @${creatorName}`);
+  expect((await owner('community_owner_verify', [creatorEmail])).result).toBe(
+    `Verified: @${creatorName}`,
+  );
 
   // The creator sees the question with no trace of who asked.
   await other.page.goto(postUrl);
   await expect(other.page.locator('[data-post-title]')).toHaveText(title);
   const html = await other.page.content();
   expect(html).not.toContain(askerName);
-  await expect(other.page.locator('[data-post-page] header').first()).toContainText('Anonymous Lifter');
+  await expect(other.page.locator('[data-post-page] header').first()).toContainText(
+    'Anonymous Lifter',
+  );
 
   // Answers with the username: the badge shows.
-  await other.page.locator('[data-reply-body]').fill('Soya chunks: about 52 g protein per 100 g dry. A katori at lunch adds 25 g.');
+  await other.page
+    .locator('[data-reply-body]')
+    .fill('Soya chunks: about 52 g protein per 100 g dry. A katori at lunch adds 25 g.');
   await other.page.locator('[data-send-reply]').click();
   const reply = other.page.locator('[data-reply]').filter({ hasText: 'Soya chunks' });
   await expect(reply).toBeVisible();
@@ -91,9 +103,13 @@ test('ask anonymously, answer as a verified creator, best answer, block and repo
   await expect(page.locator('[data-best]')).toBeVisible();
 
   // The owner removes the badge: it goes, nothing else changes.
-  expect((await owner('community_owner_unverify', [creatorEmail])).result).toBe(`No longer verified: @${creatorName}`);
+  expect((await owner('community_owner_unverify', [creatorEmail])).result).toBe(
+    `No longer verified: @${creatorName}`,
+  );
   await page.reload();
-  await expect(page.locator('[data-reply]').filter({ hasText: 'Soya chunks' }).locator('[data-verified]')).toHaveCount(0);
+  await expect(
+    page.locator('[data-reply]').filter({ hasText: 'Soya chunks' }).locator('[data-verified]'),
+  ).toHaveCount(0);
 
   // The creator reports and blocks the anonymous asker, without ever seeing who it is.
   await other.page.goto(postUrl);
@@ -114,7 +130,9 @@ test('ask anonymously, answer as a verified creator, best answer, block and repo
   await other.context.close();
 });
 
-test('Home and More lead to Leaderboards & Community, one switch between them', async ({ page }) => {
+test('Home and More lead to Leaderboards & Community, one switch between them', async ({
+  page,
+}) => {
   await signUpFresh(page, { tag: 'hub' });
   await expect(page.getByRole('heading', { name: 'Leaderboards & Community' })).toBeVisible();
   await page.locator('[data-home-community]').click();
@@ -126,14 +144,19 @@ test('Home and More lead to Leaderboards & Community, one switch between them', 
   await page.getByRole('radio', { name: 'Community' }).click();
   await expect(page).toHaveURL(/\/community$/);
   await page.goto('/more');
-  await page.getByRole('navigation', { name: 'More' }).getByRole('link', { name: /Leaderboards & Community/ }).click();
+  await page
+    .getByRole('navigation', { name: 'More' })
+    .getByRole('link', { name: /Leaderboards & Community/ })
+    .click();
   await expect(page).toHaveURL(/\/community$/);
 });
 
 test('posting can be paused by the owner without breaking reading', async ({ page }) => {
   await signUpFresh(page, { tag: 'paused' });
   await joinCommunity(page, name('pause'));
-  expect((await owner('community_owner_switch', ['community_posting', false])).error).toBeUndefined();
+  expect(
+    (await owner('community_owner_switch', ['community_posting', false])).error,
+  ).toBeUndefined();
   try {
     await page.goto('/community/new?kind=journey');
     await expect(page.locator('[data-write-blocked="paused"]')).toBeVisible();

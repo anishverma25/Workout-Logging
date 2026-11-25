@@ -18,7 +18,13 @@ export function ReportSheet({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const what =
-    target.kind === 'post' ? 'post' : target.kind === 'reply' ? 'reply' : target.kind === 'media' ? 'photo' : 'member';
+    target.kind === 'post'
+      ? 'post'
+      : target.kind === 'reply'
+        ? 'reply'
+        : target.kind === 'media'
+          ? 'photo'
+          : 'member';
   return (
     <BottomSheet
       open
@@ -103,7 +109,12 @@ export function EditSheet({
   const [topic, setTopic] = useState<Topic>(initial.topic ?? 'training');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const max = kind === 'reply' ? LIMITS.reply : initial.postKind === 'journey' ? LIMITS.journey : LIMITS.question;
+  const max =
+    kind === 'reply'
+      ? LIMITS.reply
+      : initial.postKind === 'journey'
+        ? LIMITS.journey
+        : LIMITS.question;
   const ok = kind === 'reply' ? body.trim().length > 0 : title.trim().length >= 3;
   return (
     <BottomSheet
@@ -143,7 +154,12 @@ export function EditSheet({
                 </Chip>
               ))}
             </div>
-            <TextField label="Title" value={title} maxLength={LIMITS.title} onChange={(e) => setTitle(e.target.value)} />
+            <TextField
+              label="Title"
+              value={title}
+              maxLength={LIMITS.title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
           </>
         ) : null}
         <div>

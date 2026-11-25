@@ -156,7 +156,9 @@ test('logged foods show their protein to Pro and trial members, never to free on
   await expect(row).toBeVisible();
   await expect(row).toHaveText(/^\d+(\.\d)? g protein$/);
   // And each meal shows its carbs, fat and protein in grams, like MyFitnessPal.
-  await expect(page.locator('[data-meal-macros="lunch"]')).toHaveText(/C\s*\d+ g\s*F\s*\d+ g\s*P\s*\d+ g/);
+  await expect(page.locator('[data-meal-macros="lunch"]')).toHaveText(
+    /C\s*\d+ g\s*F\s*\d+ g\s*P\s*\d+ g/,
+  );
 
   await expireTrial(email);
   await page.reload();

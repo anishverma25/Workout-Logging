@@ -49,5 +49,9 @@ export const KarmaShot = () => (
   <Shot src={karma} alt="Karma: 185 of 300 toward 30 days of Macrotrophy Pro" />
 );
 export const MealsShot = () => (
-  <Shot src={meals} alt="Breakfast with its calories and carbs, fat and protein in grams" height={15} />
+  <Shot
+    src={meals}
+    alt="Breakfast with its calories and carbs, fat and protein in grams"
+    height={15}
+  />
 );

@@ -13,7 +13,14 @@ import {
 } from '@/components/kit';
 import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/cn';
-import { AuthorAvatar, CommunityMark, HubSwitch, PostCard, PostCardSkeleton, TopicIcon } from './parts';
+import {
+  AuthorAvatar,
+  CommunityMark,
+  HubSwitch,
+  PostCard,
+  PostCardSkeleton,
+  TopicIcon,
+} from './parts';
 
 /**
  * Community (November 2026): ask a question or share a journey, then a feed (For you, Latest,
@@ -146,7 +153,8 @@ export function CommunityPage() {
                 />
               ) : (
                 <p className="type-subhead px-1 text-text-2">
-                  Results for <span className="font-semibold text-text-1">&ldquo;{debounced}&rdquo;</span>
+                  Results for{' '}
+                  <span className="font-semibold text-text-1">&ldquo;{debounced}&rdquo;</span>
                 </p>
               )}
               <div
@@ -170,7 +178,12 @@ export function CommunityPage() {
               </div>
             </div>
 
-            <Feed key={`${mode}|${topic}|${debounced}`} mode={mode} topic={topic} query={debounced} />
+            <Feed
+              key={`${mode}|${topic}|${debounced}`}
+              mode={mode}
+              topic={topic}
+              query={debounced}
+            />
           </>
         )}
       </div>
@@ -203,7 +216,9 @@ function TopicChip({
         selected ? 'bg-text-1 text-bg' : 'bg-fill text-text-1',
       )}
     >
-      {icon ? <span className={cn('inline-flex', selected ? 'text-bg' : 'text-text-2')}>{icon}</span> : null}
+      {icon ? (
+        <span className={cn('inline-flex', selected ? 'text-bg' : 'text-text-2')}>{icon}</span>
+      ) : null}
       {children}
     </button>
   );
@@ -222,7 +237,10 @@ function ComposeBar({
   return (
     <div className="flex items-center gap-3 rounded-card bg-surface p-3" data-compose-bar>
       {username ? (
-        <AuthorAvatar author={{ anonymous: false, username, avatar, verified, me: true }} size={36} />
+        <AuthorAvatar
+          author={{ anonymous: false, username, avatar, verified, me: true }}
+          size={36}
+        />
       ) : (
         <CommunityMark size={36} />
       )}
@@ -363,10 +381,17 @@ function Feed({ mode, topic, query }: { mode: FeedMode; topic: Topic | null; que
     return <ErrorState title="Community did not load" message={error} onRetry={() => load(null)} />;
   if (!items.length)
     return (
-      <div className="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center" data-feed-empty>
+      <div
+        className="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center"
+        data-feed-empty
+      >
         <CommunityMark size={48} />
         <p className="type-headline text-text-1">
-          {query ? 'No matches yet' : mode === 'unanswered' ? 'Every question has an answer' : 'Nothing here yet'}
+          {query
+            ? 'No matches yet'
+            : mode === 'unanswered'
+              ? 'Every question has an answer'
+              : 'Nothing here yet'}
         </p>
         <p className="type-subhead max-w-[30ch] text-text-2 [text-wrap:balance]">
           {query

@@ -107,7 +107,12 @@ function ActivityRow({ a }: { a: ActivityItem }) {
                 ? `Your ${COMMUNITY_REWARD_DAYS} days of Pro are saved for when your plan ends`
                 : `Your ${COMMUNITY_REWARD_DAYS} days of Pro are active`
               : 'A moderation update';
-  const to = a.kind === 'karma_milestone' || a.kind === 'reward' ? '/community/karma' : a.postId ? `/community/p/${a.postId}` : null;
+  const to =
+    a.kind === 'karma_milestone' || a.kind === 'reward'
+      ? '/community/karma'
+      : a.postId
+        ? `/community/p/${a.postId}`
+        : null;
   const inner = (
     <span className="flex items-start gap-3 px-4 py-3.5">
       <span
@@ -123,13 +128,18 @@ function ActivityRow({ a }: { a: ActivityItem }) {
         <span className="type-subhead block text-text-1">
           <span className={cn(!a.read && 'font-semibold')}>{line}</span>
         </span>
-        {a.postTitle ? <span className="type-meta block truncate text-text-2">{a.postTitle}</span> : null}
-        {a.detail && (a.kind === 'reply' || a.kind === 'followed_reply' || a.kind === 'moderation') ? (
+        {a.postTitle ? (
+          <span className="type-meta block truncate text-text-2">{a.postTitle}</span>
+        ) : null}
+        {a.detail &&
+        (a.kind === 'reply' || a.kind === 'followed_reply' || a.kind === 'moderation') ? (
           <span className="type-meta mt-0.5 line-clamp-2 block text-text-3">{a.detail}</span>
         ) : null}
       </span>
       <span className="type-meta shrink-0 text-text-3">{ago(a.createdAt)}</span>
-      {!a.read ? <span aria-label="New" className="mt-2 size-2 shrink-0 rounded-full bg-lime" /> : null}
+      {!a.read ? (
+        <span aria-label="New" className="mt-2 size-2 shrink-0 rounded-full bg-lime" />
+      ) : null}
     </span>
   );
   return to ? (
@@ -159,14 +169,22 @@ export function MinePage() {
             <AuthorAvatar
               author={
                 me.data.username
-                  ? { anonymous: false, username: me.data.username, avatar: me.data.avatar, verified: me.data.verified, me: true }
+                  ? {
+                      anonymous: false,
+                      username: me.data.username,
+                      avatar: me.data.avatar,
+                      verified: me.data.verified,
+                      me: true,
+                    }
                   : { anonymous: true, label: 'You', me: true }
               }
               size={56}
             />
             <div className="min-w-0 flex-1">
               <p className="type-title flex items-center gap-1.5 text-text-1">
-                <span className="truncate">{me.data.username ? `@${me.data.username}` : 'No username yet'}</span>
+                <span className="truncate">
+                  {me.data.username ? `@${me.data.username}` : 'No username yet'}
+                </span>
                 {me.data.verified ? <VerifiedBadge size={18} /> : null}
               </p>
               <p className="type-subhead text-text-2">
@@ -174,7 +192,10 @@ export function MinePage() {
               </p>
             </div>
             {me.data.username ? (
-              <Link to={`/community/u/${me.data.username}`} className="type-subhead font-medium text-lime">
+              <Link
+                to={`/community/u/${me.data.username}`}
+                className="type-subhead font-medium text-lime"
+              >
                 Public profile
               </Link>
             ) : null}
@@ -232,7 +253,8 @@ function MyPosts({ tab }: { tab: 'posts' | 'saved' | 'following' }) {
         <div key={p.id} className="flex flex-col gap-1.5">
           {tab === 'posts' && p.anonymous ? (
             <span className="type-meta inline-flex items-center gap-1.5 px-1 text-text-3">
-              <VenetianMask className="size-3.5" aria-hidden /> Posted anonymously. Only you can see it is yours.
+              <VenetianMask className="size-3.5" aria-hidden /> Posted anonymously. Only you can see
+              it is yours.
             </span>
           ) : null}
           <PostCard post={p} />
@@ -291,7 +313,13 @@ function BlockedList() {
       </h2>
       <ul className="flex flex-col overflow-hidden rounded-card bg-surface">
         {list.data.map((b, i) => (
-          <li key={b.id} className={cn('flex items-center gap-3 px-4 py-3', i > 0 && 'border-t-[0.5px] border-divider')}>
+          <li
+            key={b.id}
+            className={cn(
+              'flex items-center gap-3 px-4 py-3',
+              i > 0 && 'border-t-[0.5px] border-divider',
+            )}
+          >
             <Ban className="size-4 shrink-0 text-text-3" aria-hidden />
             <span className="type-subhead min-w-0 flex-1 truncate text-text-1">{b.label}</span>
             <button
@@ -363,13 +391,9 @@ function KarmaBody({ k, onClaimed }: { k: Karma; onClaimed: () => void }) {
   return (
     <>
       <section
-        className="relative flex flex-col items-center overflow-hidden rounded-panel bg-surface px-5 pt-7 pb-5 text-center"
+        className="relative flex flex-col items-center overflow-hidden rounded-panel bg-surface bg-[radial-gradient(70%_45%_at_50%_0%,var(--lime-dim),transparent_75%)] px-5 pt-7 pb-5 text-center"
         aria-labelledby="karma-total"
       >
-        <span
-          aria-hidden
-          className="pointer-events-none absolute -top-24 left-1/2 size-64 -translate-x-1/2 rounded-full bg-lime/10 blur-3xl"
-        />
         <CommunityMark size={52} className="relative" />
         <p className="type-meta relative mt-4 text-text-2">Your karma</p>
         <p id="karma-total" className="type-hero tabular relative text-text-1" data-karma-total>
@@ -389,9 +413,14 @@ function KarmaBody({ k, onClaimed }: { k: Karma; onClaimed: () => void }) {
             ['+20', 'Best answer'],
             ['+3', 'Helpful journey'],
           ].map(([v, l]) => (
-            <div key={l} className="flex flex-col items-center rounded-tile bg-surface-2 px-2 pt-3 pb-2.5">
+            <div
+              key={l}
+              className="flex flex-col items-center rounded-tile bg-surface-2 px-2 pt-3 pb-2.5"
+            >
               <dd className="type-metric-sm tabular text-lime">{v}</dd>
-              <dt className="type-meta mt-1 flex min-h-9 items-start leading-tight text-text-2">{l}</dt>
+              <dt className="type-meta mt-1 flex min-h-9 items-start leading-tight text-text-2">
+                {l}
+              </dt>
             </div>
           ))}
         </dl>
@@ -400,7 +429,11 @@ function KarmaBody({ k, onClaimed }: { k: Karma; onClaimed: () => void }) {
         </p>
       </section>
 
-      <section className="rounded-panel bg-surface px-5 pt-5 pb-5" aria-labelledby="reward-title" data-reward>
+      <section
+        className="rounded-panel bg-surface px-5 pt-5 pb-5"
+        aria-labelledby="reward-title"
+        data-reward
+      >
         <div className="flex items-center gap-3.5">
           <span
             aria-hidden
@@ -435,23 +468,35 @@ function KarmaBody({ k, onClaimed }: { k: Karma; onClaimed: () => void }) {
                   >
                     {done ? <CircleCheck className="size-[1.125rem]" strokeWidth={2.5} /> : null}
                   </span>
-                  <span className={cn('type-subhead min-w-0 flex-1 truncate', done ? 'text-text-1' : 'text-text-2')}>
+                  <span
+                    className={cn(
+                      'type-subhead min-w-0 flex-1 truncate',
+                      done ? 'text-text-1' : 'text-text-2',
+                    )}
+                  >
                     {q.label}
                   </span>
                   <span className="type-subhead tabular shrink-0 text-text-3">
-                    <span className="font-semibold text-text-1">{Math.min(q.have, q.need)}</span> / {q.need}
+                    <span className="font-semibold text-text-1">{Math.min(q.have, q.need)}</span> /{' '}
+                    {q.need}
                   </span>
                 </div>
                 <div className="mt-2 pl-[1.875rem]">
-                  <ProgressBar value={Math.min(q.have, q.need)} max={q.need} label={q.label} thickness={4} />
+                  <ProgressBar
+                    value={Math.min(q.have, q.need)}
+                    max={q.need}
+                    label={q.label}
+                    thickness={4}
+                  />
                 </div>
               </li>
             );
           })}
         </ul>
         <p className="type-meta border-t-[0.5px] border-divider pt-4 text-text-3">
-          Also needed: a confirmed email, the rules accepted, and no Community ban or mute in 90 days.
-          One reward a year. On autopay, the days wait until your plan ends, so billing never changes.
+          Also needed: a confirmed email, the rules accepted, and no Community ban or mute in 90
+          days. One reward a year. On autopay, the days wait until your plan ends, so billing never
+          changes.
         </p>
         {k.lastClaim ? (
           <InlineNotice tone="info" className="mt-4">
@@ -473,7 +518,11 @@ function KarmaBody({ k, onClaimed }: { k: Karma; onClaimed: () => void }) {
               setBusy(true);
               try {
                 const res = await claimReward(clientId);
-                toast(res.status === 'held' ? 'Saved for when your plan ends' : `${res.days} days of Pro added`);
+                toast(
+                  res.status === 'held'
+                    ? 'Saved for when your plan ends'
+                    : `${res.days} days of Pro added`,
+                );
                 onClaimed();
               } catch (e) {
                 toast(e instanceof Error ? e.message : 'Could not claim. Try again.');
@@ -494,10 +543,23 @@ function KarmaBody({ k, onClaimed }: { k: Karma; onClaimed: () => void }) {
           </h2>
           <ul className="flex flex-col overflow-hidden rounded-card bg-surface">
             {k.history.map((h, i) => (
-              <li key={i} className={cn('flex items-center gap-3 px-4 py-3', i > 0 && 'border-t-[0.5px] border-divider')}>
-                <span className="type-subhead flex-1 text-text-1">{SOURCE[h.source] ?? 'Karma'}</span>
+              <li
+                key={i}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3',
+                  i > 0 && 'border-t-[0.5px] border-divider',
+                )}
+              >
+                <span className="type-subhead flex-1 text-text-1">
+                  {SOURCE[h.source] ?? 'Karma'}
+                </span>
                 <span className="type-meta text-text-3">{ago(h.createdAt)}</span>
-                <span className={cn('type-headline tabular w-12 text-right', h.delta >= 0 ? 'text-lime' : 'text-text-2')}>
+                <span
+                  className={cn(
+                    'type-headline tabular w-12 text-right',
+                    h.delta >= 0 ? 'text-lime' : 'text-text-2',
+                  )}
+                >
                   {h.delta > 0 ? `+${h.delta}` : h.delta}
                 </span>
               </li>
@@ -527,14 +589,23 @@ export function ProfilePage() {
   return (
     <>
       <PageHeader back={back} title="" compactTitle={`@${username}`} />
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 pb-12" data-profile-page={username}>
+      <div
+        className="mx-auto flex w-full max-w-2xl flex-col gap-4 pb-12"
+        data-profile-page={username}
+      >
         {p.loading ? <Skeleton height="10rem" radius="panel" /> : null}
         {p.error ? <ErrorState title="Profile not available" message={p.error} /> : null}
         {p.data ? (
           <>
             <section className="flex flex-col items-center gap-2 rounded-panel bg-surface px-5 pt-6 pb-5 text-center">
               <AuthorAvatar
-                author={{ anonymous: false, username: p.data.username, avatar: p.data.avatar, verified: p.data.verified, me: p.data.me }}
+                author={{
+                  anonymous: false,
+                  username: p.data.username,
+                  avatar: p.data.avatar,
+                  verified: p.data.verified,
+                  me: p.data.me,
+                }}
                 size={56}
               />
               <h1 className="type-title flex items-center gap-1.5 text-text-1">
@@ -558,13 +629,18 @@ export function ProfilePage() {
                 </span>
                 {p.data.joined ? (
                   <span className="type-meta rounded-full bg-fill px-2.5 py-1 text-text-2">
-                    Active since {new Date(p.data.joined).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+                    Active since{' '}
+                    {new Date(p.data.joined).toLocaleDateString('en-IN', {
+                      month: 'short',
+                      year: 'numeric',
+                    })}
                   </span>
                 ) : null}
               </div>
               {p.data.me && p.data.karma !== null ? (
                 <p className="type-meta mt-1 text-text-3">
-                  Only you see your karma: <span className="tabular font-semibold text-text-1">{p.data.karma}</span>
+                  Only you see your karma:{' '}
+                  <span className="tabular font-semibold text-text-1">{p.data.karma}</span>
                 </p>
               ) : null}
               {!p.data.me ? (
@@ -599,12 +675,19 @@ export function ProfilePage() {
             {p.data.replies.length ? (
               <>
                 <h2 className="type-section text-text-1">Recent answers</h2>
-                <ul className="flex flex-col overflow-hidden rounded-card bg-surface" data-profile-answers>
+                <ul
+                  className="flex flex-col overflow-hidden rounded-card bg-surface"
+                  data-profile-answers
+                >
                   {p.data.replies.map((r, i) => (
                     <li key={r.id} className={cn(i > 0 && 'border-t-[0.5px] border-divider')}>
                       <Link to={`/community/p/${r.postId}`} className="pressable block px-4 py-3.5">
-                        <span className="type-meta block truncate text-text-3">On &ldquo;{r.postTitle}&rdquo;</span>
-                        <span className="type-subhead mt-0.5 line-clamp-2 block text-text-1">{r.body}</span>
+                        <span className="type-meta block truncate text-text-3">
+                          On &ldquo;{r.postTitle}&rdquo;
+                        </span>
+                        <span className="type-subhead mt-0.5 line-clamp-2 block text-text-1">
+                          {r.body}
+                        </span>
                         <span className="type-meta mt-1 flex items-center gap-3 text-text-2">
                           <span className="inline-flex items-center gap-1">
                             <Lightbulb className="size-3.5" aria-hidden /> {r.helpful} helpful
