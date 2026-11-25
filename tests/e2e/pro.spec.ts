@@ -178,6 +178,13 @@ test.describe('after early access ends', () => {
   test('before Razorpay plans are connected, prices show and paying once still works', async ({
     page,
   }) => {
+    // The server's real plans and prices, answered as not connected to Razorpay for this page
+    // only: billing.spec connects the shared plans while this runs beside it.
+    await page.route('**/rest/v1/rpc/get_billing_plans*', async (route) => {
+      const res = await route.fetch();
+      const rows = (await res.json()) as Record<string, unknown>[];
+      await route.fulfill({ response: res, json: rows.map((p) => ({ ...p, available: false })) });
+    });
     await signUp(page);
     const plans = page.getByRole('region', { name: 'Pro plans' });
     await expect(plans.getByRole('radio', { name: /^Monthly/ })).toContainText('₹149');
