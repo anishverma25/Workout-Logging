@@ -47,11 +47,11 @@ window.Razorpay = function (options) {
 const control = (path: string, body: unknown) =>
   fetch(`${FAKE}${path}`, { method: 'POST', body: JSON.stringify(body) });
 
+// Plans stay connected afterwards: the phone and desktop copies of this file run side by side,
+// and disconnecting when one finishes turned the other's coaching button into "Opening soon".
+// No other test needs the plans disconnected.
 test.beforeAll(async () => {
   await control('/__test/billing-plans', { connected: true });
-});
-test.afterAll(async () => {
-  await control('/__test/billing-plans', { connected: false });
 });
 
 test.beforeEach(async ({ page }) => {
