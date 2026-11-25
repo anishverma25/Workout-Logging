@@ -2,20 +2,17 @@ import { expect, test } from '@playwright/test';
 import { signUpFresh } from './session';
 
 /**
- * The release walkthrough (the November revamp: the Brain and fair play together): eight parts,
- * full screen, each with a drawing, shown once after the update, and kept on the "What is new"
+ * The release walkthrough (the Community launch, November 2026): five parts, full screen, each
+ * with a real screen of the feature, shown once after the update, and kept on the "What is new"
  * page.
  */
 
 const TITLES = [
-  'Macrotrophy, rebuilt',
-  'Your week and next week',
-  'Exams, travel, fasts and pain',
-  'Eat next, meal plans and menus',
-  'Say a set, see what matters now',
-  'Effort beats ego',
-  'Easier to read at a glance',
-  'Pro, your way',
+  'Community is here',
+  'Post anonymously, any time',
+  'The best answer rises to the top',
+  'Macros for every meal',
+  'Earn 30 days of Pro, free',
 ];
 
 test('the walkthrough explains every part of the release and ends on the plans', async ({
@@ -41,8 +38,8 @@ test('the walkthrough explains every part of the release and ends on the plans',
     expect(box!.height).toBeGreaterThanOrEqual((page.viewportSize()?.height ?? 0) - 1);
     if (i < TITLES.length - 1) await dialog.getByRole('button', { name: 'Next' }).click();
   }
-  await dialog.getByRole('button', { name: 'See Pro' }).click();
-  await expect(page).toHaveURL(/\/pro$/);
+  await dialog.getByRole('button', { name: 'Join the community' }).click();
+  await expect(page).toHaveURL(/\/community$/);
   await page.goto('/');
   await expect(page.getByRole('dialog', { name: 'New in Macrotrophy' })).toHaveCount(0);
 });

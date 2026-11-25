@@ -662,3 +662,23 @@ Read README.md for setup, architecture and calculation rules.
   cached hits and network answers of the wrong type are never used; Repair also re-downloads any
   app file the browser saved wrongly. `pnpm test:update` covers a deploy still spreading and a
   first visit during one (`UPDATE_ONLY`, `UPDATE_REUSE`, `UPDATE_KEEP` for working on it).
+- Community launch (November 2026, migrations `20261125000040_community_forum.sql` and
+  `20261125000041_reusable_codes.sql`, Dexie unchanged, `docs/community.md`,
+  `docs/community-owner-sql.md`):
+  - Community (`/community`, `features/community`, `app/forum.ts`): questions and journeys, one-level
+    replies, Helpful and Support, Best Answer, photos (phone-resized JPEG in `forum_media`),
+    anonymity per post and reply (thread-scoped "Anonymous Lifter N", never the account), blocks
+    (anonymous blocks hide anonymous content only), reports with automatic holds, Activity, karma
+    (append-only `forum_karma`) and the 30-day Pro reward (`forum_reward_rules`, held while autopay
+    runs). Tables `forum_*` have no grants; members call `forum_*` functions only. Owner tools are
+    `community_owner_*` (SQL editor only), including Macrotrophy Verified by email
+    (`community_owner_verify` / `_unverify`); every query in the owner doc is tested.
+    `/community` and `/groups` share `HubSwitch`; More and Home say "Leaderboards & Community".
+    The thread and composer hide the tab bar and dock their own bar (`useDockHeight`).
+  - Food: each meal shows C, F, P grams (`data-meal-macros`, Pro `macro_tracking` only; free
+    members get no macro numbers in the page). Order: Today, Meals, slim Eat next, Water, Day
+    analysis, settings.
+  - Codes work on every payment (`coupons.reusable`, default true; EARLY15 stays once per
+    account); `coupon_payments` lists each payment with its code, owner note and member.
+  - Release `2026-11-community` (five cards with real screens in `src/assets/release`),
+    `CACHE_EPOCH` `ui-21`.

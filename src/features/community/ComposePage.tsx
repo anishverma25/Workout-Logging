@@ -257,7 +257,7 @@ function Composer({
               <AuthorName author={author} link={false} />
             </p>
             <p className="type-meta text-text-3">
-              {anonymous ? 'Name hidden from members' : 'Shown with your username'}
+              {anonymous ? 'Name hidden' : 'Your username'}
             </p>
           </div>
           <label className="flex shrink-0 items-center gap-2">
