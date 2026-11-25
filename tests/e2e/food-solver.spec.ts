@@ -19,7 +19,7 @@ test('eat next: what is left today and a food added with one tap', async ({ page
   await expect(card.locator('[data-eat-next-left]')).toContainText(/You have [\d,]+ kcal/);
   const first = card.locator('[data-eat-next-item]').first();
   const name = (await first.locator('p').first().innerText()).trim();
-  await expect(first).toContainText(/\d+ kcal · \d+ g protein/);
+  await expect(first).toContainText(/\d+ kcal · \d+ g P/);
   await first.locator('[data-eat-next-add]').click();
   await expect(page.getByText(`Logged ${name} to`)).toBeVisible();
   await expect(page.locator('[data-day-totals]')).not.toContainText('0 eaten');

@@ -135,8 +135,6 @@ export function FoodPage() {
           ) : null}
           <FoodThanks />
           <DaySummary ctx={ctx} date={date} onTargets={() => setTargetsOpen(true)} />
-          <EatNextCard ctx={ctx} date={date} today={today} now={now} />
-          <DayAnalysisCard ctx={ctx} date={date} now={now} />
           <section aria-labelledby="meals-title">
             <h2 id="meals-title" className="type-section mb-2 text-text-1">
               Meals
@@ -155,7 +153,11 @@ export function FoodPage() {
               ))}
             </div>
           </section>
+          {/* Owner, 25 Nov 2026: meals straight after today's totals, then a slim Eat next, water,
+              and the full day analysis last, so logging needs no scrolling. */}
+          <EatNextCard ctx={ctx} date={date} today={today} now={now} />
           <WaterCard ctx={ctx} date={date} />
+          <DayAnalysisCard ctx={ctx} date={date} now={now} />
           <ListGroup label="Food settings">
             <li>
               <ListRow
@@ -311,31 +313,33 @@ function DaySummary({
             </span>
           </Link>
         ) : null}
-        <ul className={cn('mt-4 grid grid-cols-4 gap-3', !macros && 'hidden')} data-macro-bars>
-          {bars.map((b) => {
-            const met = b.label === 'Protein' && b.target !== null && b.value >= b.target;
-            return (
-              <li key={b.label} className="min-w-0">
-                <p className="type-meta font-semibold text-text-2">{b.label}</p>
-                <p className="type-headline tabular whitespace-nowrap text-text-1">
-                  {b.value.toFixed(0)} g
-                </p>
-                {b.target !== null ? (
-                  <p className="type-caption tabular text-text-2">of {n(b.target)} g</p>
-                ) : null}
-                {b.target ? (
-                  <ProgressBar
-                    value={Math.min(b.value, b.target)}
-                    max={b.target}
-                    label={b.label}
-                    thickness={4}
-                    className={cn('mt-1', !met && '[&>div]:bg-text-1/85')}
-                  />
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
+        {macros ? (
+          <ul className="mt-4 grid grid-cols-4 gap-3" data-macro-bars>
+            {bars.map((b) => {
+              const met = b.label === 'Protein' && b.target !== null && b.value >= b.target;
+              return (
+                <li key={b.label} className="min-w-0">
+                  <p className="type-meta font-semibold text-text-2">{b.label}</p>
+                  <p className="type-headline tabular whitespace-nowrap text-text-1">
+                    {b.value.toFixed(0)} g
+                  </p>
+                  {b.target !== null ? (
+                    <p className="type-caption tabular text-text-2">of {n(b.target)} g</p>
+                  ) : null}
+                  {b.target ? (
+                    <ProgressBar
+                      value={Math.min(b.value, b.target)}
+                      max={b.target}
+                      label={b.label}
+                      thickness={4}
+                      className={cn('mt-1', !met && '[&>div]:bg-text-1/85')}
+                    />
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
       </div>
       {kcal === null ? (
         <p className="type-meta mt-2 px-4">
@@ -439,8 +443,8 @@ function MealCard({
   const id = `meal-${meal}`;
   return (
     <section aria-labelledby={id} data-meal={meal} className="py-3">
-      <div className="flex items-center gap-3">
-        <h3 id={id} className="type-headline min-w-0 flex-1 text-text-1">
+      <div className="flex min-h-8 items-center gap-3">
+        <h3 id={id} className="type-headline min-w-0 flex-1 truncate text-text-1">
           {MEAL_LABEL[meal]}
         </h3>
         {items.length ? (
@@ -457,8 +461,30 @@ function MealCard({
           <Plus className="size-4" aria-hidden />
         </button>
       </div>
+      {/* Each meal's carbs, fat and protein, like MyFitnessPal: Pro (and the trial) only, and
+          never drawn at all for free members. */}
+      {items.length && proteinPro ? (
+        <p
+          className="type-meta tabular mt-0.5 flex flex-wrap gap-x-3.5 text-text-2"
+          data-meal-macros={meal}
+        >
+          <span aria-hidden>
+            <span className="font-semibold text-text-1">C</span> {n(total.carbsG)} g
+          </span>
+          <span aria-hidden>
+            <span className="font-semibold text-text-1">F</span> {n(total.fatG)} g
+          </span>
+          <span aria-hidden>
+            <span className="font-semibold text-text-1">P</span> {n(total.proteinG)} g
+          </span>
+          <span className="sr-only">
+            Carbs {n(total.carbsG)} grams, fat {n(total.fatG)} grams, protein {n(total.proteinG)}{' '}
+            grams
+          </span>
+        </p>
+      ) : null}
       {items.length ? (
-        <ul className="mt-1 flex flex-col">
+        <ul className="mt-1.5 flex flex-col">
           {items.map((l) => {
             const food = ctx.foodById.get(l.foodId);
             const portion = portionText(l.amount, l.unit, l.size, food ?? null);

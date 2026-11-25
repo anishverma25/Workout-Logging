@@ -643,10 +643,22 @@ describe('billing', () => {
       [user],
     );
     expect(uses.rows).toEqual([{ code: 'GYM10', discount_inr: '150.00' }]);
-    expect((await check(user, 'ONCE20')).reason).toBe('already_used');
-    expect((await handleOrder(deps(), user, { plan: 'monthly', coupon: 'ONCE20' })).status).toBe(
-      400,
+    // Codes work on every payment (migration 0041): the same code again, and another code.
+    expect((await check(user, 'GYM10')).ok).toBe(true);
+    expect((await payOnce(user, 'monthly', 'pay_c1b', 'GYM10')).body.amount).toBe(13400);
+    expect(
+      (
+        await server.pg.query('select count(*)::int as c from public.coupon_uses where user_id = $1', [
+          user,
+        ])
+      ).rows[0],
+    ).toEqual({ c: 2 });
+    const report = await server.pg.query<{ code: string; member_email: string; code_owner: string }>(
+      `select code, member_email, code_owner from public.coupon_payments where member_email = $1`,
+      ['coupon@example.com'],
     );
+    expect(report.rows.map((r) => r.code)).toEqual(['GYM10', 'GYM10']);
+    expect((await check(user, 'ONCE20')).ok).toBe(true);
     // Without a code they still pay the normal price.
     expect((await handleOrder(deps(), user, { plan: 'monthly' })).body.amount).toBe(14900);
 

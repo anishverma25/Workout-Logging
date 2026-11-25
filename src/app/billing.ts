@@ -130,7 +130,7 @@ const COUPON_REASONS: Record<string, string> = {
   unknown: 'That code is not valid. Check the spelling.',
   ended: 'That code has ended.',
   used_up: 'That code has been used up.',
-  already_used: 'A code has already been used on this account. Each account gets one.',
+  already_used: 'You have already used this code. It works once per account.',
   early_only: 'That code is for members who joined before the new prices.',
 };
 

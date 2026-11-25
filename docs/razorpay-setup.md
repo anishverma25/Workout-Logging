@@ -164,12 +164,14 @@ How paying works now:
 - If a payment fails and the person closes the window, the page shows Razorpay's reason and
   offers one payment instead.
 
-Coupons (a percent off the first payment of a Pro plan, one coupon per account, ever). The
-first code, `RISHI10` (10%), is made by the migration:
+Coupons (a percent off a Pro payment). Since migration 0041 a code works on every payment a
+member makes with it (each pay-once purchase, and the first charge of each new autopay; renewals
+are at the plan's price). Once-only codes stay once per account: `EARLY15` and any code with
+`reusable = false`. The first code, `RISHI10` (10%), is made by the migration:
 
 ```sql
 -- make a code (letters and digits, 3 to 20, upper case)
-insert into public.coupons (code, percent, note) values ('ANKIT10', 10, 'Ankit Instagram');
+insert into public.coupons (code, percent, note) values ('ANKIT10', 10, 'Ankit Instagram @handle');
 -- optional: another percent (1 to 50), an end date, a limit on uses
 insert into public.coupons (code, percent, expires_at, max_uses)
 values ('DIWALI15', 15, '2026-12-01', 100);
@@ -177,9 +179,12 @@ values ('DIWALI15', 15, '2026-12-01', 100);
 update public.coupons set active = false where code = 'ANKIT10';
 -- how every code is doing: times used, discount given, last use
 select * from public.coupon_report;
--- who used what
-select u.code, u.discount_inr, u.used_at, a.email
-from public.coupon_uses u join auth.users a on a.id = u.user_id order by u.used_at desc;
+-- every payment made with a code: whose code (its note), who paid, plan, amount, discount
+select * from public.coupon_payments;
+-- one code only
+select * from public.coupon_payments where code = 'RISHI10';
+-- a code that should work only once per account
+update public.coupons set reusable = false where code = 'WELCOME20';
 ```
 
 With pay once the order is simply made for the lower amount. With autopay the first period is
